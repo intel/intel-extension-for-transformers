@@ -1,0 +1,36 @@
+{
+    "input_info": [
+        {
+            "keyword": "input_ids",
+            "sample_size": [1, 128],
+            "type": "long",
+            "filler": "ones"
+        },
+        {
+            "keyword": "attention_mask",
+            "sample_size": [1, 128],
+            "type": "long",
+            "filler": "ones"
+        }
+    ],
+    "compression": {
+        "algorithm": "quantization",
+        "initializer": {
+            "range": {
+                "num_init_samples": 24
+            }
+        },
+        "ignored_scopes": ["{re}BertSelfAttention\\[self\\]/__add___0",
+            "RobertaForSequenceClassification/RobertaClassificationHead[classifier]/Linear[out_proj]",
+            "RobertaForSequenceClassification/RobertaClassificationHead[classifier]/Linear[dense]"
+        ],
+        "activations":
+        {
+            "mode": "asymmetric"
+        },
+        "weights":
+        {
+            "mode": "asymmetric"
+        }
+    }
+}

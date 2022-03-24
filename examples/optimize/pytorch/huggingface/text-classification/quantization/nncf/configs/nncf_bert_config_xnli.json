@@ -1,0 +1,36 @@
+{
+    "input_info": [
+        {
+            "sample_size": [1, 128],
+            "type": "long"
+        },
+        {
+            "sample_size": [1, 128],
+            "type": "long"
+        },
+        {
+            "sample_size": [1, 128],
+            "type": "long"
+        }
+    ],
+    "compression": {
+        "algorithm": "quantization",
+        "initializer": {
+            "range": {
+                "num_init_samples": 96
+            }
+        },
+        "ignored_scopes": ["{re}BertSelfAttention\\[self\\]/__add___0",
+            "{re}BertIntermediate\\[intermediate\\]/__mul___0",
+            "{re}BertIntermediate\\[intermediate\\]/NNCFLinear\\[dense\\]/linear_0"
+        ],
+        "activations":
+        {
+            "mode": "asymmetric"
+        },
+        "weights":
+        {
+            "mode": "symmetric"
+        }
+    }
+}

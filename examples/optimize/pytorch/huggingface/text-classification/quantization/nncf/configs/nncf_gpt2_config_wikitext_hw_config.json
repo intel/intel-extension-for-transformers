@@ -1,0 +1,58 @@
+{
+    "input_info": [
+        {
+            "sample_size": [1, 1024],
+            "type": "long"
+        }
+    ],
+    "hw_config_type": "cpu",
+    "compression": {
+        "algorithm": "quantization",
+        "initializer": {
+            "range": {
+                "num_init_samples": 16,
+                "type": "percentile",
+                "params":
+                {
+                    "min_percentile": 0.01,
+                    "max_percentile": 99.99
+                }
+            }
+        },
+        "ignored_scopes": [
+             //gelu_new with fusing into previous GEMM
+            "{re}.*MLP\\[mlp\\]/__rmul___0",
+            "{re}.*MLP\\[mlp\\]/__add___0",
+            "{re}.*MLP\\[mlp\\]/__rmul___1",
+            "{re}.*MLP\\[mlp\\]/tanh_0",
+            "{re}.*MLP\\[mlp\\]/__radd___0",
+            "{re}.*MLP\\[mlp\\]/__mul___0",
+
+            // Intermediate embedding sum results
+            "GPT2LMHeadModel/GPT2Model[transformer]/__add___0",
+            "GPT2LMHeadModel/GPT2Model[transformer]/__add___1",
+
+            // Scaling in attention
+            "{re}.*Attention\\[attn\\]/__truediv___0",
+
+            // Pre-LayerNorm additions
+            "{re}.*Block\\[[0-9]*\\]/__add___0",
+            "{re}.*Block\\[[0-9]*\\]/__add___1",
+
+            // Final LayerNorm inputs
+            "GPT2LMHeadModel/GPT2Model[transformer]/LayerNorm[ln_f]",
+
+            // LM head
+            "GPT2LMHeadModel/NNCFLinear[lm_head]"
+        ],
+        "activations":
+        {
+            "mode": "symmetric"
+        },
+        "weights":
+        {
+            "mode": "symmetric",
+            "signed": true
+        }
+    }
+}

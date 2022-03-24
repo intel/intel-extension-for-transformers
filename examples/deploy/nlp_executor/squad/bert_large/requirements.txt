@@ -1,0 +1,4 @@
+neural-compressor
+onnx
+onnxruntime
+transformers

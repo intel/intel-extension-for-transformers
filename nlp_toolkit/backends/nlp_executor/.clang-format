@@ -1,0 +1,6 @@
+Language:        Cpp
+BasedOnStyle:  Google
+DerivePointerAlignment: false
+ColumnLimit: 120
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true

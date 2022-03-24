@@ -1,0 +1,44 @@
+{
+    "input_info": [
+        {
+            "sample_size": [1, 384],
+            "type": "long"
+        },
+        {
+            "sample_size": [1, 384],
+            "type": "long"
+        },
+        {
+            "sample_size": [1, 384],
+            "type": "long"
+        }
+    ],
+    "compression": {
+        "algorithm": "quantization",
+        "initializer": {
+            "range": {
+                "num_init_samples": 32,
+                "type": "percentile",
+                "params":
+                {
+                    "min_percentile": 0.01,
+                    "max_percentile": 99.99
+                }
+            },
+
+            "batchnorm_adaptation": {
+                "num_bn_adaptation_samples": 200
+            }
+        },
+        "activations":
+        {
+            "mode": "symmetric"
+        },
+        "weights":
+        {
+            "mode": "symmetric",
+            "signed": true,
+            "per_channel": false
+        }
+    }
+}
