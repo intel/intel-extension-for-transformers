@@ -47,7 +47,7 @@ from nlp_toolkit import (
     QuantizationMode,
     NLPTrainer,
 )
-from nlp_toolkit import NLPOptimizedModel
+from nlp_toolkit import OptimizedModel
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -546,7 +546,7 @@ def main():
 
         if optim_args.tune or optim_args.int8:
             # Load the model obtained after Intel Neural Compressor (INC) quantization
-            model = NLPOptimizedModel.from_pretrained(
+            model = OptimizedModel.from_pretrained(
                 training_args.output_dir,
             )
         model.eval()

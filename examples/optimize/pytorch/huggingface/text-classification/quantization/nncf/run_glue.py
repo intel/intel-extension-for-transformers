@@ -54,7 +54,7 @@ from paladin import (
     QuantizationMode,
     NLPTrainer,
 )
-from paladin.model import NLPOptimizedModel
+from paladin.model import OptimizedModel
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.9.0")
@@ -621,7 +621,7 @@ def main():
 
         if optim_args.tune or optim_args.int8:
             # Load the model obtained after Intel Neural Compressor (INC) quantization
-            model = NLPOptimizedModel.from_pretrained(
+            model = OptimizedModel.from_pretrained(
                 training_args.output_dir,
             )
         model.eval()

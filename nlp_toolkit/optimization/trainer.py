@@ -44,8 +44,8 @@ from transformers.trainer_utils import (
     set_seed,
     speed_metrics,
 )
-from nlp_toolkit.config import NLPOptimizeConfig
-from nlp_toolkit.config import CONFIG_NAME as paladin_config_name
+from nlp_toolkit import OptimizeConfig
+from nlp_toolkit import CONFIG_NAME as paladin_config_name
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
 
@@ -67,7 +67,7 @@ if TYPE_CHECKING:
 __version__ = "4.9.2"
 
 
-class NLPTrainer(NLPOptimizeConfig, Trainer):
+class NLPTrainer(OptimizeConfig, Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.in_training = False

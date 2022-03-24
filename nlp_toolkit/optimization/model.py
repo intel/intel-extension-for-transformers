@@ -25,7 +25,7 @@ from neural_compressor.utils.pytorch import load_file
 from .config import CONFIG_NAME, WEIGHTS_NAME, QUANTIZED_WEIGHTS_NAME
 
 
-class NLPOptimizedModel:
+class OptimizedModel:
     def __init__(self, *args, **kwargs):
         raise EnvironmentError(
             f"{self.__class__.__name__} is designed to be instantiated using the"

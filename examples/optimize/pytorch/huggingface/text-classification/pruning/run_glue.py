@@ -48,7 +48,7 @@ from nlp_toolkit import (
     PruningMode,
     NLPTrainer,
 )
-from nlp_toolkit.model import NLPOptimizedModel
+from nlp_toolkit.model import OptimizedModel
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -526,7 +526,7 @@ def main():
 
     if optim_args.benchmark or optim_args.accuracy_only:
         # Load the model obtained after Intel Neural Compressor (INC) quantization
-        model = NLPOptimizedModel.from_pretrained(
+        model = OptimizedModel.from_pretrained(
             training_args.output_dir,
         )
         model.eval()

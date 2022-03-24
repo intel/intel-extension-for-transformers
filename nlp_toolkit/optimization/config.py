@@ -31,14 +31,14 @@ WEIGHTS_NAME = "pytorch_model.bin"
 QUANTIZED_WEIGHTS_NAME = "best_model_weights.pt"
 
 
-class NLPConfig:
+class DeployConfig:
     def __init__(self, config_path: str):
         """
         Args:
             config_path (:obj:`str`):
                 Path to the YAML configuration file used to control the tuning behavior.
         Returns:
-            config: NLPConfig object.
+            config: DeployConfig object.
         """
 
         self.path = config_path
@@ -67,7 +67,7 @@ class NLPConfig:
     @classmethod
     def from_pretrained(cls, config_name_or_path: str, config_file_name: Optional[str] = None, **kwargs):
         """
-        Instantiate an NLPConfig object from a configuration file which can either be hosted on
+        Instantiate an DeployConfig object from a configuration file which can either be hosted on
         huggingface.co or from a local directory path.
 
         Args:
@@ -89,7 +89,7 @@ class NLPConfig:
                 git-based system for storing models and other artifacts on huggingface.co, so ``revision`` can be any
                 identifier allowed by git.
         Returns:
-            config: NLPConfig object.
+            config: DeployConfig object.
         """
 
         cache_dir = kwargs.get("cache_dir", None)
@@ -393,7 +393,7 @@ class DistillationConfig(object):
     def metrics(self, metrics):
         self.distill_config.usr_cfg.evaluation.accuracy = metrics
 
-class NLPOptimizeConfig(object):
+class OptimizeConfig(object):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.quantization = QuantizationConfig()

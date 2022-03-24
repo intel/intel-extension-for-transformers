@@ -11,10 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .optimization.config import NLPConfig
-from .optimization.optimizer import NLPPipelineOptimizer, NLPNoTrainerOptimizer
+from .optimization.config import (
+    CONFIG_NAME,
+    WEIGHTS_NAME,
+    QUANTIZED_WEIGHTS_NAME,
+    DeployConfig,
+    OptimizeConfig
+)
+from .optimization.distillation import DistillationMode
+from .optimization.model import OptimizedModel
+from .optimization.optimizer import OptimizerPipeline, NoTrainerOptimizer
 from .optimization.pruning import PruningMode
 from .optimization.quantization import QuantizationMode
-from .optimization.distillation import DistillationMode
 from .optimization.trainer import NLPTrainer
-from .optimization.model import NLPOptimizedModel

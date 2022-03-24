@@ -17,7 +17,7 @@ from typing import Callable, Optional, Union, List
 
 import torch
 from transformers import PreTrainedModel
-from nlp_toolkit.config import NLPOptimizeConfig
+from nlp_toolkit import OptimizeConfig
 
 from neural_compressor.experimental import common, Component, Distillation
 from neural_compressor.experimental.scheduler import Scheduler
@@ -26,7 +26,7 @@ from neural_compressor.experimental.scheduler import Scheduler
 logger = logging.getLogger(__name__)
 
 
-class NLPPipelineOptimizer:
+class OptimizerPipeline:
     def __init__(
         self,
         model: Union[PreTrainedModel, torch.nn.Module],
@@ -74,7 +74,7 @@ class NLPPipelineOptimizer:
         return opt_model
 
 
-class NLPNoTrainerOptimizer(NLPOptimizeConfig):
+class NoTrainerOptimizer(OptimizeConfig):
     def __init__(
         self,
         model: Union[PreTrainedModel, torch.nn.Module],
