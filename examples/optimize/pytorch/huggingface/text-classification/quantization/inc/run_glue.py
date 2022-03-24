@@ -43,11 +43,11 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 
-from paladin.core import (
+from nlp_toolkit import (
     QuantizationMode,
     NLPTrainer,
 )
-from paladin.model import NLPOptimizedModel
+from nlp_toolkit import NLPOptimizedModel
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""

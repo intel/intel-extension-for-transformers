@@ -17,7 +17,7 @@ from typing import Callable, Optional, Union, List
 
 import torch
 from transformers import PreTrainedModel
-from paladin.core.config import NLPOptimizeConfig
+from nlp_toolkit.config import NLPOptimizeConfig
 
 from neural_compressor.experimental import common, Component, Distillation
 from neural_compressor.experimental.scheduler import Scheduler

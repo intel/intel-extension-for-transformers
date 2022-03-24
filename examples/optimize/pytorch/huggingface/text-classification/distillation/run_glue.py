@@ -49,10 +49,10 @@ from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.fx import symbolic_trace
 
-from paladin.core import (
+from nlp_toolkit import (
     NLPTrainer,
 )
-from paladin.core.model import NLPOptimizedModel
+from nlp_toolkit.model import NLPOptimizedModel
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""

@@ -44,8 +44,8 @@ from transformers.trainer_utils import (
     set_seed,
     speed_metrics,
 )
-from paladin.core.config import NLPOptimizeConfig
-from paladin.core.config import CONFIG_NAME as paladin_config_name
+from nlp_toolkit.config import NLPOptimizeConfig
+from nlp_toolkit.config import CONFIG_NAME as paladin_config_name
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
 

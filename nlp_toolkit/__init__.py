@@ -11,12 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-# from .config import NLPConfig, NLPPruningConfig, NLPQuantizationConfig, NLPDistillationConfig
-from .config import NLPConfig
-from .optimizer import NLPPipelineOptimizer, NLPNoTrainerOptimizer
-from .pruning import PruningMode
-from .quantization import QuantizationMode
-from .distillation import DistillationMode
-from .trainer import NLPTrainer
-from .model import NLPOptimizedModel
+from .optimization.config import NLPConfig
+from .optimization.optimizer import NLPPipelineOptimizer, NLPNoTrainerOptimizer
+from .optimization.pruning import PruningMode
+from .optimization.quantization import QuantizationMode
+from .optimization.distillation import DistillationMode
+from .optimization.trainer import NLPTrainer
+from .optimization.model import NLPOptimizedModel
