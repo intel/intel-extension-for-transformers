@@ -12,23 +12,28 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import nlp_toolkit
 import os
-from functools import reduce
-from typing import Any, Optional
-from xmlrpc.client import boolean
-
-from transformers.file_utils import cached_path, hf_bucket_url
-
 import yaml
+from enum import Enum
+from functools import reduce
 from neural_compressor.conf.config import Quantization_Conf
 from neural_compressor.conf.config import Pruning_Conf
 from neural_compressor.conf.config import Distillation_Conf
 from neural_compressor.utils import logger
+from transformers.file_utils import cached_path, hf_bucket_url
+from typing import Any, Optional, Dict
+from xmlrpc.client import boolean
 
 
 CONFIG_NAME = "best_configure.yaml"
 WEIGHTS_NAME = "pytorch_model.bin"
 QUANTIZED_WEIGHTS_NAME = "best_model_weights.pt"
+
+
+class Provider(Enum):
+    INC = "inc"
+    NNCF = "nncf"
 
 
 class DeployConfig:
@@ -399,13 +404,105 @@ class OptimizeConfig(object):
         self.quantization = QuantizationConfig()
         self.pruning = PruningConfig()
         self.distillation = DistillationConfig()
-        self._provider = "INC"
+        self._provider = Provider.INC.value
         self._provider_arguments = None
+        self._opt_cfg = {
+            "quantization": self.quantization,
+            "pruning": self.pruning,
+            "distillation": self.distillation
+        }
 
+    @property
+    def provider(self):
+        return self._provider
+
+    @provider.setter
+    def provider(self, provider: str):
+        self._provider = provider
 
     @property
     def provider_arguments(self):
         return self._provider_arguments
+
     @provider_arguments.setter
     def provider_arguments(self, provider_arguments):
         self._provider_arguments = provider_arguments
+
+    def parse_nncf_arguments(self):
+        assert self._provider_arguments is not None, "Please pass arguments to trainer.provider_arguments"
+        assert isinstance(self._provider_arguments, Dict), "provider_arguments must be a dictionary type"
+        assert "nncf_config" in self._provider_arguments.keys(), "provider_arguments must be included nncf_config"
+
+    def parse_inc_arguments(self):
+        if self._provider_arguments is not None:
+            assert isinstance(self._provider_arguments, Dict), "provider_arguments must be a dictionary type"
+            framework = "pytorch"
+            for opt_cfg in self._provider_arguments:
+                if opt_cfg == "framework":
+                    framework = self._provider_arguments[opt_cfg]
+                    continue
+                if opt_cfg == "quantization":
+                    for cfg in self._provider_arguments[opt_cfg]:
+                        if cfg == "approach":
+                            self.quantization.approach = \
+                                nlp_toolkit.QuantizationMode[self._provider_arguments[opt_cfg][cfg]].value
+                        if cfg == "strategy":
+                            self.quantization.strategy = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "timeout":
+                            self.quantization.timeout = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "max_trials":
+                            self.quantization.max_trials = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "save_path":
+                            self.quantization.save_path = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "criterion":
+                            self.quantization.criterion = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "objects":
+                            self.quantization.objects = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "metrics":
+                            self.metrics = self._provider_arguments[opt_cfg][cfg]
+
+                if opt_cfg == "pruning":
+                    for cfg in self._provider_arguments[opt_cfg]:
+                        if cfg == "approach":
+                            self.pruning.approach = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "custom_pruner":
+                            self.pruning.custom_pruner = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "target_sparsity":
+                            self.pruning.target_sparsity = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "epoch_range":
+                            self.pruning.epoch_range = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "metrics":
+                            self.pruning.metrics = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "timeout":
+                            self.pruning.timeout = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "max_trials":
+                            self.pruning.max_trials = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "save_path":
+                            self.pruning.save_path = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "criterion":
+                            self.pruning.criterion = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "objects":
+                            self.pruning.objects = self._provider_arguments[opt_cfg][cfg]
+
+                if opt_cfg == "distillation":
+                    for cfg in self._provider_arguments[opt_cfg]:
+                        if cfg == "metrics":
+                            self.pruning.metrics = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "timeout":
+                            self.pruning.timeout = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "max_trials":
+                            self.pruning.max_trials = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "save_path":
+                            self.pruning.save_path = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "criterion":
+                            self.pruning.criterion = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "objects":
+                            self.pruning.objects = self._provider_arguments[opt_cfg][cfg]
+
+            if framework == "pytorch" and \
+              self.quantization.approach != nlp_toolkit.QuantizationMode.PostTrainingDynamic.value:
+                self.quantization.quant_config.usr_cfg.model.framework = "pytorch_fx"
+            else:
+                self.quantization.quant_config.usr_cfg.model.framework = framework
+            self.pruning.prune_config.usr_cfg.model.framework = framework
+            self.distillation.distill_config.usr_cfg.model.framework = framework

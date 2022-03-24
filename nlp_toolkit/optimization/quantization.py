@@ -19,11 +19,11 @@ require_version("neural_compressor>=1.9.0", "To fix: pip install neural_compress
 
 class QuantizationMode(Enum):
 
-    DYNAMIC_QUANTIZATION = "post_training_dynamic_quant"
-    STATIC_QUANTIZATION = "post_training_static_quant"
-    QAT = "quant_aware_training"
+    PostTrainingStatic = "post_training_static_quant"
+    PostTrainingDynamic = "post_training_dynamic_quant"
+    QuantizationAwareTraining = "quant_aware_training"
 
 
-SUPPORTED_QUANT_MODE = set([approach.value for approach in QuantizationMode])
+SUPPORTED_QUANT_MODE = set([approach.name for approach in QuantizationMode])
 
 

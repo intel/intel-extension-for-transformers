@@ -17,17 +17,18 @@
 """ Finetuning the library models for sequence classification on GLUE."""
 # You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
+import datasets
 import logging
+import numpy as np
 import os
 import random
 import sys
-from dataclasses import dataclass, field
-from typing import Optional
-
-import datasets
-import numpy as np
 import transformers
+from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
+from nlp_toolkit import NLPTrainer
+from nlp_toolkit import OptimizedModel
+from nlp_toolkit.optimization.quantization import SUPPORTED_QUANT_MODE
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -42,12 +43,7 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
-
-from nlp_toolkit import (
-    QuantizationMode,
-    NLPTrainer,
-)
-from nlp_toolkit import OptimizedModel
+from typing import Optional
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -202,8 +198,9 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply quantization."},
     )
     quantization_approach: Optional[str] = field(
-        default="dynamic_quantization",
-        metadata={"help": "Quantization approach. Supported approach are static_quantization, dynamic_quantization and qat."},
+        default="PostTrainingStatic",
+        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
+                  "PostTrainingDynamic and QuantizationAwareTraining."},
     )
     metric_name: Optional[str] = field(
         default=None,
@@ -515,31 +512,25 @@ def main():
 
         model.config.save_pretrained(training_args.output_dir)
         trainer.save_model(training_args.output_dir)
-        if optim_args.quantization_approach != "dynamic_quantization":
-
+        if optim_args.quantization_approach != "PostTrainingDynamic":
             if not training_args.do_train:
-                raise ValueError("do_train must be set to True for static and aware training quantization.")
-
-            # TODO : Remove when dynamic axes support
-            if (
-                not training_args.dataloader_drop_last
-                and eval_dataset.shape[0] % training_args.per_device_eval_batch_size != 0
-            ):
                 raise ValueError(
-                    "The number of samples of the dataset is not a multiple of the batch size."
-                    "Use --dataloader_drop_last to overcome."
+                    "do_train must be set to True for static and aware training quantization."
                 )
             model.config.save_pretrained(training_args.output_dir)
-        elif optim_args.quantization_approach == "qat":
-            early_stopping_patience = 2
+        elif optim_args.quantization_approach == "QuantizationAwareTraining":
+            early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
                                                                     early_stopping_threshold))
 
-        trainer.quantization.approach = \
-            getattr(QuantizationMode, optim_args.quantization_approach.upper()).value
-        trainer.quantization.metric_tolerance = {optim_args.tolerance_mode: optim_args.perf_tol}
-        trainer.quantization.metrics = {"metrics": metric_name}
+        trainer.provider_arguments = {
+            "quantization":{
+                "approach": optim_args.quantization_approach,
+                "criterion": {optim_args.tolerance_mode: optim_args.perf_tol},
+                "metrics": {"metrics":[metric_name]},
+            }
+        }
         model = trainer.quantize()
 
     if optim_args.benchmark or optim_args.accuracy_only:

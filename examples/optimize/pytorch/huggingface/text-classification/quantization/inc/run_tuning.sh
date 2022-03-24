@@ -10,14 +10,15 @@ function main {
 
 # init params
 function init_params {
-  tuned_checkpoint=saved_results
+  topology="bert_base_SST-2"
+  tuned_checkpoint="saved_results"
   TASK_NAME="mrpc"
   model_name_or_path="bert-base-cased"
   extra_cmd=""
   batch_size=8
   MAX_SEQ_LENGTH=128
   model_type="bert"
-  approach="static_quantization"
+  approach="PostTrainingStatic"
   for var in "$@"
   do
     case $var in
@@ -48,7 +49,7 @@ function run_tuning {
         TASK_NAME="mrpc"
         model_name_or_path="textattack/bert-base-uncased-MRPC"
         model_type="bert"
-        approach="qat"
+        approach="QuantizationAwareTraining"
         extra_cmd=$extra_cmd" --learning_rate 2e-5 \
                    --num_train_epochs 3 \
                    --eval_steps 100 \

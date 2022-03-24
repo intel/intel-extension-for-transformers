@@ -13,14 +13,13 @@
 #  limitations under the License.
 
 import logging
-from typing import Callable, Optional, Union, List
-
 import torch
-from transformers import PreTrainedModel
-from nlp_toolkit import OptimizeConfig
 
 from neural_compressor.experimental import common, Component, Distillation
 from neural_compressor.experimental.scheduler import Scheduler
+from nlp_toolkit import OptimizeConfig, Provider
+from transformers import PreTrainedModel
+from typing import Callable, Optional, Union, List
 
 
 logger = logging.getLogger(__name__)
@@ -103,22 +102,6 @@ class NoTrainerOptimizer(OptimizeConfig):
         self.output_dir = output_dir
 
     @property
-    def provider(self):
-        return self._provider
-
-    @provider.setter
-    def provider(self, provider: str):
-        self._provider = provider
-
-    @property
-    def provider_arguments(self):
-        return self._provider_arguments
-
-    @provider_arguments.setter
-    def provider_arguments(self, provider_arguments: object):
-        self._provider_arguments = provider_arguments
-
-    @property
     def eval_func(self):
         return self._eval_func
 
@@ -145,7 +128,8 @@ class NoTrainerOptimizer(OptimizeConfig):
     def _init_quantize(self):
         from .quantization import QuantizationMode
         from neural_compressor.experimental import Quantization, common
-        if self.quant_config.usr_cfg.quantization.approach == QuantizationMode.PTQ_DYNAMIC.value:
+        if self.quant_config.usr_cfg.quantization.approach == \
+          QuantizationMode.PostTrainingDynamic.value:
             self.quant_config.usr_cfg.model.framework = "pytorch"
         else:
             self.quant_config.usr_cfg.model.framework = "pytorch_fx"
@@ -158,11 +142,13 @@ class NoTrainerOptimizer(OptimizeConfig):
         if self._eval_func is not None:
             quantizer.eval_func = self._eval_func
 
-        if self.quant_config.usr_cfg.quantization.approach == QuantizationMode.PTQ_STATIC.value:
+        if self.quant_config.usr_cfg.quantization.approach == \
+          QuantizationMode.PostTrainingStatic.value:
             assert self._calib_dataloader is not None, \
                 "calib_dataloader must be provided for post-training quantization."
             quantizer.calib_dataloader = self._calib_dataloader
-        elif self.quant_config.usr_cfg.quantization.approach == QuantizationMode.QAT.value:
+        elif self.quant_config.usr_cfg.quantization.approach == \
+          QuantizationMode.QuantizationAwareTraining.value:
             assert self._train_func is not None, \
                 "train_func must be provided for quantization aware training."
             quantizer.q_func = self._train_func

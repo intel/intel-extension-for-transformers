@@ -45,7 +45,7 @@ from transformers.trainer_utils import (
     speed_metrics,
 )
 from nlp_toolkit import OptimizeConfig
-from nlp_toolkit import CONFIG_NAME as paladin_config_name
+from nlp_toolkit import CONFIG_NAME as config_name, Provider
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
 
@@ -76,7 +76,6 @@ class NLPTrainer(OptimizeConfig, Trainer):
         self.teacher_model = None
         self._calib_dataloader = None
         self._resuming_checkpoint = None
-        self._nncf_compression_state_file = None
         self.compression_ctrl = None
 
     @property
@@ -86,30 +85,6 @@ class NLPTrainer(OptimizeConfig, Trainer):
     @resuming_checkpoint.setter
     def resuming_checkpoint(self, path: str):
         self._resuming_checkpoint = path
-
-    @property
-    def provider(self):
-        return self._provider
-
-    @provider.setter
-    def provider(self, provider: str):
-        self._provider = provider
-
-    @property
-    def provider_arguments(self):
-        return self._provider_arguments
-
-    @provider_arguments.setter
-    def provider_arguments(self, provider_arguments: object):
-        self._provider_arguments = provider_arguments
-
-    @property
-    def nncf_compression_state_file(self):
-        return self._nncf_compression_state_file
-
-    @nncf_compression_state_file.setter
-    def nncf_compression_state_file(self, nncf_compression_state_file: str):
-        self._nncf_compression_state_file = nncf_compression_state_file
 
     @property
     def eval_func(self):
@@ -139,19 +114,25 @@ class NLPTrainer(OptimizeConfig, Trainer):
         assert self.metrics is not None, "Please set metrics to NLPtrainer"
         self.model = model
         results = self.evaluate()
-        assert self.metrics["metrics"] in results.keys(), \
-            "Please set metric from {}".format(results.keys())
         if isinstance(self.metrics["metrics"], list):
-            assert "weights" in self.metrics.keys(), \
-                "Please set weights for metrics if you want to use more than one metric"
-            assert len(self.metrics["metrics"]) == len(self.metrics["weights"]), \
-                "Please set the same length to metrics and weights"
             nums = len(self.metrics["metrics"])
-            result = 0
             for i in range(nums):
-                result += results[self.metrics["metrics"][i]] * self.metrics["weights"][i]
+                assert self.metrics["metrics"][i] in results.keys(), \
+                    "Please set metric from {}".format(results.keys())
+            if nums == 1:
+                result = results.get(self.metrics["metrics"][0])
+            else:
+                assert "weights" in self.metrics.keys(), \
+                    "Please set weights for metrics if you want to use more than one metric"
+                assert len(self.metrics["metrics"]) == len(self.metrics["weights"]), \
+                    "Please set the same length to metrics and weights"
+                result = 0
+                for i in range(nums):
+                    result += results[self.metrics["metrics"][i]] * self.metrics["weights"][i]
             logger.info("metrics: {}".format(result))
         elif isinstance(self.metrics["metrics"], str):
+            assert self.metrics["metrics"] in results.keys(), \
+                    "Please set metric from {}".format(results.keys())
             result = results.get(self.metrics["metrics"])
             logger.info("{}: {}".format(self.metrics["metrics"], result))
         else:
@@ -173,7 +154,8 @@ class NLPTrainer(OptimizeConfig, Trainer):
     def _init_quantizer(self):
         from .quantization import QuantizationMode
         from neural_compressor.experimental import Quantization, common
-        if self.quantization.quant_config.usr_cfg.quantization.approach == QuantizationMode.DYNAMIC_QUANTIZATION.value:
+        if self.quantization.quant_config.usr_cfg.quantization.approach == \
+          QuantizationMode.PostTrainingDynamic.value:
             self.quantization.quant_config.usr_cfg.model.framework = "pytorch"
         else:
             self.quantization.quant_config.usr_cfg.model.framework = "pytorch_fx"
@@ -187,53 +169,40 @@ class NLPTrainer(OptimizeConfig, Trainer):
             assert self.metrics is not None, "Please pass metrics to trainer.quantization.metrics!"
             quantizer.eval_func = self.builtin_eval_func
 
-        if self.quantization.quant_config.usr_cfg.quantization.approach == QuantizationMode.STATIC_QUANTIZATION.value:
+        if self.quantization.quant_config.usr_cfg.quantization.approach == \
+          QuantizationMode.PostTrainingStatic.value:
             quantizer.calib_dataloader = self.get_eval_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
-        elif self.quantization.quant_config.usr_cfg.quantization.approach == QuantizationMode.QAT.value:
+        elif self.quantization.quant_config.usr_cfg.quantization.approach == \
+          QuantizationMode.QuantizationAwareTraining.value:
             quantizer.q_func = \
                 self.builtin_train_func if self._train_func is None else self._train_func
 
         self.quantizer = quantizer
         return quantizer
 
-    def _nncf_quantize(self, train_func):
+    def _nncf_quantize(self):
         from nncf import create_compressed_model
-        assert self._provider_arguments is not None, "Please pass arguments to trainer.provider_arguments!"
+        self.parse_nncf_arguments()
         compression_state = None
+        nncf_compression_state_file = self._provider_arguments.get("compression_state", None)
 
-        if os.path.isfile(self._nncf_compression_state_file):
-            compression_state = torch.load(self._nncf_compression_state_file)
+        if os.path.isfile(nncf_compression_state_file):
+            compression_state = torch.load(nncf_compression_state_file)
         else:
             compression_state = None
+
         compression_algo_controller, model = create_compressed_model(
-            self.model, self._provider_arguments["nncf_config"], compression_state=compression_state
+            self.model, self._provider_arguments.get("nncf_config"), compression_state=compression_state
         )
 
         self.compression_ctrl = \
-            compression_algo_controller.distributed() if self._provider_arguments["distributed"] else compression_algo_controller
+            compression_algo_controller.distributed() if self._provider_arguments.get("distributed", None) else compression_algo_controller
 
-        if train_func is not None:
-            self.model = train_func(model)
-        else:
-            self.builtin_train_func(model)
+        self.model = self._train_func(model)
 
-    def quantize(
-        self,
-        eval_func: Optional[Callable] = None,
-        train_func: Optional[Callable] = None,
-        calib_dataloader=None,
-    ):
-        if self._provider == "nncf":
-            return self._nncf_quantize(train_func)
-        if self.quantization.metrics is not None:
-            self.metrics = self.quantization.metrics
-        if eval_func is not None:
-            self._eval_func = eval_func
-        if train_func is not None:
-            self._train_func = train_func
-        if calib_dataloader is not None:
-            self._calib_dataloader = calib_dataloader
+    def _inc_quantize(self):
+        self.parse_inc_arguments()
         quantizer = self._init_quantizer()
         opt_model = quantizer.fit()
         self.save(opt_model)
@@ -242,10 +211,28 @@ class NLPTrainer(OptimizeConfig, Trainer):
         )
         return opt_model.model
 
+    def quantize(
+        self,
+        eval_func: Optional[Callable] = None,
+        train_func: Optional[Callable] = None,
+        calib_dataloader=None,
+    ):
+        self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
+        self._train_func = self.builtin_train_func if train_func is None else train_func
+        if calib_dataloader is not None:
+            self._calib_dataloader = calib_dataloader
+
+        if self._provider == Provider.NNCF.value:
+            return self._nncf_quantize()
+        elif self._provider == Provider.INC.value:
+            return self._inc_quantize()
+        else:
+            assert False, "Unsupport provider:{}".format(self._provider)
+
     def save(self, opt_model):
         self.save_model(self.args.output_dir)
         import yaml
-        with open(os.path.join(self.args.output_dir, paladin_config_name), "w") as f:
+        with open(os.path.join(self.args.output_dir, config_name), "w") as f:
             yaml.dump(opt_model.tune_cfg, f, default_flow_style=False)
 
     def _init_pruner(self):
