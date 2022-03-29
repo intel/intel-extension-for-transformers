@@ -28,7 +28,6 @@ from xmlrpc.client import boolean
 
 CONFIG_NAME = "best_configure.yaml"
 WEIGHTS_NAME = "pytorch_model.bin"
-QUANTIZED_WEIGHTS_NAME = "best_model_weights.pt"
 
 
 class Provider(Enum):

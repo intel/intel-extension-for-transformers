@@ -230,10 +230,9 @@ class NLPTrainer(OptimizeConfig, Trainer):
             assert False, "Unsupport provider:{}".format(self._provider)
 
     def save(self, opt_model):
-        self.save_model(self.args.output_dir)
-        import yaml
-        with open(os.path.join(self.args.output_dir, config_name), "w") as f:
-            yaml.dump(opt_model.tune_cfg, f, default_flow_style=False)
+        weights_file = os.path.join(os.path.abspath(
+          os.path.expanduser(self.args.output_dir)), WEIGHTS_NAME)
+        torch.save(opt_model.quantized_state_dict(), weights_file)
 
     def _init_pruner(self):
         from neural_compressor.experimental import Pruning, common

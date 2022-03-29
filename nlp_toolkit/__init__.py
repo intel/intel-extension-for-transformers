@@ -15,7 +15,6 @@ from .optimization.config import (
     Provider,
     CONFIG_NAME,
     WEIGHTS_NAME,
-    QUANTIZED_WEIGHTS_NAME,
     DeployConfig,
     OptimizeConfig
 )

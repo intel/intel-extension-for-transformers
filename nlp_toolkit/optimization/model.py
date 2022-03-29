@@ -16,13 +16,14 @@ import copy
 import os
 
 import torch
+import transformers
 from transformers import AutoConfig
 from transformers.file_utils import cached_path, hf_bucket_url
 
 from neural_compressor.utils import logger
-from neural_compressor.utils.pytorch import load_file
+from neural_compressor.utils.pytorch import load
 
-from .config import CONFIG_NAME, WEIGHTS_NAME, QUANTIZED_WEIGHTS_NAME
+from .config import CONFIG_NAME, WEIGHTS_NAME
 
 
 class OptimizedModel:
@@ -69,7 +70,10 @@ class OptimizedModel:
 
         config = AutoConfig.from_pretrained(model_name_or_path)
         model_class = eval(f'transformers.{config.architectures[0]}')
-        if not QUANTIZED_WEIGHTS_NAME in os.listdir(model_name_or_path):
+        weights_file = os.path.join(os.path.abspath(
+          os.path.expanduser(model_name_or_path)), WEIGHTS_NAME)
+        stat_dict = torch.load(weights_file)
+        if 'best_configure' not in stat_dict:
             logger.info("the prunging/distillation optimized model is loading.")
             model = model_class.from_pretrained(model_name_or_path)
             return model
@@ -149,14 +153,8 @@ class OptimizedModel:
 
                 model_name_or_path = os.path.dirname(resolved_config_file)
 
-            tune_cfg_file = os.path.join(os.path.abspath(os.path.expanduser(model_name_or_path)),
-                                        CONFIG_NAME)
             weights_file = os.path.join(os.path.abspath(os.path.expanduser(model_name_or_path)),
                                         WEIGHTS_NAME)
-            assert os.path.exists(
-                tune_cfg_file), "tune configure file %s didn't exist" % tune_cfg_file
-            assert os.path.exists(
-                weights_file), "weight file %s didn't exist" % weights_file
-            q_model = load_file(weights_file, tune_cfg_file, model)
+            q_model = load(weights_file, model)
 
             return q_model
