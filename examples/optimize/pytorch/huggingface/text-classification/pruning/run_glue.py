@@ -55,7 +55,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-check_min_version("4.12.0")
+check_min_version("4.17.0")
 
 
 task_to_keys = {

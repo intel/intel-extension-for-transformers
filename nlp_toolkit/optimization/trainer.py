@@ -171,7 +171,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
 
         if self.quantization.quant_config.usr_cfg.quantization.approach == \
           QuantizationMode.PostTrainingStatic.value:
-            quantizer.calib_dataloader = self.get_eval_dataloader() \
+            quantizer.calib_dataloader = self.get_train_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
         elif self.quantization.quant_config.usr_cfg.quantization.approach == \
           QuantizationMode.QuantizationAwareTraining.value:

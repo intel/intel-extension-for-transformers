@@ -116,7 +116,6 @@ function run_benchmark {
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ${tuned_checkpoint} \
         --no_cuda \
-        --dataloader_drop_last \
         ${mode_cmd} \
         ${extra_cmd}
 }
