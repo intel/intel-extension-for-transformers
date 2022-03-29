@@ -129,7 +129,7 @@ class NoTrainerOptimizer(OptimizeConfig):
         from .quantization import QuantizationMode
         from neural_compressor.experimental import Quantization, common
         if self.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.PostTrainingDynamic.value:
+          QuantizationMode.POSTTRAININGDYNAMIC.value:
             self.quant_config.usr_cfg.model.framework = "pytorch"
         else:
             self.quant_config.usr_cfg.model.framework = "pytorch_fx"
@@ -143,12 +143,12 @@ class NoTrainerOptimizer(OptimizeConfig):
             quantizer.eval_func = self._eval_func
 
         if self.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.PostTrainingStatic.value:
+          QuantizationMode.POSTTRAININGSTATIC.value:
             assert self._calib_dataloader is not None, \
                 "calib_dataloader must be provided for post-training quantization."
             quantizer.calib_dataloader = self._calib_dataloader
         elif self.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.QuantizationAwareTraining.value:
+          QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             assert self._train_func is not None, \
                 "train_func must be provided for quantization aware training."
             quantizer.q_func = self._train_func

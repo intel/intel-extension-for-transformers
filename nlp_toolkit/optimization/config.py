@@ -444,13 +444,15 @@ class OptimizeConfig(object):
                     for cfg in self._provider_arguments[opt_cfg]:
                         if cfg == "approach":
                             self.quantization.approach = \
-                                nlp_toolkit.QuantizationMode[self._provider_arguments[opt_cfg][cfg]].value
+                                nlp_toolkit.QuantizationMode[self._provider_arguments[opt_cfg][cfg].upper()].value
                         if cfg == "strategy":
                             self.quantization.strategy = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "timeout":
                             self.quantization.timeout = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "max_trials":
                             self.quantization.max_trials = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "performance_only":
+                            self.quantization.performance_only = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "save_path":
                             self.quantization.save_path = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "criterion":
@@ -463,7 +465,8 @@ class OptimizeConfig(object):
                 if opt_cfg == "pruning":
                     for cfg in self._provider_arguments[opt_cfg]:
                         if cfg == "approach":
-                            self.pruning.approach = self._provider_arguments[opt_cfg][cfg]
+                            self.pruning.approach =  \
+                                nlp_toolkit.PruningMode[self._provider_arguments[opt_cfg][cfg].upper()].value
                         if cfg == "custom_pruner":
                             self.pruning.custom_pruner = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "target_sparsity":
@@ -499,7 +502,7 @@ class OptimizeConfig(object):
                             self.pruning.objects = self._provider_arguments[opt_cfg][cfg]
 
             if framework == "pytorch" and \
-              self.quantization.approach != nlp_toolkit.QuantizationMode.PostTrainingDynamic.value:
+              self.quantization.approach != nlp_toolkit.QuantizationMode.POSTTRAININGDYNAMIC.value:
                 self.quantization.quant_config.usr_cfg.model.framework = "pytorch_fx"
             else:
                 self.quantization.quant_config.usr_cfg.model.framework = framework

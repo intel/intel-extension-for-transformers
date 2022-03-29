@@ -155,7 +155,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
         from .quantization import QuantizationMode
         from neural_compressor.experimental import Quantization, common
         if self.quantization.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.PostTrainingDynamic.value:
+          QuantizationMode.POSTTRAININGDYNAMIC.value:
             self.quantization.quant_config.usr_cfg.model.framework = "pytorch"
         else:
             self.quantization.quant_config.usr_cfg.model.framework = "pytorch_fx"
@@ -174,7 +174,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
             quantizer.calib_dataloader = self.get_train_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
         elif self.quantization.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.QuantizationAwareTraining.value:
+          QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             quantizer.q_func = \
                 self.builtin_train_func if self._train_func is None else self._train_func
 
@@ -272,6 +272,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
         train_func: Optional[Callable] = None,
         calib_dataloader=None,
     ):
+        self.parse_inc_arguments()
         if self.pruning.metrics is not None:
             self.metrics = self.pruning.metrics
         if eval_func is not None:
@@ -311,7 +312,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
-
+        self.parse_inc_arguments()
         if self.distillation.metrics is not None:
             self.metrics = self.distillation.metrics
         if eval_func is not None:
