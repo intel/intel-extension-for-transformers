@@ -24,3 +24,4 @@ from .optimization.optimizer import OptimizerPipeline, NoTrainerOptimizer
 from .optimization.pruning import PruningMode
 from .optimization.quantization import QuantizationMode
 from .optimization.trainer import NLPTrainer
+from .preprocessing.data_augmentation import DataAugmentation
