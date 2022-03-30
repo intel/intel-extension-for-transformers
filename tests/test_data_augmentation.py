@@ -53,6 +53,34 @@ class TestDataAugmentation(unittest.TestCase):
         raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", split="train")
         self.assertTrue(len(raw_datasets) == 10)
 
+    def test_ocr_augmentation(self):
+        aug = DataAugmentation(augmenter_type="OcrAug")
+        aug.input_dataset = self.origin_data
+        aug.column_names = "sentence"
+        aug.output_path = os.path.join(self.result_path, "test2.cvs")
+        aug.data_augment()
+        raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", split="train")
+        self.assertTrue(len(raw_datasets) == 10)
+
+    def test_spelling_augmentation(self):
+        aug = DataAugmentation(augmenter_type="SpellingAug")
+        aug.input_dataset = self.origin_data
+        aug.column_names = "sentence"
+        aug.output_path = os.path.join(self.result_path, "test2.cvs")
+        aug.data_augment()
+        raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", split="train")
+        self.assertTrue(len(raw_datasets) == 10)
+
+    def test_contextualwordembsforsentence_augmentation(self):
+        aug = DataAugmentation(augmenter_type="ContextualWordEmbsForSentenceAug")
+        aug.input_dataset = self.origin_data
+        aug.column_names = "sentence"
+        aug.output_path = os.path.join(self.result_path, "test2.cvs")
+        aug.augmenter_arguments = {"model_path": "xlnet-base-cased"}
+        aug.data_augment()
+        raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", split="train")
+        self.assertTrue(len(raw_datasets) == 10)
+
 
 if __name__ == "__main__":
     unittest.main()
