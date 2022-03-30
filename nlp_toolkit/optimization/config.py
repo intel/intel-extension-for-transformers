@@ -161,24 +161,24 @@ class QuantizationConfig(object):
     def metric_tolerance(self, tolerance):
         assert isinstance(tolerance, dict), \
             "metric_tolerance should be a dictionary like:{'relative': 0.01} or {'absolute': 0.1}"
-        if not isinstance(tolerance[list(tolerance.keys())[0]], (int, float)):
+        if not isinstance(tolerance[[key for key in tolerance.keys()][0]], (int, float)):
             raise TypeError(f"Supported type for performance tolerance are int and float, \
                               got {type(tolerance[list(tolerance.keys())[0]])}")
-        if list(tolerance.keys())[0] == "relative" \
-           and not -1 < tolerance[list(tolerance.keys())[0]] < 1:
+        if [key for key in tolerance.keys()][0] == "relative" \
+           and not -1 < tolerance[[key for key in tolerance.keys()][0]] < 1:
             raise ValueError("Relative performance tolerance must not be <=-1 or >=1.")
-        if list(tolerance.keys())[0] in self.quant_config.usr_cfg.tuning.accuracy_criterion:
+        if [key for key in tolerance.keys()][0] in self.quant_config.usr_cfg.tuning.accuracy_criterion:
             setattr(
-                self.quant_config.usr_cfg.tuning.accuracy_criterion, list(tolerance.keys())[0],
-                tolerance[list(tolerance.keys())[0]])
+                self.quant_config.usr_cfg.tuning.accuracy_criterion, [key for key in tolerance.keys()][0],
+                tolerance[[key for key in tolerance.keys()][0]])
         else:
             if "relative" in self.quant_config.usr_cfg.tuning.accuracy_criterion:
                 del self.quant_config.usr_cfg.tuning.accuracy_criterion["relative"]
             elif "absolute" in self.quant_config.usr_cfg.tuning.accuracy_criterion:
                 del self.quant_config.usr_cfg.tuning.accuracy_criterion["absolute"]
             setattr(
-                self.quant_config.usr_cfg.tuning.accuracy_criterion, list(tolerance.keys())[0],
-                tolerance[list(tolerance.keys())[0]])
+                self.quant_config.usr_cfg.tuning.accuracy_criterion, [key for key in tolerance.keys()][0],
+                tolerance[[key for key in tolerance.keys()][0]])
 
     @property
     def framework(self):
@@ -206,28 +206,7 @@ class QuantizationConfig(object):
 
     @objective.setter
     def objective(self, objective):
-        assert objective in ["performance", "modelsize", "footprint"], \
-            "objective: {} is not support!".format(objective)
         self.quant_config.usr_cfg.tuning.objective = objective
-
-    @property
-    def multi_objective(self):
-        return self.quant_config.usr_cfg.tuning.multi_objective.objective
-
-    @multi_objective.setter
-    def multi_objective(self, multi_objective):
-        for objective in multi_objective:
-            assert objective in ["performance", "modelsize", "footprint"], \
-                "objective: {} is not support!".format(objective)
-        self.quant_config.usr_cfg.tuning.multi_objective.objective = multi_objective
-
-    @property
-    def multi_objective_weight(self):
-        return self.quant_config.usr_cfg.tuning.multi_objective.weight
-
-    @multi_objective_weight.setter
-    def multi_objective_weight(self, multi_objective_weight):
-        self.quant_config.usr_cfg.tuning.multi_objective.weights = multi_objective_weight
 
     @property
     def timeout(self):
@@ -457,10 +436,10 @@ class OptimizeConfig(object):
                             self.quantization.save_path = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "criterion":
                             self.quantization.criterion = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "objects":
-                            self.quantization.objects = self._provider_arguments[opt_cfg][cfg]
+                        if cfg == "objectives":
+                            self.quantization.objectives = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "metrics":
-                            self.metrics = self._provider_arguments[opt_cfg][cfg]
+                            self.quantization.metrics = self._provider_arguments[opt_cfg][cfg]
 
                 if opt_cfg == "pruning":
                     for cfg in self._provider_arguments[opt_cfg]:
@@ -475,31 +454,13 @@ class OptimizeConfig(object):
                             self.pruning.epoch_range = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "metrics":
                             self.pruning.metrics = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "timeout":
-                            self.pruning.timeout = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "max_trials":
-                            self.pruning.max_trials = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "save_path":
-                            self.pruning.save_path = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "criterion":
-                            self.pruning.criterion = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "objects":
-                            self.pruning.objects = self._provider_arguments[opt_cfg][cfg]
 
                 if opt_cfg == "distillation":
                     for cfg in self._provider_arguments[opt_cfg]:
                         if cfg == "metrics":
                             self.distillation.metrics = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "timeout":
-                            self.distillation.timeout = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "max_trials":
-                            self.distillation.max_trials = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "save_path":
-                            self.distillation.save_path = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "criterion":
                             self.distillation.criterion = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "objects":
-                            self.distillation.objects = self._provider_arguments[opt_cfg][cfg]
 
             if framework == "pytorch" and \
               self.quantization.approach != nlp_toolkit.QuantizationMode.POSTTRAININGDYNAMIC.value:
