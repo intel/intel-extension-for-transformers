@@ -489,17 +489,17 @@ class OptimizeConfig(object):
                 if opt_cfg == "distillation":
                     for cfg in self._provider_arguments[opt_cfg]:
                         if cfg == "metrics":
-                            self.pruning.metrics = self._provider_arguments[opt_cfg][cfg]
+                            self.distillation.metrics = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "timeout":
-                            self.pruning.timeout = self._provider_arguments[opt_cfg][cfg]
+                            self.distillation.timeout = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "max_trials":
-                            self.pruning.max_trials = self._provider_arguments[opt_cfg][cfg]
+                            self.distillation.max_trials = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "save_path":
-                            self.pruning.save_path = self._provider_arguments[opt_cfg][cfg]
+                            self.distillation.save_path = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "criterion":
-                            self.pruning.criterion = self._provider_arguments[opt_cfg][cfg]
+                            self.distillation.criterion = self._provider_arguments[opt_cfg][cfg]
                         if cfg == "objects":
-                            self.pruning.objects = self._provider_arguments[opt_cfg][cfg]
+                            self.distillation.objects = self._provider_arguments[opt_cfg][cfg]
 
             if framework == "pytorch" and \
               self.quantization.approach != nlp_toolkit.QuantizationMode.POSTTRAININGDYNAMIC.value:

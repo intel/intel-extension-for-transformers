@@ -77,6 +77,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
         self._calib_dataloader = None
         self._resuming_checkpoint = None
         self.compression_ctrl = None
+        self.inc_int8_flag = False
 
     @property
     def resuming_checkpoint(self):
@@ -170,7 +171,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
             quantizer.eval_func = self.builtin_eval_func
 
         if self.quantization.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.PostTrainingStatic.value:
+          QuantizationMode.POSTTRAININGSTATIC.value:
             quantizer.calib_dataloader = self.get_train_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
         elif self.quantization.quant_config.usr_cfg.quantization.approach == \
@@ -204,12 +205,13 @@ class NLPTrainer(OptimizeConfig, Trainer):
     def _inc_quantize(self):
         self.parse_inc_arguments()
         quantizer = self._init_quantizer()
-        opt_model = quantizer.fit()
-        self.save(opt_model)
+        self.opt_model = quantizer.fit()
+        self.inc_int8_flag = True
+        self._save_inc_int8(self.opt_model, self.args.output_dir)
         logger.info(
             "quantized model and configure file have saved to {}".format(self.args.output_dir)
         )
-        return opt_model.model
+        return self.opt_model
 
     def quantize(
         self,
@@ -229,10 +231,14 @@ class NLPTrainer(OptimizeConfig, Trainer):
         else:
             assert False, "Unsupport provider:{}".format(self._provider)
 
-    def save(self, opt_model):
+    def _save_inc_int8(self, opt_model, output_dir):
         weights_file = os.path.join(os.path.abspath(
-          os.path.expanduser(self.args.output_dir)), WEIGHTS_NAME)
+          os.path.expanduser(output_dir)), WEIGHTS_NAME)
         torch.save(opt_model.quantized_state_dict(), weights_file)
+        logger.info(
+            "quantized model and configure file have saved to {}".format(weights_file)
+        )
+        
 
     def _init_pruner(self):
         from neural_compressor.experimental import Pruning, common
@@ -281,9 +287,9 @@ class NLPTrainer(OptimizeConfig, Trainer):
             self._train_func = train_func
 
         pruner = self._init_pruner()
-        opt_model = pruner.fit()
+        self.opt_model = pruner.fit()
 
-        return opt_model.model
+        return self.opt_model
 
     def _init_distiller(self):
         from neural_compressor.experimental import Distillation, common
@@ -322,9 +328,9 @@ class NLPTrainer(OptimizeConfig, Trainer):
 
         self.teacher_model = teacher_model
         distiller = self._init_distiller()
-        opt_model = distiller.fit()
+        self.opt_model = distiller.fit()
 
-        return opt_model.model
+        return self.opt_model
 
     def train(
         self,
@@ -974,6 +980,9 @@ class NLPTrainer(OptimizeConfig, Trainer):
                 torch.save(state_dict, os.path.join(output_dir, WEIGHTS_NAME))
         else:
             self.model.save_pretrained(output_dir, state_dict=state_dict)
+            #overwrite `pytorch_model.bin` with inc int8 format.
+            if self.inc_int8_flag:
+                self._save_inc_int8(self.opt_model, output_dir)
         if self.tokenizer is not None:
             self.tokenizer.save_pretrained(output_dir)
 
