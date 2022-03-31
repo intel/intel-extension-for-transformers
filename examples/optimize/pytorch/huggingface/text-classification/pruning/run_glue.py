@@ -48,7 +48,7 @@ from nlp_toolkit import (
     PruningMode,
     NLPTrainer,
 )
-from nlp_toolkit.model import OptimizedModel
+from nlp_toolkit.optimization.model import OptimizedModel
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -520,7 +520,11 @@ def main():
         if optim_args.target_sparsity is not None:
             trainer.target_sparsity = optim_args.target_sparsity
 
-        trainer.pruning.metrics = {"metrics": metric_name}
+        trainer.provider_arguments = {
+                        "pruning":{
+                                "metrics": {"metrics":[metric_name]}
+                                }
+                           }
         model = trainer.prune()
         trainer.save_model(training_args.output_dir)
 
