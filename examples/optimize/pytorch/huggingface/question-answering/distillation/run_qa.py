@@ -731,7 +731,11 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for distillation.")
 
-        trainer.distillation.metrics = {"metrics": metric_name}
+        trainer.provider_arguments = {
+                        "distillation":{
+                                "metrics": metric_name
+                                }                                     
+                        }
         model = trainer.distill(teacher_model)
         trainer.save_model(training_args.output_dir)
 

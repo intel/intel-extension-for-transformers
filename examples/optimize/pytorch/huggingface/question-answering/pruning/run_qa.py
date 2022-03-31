@@ -632,7 +632,13 @@ def main():
         if optim_args.target_sparsity is not None:
             trainer.target_sparsity = optim_args.target_sparsity
 
-        trainer.pruning.metrics = {"metrics": metric_name}
+        trainer.provider_arguments = {
+                        "pruning":{
+                                "metrics": {"metrics":[metric_name]}
+                                }
+                        }
+
+
         model = trainer.prune()
         trainer.save_model(training_args.output_dir)
 

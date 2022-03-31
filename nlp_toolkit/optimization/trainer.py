@@ -204,6 +204,8 @@ class NLPTrainer(OptimizeConfig, Trainer):
 
     def _inc_quantize(self):
         self.parse_inc_arguments()
+        if self.quantization.metrics is not None:
+            self.metrics = self.quantization.metrics
         quantizer = self._init_quantizer()
         self.opt_model = quantizer.fit()
         self.inc_int8_flag = True
@@ -223,7 +225,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
         self._train_func = self.builtin_train_func if train_func is None else train_func
         if calib_dataloader is not None:
             self._calib_dataloader = calib_dataloader
-
+        
         if self._provider == Provider.NNCF.value:
             return self._nncf_quantize()
         elif self._provider == Provider.INC.value:

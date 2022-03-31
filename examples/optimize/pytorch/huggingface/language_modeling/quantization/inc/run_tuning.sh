@@ -10,10 +10,11 @@ function main {
 
 # init params
 function init_params {
-  topology="distilbert"
+  topology="gpt"
   tuned_checkpoint="saved_results"
-  DATASET_NAME="squad"
-  model_name_or_path="distilbert-base-uncased-distilled-squad"
+  DATASET_NAME="wikitext"
+  DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+  model_name_or_path="EleutherAI/gpt-neo-125M"
   extra_cmd=""
   batch_size=8
   MAX_SEQ_LENGTH=384
@@ -45,26 +46,32 @@ function init_params {
 
 # run_tuning
 function run_tuning {
-    if [ "${topology}" = "distilbert" ]; then
-        DATASET_NAME="squad"
-        model_name_or_path="distilbert-base-uncased-distilled-squad"
+    if [ "${topology}" = "gpt" ]; then
+        script="run_clm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="EleutherAI/gpt-neo-125M"
+        model_type="gpt"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "bert" ]; then
+        script="run_mlm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="bert-base-uncased"
         model_type="bert"
         approach="PostTrainingStatic"
-        extra_cmd=$extra_cmd" --learning_rate 2e-5 \
-                   --num_train_epochs 3 \
-                   --eval_steps 100 \
-                   --save_steps 100 \
-                   --greater_is_better True \
-                   --load_best_model_at_end True \
-                   --evaluation_strategy steps \
-                   --save_strategy steps \
-                   --metric_for_best_model accuracy \
-                   --save_total_limit 1"
+    elif [ "${topology}" = "xlnet" ]; then
+        script="run_plm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="xlnet-base-cased"
+        model_type="xlnet"
+        approach="PostTrainingStatic"
     fi
-
-    python -u ./run_qa.py \
+    python -u ./${script} \
         --model_name_or_path ${model_name_or_path} \
         --dataset_name ${DATASET_NAME} \
+        --dataset_config_name ${DATASET_CONFIG_NAME} \
         --do_eval \
         --do_train \
         --max_seq_length ${MAX_SEQ_LENGTH} \

@@ -12,8 +12,8 @@ function main {
 function init_params {
   topology="distilbert"
   tuned_checkpoint="saved_results"
-  DATASET_NAME="squad"
-  model_name_or_path="distilbert-base-uncased-distilled-squad"
+  DATASET_NAME="conll2003"
+  model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
   extra_cmd=""
   batch_size=8
   MAX_SEQ_LENGTH=384
@@ -46,8 +46,8 @@ function init_params {
 # run_tuning
 function run_tuning {
     if [ "${topology}" = "distilbert" ]; then
-        DATASET_NAME="squad"
-        model_name_or_path="distilbert-base-uncased-distilled-squad"
+        DATASET_NAME="conll2003"
+        model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
         model_type="bert"
         approach="PostTrainingStatic"
         extra_cmd=$extra_cmd" --learning_rate 2e-5 \
@@ -62,12 +62,12 @@ function run_tuning {
                    --save_total_limit 1"
     fi
 
-    python -u ./run_qa.py \
+    python -u ./run_ner.py \
         --model_name_or_path ${model_name_or_path} \
         --dataset_name ${DATASET_NAME} \
         --do_eval \
         --do_train \
-        --max_seq_length ${MAX_SEQ_LENGTH} \
+        --pad_to_max_length \
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ${tuned_checkpoint} \
         --no_cuda \
