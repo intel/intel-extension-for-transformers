@@ -17,7 +17,6 @@ function init_params {
   model_name_or_path="EleutherAI/gpt-neo-125M"
   extra_cmd=""
   batch_size=8
-  MAX_SEQ_LENGTH=384
   model_type="bert"
   approach="PostTrainingStatic"
   for var in "$@"
@@ -46,27 +45,48 @@ function init_params {
 
 # run_tuning
 function run_tuning {
-    if [ "${topology}" = "gpt" ]; then
+    if [ "${topology}" = "gpt_static" ]; then
         script="run_clm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125M"
         model_type="gpt"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "bert" ]; then
+    elif [ "${topology}" = "gpt_dynamic" ]; then
+        script="run_clm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="EleutherAI/gpt-neo-125M"
+        model_type="gpt"
+        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bert_static" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="bert-base-uncased"
         model_type="bert"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "xlnet" ]; then
+    elif [ "${topology}" = "bert_dynamic" ]; then
+        script="run_mlm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="bert-base-uncased"
+        model_type="bert"
+        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "xlnet_static" ]; then
         script="run_plm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="xlnet-base-cased"
         model_type="xlnet"
         approach="PostTrainingStatic"
+    elif [ "${topology}" = "xlnet_dynamic" ]; then
+        script="run_plm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="xlnet-base-cased"
+        model_type="xlnet"
+        approach="PostTrainingDynamic"
     fi
     python -u ./${script} \
         --model_name_or_path ${model_name_or_path} \
@@ -74,7 +94,6 @@ function run_tuning {
         --dataset_config_name ${DATASET_CONFIG_NAME} \
         --do_eval \
         --do_train \
-        --max_seq_length ${MAX_SEQ_LENGTH} \
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ${tuned_checkpoint} \
         --no_cuda \

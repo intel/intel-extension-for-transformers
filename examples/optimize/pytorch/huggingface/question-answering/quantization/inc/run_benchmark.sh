@@ -64,9 +64,16 @@ function run_benchmark {
         exit 1
     fi
 
-    if [ "${topology}" = "distilbert" ]; then
+    if [ "${topology}" = "distilbert_base_squad_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
+        model_type="bert"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "distilbert_base_squad_dynamic" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="distilbert-base-uncased-distilled-squad"
+        model_type="bert"
+        approach="PostTrainingDynamic"
     fi
 
     if [[ ${int8} == "true" ]]; then

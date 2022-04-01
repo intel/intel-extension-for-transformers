@@ -207,11 +207,11 @@ class OptimizationArguments:
         metadata={"help": "Metric used for the tuning strategy."},
     )
     tolerance_mode: Optional[str] = field(
-        default="absolute",
+        default="relative",
         metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
     )
     perf_tol: Optional[float] = field(
-        default=0.02,
+        default=0.01,
         metadata={"help": "Performance tolerance when optimizing the model."},
     )
     benchmark: bool = field(

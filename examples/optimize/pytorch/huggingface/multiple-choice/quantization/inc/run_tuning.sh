@@ -39,17 +39,28 @@ function init_params {
 
 # run_tuning
 function run_tuning {
+    if [ "${topology}" = "bert_base_swag_static" ]; then
+        model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
+        model_type="bert"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "bert_base_swag_dynamic" ]; then
+        model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
+        model_type="bert"
+        approach="PostTrainingDynamic"
+    fi
+
     python -u ./run_swag.py \
-        --model_name_or_path ${input_model} \
+        --model_name_or_path ${model_name_or_path} \
         --do_eval \
         --do_train \
         --per_device_eval_batch_size ${batch_size} \
         --per_device_train_batch_size ${batch_size} \
         --output_dir ${tuned_checkpoint} \
         --no_cuda \
+        --quantization_approach ${approach} \
         --tune \
-        --overwrite_output_dir \
-        --quantization_approach ${approach}
+        --pad_to_max_length \
+        --overwrite_output_dir 
 }
 
 main "$@"

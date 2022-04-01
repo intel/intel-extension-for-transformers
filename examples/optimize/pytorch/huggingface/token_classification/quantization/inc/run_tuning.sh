@@ -45,21 +45,16 @@ function init_params {
 
 # run_tuning
 function run_tuning {
-    if [ "${topology}" = "distilbert" ]; then
+    if [ "${topology}" = "distilbert_base_ner_static" ]; then
         DATASET_NAME="conll2003"
         model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
         model_type="bert"
         approach="PostTrainingStatic"
-        extra_cmd=$extra_cmd" --learning_rate 2e-5 \
-                   --num_train_epochs 3 \
-                   --eval_steps 100 \
-                   --save_steps 100 \
-                   --greater_is_better True \
-                   --load_best_model_at_end True \
-                   --evaluation_strategy steps \
-                   --save_strategy steps \
-                   --metric_for_best_model accuracy \
-                   --save_total_limit 1"
+    elif [ "${topology}" = "distilbert_base_ner_dynamic" ]; then
+        DATASET_NAME="conll2003"
+        model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
+        model_type="bert"
+        approach="PostTrainingDynamic"
     fi
 
     python -u ./run_ner.py \

@@ -54,6 +54,16 @@ function init_params {
 function run_benchmark {
     extra_cmd=''
 
+    if [ "${topology}" = "bert_base_swag_static" ]; then
+        model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
+        model_type="bert"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "bert_base_swag_dynamic" ]; then
+        model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
+        model_type="bert"
+        approach="PostTrainingDynamic"
+    fi
+
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy_only"
     elif [[ ${mode} == "benchmark" ]]; then
@@ -69,7 +79,7 @@ function run_benchmark {
     echo $extra_cmd
 
     python -u run_swag.py \
-        --model_name_or_path ${input_model} \
+        --model_name_or_path ${model_name_or_path} \
         --do_eval \
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ${tuned_checkpoint} \

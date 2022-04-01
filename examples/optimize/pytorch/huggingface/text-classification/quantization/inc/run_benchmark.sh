@@ -64,43 +64,55 @@ function run_benchmark {
         exit 1
     fi
 
-    if [ "${topology}" = "bert_base_SST-2" ];then
+    if [ "${topology}" = "bert_base_mrpc_qat" ]; then
+        TASK_NAME="mrpc"
+        model_name_or_path="textattack/bert-base-uncased-MRPC"
+        model_type="bert"
+        approach="QuantizationAwareTraining"
+        extra_cmd=$extra_cmd" --learning_rate 2e-5 \
+                   --num_train_epochs 3 \
+                   --eval_steps 100 \
+                   --save_steps 100 \
+                   --greater_is_better True \
+                   --load_best_model_at_end True \
+                   --evaluation_strategy steps \
+                   --save_strategy steps \
+                   --metric_for_best_model accuracy \
+                   --save_total_limit 1"
+    elif [ "${topology}" = "bert_base_mrpc_static" ]; then
+        TASK_NAME="mrpc"
+        model_name_or_path="textattack/bert-base-uncased-MRPC"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "bert_base_mrpc_dynamic" ]; then
+        TASK_NAME="mrpc"
+        model_name_or_path="textattack/bert-base-uncased-MRPC"
+        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bert_base_SST-2_static" ]; then
         TASK_NAME='sst2'
-        model_name_or_path='echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid'
-    elif [ "${topology}" = "distilbert_base_MRPC" ]; then
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model
-    elif [ "${topology}" = "albert_base_MRPC" ]; then
-        MAX_SEQ_LENGTH=512
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model #'albert-base-v1'
-    elif [ "${topology}" = "funnel_MRPC" ]; then
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model #'funnel-transformer/small'
-    elif [ "${topology}" = "bart_WNLI" ]; then
-        TASK_NAME='WNLI'
-        model_name_or_path=$input_model #'facebook/bart-large'
-    elif [ "${topology}" = "mbart_WNLI" ]; then
-        TASK_NAME='WNLI'
-        model_name_or_path=$input_model #'facebook/mbart-large-cc25'
-    elif [ "${topology}" = "xlm_roberta_MRPC" ]; then
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model
-    elif [ "${topology}" = "xlnet_base_MRPC" ]; then
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model
-    elif [ "${topology}" = "gpt2_MRPC" ]; then
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model
-    elif [ "${topology}" = "transfo_xl_MRPC" ]; then
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model
-    elif [ "${topology}" = "ctrl_MRPC" ]; then
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model
-    elif [ "${topology}" = "xlm_MRPC" ]; then
-        TASK_NAME='mrpc'
-        model_name_or_path=$input_model
+        model_name_or_path="echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "bert_base_SST-2_dynamic" ]; then
+        TASK_NAME='sst2'
+        model_name_or_path="echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid"
+        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "distillbert_base_SST-2_static" ]; then
+        TASK_NAME='sst2'
+        model_name_or_path="distilbert-base-uncased-finetuned-sst-2-english"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "distillbert_base_SST-2_dynamic" ]; then
+        TASK_NAME='sst2'
+        model_name_or_path="distilbert-base-uncased-finetuned-sst-2-english"
+        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "albert_base_MRPC_static" ]; then
+        TASK_NAME='MRPC'
+        model_name_or_path="textattack/albert-base-v2-MRPC" 
+        model_type='albert'
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "albert_base_MRPC_dynamic" ]; then
+        TASK_NAME='MRPC'
+        model_name_or_path="textattack/albert-base-v2-MRPC" 
+        model_type='albert'
+        approach="PostTrainingDynamic"
     fi
 
     if [[ ${int8} == "true" ]]; then
