@@ -1,0 +1,32 @@
+{
+    "_name_or_path": "google/mobilebert-uncased",
+    "architectures": [
+      "MobileBertForPreTraining"
+    ],
+    "attention_probs_dropout_prob": 0.1,
+    "classifier_activation": false,
+    "embedding_size": 128,
+    "hidden_act": "relu",
+    "hidden_dropout_prob": 0.0,
+    "hidden_size": 512,
+    "initializer_range": 0.02,
+    "intermediate_size": 512,
+    "intra_bottleneck_size": 128,
+    "key_query_shared_bottleneck": true,
+    "layer_norm_eps": 1e-12,
+    "max_position_embeddings": 512,
+    "model_type": "mobilebert",
+    "normalization_type": "no_norm",
+    "num_attention_heads": 4,
+    "num_feedforward_networks": 4,
+    "num_hidden_layers": 24,
+    "pad_token_id": 0,
+    "transformers_version": "4.6.0.dev0",
+    "trigram_input": true,
+    "true_hidden_size": 128,
+    "type_vocab_size": 2,
+    "use_bottleneck": true,
+    "use_bottleneck_attention": false,
+    "output_attentions": true,
+    "vocab_size": 30522
+  }

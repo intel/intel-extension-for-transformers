@@ -23,5 +23,6 @@ from .optimization.model import OptimizedModel
 from .optimization.optimizer import OptimizerPipeline, NoTrainerOptimizer
 from .optimization.pruning import PruningMode
 from .optimization.quantization import QuantizationMode
+from .optimization.auto_distillation import AutoDistillation
 from .optimization.trainer import NLPTrainer
 from .preprocessing.data_augmentation import DataAugmentation

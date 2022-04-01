@@ -6,6 +6,7 @@ import copy
 import sys
 import time
 import warnings
+import numpy as np
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
 
 import torch
@@ -15,6 +16,7 @@ import torch.distributed as dist
 # from packaging import version
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
+from torch.utils.data.dataset import Dataset, IterableDataset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm.auto import tqdm
 from transformers import Trainer, PreTrainedModel
@@ -35,19 +37,28 @@ from transformers.integrations import hp_params
 from transformers.modeling_utils import unwrap_model
 from transformers.trainer import TRAINER_STATE_NAME, TRAINING_ARGS_NAME
 from transformers.trainer_callback import TrainerState
-from transformers.trainer_pt_utils import IterableDatasetShard
+from transformers.trainer_pt_utils import (
+    IterableDatasetShard,
+    find_batch_size,
+    nested_numpify,
+)
 from transformers.trainer_utils import (
     HPSearchBackend,
     ShardedDDPOption,
     TrainOutput,
+    EvalLoopOutput,
+    EvalPrediction,
     get_last_checkpoint,
     set_seed,
     speed_metrics,
+    denumpify_detensorize,
 )
 from nlp_toolkit import OptimizeConfig
 from nlp_toolkit import CONFIG_NAME as config_name, Provider
+from nlp_toolkit import AutoDistillation
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
+from functools import partial
 
 if is_datasets_available():
     import datasets
@@ -584,6 +595,8 @@ class NLPTrainer(OptimizeConfig, Trainer):
                 for _ in train_dataloader:
                     break
         if isinstance(component, Component):
+            if hasattr(self.component, "teacher_model"):
+                self.component.teacher_model._model = self._wrap_model(self.component.teacher_model.model)
             component.pre_epoch_begin()
             if component.combination is not None and "Quantization" in component.combination:
                 model = component.model.model
@@ -888,6 +901,8 @@ class NLPTrainer(OptimizeConfig, Trainer):
                         logits = outputs["logits"]
                     elif "start_logits" in outputs and "end_logits" in outputs:
                         logits = qa_output_merger(outputs)
+                    elif "prediction_logits" in outputs:
+                        logits = outputs["prediction_logits"]
                     else:
                         raise AssertionError("Logits of outputs not included, can't compute loss")
                 elif isinstance(outputs, torch.Tensor):
@@ -907,8 +922,13 @@ class NLPTrainer(OptimizeConfig, Trainer):
             logits = get_logits(outputs)
             if hasattr(self.component, "on_post_forward"):
                 self.component.on_post_forward(inputs, teacher_output=teacher_logits)
-                self.component.criterion.teacher_outputs = get_logits(self.component.criterion.teacher_outputs)
+                if hasattr(self.component.criterion, "teacher_outputs"):
+                    self.component.criterion.teacher_outputs = \
+                        get_logits(self.component.criterion.teacher_outputs)
             loss = self.component.criterion(logits, labels)
+            if hasattr(self.component.criterion, 'add_origin_loss') and \
+                self.component.criterion.add_origin_loss:
+                loss = loss + outputs['loss']
             if "start_positions" in inputs and "end_positions" in inputs:
                 start_logits, end_logits = qa_output_spliter(logits)
                 outputs = {"start_logits":start_logits, "end_logits":end_logits, "loss":loss}
@@ -956,6 +976,256 @@ class NLPTrainer(OptimizeConfig, Trainer):
             return dataset
         else:
             return dataset.remove_columns(ignored_columns)
+
+    def autodistillation(self, teacher_model, model_builder=None, model_cls=None,
+                         train_func=None, eval_func=None):
+        assert hasattr(self, "autodistillation_config"), "Must specify" + \
+            "Trainer.autodistillation_config before calling autodistillation."
+        if model_builder is None:
+            assert model_cls is not None, "Must specify model_cls to use the built-in " + \
+                "model_builder, e.g. model_cls=AutoModelForPreTraining, or you can use " + \
+                "the customized model_builder."
+            model_builder = partial(self.model_builder_builtin, model_cls=model_cls)
+        agent = AutoDistillation(model_builder, self.autodistillation_config)
+
+        def take_train_steps(model, trainer, agent=None, train_steps=None,
+                             block_name=None, checkpoint=None):
+            trainer.model_wrapped = model
+            trainer.model = model
+            if train_steps is not None and isinstance(train_steps, int):
+                trainer.args.max_steps = train_steps
+            if block_name is not None and isinstance(block_name, str):
+                for name, para in model.named_parameters():
+                    if block_name in name:
+                        para.requires_grad = True
+                    else:
+                        para.requires_grad = False
+            train_result = trainer.train(agent, resume_from_checkpoint=checkpoint)
+            metrics = train_result.metrics
+            trainer.save_model()  # Saves the tokenizer too for easy upload
+            trainer.log_metrics("train", metrics)
+            trainer.save_metrics("train", metrics)
+            trainer.save_state()
+            return trainer.model
+
+        def take_eval_steps(model, trainer, metric_name, save_metrics=False):
+            trainer.model = model
+            metrics = trainer.evaluate()
+            if save_metrics:
+                trainer.save_metrics("eval", metrics)
+            logger.info("{}: {}".format(metric_name, metrics.get(metric_name)))
+            logger.info(
+                "Throughput: {} samples/sec".format(metrics.get("eval_samples_per_second"))
+                )
+            return {metric_name: metrics.get(metric_name), 
+                    'latency': 1000 / metrics.get("eval_samples_per_second")}
+
+        def train_func_builtin(model):
+            def run_distillers(model, distillers, train_steps, block_names,
+                               checkpoints=None, presentation='flash distillation'):
+                max_train_steps=0
+                if checkpoints is None:
+                    checkpoints = [None] * len(distillers)
+                for i, elements in \
+                    enumerate(zip(distillers, train_steps, block_names, checkpoints)):
+                    distiller, ts, bln, checkpoint = elements
+                    logger.info(
+                        ' '.join(['='*30, 'Step {} of'.format(i+1), presentation, '='*30]))
+                    distiller.student_model = model
+                    distiller.teacher_model = teacher_model
+                    distiller.criterion = None # force creating new criterion object
+                    distiller.create_criterion()
+                    max_train_steps += ts
+                    distiller.train_func = \
+                        partial(take_train_steps, trainer=self, agent=distiller, 
+                                train_steps=max_train_steps, block_name=bln, 
+                                checkpoint=checkpoint)
+                    # distiller.eval_func = \
+                    #     partial(take_eval_steps, trainer=self, metric_name='eval_loss')
+                    model = distiller().model
+                return model
+            
+            self._move_model_to_device(teacher_model, self.args.device)
+            self._move_model_to_device(model, self.args.device)
+            # create new distillers before each train process
+            agent.create_distillers()
+            # run flash_distillers
+            model = run_distillers(model, 
+                                   agent.flash_distillers, 
+                                   agent.flash_train_steps, 
+                                   agent.flash_block_names,
+                                   [None] + [self.args.output_dir] * \
+                                        (len(agent.flash_distillers)-1))
+            # run regular_distillers
+            model = run_distillers(model, 
+                                   agent.regular_distillers, 
+                                   agent.regular_train_steps, 
+                                   agent.regular_block_names,
+                                   presentation='regular distillation')
+            return model
+
+        def eval_func_builtin(model):
+            return take_eval_steps(model, trainer=self, 
+                                   metric_name='eval_loss', 
+                                   save_metrics=True)
+
+        agent.train_func = train_func \
+            if train_func else train_func_builtin
+        agent.eval_func = eval_func \
+            if eval_func else eval_func_builtin
+        return agent.search_loop(self.args.output_dir)
+    
+    def model_builder_builtin(self, arch_paras=None, model_cls=None):
+        config = self.model.config
+        if arch_paras is not None:
+            assert isinstance(arch_paras, dict), "Expect arch_paras to be a dict."
+            for k in arch_paras:
+                if hasattr(config, k):
+                    config.__setattr__(k, arch_paras[k])
+                    # for MobileBERT, 'intra_bottleneck_size' is associated with 
+                    # 'true_hidden_size', and must have the same values.
+                    if k == 'intra_bottleneck_size':
+                        config.__setattr__('true_hidden_size', arch_paras[k])
+        return model_cls.from_config(config)
+
+    def evaluation_loop(
+        self,
+        dataloader: DataLoader,
+        description: str,
+        prediction_loss_only: Optional[bool] = None,
+        ignore_keys: Optional[List[str]] = None,
+        metric_key_prefix: str = "eval",
+    ) -> EvalLoopOutput:
+        """
+        Prediction/evaluation loop, shared by :obj:`Trainer.evaluate()` and :obj:`Trainer.predict()`.
+
+        Works both with or without labels.
+        Does not save all predictions and labels to avoid out of memory when predictions is huge.
+        """
+        prediction_loss_only = (
+            prediction_loss_only if prediction_loss_only is not None else self.args.prediction_loss_only
+        )
+
+        model = self._wrap_model(self.model, training=False)
+
+        # if full fp16 is wanted on eval and this ``evaluation`` or ``predict`` isn't called while
+        # ``train`` is running, halve it first and then put on device
+        if not self.is_in_train and self.args.fp16_full_eval:
+            model = model.half().to(self.args.device)
+
+        batch_size = dataloader.batch_size
+
+        logger.info(f"***** Running {description} *****")
+        if isinstance(dataloader.dataset, collections.abc.Sized):
+            logger.info(f"  Num examples = {self.num_examples(dataloader)}")
+        else:
+            logger.info("  Num examples: Unknown")
+        logger.info(f"  Batch size = {batch_size}")
+
+        model.eval()
+
+        self.callback_handler.eval_dataloader = dataloader
+        # Do this before wrapping.
+        eval_dataset = dataloader.dataset
+
+        if self.args.past_index >= 0:
+            self._past = None
+
+        # Initialize containers
+        # losses/preds/labels on GPU/TPU (accumulated for eval_accumulation_steps)
+        losses_host = None
+        # losses/preds/labels on CPU (final containers)
+        all_losses = None
+        # Will be useful when we have an iterable dataset so don't know its length.
+
+        observed_num_examples = 0
+        all_metrics = {}
+        # Main evaluation loop
+        for step, inputs in enumerate(dataloader):
+            # Update the observed num examples
+            observed_batch_size = find_batch_size(inputs)
+            if observed_batch_size is not None:
+                observed_num_examples += observed_batch_size
+                # For batch samplers, batch_size is not known by the dataloader in advance.
+                if batch_size is None:
+                    batch_size = observed_batch_size
+
+            # Prediction step
+            loss, logits, labels = self.prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+
+            # Update containers on host
+            if loss is not None:
+                losses = self._nested_gather(loss.repeat(batch_size))
+                losses_host = losses if losses_host is None else torch.cat((losses_host, losses), dim=0)
+            if logits is not None:
+                logits = self._pad_across_processes(logits)
+                logits = self._nested_gather(logits)
+            if labels is not None:
+                labels = self._pad_across_processes(labels)
+                labels = self._nested_gather(labels)
+            self.control = self.callback_handler.on_prediction_step(self.args, self.state, self.control)
+            if self.compute_metrics is not None and logits is not None and labels is not None:
+                metrics = self.compute_metrics(EvalPrediction(predictions=nested_numpify(logits), 
+                                                              label_ids=nested_numpify(labels)))
+                if not all_metrics:
+                    all_metrics = metrics
+                else:
+                    assert all_metrics.keys() == metrics.keys(), \
+                        'Different keys between all_metrics and metrics, {} vs. {}.'.format(
+                            metrics.keys(), all_metrics.keys())
+                    for k in metrics.keys():
+                        all_metrics[k] += metrics[k]
+
+            # Gather all tensors and put them back on the CPU if we have done enough accumulation steps.
+            if self.args.eval_accumulation_steps is not None and (step + 1) % self.args.eval_accumulation_steps == 0:
+                if losses_host is not None:
+                    losses = nested_numpify(losses_host)
+                    all_losses = losses if all_losses is None else np.concatenate((all_losses, losses), axis=0)
+
+                # Set back to None to begin a new accumulation
+                losses_host = None
+                # losses_host, preds_host, labels_host = None, None, None
+
+        if self.args.past_index and hasattr(self, "_past"):
+            # Clean the state at the end of the evaluation loop
+            delattr(self, "_past")
+
+        # Gather all remaining tensors and put them back on the CPU
+        if losses_host is not None:
+            losses = nested_numpify(losses_host)
+            all_losses = losses if all_losses is None else np.concatenate((all_losses, losses), axis=0)
+
+        # Number of samples
+        if not isinstance(eval_dataset, IterableDataset):
+            num_samples = len(eval_dataset)
+        # The instance check is weird and does not actually check for the type, but whether the dataset has the right
+        # methods. Therefore we need to make sure it also has the attribute.
+        elif isinstance(eval_dataset, IterableDatasetShard) and hasattr(eval_dataset, "num_examples"):
+            num_samples = eval_dataset.num_examples
+        else:
+            num_samples = observed_num_examples
+
+        # Number of losses has been rounded to a multiple of batch_size and in a distributed training, the number of
+        # samplers has been rounded to a multiple of batch_size, so we truncate.
+        if all_losses is not None:
+            all_losses = all_losses[:num_samples]
+
+        if not all_metrics:
+            metrics = {}
+        else:
+            metrics = {k: all_metrics[k] / (step + 1) for k in all_metrics}
+
+        # To be JSON-serializable, we need to remove numpy types or zero-d tensors
+        metrics = denumpify_detensorize(metrics)
+        if all_losses is not None:
+            metrics[f"{metric_key_prefix}_loss"] = all_losses.mean().item()
+
+        # Prefix all keys with metric_key_prefix + '_'
+        for key in list(metrics.keys()):
+            if not key.startswith(f"{metric_key_prefix}_"):
+                metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
+
+        return EvalLoopOutput(predictions=logits, label_ids=labels, metrics=metrics, num_samples=num_samples)
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         # If we are executing this function, we are the process zero, so we don't check for that.
