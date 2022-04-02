@@ -38,7 +38,7 @@ function init_params {
 # run_tuning
 function run_tuning {
     extra_cmd=''
-    approach='basic_magnitude'
+    approach='BasicMagnitude'
     batch_size=16
     if [ "${topology}" = "distilbert_base_sst2" ]; then
         TASK_NAME='sst2'
@@ -48,7 +48,7 @@ function run_tuning {
     python -u ./run_glue.py \
         --model_name_or_path ${model_name_or_path} \
         --task_name ${TASK_NAME} \
-        --target_sparsity 0.1 \
+        --target_sparsity_ratio 0.1 \
         --prune \
         --do_eval \
         --do_train \

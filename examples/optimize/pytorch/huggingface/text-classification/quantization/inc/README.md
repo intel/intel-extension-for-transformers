@@ -1,6 +1,6 @@
 # Text classification
 
-The script `run_glue.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+The script `run_glue.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [nlp toolkit](...).
 
 GLUE is made up of a total of 9 different tasks. Here is how to run the script on one of them:
  

@@ -20,20 +20,15 @@ https://huggingface.co/models?filter=fill-mask
 """
 # You can also adapt this script on your own masked language modeling task. Pointers for this are left as comments.
 
+import datasets
 import logging
-import math
 import os
 import sys
-from dataclasses import dataclass, field
-from itertools import chain
-from typing import Optional
-
-import datasets
-from datasets import load_dataset, load_metric
-from nlp_toolkit import NLPTrainer
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit.optimization.quantization import SUPPORTED_QUANT_MODE
 import transformers
+from dataclasses import dataclass, field
+from datasets import load_dataset, load_metric
+from itertools import chain
+from nlp_toolkit import NLPTrainer, Metric, OptimizedModel, QuantizationConfig
 from transformers import (
     CONFIG_MAPPING,
     MODEL_FOR_MASKED_LM_MAPPING,
@@ -42,7 +37,6 @@ from transformers import (
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     HfArgumentParser,
-    Trainer,
     TrainingArguments,
     is_torch_tpu_available,
     set_seed,
@@ -50,6 +44,7 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
+from typing import Optional
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -217,9 +212,9 @@ class OptimizationArguments:
         default="eval_loss",
         metadata={"help": "Metric used for the tuning strategy."},
     )
-    tolerance_mode: Optional[str] = field(
-        default="absolute",
-        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
+    is_relative: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Metric tolerance mode, True is for relative, otherwise for absolute."},
     )
     perf_tol: Optional[float] = field(
         default=0.02,
@@ -577,13 +572,14 @@ def main():
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
                                                                     early_stopping_threshold))
 
-        trainer.provider_arguments = {
-            "quantization":{
-                "approach": optim_args.quantization_approach,
-                "criterion": {optim_args.tolerance_mode: optim_args.perf_tol},
-                "metrics": {"metrics":[metric_name]},
-            }
-        }
+        tune_metric = Metric(
+            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+        )
+        quantization_config = QuantizationConfig(
+            approach=optim_args.quantization_approach,
+            metrics=[tune_metric],
+        )
+        trainer.provider_config.quantization = quantization_config
         model = trainer.quantize()
 
     if optim_args.benchmark or optim_args.accuracy_only:

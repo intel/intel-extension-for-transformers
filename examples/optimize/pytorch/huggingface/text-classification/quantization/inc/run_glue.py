@@ -26,9 +26,7 @@ import sys
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from nlp_toolkit import NLPTrainer
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit.optimization.quantization import SUPPORTED_QUANT_MODE
+from nlp_toolkit import Metric, NLPTrainer, OBJECTIVES, OptimizedModel, QuantizationConfig
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -206,8 +204,8 @@ class OptimizationArguments:
         default=None,
         metadata={"help": "Metric used for the tuning strategy."},
     )
-    tolerance_mode: Optional[str] = field(
-        default="relative",
+    is_relative: Optional[bool] = field(
+        default=True,
         metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
     )
     perf_tol: Optional[float] = field(
@@ -480,7 +478,6 @@ def main():
     else:
         data_collator = None
 
-
     # Initialize our Trainer
     trainer = NLPTrainer(
         model=model,
@@ -524,13 +521,16 @@ def main():
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
                                                                     early_stopping_threshold))
 
-        trainer.provider_arguments = {
-            "quantization":{
-                "approach": optim_args.quantization_approach,
-                "criterion": {optim_args.tolerance_mode: optim_args.perf_tol},
-                "metrics": {"metrics":[metric_name]},
-            }
-        }
+        tune_metric = Metric(
+            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+        )
+        objective = OBJECTIVES.performance
+        quantization_config = QuantizationConfig(
+            approach=optim_args.quantization_approach,
+            metrics=[tune_metric],
+            objectives=[objective]
+        )
+        trainer.provider_config.quantization = quantization_config
         model = trainer.quantize()
 
     if optim_args.benchmark or optim_args.accuracy_only:

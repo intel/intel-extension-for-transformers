@@ -1,18 +1,18 @@
 import shutil
-import unittest
-
-import torch
 import torch.utils.data as data
-
-from transformers import DistilBertForSequenceClassification
+import unittest
+from nlp_toolkit import (
+    Metric,
+    NLPTrainer,
+    OBJECTIVES,
+    OptimizedModel,
+    QuantizationConfig,
+    QuantizationMode,
+)
 from transformers import (
-    AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer
 )
-from nlp_toolkit import NLPTrainer
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit import QuantizationMode
 
 
 
@@ -59,13 +59,16 @@ class TestQuantization(unittest.TestCase):
                 train_dataset=self.dummy_dataset,
                 eval_dataset=self.dummy_dataset,
             )
-            self.trainer.provider_arguments = {
-                "quantization":{
-                    "approach": mode.name,
-                    "performance_only": True,
-                    "metrics": {"metrics":["eval_samples_per_second"]},
-                }
-            }
+            tune_metric = Metric(
+                name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
+            )
+            objective = OBJECTIVES.performance
+            quantization_config = QuantizationConfig(
+                approach=mode.name,
+                metrics=[tune_metric],
+                objectives=[objective]
+            )
+            self.trainer.provider_config.quantization = quantization_config
             quantized_model = self.trainer.quantize()
             # By default, model will be saved in tmp_trainer dir.
             self.trainer.save_model('./quantized_model')

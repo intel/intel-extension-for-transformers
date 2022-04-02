@@ -1,19 +1,18 @@
 import copy
 import shutil
-import unittest
-
-import torch
 import torch.utils.data as data
-
-from transformers import DistilBertForSequenceClassification
+import unittest
+from nlp_toolkit import (
+    Metric,
+    NLPTrainer,
+    OptimizedModel,
+    PruningConfig,
+    PruningMode,
+)
 from transformers import (
-    AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer
 )
-from nlp_toolkit import NLPTrainer
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit import PruningMode
 
 
 
@@ -33,7 +32,7 @@ class DummyDataset(data.Dataset):
         return self.encoded_dict
 
 
-class TestQuantization(unittest.TestCase):
+class TestPruning(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.model = AutoModelForSequenceClassification.from_pretrained(
@@ -55,21 +54,19 @@ class TestQuantization(unittest.TestCase):
         origin_weight = copy.deepcopy(self.model.classifier.weight)
         for mode in PruningMode:
             # not supported yet
-            if mode.value == "pattern_lock":
+            if mode.value != "basic_magnitude":
                 continue
-            print("Pruning approach:", mode.value)
+            print("Pruning mode:", mode.value)
             self.trainer = NLPTrainer(
                 model=self.model,
                 train_dataset=self.dummy_dataset,
                 eval_dataset=self.dummy_dataset,
             )
-            self.trainer.provider_arguments = {
-                "pruning":{
-                    "approach": mode.name,
-                    "target_sparsity": 0.9,
-                    "metrics": {"metrics":["eval_samples_per_second"]},
-                }
-            }
+            metric = Metric(name="eval_loss")
+            pruning_conf = PruningConfig(
+                approach=mode.name, target_sparsity_ratio=0.9, metrics=[metric]
+            )
+            self.trainer.provider_config.pruning = pruning_conf
             pruned_model = self.trainer.prune()
             pruned_model.report_sparsity()
             # By default, model will be saved in tmp_trainer dir.

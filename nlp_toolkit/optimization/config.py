@@ -12,17 +12,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import nlp_toolkit
 import os
 import yaml
 from enum import Enum
 from functools import reduce
-from neural_compressor.conf.config import Quantization_Conf
-from neural_compressor.conf.config import Pruning_Conf
-from neural_compressor.conf.config import Distillation_Conf
+from neural_compressor.conf.config import (
+    Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
+)
 from neural_compressor.utils import logger
+from nlp_toolkit.optimization.base import Metric, Objective
+from nlp_toolkit.optimization.pruning import PruningMode, SUPPORTED_PRUNING_MODE
+from nlp_toolkit.optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
+from nlp_toolkit.optimization.distillation import (
+    Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
+)
 from transformers.file_utils import cached_path, hf_bucket_url
-from typing import Any, Optional, Dict
+from typing import Any, List, Optional, Union
 from xmlrpc.client import boolean
 
 
@@ -136,10 +141,34 @@ class DeployConfig:
 
         return config
 
+
 class QuantizationConfig(object):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        framework: str = "pytorch",
+        approach: str = None,
+        timeout: int = None,
+        max_trials: int = None,
+        metrics: Union[Metric, List] = None,
+        objectives: Union[Objective, List] = None,
+    ):
+        super().__init__()
         self.quant_config = Quantization_Conf()
+        self.framework = framework
+        if approach is not None:
+            self.approach = approach
+        if timeout is not None:
+            self.timeout = timeout
+        if max_trials is not None:
+            self.max_trials = max_trials
+        if metrics is not None:
+            self.metrics = metrics
+        else:
+            self._metrics = None
+        if objectives is not None:
+            self.objectives = objectives
+        else:
+            self._objectives = None
 
     @property
     def approach(self):
@@ -147,38 +176,48 @@ class QuantizationConfig(object):
 
     @approach.setter
     def approach(self, approach):
-        assert approach in \
-            ["post_training_static_quant", "quant_aware_training",
-             "post_training_dynamic_quant"], \
-            "quantization approach: {} is not support!".format(approach)
-        self.quant_config.usr_cfg.quantization.approach = approach
+        approach = approach.upper()
+        assert approach in SUPPORTED_QUANT_MODE, \
+            f"quantization approach: {approach} is not support!" + \
+            "PostTrainingStatic, PostTrainingDynamic and QuantizationAwareTraining are supported!"
+        self.quant_config.usr_cfg.quantization.approach = QuantizationMode[approach].value
 
     @property
-    def metric_tolerance(self):
-        return self.quant_config.usr_cfg.tuning.accuracy_criterion
+    def metrics(self):
+        return self._metrics
 
-    @metric_tolerance.setter
-    def metric_tolerance(self, tolerance):
-        assert isinstance(tolerance, dict), \
-            "metric_tolerance should be a dictionary like:{'relative': 0.01} or {'absolute': 0.1}"
-        if not isinstance(tolerance[[key for key in tolerance.keys()][0]], (int, float)):
-            raise TypeError(f"Supported type for performance tolerance are int and float, \
-                              got {type(tolerance[list(tolerance.keys())[0]])}")
-        if [key for key in tolerance.keys()][0] == "relative" \
-           and not -1 < tolerance[[key for key in tolerance.keys()][0]] < 1:
-            raise ValueError("Relative performance tolerance must not be <=-1 or >=1.")
-        if [key for key in tolerance.keys()][0] in self.quant_config.usr_cfg.tuning.accuracy_criterion:
-            setattr(
-                self.quant_config.usr_cfg.tuning.accuracy_criterion, [key for key in tolerance.keys()][0],
-                tolerance[[key for key in tolerance.keys()][0]])
+    @metrics.setter
+    def metrics(self, metrics: Union[Metric, List]):
+        self._metrics = metrics
+        rel_or_abs = {True: "relative", False: "absolute"}
+        assert isinstance(metrics[0] if isinstance(metrics, list) else metrics, Metric), \
+            "metric should be a Metric calss!"
+        if isinstance(metrics, Metric) or len(metrics) == 1:
+            self.quant_config.usr_cfg.tuning.accuracy_criterion = {
+                rel_or_abs[metrics[0].is_relative]
+                if isinstance(metrics, list) else rel_or_abs[metrics.is_relative]:
+                metrics[0].criterion if isinstance(metrics, list) else metrics.criterion,
+                "higher_is_better": metrics[0].greater_is_better if isinstance(metrics, list) else
+                metrics.greater_is_better
+            }
         else:
-            if "relative" in self.quant_config.usr_cfg.tuning.accuracy_criterion:
-                del self.quant_config.usr_cfg.tuning.accuracy_criterion["relative"]
-            elif "absolute" in self.quant_config.usr_cfg.tuning.accuracy_criterion:
-                del self.quant_config.usr_cfg.tuning.accuracy_criterion["absolute"]
-            setattr(
-                self.quant_config.usr_cfg.tuning.accuracy_criterion, [key for key in tolerance.keys()][0],
-                tolerance[[key for key in tolerance.keys()][0]])
+            weights = [metric.weight_ratio for metric in metrics]
+            if not any(weights):
+                weight = 1 / len(metrics)
+                for metric in metrics:
+                    metric.weight_ratio = weight
+            else:
+                assert all(weights), "Please set the weight ratio for all metrics!"
+
+            assert all(metric.is_relative == metrics[0].is_relative for metric in metrics), \
+                "Unsupport different is_relative for different metric now, will support soon!"
+            assert all(metric.criterion == metrics[0].criterion for metric in metrics), \
+                "Unsupport different criterion for different metric now, will support soon!"
+
+            self.quant_config.usr_cfg.tuning.accuracy_criterion = {
+                rel_or_abs[metrics[0].is_relative]: metrics[0].criterion,
+                "higher_is_better": metrics[0].greater_is_better
+            }
 
     @property
     def framework(self):
@@ -191,6 +230,31 @@ class QuantizationConfig(object):
         self.quant_config.usr_cfg.model.framework = framework
 
     @property
+    def objectives(self):
+        return self._objectives
+
+    @objectives.setter
+    def objectives(self, objectives: Union[List, Objective]):
+        self._objectives = objectives
+        if isinstance(objectives, Objective) or len(objectives) == 1:
+            self.quant_config.usr_cfg.tuning.objective = objectives.name \
+                if isinstance(objectives, Objective) else objectives[0].name
+        else:
+            weights = [objective.weight_ratio for objective in objectives]
+            if not any(weights):
+                weight = 1 / len(objectives)
+                for objective in objectives:
+                    objective.weight_ratio = weight
+            else:
+                assert all(weights), "Please set the weight ratio for all metrics!"
+
+            self.quant_config.usr_cfg.tuning.multi_objective = {
+                "objective": [objective.name for objective in objectives],
+                "higher_is_better": [objective.greater_is_better for objective in objectives],
+                "weight": [objective.weight_ratio for objective in objectives],
+            }
+
+    @property
     def strategy(self):
         return self.quant_config.usr_cfg.tuning.strategy.name
 
@@ -199,14 +263,6 @@ class QuantizationConfig(object):
         assert strategy in ["basic", "bayesian", "mse"], \
             "strategy: {} is not support!".format(strategy)
         self.quant_config.usr_cfg.tuning.strategy.name = strategy
-
-    @property
-    def objective(self):
-        return self.quant_config.usr_cfg.tuning.objective
-
-    @objective.setter
-    def objective(self, objective):
-        self.quant_config.usr_cfg.tuning.objective = objective
 
     @property
     def timeout(self):
@@ -254,11 +310,11 @@ class QuantizationConfig(object):
         self.quant_config.usr_cfg.tuning.tensorboard = tensorboard
 
     @property
-    def save_path(self):
+    def output_dir(self):
         return self.quant_config.usr_cfg.tuning.workspace.path
 
-    @save_path.setter
-    def save_path(self, path):
+    @output_dir.setter
+    def output_dir(self, path):
         assert isinstance(path, str), "save_path should be a string of directory!"
         self.quant_config.usr_cfg.tuning.workspace.path = path
 
@@ -271,24 +327,34 @@ class QuantizationConfig(object):
         assert isinstance(path, str), "resume_path should be a string of directory!"
         self.quant_config.usr_cfg.tuning.workspace.resume = path
 
-    @property
-    def metrics(self):
-        return self.quant_config.usr_cfg.evaluation.accuracy
-
-    @metrics.setter
-    def metrics(self, metrics):
-        self.quant_config.usr_cfg.evaluation.accuracy = metrics
 
 class PruningConfig(object):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        framework: str = "pytorch",
+        approach: str = "BasicMagnitude",
+        target_sparsity_ratio: float = None,
+        epoch_range: List = None,
+        metrics: Union[List, Metric] = None,
+        custom_pruner: Pruner = None,
+    ):
+        super().__init__()
         self.prune_config = Pruning_Conf()
+        self.framework = framework
         self.init_prune_config()
+        self.approach = approach
+        if target_sparsity_ratio is not None:
+            self.target_sparsity_ratio = target_sparsity_ratio
+        if epoch_range is not None:
+            self.epoch_range = epoch_range
+        if metrics is not None:
+            self.metrics = metrics
+        if custom_pruner is not None:
+            self.custom_pruner = custom_pruner
 
     def init_prune_config(self):
-        from neural_compressor.conf.config import Pruner
-        Pruner = Pruner()
-        self.prune_config.usr_cfg.pruning.approach.weight_compression['pruners'] = [Pruner]
+        pruner = Pruner()
+        self.prune_config.usr_cfg.pruning.approach.weight_compression['pruners'] = [pruner]
 
     @property
     def custom_pruner(self):
@@ -304,26 +370,31 @@ class PruningConfig(object):
 
     @approach.setter
     def approach(self, approach):
-        assert approach in \
-            ["basic_magnitude"], \
-            "pruning approach: {} is not support!".format(approach)
-        self.prune_config.usr_cfg.pruning.approach.weight_compression.pruners[0].prune_type = approach
+        assert approach.upper() in SUPPORTED_PRUNING_MODE, \
+            "pruning approach must be in {}!".format(
+                [mode.lower() for mode in SUPPORTED_PRUNING_MODE]
+            )
+        self.prune_config.usr_cfg.pruning.approach.weight_compression.pruners[0].prune_type = \
+            PruningMode[approach.upper()].value
 
     @property
-    def target_sparsity(self):
+    def target_sparsity_ratio(self):
         return self.prune_config.usr_cfg.pruning.approach.weight_compression.target_sparsity
 
-    @target_sparsity.setter
-    def target_sparsity(self, target_sparsity):
-        self.prune_config.usr_cfg.pruning.approach.weight_compression.target_sparsity = target_sparsity
+    @target_sparsity_ratio.setter
+    def target_sparsity_ratio(self, target_sparsity_ratio):
+        self.prune_config.usr_cfg.pruning.approach.weight_compression.target_sparsity = \
+            target_sparsity_ratio
 
     @property
     def epoch_range(self):
-        return [self.prune_config.usr_cfg.pruning.approach.weight_compression.start_epoch, self.prune_config.usr_cfg.pruning.approach.weight_compression.end_epoch]
+        return [self.prune_config.usr_cfg.pruning.approach.weight_compression.start_epoch,
+                self.prune_config.usr_cfg.pruning.approach.weight_compression.end_epoch]
 
     @epoch_range.setter
     def epoch_range(self, epoch_range):
-        assert isinstance(epoch_range,list) and len(epoch_range) == 2, "you should set epoch_range like [a,b] format to match the pruning start and end epoch."
+        assert isinstance(epoch_range, list) and len(epoch_range) == 2, \
+          "You should set epoch_range like [a,b] format to match the pruning start and end epoch."
         self.prune_config.usr_cfg.pruning.approach.weight_compression.start_epoch = epoch_range[0]
         self.prune_config.usr_cfg.pruning.approach.weight_compression.end_epoch = epoch_range[1]
 
@@ -333,22 +404,33 @@ class PruningConfig(object):
 
     @framework.setter
     def framework(self, framework):
-        assert framework in ["pytorch"], \
+        assert framework.lower() in ["pytorch"], \
             "framework: {} is not support!".format(framework)
-        self.prune_config.usr_cfg.model.framework = framework
+        self.prune_config.usr_cfg.model.framework = framework.lower()
 
     @property
     def metrics(self):
-        return self.prune_config.usr_cfg.evaluation.accuracy
+        return self._metrics
 
     @metrics.setter
-    def metrics(self, metrics):
-        self.prune_config.usr_cfg.evaluation.accuracy = metrics
+    def metrics(self, metrics: Union[Metric, List]):
+        self._metrics = metrics
+
 
 class DistillationConfig(object):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        framework: str = "pytorch",
+        criterion: Criterion = None,
+        metrics: Union[List, Metric] = None,
+    ):
+        super().__init__()
         self.distill_config = Distillation_Conf()
+        self.framework = framework
+        if criterion is not None:
+            self.criterion = criterion
+        if metrics is not None:
+            self.metrics = metrics
 
     @property
     def framework(self):
@@ -365,107 +447,63 @@ class DistillationConfig(object):
         return self.distill_config.usr_cfg.distillation.train.criterion
 
     @criterion.setter
-    def criterion(self, criterion):
-        self.distill_config.usr_cfg.distillation.train.criterion = criterion
+    def criterion(self, criterion: Criterion):
+        assert criterion.name.upper() in SUPPORTED_DISTILLATION_CRITERION_MODE, \
+            "The criterion name must be in ['KnowledgeLoss', 'IntermediateLayersLoss']"
+        if criterion.name.upper() == DistillationCriterionMode.KNOWLEDGELOSS.name:
+            assert criterion.temperature is not None, \
+                "Please pass the temperature to Criterion.temperature!"
+            assert criterion.loss_types is not None, \
+                "Please pass the loss_types to Criterion.loss_types!"
+            assert criterion.loss_weight_ratio is not None, \
+                "Please pass the loss_weight_ratio to Criterion.loss_weight_ratio!"
+            self.distill_config.usr_cfg.distillation.train.criterion = {
+                DistillationCriterionMode.KNOWLEDGELOSS.value: {
+                    "temperature": criterion.temperature,
+                    "loss_types": criterion.loss_types,
+                    "loss_weights": criterion.loss_weight_ratio
+                }
+            }
+
+        if criterion.name.upper() == DistillationCriterionMode.INTERMEDIATELAYERSLOSS.name:
+            assert criterion.layer_mappings is not None, \
+                "Please pass the layer_mappings to Criterion.layer_mappings!"
+            assert criterion.loss_types is not None, \
+                "Please pass the loss_types to Criterion.loss_types!"
+            assert criterion.loss_weight_ratio is not None, \
+                "Please pass the loss_weight_ratio to Criterion.loss_weight_ratio!"
+            assert criterion.add_origin_loss is not None, \
+                "Please pass the add_origin_loss to Criterion.add_origin_loss!"
+            self.distill_config.usr_cfg.distillation.train.criterion = {
+                DistillationCriterionMode.INTERMEDIATELAYERSLOSS.value: {
+                    "layer_mappings": criterion.layer_mappings,
+                    "loss_types": criterion.loss_types,
+                    "loss_weights": criterion.loss_weight_ratio,
+                    "add_origin_loss": criterion.add_origin_loss
+                }
+            }
 
     @property
     def metrics(self):
-        return self.distill_config.usr_cfg.evaluation.accuracy
+        return self._metrics
 
     @metrics.setter
     def metrics(self, metrics):
-        self.distill_config.usr_cfg.evaluation.accuracy = metrics
+        self._metrics = metrics
 
-class OptimizeConfig(object):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+
+class ProviderConfig(object):
+    def __init__(self):
+        super().__init__()
         self.quantization = QuantizationConfig()
         self.pruning = PruningConfig()
         self.distillation = DistillationConfig()
-        self._provider = Provider.INC.value
-        self._provider_arguments = None
-        self._opt_cfg = {
-            "quantization": self.quantization,
-            "pruning": self.pruning,
-            "distillation": self.distillation
-        }
+        self._nncf_config = None
 
     @property
-    def provider(self):
-        return self._provider
+    def nncf_config(self):
+        return self._nncf_config
 
-    @provider.setter
-    def provider(self, provider: str):
-        self._provider = provider
-
-    @property
-    def provider_arguments(self):
-        return self._provider_arguments
-
-    @provider_arguments.setter
-    def provider_arguments(self, provider_arguments):
-        self._provider_arguments = provider_arguments
-
-    def parse_nncf_arguments(self):
-        assert self._provider_arguments is not None, "Please pass arguments to trainer.provider_arguments"
-        assert isinstance(self._provider_arguments, Dict), "provider_arguments must be a dictionary type"
-        assert "nncf_config" in self._provider_arguments.keys(), "provider_arguments must be included nncf_config"
-
-    def parse_inc_arguments(self):
-        if self._provider_arguments is not None:
-            assert isinstance(self._provider_arguments, Dict), "provider_arguments must be a dictionary type"
-            framework = "pytorch"
-            for opt_cfg in self._provider_arguments:
-                if opt_cfg == "framework":
-                    framework = self._provider_arguments[opt_cfg]
-                    continue
-                if opt_cfg == "quantization":
-                    for cfg in self._provider_arguments[opt_cfg]:
-                        if cfg == "approach":
-                            self.quantization.approach = \
-                                nlp_toolkit.QuantizationMode[self._provider_arguments[opt_cfg][cfg].upper()].value
-                        if cfg == "strategy":
-                            self.quantization.strategy = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "timeout":
-                            self.quantization.timeout = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "max_trials":
-                            self.quantization.max_trials = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "performance_only":
-                            self.quantization.performance_only = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "save_path":
-                            self.quantization.save_path = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "criterion":
-                            self.quantization.criterion = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "objectives":
-                            self.quantization.objectives = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "metrics":
-                            self.quantization.metrics = self._provider_arguments[opt_cfg][cfg]
-
-                if opt_cfg == "pruning":
-                    for cfg in self._provider_arguments[opt_cfg]:
-                        if cfg == "approach":
-                            self.pruning.approach =  \
-                                nlp_toolkit.PruningMode[self._provider_arguments[opt_cfg][cfg].upper()].value
-                        if cfg == "custom_pruner":
-                            self.pruning.custom_pruner = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "target_sparsity":
-                            self.pruning.target_sparsity = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "epoch_range":
-                            self.pruning.epoch_range = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "metrics":
-                            self.pruning.metrics = self._provider_arguments[opt_cfg][cfg]
-
-                if opt_cfg == "distillation":
-                    for cfg in self._provider_arguments[opt_cfg]:
-                        if cfg == "metrics":
-                            self.distillation.metrics = self._provider_arguments[opt_cfg][cfg]
-                        if cfg == "criterion":
-                            self.distillation.criterion = self._provider_arguments[opt_cfg][cfg]
-
-            if framework == "pytorch" and \
-              self.quantization.approach != nlp_toolkit.QuantizationMode.POSTTRAININGDYNAMIC.value:
-                self.quantization.quant_config.usr_cfg.model.framework = "pytorch_fx"
-            else:
-                self.quantization.quant_config.usr_cfg.model.framework = framework
-            self.pruning.prune_config.usr_cfg.model.framework = framework
-            self.distillation.distill_config.usr_cfg.model.framework = framework
+    @nncf_config.setter
+    def nncf_config(self, nncf_config):
+        self._nncf_config = nncf_config

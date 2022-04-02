@@ -27,9 +27,11 @@ from typing import Optional
 import datasets
 from datasets import load_dataset, load_metric
 
-import torch
+import functools
 import numpy as np
+import torch
 import transformers
+from nlp_toolkit import Metric, OptimizedModel, DistillationConfig
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -46,11 +48,9 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
+from typing import Optional
 from utils_qa import postprocess_qa_predictions
 
-from nlp_toolkit import OptimizedModel
-from typing import Optional
-import functools
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.17.0.dev0")
@@ -731,11 +731,9 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for distillation.")
 
-        trainer.provider_arguments = {
-                        "distillation":{
-                                "metrics": metric_name
-                                }                                     
-                        }
+        metric = Metric(name=metric_name)
+        distillation_conf = DistillationConfig(metrics=[metric])
+        trainer.provider_config.distillation = distillation_conf
         model = trainer.distill(teacher_model)
         trainer.save_model(training_args.output_dir)
 

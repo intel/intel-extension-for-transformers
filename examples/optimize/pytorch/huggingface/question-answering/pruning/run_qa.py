@@ -18,16 +18,14 @@ Fine-tuning the library models for question answering using a slightly adapted v
 """
 # You can also adapt this script on your own question answering task. Pointers for this are left as comments.
 
+import datasets
 import logging
 import os
 import sys
-from dataclasses import dataclass, field
-from typing import Optional
-
-import datasets
-from datasets import load_dataset, load_metric
-
 import transformers
+from dataclasses import dataclass, field
+from datasets import load_dataset, load_metric
+from nlp_toolkit import Metric, OptimizedModel, PruningConfig, PruningMode
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -44,10 +42,8 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
-from utils_qa import postprocess_qa_predictions
-
-from nlp_toolkit import OptimizedModel,PruningMode
 from typing import Optional
+from utils_qa import postprocess_qa_predictions
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -211,10 +207,10 @@ class OptimizationArguments:
         metadata={"help": "Whether or not to apply prune."},
     )
     pruning_approach: Optional[str] = field(
-        default="magnitude",
+        default="BasicMagnitude",
         metadata={"help": "Pruning approach. Supported approach is basic_magnite."},
     )
-    target_sparsity: Optional[float] = field(
+    target_sparsity_ratio: Optional[float] = field(
         default=None,
         metadata={"help": "Targeted sparsity when pruning the model."},
     )
@@ -629,15 +625,17 @@ def main():
         if optim_args.pruning_approach is not None:
             trainer.pruning.approach = \
                 getattr(PruningMode, optim_args.pruning_approach.upper()).value
-        if optim_args.target_sparsity is not None:
-            trainer.target_sparsity = optim_args.target_sparsity
+        if optim_args.target_sparsity_ratio is not None:
+            trainer.target_sparsity_ratio = optim_args.target_sparsity_ratio
 
         trainer.provider_arguments = {
                         "pruning":{
                                 "metrics": {"metrics":[metric_name]}
                                 }
                         }
-
+        metric = Metric(name=metric_name)
+        pruning_conf = PruningConfig(metrics=[metric])
+        trainer.provider_config.pruning = pruning_conf
 
         model = trainer.prune()
         trainer.save_model(training_args.output_dir)

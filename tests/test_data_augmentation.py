@@ -3,7 +3,7 @@ import shutil
 import unittest
 
 from datasets import load_dataset
-from nlp_toolkit import DataAugmentation
+from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
 
 
 def build_fake_dataset(save_path):

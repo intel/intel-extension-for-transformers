@@ -17,22 +17,25 @@
 """ Finetuning the library models for sequence classification on GLUE."""
 # You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
+import datasets
+import functools
 import logging
 import os
+import numpy as np
 import random
 import sys
-from dataclasses import dataclass, field
-from typing import Optional
-
 import torch
-import functools
+import transformers
+from dataclasses import dataclass, field
+from datasets import load_dataset, load_metric
+from nlp_toolkit import (
+    Metric,
+    DistillationConfig,
+    NLPTrainer,
+    OptimizedModel,
+)
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-
-import datasets
-import numpy as np
-import transformers
-from datasets import load_dataset, load_metric
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -47,12 +50,8 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
-from transformers.utils.fx import symbolic_trace
+from typing import Optional
 
-from nlp_toolkit import (
-    NLPTrainer,
-)
-from nlp_toolkit.model import OptimizedModel
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -596,11 +595,9 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for distillation.")
 
-        trainer.provider_arguments = {
-                                     "distillation":{
-                                         "metrics": metric_name
-                                         }
-                                     }
+        metric = Metric(name=metric_name)
+        distillation_conf = DistillationConfig(metrics=[metric])
+        trainer.provider_config.distillation = distillation_conf
         model = trainer.distill(teacher_model)
         trainer.save_model(training_args.output_dir)
 

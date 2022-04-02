@@ -72,7 +72,7 @@ function run_benchmark {
     python -u ./run_glue.py \
         --model_name_or_path ${model_name_or_path} \
         --task_name ${TASK_NAME} \
-        --target_sparsity 0.1 \
+        --target_sparsity_ratio 0.1 \
         --do_eval \
         --do_train \
         --per_device_eval_batch_size ${batch_size} \

@@ -17,7 +17,7 @@ import torch
 
 from neural_compressor.experimental import common, Component, Distillation
 from neural_compressor.experimental.scheduler import Scheduler
-from nlp_toolkit import OptimizeConfig, Provider
+from nlp_toolkit import ProviderConfig, Provider
 from transformers import PreTrainedModel
 from typing import Callable, Optional, Union, List
 
@@ -73,7 +73,7 @@ class OptimizerPipeline:
         return opt_model
 
 
-class NoTrainerOptimizer(OptimizeConfig):
+class NoTrainerOptimizer:
     def __init__(
         self,
         model: Union[PreTrainedModel, torch.nn.Module],
@@ -251,7 +251,6 @@ class NoTrainerOptimizer(OptimizeConfig):
         return opt_model.model
 
     def _init_distiller(self):
-        from .distillation import DistillationMode
         from neural_compressor.experimental import Distillation, common
         assert self.teacher_model is not None, \
                     "teacher model must be provided for distillation."

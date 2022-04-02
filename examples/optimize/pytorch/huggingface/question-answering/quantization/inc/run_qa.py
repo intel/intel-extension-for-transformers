@@ -18,16 +18,14 @@ Fine-tuning the library models for question answering using a slightly adapted v
 """
 # You can also adapt this script on your own question answering task. Pointers for this are left as comments.
 
+import datasets
 import logging
 import os
 import sys
-from dataclasses import dataclass, field
-from typing import Optional
-
-import datasets
-from datasets import load_dataset, load_metric
-
 import transformers
+from dataclasses import dataclass, field
+from datasets import load_dataset, load_metric
+from nlp_toolkit import Metric, OptimizedModel, QuantizationConfig
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -44,11 +42,9 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
+from typing import Optional
 from utils_qa import postprocess_qa_predictions
 
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit.optimization.quantization import SUPPORTED_QUANT_MODE
-from typing import Optional
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -220,9 +216,9 @@ class OptimizationArguments:
         default="eval_f1",
         metadata={"help": "Metric used for the tuning strategy."},
     )
-    tolerance_mode: Optional[str] = field(
-        default="relative",
-        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
+    is_relative: Optional[bool] = field(
+        default=True,
+        metadata={"help": "Metric tolerance mode, True for relative, otherwise for absolute."},
     )
     perf_tol: Optional[float] = field(
         default=0.01,
@@ -640,13 +636,14 @@ def main():
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
                                                                     early_stopping_threshold))
 
-        trainer.provider_arguments = {
-            "quantization":{
-                "approach": optim_args.quantization_approach,
-                "criterion": {optim_args.tolerance_mode: optim_args.perf_tol},
-                "metrics": {"metrics":[metric_name]},
-            }
-        }
+        tune_metric = Metric(
+            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+        )
+        quantization_config = QuantizationConfig(
+            approach=optim_args.quantization_approach,
+            metrics=[tune_metric],
+        )
+        trainer.provider_config.quantization = quantization_config
         model = trainer.quantize()
 
     if optim_args.benchmark or optim_args.accuracy_only:

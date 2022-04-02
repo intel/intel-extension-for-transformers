@@ -1,22 +1,22 @@
 import collections
 import inspect
 import math
+import numpy as np
 import os
 import copy
 import sys
 import time
 import warnings
-import numpy as np
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
-
 import torch
-from packaging import version
 import torch.distributed as dist
-
-# from packaging import version
+from functools import partial
+from neural_compressor.experimental import Component
+from neural_compressor.utils import logger
+from nlp_toolkit import AutoDistillation, Metric, Provider, ProviderConfig
+from packaging import version
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
-from torch.utils.data.dataset import Dataset, IterableDataset
+from torch.utils.data.dataset import IterableDataset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm.auto import tqdm
 from transformers import Trainer, PreTrainedModel
@@ -28,10 +28,8 @@ from transformers.file_utils import (
     is_apex_available,
     is_datasets_available,
     is_torch_tpu_available,
-    is_sagemaker_dp_enabled,
     is_sagemaker_mp_enabled,
 )
-
 # Integrations must be imported before ML frameworks:
 from transformers.integrations import hp_params
 from transformers.modeling_utils import unwrap_model
@@ -53,12 +51,8 @@ from transformers.trainer_utils import (
     speed_metrics,
     denumpify_detensorize,
 )
-from nlp_toolkit import OptimizeConfig
-from nlp_toolkit import CONFIG_NAME as config_name, Provider
-from nlp_toolkit import AutoDistillation
-from neural_compressor.experimental import Component
-from neural_compressor.utils import logger
-from functools import partial
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
+
 
 if is_datasets_available():
     import datasets
@@ -78,7 +72,7 @@ if TYPE_CHECKING:
 __version__ = "4.9.2"
 
 
-class NLPTrainer(OptimizeConfig, Trainer):
+class NLPTrainer(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.in_training = False
@@ -89,6 +83,16 @@ class NLPTrainer(OptimizeConfig, Trainer):
         self._resuming_checkpoint = None
         self.compression_ctrl = None
         self.inc_int8_flag = False
+        self._provider = Provider.INC.value
+        self._provider_config = ProviderConfig()
+
+    @property
+    def provider_config(self):
+        return self._provider_config
+
+    @provider_config.setter
+    def provider_config(self, provider_config: ProviderConfig):
+        self._provider_config = provider_config
 
     @property
     def resuming_checkpoint(self):
@@ -123,30 +127,28 @@ class NLPTrainer(OptimizeConfig, Trainer):
         self._calib_dataloader = dataloader
 
     def builtin_eval_func(self, model):
-        assert self.metrics is not None, "Please set metrics to NLPtrainer"
         self.model = model
         results = self.evaluate()
-        if isinstance(self.metrics["metrics"], list):
-            nums = len(self.metrics["metrics"])
-            for i in range(nums):
-                assert self.metrics["metrics"][i] in results.keys(), \
+        logger.info(results)
+        if isinstance(self.metrics, list):
+            nums = len(self.metrics)
+            for metric in self.metrics:
+                assert metric.name in results.keys(), \
                     "Please set metric from {}".format(results.keys())
             if nums == 1:
-                result = results.get(self.metrics["metrics"][0])
+                result = results.get(self.metrics[0].name)
             else:
-                assert "weights" in self.metrics.keys(), \
-                    "Please set weights for metrics if you want to use more than one metric"
-                assert len(self.metrics["metrics"]) == len(self.metrics["weights"]), \
-                    "Please set the same length to metrics and weights"
                 result = 0
-                for i in range(nums):
-                    result += results[self.metrics["metrics"][i]] * self.metrics["weights"][i]
-            logger.info("metrics: {}".format(result))
-        elif isinstance(self.metrics["metrics"], str):
-            assert self.metrics["metrics"] in results.keys(), \
+                for metric in self.metrics:
+                    assert metric.weight_ratio is not None, \
+                        "Please set weights for metric if you want to use more than one metric"
+                    result += results[metric.name] * metric.weighted
+            logger.info("metric: {}".format(result))
+        elif isinstance(self.metrics, Metric):
+            assert self.metrics.name in results.keys(), \
                     "Please set metric from {}".format(results.keys())
-            result = results.get(self.metrics["metrics"])
-            logger.info("{}: {}".format(self.metrics["metrics"], result))
+            result = results.get(self.metrics.name)
+            logger.info("metric: {}".format(result))
         else:
             assert False, "Please set the correct metrics format from the README"
         logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
@@ -166,26 +168,29 @@ class NLPTrainer(OptimizeConfig, Trainer):
     def _init_quantizer(self):
         from .quantization import QuantizationMode
         from neural_compressor.experimental import Quantization, common
-        if self.quantization.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.POSTTRAININGDYNAMIC.value:
-            self.quantization.quant_config.usr_cfg.model.framework = "pytorch"
-        else:
-            self.quantization.quant_config.usr_cfg.model.framework = "pytorch_fx"
 
-        quantizer = Quantization(self.quantization.quant_config)
+        if self._provider_config.quantization.framework == "pytorch":
+            if self._provider_config.quantization.approach == \
+              QuantizationMode.POSTTRAININGDYNAMIC.value:
+                self._provider_config.quantization.framework = "pytorch"
+            else:
+                self._provider_config.quantization.framework = "pytorch_fx"
+
+        quantizer = Quantization(self._provider_config.quantization.quant_config)
         quantizer.model = common.Model(self.model)
 
         if self._eval_func is not None:
             quantizer.eval_func = self._eval_func
         else:
-            assert self.metrics is not None, "Please pass metrics to trainer.quantization.metrics!"
+            assert self.metrics is not None, \
+                "Please pass the metrics to trainer.quantization.metrics!"
             quantizer.eval_func = self.builtin_eval_func
 
-        if self.quantization.quant_config.usr_cfg.quantization.approach == \
+        if self._provider_config.quantization.approach == \
           QuantizationMode.POSTTRAININGSTATIC.value:
             quantizer.calib_dataloader = self.get_train_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
-        elif self.quantization.quant_config.usr_cfg.quantization.approach == \
+        elif self._provider_config.quantization.approach == \
           QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             quantizer.q_func = \
                 self.builtin_train_func if self._train_func is None else self._train_func
@@ -197,7 +202,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
         from nncf import create_compressed_model
         self.parse_nncf_arguments()
         compression_state = None
-        nncf_compression_state_file = self._provider_arguments.get("compression_state", None)
+        nncf_compression_state_file = self._provider_config.get("compression_state", None)
 
         if os.path.isfile(nncf_compression_state_file):
             compression_state = torch.load(nncf_compression_state_file)
@@ -205,19 +210,19 @@ class NLPTrainer(OptimizeConfig, Trainer):
             compression_state = None
 
         compression_algo_controller, model = create_compressed_model(
-            self.model, self._provider_arguments.get("nncf_config"), compression_state=compression_state
+            self.model, self._provider_config.get("nncf_config"), compression_state=compression_state
         )
 
         self.compression_ctrl = \
-            compression_algo_controller.distributed() if self._provider_arguments.get("distributed", None) else compression_algo_controller
+            compression_algo_controller.distributed() if self._provider_config.get("distributed", None) else compression_algo_controller
 
         self.model = self._train_func(model)
 
     def _inc_quantize(self):
-        self.parse_inc_arguments()
-        if self.quantization.metrics is not None:
-            self.metrics = self.quantization.metrics
         quantizer = self._init_quantizer()
+        assert self._provider_config.quantization.metrics is not None, \
+            "Please pass the metrics to provider_config.quantization.metrics!"
+        self.metrics = self._provider_config.quantization.metrics
         self.opt_model = quantizer.fit()
         self.inc_int8_flag = True
         self._save_inc_int8(self.opt_model, self.args.output_dir)
@@ -236,7 +241,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
         self._train_func = self.builtin_train_func if train_func is None else train_func
         if calib_dataloader is not None:
             self._calib_dataloader = calib_dataloader
-        
+
         if self._provider == Provider.NNCF.value:
             return self._nncf_quantize()
         elif self._provider == Provider.INC.value:
@@ -251,13 +256,12 @@ class NLPTrainer(OptimizeConfig, Trainer):
         logger.info(
             "quantized model and configure file have saved to {}".format(weights_file)
         )
-        
+
 
     def _init_pruner(self):
         from neural_compressor.experimental import Pruning, common
 
-        self.pruning.framework = "pytorch"
-        pruning_start_epoch, pruning_end_epoch = self.pruning.epoch_range
+        pruning_start_epoch, pruning_end_epoch = self.provider_config.pruning.epoch_range
 
         if pruning_start_epoch > self.args.num_train_epochs - 1:
             logger.warning(
@@ -271,7 +275,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
                 f"{self.args.num_train_epochs}. The target sparsity will not be reached."
             )
 
-        pruner = Pruning(self.pruning.prune_config)
+        pruner = Pruning(self._provider_config.pruning.prune_config)
         pruner.model = common.Model(self.model)
 
         if self._eval_func is not None:
@@ -289,11 +293,10 @@ class NLPTrainer(OptimizeConfig, Trainer):
         self,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
-        calib_dataloader=None,
     ):
-        self.parse_inc_arguments()
-        if self.pruning.metrics is not None:
-            self.metrics = self.pruning.metrics
+        assert self._provider_config.pruning.metrics is not None, \
+            "Please pass the metrics to provider_config.pruning.metrics!"
+        self.metrics = self._provider_config.pruning.metrics
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:
@@ -307,8 +310,7 @@ class NLPTrainer(OptimizeConfig, Trainer):
     def _init_distiller(self):
         from neural_compressor.experimental import Distillation, common
 
-        self.distillation.framework = "pytorch"
-        distiller = Distillation(self.distillation.distill_config)
+        distiller = Distillation(self._provider_config.distillation.distill_config)
         distiller.model = common.Model(self.model)
         distiller.teacher_model = common.Model(self.teacher_model)
 
@@ -331,9 +333,9 @@ class NLPTrainer(OptimizeConfig, Trainer):
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
-        self.parse_inc_arguments()
-        if self.distillation.metrics is not None:
-            self.metrics = self.distillation.metrics
+        assert self._provider_config.distillation.metrics is not None, \
+            "Please pass the metrics to provider_config.distillation.metrics!"
+        self.metrics = self._provider_config.distillation.metrics
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:

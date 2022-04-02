@@ -18,25 +18,22 @@ Fine-tuning the library models for multiple choice.
 """
 # You can also adapt this script on your own multiple choice task. Pointers for this are left as comments.
 
+import datasets
 import logging
+import numpy as np
 import os
 import sys
-from dataclasses import dataclass, field
-from itertools import chain
-from typing import Optional, Union
-
-import datasets
-import numpy as np
 import torch
-from datasets import load_dataset
-
 import transformers
+from dataclasses import dataclass, field
+from datasets import load_dataset
+from itertools import chain
+from nlp_toolkit import Metric, NLPTrainer, OptimizedModel, QuantizationConfig
 from transformers import (
     AutoConfig,
     AutoModelForMultipleChoice,
     AutoTokenizer,
     HfArgumentParser,
-    Trainer,
     TrainingArguments,
     default_data_collator,
     set_seed,
@@ -45,10 +42,8 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.file_utils import PaddingStrategy
+from typing import Optional, Union
 
-from nlp_toolkit import NLPTrainer
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit.optimization.quantization import SUPPORTED_QUANT_MODE
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.17.0")
@@ -225,9 +220,9 @@ class OptimizationArguments:
         default=None,
         metadata={"help": "Metric used for the tuning strategy."},
     )
-    tolerance_mode: Optional[str] = field(
-        default="relative",
-        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
+    is_relative: Optional[bool] = field(
+        default=True,
+        metadata={"help": "Metric tolerance mode, True for relative, otherwise for absolute."},
     )
     perf_tol: Optional[float] = field(
         default=0.01,
@@ -465,15 +460,15 @@ def main():
             early_stopping_threshold = 0.001 # optional
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
                                                                     early_stopping_threshold))
-        from neural_compressor.utils import constant
 
-        trainer.provider_arguments = {
-            "quantization":{
-                "approach": optim_args.quantization_approach,
-                "criterion": {optim_args.tolerance_mode: optim_args.perf_tol},
-                "metrics": {"metrics":[metric_name]},
-            }
-        }
+        tune_metric = Metric(
+            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+        )
+        quantization_config = QuantizationConfig(
+            approach=optim_args.quantization_approach,
+            metrics=[tune_metric],
+        )
+        trainer.provider_config.quantization = quantization_config
         model = trainer.quantize()
 
     if optim_args.benchmark or optim_args.accuracy_only:

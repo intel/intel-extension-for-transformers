@@ -1,18 +1,17 @@
-import copy
 import shutil
-import unittest
-
-import torch
 import torch.utils.data as data
-
-from transformers import DistilBertForSequenceClassification
+import unittest
+from nlp_toolkit import (
+    DistillationConfig,
+    DistillationCriterionMode,
+    Metric,
+    NLPTrainer,
+    OptimizedModel,
+)
 from transformers import (
-    AutoConfig,
     AutoModelForPreTraining,
     AutoTokenizer
 )
-from nlp_toolkit import NLPTrainer
-from nlp_toolkit import OptimizedModel
 
 
 class DummyDataset(data.Dataset):
@@ -84,7 +83,7 @@ class TestAutoDistillation(unittest.TestCase):
         best_model_archs = self.trainer.autodistillation(
             self.teacher_model, 
             model_cls=AutoModelForPreTraining
-            )
+        )
         # check best model architectures
         self.assertTrue(len(best_model_archs) > 0)
 

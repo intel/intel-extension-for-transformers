@@ -37,7 +37,6 @@ function init_params {
 # run_tuning
 function run_tuning {
     extra_cmd=''
-    approach='basic_magnitude'
     batch_size=16
     if [ "${topology}" = "distilbert" ]; then
         DATASET_NAME='squad'
@@ -47,7 +46,7 @@ function run_tuning {
     python -u ./run_qa.py \
         --model_name_or_path ${model_name_or_path} \
         --task_name ${DATASET_NAME} \
-        --target_sparsity 0.1 \
+        --target_sparsity_ratio 0.1 \
         --prune \
         --do_eval \
         --do_train \

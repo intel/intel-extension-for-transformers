@@ -37,7 +37,6 @@ function init_params {
 # run_tuning
 function run_tuning {
     extra_cmd=''
-    approach='basic_magnitude'
     batch_size=16
     if [ "${topology}" = "distilbert" ]; then
         DATASET_NAME='squad'

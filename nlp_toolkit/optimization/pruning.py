@@ -15,10 +15,10 @@
 from enum import Enum
 
 class PruningMode(Enum):
-    MAGNITUDE = "basic_magnitude"
+    BASICMAGNITUDE = "basic_magnitude"
     PATTERNLOCK = "pattern_lock"
 
 
-SUPPORTED_PRUNING_MODE = set([approach.value for approach in PruningMode])
+SUPPORTED_PRUNING_MODE = set([approach.name for approach in PruningMode])
 
 

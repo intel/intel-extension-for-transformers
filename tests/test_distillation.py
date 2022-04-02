@@ -1,20 +1,18 @@
 import copy
 import shutil
-import unittest
-
-import torch
 import torch.utils.data as data
-
-from transformers import DistilBertForSequenceClassification
+import unittest
+from nlp_toolkit import (
+    DistillationConfig,
+    DistillationCriterionMode,
+    Metric,
+    NLPTrainer,
+    OptimizedModel,
+)
 from transformers import (
-    AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer
 )
-from nlp_toolkit import NLPTrainer
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit import DistillationMode
-
 
 
 class DummyDataset(data.Dataset):
@@ -33,7 +31,7 @@ class DummyDataset(data.Dataset):
         return self.encoded_dict
 
 
-class TestQuantization(unittest.TestCase):
+class TestDistillation(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.model = AutoModelForSequenceClassification.from_pretrained(
@@ -56,18 +54,16 @@ class TestQuantization(unittest.TestCase):
 
     def test_fx_model_distil(self):
         origin_weight = copy.deepcopy(self.model.classifier.weight)
-        for mode in DistillationMode:
+        for mode in DistillationCriterionMode:
             print("Distillation approach:", mode.value)
             self.trainer = NLPTrainer(
                 model=self.model,
                 train_dataset=self.dummy_dataset,
                 eval_dataset=self.dummy_dataset,
             )
-            self.trainer.provider_arguments = {
-                "distillation":{
-                    "metrics": {"metrics":["eval_samples_per_second"]},
-                }
-            }
+            metric = Metric(name="eval_loss")
+            distillation_conf = DistillationConfig(metrics=[metric])
+            self.trainer.provider_config.distillation = distillation_conf
             distilled_model = self.trainer.distill(self.teacher_model)
             # By default, model will be saved in tmp_trainer dir.
             self.trainer.save_model('./distilled_model')
