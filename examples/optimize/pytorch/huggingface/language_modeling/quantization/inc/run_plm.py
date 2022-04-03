@@ -539,7 +539,7 @@ def main():
         trainer.model = model
         metrics = trainer.evaluate()
         logger.info("metrics keys: {}".format(metrics.keys()))
-        bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
+        bert_task_acc_keys = ['eval_loss', 'eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
                               'eval_pearson', 'eval_mcc', 'eval_spearmanr']
         ret = False
         for key in bert_task_acc_keys:

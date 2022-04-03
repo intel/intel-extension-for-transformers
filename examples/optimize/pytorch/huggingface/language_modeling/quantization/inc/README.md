@@ -1,5 +1,5 @@
 # Language modeling
-The scripts `run_clm.py`, `run_mlm.py` and `run_plm.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+The scripts `run_clm.py`, `run_mlm.py` and `run_plm.py` provide three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 Here is how to run the scripts:
 

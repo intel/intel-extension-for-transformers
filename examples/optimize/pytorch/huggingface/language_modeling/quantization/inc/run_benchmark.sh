@@ -53,7 +53,6 @@ function init_params {
 # run_benchmark
 function run_benchmark {
     extra_cmd=''
-    MAX_SEQ_LENGTH=384
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy_only"
@@ -65,42 +64,42 @@ function run_benchmark {
     fi
 
 
-    if [ "${topology}" = "gpt_static" ]; then
+    if [ "${topology}" = "gpt_neo_clm_static" ]; then
         script="run_clm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125M"
         model_type="gpt"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "gpt_dynamic" ]; then
+    elif [ "${topology}" = "gpt_neo_clm_dynamic" ]; then
         script="run_clm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125M"
         model_type="gpt"
         approach="PostTrainingDynamic"
-    elif [ "${topology}" = "bert_static" ]; then
+    elif [ "${topology}" = "bert_mlm_static" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="bert-base-uncased"
         model_type="bert"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "bert_dynamic" ]; then
+    elif [ "${topology}" = "bert_mlm_dynamic" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="bert-base-uncased"
         model_type="bert"
         approach="PostTrainingDynamic"
-    elif [ "${topology}" = "xlnet_static" ]; then
+    elif [ "${topology}" = "xlnet_plm_static" ]; then
         script="run_plm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="xlnet-base-cased"
         model_type="xlnet"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "xlnet_dynamic" ]; then
+    elif [ "${topology}" = "xlnet_plm_dynamic" ]; then
         script="run_plm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
