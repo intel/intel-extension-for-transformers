@@ -1,7 +1,7 @@
 {
     "pytorch":{
         "gpt_neo_static": {
-            "model_src_dir": "optimize/pytorch/huggingface/language_modeling/quantization/inc",
+            "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
             "dataset_location": "",
             "input_model": "",
             "yaml": "conf.yaml",
@@ -10,7 +10,7 @@
             "new_benchmark": false
         },
         "gpt_neo_dynamic": {
-          "model_src_dir": "optimize/pytorch/huggingface/language_modeling/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -19,7 +19,7 @@
           "new_benchmark": false
         },
         "bert_mlm_static": {
-          "model_src_dir": "optimize/pytorch/huggingface/language_modeling/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -28,7 +28,7 @@
           "new_benchmark": false
         },
         "bert_mlm_dynamic": {
-          "model_src_dir": "optimize/pytorch/huggingface/language_modeling/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -37,7 +37,7 @@
           "new_benchmark": false
         },
         "xlnet_plm_static": {
-          "model_src_dir": "optimize/pytorch/huggingface/language_modeling/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -46,7 +46,7 @@
           "new_benchmark": false
         },
         "xlnet_plm_dynamic": {
-          "model_src_dir": "optimize/pytorch/huggingface/language_modeling/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -73,7 +73,7 @@
           "new_benchmark": false
         },
         "distilbert_base_squad_static": {
-          "model_src_dir": "optimize/pytorch/huggingface/question_answering/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/question-answering/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -82,7 +82,7 @@
           "new_benchmark": false
         },
         "distilbert_base_squad_dynamic": {
-          "model_src_dir": "optimize/pytorch/huggingface/question_answering/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/question-answering/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
