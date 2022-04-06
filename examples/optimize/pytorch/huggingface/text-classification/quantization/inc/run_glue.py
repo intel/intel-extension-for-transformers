@@ -26,7 +26,7 @@ import sys
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from nlp_toolkit import Metric, NLPTrainer, OBJECTIVES, OptimizedModel, QuantizationConfig
+from nlp_toolkit import metrics, NLPTrainer, objectives, OptimizedModel, QuantizationConfig
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -48,7 +48,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-check_min_version("4.17.0")
+check_min_version("4.12.0")
 
 
 task_to_keys = {
@@ -521,17 +521,16 @@ def main():
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
                                                                     early_stopping_threshold))
 
-        tune_metric = Metric(
+        tune_metric = metrics.Metric(
             name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
-        objective = OBJECTIVES.performance
+        objective = objectives.performance
         quantization_config = QuantizationConfig(
             approach=optim_args.quantization_approach,
             metrics=[tune_metric],
             objectives=[objective]
         )
-        trainer.provider_config.quantization = quantization_config
-        model = trainer.quantize()
+        model = trainer.quantize(quant_config=quantization_config)
 
     if optim_args.benchmark or optim_args.accuracy_only:
 

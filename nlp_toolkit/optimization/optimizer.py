@@ -17,7 +17,7 @@ import torch
 
 from neural_compressor.experimental import common, Component, Distillation
 from neural_compressor.experimental.scheduler import Scheduler
-from nlp_toolkit import ProviderConfig, Provider
+from nlp_toolkit import DistillationConfig, Provider, PruningConfig, QuantizationConfig
 from transformers import PreTrainedModel
 from typing import Callable, Optional, Union, List
 
@@ -128,13 +128,16 @@ class NoTrainerOptimizer:
     def _init_quantize(self):
         from .quantization import QuantizationMode
         from neural_compressor.experimental import Quantization, common
-        if self.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.POSTTRAININGDYNAMIC.value:
-            self.quant_config.usr_cfg.model.framework = "pytorch"
-        else:
-            self.quant_config.usr_cfg.model.framework = "pytorch_fx"
+        assert isinstance(self.quant_config, QuantizationConfig), \
+            "Please pass a QuantizationConfig instance to NoTrainerOptimizer.quantize!"
+        if self.quant_config.framework == "pytorch":
+            if self.quant_config.approach == \
+              QuantizationMode.POSTTRAININGDYNAMIC.value:
+                self.quant_config.framework = "pytorch"
+            else:
+                self.quant_config.framework = "pytorch_fx"
 
-        quantizer = Quantization(self.quant_config)
+        quantizer = Quantization(self.quant_config.inc_config)
         quantizer.model = common.Model(self.model)
 
         assert self._eval_func is not None, "eval_func must be provided for quantization!"
@@ -142,13 +145,11 @@ class NoTrainerOptimizer:
         if self._eval_func is not None:
             quantizer.eval_func = self._eval_func
 
-        if self.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.POSTTRAININGSTATIC.value:
+        if self.quant_config.approach == QuantizationMode.POSTTRAININGSTATIC.value:
             assert self._calib_dataloader is not None, \
                 "calib_dataloader must be provided for post-training quantization."
             quantizer.calib_dataloader = self._calib_dataloader
-        elif self.quant_config.usr_cfg.quantization.approach == \
-          QuantizationMode.QUANTIZATIONAWARETRAINING.value:
+        elif self.quant_config.approach ==  QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             assert self._train_func is not None, \
                 "train_func must be provided for quantization aware training."
             quantizer.q_func = self._train_func
@@ -157,32 +158,37 @@ class NoTrainerOptimizer:
         return quantizer
 
     def _nncf_quantize(self):
+        from nlp_toolkit import NncfConfig
         from nncf import create_compressed_model
-        assert self._provider_arguments is not None, "Please pass arguments to trainer.provider_arguments!"
+        assert isinstance(self.quant_config, NncfConfig), \
+            "Please pass a NNCFConfig instance to NoTrainerOptimizer.quantize!"
+
+        nncf_compression_state_file = self.quant_config.get("compression_state", None)
         compression_state = None
 
-        if os.path.isfile(self._nncf_compression_state_file):
-            compression_state = torch.load(self._nncf_compression_state_file)
+        if os.path.isfile(nncf_compression_state_file):
+            compression_state = torch.load(nncf_compression_state_file)
         else:
             compression_state = None
         compression_algo_controller, model = create_compressed_model(
-            self.model, self._provider_arguments["nncf_config"], compression_state=compression_state
+            self.model, self.quant_config.nncf_config, compression_state=compression_state
         )
 
         self.compression_ctrl = \
-            compression_algo_controller.distributed() if self._provider_arguments["distributed"] else compression_algo_controller
+            compression_algo_controller.distributed() if self.quant_config.distributed else compression_algo_controller
 
     def quantize(
         self,
-        metric_name: Optional[str] = None,
+        quant_config,
+        provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
         calib_dataloader=None,
     ):
-        if self._provider == "nncf":
+        self.quant_config = quant_config
+        self._provider = provider[provider.upper()].value
+        if self._provider == Provider.NNCF.value:
             return self._nncf_quantize()
-        if metric_name is not None:
-            self.metric_name = metric_name
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:
@@ -198,12 +204,12 @@ class NoTrainerOptimizer:
         return opt_model.model
 
     def _init_pruner(self):
-        from .pruning import PruningMode
         from neural_compressor.experimental import Pruning, common
 
-        self.prune_config.usr_cfg.model.framework = "pytorch"
-        pruning_start_epoch = self.prune_config.usr_cfg.pruning.approach.weight_compression.start_epoch
-        pruning_end_epoch = self.prune_config.usr_cfg.pruning.approach.weight_compression.end_epoch
+        assert isinstance(self.pruning_config, PruningConfig), \
+            "please pass a instance of PruningConfig to NoTrainerOptimizer.prune!"
+
+        pruning_start_epoch, pruning_end_epoch = self.pruning_config.epoch_range
 
         if pruning_start_epoch > self.args.num_train_epochs - 1:
             logger.warning(
@@ -217,7 +223,7 @@ class NoTrainerOptimizer:
                 f"{self.args.num_train_epochs}. The target sparsity will not be reached."
             )
 
-        pruner = Pruning(self.prune_config)
+        pruner = Pruning(self.pruning_config.inc_config)
         pruner.model = common.Model(self.model)
 
         assert self._eval_func is not None, "eval_func must be provided for pruning!"
@@ -233,13 +239,14 @@ class NoTrainerOptimizer:
 
     def prune(
         self,
-        metric_name: Optional[str] = None,
+        pruning_config,
+        provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
         calib_dataloader=None,
     ):
-        if metric_name is not None:
-            self.metric_name = metric_name
+        self.pruning_config = pruning_config
+        self._provider = Provider[provider.upper()].value
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:
@@ -254,8 +261,9 @@ class NoTrainerOptimizer:
         from neural_compressor.experimental import Distillation, common
         assert self.teacher_model is not None, \
                     "teacher model must be provided for distillation."
-        self.distill_config.usr_cfg.model.framework = "pytorch"
-        distiller = Distillation(self.distill_config)
+        assert isinstance(self.distillation_config, DistillationConfig), \
+            "Please pass a DistillationConfig instance to NoTrainerOptimizer.distill!"
+        distiller = Distillation(self.distillation_config.inc_config)
         distiller.model = common.Model(self.model)
         distiller.teacher_model = common.Model(self.teacher_model)
 
@@ -271,15 +279,17 @@ class NoTrainerOptimizer:
         self.distiller = distiller
         return distiller
 
-    def distillation(
+    def distill(
         self,
+        distillation_config,
         teacher_model: Union[PreTrainedModel, torch.nn.Module],
-        metric_name: Optional[str] = None,
+        provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
-        if metric_name is not None:
-            self.metric_name = metric_name
+        self.distillation_config = distillation_config
+        self._provider = Provider[provider.upper()].value
+
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:

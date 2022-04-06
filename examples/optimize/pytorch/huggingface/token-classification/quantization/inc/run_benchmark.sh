@@ -85,7 +85,7 @@ function run_benchmark {
         --model_name_or_path ${model_name_or_path} \
         --dataset_name ${DATASET_NAME} \
         --do_eval \
-        --pad_to_max_length \ \
+        --pad_to_max_length \
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ${tuned_checkpoint} \
         --no_cuda \

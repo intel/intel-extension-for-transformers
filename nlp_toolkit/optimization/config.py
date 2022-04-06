@@ -20,15 +20,18 @@ from neural_compressor.conf.config import (
     Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
 )
 from neural_compressor.utils import logger
-from nlp_toolkit.optimization.base import Metric, Objective
-from nlp_toolkit.optimization.pruning import PruningMode, SUPPORTED_PRUNING_MODE
+from nlp_toolkit.optimization.metrics import Metric
+from nlp_toolkit.optimization.objectives import Objective
 from nlp_toolkit.optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from nlp_toolkit.optimization.distillation import (
     Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
 )
+from nlp_toolkit.optimization.utils.utility import LazyImport
 from transformers.file_utils import cached_path, hf_bucket_url
 from typing import Any, List, Optional, Union
 from xmlrpc.client import boolean
+
+nncf = LazyImport("nncf")
 
 
 CONFIG_NAME = "best_configure.yaml"
@@ -153,7 +156,7 @@ class QuantizationConfig(object):
         objectives: Union[Objective, List] = None,
     ):
         super().__init__()
-        self.quant_config = Quantization_Conf()
+        self.inc_config = Quantization_Conf()
         self.framework = framework
         if approach is not None:
             self.approach = approach
@@ -172,7 +175,7 @@ class QuantizationConfig(object):
 
     @property
     def approach(self):
-        return self.quant_config.usr_cfg.quantization.approach
+        return self.inc_config.usr_cfg.quantization.approach
 
     @approach.setter
     def approach(self, approach):
@@ -180,7 +183,7 @@ class QuantizationConfig(object):
         assert approach in SUPPORTED_QUANT_MODE, \
             f"quantization approach: {approach} is not support!" + \
             "PostTrainingStatic, PostTrainingDynamic and QuantizationAwareTraining are supported!"
-        self.quant_config.usr_cfg.quantization.approach = QuantizationMode[approach].value
+        self.inc_config.usr_cfg.quantization.approach = QuantizationMode[approach].value
 
     @property
     def metrics(self):
@@ -193,7 +196,7 @@ class QuantizationConfig(object):
         assert isinstance(metrics[0] if isinstance(metrics, list) else metrics, Metric), \
             "metric should be a Metric calss!"
         if isinstance(metrics, Metric) or len(metrics) == 1:
-            self.quant_config.usr_cfg.tuning.accuracy_criterion = {
+            self.inc_config.usr_cfg.tuning.accuracy_criterion = {
                 rel_or_abs[metrics[0].is_relative]
                 if isinstance(metrics, list) else rel_or_abs[metrics.is_relative]:
                 metrics[0].criterion if isinstance(metrics, list) else metrics.criterion,
@@ -214,20 +217,20 @@ class QuantizationConfig(object):
             assert all(metric.criterion == metrics[0].criterion for metric in metrics), \
                 "Unsupport different criterion for different metric now, will support soon!"
 
-            self.quant_config.usr_cfg.tuning.accuracy_criterion = {
+            self.inc_config.usr_cfg.tuning.accuracy_criterion = {
                 rel_or_abs[metrics[0].is_relative]: metrics[0].criterion,
                 "higher_is_better": metrics[0].greater_is_better
             }
 
     @property
     def framework(self):
-        return self.quant_config.usr_cfg.model.framework
+        return self.inc_config.usr_cfg.model.framework
 
     @framework.setter
     def framework(self, framework):
         assert framework in ["pytorch", "pytorch_fx"], \
             "framework: {} is not support!".format(framework)
-        self.quant_config.usr_cfg.model.framework = framework
+        self.inc_config.usr_cfg.model.framework = framework
 
     @property
     def objectives(self):
@@ -237,7 +240,7 @@ class QuantizationConfig(object):
     def objectives(self, objectives: Union[List, Objective]):
         self._objectives = objectives
         if isinstance(objectives, Objective) or len(objectives) == 1:
-            self.quant_config.usr_cfg.tuning.objective = objectives.name \
+            self.inc_config.usr_cfg.tuning.objective = objectives.name \
                 if isinstance(objectives, Objective) else objectives[0].name
         else:
             weights = [objective.weight_ratio for objective in objectives]
@@ -248,7 +251,7 @@ class QuantizationConfig(object):
             else:
                 assert all(weights), "Please set the weight ratio for all metrics!"
 
-            self.quant_config.usr_cfg.tuning.multi_objective = {
+            self.inc_config.usr_cfg.tuning.multi_objective = {
                 "objective": [objective.name for objective in objectives],
                 "higher_is_better": [objective.greater_is_better for objective in objectives],
                 "weight": [objective.weight_ratio for objective in objectives],
@@ -256,157 +259,144 @@ class QuantizationConfig(object):
 
     @property
     def strategy(self):
-        return self.quant_config.usr_cfg.tuning.strategy.name
+        return self.inc_config.usr_cfg.tuning.strategy.name
 
     @strategy.setter
     def strategy(self, strategy):
         assert strategy in ["basic", "bayesian", "mse"], \
             "strategy: {} is not support!".format(strategy)
-        self.quant_config.usr_cfg.tuning.strategy.name = strategy
+        self.inc_config.usr_cfg.tuning.strategy.name = strategy
 
     @property
     def timeout(self):
-        return self.quant_config.usr_cfg.tuning.exit_policy.timeout
+        return self.inc_config.usr_cfg.tuning.exit_policy.timeout
 
     @timeout.setter
     def timeout(self, timeout):
         assert isinstance(timeout, int), "timeout should be integer!"
-        self.quant_config.usr_cfg.tuning.exit_policy.timeout = timeout
+        self.inc_config.usr_cfg.tuning.exit_policy.timeout = timeout
 
     @property
     def max_trials(self):
-        return self.quant_config.usr_cfg.tuning.exit_policy.max_trials
+        return self.inc_config.usr_cfg.tuning.exit_policy.max_trials
 
     @max_trials.setter
     def max_trials(self, max_trials):
         assert isinstance(max_trials, int), "max_trials should be integer!"
-        self.quant_config.usr_cfg.tuning.exit_policy.max_trials = max_trials
+        self.inc_config.usr_cfg.tuning.exit_policy.max_trials = max_trials
 
     @property
     def performance_only(self):
-        return self.quant_config.usr_cfg.tuning.exit_policy.performance_only
+        return self.inc_config.usr_cfg.tuning.exit_policy.performance_only
 
     @performance_only.setter
     def performance_only(self, performance_only):
         assert isinstance(performance_only, boolean), "performance_only should be boolean!"
-        self.quant_config.usr_cfg.tuning.exit_policy.performance_only = performance_only
+        self.inc_config.usr_cfg.tuning.exit_policy.performance_only = performance_only
 
     @property
     def random_seed(self):
-        return self.quant_config.usr_cfg.tuning.random_seed
+        return self.inc_config.usr_cfg.tuning.random_seed
 
     @random_seed.setter
     def random_seed(self, random_seed):
         assert isinstance(random_seed, int), "random_seed should be integer!"
-        self.quant_config.usr_cfg.tuning.random_seed = random_seed
+        self.inc_config.usr_cfg.tuning.random_seed = random_seed
 
     @property
     def tensorboard(self):
-        return self.quant_config.usr_cfg.tuning.tensorboard
+        return self.inc_config.usr_cfg.tuning.tensorboard
 
     @tensorboard.setter
     def tensorboard(self, tensorboard):
         assert isinstance(tensorboard, boolean), "tensorboard should be boolean!"
-        self.quant_config.usr_cfg.tuning.tensorboard = tensorboard
+        self.inc_config.usr_cfg.tuning.tensorboard = tensorboard
 
     @property
     def output_dir(self):
-        return self.quant_config.usr_cfg.tuning.workspace.path
+        return self.inc_config.usr_cfg.tuning.workspace.path
 
     @output_dir.setter
     def output_dir(self, path):
         assert isinstance(path, str), "save_path should be a string of directory!"
-        self.quant_config.usr_cfg.tuning.workspace.path = path
+        self.inc_config.usr_cfg.tuning.workspace.path = path
 
     @property
     def resume_path(self):
-        return self.quant_config.usr_cfg.tuning.workspace.resume
+        return self.inc_config.usr_cfg.tuning.workspace.resume
 
     @resume_path.setter
     def resume_path(self, path):
         assert isinstance(path, str), "resume_path should be a string of directory!"
-        self.quant_config.usr_cfg.tuning.workspace.resume = path
+        self.inc_config.usr_cfg.tuning.workspace.resume = path
 
 
 class PruningConfig(object):
     def __init__(
         self,
         framework: str = "pytorch",
-        approach: str = "BasicMagnitude",
         target_sparsity_ratio: float = None,
         epoch_range: List = None,
         metrics: Union[List, Metric] = None,
-        custom_pruner: Pruner = None,
+        pruner: Pruner = None,
     ):
         super().__init__()
-        self.prune_config = Pruning_Conf()
+        self.inc_config = Pruning_Conf()
         self.framework = framework
-        self.init_prune_config()
-        self.approach = approach
         if target_sparsity_ratio is not None:
             self.target_sparsity_ratio = target_sparsity_ratio
         if epoch_range is not None:
             self.epoch_range = epoch_range
         if metrics is not None:
             self.metrics = metrics
-        if custom_pruner is not None:
-            self.custom_pruner = custom_pruner
+        if pruner is not None:
+            self.pruner = pruner
+        else:
+            self.init_prune_config()
+
 
     def init_prune_config(self):
         pruner = Pruner()
-        self.prune_config.usr_cfg.pruning.approach.weight_compression['pruners'] = [pruner]
+        self.inc_config.usr_cfg.pruning.approach.weight_compression['pruners'] = [pruner]
 
     @property
-    def custom_pruner(self):
-        return self.prune_config.usr_cfg.pruning.approach.weight_compression.pruners
+    def pruner(self):
+        return self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners
 
-    @custom_pruner.setter
-    def custom_pruner(self, pruner):
-        self.prune_config.usr_cfg.pruning.approach.weight_compression.pruners = [pruner]
-
-    @property
-    def approach(self):
-        return self.prune_config.usr_cfg.pruning.approach.weight_compression.pruners[0].prune_type
-
-    @approach.setter
-    def approach(self, approach):
-        assert approach.upper() in SUPPORTED_PRUNING_MODE, \
-            "pruning approach must be in {}!".format(
-                [mode.lower() for mode in SUPPORTED_PRUNING_MODE]
-            )
-        self.prune_config.usr_cfg.pruning.approach.weight_compression.pruners[0].prune_type = \
-            PruningMode[approach.upper()].value
+    @pruner.setter
+    def pruner(self, pruner):
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = [pruner]
 
     @property
     def target_sparsity_ratio(self):
-        return self.prune_config.usr_cfg.pruning.approach.weight_compression.target_sparsity
+        return self.inc_config.usr_cfg.pruning.approach.weight_compression.target_sparsity
 
     @target_sparsity_ratio.setter
     def target_sparsity_ratio(self, target_sparsity_ratio):
-        self.prune_config.usr_cfg.pruning.approach.weight_compression.target_sparsity = \
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.target_sparsity = \
             target_sparsity_ratio
 
     @property
     def epoch_range(self):
-        return [self.prune_config.usr_cfg.pruning.approach.weight_compression.start_epoch,
-                self.prune_config.usr_cfg.pruning.approach.weight_compression.end_epoch]
+        return [self.inc_config.usr_cfg.pruning.approach.weight_compression.start_epoch,
+                self.inc_config.usr_cfg.pruning.approach.weight_compression.end_epoch]
 
     @epoch_range.setter
     def epoch_range(self, epoch_range):
         assert isinstance(epoch_range, list) and len(epoch_range) == 2, \
           "You should set epoch_range like [a,b] format to match the pruning start and end epoch."
-        self.prune_config.usr_cfg.pruning.approach.weight_compression.start_epoch = epoch_range[0]
-        self.prune_config.usr_cfg.pruning.approach.weight_compression.end_epoch = epoch_range[1]
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.start_epoch = epoch_range[0]
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.end_epoch = epoch_range[1]
 
     @property
     def framework(self):
-        return self.prune_config.usr_cfg.model.framework
+        return self.inc_config.usr_cfg.model.framework
 
     @framework.setter
     def framework(self, framework):
         assert framework.lower() in ["pytorch"], \
             "framework: {} is not support!".format(framework)
-        self.prune_config.usr_cfg.model.framework = framework.lower()
+        self.inc_config.usr_cfg.model.framework = framework.lower()
 
     @property
     def metrics(self):
@@ -425,7 +415,7 @@ class DistillationConfig(object):
         metrics: Union[List, Metric] = None,
     ):
         super().__init__()
-        self.distill_config = Distillation_Conf()
+        self.inc_config = Distillation_Conf()
         self.framework = framework
         if criterion is not None:
             self.criterion = criterion
@@ -434,17 +424,17 @@ class DistillationConfig(object):
 
     @property
     def framework(self):
-        return self.distill_config.usr_cfg.model.framework
+        return self.inc_config.usr_cfg.model.framework
 
     @framework.setter
     def framework(self, framework):
         assert framework in ["pytorch"], \
             "framework: {} is not support!".format(framework)
-        self.distill_config.usr_cfg.model.framework = framework
+        self.inc_config.usr_cfg.model.framework = framework
 
     @property
     def criterion(self):
-        return self.distill_config.usr_cfg.distillation.train.criterion
+        return self.inc_config.usr_cfg.distillation.train.criterion
 
     @criterion.setter
     def criterion(self, criterion: Criterion):
@@ -457,7 +447,7 @@ class DistillationConfig(object):
                 "Please pass the loss_types to Criterion.loss_types!"
             assert criterion.loss_weight_ratio is not None, \
                 "Please pass the loss_weight_ratio to Criterion.loss_weight_ratio!"
-            self.distill_config.usr_cfg.distillation.train.criterion = {
+            self.inc_config.usr_cfg.distillation.train.criterion = {
                 DistillationCriterionMode.KNOWLEDGELOSS.value: {
                     "temperature": criterion.temperature,
                     "loss_types": criterion.loss_types,
@@ -474,7 +464,7 @@ class DistillationConfig(object):
                 "Please pass the loss_weight_ratio to Criterion.loss_weight_ratio!"
             assert criterion.add_origin_loss is not None, \
                 "Please pass the add_origin_loss to Criterion.add_origin_loss!"
-            self.distill_config.usr_cfg.distillation.train.criterion = {
+            self.inc_config.usr_cfg.distillation.train.criterion = {
                 DistillationCriterionMode.INTERMEDIATELAYERSLOSS.value: {
                     "layer_mappings": criterion.layer_mappings,
                     "loss_types": criterion.loss_types,
@@ -492,13 +482,47 @@ class DistillationConfig(object):
         self._metrics = metrics
 
 
-class ProviderConfig(object):
-    def __init__(self):
+class NncfConfig(object):
+    def __init__(
+        self,
+        nncf_config,
+        distributed: bool = False,
+        to_onnx: bool = False,
+        metrics: Union[List, Metric] = None,
+    ):
         super().__init__()
-        self.quantization = QuantizationConfig()
-        self.pruning = PruningConfig()
-        self.distillation = DistillationConfig()
-        self._nncf_config = None
+        from nncf import NNCFConfig
+        assert isinstance(nncf_config, NNCFConfig)
+        self.nncf_config = nncf_config
+        if metrics is not None:
+            self._metrics = metrics
+        self._distributed = distributed
+        self._to_onnx = to_onnx
+
+
+    @property
+    def distributed(self):
+        return self._distributed
+
+    @distributed.setter
+    def distributed(self, distributed):
+        self._distributed = distributed
+
+    @property
+    def to_onnx(self):
+        return self._to_onnx
+
+    @to_onnx.setter
+    def to_onnx(self, to_onnx):
+        self._to_onnx = to_onnx
+
+    @property
+    def metrics(self):
+        return self._metrics
+
+    @metrics.setter
+    def metrics(self, metrics):
+        self._metrics = metrics
 
     @property
     def nncf_config(self):

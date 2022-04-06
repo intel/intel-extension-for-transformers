@@ -38,7 +38,6 @@ function init_params {
 # run_tuning
 function run_tuning {
     extra_cmd=''
-    approach='BasicMagnitude'
     batch_size=16
 
     python -u ./run_glue.py \

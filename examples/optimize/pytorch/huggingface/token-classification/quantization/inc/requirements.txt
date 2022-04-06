@@ -1,5 +1,6 @@
 accelerate
 seqeval
 datasets >= 1.8.0
-torch >= 1.3
-transformers >=4.12.0
+torch >= 1.10
+transformers>=4.12.0
+wandb

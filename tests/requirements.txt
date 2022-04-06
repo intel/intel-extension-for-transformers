@@ -1,6 +1,6 @@
+datasets>=1.8.0
+neural-compressor
+nlpaug
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=1.10.0+cpu
-neural-compressor
 transformers>=4.12.0
-datasets>=1.8.0
-nlpaug

@@ -11,6 +11,7 @@ function main {
 # init params
 function init_params {
   tuned_checkpoint=saved_results
+  topology="distilbert_base_sst2"
   for var in "$@"
   do
     case $var in
@@ -38,7 +39,6 @@ function init_params {
 # run_tuning
 function run_tuning {
     extra_cmd=''
-    approach='BasicMagnitude'
     batch_size=16
     if [ "${topology}" = "distilbert_base_sst2" ]; then
         TASK_NAME='sst2'

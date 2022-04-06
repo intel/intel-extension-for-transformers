@@ -31,7 +31,7 @@ import functools
 import numpy as np
 import torch
 import transformers
-from nlp_toolkit import Metric, OptimizedModel, DistillationConfig
+from nlp_toolkit import metrics, OptimizedModel, DistillationConfig
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -53,7 +53,7 @@ from utils_qa import postprocess_qa_predictions
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-check_min_version("4.17.0.dev0")
+check_min_version("4.12.0")
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/question-answering/requirements.txt")
 
@@ -731,30 +731,31 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for distillation.")
 
-        metric = Metric(name=metric_name)
-        distillation_conf = DistillationConfig(metrics=[metric])
-        trainer.provider_config.distillation = distillation_conf
-        model = trainer.distill(teacher_model)
+        tune_metric = metrics.Metric(name=metric_name)
+        distillation_conf = DistillationConfig(metrics=[tune_metric])
+        model = trainer.distill(
+            distillation_config=distillation_conf, teacher_model=teacher_model
+        )
         trainer.save_model(training_args.output_dir)
 
     if optim_args.benchmark or optim_args.accuracy_only:
 
         model = OptimizedModel.from_pretrained(
-                training_args.output_dir,
-                )
+            training_args.output_dir,
+        )
         model.eval()
         trainer.model = model
-        metrics = trainer.evaluate()
-        logger.info("metrics keys: {}".format(metrics.keys()))
+        results = trainer.evaluate()
+        logger.info("metrics keys: {}".format(results.keys()))
         bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
                               'eval_pearson', 'eval_mcc', 'eval_spearmanr']
         ret = False
         for key in bert_task_acc_keys:
-            if key in metrics.keys():
+            if key in results.keys():
                 ret = True
-                throughput = metrics.get("eval_samples_per_second")
+                throughput = results.get("eval_samples_per_second")
                 print('Batch size = %d', training_args.per_device_eval_batch_size)
-                print("Finally Eval {} Accuracy: {}".format(key, metrics[key]))
+                print("Finally Eval {} Accuracy: {}".format(key, results[key]))
                 print("Latency: %.3f ms", (1000 / throughput))
                 print("Throughput: {} samples/sec".format(throughput))
         assert ret, "No metric returned, Please check inference metric!"

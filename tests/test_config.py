@@ -4,13 +4,11 @@ import unittest
 
 from nlp_toolkit import (
     DistillationConfig,
-    Metric,
-    ProviderConfig,
+    metrics,
+    objectives,
+    Pruner,
     PruningConfig,
-    PruningMode,
     QuantizationConfig,
-    OBJECTIVES,
-    Objective,
 )
 from nlp_toolkit.optimization.distillation import Criterion as DistillationCriterion, \
                                                   DistillationCriterionMode
@@ -34,15 +32,15 @@ class TestConfig(unittest.TestCase):
         shutil.rmtree('./tmp_trainer', ignore_errors=True)
 
     def test_quantization_config_with_init(self):
-        metric1 = Metric(
+        metric1 = metrics.Metric(
             name="F1", greater_is_better=False, is_relative=False, criterion=0.02, weight_ratio=0.5
         )
-        metric2 = Metric(
+        metric2 = metrics.Metric(
             name="accuracy", greater_is_better=False, is_relative=False,
             criterion=0.02, weight_ratio=0.5
         )
-        objective1 = OBJECTIVES.performance
-        objective2 = OBJECTIVES.modelsize
+        objective1 = objectives.performance
+        objective2 = objectives.modelsize
         quantization_config = QuantizationConfig(
                                 framework="pytorch",
                                 approach="PostTrainingDynamic",
@@ -62,10 +60,10 @@ class TestConfig(unittest.TestCase):
         quantization_config = QuantizationConfig()
         quantization_config.approach = "PostTrainingStatic"
         quantization_config.framework = "pytorch"
-        metric = Metric(name="F1", greater_is_better=False, criterion=0.02, is_relative=True)
+        metric = metrics.Metric(name="F1", greater_is_better=False, criterion=0.02, is_relative=True)
         quantization_config.metrics = metric
-        objective1 = Objective(name="performance", greater_is_better=True)
-        objective2 = Objective(name="modelsize", greater_is_better=False)
+        objective1 = objectives.Objective(name="performance", greater_is_better=True)
+        objective2 = objectives.Objective(name="modelsize", greater_is_better=False)
         quantization_config.objectives = [objective1, objective2]
 
         quantization_config.timeout = 600
@@ -81,24 +79,23 @@ class TestConfig(unittest.TestCase):
 
     def test_pruning_config(self):
         pruning_config = PruningConfig()
-        metric = Metric(name="F1")
-        pruning_config.custom_pruner = CustomPruner
-        pruning_config.approach = "BasicMagnitude"
+        pruner = Pruner()
+        metric = metrics.Metric(name="F1")
+        pruning_config.pruner = pruner
         pruning_config.framework = "pytorch"
         pruning_config.target_sparsity_ratio = 0.1
         pruning_config.epoch_range = [0, 4]
         pruning_config.metrics = [metric]
 
-        self.assertEqual(pruning_config.custom_pruner, [CustomPruner])
-        self.assertEqual(pruning_config.approach, PruningMode["BasicMagnitude".upper()].value)
+        self.assertEqual(pruning_config.pruner, [pruner])
         self.assertEqual(pruning_config.framework, "pytorch")
         self.assertEqual(pruning_config.target_sparsity_ratio, 0.1)
         self.assertEqual(pruning_config.epoch_range, [0, 4])
         self.assertEqual(pruning_config.metrics, [metric])
 
     def test_distillation_config(self):
-        metric1 = Metric(name="F1")
-        metric2 = Metric(name="accuracy")
+        metric1 = metrics.Metric(name="F1")
+        metric2 = metrics.Metric(name="accuracy")
         criterion = DistillationCriterion(
             name="KnowledgeLoss",
             temperature=1.0,

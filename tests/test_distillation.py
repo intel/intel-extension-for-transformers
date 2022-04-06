@@ -5,7 +5,7 @@ import unittest
 from nlp_toolkit import (
     DistillationConfig,
     DistillationCriterionMode,
-    Metric,
+    metrics,
     NLPTrainer,
     OptimizedModel,
 )
@@ -61,10 +61,11 @@ class TestDistillation(unittest.TestCase):
                 train_dataset=self.dummy_dataset,
                 eval_dataset=self.dummy_dataset,
             )
-            metric = Metric(name="eval_loss")
+            metric = metrics.Metric(name="eval_loss")
             distillation_conf = DistillationConfig(metrics=[metric])
-            self.trainer.provider_config.distillation = distillation_conf
-            distilled_model = self.trainer.distill(self.teacher_model)
+            distilled_model = self.trainer.distill(
+                distillation_config=distillation_conf, teacher_model=self.teacher_model
+            )
             # By default, model will be saved in tmp_trainer dir.
             self.trainer.save_model('./distilled_model')
             loaded_model = OptimizedModel.from_pretrained(

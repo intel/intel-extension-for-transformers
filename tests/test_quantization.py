@@ -2,13 +2,12 @@ import shutil
 import torch.utils.data as data
 import unittest
 from nlp_toolkit import (
-    Metric,
     NLPTrainer,
-    OBJECTIVES,
     OptimizedModel,
     QuantizationConfig,
     QuantizationMode,
 )
+from nlp_toolkit import metrics, objectives
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer
@@ -59,17 +58,15 @@ class TestQuantization(unittest.TestCase):
                 train_dataset=self.dummy_dataset,
                 eval_dataset=self.dummy_dataset,
             )
-            tune_metric = Metric(
+            tune_metric = metrics.Metric(
                 name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
             )
-            objective = OBJECTIVES.performance
             quantization_config = QuantizationConfig(
                 approach=mode.name,
                 metrics=[tune_metric],
-                objectives=[objective]
+                objectives=[objectives.performance]
             )
-            self.trainer.provider_config.quantization = quantization_config
-            quantized_model = self.trainer.quantize()
+            quantized_model = self.trainer.quantize(quant_config=quantization_config, provider="inc")
             # By default, model will be saved in tmp_trainer dir.
             self.trainer.save_model('./quantized_model')
             output_1 = self.trainer.predict(self.dummy_dataset).predictions

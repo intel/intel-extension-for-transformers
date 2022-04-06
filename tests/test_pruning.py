@@ -3,9 +3,10 @@ import shutil
 import torch.utils.data as data
 import unittest
 from nlp_toolkit import (
-    Metric,
+    metrics,
     NLPTrainer,
     OptimizedModel,
+    Pruner,
     PruningConfig,
     PruningMode,
 )
@@ -54,20 +55,19 @@ class TestPruning(unittest.TestCase):
         origin_weight = copy.deepcopy(self.model.classifier.weight)
         for mode in PruningMode:
             # not supported yet
-            if mode.value != "basic_magnitude":
+            if mode.name != "BasicMagnitude".upper():
                 continue
-            print("Pruning mode:", mode.value)
             self.trainer = NLPTrainer(
                 model=self.model,
                 train_dataset=self.dummy_dataset,
                 eval_dataset=self.dummy_dataset,
             )
-            metric = Metric(name="eval_loss")
+            metric = metrics.Metric(name="eval_loss")
+            pruner = Pruner(prune_type=mode.name)
             pruning_conf = PruningConfig(
-                approach=mode.name, target_sparsity_ratio=0.9, metrics=[metric]
+                pruner=pruner, target_sparsity_ratio=0.9, metrics=[metric]
             )
-            self.trainer.provider_config.pruning = pruning_conf
-            pruned_model = self.trainer.prune()
+            pruned_model = self.trainer.prune(pruning_config=pruning_conf)
             pruned_model.report_sparsity()
             # By default, model will be saved in tmp_trainer dir.
             self.trainer.save_model('./pruned_model')

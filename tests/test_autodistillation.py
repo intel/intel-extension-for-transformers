@@ -2,11 +2,7 @@ import shutil
 import torch.utils.data as data
 import unittest
 from nlp_toolkit import (
-    DistillationConfig,
-    DistillationCriterionMode,
-    Metric,
     NLPTrainer,
-    OptimizedModel,
 )
 from transformers import (
     AutoModelForPreTraining,
