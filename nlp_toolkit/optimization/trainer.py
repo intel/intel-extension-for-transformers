@@ -1004,6 +1004,7 @@ class NLPTrainer(Trainer):
                          train_func=None, eval_func=None):
         assert hasattr(self, "autodistillation_config"), "Must specify" + \
             "Trainer.autodistillation_config before calling autodistillation."
+        self.evaluation_loop = self.auto_distil_evaluation_loop
         if model_builder is None:
             assert model_cls is not None, "Must specify model_cls to use the built-in " + \
                 "model_builder, e.g. model_cls=AutoModelForPreTraining, or you can use " + \
@@ -1111,7 +1112,7 @@ class NLPTrainer(Trainer):
                         config.__setattr__('true_hidden_size', arch_paras[k])
         return model_cls.from_config(config)
 
-    def evaluation_loop(
+    def auto_distil_evaluation_loop(
         self,
         dataloader: DataLoader,
         description: str,
