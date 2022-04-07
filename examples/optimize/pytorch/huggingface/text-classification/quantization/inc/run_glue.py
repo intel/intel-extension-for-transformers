@@ -541,17 +541,17 @@ def main():
             )
         model.eval()
         trainer.model = model
-        metrics = trainer.evaluate()
-        logger.info("metrics keys: {}".format(metrics.keys()))
+        results = trainer.evaluate()
+        logger.info("metrics keys: {}".format(results.keys()))
         bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
                               'eval_pearson', 'eval_mcc', 'eval_spearmanr']
         ret = False
         for key in bert_task_acc_keys:
-            if key in metrics.keys():
+            if key in results.keys():
                 ret = True
-                throughput = metrics.get("eval_samples_per_second")
+                throughput = results.get("eval_samples_per_second")
                 print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
-                print("Finally Eval {} Accuracy: {}".format(key, metrics[key]))
+                print("Finally Eval {} Accuracy: {}".format(key, results[key]))
                 print("Latency: {:.3f} ms".format(1000 / throughput))
                 print("Throughput: {} samples/sec".format(throughput))
         assert ret, "No metric returned, Please check inference metric!"
