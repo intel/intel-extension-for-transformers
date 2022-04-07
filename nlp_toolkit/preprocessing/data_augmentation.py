@@ -232,8 +232,8 @@ class DataAugmentation:
         min_length = m - std
 
         total_count = sum(label2count.values())
-        factor = total_count \
-            if num_return_sentences <= 0 else int(math.ceil(num_return_sentences / num_samples))
+        factor = total_count if num_return_sentences <= 0 \
+                 else int(math.ceil(num_return_sentences / self._num_samples))
         p0 = label2count[0] / total_count
         p1 = 1 - p0
 

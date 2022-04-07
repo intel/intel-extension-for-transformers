@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import logging
+import os
 import torch
 
 from neural_compressor.experimental import common, Component, Distillation
@@ -100,6 +101,10 @@ class NoTrainerOptimizer:
         self._train_func = None
         self._calib_dataloader = None
         self.output_dir = output_dir
+        self.quant_config = None
+        self.pruning_config = None
+        self.distillation_config = None
+        self._provider = Provider.INC.value
 
     @property
     def eval_func(self):
@@ -125,7 +130,7 @@ class NoTrainerOptimizer:
     def calib_dataloader(self, dataloader):
         self._calib_dataloader = dataloader
 
-    def _init_quantize(self):
+    def _init_quantizer(self):
         from .quantization import QuantizationMode
         from neural_compressor.experimental import Quantization, common
         assert isinstance(self.quant_config, QuantizationConfig), \
@@ -157,7 +162,7 @@ class NoTrainerOptimizer:
         self.quantizer = quantizer
         return quantizer
 
-    def _nncf_quantize(self):
+    def _nncf_quantize(self): # disable=E0401
         from nlp_toolkit import NncfConfig
         from nncf import create_compressed_model
         assert isinstance(self.quant_config, NncfConfig), \
@@ -175,7 +180,8 @@ class NoTrainerOptimizer:
         )
 
         self.compression_ctrl = \
-            compression_algo_controller.distributed() if self.quant_config.distributed else compression_algo_controller
+            compression_algo_controller.distributed() if self.quant_config.distributed \
+            else compression_algo_controller
 
     def quantize(
         self,
@@ -197,9 +203,9 @@ class NoTrainerOptimizer:
             self._calib_dataloader = calib_dataloader
         quantizer = self._init_quantizer()
         opt_model = quantizer.fit()
-        opt_model.save(self.args.output_dir)
+        opt_model.save(self.output_dir)
         logger.info(
-            "quantized model and configure file have saved to {}".format(self.args.output_dir)
+            "quantized model and configure file have saved to {}".format(self.output_dir)
         )
         return opt_model.model
 
@@ -208,20 +214,6 @@ class NoTrainerOptimizer:
 
         assert isinstance(self.pruning_config, PruningConfig), \
             "please pass a instance of PruningConfig to NoTrainerOptimizer.prune!"
-
-        pruning_start_epoch, pruning_end_epoch = self.pruning_config.epoch_range
-
-        if pruning_start_epoch > self.args.num_train_epochs - 1:
-            logger.warning(
-                f"Pruning end epoch {pruning_start_epoch} is higher than the total number of training epoch "
-                f"{self.args.num_train_epochs}. No pruning will be applied."
-            )
-
-        if pruning_end_epoch > self.args.num_train_epochs - 1:
-            logger.warning(
-                f"Pruning end epoch {pruning_end_epoch} is higher than the total number of training epoch "
-                f"{self.args.num_train_epochs}. The target sparsity will not be reached."
-            )
 
         pruner = Pruning(self.pruning_config.inc_config)
         pruner.model = common.Model(self.model)

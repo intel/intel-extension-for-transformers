@@ -145,10 +145,10 @@ class AutoDistillation(object):
         Returns:
             Evaluated metrics of the model.
         """
-        assert self.train_func is not None and self.eval_func is not None, \
+        assert self._train_func is not None and self._eval_func is not None, \
             "train_func and eval_func must be set."
-        model = self.train_func(model)
-        return self.eval_func(model)
+        model = self._train_func(model)
+        return self._eval_func(model)
 
     def metrics_conversion(self, metrics):
         if isinstance(metrics, dict):

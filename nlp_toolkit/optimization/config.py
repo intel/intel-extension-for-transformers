@@ -491,7 +491,7 @@ class NncfConfig(object):
         metrics: Union[List, Metric] = None,
     ):
         super().__init__()
-        from nncf import NNCFConfig
+        from nncf import NNCFConfig # disable=E0401
         assert isinstance(nncf_config, NNCFConfig)
         self.nncf_config = nncf_config
         if metrics is not None:

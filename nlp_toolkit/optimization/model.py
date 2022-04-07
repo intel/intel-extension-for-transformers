@@ -66,7 +66,10 @@ class OptimizedModel:
             ("resume_download", False),
             ("revision", None),
         ]
-        download_kwargs = {name: kwargs.get(name, default_value) for (name, default_value) in download_kwarg_default}
+        download_kwargs = {
+            name: kwargs.get(name, default_value)
+            for (name, default_value) in download_kwarg_default
+        }
 
         config = AutoConfig.from_pretrained(model_name_or_path)
         model_class = eval(f'transformers.{config.architectures[0]}')
@@ -82,7 +85,8 @@ class OptimizedModel:
             keys_to_ignore_on_load_unexpected = copy.deepcopy(
                 getattr(model_class, "_keys_to_ignore_on_load_unexpected", None)
             )
-            keys_to_ignore_on_load_missing = copy.deepcopy(getattr(model_class, "_keys_to_ignore_on_load_missing", None))
+            keys_to_ignore_on_load_missing = \
+                copy.deepcopy(getattr(model_class, "_keys_to_ignore_on_load_missing", None))
 
             # Avoid unnecessary warnings resulting from quantized model initialization
             quantized_keys_to_ignore_on_load = [r"zero_point", r"scale", 
@@ -91,7 +95,9 @@ class OptimizedModel:
             if keys_to_ignore_on_load_unexpected is None:
                 model_class._keys_to_ignore_on_load_unexpected = quantized_keys_to_ignore_on_load
             else:
-                model_class._keys_to_ignore_on_load_unexpected.extend(quantized_keys_to_ignore_on_load)
+                model_class._keys_to_ignore_on_load_unexpected.extend(
+                    quantized_keys_to_ignore_on_load
+                )
             missing_keys_to_ignore_on_load = [r"weight", r"bias"]
             if keys_to_ignore_on_load_missing is None:
                 model_class._keys_to_ignore_on_load_missing = missing_keys_to_ignore_on_load
@@ -104,7 +110,9 @@ class OptimizedModel:
             model_class._keys_to_ignore_on_load_missing = keys_to_ignore_on_load_missing
 
             if not os.path.isdir(model_name_or_path) and not os.path.isfile(model_name_or_path):
-                config_file = hf_bucket_url(model_name_or_path, filename="best_configure.yaml", revision=download_kwargs["revision]"])
+                config_file = hf_bucket_url(model_name_or_path,
+                                            filename="best_configure.yaml",
+                                            revision=download_kwargs["revision]"])
 
                 try:
                     resolved_config_file = cached_path(
@@ -117,19 +125,25 @@ class OptimizedModel:
                     logger.error(err)
                     msg = (
                         f"Can't load config for '{model_name_or_path}'. Make sure that:\n\n"
-                        f"-'{model_name_or_path}' is a correct model identifier listed on 'https://huggingface.co/models'\n\n"
-                        f"-or '{model_name_or_path}' is a correct path to a directory containing a best_configure.yaml file\n\n"
+                        f"-'{model_name_or_path}' is a correct model identifier listed on "
+                        f"'https://huggingface.co/models'\n\n"
+                        f"-or '{model_name_or_path}' is a correct path to a directory containing "
+                        f"a best_configure.yaml file\n\n"
                     )
 
                     if download_kwargs["revision]"] is not None:
                         msg += (
-                            f"- or {download_kwargs['revision']} is a valid git identifier (branch name, a tag name, or a commit id) that "
-                            f"exists for this model name as listed on its model page on 'https://huggingface.co/models'\n\n"
+                            f"- or {download_kwargs['revision']} is a valid git "
+                            f"identifier (branch name, a tag name, or a commit id) that "
+                            f"exists for this model name as listed on its model page on "
+                            f"'https://huggingface.co/models'\n\n"
                         )
 
                     raise EnvironmentError(msg)
 
-                config_file = hf_bucket_url(model_name_or_path, filename="best_model_weights.pt", revision=download_kwargs["revision]"])
+                config_file = hf_bucket_url(model_name_or_path,
+                                            filename="best_model_weights.pt",
+                                            revision=download_kwargs["revision]"])
                 try:
                     resolved_config_file = cached_path(
                         config_file,
@@ -141,14 +155,18 @@ class OptimizedModel:
                     logger.error(err)
                     msg = (
                         f"Can't load config for '{model_name_or_path}'. Make sure that:\n\n"
-                        f"-'{model_name_or_path}' is a correct model identifier listed on 'https://huggingface.co/models'\n\n"
-                        f"-or '{model_name_or_path}' is a correct path to a directory containing a best_model_weights.pt file\n\n"
+                        f"-'{model_name_or_path}' is a correct model identifier listed on "
+                        f"'https://huggingface.co/models'\n\n"
+                        f"-or '{model_name_or_path}' is a correct path to a directory containing "
+                        f"a best_model_weights.pt file\n\n"
                     )
 
                     if download_kwargs["revision]"] is not None:
                         msg += (
-                            f"- or {download_kwargs['revision']} is a valid git identifier (branch name, a tag name, or a commit id) that "
-                            f"exists for this model name as listed on its model page on 'https://huggingface.co/models'\n\n"
+                            f"- or {download_kwargs['revision']} is a valid git identifier "
+                            f"(branch name, a tag name, or a commit id) that "
+                            f"exists for this model name as listed on its model page on "
+                            f"'https://huggingface.co/models'\n\n"
                         )
 
                     raise EnvironmentError(msg)

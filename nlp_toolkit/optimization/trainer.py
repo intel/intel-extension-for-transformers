@@ -61,13 +61,13 @@ if is_datasets_available():
     import datasets
 
 if is_torch_tpu_available():
-    import torch_xla.core.xla_model as xm
+    import torch_xla.core.xla_model as xm # disable=E0401
 
 if is_apex_available():
-    from apex import amp
+    from apex import amp # disable=E0401
 
 if is_sagemaker_mp_enabled():
-    from .trainer_pt_utils import smp_forward_backward
+    from .trainer_pt_utils import smp_forward_backward # disable=E0401
 
 if TYPE_CHECKING:
     import optuna
@@ -189,7 +189,7 @@ class NLPTrainer(Trainer):
         self.quantizer = quantizer
         return quantizer
 
-    def _nncf_quantize(self):
+    def _nncf_quantize(self): # disable=E0401
         from nlp_toolkit import NncfConfig
         from nncf import create_compressed_model
         compression_state = None
@@ -272,13 +272,15 @@ class NLPTrainer(Trainer):
 
         if pruning_start_epoch > self.args.num_train_epochs - 1:
             logger.warning(
-                f"Pruning end epoch {pruning_start_epoch} is higher than the total number of training epoch "
+                f"Pruning end epoch {pruning_start_epoch} is higher than "
+                f"the total number of training epoch "
                 f"{self.args.num_train_epochs}. No pruning will be applied."
             )
 
         if pruning_end_epoch > self.args.num_train_epochs - 1:
             logger.warning(
-                f"Pruning end epoch {pruning_end_epoch} is higher than the total number of training epoch "
+                f"Pruning end epoch {pruning_end_epoch} is higher than "
+                f"the total number of training epoch "
                 f"{self.args.num_train_epochs}. The target sparsity will not be reached."
             )
 
@@ -331,7 +333,8 @@ class NLPTrainer(Trainer):
         if self._eval_func is not None:
             distiller.eval_func = self._eval_func
         else:
-            assert self.metrics is not None, "Please pass metrics to trainer.distillation.metrics!"
+            assert self.metrics is not None, \
+                "Please pass metrics to trainer.distillation.metrics!"
             distiller.eval_func = self.builtin_eval_func
 
         distiller.train_func = \
@@ -861,7 +864,8 @@ class NLPTrainer(Trainer):
             loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps, scaler=scaler)
             return loss_mb.reduce_mean().detach().to(self.args.device)
 
-        if self.use_amp:
+        if self.use_amp: # disable=E0401
+            from torch.cuda.amp import autocast
             with autocast():
                 loss = self.compute_loss(model, inputs)
         else:
