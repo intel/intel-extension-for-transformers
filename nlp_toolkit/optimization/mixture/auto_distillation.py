@@ -24,6 +24,7 @@ from neural_compressor.utils import logger
 from neural_compressor.conf.config import Conf, schema
 from neural_compressor.conf.dotdict import DotDict
 from neural_compressor.strategy.bayesian import BayesianOptimization
+from nlp_toolkit.optimization.config import AutoDistillationConfig
 
 class AutoDistillation(object):
     """
@@ -44,6 +45,9 @@ class AutoDistillation(object):
                 raise FileNotFoundError(
                     "{} is not a file, please provide a file path.".format(conf_fname_or_dict)
                     )
+        elif isinstance(conf_fname_or_dict, AutoDistillationConfig):
+            self.config = conf_fname_or_dict.config
+            schema.validate(self.config)
         elif isinstance(conf_fname_or_dict, dict):
             config = {}
             config['model'] = {'name': 'AutoDistillation', 'framework': 'NA'}
@@ -93,6 +97,9 @@ class AutoDistillation(object):
                     )
                 )
             model_arch_paras = self.model_arch_proposition()
+            if tuple(model_arch_paras.values()) in self.search_results:
+                logger.info("Skip evaluated model architecture {}.".format(model_arch_paras))
+                continue
             logger.info("Assessing model architecture: {}.".format(model_arch_paras))
             model = self.model_builder(model_arch_paras)
             metrics = self.train_evaluate(model)

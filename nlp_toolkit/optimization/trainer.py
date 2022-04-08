@@ -1010,17 +1010,27 @@ class NLPTrainer(Trainer):
         else:
             return dataset.remove_columns(ignored_columns)
 
-    def autodistillation(self, teacher_model, model_builder=None, model_cls=None,
-                         train_func=None, eval_func=None):
-        assert hasattr(self, "autodistillation_config"), "Must specify" + \
-            "Trainer.autodistillation_config before calling autodistillation."
+    def autodistillation(
+        self,
+        autodistillation_config,
+        teacher_model: Union[PreTrainedModel, torch.nn.Module],
+        provider: str = Provider.INC.value,
+        model_builder: Optional[Callable] = None,
+        model_cls: Optional[Callable] = None,
+        eval_func: Optional[Callable] = None,
+        train_func: Optional[Callable] = None,
+    ):
+        self.autodistillation_config = autodistillation_config
+        self._provider = Provider[provider.upper()].value
         self.evaluation_loop = self.auto_distil_evaluation_loop
+
         if model_builder is None:
             assert model_cls is not None, "Must specify model_cls to use the built-in " + \
                 "model_builder, e.g. model_cls=AutoModelForPreTraining, or you can use " + \
                 "the customized model_builder."
             model_builder = partial(self.model_builder_builtin, model_cls=model_cls)
         agent = AutoDistillation(model_builder, self.autodistillation_config)
+        self.args.lr_scheduler_type = 'constant'
 
         def take_train_steps(model, trainer, agent=None, train_steps=None,
                              block_name=None, checkpoint=None):
@@ -1042,26 +1052,30 @@ class NLPTrainer(Trainer):
             trainer.save_state()
             return trainer.model
 
-        def take_eval_steps(model, trainer, metric_name, save_metrics=False):
+        def take_eval_steps(model, trainer, metric_names, save_metrics=False):
             trainer.model = model
             metrics = trainer.evaluate()
             if save_metrics:
                 trainer.save_metrics("eval", metrics)
-            logger.info("{}: {}".format(metric_name, metrics.get(metric_name)))
+            metrics['latency'] = 1000.0 / metrics.get("eval_samples_per_second")
+            metric_names = ['eval_loss', 'latency'] if metric_names is None else metric_names
+            for metric_name in metric_names:
+                logger.info("{}: {}".format(metric_name, metrics.get(metric_name)))
             logger.info(
                 "Throughput: {} samples/sec".format(metrics.get("eval_samples_per_second"))
                 )
-            return {metric_name: metrics.get(metric_name), 
-                    'latency': 1000 / metrics.get("eval_samples_per_second")}
+            return {metric_name: metrics.get(metric_name) for metric_name in metric_names}
 
         def train_func_builtin(model):
             def run_distillers(model, distillers, train_steps, block_names,
                                checkpoints=None, presentation='flash distillation'):
                 max_train_steps=0
+                begin_time = time.time()
                 if checkpoints is None:
                     checkpoints = [None] * len(distillers)
                 for i, elements in \
                     enumerate(zip(distillers, train_steps, block_names, checkpoints)):
+                    start_time = time.time()
                     distiller, ts, bln, checkpoint = elements
                     logger.info(
                         ' '.join(['='*30, 'Step {} of'.format(i+1), presentation, '='*30]))
@@ -1069,6 +1083,8 @@ class NLPTrainer(Trainer):
                     distiller.teacher_model = teacher_model
                     distiller.criterion = None # force creating new criterion object
                     distiller.create_criterion()
+                    if checkpoint is None:
+                        max_train_steps = 0
                     max_train_steps += ts
                     distiller.train_func = \
                         partial(take_train_steps, trainer=self, agent=distiller, 
@@ -1076,9 +1092,24 @@ class NLPTrainer(Trainer):
                                 checkpoint=checkpoint)
                     # distiller.eval_func = \
                     #     partial(take_eval_steps, trainer=self, metric_name='eval_loss')
+                    # shuffle train_dataset before each training
+                    indices = np.arange(len(self.train_dataset))
+                    np.random.shuffle(indices)
+                    self.train_dataset = self.train_dataset.select(
+                        indices=indices, keep_in_memory=True
+                    )
                     model = distiller().model
+                    logger.info(
+                        ' '.join(['='*30, 'Step {} of'.format(i+1), presentation,
+                            'consumed {:.2f} min'.format((time.time()-start_time) / 60), '='*30])
+                        )
+                logger.info(
+                    ' '.join(['='*30, presentation,
+                        'consumed {:.2f} h'.format((time.time()-begin_time) / 3600), '='*30])
+                    )
                 return model
             
+            self.optimizer, self.lr_scheduler = None, None
             self._move_model_to_device(teacher_model, self.args.device)
             self._move_model_to_device(model, self.args.device)
             # create new distillers before each train process
@@ -1087,9 +1118,7 @@ class NLPTrainer(Trainer):
             model = run_distillers(model, 
                                    agent.flash_distillers, 
                                    agent.flash_train_steps, 
-                                   agent.flash_block_names,
-                                   [None] + [self.args.output_dir] * \
-                                        (len(agent.flash_distillers)-1))
+                                   agent.flash_block_names)
             # run regular_distillers
             model = run_distillers(model, 
                                    agent.regular_distillers, 
@@ -1100,7 +1129,7 @@ class NLPTrainer(Trainer):
 
         def eval_func_builtin(model):
             return take_eval_steps(model, trainer=self, 
-                                   metric_name='eval_loss', 
+                                   metric_names=agent.metrics, 
                                    save_metrics=True)
 
         agent.train_func = train_func \

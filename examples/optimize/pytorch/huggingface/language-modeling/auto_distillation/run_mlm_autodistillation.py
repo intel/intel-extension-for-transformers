@@ -35,19 +35,25 @@ Changes made to the script:
  5. Removed pre-processing code and exported it to dataset_processing.py
 """
 
+import dataset_processing as preprocess
 import logging
 import math
+import numpy as np
 import os
 import sys
+import torch
+import transformers
+
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional, List
-
-import numpy as np
-
-import torch
-
-import transformers
+from nlp_toolkit import (
+    AutoDistillationConfig,
+    FlashDistillationConfig,
+    metrics
+)
+from nlp_toolkit import NLPTrainer as Trainer
+from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 from transformers import (
     CONFIG_MAPPING,
     MODEL_FOR_MASKED_LM_MAPPING,
@@ -61,15 +67,12 @@ from transformers import (
     TrainingArguments,
     set_seed,
 )
+from transformers.optimization import get_scheduler
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 from transformers.utils import check_min_version
-from transformers.optimization import get_scheduler
 
-import dataset_processing as preprocess
+from typing import Optional, List
 
-from nlp_toolkit import NLPTrainer as Trainer
-from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 # check_min_version("4.10.0")
@@ -467,24 +470,23 @@ def main():
     # Auto Distillation
     if optim_args.auto_distillation:
         stages = 24
-        trainer.autodistillation_config = {
-          'search': {
-            'search_space': {
+        autodistillation_config = \
+            AutoDistillationConfig(
+            search_space={
               'hidden_size': [128, 246, 384, 512],
               'intra_bottleneck_size': [64, 96, 128, 160],
               'num_attention_heads': [1, 2, 4, 8],
               'intermediate_size': [384, 512, 640],
               'num_feedforward_networks': [2, 4, 6]
               },
-            'max_trials': 100,
-            'higher_is_better': [False, False]
-          },
-          'flash_distillation': {
-            'knowledge_transfer': {
-              'block_names': 
-                ['mobilebert.encoder.layer.{}'.format(i) for i in range(stages)],
-              'layer_mappings_for_knowledge_transfer': 
-                [
+            max_trials=100,
+            metrics=[
+                metrics.Metric(name="eval_loss", greater_is_better=False),
+                metrics.Metric(name="latency", greater_is_better=False),
+            ],
+            knowledge_transfer=FlashDistillationConfig(
+              block_names=['mobilebert.encoder.layer.{}'.format(i) for i in range(stages)],
+              layer_mappings_for_knowledge_transfer=[
                     [
                       (
                         'mobilebert.encoder.layer.{}.attention.self'.format(i), '1',
@@ -496,21 +498,23 @@ def main():
                       )
                     ] for i in range(stages)
                 ],
-              'loss_types': [['KL', 'MSE'] for i in range(stages)],
-              'loss_weights': [[0.5, 0.5] for i in range(stages)],
-              'train_steps': [500 for i in range(stages)] 
-              },
-            'regular_distillation': {
-              'layer_mappings_for_knowledge_transfer': [
+              loss_types=[['KL', 'MSE'] for i in range(stages)],
+              loss_weights=[[0.5, 0.5] for i in range(stages)],
+              train_steps=[500 for i in range(stages)]),
+            regular_distillation=FlashDistillationConfig(
+              layer_mappings_for_knowledge_transfer=[
                 [('cls', '0', 'cls', '0')]
-                ],
-              'loss_types': [['KL']],
-              'add_origin_loss': [True],
-              'train_steps': [25000]
-              },
-            }
-          }
-        best_model_archs = trainer.autodistillation(teacher_model, model_cls=model_cls)
+              ],
+              loss_types=[['KL']],
+              add_origin_loss=[True],
+              train_steps=[25000]
+            ),
+          )
+        best_model_archs = trainer.autodistillation(
+            autodistillation_config,
+            teacher_model,
+            model_cls=model_cls
+        )
 
     # # Training
     # if training_args.do_train:

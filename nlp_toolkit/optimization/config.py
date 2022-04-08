@@ -5,6 +5,7 @@ from functools import reduce
 from neural_compressor.conf.config import (
     Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
 )
+from neural_compressor.conf.dotdict import DotDict
 from neural_compressor.utils import logger
 from nlp_toolkit.optimization.metrics import Metric
 from nlp_toolkit.optimization.objectives import Objective
@@ -466,6 +467,147 @@ class DistillationConfig(object):
     @metrics.setter
     def metrics(self, metrics):
         self._metrics = metrics
+
+
+class FlashDistillationConfig(object):
+    def __init__(
+        self,
+        block_names: list = [],
+        layer_mappings_for_knowledge_transfer: list = [],
+        loss_types: list = [],
+        loss_weights: list = [],
+        add_origin_loss: list = [],
+        train_steps: list = [],
+    ):
+        super().__init__()
+        self.block_names = block_names
+        self.layer_mappings_for_knowledge_transfer = layer_mappings_for_knowledge_transfer
+        self.loss_types = loss_types
+        self.loss_weights = loss_weights
+        self.add_origin_loss = add_origin_loss
+        self.train_steps = train_steps
+
+
+class AutoDistillationConfig(object):
+    def __init__(
+        self,
+        framework: str = "pytorch",
+        search_space: dict = {},
+        search_algorithm: str = "BO",
+        metrics: Union[List, Metric] = None,
+        max_trials: int = None,
+        seed: int = None,
+        knowledge_transfer: FlashDistillationConfig = None,
+        regular_distillation: FlashDistillationConfig = None,
+    ):
+        super().__init__()
+        self.config = DotDict({
+            'model':{'name': 'AutoDistillation'},
+            'auto_distillation':{
+                'search':{},
+                'flash_distillation':{
+                    'knowledge_transfer':{},
+                    'regular_distillation':{}
+                    }
+                }
+            }
+        )
+        self.framework = framework
+        self.search_space = search_space
+        self.search_algorithm = search_algorithm
+        if max_trials is not None:
+            self.max_trials = max_trials
+        if seed is not None:
+            self.seed = seed
+        if knowledge_transfer is not None:
+            self.knowledge_transfer = knowledge_transfer
+        if regular_distillation is not None:
+            self.regular_distillation = regular_distillation
+        if metrics is not None:
+            self.metrics = metrics
+
+    @property
+    def knowledge_transfer(self):
+        return self.config.auto_distillation.flash_distillation.knowledge_transfer
+
+    @knowledge_transfer.setter
+    def knowledge_transfer(self, knowledge_transfer):
+        if knowledge_transfer is None:
+            knowledge_transfer = FlashDistillationConfig()
+        for k, v in knowledge_transfer.__dict__.items():
+            if v:
+                self.config.auto_distillation.flash_distillation.knowledge_transfer[k] = v
+
+    @property
+    def regular_distillation(self):
+        return self.config.auto_distillation.flash_distillation.regular_distillation
+
+    @regular_distillation.setter
+    def regular_distillation(self, regular_distillation):
+        if regular_distillation is None:
+            regular_distillation = FlashDistillationConfig()
+        for k, v in regular_distillation.__dict__.items():
+            if v:
+                self.config.auto_distillation.flash_distillation.regular_distillation[k] = v
+
+    @property
+    def framework(self):
+        return self.config.model.framework
+
+    @framework.setter
+    def framework(self, framework):
+        assert framework in ["pytorch"], \
+            "framework: {} is not support!".format(framework)
+        self.config.model.framework = framework
+
+    @property
+    def search_space(self):
+        return self.config.auto_distillation.search.search_space
+
+    @search_space.setter
+    def search_space(self, search_space: dict):
+        self.config.auto_distillation.search.search_space = search_space
+
+    @property
+    def search_algorithm(self):
+        return self.config.auto_distillation.search.search_algorithm
+
+    @search_algorithm.setter
+    def search_algorithm(self, search_algorithm: str):
+        self.config.auto_distillation.search.search_algorithm = search_algorithm
+
+    @property
+    def max_trials(self):
+        return self.config.auto_distillation.search.max_trials
+
+    @max_trials.setter
+    def max_trials(self, max_trials: int):
+        self.config.auto_distillation.search.max_trials = max_trials
+
+    @property
+    def seed(self):
+        return self.config.auto_distillation.search.seed
+
+    @seed.setter
+    def seed(self, seed: int):
+        self.config.auto_distillation.search.seed = seed
+
+    @property
+    def metrics(self):
+        return self._metrics
+
+    @metrics.setter
+    def metrics(self, metrics: Union[List, Metric]):
+        self._metrics = metrics
+        if isinstance(metrics, Metric):
+            metrics = [metrics]
+        self.config.auto_distillation.search.metrics = []
+        self.config.auto_distillation.search.higher_is_better = []
+        for metric in metrics:
+            self.config.auto_distillation.search.metrics.append(metric.name)
+            self.config.auto_distillation.search.higher_is_better.append(
+                metric.greater_is_better
+                )
 
 
 # pylint: disable=E0401
