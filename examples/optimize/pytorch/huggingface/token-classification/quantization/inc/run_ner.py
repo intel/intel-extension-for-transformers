@@ -27,9 +27,12 @@ import sys
 import transformers
 from dataclasses import dataclass, field
 from datasets import ClassLabel, load_dataset, load_metric
-from nlp_toolkit import NLPTrainer
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit.optimization.config import metrics, QuantizationConfig
+from nlp_toolkit import(
+    metrics,
+    NLPTrainer,
+    OptimizedModel,
+    QuantizationConfig,
+)
 from transformers import (
     AutoConfig,
     AutoModelForTokenClassification,
@@ -38,7 +41,6 @@ from transformers import (
     HfArgumentParser,
     PretrainedConfig,
     PreTrainedTokenizerFast,
-    Trainer,
     TrainingArguments,
     set_seed,
 )
@@ -54,6 +56,8 @@ check_min_version("4.12.0")
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/token-classification/requirements.txt")
 
 logger = logging.getLogger(__name__)
+
+os.environ["WANDB_DISABLED"] = "true"
 
 
 @dataclass

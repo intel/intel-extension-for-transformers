@@ -1,4 +1,5 @@
 import copy
+import os
 import shutil
 import torch.utils.data as data
 import unittest
@@ -13,6 +14,8 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer
 )
+
+os.environ["WANDB_DISABLED"] = "true"
 
 
 class DummyDataset(data.Dataset):

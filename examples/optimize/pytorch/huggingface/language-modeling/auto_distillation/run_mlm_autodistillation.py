@@ -76,6 +76,7 @@ from typing import Optional, List
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 # check_min_version("4.10.0")
+os.environ["WANDB_DISABLED"] = "true"
 
 logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())

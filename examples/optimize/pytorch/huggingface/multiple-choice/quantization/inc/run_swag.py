@@ -50,6 +50,8 @@ check_min_version("4.12.0")
 
 logger = logging.getLogger(__name__)
 
+os.environ["WANDB_DISABLED"] = "true"
+
 
 @dataclass
 class ModelArguments:

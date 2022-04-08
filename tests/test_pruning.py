@@ -1,4 +1,5 @@
 import copy
+import os
 import shutil
 import torch.utils.data as data
 import unittest
@@ -14,6 +15,8 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer
 )
+
+os.environ["WANDB_DISABLED"] = "true"
 
 
 
@@ -67,7 +70,8 @@ class TestPruning(unittest.TestCase):
             pruning_conf = PruningConfig(
                 pruner=pruner, target_sparsity_ratio=0.9, metrics=[metric]
             )
-            pruned_model = self.trainer.prune(pruning_config=pruning_conf)
+            agent = self.trainer.init_pruner(pruning_config=pruning_conf)
+            pruned_model = self.trainer.prune()
             pruned_model.report_sparsity()
             # By default, model will be saved in tmp_trainer dir.
             self.trainer.save_model('./pruned_model')

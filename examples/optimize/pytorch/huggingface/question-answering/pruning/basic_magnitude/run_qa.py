@@ -53,6 +53,8 @@ require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/ques
 
 logger = logging.getLogger(__name__)
 
+os.environ["WANDB_DISABLED"] = "true"
+
 
 @dataclass
 class ModelArguments:

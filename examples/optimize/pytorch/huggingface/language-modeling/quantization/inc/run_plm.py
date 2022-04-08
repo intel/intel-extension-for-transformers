@@ -47,6 +47,8 @@ from typing import Optional
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.12.0")
 
+os.environ["WANDB_DISABLED"] = "true"
+
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
 
 logger = logging.getLogger(__name__)

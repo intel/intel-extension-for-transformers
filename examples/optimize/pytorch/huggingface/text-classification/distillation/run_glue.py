@@ -55,6 +55,7 @@ from typing import Optional
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["WANDB_DISABLED"] = "true"
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.

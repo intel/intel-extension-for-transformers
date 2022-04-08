@@ -1,3 +1,4 @@
+import os
 import shutil
 import torch.utils.data as data
 import unittest
@@ -13,7 +14,7 @@ from transformers import (
     AutoTokenizer
 )
 
-
+os.environ["WANDB_DISABLED"] = "true"
 
 class DummyDataset(data.Dataset):
     def __init__(self):
