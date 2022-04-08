@@ -258,6 +258,9 @@ class NLPTrainer(Trainer):
             assert False, "Unsupport provider:{}".format(self._provider)
 
     def _save_inc_int8(self, opt_model, output_dir):
+        self.model.config.architectures = [self.model.__class__.__name__]
+        self.model.config.torch_dtype = "int8"
+        self.model.config.save_pretrained(output_dir)
         weights_file = os.path.join(os.path.abspath(
           os.path.expanduser(output_dir)), WEIGHTS_NAME)
         torch.save(opt_model.quantized_state_dict(), weights_file)
@@ -1282,10 +1285,11 @@ class NLPTrainer(Trainer):
                     state_dict = self.model.state_dict()
                 torch.save(state_dict, os.path.join(output_dir, WEIGHTS_NAME))
         else:
-            self.model.save_pretrained(output_dir, state_dict=state_dict)
-            #overwrite `pytorch_model.bin` with inc int8 format.
+            # overwrite `pytorch_model.bin` with inc int8 format.
             if self.inc_int8_flag:
                 self._save_inc_int8(self.opt_model, output_dir)
+            else:
+                self.model.save_pretrained(output_dir, state_dict=state_dict)
         if self.tokenizer is not None:
             self.tokenizer.save_pretrained(output_dir)
 
