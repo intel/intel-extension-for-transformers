@@ -1,6 +1,6 @@
 {
     "pytorch":{
-        "gpt_neo_static": {
+        "gpt_neo_clm_static": {
             "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
             "dataset_location": "",
             "input_model": "",
@@ -9,7 +9,7 @@
             "batch_size": 64,
             "new_benchmark": false
         },
-        "gpt_neo_dynamic": {
+        "gpt_neo_clm_dynamic": {
           "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
           "dataset_location": "",
           "input_model": "",
