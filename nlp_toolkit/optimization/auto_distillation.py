@@ -45,10 +45,10 @@ class AutoDistillation(object):
                     "{} is not a file, please provide a file path.".format(conf_fname_or_dict)
                     )
         elif isinstance(conf_fname_or_dict, dict):
-            self.config = {}
-            self.config['model'] = {'name': 'AutoDistillation', 'framework': 'NA'}
-            self.config['auto_distillation'] = conf_fname_or_dict
-            self.config = DotDict(self.config)
+            config = {}
+            config['model'] = {'name': 'AutoDistillation', 'framework': 'NA'}
+            config['auto_distillation'] = conf_fname_or_dict
+            self.config = DotDict(config)
             schema.validate(self.config)
         else:
             raise NotImplementedError(

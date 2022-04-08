@@ -60,14 +60,17 @@ from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
 if is_datasets_available():
     import datasets
 
+# pylint: disable=E0401
 if is_torch_tpu_available():
-    import torch_xla.core.xla_model as xm # disable=E0401
+    import torch_xla.core.xla_model as xm
 
+# pylint: disable=E0401
 if is_apex_available():
-    from apex import amp # disable=E0401
+    from apex import amp
 
+# pylint: disable=E0401
 if is_sagemaker_mp_enabled():
-    from .trainer_pt_utils import smp_forward_backward # disable=E0401
+    from .trainer_pt_utils import smp_forward_backward
 
 if TYPE_CHECKING:
     import optuna
@@ -189,7 +192,8 @@ class NLPTrainer(Trainer):
         self.quantizer = quantizer
         return quantizer
 
-    def _nncf_quantize(self): # disable=E0401
+    # pylint: disable=E0401
+    def _nncf_quantize(self):
         from nlp_toolkit import NncfConfig
         from nncf import create_compressed_model
         compression_state = None
@@ -507,7 +511,8 @@ class NLPTrainer(Trainer):
                 # nn.DataParallel(model) replicates the model, creating new variables and module
                 # references registered here no longer work on other gpus, breaking the module
                 raise ValueError(
-                    "Currently --debug underflow_overflow is not supported under DP. Please use DDP (torch.distributed.launch)."
+                    "Currently --debug underflow_overflow is not supported under DP. "
+                    "Please use DDP (torch.distributed.launch)."
                 )
             else:
                 debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
@@ -819,6 +824,7 @@ class NLPTrainer(Trainer):
             logs["loss"] = round(tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged), 4)
             logs["learning_rate"] = self._get_learning_rate()
 
+            # pylint: disable=E0401
             if self.compression_ctrl is not None:
                 from nncf.common.utils.tensorboard import prepare_for_tensorboard
                 logs["compression_loss"] = self.compression_ctrl.loss().item()
@@ -864,7 +870,8 @@ class NLPTrainer(Trainer):
             loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps, scaler=scaler)
             return loss_mb.reduce_mean().detach().to(self.args.device)
 
-        if self.use_amp: # disable=E0401
+        # pylint: disable=E0401
+        if self.use_amp:
             from torch.cuda.amp import autocast
             with autocast():
                 loss = self.compute_loss(model, inputs)
