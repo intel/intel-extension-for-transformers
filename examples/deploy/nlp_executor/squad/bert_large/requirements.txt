@@ -1,4 +1,5 @@
 neural-compressor
 onnx
 onnxruntime
+onnxruntime-extensions
 transformers
