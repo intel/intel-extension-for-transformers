@@ -353,14 +353,25 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
-        cache_dir=model_args.cache_dir,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-    )
+    if optim_args.int8:
+        # Load the model obtained after Intel Neural Compressor (INC) quantization
+        model = OptimizedModel.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
 
     # Preprocessing the raw_datasets
     if data_args.task_name is not None:
@@ -396,9 +407,9 @@ def main():
             label_to_id = {i: int(label_name_to_id[label_list[i]]) for i in range(num_labels)}
         else:
             logger.warning(
-                "Your model seems to have been trained with labels, but they don't match the dataset: ",
-                f"model labels: {list(sorted(label_name_to_id.keys()))}, dataset labels: {list(sorted(label_list))}."
-                "\nIgnoring the model labels as a result.",
+                f"Your model seems to have been trained with labels, but they don't match the dataset: "
+                f"model labels: {list(sorted(label_name_to_id.keys()))}, dataset labels: {list(sorted(label_list))}.\n"
+                f"Ignoring the model labels as a result."
             )
     elif data_args.task_name is None and not is_regression:
         label_to_id = {v: i for i, v in enumerate(label_list)}
@@ -534,13 +545,6 @@ def main():
 
     if optim_args.benchmark or optim_args.accuracy_only:
 
-        if optim_args.tune or optim_args.int8:
-            # Load the model obtained after Intel Neural Compressor (INC) quantization
-            model = OptimizedModel.from_pretrained(
-                training_args.output_dir,
-            )
-        model.eval()
-        trainer.model = model
         results = trainer.evaluate()
         logger.info("metrics keys: {}".format(results.keys()))
         bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
@@ -554,6 +558,7 @@ def main():
                 print("Finally Eval {} Accuracy: {}".format(key, results[key]))
                 print("Latency: {:.3f} ms".format(1000 / throughput))
                 print("Throughput: {} samples/sec".format(throughput))
+                break
         assert ret, "No metric returned, Please check inference metric!"
 
 def _mp_fn(index):

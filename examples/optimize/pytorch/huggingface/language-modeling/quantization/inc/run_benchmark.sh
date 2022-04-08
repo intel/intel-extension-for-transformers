@@ -114,12 +114,13 @@ function run_benchmark {
     echo $extra_cmd
 
     python -u ${script} \
-        --model_name_or_path ${model_name_or_path} \
+        --model_name_or_path ${tuned_checkpoint} \
         --dataset_name ${DATASET_NAME} \
         --dataset_config_name ${DATASET_CONFIG_NAME} \
         --do_eval \
         --per_device_eval_batch_size ${batch_size} \
-        --output_dir ${tuned_checkpoint} \
+        --output_dir ./tmp/benchmark_output \
+        --overwrite_output_dir \
         --no_cuda \
         ${mode_cmd} \
         ${extra_cmd}

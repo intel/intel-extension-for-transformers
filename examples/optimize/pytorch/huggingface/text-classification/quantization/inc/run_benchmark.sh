@@ -121,12 +121,13 @@ function run_benchmark {
     echo $extra_cmd
 
     python -u run_glue.py \
-        --model_name_or_path ${model_name_or_path} \
+        --model_name_or_path ${tuned_checkpoint} \
         --task_name ${TASK_NAME} \
         --do_eval \
         --max_seq_length ${MAX_SEQ_LENGTH} \
         --per_device_eval_batch_size ${batch_size} \
-        --output_dir ${tuned_checkpoint} \
+        --output_dir ./tmp/benchmark_output \
+        --overwrite_output_dir \
         --no_cuda \
         ${mode_cmd} \
         ${extra_cmd}

@@ -82,6 +82,7 @@ class NLPTrainer(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.in_training = False
+        self._provider = "inc"
         self._eval_func = None
         self._train_func = None
         self.teacher_model = None
@@ -99,6 +100,10 @@ class NLPTrainer(Trainer):
         self._resuming_checkpoint = path
 
     @property
+    def provider(self):
+        return self._provider
+
+    @property
     def eval_func(self):
         return self._eval_func
 
@@ -109,6 +114,10 @@ class NLPTrainer(Trainer):
     @property
     def calib_dataloader(self):
         return self._calib_dataloader
+
+    @provider.setter
+    def provider(self, prov: str):
+        self._provider = prov
 
     @eval_func.setter
     def eval_func(self, func: Callable):
@@ -1095,9 +1104,10 @@ class NLPTrainer(Trainer):
                     # shuffle train_dataset before each training
                     indices = np.arange(len(self.train_dataset))
                     np.random.shuffle(indices)
-                    self.train_dataset = self.train_dataset.select(
-                        indices=indices, keep_in_memory=True
-                    )
+                    if hasattr(self.train_dataset, 'select'):
+                        self.train_dataset = self.train_dataset.select(
+                            indices=indices, keep_in_memory=True
+                        )
                     model = distiller().model
                     logger.info(
                         ' '.join(['='*30, 'Step {} of'.format(i+1), presentation,

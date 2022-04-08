@@ -378,14 +378,26 @@ def main():
         )
 
     if model_args.model_name_or_path:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
+
+        if optim_args.int8:
+            # Load the model obtained after Intel Neural Compressor (INC) quantization
+            model = OptimizedModel.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+            )
+        else:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+            )
     else:
         model = AutoModelForCausalLM.from_config(config)
         n_params = sum(dict((p.data_ptr(), p.numel()) for p in model.parameters()).values())
@@ -549,14 +561,6 @@ def main():
         model = trainer.quantize(quant_config=quantization_config)
 
     if optim_args.benchmark or optim_args.accuracy_only:
-
-        if optim_args.tune or optim_args.int8:
-            # Load the model obtained after Intel Neural Compressor (INC) quantization
-            model = OptimizedModel.from_pretrained(
-                training_args.output_dir,
-            )
-        model.eval()
-        trainer.model = model
         results = trainer.evaluate()
         logger.info("metrics keys: {}".format(results.keys()))
         bert_task_acc_keys = ['eval_loss', 'eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
@@ -570,6 +574,7 @@ def main():
                 print("Finally Eval {} Accuracy: {}".format(key, results[key]))
                 print("Latency: {:.3f} ms".format(1000 / throughput))
                 print("Throughput: {} samples/sec".format(throughput))
+                break
         assert ret, "No metric returned, Please check inference metric!"
 
 def _mp_fn(index):

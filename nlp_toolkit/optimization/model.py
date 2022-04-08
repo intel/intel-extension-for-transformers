@@ -46,23 +46,26 @@ class OptimizedModel:
         Returns:
             q_model: Quantized model.
         """
-        download_kwarg_default = [
-            ("cache_dir", None),
-            ("force_download", False),
-            ("resume_download", False),
-            ("revision", None),
-        ]
-        download_kwargs = {
-            name: kwargs.get(name, default_value)
-            for (name, default_value) in download_kwarg_default
-        }
+        config = kwargs.pop("config", None)
+        cache_dir = kwargs.pop("cache_dir", None)
+        force_download = kwargs.pop("force_download", False)
+        resume_download = kwargs.pop("resume_download", False)
+        use_auth_token = kwargs.pop("use_auth_token", None)
+        revision = kwargs.pop("revision", None)
 
-        config = AutoConfig.from_pretrained(model_name_or_path)
+        if config is None:
+            config = AutoConfig.from_pretrained(
+                model_name_or_path,
+                cache_dir=cache_dir,
+                force_download=force_download,
+                resume_download=resume_download,
+                use_auth_token=use_auth_token,
+                revision=revision,
+                **kwargs,
+                )
+
         model_class = eval(f'transformers.{config.architectures[0]}')
-        weights_file = os.path.join(os.path.abspath(
-          os.path.expanduser(model_name_or_path)), WEIGHTS_NAME)
-        stat_dict = torch.load(weights_file)
-        if 'best_configure' not in stat_dict:
+        if config.torch_dtype is not torch.int8:
             logger.info("the prunging/distillation optimized model is loading.")
             model = model_class.from_pretrained(model_name_or_path)
             return model
@@ -90,77 +93,56 @@ class OptimizedModel:
             else:
                 model_class._keys_to_ignore_on_load_missing.extend(missing_keys_to_ignore_on_load)
 
-            model = model_class.from_pretrained(model_name_or_path, **kwargs)
+            model = model_class.from_pretrained(
+                model_name_or_path,
+                cache_dir=cache_dir,
+                force_download=force_download,
+                resume_download=resume_download,
+                use_auth_token=use_auth_token,
+                revision=revision,
+                **kwargs,
+                )
 
             model_class._keys_to_ignore_on_load_unexpected = keys_to_ignore_on_load_unexpected
             model_class._keys_to_ignore_on_load_missing = keys_to_ignore_on_load_missing
 
             if not os.path.isdir(model_name_or_path) and not os.path.isfile(model_name_or_path):
-                config_file = hf_bucket_url(model_name_or_path,
-                                            filename="best_configure.yaml",
-                                            revision=download_kwargs["revision]"])
-
+                weights_file = hf_bucket_url(model_name_or_path,
+                                            filename=WEIGHTS_NAME,
+                                            revision=revision)
                 try:
-                    resolved_config_file = cached_path(
-                        config_file,
-                        cache_dir=download_kwargs["cache_dir"],
-                        force_download=download_kwargs["force_download"],
-                        resume_download=download_kwargs["resume_download"],
+                    # Load from URL or cache if already cached
+                    resolved_weights_file = cached_path(
+                        weights_file,
+                        cache_dir=cache_dir,
+                        force_download=force_download,
+                        resume_download=resume_download,
+                        use_auth_token=use_auth_token,
                     )
                 except EnvironmentError as err:
                     logger.error(err)
                     msg = (
-                        f"Can't load config for '{model_name_or_path}'. Make sure that:\n\n"
-                        f"-'{model_name_or_path}' is a correct model identifier listed on "
-                        f"'https://huggingface.co/models'\n\n"
-                        f"-or '{model_name_or_path}' is a correct path to a directory containing "
-                        f"a best_configure.yaml file\n\n"
+                        f"Can't load weights for '{model_name_or_path}'. Make sure that:\n\n"
+                        f"- '{model_name_or_path}' is a correct model identifier "
+                        f"listed on 'https://huggingface.co/models'\n  (make sure "
+                        f"'{model_name_or_path}' is not a path to a local directory with "
+                        f"something else, in that case)\n\n- or '{model_name_or_path}' is "
+                        f"the correct path to a directory containing a file "
+                        f"named one of {WEIGHTS_NAME}\n\n"
                     )
 
-                    if download_kwargs["revision]"] is not None:
-                        msg += (
-                            f"- or {download_kwargs['revision']} is a valid git "
-                            f"identifier (branch name, a tag name, or a commit id) that "
-                            f"exists for this model name as listed on its model page on "
-                            f"'https://huggingface.co/models'\n\n"
-                        )
+                    if revision is not None:
+                        msg += (f"- or '{revision}' is a valid git identifier "
+                                f"(branch name, a tag name, or a commit id) that "
+                                f"exists for this model name as listed on its model "
+                                f"page on 'https://huggingface.co/models'\n\n"
+                            )
 
                     raise EnvironmentError(msg)
-
-                config_file = hf_bucket_url(model_name_or_path,
-                                            filename="best_model_weights.pt",
-                                            revision=download_kwargs["revision]"])
-                try:
-                    resolved_config_file = cached_path(
-                        config_file,
-                        cache_dir=download_kwargs["cache_dir"],
-                        force_download=download_kwargs["force_download"],
-                        resume_download=download_kwargs["resume_download"],
-                    )
-                except EnvironmentError as err:
-                    logger.error(err)
-                    msg = (
-                        f"Can't load config for '{model_name_or_path}'. Make sure that:\n\n"
-                        f"-'{model_name_or_path}' is a correct model identifier listed on "
-                        f"'https://huggingface.co/models'\n\n"
-                        f"-or '{model_name_or_path}' is a correct path to a directory containing "
-                        f"a best_model_weights.pt file\n\n"
-                    )
-
-                    if download_kwargs["revision]"] is not None:
-                        msg += (
-                            f"- or {download_kwargs['revision']} is a valid git identifier "
-                            f"(branch name, a tag name, or a commit id) that "
-                            f"exists for this model name as listed on its model page on "
-                            f"'https://huggingface.co/models'\n\n"
-                        )
-
-                    raise EnvironmentError(msg)
-
-                model_name_or_path = os.path.dirname(resolved_config_file)
-
-            weights_file = os.path.join(os.path.abspath(os.path.expanduser(model_name_or_path)),
-                                        WEIGHTS_NAME)
-            q_model = load(weights_file, model)
+                q_model = load(resolved_weights_file, model)
+            else:
+                weights_file = os.path.join(os.path.abspath(
+                    os.path.expanduser(model_name_or_path)), WEIGHTS_NAME)
+                q_model = load(weights_file, model)
 
             return q_model
