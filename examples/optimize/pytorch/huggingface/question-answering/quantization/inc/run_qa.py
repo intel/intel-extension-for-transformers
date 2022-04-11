@@ -22,6 +22,7 @@ import datasets
 import logging
 import os
 import sys
+import timeit
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
@@ -659,12 +660,20 @@ def main():
         )
         quantization_config = QuantizationConfig(
             approach=optim_args.quantization_approach,
+            max_trials=200,
             metrics=[tune_metric],
         )
         model = trainer.quantize(quant_config=quantization_config)
 
     if optim_args.benchmark or optim_args.accuracy_only:
+        start_time = timeit.default_timer()
         results = trainer.evaluate()
+        evalTime = timeit.default_timer() - start_time
+        max_eval_samples = data_args.max_eval_samples \
+            if data_args.max_eval_samples is not None else len(eval_dataset)
+        eval_samples = min(max_eval_samples, len(eval_dataset))
+        samples = eval_samples - (eval_samples % batch_size) \
+            if training_args.dataloader_drop_last else eval_samples
         logger.info("metrics keys: {}".format(results.keys()))
         bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
                               'eval_pearson', 'eval_mcc', 'eval_spearmanr']
@@ -672,11 +681,10 @@ def main():
         for key in bert_task_acc_keys:
             if key in results.keys():
                 ret = True
-                throughput = results.get("eval_samples_per_second")
                 print('Batch size = %d', training_args.per_device_eval_batch_size)
                 print("Finally Eval {} Accuracy: {}".format(key, results[key]))
-                print("Latency: %.3f ms", (1000 / throughput))
-                print("Throughput: {} samples/sec".format(throughput))
+                print("Latency: %.3f ms", (evalTime / samples * 1000))
+                print("Throughput: {} samples/sec".format(samples/evalTime))
                 break
         assert ret, "No metric returned, Please check inference metric!"
 

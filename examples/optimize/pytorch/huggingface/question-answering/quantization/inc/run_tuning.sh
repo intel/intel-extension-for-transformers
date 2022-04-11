@@ -64,6 +64,7 @@ function run_tuning {
         --do_train \
         --max_seq_length ${MAX_SEQ_LENGTH} \
         --per_device_eval_batch_size ${batch_size} \
+        --max_eval_samples 5000 \
         --output_dir ${tuned_checkpoint} \
         --no_cuda \
         --tune \
