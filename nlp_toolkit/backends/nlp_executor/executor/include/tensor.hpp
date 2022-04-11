@@ -25,7 +25,6 @@
 #include "memory_allocator.hpp"
 
 namespace executor {
-
 /**
  * @brief A wrapper around Memory holders serving as the basic
  *        computational unit through which Operator%s, Model%s interact.
@@ -49,6 +48,9 @@ class Tensor {
   }
   // use data after set_shape
   inline const void* data() {
+    if (shm_handle_ != 0) {
+      data_ = MemoryAllocator::ManagedShm().get_address_from_handle(shm_handle_);
+    }
     if (data_ == nullptr) {
       data_ = MemoryAllocator::get().GetMemory(this->size() * type2bytes[this->dtype()], this->life());
       // MemoryAllocator::get().SetName(data_, this->name());
@@ -56,6 +58,9 @@ class Tensor {
     return data_;
   }
   inline void* mutable_data() {
+    if (shm_handle_ != 0) {
+      data_ = MemoryAllocator::ManagedShm().get_address_from_handle(shm_handle_);
+    }
     if (data_ == nullptr) {
       data_ = MemoryAllocator::get().GetMemory(this->size() * type2bytes[this->dtype()], this->life());
       // MemoryAllocator::get().SetName(data_, this->name());
@@ -79,11 +84,14 @@ class Tensor {
     return status;
   }
 
+  void set_name(const string& name) { name_ = name; }
   void set_shape(const vector<int64_t>& shape) { shape_ = shape; }
   void set_dtype(const string& dtype) { dtype_ = dtype; }
   void add_tensor_life(const int count) { life_count_ += count; }
 
   inline size_t size() { return std::accumulate(shape_.begin(), shape_.end(), size_t(1), std::multiplies<size_t>()); }
+
+  void set_shm_handle(const ipc::managed_shared_memory::handle_t& h) { shm_handle_ = h; }
 
   inline const string& name() const { return name_; }
   inline const int life() const { return life_count_; }
@@ -104,8 +112,10 @@ class Tensor {
 
   // for memory handling
   int life_count_ = 0;
-};  // class Tensor
 
+  // If shm_handle_ not equal to 0, which means it is on shared memory
+  ipc::managed_shared_memory::handle_t shm_handle_ = 0;
+};  // class Tensor
 }  // namespace executor
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_TENSOR_HPP_

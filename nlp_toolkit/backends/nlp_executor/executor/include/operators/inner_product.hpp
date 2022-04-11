@@ -54,7 +54,11 @@ class InnerProductOperator : public Operator {
   void ForwardSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
   void PrepareSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
-
+  void DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* rescales_ptr,
+                      vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
+  void RuntimeMinmax();
+  void CalculateCompensation(const vector<int64_t>& src1_shape, const vector<int64_t>& src1_stride,
+                             const vector<int64_t>& zero_point_stride);
   // Converting string variables from operators attrs to boolean, or int/float
  protected:
   // The input tensors x and y are [..., r_x, c_x] and [..., r_y, c_y].
@@ -64,7 +68,6 @@ class InnerProductOperator : public Operator {
   // Matrix can optionally be adjointed (to adjoint a matrix means to transpose and conjugate it).
   // So "adj_" decide the highest two dimensions, and is the built-in operation of InnerProduct OP.
   // While "perm" decide all dimensions, and is the external Trans OP. Both are transpose.
-  bool is_asymm_;
   bool weight_cached_;
   bool has_bias_;
   bool format_any_;
@@ -78,18 +81,23 @@ class InnerProductOperator : public Operator {
   bool relu_;
 
   bool append_eltwise_;
+  bool is_dynamic_ = false;
   float output_scale_ = 1.f;
+  vector<float> dst_scales_;
   string output_dtype_ = "fp32";
   vector<int64_t> src0_perm_;
   vector<int64_t> src1_perm_;
   vector<int64_t> dst_perm_;
+  vector<int64_t> compensation_;
+  memory::desc scale_md_;
+  memory::desc compensation_md_;
 
-  dnnl::primitive_attr attr_;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream eng_stream_ = dnnl::stream(eng_);
   dnnl::inner_product_forward::primitive_desc inner_product_pd_;
   dnnl::inner_product_forward inner_product_p_;
   unordered_map<int, memory> memory_args_;
+  dnnl::primitive_attr attr_;
 
   dnnl::engine gelu_eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream gelu_eng_stream_ = dnnl::stream(gelu_eng_);

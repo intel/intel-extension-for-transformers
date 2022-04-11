@@ -122,7 +122,7 @@ def check_submodules():
             sys.exit(1)
 
 if __name__ == '__main__':
-    # check_submodules()
+    check_submodules()
 
     setup(
         name="nlp_toolkit",
@@ -135,7 +135,7 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/",
-        # ext_modules=[CMakeExtension("engine_py", str(cwd) + '/nlp_toolkit/backends/nlp_executor/executor/')],
+        ext_modules=[CMakeExtension("engine_py", str(cwd) + '/nlp_toolkit/backends/nlp_executor/executor/')],
         packages = find_packages(),
         include_package_data = True,
         package_dir = {'':'.'},
