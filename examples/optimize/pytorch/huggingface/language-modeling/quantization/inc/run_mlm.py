@@ -404,7 +404,8 @@ def main():
         logger.info("Training new model from scratch")
         model = AutoModelForMaskedLM.from_config(config)
 
-    model.resize_token_embeddings(len(tokenizer))
+    if not optim_args.int8:
+        model.resize_token_embeddings(len(tokenizer))
 
     # Preprocessing the datasets.
     # First we tokenize all the texts.
