@@ -55,6 +55,7 @@ function run_tuning {
         --do_train \
         --per_device_eval_batch_size ${batch_size} \
         --per_device_train_batch_size ${batch_size} \
+        --max_eval_samples 1000 \
         --output_dir ${tuned_checkpoint} \
         --no_cuda \
         --quantization_approach ${approach} \

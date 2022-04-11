@@ -539,6 +539,7 @@ def main():
         objective = objectives.performance
         quantization_config = QuantizationConfig(
             approach=optim_args.quantization_approach,
+            max_trials=600,
             metrics=[tune_metric],
             objectives=[objective]
         )

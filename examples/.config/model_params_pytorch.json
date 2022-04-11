@@ -91,7 +91,7 @@
           "new_benchmark": false
         },
         "bert_base_mrpc_qat": {
-          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/qat",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -100,7 +100,7 @@
           "new_benchmark": false
         },
         "bert_base_mrpc_static": {
-          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -109,7 +109,7 @@
           "new_benchmark": false
         },
         "bert_base_mrpc_dynamic": {
-          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -118,7 +118,7 @@
           "new_benchmark": false
         },
         "bert_base_SST-2_static": {
-          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -127,7 +127,7 @@
           "new_benchmark": false
         },
         "bert_base_SST-2_dynamic": {
-          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -136,7 +136,7 @@
           "new_benchmark": false
         },
         "distillbert_base_SST-2_static": {
-          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -145,7 +145,7 @@
           "new_benchmark": false
         },
         "distillbert_base_SST-2_dynamic": {
-          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc",
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",

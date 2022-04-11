@@ -64,13 +64,13 @@ function run_benchmark {
         exit 1
     fi
 
-    if [ "${topology}" = "bert_base_mrpc_qat" ]; then
+    if [ "${topology}" = "bert_base_mrpc" ]; then
         TASK_NAME="mrpc"
-        model_name_or_path="textattack/bert-base-uncased-MRPC"
+        model_name_or_path="bert-base-uncased"
         model_type="bert"
         approach="QuantizationAwareTraining"
-        extra_cmd=$extra_cmd" --learning_rate 2e-5 \
-                   --num_train_epochs 3 \
+        extra_cmd=$extra_cmd" --learning_rate 1e-5 \
+                   --num_train_epochs 6 \
                    --eval_steps 100 \
                    --save_steps 100 \
                    --greater_is_better True \
@@ -79,40 +79,6 @@ function run_benchmark {
                    --save_strategy steps \
                    --metric_for_best_model accuracy \
                    --save_total_limit 1"
-    elif [ "${topology}" = "bert_base_mrpc_static" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="textattack/bert-base-uncased-MRPC"
-        approach="PostTrainingStatic"
-    elif [ "${topology}" = "bert_base_mrpc_dynamic" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="textattack/bert-base-uncased-MRPC"
-        approach="PostTrainingDynamic"
-    elif [ "${topology}" = "bert_base_SST-2_static" ]; then
-        TASK_NAME='sst2'
-        model_name_or_path="echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid"
-        approach="PostTrainingStatic"
-    elif [ "${topology}" = "bert_base_SST-2_dynamic" ]; then
-        TASK_NAME='sst2'
-        model_name_or_path="echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid"
-        approach="PostTrainingDynamic"
-    elif [ "${topology}" = "distillbert_base_SST-2_static" ]; then
-        TASK_NAME='sst2'
-        model_name_or_path="distilbert-base-uncased-finetuned-sst-2-english"
-        approach="PostTrainingStatic"
-    elif [ "${topology}" = "distillbert_base_SST-2_dynamic" ]; then
-        TASK_NAME='sst2'
-        model_name_or_path="distilbert-base-uncased-finetuned-sst-2-english"
-        approach="PostTrainingDynamic"
-    elif [ "${topology}" = "albert_base_MRPC_static" ]; then
-        TASK_NAME='MRPC'
-        model_name_or_path="textattack/albert-base-v2-MRPC" 
-        model_type='albert'
-        approach="PostTrainingStatic"
-    elif [ "${topology}" = "albert_base_MRPC_dynamic" ]; then
-        TASK_NAME='MRPC'
-        model_name_or_path="textattack/albert-base-v2-MRPC" 
-        model_type='albert'
-        approach="PostTrainingDynamic"
     fi
 
     if [[ ${int8} == "true" ]]; then
@@ -120,7 +86,7 @@ function run_benchmark {
     fi
     echo $extra_cmd
 
-    python -u run_glue.py \
+    python -u ../run_glue.py \
         --model_name_or_path ${tuned_checkpoint} \
         --task_name ${TASK_NAME} \
         --do_eval \
