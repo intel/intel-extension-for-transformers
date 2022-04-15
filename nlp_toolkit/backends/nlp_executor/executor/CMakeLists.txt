@@ -1,8 +1,8 @@
-project(engine)
+project(executor)
 if(CMAKE_VERSION VERSION_LESS 3.12)
-    message("${CMAKE_VERSION} is less then the minimum required for engine build which is cmake 3.12, skip the engine build")
+    message("${CMAKE_VERSION} is less then the minimum required for executor build which is cmake 3.12, skip the executor build")
 elseif(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.2.1)
-    message("GCC version less then the minimum required for engine build which is 7.2.1, skip the engine build")
+    message("GCC version less then the minimum required for executor build which is 7.2.1, skip the executor build")
 else()
 cmake_minimum_required(VERSION 3.12)
 
@@ -16,7 +16,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -Wall -s")
 #                COMMAND grep -c avx512
 #                OUTPUT_VARIABLE AVX_RESULT)
 #if(NOT AVX_RESULT EQUAL "1")
-#  message(FATAL_ERROR "AVX512 is necessary for engine, please check your device")
+#  message(FATAL_ERROR "AVX512 is necessary for executor, please check your device")
 #endif()
 
 # -lpthread
@@ -46,7 +46,7 @@ add_subdirectory(${THIRD_PARTY_DIR}/oneDNN)
 add_subdirectory(${THIRD_PARTY_DIR}/pybind11)
 add_subdirectory(${THIRD_PARTY_DIR}/yaml-cpp)
 
-add_library(engine SHARED
+add_library(executor SHARED
     src/model.cpp
     src/common.cpp
     src/i_malloc.cpp
@@ -82,7 +82,7 @@ add_library(engine SHARED
 )
 
 # Header file include path
-target_include_directories(engine
+target_include_directories(executor
     PUBLIC
         ./include/kernels
         ./include/kernels/xbyak
@@ -101,7 +101,7 @@ target_include_directories(engine
 )
 
 ## link against the third party libraries
-target_link_libraries(engine
+target_link_libraries(executor
     PUBLIC
         ${CMAKE_THREAD_LIBS_INIT}
         dnnl
@@ -117,34 +117,34 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
 endif()
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-pybind11_add_module(engine_py ${PROJECT_SOURCE_DIR}/python/bind_engine.cpp)
-target_include_directories(engine_py
+pybind11_add_module(executor_py ${PROJECT_SOURCE_DIR}/python/bind_executor.cpp)
+target_include_directories(executor_py
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/python
 )
 
 # link against the third party libraries
-target_link_libraries(engine_py
+target_link_libraries(executor_py
     PRIVATE
         ${CMAKE_THREAD_LIBS_INIT}
-        engine
+        executor
 )
 
-# build inferencer executable
-add_executable(inferencer
-    src/inferencer.cc
+# build executor
+add_executable(nlp_executor
+    src/nlp_executor.cc
 )
 
-target_include_directories(inferencer
+target_include_directories(nlp_executor
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
 )
 
-target_link_libraries(inferencer
+target_link_libraries(nlp_executor
     PRIVATE
         ${CMAKE_THREAD_LIBS_INIT}
-        engine
+        executor
 )
 
 endif()

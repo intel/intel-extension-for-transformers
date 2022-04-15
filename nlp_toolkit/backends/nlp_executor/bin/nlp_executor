@@ -20,6 +20,6 @@ import engine
 
 if __name__ == '__main__':
     path = engine.__path__[0]
-    command = [path + '/../inferencer']
+    command = [path + '/../nlp_executor']
     command.extend(sys.argv)
     subprocess.call(command)

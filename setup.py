@@ -82,11 +82,11 @@ class build_ext(build_ext):
             os.chdir(str(build_temp))
             self.spawn([cmake_command, ext.sourcedir] + cmake_args)
             self.spawn(['make'] + build_args)
-            if os.path.exists('inferencer'):
-                shutil.copy('inferencer', executable_path)
+            if os.path.exists('nlp_executor'):
+                shutil.copy('nlp_executor', executable_path)
             os.chdir(str(cwd))
         else:
-            print("Engine is not support windows for now")
+            print("Executor is not support windows for now")
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
@@ -135,19 +135,19 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/",
-        ext_modules=[CMakeExtension("engine_py", str(cwd) + '/nlp_toolkit/backends/nlp_executor/executor/')],
+        ext_modules=[CMakeExtension("executor_py", str(cwd) + '/nlp_toolkit/backends/nlp_executor/executor/')],
         packages = find_packages(),
         include_package_data = True,
         package_dir = {'':'.'},
         package_data={
             '': ['*.py', '*.yaml'],
-            'engine': ['*.py'],
+            'executor': ['*.py'],
         },
         cmdclass={
             'build_ext': build_ext,
         },
         install_requires=[],
-        scripts=['nlp_toolkit/backends/nlp_executor/bin/inferencer'],
+        scripts=['nlp_toolkit/backends/nlp_executor/bin/nlp_executor'],
         python_requires='>=3.6.0',
         classifiers=[
               'Intended Audience :: Science/Research',
