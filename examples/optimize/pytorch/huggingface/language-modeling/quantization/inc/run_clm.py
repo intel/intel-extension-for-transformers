@@ -208,11 +208,11 @@ class OptimizationArguments:
         metadata={"help": "Metric used for the tuning strategy."},
     )
     is_relative: Optional[bool] = field(
-        default=False,
+        default=True,
         metadata={"help": "Metric tolerance mode, True is for relative, otherwise for absolute."},
     )
     perf_tol: Optional[float] = field(
-        default=0.02,
+        default=0.35,
         metadata={"help": "Performance tolerance when optimizing the model."},
     )
     benchmark: bool = field(
@@ -555,7 +555,10 @@ def main():
                                                                     early_stopping_threshold))
 
         tune_metric = metrics.Metric(
-            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+                        name=metric_name, 
+                        is_relative=optim_args.is_relative,
+                        criterion=optim_args.perf_tol, 
+                        greater_is_better=False
         )
         quantization_config = QuantizationConfig(
             approach=optim_args.quantization_approach,

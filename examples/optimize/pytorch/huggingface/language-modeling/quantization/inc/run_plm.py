@@ -533,7 +533,10 @@ def main():
                                                                     early_stopping_threshold))
 
         tune_metric = metrics.Metric(
-            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+            name=metric_name, 
+            is_relative=optim_args.is_relative,
+            criterion=optim_args.perf_tol,
+            greater_is_better=False
         )
         quantization_config = QuantizationConfig(
             approach=optim_args.quantization_approach,

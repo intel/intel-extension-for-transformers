@@ -78,11 +78,12 @@ function run_benchmark {
 
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
+        model_name_or_path=${tuned_checkpoint}
     fi
     echo $extra_cmd
 
     python -u run_ner.py \
-        --model_name_or_path ${tuned_checkpoint} \
+        --model_name_or_path ${model_name_or_path} \
         --dataset_name ${DATASET_NAME} \
         --do_eval \
         --pad_to_max_length \

@@ -142,6 +142,8 @@ class NLPTrainer(Trainer):
 
     def builtin_eval_func(self, model):
         self.model = model
+        if self.args.seed:
+            torch.manual_seed(self.args.seed)
         results = self.evaluate()
         logger.info(results)
         if isinstance(self.metrics, list):

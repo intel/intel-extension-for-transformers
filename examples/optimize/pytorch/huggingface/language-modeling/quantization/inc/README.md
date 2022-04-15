@@ -6,15 +6,15 @@ Here is how to run the scripts:
 **Causal Language modeling (CLM)**
 
 ```
-python run_clm.py \     
-    --model_name_or_path EleutherAI/gpt-neo-125M \     
-    --dataset_name wikitext \     
-    --dataset_config_name wikitext-2-raw-v1 \     
-    --tune \    
-    --quantization_approach PostTrainingStatic \          
-    --do_train \     
-    --do_eval \     
-    --output_dir ./tmp/clm_output \ 
+python run_clm.py \
+    --model_name_or_path EleutherAI/gpt-neo-125M \
+    --dataset_name wikitext \
+    --dataset_config_name wikitext-2-raw-v1 \
+    --tune \
+    --quantization_approach PostTrainingStatic \
+    --do_train \
+    --do_eval \
+    --output_dir ./tmp/clm_output \
     --overwrite_output_dir
 
 ```

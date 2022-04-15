@@ -75,11 +75,12 @@ function run_benchmark {
 
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
+        model_name_or_path=${tuned_checkpoint}
     fi
     echo $extra_cmd
 
     python -u run_swag.py \
-        --model_name_or_path ${tuned_checkpoint} \
+        --model_name_or_path ${model_name_or_path} \
         --do_eval \
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ./tmp/benchmark_output \

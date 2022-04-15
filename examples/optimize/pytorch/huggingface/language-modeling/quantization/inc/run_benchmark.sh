@@ -110,11 +110,12 @@ function run_benchmark {
     
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
+        model_name_or_path=${tuned_checkpoint}
     fi
     echo $extra_cmd
 
     python -u ${script} \
-        --model_name_or_path ${tuned_checkpoint} \
+        --model_name_or_path ${model_name_or_path} \
         --dataset_name ${DATASET_NAME} \
         --dataset_config_name ${DATASET_CONFIG_NAME} \
         --do_eval \
