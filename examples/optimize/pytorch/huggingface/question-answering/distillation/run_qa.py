@@ -734,7 +734,7 @@ def main():
             raise ValueError("do_eval must be set to True for distillation.")
 
         tune_metric = metrics.Metric(name=metric_name)
-        distillation_conf = DistillationConfig(metrics=[tune_metric])
+        distillation_conf = DistillationConfig(metrics=tune_metric)
         model = trainer.distill(
             distillation_config=distillation_conf, teacher_model=teacher_model
         )

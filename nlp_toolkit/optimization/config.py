@@ -8,7 +8,7 @@ from neural_compressor.conf.config import (
 from neural_compressor.conf.dotdict import DotDict
 from neural_compressor.utils import logger
 from nlp_toolkit.optimization.metrics import Metric
-from nlp_toolkit.optimization.objectives import Objective
+from nlp_toolkit.optimization.objectives import Objective, performance
 from nlp_toolkit.optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from nlp_toolkit.optimization.distillation import (
     Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
@@ -136,11 +136,11 @@ class QuantizationConfig(object):
     def __init__(
         self,
         framework: str = "pytorch",
-        approach: str = None,
-        timeout: int = None,
-        max_trials: int = None,
+        approach: str = "PostTrainingStatic",
+        timeout: int = 0,
+        max_trials: int = 100,
         metrics: Union[Metric, List] = None,
-        objectives: Union[Objective, List] = None,
+        objectives: Union[Objective, List] = performance,
     ):
         super().__init__()
         self.inc_config = Quantization_Conf()
@@ -322,14 +322,17 @@ class PruningConfig(object):
     def __init__(
         self,
         framework: str = "pytorch",
-        target_sparsity_ratio: float = None,
-        epoch_range: List = None,
-        metrics: Union[List, Metric] = None,
-        pruner: Pruner = None,
+        epoch_range: List = [0, 4],
+        initial_sparsity_ratio: float=0.0,
+        target_sparsity_ratio: float = 0.97,
+        metrics: Metric = None,
+        pruner: Union[List, Pruner] = None,
     ):
         super().__init__()
         self.inc_config = Pruning_Conf()
         self.framework = framework
+        if initial_sparsity_ratio is not None:
+            self.initial_sparsity_ratio = initial_sparsity_ratio
         if target_sparsity_ratio is not None:
             self.target_sparsity_ratio = target_sparsity_ratio
         if epoch_range is not None:
@@ -352,7 +355,10 @@ class PruningConfig(object):
 
     @pruner.setter
     def pruner(self, pruner):
-        self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = [pruner]
+        if isinstance(pruner, list):
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = pruner
+        else:
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = [pruner]
 
     @property
     def target_sparsity_ratio(self):
@@ -362,6 +368,15 @@ class PruningConfig(object):
     def target_sparsity_ratio(self, target_sparsity_ratio):
         self.inc_config.usr_cfg.pruning.approach.weight_compression.target_sparsity = \
             target_sparsity_ratio
+
+    @property
+    def initial_sparsity_ratio(self):
+        return self.inc_config.usr_cfg.pruning.approach.weight_compression.initial_sparsity
+
+    @initial_sparsity_ratio.setter
+    def initial_sparsity_ratio(self, initial_sparsity_ratio):
+        self.inc_config.usr_cfg.pruning.approach.weight_compression.initial_sparsity = \
+            initial_sparsity_ratio
 
     @property
     def epoch_range(self):
@@ -390,8 +405,10 @@ class PruningConfig(object):
         return self._metrics
 
     @metrics.setter
-    def metrics(self, metrics: Union[Metric, List]):
+    def metrics(self, metrics: Metric):
         self._metrics = metrics
+        assert isinstance(metrics, Metric), \
+            "metric should be a Metric calss!"
 
 
 class DistillationConfig(object):
@@ -399,7 +416,7 @@ class DistillationConfig(object):
         self,
         framework: str = "pytorch",
         criterion: Criterion = None,
-        metrics: Union[List, Metric] = None,
+        metrics: Metric = None,
     ):
         super().__init__()
         self.inc_config = Distillation_Conf()
@@ -466,6 +483,8 @@ class DistillationConfig(object):
 
     @metrics.setter
     def metrics(self, metrics):
+        assert isinstance(metrics, Metric), \
+            "metric should be a Metric calss!"
         self._metrics = metrics
 
 

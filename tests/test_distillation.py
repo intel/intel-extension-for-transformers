@@ -65,7 +65,7 @@ class TestDistillation(unittest.TestCase):
                 eval_dataset=self.dummy_dataset,
             )
             metric = metrics.Metric(name="eval_loss")
-            distillation_conf = DistillationConfig(metrics=[metric])
+            distillation_conf = DistillationConfig(metrics=metric)
             distilled_model = self.trainer.distill(
                 distillation_config=distillation_conf, teacher_model=self.teacher_model
             )

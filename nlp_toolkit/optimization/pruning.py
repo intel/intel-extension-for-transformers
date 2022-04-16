@@ -14,8 +14,8 @@ SUPPORTED_PRUNING_MODE = set([approach.name for approach in PruningMode])
 
 
 class Pruner(INCPruner):
-    def __init__(self, epoch_range: List=None, initial_sparsity_ratio: float=None,
-                 target_sparsity_ratio: float=None, update_frequency: int=1,
+    def __init__(self, epoch_range: List=[0, 4], initial_sparsity_ratio: float=0.0,
+                 target_sparsity_ratio: float=0.97, update_frequency: int=1,
                  prune_type: str='BasicMagnitude', method: str='per_tensor',
                  names: List=[], parameters: Dict=None):
         if epoch_range is not None:

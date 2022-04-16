@@ -630,7 +630,7 @@ def main():
         target_sparsity_ratio = None \
             if optim_args.target_sparsity_ratio else optim_args.target_sparsity_ratio
         pruner = Pruner(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
-        pruning_conf = PruningConfig(pruner=pruner, metrics=[tune_metric])
+        pruning_conf = PruningConfig(pruner=pruner, metrics=tune_metric)
 
         model = trainer.prune(pruning_config=pruning_conf)
         trainer.save_model(training_args.output_dir)

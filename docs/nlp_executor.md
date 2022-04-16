@@ -1,5 +1,5 @@
 # NLP Executor：A baremetal inference engine for Natural Language Processing(NLP) Models
-NLP Executor is an inference executor for Natural Language Processing (NLP) models, providing the optimal performance via various model compression techniques like quantization, sparsity. The executor is a baremetal reference engine of NLP Toolkit and supports popular NLP models.
+NLP Executor is an inference executor for Natural Language Processing (NLP) models, providing the optimal performance by quantization and sparsity. The executor is a baremetal reference engine of NLP Toolkit and supports typical NLP models.
 
 ## Deployment Architecture
 The executor supports model optimization and high performance kernel for CPU.
@@ -65,12 +65,13 @@ If you use pip install -e . to install the executor in your current folder, plea
 
 You can skip the step if install with other ways .
 
-```
+```python
 from engine_py import Model
 # load the model, config_path:path of generated yaml, weight_path: path of generated bin
 model = Model(config_path, weight_path)
 # use model.forward to do inference
-out = model.forward([input_ids, segment_ids, input_mask]) ```
+out = model.forward([input_ids, segment_ids, input_mask])
+```
 
 The `input_ids`, `segment_ids` and `input_mask` are the input numpy array data of a bert model, which have size (batch_size, seq_len). 
 Note that the `out` is a list contains the bert model output numpy data (`out=[output numpy data]`). 

@@ -85,17 +85,16 @@ class TestConfig(unittest.TestCase):
         pruning_config.framework = "pytorch"
         pruning_config.target_sparsity_ratio = 0.1
         pruning_config.epoch_range = [0, 4]
-        pruning_config.metrics = [metric]
+        pruning_config.metrics = metric
 
         self.assertEqual(pruning_config.pruner, [pruner])
         self.assertEqual(pruning_config.framework, "pytorch")
         self.assertEqual(pruning_config.target_sparsity_ratio, 0.1)
         self.assertEqual(pruning_config.epoch_range, [0, 4])
-        self.assertEqual(pruning_config.metrics, [metric])
+        self.assertEqual(pruning_config.metrics, metric)
 
     def test_distillation_config(self):
-        metric1 = metrics.Metric(name="F1")
-        metric2 = metrics.Metric(name="accuracy")
+        metric = metrics.Metric(name="eval_F1")
         criterion = DistillationCriterion(
             name="KnowledgeLoss",
             temperature=1.0,
@@ -105,13 +104,13 @@ class TestConfig(unittest.TestCase):
         distillation_config = DistillationConfig(
             framework="pytorch",
             criterion=criterion,
-            metrics=[metric1, metric2]
+            metrics=metric
         )
 
         self.assertEqual(distillation_config.framework, "pytorch")
         self.assertEqual(list(distillation_config.criterion.keys())[0],
                          DistillationCriterionMode[criterion.name.upper()].value)
-        self.assertEqual(distillation_config.metrics, [metric1, metric2])
+        self.assertEqual(distillation_config.metrics, metric)
 
 
 if __name__ == "__main__":

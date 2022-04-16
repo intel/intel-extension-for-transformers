@@ -66,10 +66,8 @@ class TestPruning(unittest.TestCase):
                 eval_dataset=self.dummy_dataset,
             )
             metric = metrics.Metric(name="eval_loss")
-            pruner = Pruner(prune_type=mode.name)
-            pruning_conf = PruningConfig(
-                pruner=pruner, target_sparsity_ratio=0.9, metrics=[metric]
-            )
+            pruner = Pruner(prune_type=mode.name, target_sparsity_ratio=0.9)
+            pruning_conf = PruningConfig(pruner=pruner, metrics=metric)
             agent = self.trainer.init_pruner(pruning_config=pruning_conf)
             pruned_model = self.trainer.prune()
             pruned_model.report_sparsity()
