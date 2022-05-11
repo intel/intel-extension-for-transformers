@@ -27,8 +27,6 @@ evaluation:
       SquadF1:
     postprocess:
       transform:
-        Collect:
-          length: 10833
         SquadV1:
           label_file: /path/to/dev-v1.1.json
           vocab_file: /path/to/vocab.txt
