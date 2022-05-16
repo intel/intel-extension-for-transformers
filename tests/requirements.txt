@@ -1,6 +1,7 @@
 datasets>=1.8.0
 neural-compressor
 nlpaug
+sacremoses
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=1.10.0+cpu
 transformers>=4.12.0
