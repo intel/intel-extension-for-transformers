@@ -1,8 +1,11 @@
 import copy
+import mlflow
+import numpy as np
 import os
 import shutil
 import torch.utils.data as data
 import unittest
+from datasets import load_dataset, load_metric
 from nlp_toolkit import (
     DistillationConfig,
     DistillationCriterionMode,
@@ -10,28 +13,13 @@ from nlp_toolkit import (
     NLPTrainer,
     OptimizedModel,
 )
+from nlp_toolkit.optimization.distillation import Criterion
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer
 )
 
 os.environ["WANDB_DISABLED"] = "true"
-
-
-class DummyDataset(data.Dataset):
-    def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-        self.sequence_a = "NLP-toolkit is based in SH"
-        self.sequence_b = "Where is NLP-toolkit based? NYC or SH"
-        self.encoded_dict = self.tokenizer(self.sequence_a, self.sequence_b)
-        self.encoded_dict['label'] = 1
-
-    def __len__(self):
-        return 1
-
-    def __getitem__(self, index):
-        """Returns one data pair (source and target)."""
-        return self.encoded_dict
 
 
 class TestDistillation(unittest.TestCase):
@@ -41,14 +29,22 @@ class TestDistillation(unittest.TestCase):
             'distilbert-base-uncased'
         )
         self.teacher_model = AutoModelForSequenceClassification.from_pretrained(
-            'bert-base-uncased'
+            'distilbert-base-uncased-finetuned-sst-2-english'
         )
-        self.dummy_dataset = DummyDataset()
-        self.trainer = NLPTrainer(
-            model=self.model,
-            train_dataset=self.dummy_dataset,
-            eval_dataset=self.dummy_dataset,
+        raw_datasets = load_dataset("glue", "sst2")["validation"]
+        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        def preprocess_function(examples):
+            # Tokenize the texts
+            args = (
+                (examples['sentence'],)
+            )
+            result = tokenizer(*args, padding=True, max_length=64, truncation=True)
+            return result
+        raw_datasets = raw_datasets.map(
+            preprocess_function, batched=True, load_from_cache_file=True
         )
+        eval_dataset = raw_datasets.select(range(30))
+        self.dataset = eval_dataset
 
     @classmethod
     def tearDownClass(self):
@@ -56,16 +52,29 @@ class TestDistillation(unittest.TestCase):
         shutil.rmtree('./distilled_model', ignore_errors=True)
 
     def test_fx_model_distil(self):
+        metric = load_metric("accuracy")
+        def compute_metrics(p):
+            preds = p.predictions
+            preds = np.argmax(preds, axis=1)
+            return metric.compute(predictions=preds, references=p.label_ids)
         origin_weight = copy.deepcopy(self.model.classifier.weight)
         for mode in DistillationCriterionMode:
             print("Distillation approach:", mode.value)
             self.trainer = NLPTrainer(
-                model=self.model,
-                train_dataset=self.dummy_dataset,
-                eval_dataset=self.dummy_dataset,
+                model=copy.deepcopy(self.model),
+                train_dataset=self.dataset,
+                eval_dataset=self.dataset,
+                compute_metrics=compute_metrics,
             )
-            metric = metrics.Metric(name="eval_loss")
-            distillation_conf = DistillationConfig(metrics=metric)
+            metric_ = metrics.Metric(name="eval_accuracy")
+            criterion = Criterion(
+                name='IntermediateLayersLoss',
+                layer_mappings=[['classifier', 'classifier']],
+                loss_types=['MSE'],
+                loss_weight_ratio=[1.0],
+                add_origin_loss=False
+            ) if mode.value == "IntermediateLayersKnowledgeDistillationLoss" else None
+            distillation_conf = DistillationConfig(metrics=metric_, criterion=criterion)
             distilled_model = self.trainer.distill(
                 distillation_config=distillation_conf, teacher_model=self.teacher_model
             )
@@ -80,6 +89,7 @@ class TestDistillation(unittest.TestCase):
             self.assertTrue((distilled_weight != origin_weight).any())
             # check loaded model
             self.assertTrue((distilled_weight == loaded_weight).all())
+            mlflow.end_run()
 
 
 if __name__ == "__main__":

@@ -96,6 +96,7 @@ class NLPTrainer(Trainer):
         self._resuming_checkpoint = None
         self.compression_ctrl = None
         self.inc_int8_flag = False
+        self.component = None
         self.pruner = None
         self.quantizer = None
         self.distiller = None
@@ -173,7 +174,7 @@ class NLPTrainer(Trainer):
     def builtin_train_func(self, model):
         self.model_wrapped = model
         self.model = model
-        train_result = self.train(resume_from_checkpoint=self._resuming_checkpoint)
+        train_result = self.train(component=self.component, resume_from_checkpoint=self._resuming_checkpoint)
         metrics = train_result.metrics
         self.save_model()  # Saves the tokenizer too for easy upload
         self.log_metrics("train", metrics)
@@ -254,6 +255,7 @@ class NLPTrainer(Trainer):
         elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             self.quantizer.q_func = \
                 self.builtin_train_func if self._train_func is None else self._train_func
+        self.component = self.quantizer
         self.opt_model = self.quantizer.fit()
         self.inc_int8_flag = True
         self._save_inc_int8(self.opt_model, self.args.output_dir)
@@ -360,6 +362,7 @@ class NLPTrainer(Trainer):
                 "Please pass train_func to trainer.train_func"
             self.pruner.pruning_func = self.builtin_train_func
 
+        self.component = self.pruner
         self.opt_model = self.pruner.fit()
 
         return self.opt_model
@@ -414,7 +417,7 @@ class NLPTrainer(Trainer):
         self.distiller.train_func = \
             self.builtin_train_func if self._train_func is None else self._train_func
         self.distiller.create_criterion()
-
+        self.component = self.distiller
         self.opt_model = self.distiller.fit()
 
         return self.opt_model
