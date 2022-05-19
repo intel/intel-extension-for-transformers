@@ -1,8 +1,6 @@
 from .optimization import metrics, objectives
 from .optimization.config import (
     AutoDistillationConfig,
-    CONFIG_NAME,
-    DeployConfig,
     DistillationConfig,
     FlashDistillationConfig,
     NncfConfig,

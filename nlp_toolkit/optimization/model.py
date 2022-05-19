@@ -9,7 +9,7 @@ from transformers.file_utils import cached_path, hf_bucket_url
 from neural_compressor.utils import logger
 from neural_compressor.utils.pytorch import load
 
-from .config import CONFIG_NAME, WEIGHTS_NAME
+from .config import WEIGHTS_NAME
 
 
 class OptimizedModel:
@@ -66,8 +66,15 @@ class OptimizedModel:
 
         model_class = eval(f'transformers.{config.architectures[0]}')
         if config.torch_dtype is not torch.int8:
-            logger.info("the prunging/distillation optimized model is loading.")
-            model = model_class.from_pretrained(model_name_or_path)
+            model = model_class.from_pretrained(
+                model_name_or_path,
+                cache_dir=cache_dir,
+                force_download=force_download,
+                resume_download=resume_download,
+                use_auth_token=use_auth_token,
+                revision=revision,
+                **kwargs,
+            )
             return model
         else:
             logger.info("the quantization optimized model is loading.")

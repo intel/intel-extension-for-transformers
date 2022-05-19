@@ -1,6 +1,7 @@
 import collections
 import inspect
 import math
+from operator import length_hint
 import numpy as np
 import os
 import copy
@@ -95,11 +96,14 @@ class NLPTrainer(Trainer):
         self._calib_dataloader = None
         self._resuming_checkpoint = None
         self.compression_ctrl = None
-        self.inc_int8_flag = False
         self.component = None
+        self.enable_inc_quant = False
         self.pruner = None
         self.quantizer = None
         self.distiller = None
+        self.fp32_model = None
+        # This flag is set for the engine in the export_to_int8_onnx API.
+        self.enable_executor = False
 
     @property
     def resuming_checkpoint(self):
@@ -240,6 +244,11 @@ class NLPTrainer(Trainer):
         quant_config,
         provider: str = Provider.INC.value,
     ):
+        try:
+            # we do deepcopy to keep the fp32 model for the export_to_int8_onnx API.
+            self.fp32_model = copy.deepcopy(self.model)
+        except Exception as e:   # pragma: no cover
+            logger.warning("Model deepcopy failed: {}!".format(repr(e)))
         if self.quantizer is None:
             self.init_quantizer(quant_config=quant_config, provider=provider)
         if self._eval_func is not None:
@@ -257,7 +266,7 @@ class NLPTrainer(Trainer):
                 self.builtin_train_func if self._train_func is None else self._train_func
         self.component = self.quantizer
         self.opt_model = self.quantizer.fit()
-        self.inc_int8_flag = True
+        self.enable_inc_quant = True
         self._save_inc_int8(self.opt_model, self.args.output_dir)
         logger.info(
             "quantized model and configure file have saved to {}".format(self.args.output_dir)
@@ -1362,7 +1371,7 @@ class NLPTrainer(Trainer):
                 torch.save(state_dict, os.path.join(output_dir, WEIGHTS_NAME))
         else:
             # overwrite `pytorch_model.bin` with inc int8 format.
-            if self.inc_int8_flag:
+            if self.enable_inc_quant:
                 self._save_inc_int8(self.opt_model, output_dir)
             else:
                 self.model.save_pretrained(output_dir, state_dict=state_dict)
@@ -1371,3 +1380,318 @@ class NLPTrainer(Trainer):
 
         # Good practice: save your training arguments together with the trained model
         torch.save(self.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
+
+    def export_to_onnx(self, *args, **kwargs):
+        if not self.enable_inc_quant:
+            self.export_to_fp32_onnx(*args, **kwargs)
+        else:
+            self.export_to_int8_onnx(*args, **kwargs)
+
+    def export_to_fp32_onnx(self, save_path=None, opset_version=14, do_constant_folding=True):
+        if self.fp32_model is None:
+            model = self.model.eval()
+        else:
+            # Quantized model cannot be converted into onnx
+            model = self.fp32_model.eval()
+        onnx_save_path = save_path if save_path \
+          else os.path.join(self.args.output_dir, 'fp32-model.onnx')
+
+        # Prepare input data
+        eval_dataloader = self.get_eval_dataloader()
+        it = iter(eval_dataloader)
+        input = next(it)
+        input_names = list(input.keys())
+        for k in input_names:
+            if 'label' in k:
+                input.pop(k)
+        # Set variable length axes
+        symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+        axes_dict = {k: symbolic_names for k in input.keys()}
+
+        import torch
+        torch.onnx.export(
+            model,
+            tuple(input.values()),
+            onnx_save_path,
+            opset_version=opset_version,
+            input_names=list(input.keys()),
+            dynamic_axes=axes_dict,
+            do_constant_folding=do_constant_folding,
+        )
+        info = "ONNX Model exported to path: {0}".format(onnx_save_path)
+        logger.info("*"*len(info))
+        logger.info(info)
+        logger.info("*"*len(info))
+
+    def export_to_int8_onnx(self,
+                    save_path=None,
+                    quant_format='QDQ',
+                    dtype='U8U8',
+                    opset_version=14,
+                    opt_level='all',
+                    ):
+        if self.provider != 'inc':   # pragma: no cover
+            logger.error("export_to_onnx API only supports INC model right now.")
+            sys.exit(0)
+
+        if self.enable_executor:
+            # Will deprecate after engine supports QDQ format and other op_types.
+            op_types_to_quantize=['MatMul']
+            pytorch_op_types_to_quantize=['Linear']
+            addition_op_to_quantize = []
+            opset_version = 11
+            quant_format='Qlinear'
+            logger.info("Engine only support opset_version=11 " + 
+                        "and int8 MatMul.")
+        else:
+            from onnxruntime.quantization.registry import (
+                IntegerOpsRegistry,
+                QLinearOpsRegistry,
+                QDQRegistry,
+            )
+            if 'dynamic' in self.opt_model.tune_cfg['approach']:
+                op_types_to_quantize=['MatMul', 'Gather', "LSTM", 'Conv']
+                pytorch_op_types_to_quantize=['Linear', 'Embedding', "LSTM", 
+                                              'Conv1d', 'Conv2d']
+                addition_op_to_quantize = list(IntegerOpsRegistry.keys())
+            else:
+                op_types_to_quantize=['MatMul', 'Gather', 'Conv']
+                pytorch_op_types_to_quantize=['Linear', 'Embedding', 'Conv1d', 'Conv2d']
+                if quant_format == 'QDQ':
+                    addition_op_to_quantize = list(QDQRegistry.keys())
+                    addition_op_to_quantize.remove('Relu') # ValueError: x not in list
+                else:
+                    addition_op_to_quantize = list(QLinearOpsRegistry.keys())
+
+        if quant_format == 'QDQ' and opset_version < 13:
+            opset_version = 14
+            logger.error("Per-Channel support with QDQ format " + 
+                        "requires onnx opset version 13 or above. " +
+                        "Here we use opset_version=", opset_version)
+        all_op_types_to_quantize = op_types_to_quantize + addition_op_to_quantize
+
+        import onnx
+        fp32_path = save_path if save_path \
+          else os.path.join(self.args.output_dir, 'fp32-model.onnx')
+        onnx_save_path = save_path if save_path \
+          else os.path.join(self.args.output_dir, 'int8-model.onnx')
+        self.export_to_fp32_onnx(fp32_path, opset_version=opset_version, do_constant_folding=False)
+        model = onnx.load(fp32_path)
+        model = self._replace_gemm_with_matmul(model)
+        onnx.save(model, fp32_path)
+
+        # Get weight name from onnx initializer
+        weight_name_list = []
+        for tensor in model.graph.initializer:
+            weight_name_list.append(tensor.name)
+
+        # Match weight name with onnx node name
+        quantize_nodes = []
+        tmp_node_mapping = {}
+        module_node_mapping = {}
+        for node in model.graph.node:
+            if node.op_type not in op_types_to_quantize:
+                for inp in node.input:
+                    if inp in weight_name_list and 'weight' in inp:
+                        tmp_node_mapping.update({node.output[0] : inp.split('.weight')[0]})
+                    elif inp in tmp_node_mapping:
+                        tmp_node_mapping.update({node.output[0] : tmp_node_mapping[inp]})
+            else:
+                for inp in node.input:
+                    if inp in weight_name_list and 'weight' in inp:
+                        module_node_mapping.update({inp.split('.weight')[0] : node.name})
+                    elif inp in tmp_node_mapping:
+                        module_node_mapping.update({tmp_node_mapping[inp]: node.name})
+
+            # Save all quantizable node name
+            if node.op_type in all_op_types_to_quantize:
+                quantize_nodes.append(node.name)
+
+        # Match pytorch module name with onnx node name
+        for k, v in self.opt_model.tune_cfg['op'].items():
+            if k[1] not in pytorch_op_types_to_quantize or 'int8' in v['weight']['dtype']:
+                continue
+            if k[0] not in module_node_mapping:
+                k[0] = k[0].split('.module')[0]
+            if k[0] in module_node_mapping:
+                fallback_op = module_node_mapping[k[0]]
+                quantize_nodes.remove(fallback_op)
+
+        # Quantization
+        from onnxruntime.quantization import quantize_static, quantize_dynamic 
+        from onnxruntime.quantization import QuantFormat, QuantType
+        quant_format = QuantFormat.QOperator if quant_format != 'QDQ' else QuantFormat.QDQ
+
+        if 'U8' in dtype:
+            weight_type=QuantType.QUInt8,
+            activation_type=QuantType.QUInt8,
+        elif 'S8' in dtype:
+            weight_type=QuantType.QInt8,
+            activation_type=QuantType.QInt8,
+        else:
+            # Gather requires weight type be the same as activation.
+            # So U8S8(acitvation|weight) option is not workable for best performance.
+            logger.error("Right now, we don't support dtype: {}".format(dtype))
+            sys.exit(0)
+
+        if 'dynamic' in self.opt_model.tune_cfg['approach']:
+            quantize_dynamic(fp32_path,
+                            onnx_save_path,
+                            per_channel=True,
+                            weight_type=QuantType.QUInt8,
+                            nodes_to_quantize=quantize_nodes,
+                            nodes_to_exclude=[],
+                            #op_types_to_quantize=op_types_to_quantize,
+                            extra_options={})
+        else:
+            from onnxruntime.quantization import CalibrationDataReader
+            class NLPDataReader(CalibrationDataReader):
+                def __init__(self, dataloader, sample_size=100):
+                    import math
+                    self.dataloader = dataloader
+                    self.batch_size = dataloader.batch_size
+                    self.batch_num = math.ceil(sample_size/self.batch_size)
+                    self.datasize = self.batch_num*self.batch_size
+
+                    self.data = []
+                    for i, batch in enumerate(self.dataloader):
+                        if i * self.batch_size >= self.datasize:
+                            break
+                        batch.pop('labels')
+                        batch = {k: v.detach().cpu().numpy() for k, v in batch.items()}
+                        self.data.append(batch)
+                    self.data = iter(self.data)
+
+                def get_next(self):
+                    return next(self.data, None)
+
+            calib_datareader = NLPDataReader(self.get_eval_dataloader())
+
+            quantize_static(fp32_path,
+                            onnx_save_path,
+                            calib_datareader,
+                            quant_format=quant_format,
+                            per_channel=True,
+                            weight_type=weight_type,
+                            activation_type=activation_type,
+                            nodes_to_quantize=quantize_nodes,
+                            nodes_to_exclude=[],
+                            #op_types_to_quantize=op_types_to_quantize,
+                            extra_options={})
+
+        # Post-optimization
+        import onnx
+        import onnxruntime as rt
+        model = onnx.load(onnx_save_path)
+        sess_options = rt.SessionOptions()
+        # Set graph optimization level
+        if opt_level == 'all':
+            opt_level_type = rt.GraphOptimizationLevel.ORT_ENABLE_ALL 
+        elif opt_level == 'extend':
+            opt_level_type = rt.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
+        elif opt_level == 'basic':
+            opt_level_type = rt.GraphOptimizationLevel.ORT_ENABLE_BASIC
+        else:
+            opt_level_type = rt.GraphOptimizationLevel.ORT_DISABLE_ALL
+
+        sess_options.graph_optimization_level = opt_level_type
+        sess_options.optimized_model_filepath = onnx_save_path
+        rt.InferenceSession(onnx_save_path, sess_options)
+        info = "ONNX Model exported to path: {0}".format(onnx_save_path)
+        logger.info("*"*len(info))
+        logger.info(info)
+        logger.info("*"*len(info))
+
+    def export_to_jit(self):
+        self.model.eval()
+        eval_dataloader = self.get_eval_dataloader()
+        it = iter(eval_dataloader)
+        input = next(it)
+        input.pop('labels')
+        jit_model = torch.jit.trace(
+            self.model,
+            tuple(input.values()),
+            strict=False
+        )
+        info = "JIT Model exported"
+        logger.info("*"*len(info))
+        logger.info(info)
+        logger.info("*"*len(info))
+        return jit_model
+
+    # will remove after next INC(1.12) release
+    def _replace_gemm_with_matmul(self, model):
+        new_nodes = []
+        import onnx
+        from onnx import numpy_helper
+        from neural_compressor.model.onnx_model import ONNXModel
+        if not isinstance(model, ONNXModel):
+            model = ONNXModel(model)
+
+        for node in model.nodes():
+            if node.op_type == 'Gemm':
+                alpha = 1.0
+                beta = 1.0
+                transA = 0
+                transB = 0
+                for attr in node.attribute:
+                    if attr.name == 'alpha':
+                        alpha = onnx.helper.get_attribute_value(attr)
+                    elif attr.name == 'beta':
+                        beta = onnx.helper.get_attribute_value(attr)
+                    elif attr.name == 'transA':
+                        transA = onnx.helper.get_attribute_value(attr)
+                    elif attr.name == 'transB':
+                        transB = onnx.helper.get_attribute_value(attr)
+                if alpha == 1.0 and beta == 1.0 and transA == 0:
+                    inputB = node.input[1]
+                    if transB == 1:
+                        B = model.get_initializer(node.input[1])
+                        if B:
+                            # assume B is not used by any other node
+                            B_array = numpy_helper.to_array(B)
+                            B_trans = numpy_helper.from_array(B_array.T)
+                            B_trans.name = B.name
+                            model.remove_initializer(B)
+                            model.add_initializer(B_trans)
+
+                            #TBD this is for onnx model zoo, which are all in old IR version
+                            if model.model.ir_version < 4:
+                                for input in model.model.graph.input:
+                                    if input.name == B_trans.name:
+                                        for i, dim in enumerate(input.type.tensor_type.shape.dim):
+                                            dim.dim_value = B_array.T.shape[i]
+
+                        else:
+                            inputB += '_Transposed'
+                            transpose_node = onnx.helper.make_node('Transpose',
+                                                                inputs=[node.input[1]],
+                                                                outputs=[inputB],
+                                                                name=node.name+'_Transpose')
+                            new_nodes.append(transpose_node)
+
+                    matmul_node = onnx.helper.make_node('MatMul',
+                            inputs=[node.input[0], inputB],
+                            outputs=[node.output[0] + ('_MatMul' if len(node.input)>2 else '')],
+                            name=node.name + '_MatMul')
+                    new_nodes.append(matmul_node)
+
+                    if len(node.input) > 2:
+                        add_node = onnx.helper.make_node('Add',
+                            inputs=[node.output[0] + '_MatMul', node.input[2]],
+                            outputs=node.output,
+                            name=node.name + '_Add')
+                        new_nodes.append(add_node)
+
+                # unsupported
+                else:
+                    new_nodes.append(node)
+
+            # not GEMM
+            else:
+                new_nodes.append(node)
+
+        model.graph().ClearField('node')
+        model.graph().node.extend(new_nodes)
+
+        return model.model
