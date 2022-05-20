@@ -29,7 +29,7 @@ from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import IterableDataset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm.auto import tqdm
-from transformers import Trainer, PreTrainedModel
+from transformers import __version__, Trainer, PreTrainedModel
 from transformers.configuration_utils import PretrainedConfig
 from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
 from transformers.file_utils import (
@@ -81,8 +81,6 @@ if is_sagemaker_mp_enabled():
 
 if TYPE_CHECKING:
     import optuna
-
-__version__ = "4.9.2"
 
 
 class NLPTrainer(Trainer):
@@ -503,28 +501,31 @@ class NLPTrainer(Trainer):
                 raise ValueError(f"No valid checkpoint found in output directory ({args.output_dir})")
 
         if resume_from_checkpoint is not None:
-            if not os.path.isfile(os.path.join(resume_from_checkpoint, WEIGHTS_NAME)):
-                raise ValueError(f"Can't find a valid checkpoint at {resume_from_checkpoint}")
+            if version.parse(__version__) < version.parse("4.19"):
+                if not os.path.isfile(os.path.join(resume_from_checkpoint, WEIGHTS_NAME)):
+                    raise ValueError(f"Can't find a valid checkpoint at {resume_from_checkpoint}")
 
-            logger.info(f"Loading model from {resume_from_checkpoint}).")
+                logger.info(f"Loading model from {resume_from_checkpoint}).")
 
-            if os.path.isfile(os.path.join(resume_from_checkpoint, CONFIG_NAME)):
-                config = PretrainedConfig.from_json_file(os.path.join(resume_from_checkpoint, CONFIG_NAME))
-                checkpoint_version = config.transformers_version
-                if checkpoint_version is not None and checkpoint_version != __version__:
-                    logger.warn(
-                        f"You are resuming training from a checkpoint trained with {checkpoint_version} of "
-                        f"Transformers but your current version is {__version__}. This is not recommended and could "
-                        "yield to errors or unwanted behaviors."
-                    )
+                if os.path.isfile(os.path.join(resume_from_checkpoint, CONFIG_NAME)):
+                    config = PretrainedConfig.from_json_file(os.path.join(resume_from_checkpoint, CONFIG_NAME))
+                    checkpoint_version = config.transformers_version
+                    if checkpoint_version is not None and checkpoint_version != __version__:
+                        logger.warn(
+                            f"You are resuming training from a checkpoint trained with {checkpoint_version} of "
+                            f"Transformers but your current version is {__version__}. "
+                            "This is not recommended and could yield to errors or unwanted behaviors."
+                        )
 
-            # We load the model state dict on the CPU to avoid an OOM error.
-            state_dict = torch.load(os.path.join(resume_from_checkpoint, WEIGHTS_NAME), map_location="cpu")
-            # If the model is on the GPU, it still works!
-            self._load_state_dict_in_model(state_dict)
+                # We load the model state dict on the CPU to avoid an OOM error.
+                state_dict = torch.load(os.path.join(resume_from_checkpoint, WEIGHTS_NAME), map_location="cpu")
+                # If the model is on the GPU, it still works!
+                self._load_state_dict_in_model(state_dict)
 
-            # release memory
-            del state_dict
+                # release memory
+                del state_dict
+            else:
+                self._load_from_checkpoint(resume_from_checkpoint)
 
         # If model was re-initialized, put it on the right device and update self.model_wrapped
         if model_reloaded:
@@ -833,21 +834,25 @@ class NLPTrainer(Trainer):
             if args.local_rank != -1:
                 dist.barrier()
 
-            logger.info(
-                f"Loading best model from {self.state.best_model_checkpoint} (score: {self.state.best_metric})."
-            )
-
-            best_model_path = os.path.join(self.state.best_model_checkpoint, WEIGHTS_NAME)
-            if os.path.exists(best_model_path):
-                # We load the model state dict on the CPU to avoid an OOM error.
-                state_dict = torch.load(best_model_path, map_location="cpu")
-                # If the model is on the GPU, it still works!
-                self._load_state_dict_in_model(state_dict)
-            else:
-                logger.warn(
-                    f"Could not locate the best model at {best_model_path}, if you are running a distributed training "
-                    "on multiple nodes, you should activate `--save_on_each_node`."
+            if version.parse(__version__) < version.parse("4.19"):
+                logger.info(
+                    f"Loading best model from {self.state.best_model_checkpoint} (score: {self.state.best_metric})."
                 )
+
+                best_model_path = os.path.join(self.state.best_model_checkpoint, WEIGHTS_NAME)
+                if os.path.exists(best_model_path):
+                    # We load the model state dict on the CPU to avoid an OOM error.
+                    state_dict = torch.load(best_model_path, map_location="cpu")
+                    # If the model is on the GPU, it still works!
+                    self._load_state_dict_in_model(state_dict)
+                else:
+                    logger.warn(
+                        f"Could not locate the best model at {best_model_path}, "
+                        "if you are running a distributed training on multiple nodes, "
+                        "you should activate `--save_on_each_node`."
+                    )
+            else:
+                self._load_best_model()
 
         # add remaining tr_loss
         self._total_loss_scalar += tr_loss.item()
