@@ -1,76 +1,107 @@
-Step-by-Step
-============
+# Step-by-Step
 
 # Prerequisite
-1.1 Install python environment
+
 ### 1. Installation
-  ```shell
-  conda create -n <env name> python=3.7
-  conda activate <env name>
-  cd <nc_folder>/examples/deepengine/nlp/bert_large
-  pip install 1.15.0 up2 from links below:
-  https://storage.googleapis.com/intel-optimized-tensorflow/intel_tensorflow-1.15.0up2-cp37-cp37m-manylinux2010_x86_64.whl
-  pip install -r requirements.txt
-  ```
+1.1 Install python environment
+Create a new python environment
+```shell
+conda create -n <env name> python=3.8
+conda activate <env name>
+```
+Check the gcc version using $gcc-v, make sure the gcc version is higher than 7.0.
+If not, you need to update gcc by yourself.
+Make sure the cmake version is 3 rather than 2.
+If not, you need to install cmake.
+```shell
+cmake --version
+conda install cmake
+```
+Install NLPTookit from source code
+```shell
+cd <NLPToolkit_folder>
+git submodule update --init --recursive
+python setup.py install
+```
+Install package for examples
+```shell
+cd <NLPToolkit_folder>/examples/deploy/nlp_executor/squad/bert_large
+pip install -r requirements.txt
+```
 1.2 Install C++ environment (Optional)
-Install engine according to [Engine](../../../../../docs/engine.md) if need the performance in C++.
+Install engine according to [nlp_executor](<NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/docs/executor.md)
+if need the performance in C++.
 Preload libiomp5.so can improve the performance when bs=1.
 ```
 export LD_PRELOAD=<path_to_libiomp5.so>
 ```
-### 2. Prepare Dataset and Model
-### 2.1 Prepare Dataset
-  ```shell
-  bash prepare_dataset.sh
-  ```
+Preload libjemalloc.so can improve the performance when multi instance.
+```
+export LD_PRELOAD=<NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/executor/third_party/jemalloc/lib/libjemalloc.so
+```
+Using weight sharing can save memory and improve the performance when multi instance.
+```
+export SHARED_INST_NUM=<inst_num>
+```
+### 2. Prepare Dataset and pretrained model
 
-### 2.2 Download TensorFlow model (The model will be in build/data/bert_tf_v1_1_large_fp32_384_v2 folder):
-  ```shell
-  bash prepare_model.sh
-  ```
+### 2.1 Get dataset
 
-### 2.3 Get the frozen pb model (The model.pb will be in build/data):
-  ```shell
-  python tf_freeze_bert.py
-  ```
+```shell
+python prepare_dataset.py --output_dir=./data
+```
 
-### Run
+### 2.2 Get model
+Executor can parse Tensorflow/Pytorch/ONNX and IR model. Here is an example to get a PTQ int8 ONNX model.
 
-### 1. To get the tuned model and its accuracy:
+```shell
+bash prepare_model.sh
+```
+
+### Benchmark
+
+  2.1 accuracy  
   run python
   ```shell
-  GLOG_minloglevel=2 python run_engine.py --tune
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=1
   ```
   or run shell
   ```shell
-  bash run_tuning.sh --config=bert.yaml --input_model=build/data/model.pb --output_model=ir --dataset_location=build/data
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=1
   ```
-
-### 2. To get the benchmark of tuned model:
-  2.1 accuracy
-  run python
+  if you just want a quick start, you can run only a part of dataset, like this
   ```shell
-  GLOG_minloglevel=2 python run_engine.py --input_model=./ir --benchmark --mode=accuracy --batch_size=1
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --config=bert.yaml --input_model=ir --dataset_location=build/data --batch_size=1 --mode=accuracy
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
   ```
+  but the accuracy of quick start is unauthentic.
 
   2.2 performance
   run python
   ```shell
-  GLOG_minloglevel=2 python run_engine.py --input_model=./ir --benchmark --mode=performance --batch_size=1
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --seq_len=384
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --config=bert.yaml --input_model=ir --dataset_location=build/data --batch_size=1 --mode=performance
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --seq_len=384
   ```
-  or run C++
+  or compile framwork model to IR using python API
+  ```
+  from nlp_toolkit.backends.nlp_executor.compile import compile
+  graph = compile('./model_and_tokenizer/int8-model.onnx')
+  graph.save('./ir')
+  ```
+  and run C++  
   The warmup below is recommended to be 1/10 of iterations and no less than 3.
   ```
   export GLOG_minloglevel=2
   export OMP_NUM_THREADS=<cpu_cores>
   export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
-  numactl -C 0-<cpu_cores-1> <neural_compressor_folder>/engine/bin/inferencer --batch_size=<batch_size> --iterations=<iterations> --w=<warmup> --seq_len=384 --config=./ir/conf.yaml --weight=./ir/model.bin
+  export UNIFIED_BUFFER=1
+  numactl -C 0-<cpu_cores-1> <NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/bin/nlp_executor
+  --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
+  --seq_len=384 --config=./ir/conf.yaml --weight=./ir/model.bin
   ```

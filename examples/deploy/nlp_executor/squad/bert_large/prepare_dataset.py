@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2021 Intel Corporation
 #
@@ -13,31 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: 1.0
+import os
+import argparse
+from datasets import load_dataset
 
-model:
-  name: bert
-  framework: engine
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--output_dir', help='directory to save data to', type=str, default='data')
+    args = parser.parse_args()
 
-evaluation:
-  accuracy:
-    metric:
-      GLUE:
-        task: mrpc
-  performance:
-    warmup: 5
-    iteration: 10
-    configs:
-      num_of_instance: 1
-      cores_per_instance: 28
+    if not os.path.isdir(args.output_dir):
+        os.mkdir(args.output_dir)
 
-quantization:
-  calibration:
-    sampling_size: 40
-
-tuning:
-  accuracy_criterion:
-    relative: 0.01
-  exit_policy:
-    timeout: 0
-  random_seed: 9527
+    dataset = load_dataset('squad', None, cache_dir=args.output_dir, split='validation')

@@ -17,7 +17,6 @@
 
 import os
 import argparse
-import transformers
 from datasets import load_dataset
 
 
