@@ -205,7 +205,7 @@ class OptimizationArguments:
                   "PostTrainingDynamic and QuantizationAwareTraining."},
     )
     metric_name: Optional[str] = field(
-        default="eval_accuracy",
+        default="eval_f1",
         metadata={"help": "Metric used for the tuning strategy."},
     )
     is_relative: Optional[bool] = field(
