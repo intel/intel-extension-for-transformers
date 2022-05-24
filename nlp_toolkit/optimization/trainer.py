@@ -1392,7 +1392,12 @@ class NLPTrainer(Trainer):
         else:
             self.export_to_int8_onnx(*args, **kwargs)
 
-    def export_to_fp32_onnx(self, save_path=None, opset_version=14, do_constant_folding=True):
+    def export_to_fp32_onnx(self, 
+            save_path=None, 
+            opset_version=14, 
+            do_constant_folding=True,
+            verbose=True,
+            ):
         if self.fp32_model is None:
             model = self.model.eval()
         else:
@@ -1405,10 +1410,7 @@ class NLPTrainer(Trainer):
         eval_dataloader = self.get_eval_dataloader()
         it = iter(eval_dataloader)
         input = next(it)
-        input_names = list(input.keys())
-        for k in input_names:
-            if 'label' in k:
-                input.pop(k)
+        self._remove_label(input)
         # Set variable length axes
         symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
         axes_dict = {k: symbolic_names for k in input.keys()}
@@ -1423,18 +1425,19 @@ class NLPTrainer(Trainer):
             dynamic_axes=axes_dict,
             do_constant_folding=do_constant_folding,
         )
-        info = "ONNX Model exported to path: {0}".format(onnx_save_path)
-        logger.info("*"*len(info))
-        logger.info(info)
-        logger.info("*"*len(info))
+        if verbose:
+            info = "ONNX Model exported to path: {0}".format(onnx_save_path)
+            logger.info("*"*len(info))
+            logger.info(info)
+            logger.info("*"*len(info))
 
     def export_to_int8_onnx(self,
-                    save_path=None,
-                    quant_format='QDQ',
-                    dtype='U8U8',
-                    opset_version=14,
-                    opt_level='all',
-                    ):
+            save_path=None,
+            quant_format='QDQ',
+            dtype='U8U8',
+            opset_version=14,
+            opt_level='all',
+            ):
         if self.provider != 'inc':   # pragma: no cover
             logger.error("export_to_onnx API only supports INC model right now.")
             sys.exit(0)
@@ -1476,11 +1479,12 @@ class NLPTrainer(Trainer):
         all_op_types_to_quantize = op_types_to_quantize + addition_op_to_quantize
 
         import onnx
-        fp32_path = save_path if save_path \
-          else os.path.join(self.args.output_dir, 'fp32-model.onnx')
+        fp32_path = save_path + '.tmp' if save_path \
+          else os.path.join(self.args.output_dir, 'int8-model.onnx.tmp')
         onnx_save_path = save_path if save_path \
           else os.path.join(self.args.output_dir, 'int8-model.onnx')
-        self.export_to_fp32_onnx(fp32_path, opset_version=opset_version, do_constant_folding=False)
+        self.export_to_fp32_onnx(fp32_path, opset_version=opset_version, 
+                                 do_constant_folding=False, verbose=False)
         model = onnx.load(fp32_path)
         model = self._replace_gemm_with_matmul(model)
         onnx.save(model, fp32_path)
@@ -1562,7 +1566,7 @@ class NLPTrainer(Trainer):
                     for i, batch in enumerate(self.dataloader):
                         if i * self.batch_size >= self.datasize:
                             break
-                        batch.pop('labels')
+                        NLPTrainer._remove_label(batch)
                         batch = {k: v.detach().cpu().numpy() for k, v in batch.items()}
                         self.data.append(batch)
                     self.data = iter(self.data)
@@ -1584,6 +1588,7 @@ class NLPTrainer(Trainer):
                             #op_types_to_quantize=op_types_to_quantize,
                             extra_options={})
 
+        os.remove(fp32_path)
         # Post-optimization
         import onnx
         import onnxruntime as rt
@@ -1612,7 +1617,7 @@ class NLPTrainer(Trainer):
         eval_dataloader = self.get_eval_dataloader()
         it = iter(eval_dataloader)
         input = next(it)
-        input.pop('labels')
+        self._remove_label(input)
         jit_model = torch.jit.trace(
             self.model,
             tuple(input.values()),
@@ -1700,3 +1705,12 @@ class NLPTrainer(Trainer):
         model.graph().node.extend(new_nodes)
 
         return model.model
+    
+    @staticmethod
+    def _remove_label(input):
+        if "labels" in input: # for GLUE
+            input.pop('labels')
+        elif "start_positions" in input and "end_positions" in input: # for SQuAD
+            input.pop('start_positions')
+            input.pop('end_positions')
+        return input

@@ -26,7 +26,7 @@ class DummyDataset(data.Dataset):
         self.sequence_a = "NLP-toolkit is based in SH"
         self.sequence_b = "Where is NLP-toolkit based? NYC or SH"
         self.encoded_dict = self.tokenizer(self.sequence_a, self.sequence_b)
-        self.encoded_dict['label'] = 1
+        self.encoded_dict['labels'] = 1
 
     def __len__(self):
         return 1
