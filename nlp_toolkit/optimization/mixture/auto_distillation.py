@@ -18,6 +18,7 @@
 import os
 import random
 import numpy as np
+import shutil
 
 from neural_compressor.experimental import Distillation
 from neural_compressor.utils import logger
@@ -80,6 +81,18 @@ class AutoDistillation(object):
             "Keys of model_arch_paras should be the same with search_space_keys."
         return model_arch_paras
 
+    def load_search_results(self, path):
+        self.resumed_search_results = {}
+        if not os.path.exists(path):
+            return
+        lastest_results_record = os.path.join(path, 'lastest_results.npy')
+        self.resumed_search_results = np.load(lastest_results_record, allow_pickle=True).item()
+        os.makedirs(os.path.join(path, 'previous_results'), exist_ok=True)
+        for f in os.listdir(path):
+            if os.path.isfile(os.path.join(path, f)):
+                shutil.move(os.path.join(path, f), os.path.join(path, 'previous_results', f))
+        logger.info("Loaded previous results.")
+
     def search_loop(self, res_save_path=None):
         """AutoDistillation search loop.
         
@@ -89,6 +102,8 @@ class AutoDistillation(object):
         if res_save_path is None or not os.path.isdir(res_save_path):
             res_save_path = os.path.expanduser('~')
         save_path = os.path.join(res_save_path, 'AutoDistillationResults')
+        self.model_paras_num = {}
+        self.load_search_results(save_path)
         os.makedirs(save_path, exist_ok=True)
         for i in range(self.max_trials):
             logger.info(
@@ -97,12 +112,22 @@ class AutoDistillation(object):
                     )
                 )
             model_arch_paras = self.model_arch_proposition()
+            model = self.model_builder(model_arch_paras)
+            model_paras = sum(p.numel() for p in model.parameters())
+            logger.info("***** Number of model parameters: {:.2f}M *****".format(\
+                        model_paras / 10**6))
+            self.model_paras_num[tuple(model_arch_paras.values())] = model_paras
             if tuple(model_arch_paras.values()) in self.search_results:
                 logger.info("Skip evaluated model architecture {}.".format(model_arch_paras))
                 continue
-            logger.info("Assessing model architecture: {}.".format(model_arch_paras))
-            model = self.model_builder(model_arch_paras)
-            metrics = self.train_evaluate(model)
+            if tuple(model_arch_paras.values()) in self.resumed_search_results:
+                logger.info(
+                    "Find previous results of model architecture: {}.".format(model_arch_paras)
+                    )
+                metrics = self.resumed_search_results[tuple(model_arch_paras.values())]
+            else:
+                logger.info("Assessing model architecture: {}.".format(model_arch_paras))
+                metrics = self.train_evaluate(model)
             logger.info(
                 "Metrics of model architecture {} is {}.".format(model_arch_paras, metrics)
                 )
@@ -120,11 +145,16 @@ class AutoDistillation(object):
         return self.best_model_arch
 
     def dump_search_results(self, path):
+        lastest_results_record = os.path.join(os.path.dirname(path), 'lastest_results.npy')
+        np.save(lastest_results_record, self.search_results, allow_pickle=True)
         write_contents = '=' * 30 + ' All Search Results ' + '=' * 30 + '\n\n'
         for model_arch_vec in self.search_results:
             tmp = ','.join(['{}_{}'.format(k, v) \
                 for k, v in zip(self.search_space_keys, model_arch_vec)])
-            write_contents += '{}: {}\n'.format(tmp, self.search_results[model_arch_vec])
+            write_contents += '{}: {} Paras: {}M\n'.format(
+                tmp, self.search_results[model_arch_vec],
+                self.model_paras_num[model_arch_vec] / 10**6
+                )
         write_contents += '\n\n\n' + '=' * 30 + ' Best Search Results ' + '=' * 30 + '\n\n'
         self.find_best_model_arches()
         for i, model_arch in enumerate(self.best_model_arch):
@@ -132,18 +162,22 @@ class AutoDistillation(object):
             tmp = ','.join(['{}_{}'.format(k, v) \
                 for k, v in zip(self.search_space_keys, model_arch_vec)])
             write_contents += \
-                '{}. {}: {}\n'.format(i+1, tmp, self.search_results[model_arch_vec])
+                '{}. {}: {} Paras: {}M\n'.format(
+                    i+1, tmp, self.search_results[model_arch_vec],
+                    self.model_paras_num[model_arch_vec] / 10**6
+                    )
         with open(path, mode='w') as f:
             f.write(write_contents)
+
+    def paras_vec2paras_dict(self, paras_vec):
+        return {k:v for k, v in zip(self.search_space_keys, paras_vec)}
 
     def find_best_model_arches(self):
         assert len(self.search_results) > 0, "Zero result in search_results."
         model_arches = list(self.search_results.keys())
         metrics = [self.metrics_conversion(self.search_results[ma]) for ma in model_arches]
         pareto_front_indices = find_pareto_front(metrics)
-        paras_vec2paras_dict = lambda paras_vec:{k:v \
-            for k, v in zip(self.search_space_keys, paras_vec)}
-        self.best_model_arch = [paras_vec2paras_dict(model_arches[i]) \
+        self.best_model_arch = [self.paras_vec2paras_dict(model_arches[i]) \
             for i in pareto_front_indices]
 
     def train_evaluate(self, model):

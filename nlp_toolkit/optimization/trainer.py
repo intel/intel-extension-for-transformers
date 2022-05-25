@@ -1129,6 +1129,7 @@ class NLPTrainer(Trainer):
             return {metric_name: metrics.get(metric_name) for metric_name in metric_names}
 
         def train_func_builtin(model):
+            from torch.utils.data import Subset
             def run_distillers(model, distillers, train_steps, block_names,
                                checkpoints=None, presentation='flash distillation'):
                 max_train_steps=0
@@ -1155,9 +1156,8 @@ class NLPTrainer(Trainer):
                     # distiller.eval_func = \
                     #     partial(take_eval_steps, trainer=self, metric_name='eval_loss')
                     # shuffle train_dataset before each training
-                    indices = np.arange(len(self.train_dataset))
+                    indices = list(range(len(self.train_dataset)))
                     np.random.shuffle(indices)
-                    from torch.utils.data import Subset
                     self.train_dataset = Subset(self.train_dataset, indices)
                     model = distiller().model
                     logger.info(
