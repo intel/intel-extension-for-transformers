@@ -48,14 +48,19 @@ export SHARED_INST_NUM=<inst_num>
 ### 2.1 Get dataset
 
 ```shell
-python prepare_dataset.py --output_dir=./data
+python prepare_dataset.py --dataset_name=glue --task_name=mrpc --output_dir=./data
 ```
 
 ### 2.2 Get model
-Executor can parse Tensorflow/Pytorch/ONNX and IR model. Here is an example to get a PTQ int8 ONNX model.
-
+Executor can parse Tensorflow/Pytorch/ONNX and IR model.  
+Here are two examples to get ONNX model.
+You can get FP32 modol from optimize by setting precision=fp32 as follows:
 ```shell
-bash prepare_model.sh
+bash prepare_model.sh --input_model=M-FAC/bert-mini-finetuned-mrpc --task_name=mrpc --output_dir=./model_and_tokenizer --precision=fp32
+```
+And for better perfromance, you can also get a PTQ int8 model by setting precision=int8.
+```shell
+bash prepare_model.sh --input_model=M-FAC/bert-mini-finetuned-mrpc --task_name=mrpc --output_dir=./model_and_tokenizer --precision=int8
 ```
 
 ### Benchmark

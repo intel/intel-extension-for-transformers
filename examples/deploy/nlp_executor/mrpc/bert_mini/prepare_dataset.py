@@ -22,10 +22,20 @@ from datasets import load_dataset
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output_dir', help='directory to save data to', type=str, default='data')
+    parser.add_argument('--dataset_name',
+                        help='dataset name',
+                        type=str, default='glue')
+    parser.add_argument('--task_name',
+                        help='task name in dataset',
+                        type=str, default='mrpc')
+    parser.add_argument('--output_dir',
+                        help='directory to save data to',
+                        type=str, default='./data')
     args = parser.parse_args()
 
     if not os.path.isdir(args.output_dir):
         os.mkdir(args.output_dir)
 
-    dataset = load_dataset('glue', 'mrpc', cache_dir=args.output_dir, split='validation')
+    dataset = load_dataset(args.dataset_name, args.task_name,
+                           cache_dir=args.output_dir, split='validation')
+
