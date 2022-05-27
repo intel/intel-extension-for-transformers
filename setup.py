@@ -146,7 +146,7 @@ if __name__ == '__main__':
         cmdclass={
             'build_ext': build_ext,
         },
-        install_requires=[],
+        install_requires=['numpy', 'transformers>=4.12.0'],
         scripts=['nlp_toolkit/backends/nlp_executor/bin/nlp_executor'],
         python_requires='>=3.6.0',
         classifiers=[

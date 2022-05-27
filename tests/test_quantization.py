@@ -15,6 +15,7 @@ from transformers import (
 )
 
 os.environ["WANDB_DISABLED"] = "true"
+os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
 MODEL_NAME = "distilbert-base-uncased"
 
 class DummyDataset(data.Dataset):
@@ -66,6 +67,7 @@ class TestQuantization(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
+        shutil.rmtree('./mlruns', ignore_errors=True)
         shutil.rmtree('./tmp_trainer', ignore_errors=True)
         shutil.rmtree('./quantized_model', ignore_errors=True)
 
@@ -83,7 +85,7 @@ class TestQuantization(unittest.TestCase):
             if mode == QuantizationMode.POSTTRAININGSTATIC:
                 jit_model = self.trainer.export_to_jit()
                 self.trainer.export_to_onnx('fp32-model.onnx')
-            self.assertTrue(check_onnx('fp32-model.onnx', self.trainer.get_eval_dataloader()))
+                self.assertTrue(check_onnx('fp32-model.onnx', self.trainer.get_eval_dataloader()))
 
             tune_metric = metrics.Metric(
                 name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
