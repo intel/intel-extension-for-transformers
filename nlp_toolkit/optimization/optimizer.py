@@ -2,7 +2,13 @@ import logging
 import os
 import torch
 
-from neural_compressor.experimental import common, Component, Distillation
+from neural_compressor.experimental import(
+    common,
+    Component,
+    Distillation,
+    Pruning,
+    Quantization
+)
 from neural_compressor.experimental.scheduler import Scheduler
 from nlp_toolkit import(
     DistillationConfig,
@@ -10,6 +16,7 @@ from nlp_toolkit import(
     QuantizationConfig,
     PruningConfig
 )
+
 from nlp_toolkit.optimization.quantization import QuantizationMode
 from transformers import PreTrainedModel
 from transformers.file_utils import WEIGHTS_NAME
@@ -19,12 +26,11 @@ from typing import Callable, Optional, Union, List
 logger = logging.getLogger(__name__)
 
 
-class OptimizerPipeline:
+class Orchestrate_optimizer:
     def __init__(
         self,
         model: Union[PreTrainedModel, torch.nn.Module],
         components: Optional[List[Component]] = [],
-        one_shot_optimization: Optional[bool] = False,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
@@ -35,13 +41,12 @@ class OptimizerPipeline:
             components (List[:obj:`Component`], `optional`):
                 List of Component objects which contains Quantization, 
                 Pruning, Distillation objects.
-            one_shot_optimization (bool, `optional`):
-                Whether to do multiple compression processes together.
             eval_func (:obj:`Callable`, `optional`):
                 Evaluation function to evaluate the tuning objective.
             train_func (:obj:`Callable`, `optional`):
                 Training function which will be combined with pruning.
         """
+
 
         if len(components) == 0:
             raise RuntimeError("`NLPOptimizer` requires at least one `Quantization`, "
@@ -50,7 +55,7 @@ class OptimizerPipeline:
         self.scheduler = Scheduler()
         self.scheduler.model = common.Model(model)
 
-        if one_shot_optimization and len(components) > 1:
+        if len(components) > 1:
             agent = self.scheduler.combine(*components)
             agent.train_func = train_func
             agent.eval_func = eval_func
@@ -65,6 +70,7 @@ class OptimizerPipeline:
     def fit(self):
         opt_model = self.scheduler()
         return opt_model
+
 
 
 class NoTrainerOptimizer:

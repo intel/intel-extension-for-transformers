@@ -301,7 +301,7 @@ class PruningConfig(object):
 
     @framework.setter
     def framework(self, framework):
-        assert framework.lower() in ["pytorch"], \
+        assert framework.lower() in ["pytorch", "pytorch_fx"], \
             "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework.lower()
 
@@ -337,7 +337,7 @@ class DistillationConfig(object):
 
     @framework.setter
     def framework(self, framework):
-        assert framework in ["pytorch"], \
+        assert framework in ["pytorch", "pytorch_fx"], \
             "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework
 

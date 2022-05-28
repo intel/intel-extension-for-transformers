@@ -14,7 +14,7 @@ from .optimization.distillation import (
     SUPPORTED_DISTILLATION_CRITERION_MODE,
 )
 from .optimization.model import OptimizedModel
-from .optimization.optimizer import OptimizerPipeline, NoTrainerOptimizer
+from .optimization.optimizer import Orchestrate_optimizer, NoTrainerOptimizer
 from .optimization.pruning import Pruner, PruningMode, SUPPORTED_PRUNING_MODE
 from .optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from .optimization.mixture.auto_distillation import AutoDistillation

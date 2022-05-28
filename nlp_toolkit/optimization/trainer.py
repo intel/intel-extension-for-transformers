@@ -20,7 +20,8 @@ from nlp_toolkit import (
     PruningMode,
     QuantizationConfig,
     QuantizationMode,
-    PruningConfig
+    PruningConfig,
+    Orchestrate_optimizer
 )
 from nlp_toolkit.optimization.metrics import Metric
 from packaging import version
@@ -428,6 +429,49 @@ class NLPTrainer(Trainer):
         self.opt_model = self.distiller.fit()
 
         return self.opt_model
+
+    def orchestrate_optimizations(
+        self,
+        config_list,
+        teacher_model: Optional[Callable] = None,
+        eval_func: Optional[Callable] = None,
+        train_func: Optional[Callable] = None,
+    ):
+        self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
+        self._train_func = self.builtin_train_func if train_func is None else train_func
+
+        components = self.create_optimizer_builtin(config_list, teacher_model)
+
+        self.orchestrate_optimizer = Orchestrate_optimizer(self.model, components, \
+                                     eval_func=self.eval_func, train_func=self.train_func)
+        self.component = self.orchestrate_optimizer.scheduler.components[0]
+        self.opt_model = self.orchestrate_optimizer.fit()
+
+        return self.opt_model
+
+    def create_optimizer_builtin(self, config_list, teacher_model=None):
+        components = []
+        for config in config_list:
+            if isinstance(config, QuantizationConfig):
+                component = self.init_quantizer(config)
+                component.eval_func = self._eval_func
+                component.train_func = self._train_func
+            elif isinstance(config, PruningConfig):
+                component = self.init_pruner(config)
+                component.eval_func = self._eval_func
+                component.train_func = self._train_func
+            elif isinstance(config, DistillationConfig):
+                assert isinstance(teacher_model, torch.nn.Module), \
+                        "The teacher_model is needed for distiller"
+                component = self.init_distiller(config, teacher_model)
+                component.eval_func = self._eval_func
+                component.train_func = self._train_func
+                component.create_criterion()
+            else:
+                assert False, "Orchestrate_optimizations config_list requires at least one" \
+                    "       `QuantizationConfig`, `PruningConfig` or `DistillationConfig` object"
+            components.append(component)
+        return components
 
     def train(
         self,
