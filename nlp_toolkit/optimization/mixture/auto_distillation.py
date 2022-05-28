@@ -15,17 +15,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import os
 import random
-import numpy as np
 import shutil
+import torch
 
-from neural_compressor.experimental import Distillation
-from neural_compressor.utils import logger
+from functools import partial
+from multiprocessing import managers, Process
 from neural_compressor.conf.config import Conf, schema
 from neural_compressor.conf.dotdict import DotDict
+from neural_compressor.experimental import Distillation
 from neural_compressor.strategy.bayesian import BayesianOptimization
+from neural_compressor.utils import logger
 from nlp_toolkit.optimization.config import AutoDistillationConfig
+from queue import Queue
+
+def distributed_log_wrapper(func, msg):
+    if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+        func(msg)
+
+logger.info = partial(distributed_log_wrapper, logger.info)
+logger.warning = partial(distributed_log_wrapper, logger.info)
+logger.debug = partial(distributed_log_wrapper, logger.info)
+
+QUEUE = Queue()
+
+class QueueManager(managers.BaseManager):
+    def get_queue(self): return QUEUE # for pylint error only
+
+# needed for sharing QUEUE between processes
+QueueManager.register('get_queue', callable=lambda:QUEUE)
 
 class AutoDistillation(object):
     """
@@ -39,35 +59,15 @@ class AutoDistillation(object):
     """
 
     def __init__(self, model_builder, conf_fname_or_dict):
-        if isinstance(conf_fname_or_dict, str):
-            if os.path.isfile(conf_fname_or_dict):
-                self.config = Conf(conf_fname_or_dict).usr_cfg
-            else:
-                raise FileNotFoundError(
-                    "{} is not a file, please provide a file path.".format(conf_fname_or_dict)
-                    )
-        elif isinstance(conf_fname_or_dict, AutoDistillationConfig):
-            self.config = conf_fname_or_dict.config
-            schema.validate(self.config)
-        elif isinstance(conf_fname_or_dict, dict):
-            config = {}
-            config['model'] = {'name': 'AutoDistillation', 'framework': 'NA'}
-            config['auto_distillation'] = conf_fname_or_dict
-            self.config = DotDict(config)
-            schema.validate(self.config)
-        else:
-            raise NotImplementedError(
-                "Please provide a str path to config file or a config dict."
-                )
         self.search_space = {}
         self.model_builder = model_builder
         self._advisor = None
         self._train_func = None
         self._eval_func = None
         self.search_results = {}
-        self.best_model_arch = None
+        self.best_model_archs = None
         self.seed = None
-        self.init_by_cfg()
+        self.init_by_cfg(conf_fname_or_dict)
 
     def model_arch_proposition(self):
         """Propose architecture of the model based on search algorithm for next search iteration.
@@ -81,20 +81,8 @@ class AutoDistillation(object):
             "Keys of model_arch_paras should be the same with search_space_keys."
         return model_arch_paras
 
-    def load_search_results(self, path):
-        self.resumed_search_results = {}
-        if not os.path.exists(path):
-            return
-        lastest_results_record = os.path.join(path, 'lastest_results.npy')
-        self.resumed_search_results = np.load(lastest_results_record, allow_pickle=True).item()
-        os.makedirs(os.path.join(path, 'previous_results'), exist_ok=True)
-        for f in os.listdir(path):
-            if os.path.isfile(os.path.join(path, f)):
-                shutil.move(os.path.join(path, f), os.path.join(path, 'previous_results', f))
-        logger.info("Loaded previous results.")
-
-    def search_loop(self, res_save_path=None):
-        """AutoDistillation search loop.
+    def search(self, res_save_path=None):
+        """AutoDistillation search process.
         
         Returns:
             Best model architecture found in search process.
@@ -105,17 +93,41 @@ class AutoDistillation(object):
         self.model_paras_num = {}
         self.load_search_results(save_path)
         os.makedirs(save_path, exist_ok=True)
+        if torch.distributed.is_initialized() and torch.distributed.get_rank() == 0:
+            manager = QueueManager(address=('127.0.0.1', 50000), authkey=b'autodistillation')
+            server = manager.get_server()
+            server_process = Process(target=server.serve_forever)
+            server_process.start()
+
         for i in range(self.max_trials):
             logger.info(
                 "{fix} Trial {n} starts, {r} trials to go {fix}".format(
                     n=i+1, r=self.max_trials-i-1, fix="="*30
-                    )
                 )
-            model_arch_paras = self.model_arch_proposition()
+            )
+            if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+                model_arch_paras = self.model_arch_proposition()
+                logger.info("Model architecture {} proposed.".format(model_arch_paras))
+            if torch.distributed.is_initialized():
+                if torch.distributed.get_rank() != 0:
+                    torch.distributed.barrier()
+                manager = QueueManager(address=('127.0.0.1', 50000), authkey=b'autodistillation')
+                manager.connect()
+                queue = manager.get_queue()
+                logger.info('Got Queue')
+                if torch.distributed.get_rank() != 0:
+                    model_arch_paras = queue.get()
+                    logger.info("Got model architecture {}.".format(model_arch_paras))
+                else:
+                    for _ in range(torch.distributed.get_world_size() - 1):
+                        queue.put(model_arch_paras)
+                    logger.info('Put model_arch_paras to Queue, wait for other worker.')
+                    torch.distributed.barrier()
             model = self.model_builder(model_arch_paras)
             model_paras = sum(p.numel() for p in model.parameters())
-            logger.info("***** Number of model parameters: {:.2f}M *****".format(\
-                        model_paras / 10**6))
+            logger.info(
+                "***** Number of model parameters: {:.2f}M *****".format(model_paras / 10**6)
+            )
             self.model_paras_num[tuple(model_arch_paras.values())] = model_paras
             if tuple(model_arch_paras.values()) in self.search_results:
                 logger.info("Skip evaluated model architecture {}.".format(model_arch_paras))
@@ -123,26 +135,68 @@ class AutoDistillation(object):
             if tuple(model_arch_paras.values()) in self.resumed_search_results:
                 logger.info(
                     "Find previous results of model architecture: {}.".format(model_arch_paras)
-                    )
+                )
                 metrics = self.resumed_search_results[tuple(model_arch_paras.values())]
             else:
                 logger.info("Assessing model architecture: {}.".format(model_arch_paras))
-                metrics = self.train_evaluate(model)
+                metrics = self.performance_estimation(model)
             logger.info(
                 "Metrics of model architecture {} is {}.".format(model_arch_paras, metrics)
-                )
-            self.advisor.feedback(sum(self.metrics_conversion(metrics)))
+            )
             self.search_results[tuple(model_arch_paras.values())] = metrics
-            self.dump_search_results(os.path.join(save_path, 'Trial_{}_results.txt'.format(i+1)))
-        self.find_best_model_arches()
+            if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+                self.advisor.feedback(sum(self.metrics_conversion(metrics)))
+                self.dump_search_results(
+                    os.path.join(save_path, 'Trial_{}_results.txt'.format(i+1))
+                )
+
+        if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+            for model_arch_vec in self.resumed_search_results:
+                if model_arch_vec not in self.search_results:
+                    self.search_results[model_arch_vec] = \
+                        self.resumed_search_results[model_arch_vec]
+            self.dump_search_results(os.path.join(save_path, 'Final_results.txt'.format(i+1)))
+        if torch.distributed.is_initialized():
+            if torch.distributed.get_rank() == 0:
+                torch.distributed.barrier()
+                server_process.terminate()
+            else:
+                torch.distributed.barrier()
+        self.find_best_model_archs()
         logger.info(
             "{fix} Found {n} best model architectures {fix}".format(
-                n=len(self.best_model_arch), fix="="*30
-                )
+                n=len(self.best_model_archs), fix="="*30
             )
-        for i, model_arch in enumerate(self.best_model_arch):
+        )
+        for i, model_arch in enumerate(self.best_model_archs):
             logger.info("Best model architecture {}: {}".format(i+1, model_arch))
-        return self.best_model_arch
+        return self.best_model_archs
+
+    def performance_estimation(self, model):
+        """Train and evaluate the model.
+
+        Returns:
+            Evaluated metrics of the model.
+        """
+        assert self._train_func is not None and self._eval_func is not None, \
+            "train_func and eval_func must be set."
+        model = self._train_func(model)
+        return self._eval_func(model)
+
+    def load_search_results(self, path):
+        self.resumed_search_results = {}
+        lastest_results_record = os.path.join(path, 'lastest_results.npy')
+        if not os.path.exists(path) or not os.path.exists(lastest_results_record):
+            return
+        self.resumed_search_results = np.load(lastest_results_record, allow_pickle=True).item()
+        if torch.distributed.is_initialized():
+            torch.distributed.barrier()
+        if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+            os.makedirs(os.path.join(path, 'previous_results'), exist_ok=True)
+            for f in os.listdir(path):
+                if os.path.isfile(os.path.join(path, f)):
+                    shutil.move(os.path.join(path, f), os.path.join(path, 'previous_results', f))
+        logger.info("Loaded previous results.")
 
     def dump_search_results(self, path):
         lastest_results_record = os.path.join(os.path.dirname(path), 'lastest_results.npy')
@@ -154,10 +208,10 @@ class AutoDistillation(object):
             write_contents += '{}: {} Paras: {}M\n'.format(
                 tmp, self.search_results[model_arch_vec],
                 self.model_paras_num[model_arch_vec] / 10**6
-                )
+            )
         write_contents += '\n\n\n' + '=' * 30 + ' Best Search Results ' + '=' * 30 + '\n\n'
-        self.find_best_model_arches()
-        for i, model_arch in enumerate(self.best_model_arch):
+        self.find_best_model_archs()
+        for i, model_arch in enumerate(self.best_model_archs):
             model_arch_vec = tuple(model_arch.values())
             tmp = ','.join(['{}_{}'.format(k, v) \
                 for k, v in zip(self.search_space_keys, model_arch_vec)])
@@ -165,31 +219,22 @@ class AutoDistillation(object):
                 '{}. {}: {} Paras: {}M\n'.format(
                     i+1, tmp, self.search_results[model_arch_vec],
                     self.model_paras_num[model_arch_vec] / 10**6
-                    )
+            )
         with open(path, mode='w') as f:
             f.write(write_contents)
 
-    def paras_vec2paras_dict(self, paras_vec):
+    def params_vec2params_dict(self, paras_vec):
+        assert len(paras_vec) == len(self.search_space_keys), \
+            "Length of paras_vec and search_space_keys should be the same."
         return {k:v for k, v in zip(self.search_space_keys, paras_vec)}
 
-    def find_best_model_arches(self):
+    def find_best_model_archs(self):
         assert len(self.search_results) > 0, "Zero result in search_results."
         model_arches = list(self.search_results.keys())
         metrics = [self.metrics_conversion(self.search_results[ma]) for ma in model_arches]
         pareto_front_indices = find_pareto_front(metrics)
-        self.best_model_arch = [self.paras_vec2paras_dict(model_arches[i]) \
+        self.best_model_archs = [self.params_vec2params_dict(model_arches[i]) \
             for i in pareto_front_indices]
-
-    def train_evaluate(self, model):
-        """Train and evaluate the model.
-        
-        Returns:
-            Evaluated metrics of the model.
-        """
-        assert self._train_func is not None and self._eval_func is not None, \
-            "train_func and eval_func must be set."
-        model = self._train_func(model)
-        return self._eval_func(model)
 
     def metrics_conversion(self, metrics):
         if isinstance(metrics, dict):
@@ -206,13 +251,36 @@ class AutoDistillation(object):
             for metric, higher_is_better in zip(metrics, self.higher_is_better)]
         return converted_metrics
 
-    def init_by_cfg(self):
-        assert self.config.auto_distillation is not None, \
-            "auto_distillation section must be set"
+    def init_by_cfg(self, conf_fname_or_dict):
+        if isinstance(conf_fname_or_dict, str):
+            if os.path.isfile(conf_fname_or_dict):
+                self.config = Conf(conf_fname_or_dict).usr_cfg
+            else:
+                raise FileNotFoundError(
+                    "{} is not a file, please provide a file path.".format(conf_fname_or_dict)
+                )
+        elif isinstance(conf_fname_or_dict, AutoDistillationConfig):
+            self.config = conf_fname_or_dict.config
+            schema.validate(self.config)
+        elif isinstance(conf_fname_or_dict, dict):
+            config = {}
+            config['model'] = {'name': 'AutoDistillation', 'framework': 'NA'}
+            config['auto_distillation'] = conf_fname_or_dict
+            self.config = DotDict(config)
+            schema.validate(self.config)
+        else:
+            raise NotImplementedError(
+                "Please provide a str path to config file or a config dict."
+            )
+        assert self.config.auto_distillation is not None, "auto_distillation section must be set"
         auto_distillation_cfg = self.config.auto_distillation
-
         # search related
-        self.search_cfg = auto_distillation_cfg.search
+        self.init_search_cfg(auto_distillation_cfg)
+        # flash distillation related
+        self.flash_distillation_config = auto_distillation_cfg.flash_distillation
+
+    def init_search_cfg(self, config):
+        self.search_cfg = config.search
         self.search_space = self.search_cfg.search_space
         self.search_space_keys = sorted(self.search_space.keys())
         for k in self.search_space_keys:
@@ -238,10 +306,7 @@ class AutoDistillation(object):
         else:
             raise NotImplementedError(
                 'Unsupported \'{}\' search algorithm'.format(self.search_algorithm)
-                )
-
-        ## flash distillation related
-        self.flash_distillation_config = auto_distillation_cfg.flash_distillation
+            )
 
     def create_distillers(self):
         def create_distiller(distillation_cfg):
@@ -348,7 +413,7 @@ def create_search_space_pool(search_space, idx=0):
     key = search_space_keys[idx]
     search_space_pool = []
     for v in search_space[key]:
-        sub_search_space_pool = create_search_space_pool(idx+1, search_space)
+        sub_search_space_pool = create_search_space_pool(search_space, idx+1)
         search_space_pool += [[v] + item for item in sub_search_space_pool]
     return search_space_pool
 
@@ -368,7 +433,7 @@ class Searcher(object):
     def feedback(self, metric):
         pass
 
-    def params_vec2parameters(self, para_vec):
+    def params_vec2params_dict(self, para_vec):
         assert len(para_vec) == len(self.search_space_keys), \
             "Length of para_vec and search_space_keys should be the same."
         return {k: para_vec[i] for i, k in enumerate(self.search_space_keys)}
@@ -382,7 +447,7 @@ class GridSearcher(Searcher):
     def suggestion(self):
         res = self.search_space_pool[self.idx]
         self.idx = (self.idx + 1) % len(self.search_space_pool)
-        return self.params_vec2parameters(res)
+        return self.params_vec2params_dict(res)
 
 class RandomSearcher(Searcher):
     def __init__(self, search_space, seed=42) -> None:
@@ -397,7 +462,7 @@ class RandomSearcher(Searcher):
             self.indices_pool = list(range(len(self.search_space_pool)))
             random.shuffle(self.indices_pool)
         idx = self.indices_pool.pop(-1)
-        return self.params_vec2parameters(self.search_space_pool[idx])
+        return self.params_vec2params_dict(self.search_space_pool[idx])
 
 class BayesianOptimizationSearcher(Searcher):
     def __init__(self, search_space, seed=42) -> None:
@@ -409,7 +474,7 @@ class BayesianOptimizationSearcher(Searcher):
     def suggestion(self):
         param_indices = self.bo_agent.gen_next_params()
         self.last_param_indices = param_indices
-        return self.params_vec2parameters(self.indices2params_vec(param_indices))
+        return self.params_vec2params_dict(self.indices2params_vec(param_indices))
 
     def feedback(self, metric):
         assert self.last_param_indices is not None, "Need run suggestion first " + \

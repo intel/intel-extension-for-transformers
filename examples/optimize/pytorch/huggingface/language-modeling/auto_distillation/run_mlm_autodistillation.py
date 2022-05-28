@@ -243,10 +243,22 @@ class OptimizationArguments:
         default=False,
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
-    auto_distillation_config: Optional[str] = field(
-        default=None,
+    flash_distillation_steps: int = field(
+        default=500,
         metadata={
-            "help": "Path to the directory containing the YAML configuration file used to control the distillation behavior."
+            "help": "Steps for each stage in knowledge transfer."
+        },
+    )
+    regular_distillation_steps: int = field(
+        default=25000,
+        metadata={
+            "help": "Steps for each stage in regular distillation."
+        },
+    )
+    max_trials: int = field(
+        default=100,
+        metadata={
+            "help": "Maximum trials for AutoDistillation."
         },
     )
 
@@ -429,21 +441,19 @@ def main():
                 mask = labels != -100
                 preds = np.argmax(logits[mask], axis=-1)
                 return (preds == labels[mask]).mean()
-            
+
             def loss(logits, labels):
-                logits = torch.tensor(logits)
-                labels = torch.tensor(labels)
+                mask = labels != -100
+                logits = torch.tensor(logits[mask])
+                labels = torch.tensor(labels[mask])
                 return torch.nn.CrossEntropyLoss()(logits.view(-1, logits.shape[-1]), 
                                                    labels.view(-1)).item()
-            
+
             mlm_acc = accuracy(eval_prediction.predictions[0], eval_prediction.label_ids[0])
             nsp_acc = accuracy(eval_prediction.predictions[1], eval_prediction.label_ids[1])
             mlm_loss = loss(eval_prediction.predictions[0], eval_prediction.label_ids[0])
             nsp_loss = loss(eval_prediction.predictions[1], eval_prediction.label_ids[1])
-            try:
-                perplexity = math.exp(mlm_loss)
-            except OverflowError:
-                perplexity = float("inf")
+            perplexity = np.exp(mlm_loss).item()
             return {
                 "mlm_acc": mlm_acc,
                 "mlm_loss": mlm_loss,
@@ -470,109 +480,163 @@ def main():
 
     # Auto Distillation
     if optim_args.auto_distillation:
-        stages = 24
-        autodistillation_config = \
-            AutoDistillationConfig(
-            search_space={
-              'hidden_size': [128, 246, 384, 512],
-              'intra_bottleneck_size': [64, 96, 128, 160],
-              'num_attention_heads': [1, 2, 4, 8],
-              'intermediate_size': [384, 512, 640],
-              'num_feedforward_networks': [2, 4, 6]
-              },
-            max_trials=100,
-            metrics=[
-                metrics.Metric(name="eval_loss", greater_is_better=False),
-                metrics.Metric(name="latency", greater_is_better=False),
-            ],
-            knowledge_transfer=FlashDistillationConfig(
-              block_names=['mobilebert.encoder.layer.{}'.format(i) for i in range(stages)],
-              layer_mappings_for_knowledge_transfer=[
-                    [
-                      (
-                        'mobilebert.encoder.layer.{}.attention.self'.format(i), '1',
-                        'bert.encoder.layer.{}.attention.self'.format(i), '1'
-                      ),
-                      (
-                        'mobilebert.encoder.layer.{}.output'.format(i), 
-                        'bert.encoder.layer.{}.output'.format(i)
-                      )
-                    ] for i in range(stages)
-                ],
-              loss_types=[['KL', 'MSE'] for i in range(stages)],
-              loss_weights=[[0.5, 0.5] for i in range(stages)],
-              train_steps=[500 for i in range(stages)]),
-            regular_distillation=FlashDistillationConfig(
-              layer_mappings_for_knowledge_transfer=[
-                [('cls', '0', 'cls', '0')]
-              ],
-              loss_types=[['KL']],
-              add_origin_loss=[True],
-              train_steps=[25000]
-            ),
-          )
+        if 'mobilebert' in model_args.config_name:
+            # for MobileBERT
+            stages = 24
+            autodistillation_config = \
+                AutoDistillationConfig(
+                    search_space={
+                        'hidden_size': [128, 246, 384, 512],
+                        'intra_bottleneck_size': [64, 96, 128, 160],
+                        'num_attention_heads': [1, 2, 4, 8],
+                        'intermediate_size': [384, 512, 640],
+                        'num_feedforward_networks': [2, 4, 6]
+                        },
+                    max_trials=optim_args.max_trials,
+                    metrics=[
+                        metrics.Metric(name="eval_loss", greater_is_better=False),
+                        metrics.Metric(name="latency", greater_is_better=False),
+                    ],
+                    knowledge_transfer=FlashDistillationConfig(
+                    block_names=['mobilebert.encoder.layer.{}'.format(i) for i in range(stages)],
+                    layer_mappings_for_knowledge_transfer=[
+                            [
+                            (
+                                'mobilebert.encoder.layer.{}.attention.self'.format(i), '1',
+                                'bert.encoder.layer.{}.attention.self'.format(i), '1'
+                            ),
+                            (
+                                'mobilebert.encoder.layer.{}.output'.format(i), 
+                                'bert.encoder.layer.{}.output'.format(i)
+                            )
+                            ] for i in range(stages)
+                        ],
+                    loss_types=[['KL', 'MSE'] for i in range(stages)],
+                    loss_weights=[[0.5, 0.5] for i in range(stages)],
+                    train_steps=[optim_args.flash_distillation_steps for i in range(stages)]),
+                    regular_distillation=FlashDistillationConfig(
+                    layer_mappings_for_knowledge_transfer=[
+                        [('cls', '0', 'cls', '0')]
+                    ],
+                    loss_types=[['KL']],
+                    add_origin_loss=[True],
+                    train_steps=[optim_args.regular_distillation_steps]
+                ),
+            )
+        elif 'bert-tiny' in model_args.config_name:
+            # for BERT-Tiny
+            autodistillation_config = \
+                AutoDistillationConfig(
+                    search_space={
+                        'hidden_size': [128],#[64, 128, 256, 384],
+                        'num_attention_heads': [4],#[1, 2, 4, 8, 16],
+                        'intermediate_size': [512],#[128, 256, 384, 512, 640],
+                    },
+                    max_trials=optim_args.max_trials,
+                    metrics=[
+                        metrics.Metric(name="eval_loss", greater_is_better=False),
+                        metrics.Metric(name="latency", greater_is_better=False),
+                    ],
+                    knowledge_transfer=FlashDistillationConfig(
+                    block_names=['bert.encoder.layer.0', 'bert.encoder.layer.1'],
+                    layer_mappings_for_knowledge_transfer=[
+                            [
+                                (
+                                    'bert.encoder.layer.0.attention.self', '1',
+                                    'bert.encoder.layer.0.attention.self', '1'
+                                ),
+                                (
+                                    'bert.encoder.layer.0.output', 
+                                    'bert.encoder.layer.0.output'
+                                )
+                            ],
+                            [
+                                (
+                                    'bert.encoder.layer.1.attention.self', '1',
+                                    'bert.encoder.layer.11.attention.self', '1'
+                                ),
+                                (
+                                    'bert.encoder.layer.1.output', 
+                                    'bert.encoder.layer.11.output'
+                                )
+                            ]
+                        ],
+                    loss_types=[['KL', 'MSE'], ['KL', 'MSE']],
+                    loss_weights=[[0.5, 0.5], [0.5, 0.5]],
+                    train_steps=[optim_args.flash_distillation_steps] * 2),
+                    regular_distillation=FlashDistillationConfig(
+                    layer_mappings_for_knowledge_transfer=[
+                        [('cls', '0', 'cls', '0')]
+                    ],
+                    loss_types=[['KL']],
+                    add_origin_loss=[True],
+                    train_steps=[optim_args.regular_distillation_steps]
+                ),
+            )
         best_model_archs = trainer.autodistillation(
             autodistillation_config,
             teacher_model,
             model_cls=model_cls
         )
+        print("Best model architectures obtained by AutoDistillation are as follow.")
+        print(best_model_archs)
+    else:
+        # Training
+        if training_args.do_train:
+            checkpoint = None
+            if training_args.resume_from_checkpoint is not None:
+                checkpoint = training_args.resume_from_checkpoint
+            elif last_checkpoint is not None:
+                checkpoint = last_checkpoint
+            train_result = trainer.train(resume_from_checkpoint=checkpoint)
+            trainer.save_model()  # Saves the tokenizer too for easy upload
+            metrics_result = train_result.metrics
 
-    # # Training
-    # if training_args.do_train:
-    #     checkpoint = None
-    #     if training_args.resume_from_checkpoint is not None:
-    #         checkpoint = training_args.resume_from_checkpoint
-    #     elif last_checkpoint is not None:
-    #         checkpoint = last_checkpoint
-    #     train_result = trainer.train(resume_from_checkpoint=checkpoint)
-    #     trainer.save_model()  # Saves the tokenizer too for easy upload
-    #     metrics = train_result.metrics
+            max_train_samples = (
+                data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
+            )
+            metrics_result["train_samples"] = min(max_train_samples, len(train_dataset))
 
-    #     max_train_samples = (
-    #         data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
-    #     )
-    #     metrics["train_samples"] = min(max_train_samples, len(train_dataset))
+            trainer.log_metrics("train", metrics_result)
+            trainer.save_metrics("train", metrics_result)
+            trainer.save_state()
+            try:
+                torch.save([vars(a) for a in [training_args, data_args, model_args]], os.path.join(training_args.output_dir, "args.bin"))
+            except:
+                logger.info("Failed to save arguments")
 
-    #     trainer.log_metrics("train", metrics)
-    #     trainer.save_metrics("train", metrics)
-    #     trainer.save_state()
-    #     try:
-    #         torch.save([vars(a) for a in [training_args, data_args, model_args]], os.path.join(training_args.output_dir, "args.bin"))
-    #     except:
-    #         logger.info("Failed to save arguments")
+        # Evaluation
+        if training_args.do_eval:
+            logger.info("*** Evaluate ***")
 
-    # # Evaluation
-    # if training_args.do_eval:
-    #     logger.info("*** Evaluate ***")
+            metrics_result = trainer.evaluate()
 
-    #     metrics = trainer.evaluate()
+            max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
+            metrics_result["eval_samples"] = min(max_eval_samples, len(eval_dataset))
+            if "eval_nsp_loss" in metrics_result:
+                try:
+                    perplexity = math.exp(metrics_result["eval_loss"] - metrics_result["eval_nsp_loss"])
+                except:
+                    logger.warning("Perplexity computation failed")
+                    perplexity = math.exp(metrics_result["eval_loss"])
+            else:
+                    perplexity = math.exp(metrics_result["eval_loss"])
+            metrics_result["perplexity"] = perplexity
 
-    #     max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
-    #     metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
-    #     if "eval_nsp_loss" in metrics:
-    #         try:
-    #             perplexity = math.exp(metrics["eval_loss"] - metrics["eval_nsp_loss"])
-    #         except:
-    #             logger.warning("Perplexity computation failed")
-    #             perplexity = math.exp(metrics["eval_loss"])
-    #     else:
-    #             perplexity = math.exp(metrics["eval_loss"])
-    #     metrics["perplexity"] = perplexity
+            trainer.log_metrics("eval", metrics_result)
+            trainer.save_metrics("eval", metrics_result)
 
-    #     trainer.log_metrics("eval", metrics)
-    #     trainer.save_metrics("eval", metrics)
+        if training_args.push_to_hub:
+            kwargs = {"finetuned_from": model_args.model_name_or_path, "tags": "fill-mask"}
+            if data_args.dataset_name is not None:
+                kwargs["dataset_tags"] = data_args.dataset_name
+                if data_args.dataset_config_name is not None:
+                    kwargs["dataset_args"] = data_args.dataset_config_name
+                    kwargs["dataset"] = f"{data_args.dataset_name} {data_args.dataset_config_name}"
+                else:
+                    kwargs["dataset"] = data_args.dataset_name
 
-    # if training_args.push_to_hub:
-    #     kwargs = {"finetuned_from": model_args.model_name_or_path, "tags": "fill-mask"}
-    #     if data_args.dataset_name is not None:
-    #         kwargs["dataset_tags"] = data_args.dataset_name
-    #         if data_args.dataset_config_name is not None:
-    #             kwargs["dataset_args"] = data_args.dataset_config_name
-    #             kwargs["dataset"] = f"{data_args.dataset_name} {data_args.dataset_config_name}"
-    #         else:
-    #             kwargs["dataset"] = data_args.dataset_name
-
-    #     trainer.push_to_hub(**kwargs)
+            trainer.push_to_hub(**kwargs)
 
 
 def _mp_fn(index):

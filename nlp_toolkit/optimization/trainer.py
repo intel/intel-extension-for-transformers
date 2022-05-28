@@ -1241,7 +1241,7 @@ class NLPTrainer(Trainer):
             if train_func else train_func_builtin
         agent.eval_func = eval_func \
             if eval_func else eval_func_builtin
-        return agent.search_loop(self.args.output_dir)
+        return agent.search(self.args.output_dir)
     
     def model_builder_builtin(self, arch_paras=None, model_cls=None):
         config = self.model.config
