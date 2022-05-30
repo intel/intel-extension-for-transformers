@@ -75,6 +75,15 @@ def get_data_dtype(data):
 
     return dtype
 
+def quant_info_init(): 
+    global _quant_info
+    _quant_info = {}
+
+def insert_quant_info(key, value):
+    _quant_info[key] = value
+ 
+def get_quant_info():
+    return _quant_info
 
 def search_straight_pattern(input_pattern, graph):
     """search user specified patterns on internal grpah structure.

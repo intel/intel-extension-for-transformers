@@ -29,4 +29,5 @@ class Unsqueeze(Operator):
 
     def set_attr(self, framework, node):
         if framework == 'onnxruntime':
-            self._attr['axis'] = list2str(node.attribute[0].ints)
+            if len(node.attribute):
+                self._attr['axis'] = list2str(node.attribute[0].ints)

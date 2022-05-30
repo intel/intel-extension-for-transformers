@@ -102,7 +102,7 @@ class Graph(object):
     def change_node_input_tensors(self, node_name, index, tensor=None, mode='modify'):
         assert mode in ['insert', 'remove', 'modify'], 'Wrong mode'
         node = self.get_node_by_name(node_name)
-        index = index if index != -1 else len(node.input_tensors) - 1
+        index = index if index >= 0 else len(node.input_tensors) + index
         node_index = self.get_node_id(node_name)
         source_node_idx = None
         tensor_idx = None
@@ -134,7 +134,7 @@ class Graph(object):
     def change_node_output_tensors(self, node_name, index, tensor=None, mode='modify'):
         assert mode in ['insert', 'remove', 'modify'], 'Wrong mode'
         node = self.get_node_by_name(node_name)
-        index = index if index != -1 else len(node.output_tensors) - 1
+        index = index if index >= 0 else len(node.input_tensors) + index
         node_index = self.get_node_id(node_name)
         if mode == 'remove':
             tensor = node.output_tensors[index]

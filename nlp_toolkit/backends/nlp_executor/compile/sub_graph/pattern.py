@@ -29,6 +29,7 @@ from abc import abstractmethod
 supported_patterns = [
     'InputFile',
     'InputData',
+    'CollectQDQInfo',
     'LayerNorm',
     'WordEmbeddings',
     'MergedEmbeddingbag',
@@ -53,6 +54,8 @@ supported_patterns = [
     'MatMulWithBiasSigmoid',
     'LayerNormWithReduceMean',
     'StartEndLogits',
+    'InsertQuantNode',
+    'QunatizeFusion',
     'OutputData',
 ]
 

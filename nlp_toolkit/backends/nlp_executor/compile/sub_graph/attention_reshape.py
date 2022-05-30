@@ -82,6 +82,39 @@ class AttentionReshape(Pattern):
                     'returns': [6, 8]
                 },
 
+                # bert_mini_int8
+                {
+                    'patterns': {
+                        'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Gather'), (3, 'Unsqueeze'), (6, 'Concat'),
+                                (7, 'Reshape'), (8, 'MatMulWithBias')],
+                                [(1, 'Gather'), (4, 'Gather'), (5, 'Unsqueeze'),
+                                (6, 'Concat')]],
+                        'out': [[(0, 'Reshape'), (1, 'MatMulWithBias')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 7,
+                        1: 8
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            7: [0]
+                        }], [[0], 1]],
+                        1: [[
+                            {8: [1]}, {8: [2]}
+                        ], [[1, 2], 3]],
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            7: [0]
+                        }], [[0], 1]],
+                        1: [[{
+                            8: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [6, 8]
+                },
+
                 # distil_bert_base
                 {
                     'patterns': {
