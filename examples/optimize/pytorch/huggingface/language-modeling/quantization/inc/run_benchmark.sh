@@ -63,51 +63,42 @@ function run_benchmark {
         exit 1
     fi
 
-
     if [ "${topology}" = "gpt_neo_clm_static" ]; then
         script="run_clm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125M"
-        model_type="gpt"
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "gpt_neo_clm_dynamic" ]; then
         script="run_clm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125M"
-        model_type="gpt"
-        approach="PostTrainingDynamic"
     elif [ "${topology}" = "bert_mlm_static" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="bert-base-uncased"
-        model_type="bert"
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_mlm_dynamic" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="bert-base-uncased"
-        model_type="bert"
-        approach="PostTrainingDynamic"
     elif [ "${topology}" = "xlnet_plm_static" ]; then
         script="run_plm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="xlnet-base-cased"
-        model_type="xlnet"
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "xlnet_plm_dynamic" ]; then
         script="run_plm.py"
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="xlnet-base-cased"
-        model_type="xlnet"
-        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "reformer_crime_and_punishment_static" ]; then
+        script="run_clm.py"
+        DATASET_NAME="crime_and_punish"
+        model_name_or_path="google/reformer-crime-and-punishment"
     fi
-    
+
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
         model_name_or_path=${tuned_checkpoint}

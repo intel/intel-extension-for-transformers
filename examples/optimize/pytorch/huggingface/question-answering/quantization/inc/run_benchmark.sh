@@ -67,13 +67,15 @@ function run_benchmark {
     if [ "${topology}" = "distilbert_base_squad_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
-        model_type="bert"
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "distilbert_base_squad_dynamic" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
-        model_type="bert"
-        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bert_large_SQuAD_static" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="bert-large-uncased-whole-word-masking-finetuned-squad"
+    elif [ "${topology}" = "roberta_base_SQuAD2_static" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="deepset/roberta-base-squad2"
     fi
 
     if [[ ${int8} == "true" ]]; then

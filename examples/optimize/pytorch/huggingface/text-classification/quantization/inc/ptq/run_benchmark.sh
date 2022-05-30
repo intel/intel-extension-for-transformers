@@ -65,39 +65,65 @@ function run_benchmark {
     fi
 
     if [ "${topology}" = "bert_base_mrpc_static" ]; then
-        TASK_NAME="mrpc"
         model_name_or_path="textattack/bert-base-uncased-MRPC"
-        approach="PostTrainingStatic"
+        extra_cmd=$extra_cmd" --task_name mrpc"
     elif [ "${topology}" = "bert_base_mrpc_dynamic" ]; then
-        TASK_NAME="mrpc"
+        extra_cmd=$extra_cmd" --task_name mrpc"
         model_name_or_path="textattack/bert-base-uncased-MRPC"
-        approach="PostTrainingDynamic"
     elif [ "${topology}" = "bert_base_SST-2_static" ]; then
-        TASK_NAME='sst2'
+        extra_cmd=$extra_cmd" --task_name sst2"
         model_name_or_path="echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid"
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_base_SST-2_dynamic" ]; then
-        TASK_NAME='sst2'
+        extra_cmd=$extra_cmd" --task_name sst2"
         model_name_or_path="echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid"
-        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bert_base_CoLA_static" ]; then
+        extra_cmd=$extra_cmd" --task_name cola"
+        model_name_or_path="textattack/bert-base-uncased-CoLA"
+    elif [ "${topology}" = "bert_base_STS-B_static" ]; then
+        extra_cmd=$extra_cmd" --task_name stsb"
+        model_name_or_path="Contrastive-Tension/BERT-Base-CT-STSb"
+    elif [ "${topology}" = "bert_base_RTE_static" ]; then
+        extra_cmd=$extra_cmd" --task_name rte"
+        model_name_or_path="textattack/bert-base-uncased-RTE"
+    elif [ "${topology}" = "bert_large_RTE_static" ]; then
+        extra_cmd=$extra_cmd" --task_name rte"
+        model_name_or_path="yoshitomo-matsubara/bert-large-uncased-rte"
+    elif [ "${topology}" = "bert_large_CoLA_static" ]; then
+        extra_cmd=$extra_cmd" --task_name cola"
+        model_name_or_path="yoshitomo-matsubara/bert-large-uncased-cola"
+    elif [ "${topology}" = "bert_large_MRPC_static" ]; then
+        extra_cmd=$extra_cmd" --task_name mrpc"
+        model_name_or_path="yoshitomo-matsubara/bert-large-uncased-mrpc"
+    elif [ "${topology}" = "bert_large_QNLI_static" ]; then
+        extra_cmd=$extra_cmd" --task_name qnli"
+        model_name_or_path="yoshitomo-matsubara/bert-large-uncased-qnli"
+    elif [ "${topology}" = "camembert_base_XNLI_dynamic" ]; then
+        model_name_or_path="BaptisteDoyen/camembert-base-xnli"
+        extra_cmd=$extra_cmd" --dataset_name xnli --dataset_config_name fr"
+    elif [ "${topology}" = "xlnet_base_SST-2_static" ]; then
+        extra_cmd=$extra_cmd" --task_name sst2"
+        model_name_or_path="textattack/xlnet-base-cased-SST-2"
+    elif [ "${topology}" = "funnel_small_MRPC_static" ]; then
+        extra_cmd=$extra_cmd" --task_name mrpc"
+        model_name_or_path="funnel-transformer/small-base"
+    elif [ "${topology}" = "roberta_base_SST-2_dynamic" ]; then
+        extra_cmd=$extra_cmd" --task_name sst2"
+        model_name_or_path="textattack/roberta-base-SST-2"
     elif [ "${topology}" = "distillbert_base_SST-2_static" ]; then
-        TASK_NAME='sst2'
+        extra_cmd=$extra_cmd" --task_name sst2"
         model_name_or_path="distilbert-base-uncased-finetuned-sst-2-english"
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "distillbert_base_SST-2_dynamic" ]; then
-        TASK_NAME='sst2'
+        extra_cmd=$extra_cmd" --task_name sst2"
         model_name_or_path="distilbert-base-uncased-finetuned-sst-2-english"
-        approach="PostTrainingDynamic"
     elif [ "${topology}" = "albert_base_MRPC_static" ]; then
-        TASK_NAME='MRPC'
+        extra_cmd=$extra_cmd" --task_name mrpc"
         model_name_or_path="textattack/albert-base-v2-MRPC" 
-        model_type='albert'
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "albert_base_MRPC_dynamic" ]; then
-        TASK_NAME='MRPC'
+        extra_cmd=$extra_cmd" --task_name mrpc"
         model_name_or_path="textattack/albert-base-v2-MRPC" 
-        model_type='albert'
-        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "xlm_roberta_large_XNLI_dynamic" ]; then
+        extra_cmd=$extra_cmd" --dataset_name xnli --dataset_config_name en"
+        model_name_or_path="joeddav/xlm-roberta-large-xnli" 
     fi
 
     if [[ ${int8} == "true" ]]; then
@@ -108,7 +134,6 @@ function run_benchmark {
 
     python -u ../run_glue.py \
         --model_name_or_path ${model_name_or_path} \
-        --task_name ${TASK_NAME} \
         --do_eval \
         --max_seq_length ${MAX_SEQ_LENGTH} \
         --per_device_eval_batch_size ${batch_size} \

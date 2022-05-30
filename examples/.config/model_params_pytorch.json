@@ -135,6 +135,114 @@
           "batch_size": 64,
           "new_benchmark": false
         },
+        "bert_base_CoLA_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "bert_base_STS-B_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "bert_base_RTE_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "bert_large_CoLA_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "bert_large_MRPC_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "bert_large_QNLI_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "xlnet_base_SST-2_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "bert_large_SQuAD_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/question-answering/quantization/inc",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "roberta_base_SST-2_dynamic": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "camembert_base_XNLI_dynamic": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "funnel_small_MRPC_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "xlm_roberta_large_XNLI_dynamic": {
+          "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
         "distillbert_base_SST-2_static": {
           "model_src_dir": "optimize/pytorch/huggingface/text-classification/quantization/inc/ptq",
           "dataset_location": "",

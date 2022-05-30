@@ -17,7 +17,6 @@ function init_params {
   extra_cmd=""
   batch_size=8
   MAX_SEQ_LENGTH=384
-  model_type="bert"
   approach="PostTrainingStatic"
   for var in "$@"
   do
@@ -48,13 +47,20 @@ function run_tuning {
     if [ "${topology}" = "distilbert_base_squad_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
-        model_type="bert"
         approach="PostTrainingStatic"
     elif [ "${topology}" = "distilbert_base_squad_dynamic" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
-        model_type="bert"
         approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bert_large_SQuAD_static" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="bert-large-uncased-whole-word-masking-finetuned-squad"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "roberta_base_SQuAD2_static" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="deepset/roberta-base-squad2"
+        approach="PostTrainingStatic"
+        # extra_cmd=$extra_cmd" --version_2_with_negative"
     fi
 
     python -u ./run_qa.py \
