@@ -1,5 +1,6 @@
 import os
 import shutil
+import torch
 import torch.utils.data as data
 import unittest
 from nlp_toolkit import (
@@ -107,7 +108,6 @@ class TestQuantization(unittest.TestCase):
                     quant_format='Qlinear',
                     dtype='S8S8',
                     opset_version=13,
-                    opt_level='basic',
                 )
                 self.assertTrue(check_onnx('./tmp_trainer/int8-model.onnx', self.trainer.get_eval_dataloader()))
             else:
@@ -129,6 +129,23 @@ class TestQuantization(unittest.TestCase):
 
             # check loaded model
             self.assertTrue((output_1 == output_2).all())
+
+    def test_functional_quant(self):
+        def eval_func(model):
+            return 1
+
+        def train_func(model):
+            return model
+
+        self.trainer = NLPTrainer(self.model, train_dataset=self.dummy_dataset)
+        quantization_config = QuantizationConfig(
+            approach='PostTrainingStatic',
+            objectives=[objectives.performance]
+        )
+        self.trainer.quantize(quant_config=quantization_config, 
+                              provider="inc",
+                              train_func = train_func,
+                              eval_func = eval_func,)
 
 
 if __name__ == "__main__":

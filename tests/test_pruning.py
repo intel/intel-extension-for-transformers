@@ -83,6 +83,21 @@ class TestPruning(unittest.TestCase):
             # check loaded model
             self.assertTrue((pruned_weight == loaded_weight).all())
 
+    def test_functional_prune(self):
+        def eval_func(model):
+            return 1
+
+        def train_func(model):
+            return model
+
+        self.trainer = NLPTrainer(self.model)
+        pruner = Pruner(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
+        pruning_conf = PruningConfig(pruner=pruner)
+        self.trainer.prune(pruning_conf, 
+                           provider="inc",
+                           train_func = train_func,
+                           eval_func = eval_func,)
+
 
 if __name__ == "__main__":
     unittest.main()

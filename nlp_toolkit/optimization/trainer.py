@@ -36,8 +36,6 @@ from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
 from transformers.file_utils import (
     CONFIG_NAME,
     WEIGHTS_NAME,
-    is_apex_available,
-    is_datasets_available,
     is_torch_tpu_available,
     is_sagemaker_mp_enabled,
 )
@@ -63,25 +61,16 @@ from transformers.trainer_utils import (
     denumpify_detensorize,
 )
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
+from .utils.utility import LazyImport
 
-
-if is_datasets_available():
-    import datasets
-
-# pylint: disable=E0401
-if is_torch_tpu_available():
-    import torch_xla.core.xla_model as xm
-
-# pylint: disable=E0401
-if is_apex_available():
-    from apex import amp
-
-# pylint: disable=E0401
-if is_sagemaker_mp_enabled():
-    from .trainer_pt_utils import smp_forward_backward
-
-if TYPE_CHECKING:
-    import optuna
+amp = LazyImport('apex.amp')
+datasets =  LazyImport('datasets')
+optuna = LazyImport('optuna')
+onnx = LazyImport('onnx')
+ort = LazyImport('onnxruntime')
+ortq = LazyImport('onnxruntime.quantization')
+smp_forward_backward = LazyImport('transformers.trainer_pt_utils.smp_forward_backward')
+xm = LazyImport('torch_xla.core.xla_model')
 
 
 class NLPTrainer(Trainer):
@@ -212,7 +201,7 @@ class NLPTrainer(Trainer):
         return quantizer
 
     # pylint: disable=E0401
-    def _nncf_quantize(self):
+    def _nncf_quantize(self):   # pragma: no cover
         from nlp_toolkit import NncfConfig
         from nncf import create_compressed_model
         compression_state = None
@@ -480,7 +469,7 @@ class NLPTrainer(Trainer):
         trial: Union["optuna.Trial", Dict[str, Any]] = None,
         ignore_keys_for_eval: Optional[List[str]] = None,
         **kwargs,
-    ):
+    ):   # pragma: no cover
         """
         Main training entry point.
 
@@ -917,7 +906,7 @@ class NLPTrainer(Trainer):
 
         return TrainOutput(self.state.global_step, train_loss, metrics)
 
-    def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval):
+    def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval):   # pragma: no cover
         if self.control.should_log:
             if is_torch_tpu_available():
                 xm.mark_step()
@@ -957,7 +946,10 @@ class NLPTrainer(Trainer):
             self._save_checkpoint(model, trial, metrics=metrics)
             self.control = self.callback_handler.on_save(self.args, self.state, self.control)
 
-    def training_step(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
+    def training_step(self, 
+                      model: nn.Module, 
+                      inputs: Dict[str, Union[torch.Tensor, Any]]
+                      ) -> torch.Tensor:   # pragma: no cover
         """
         Perform a training step on a batch of inputs.
         Subclass and override to inject custom behavior.
@@ -1011,7 +1003,7 @@ class NLPTrainer(Trainer):
 
         return loss.detach()
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False):   # pragma: no cover
         """
         How the loss is computed by Trainer. By default, all models return the loss in the first element.
 
@@ -1087,7 +1079,10 @@ class NLPTrainer(Trainer):
 
         return (loss, outputs) if return_outputs else loss
 
-    def _remove_unused_columns(self, dataset: "datasets.Dataset", description: Optional[str] = None):
+    def _remove_unused_columns(self, 
+                               dataset: "datasets.Dataset", 
+                               description: Optional[str] = None
+                               ):   # pragma: no cover
         if not self.args.remove_unused_columns:
             return dataset
         if self._signature_columns is None:
@@ -1402,7 +1397,7 @@ class NLPTrainer(Trainer):
         logger.info(f"Saving model checkpoint to {output_dir}")
         # Save a trained model and configuration using `save_pretrained()`.
         # They can then be reloaded using `from_pretrained()`
-        if not isinstance(self.model, PreTrainedModel):
+        if not isinstance(self.model, PreTrainedModel):   # pragma: no cover
             unwrapped_model = unwrap_model(self.model)
             if self._provider == "nncf":
                 is_pretrained = isinstance(unwrapped_model.get_nncf_wrapped_model(), PreTrainedModel)
@@ -1424,7 +1419,7 @@ class NLPTrainer(Trainer):
                 self._save_inc_int8(self.opt_model, output_dir)
             else:
                 self.model.save_pretrained(output_dir, state_dict=state_dict)
-        if self.tokenizer is not None:
+        if self.tokenizer is not None:   # pragma: no cover
             self.tokenizer.save_pretrained(output_dir)
 
         # Good practice: save your training arguments together with the trained model
@@ -1478,9 +1473,8 @@ class NLPTrainer(Trainer):
     def export_to_int8_onnx(self,
             save_path=None,
             quant_format='QDQ',
-            dtype='U8U8',
+            dtype='S8S8',
             opset_version=14,
-            opt_level='all',
             ):
         if self.provider != 'inc':   # pragma: no cover
             logger.error("export_to_onnx API only supports INC model right now.")
@@ -1491,38 +1485,31 @@ class NLPTrainer(Trainer):
             op_types_to_quantize=['MatMul']
             pytorch_op_types_to_quantize=['Linear']
             addition_op_to_quantize = []
-            opset_version = 11
-            quant_format='Qlinear'
+            opset_version = 13
+            quant_format='QDQ'
             logger.info("Engine only support opset_version=11 " + 
                         "and int8 MatMul.")
         else:
-            from onnxruntime.quantization.registry import (
-                IntegerOpsRegistry,
-                QLinearOpsRegistry,
-                QDQRegistry,
-            )
             if 'dynamic' in self.opt_model.tune_cfg['approach']:
                 op_types_to_quantize=['MatMul', 'Gather', "LSTM", 'Conv']
                 pytorch_op_types_to_quantize=['Linear', 'Embedding', "LSTM", 
                                               'Conv1d', 'Conv2d']
-                addition_op_to_quantize = list(IntegerOpsRegistry.keys())
+                addition_op_to_quantize = list(ortq.registry.IntegerOpsRegistry.keys())
             else:
                 op_types_to_quantize=['MatMul', 'Gather', 'Conv']
                 pytorch_op_types_to_quantize=['Linear', 'Embedding', 'Conv1d', 'Conv2d']
                 if quant_format == 'QDQ':
-                    addition_op_to_quantize = list(QDQRegistry.keys())
+                    addition_op_to_quantize = list(ortq.registry.QDQRegistry.keys())
                     addition_op_to_quantize.remove('Relu') # ValueError: x not in list
                 else:
-                    addition_op_to_quantize = list(QLinearOpsRegistry.keys())
+                    addition_op_to_quantize = list(ortq.registry.QLinearOpsRegistry.keys())
 
         if quant_format == 'QDQ' and opset_version < 13:
-            opset_version = 14
-            logger.error("Per-Channel support with QDQ format " + 
-                        "requires onnx opset version 13 or above. " +
-                        "Here we use opset_version=", opset_version)
+            opset_version = 13
+            logger.warning("QDQ format requires opset_version >= 13, " + 
+                            "we reset opset_version={} here".format(opset_version))
         all_op_types_to_quantize = op_types_to_quantize + addition_op_to_quantize
 
-        import onnx
         fp32_path = save_path + '.tmp' if save_path \
           else os.path.join(self.args.output_dir, 'int8-model.onnx.tmp')
         onnx_save_path = save_path if save_path \
@@ -1571,34 +1558,33 @@ class NLPTrainer(Trainer):
                 quantize_nodes.remove(fallback_op)
 
         # Quantization
-        from onnxruntime.quantization import quantize_static, quantize_dynamic 
-        from onnxruntime.quantization import QuantFormat, QuantType
-        quant_format = QuantFormat.QOperator if quant_format != 'QDQ' else QuantFormat.QDQ
+        quant_format = ortq.QuantFormat.QOperator if quant_format != 'QDQ' else ortq.QuantFormat.QDQ
 
         if 'U8' in dtype:
-            weight_type=QuantType.QUInt8,
-            activation_type=QuantType.QUInt8,
+            weight_type = ortq.QuantType.QUInt8
+            activation_type = ortq.QuantType.QUInt8
         elif 'S8' in dtype:
-            weight_type=QuantType.QInt8,
-            activation_type=QuantType.QInt8,
+            weight_type = ortq.QuantType.QInt8
+            activation_type = ortq.QuantType.QInt8
         else:
             # Gather requires weight type be the same as activation.
             # So U8S8(acitvation|weight) option is not workable for best performance.
             logger.error("Right now, we don't support dtype: {}".format(dtype))
             sys.exit(0)
+        logger.info("Weight type: {}.".format(weight_type))
+        logger.info("Activation type: {}.".format(activation_type))
 
         if 'dynamic' in self.opt_model.tune_cfg['approach']:
-            quantize_dynamic(fp32_path,
-                            onnx_save_path,
-                            per_channel=True,
-                            weight_type=QuantType.QUInt8,
-                            nodes_to_quantize=quantize_nodes,
-                            nodes_to_exclude=[],
-                            #op_types_to_quantize=op_types_to_quantize,
-                            extra_options={})
+            ortq.quantize_dynamic(fp32_path,
+                                onnx_save_path,
+                                per_channel=True,
+                                weight_type=weight_type,
+                                nodes_to_quantize=quantize_nodes,
+                                nodes_to_exclude=[],
+                                #op_types_to_quantize=op_types_to_quantize,
+                                extra_options={})
         else:
-            from onnxruntime.quantization import CalibrationDataReader
-            class NLPDataReader(CalibrationDataReader):
+            class NLPDataReader(ortq.CalibrationDataReader):
                 def __init__(self, dataloader, sample_size=100):
                     import math
                     self.dataloader = dataloader
@@ -1619,38 +1605,19 @@ class NLPTrainer(Trainer):
                     return next(self.data, None)
 
             calib_datareader = NLPDataReader(self.get_eval_dataloader())
-
-            quantize_static(fp32_path,
-                            onnx_save_path,
-                            calib_datareader,
-                            quant_format=quant_format,
-                            per_channel=True,
-                            weight_type=weight_type,
-                            activation_type=activation_type,
-                            nodes_to_quantize=quantize_nodes,
-                            nodes_to_exclude=[],
-                            #op_types_to_quantize=op_types_to_quantize,
-                            extra_options={})
+            ortq.quantize_static(fp32_path,
+                                onnx_save_path,
+                                calib_datareader,
+                                quant_format=quant_format,
+                                per_channel=True,
+                                weight_type=weight_type,
+                                activation_type=activation_type,
+                                nodes_to_quantize=quantize_nodes,
+                                nodes_to_exclude=[],
+                                #op_types_to_quantize=op_types_to_quantize,
+                                extra_options={})
 
         os.remove(fp32_path)
-        # Post-optimization
-        import onnx
-        import onnxruntime as rt
-        model = onnx.load(onnx_save_path)
-        sess_options = rt.SessionOptions()
-        # Set graph optimization level
-        if opt_level == 'all':
-            opt_level_type = rt.GraphOptimizationLevel.ORT_ENABLE_ALL 
-        elif opt_level == 'extend':
-            opt_level_type = rt.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
-        elif opt_level == 'basic':
-            opt_level_type = rt.GraphOptimizationLevel.ORT_ENABLE_BASIC
-        else:
-            opt_level_type = rt.GraphOptimizationLevel.ORT_DISABLE_ALL
-
-        sess_options.graph_optimization_level = opt_level_type
-        sess_options.optimized_model_filepath = onnx_save_path
-        rt.InferenceSession(onnx_save_path, sess_options)
         info = "ONNX Model exported to path: {0}".format(onnx_save_path)
         logger.info("*"*len(info))
         logger.info(info)
@@ -1676,8 +1643,6 @@ class NLPTrainer(Trainer):
     # will remove after next INC(1.12) release
     def _replace_gemm_with_matmul(self, model):
         new_nodes = []
-        import onnx
-        from onnx import numpy_helper
         from neural_compressor.model.onnx_model import ONNXModel
         if not isinstance(model, ONNXModel):
             model = ONNXModel(model)
@@ -1703,8 +1668,8 @@ class NLPTrainer(Trainer):
                         B = model.get_initializer(node.input[1])
                         if B:
                             # assume B is not used by any other node
-                            B_array = numpy_helper.to_array(B)
-                            B_trans = numpy_helper.from_array(B_array.T)
+                            B_array = onnx.numpy_helper.to_array(B)
+                            B_trans = onnx.numpy_helper.from_array(B_array.T)
                             B_trans.name = B.name
                             model.remove_initializer(B)
                             model.add_initializer(B_trans)

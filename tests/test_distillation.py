@@ -91,6 +91,22 @@ class TestDistillation(unittest.TestCase):
             self.assertTrue((distilled_weight == loaded_weight).all())
             mlflow.end_run()
 
+    def test_functional_distil(self):
+        def eval_func(model):
+            return 1
+
+        def train_func(model):
+            return model
+
+        self.trainer = NLPTrainer(self.model)
+
+        distillation_conf = DistillationConfig()
+        self.trainer.distill(distillation_conf,
+                           teacher_model=self.teacher_model,
+                           provider="inc",
+                           train_func = train_func,
+                           eval_func = eval_func,)
+
 
 if __name__ == "__main__":
     unittest.main()

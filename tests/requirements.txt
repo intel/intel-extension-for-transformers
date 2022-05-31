@@ -3,8 +3,8 @@ mlflow
 neural-compressor
 nlpaug
 sacremoses
-onnx
-onnxruntime
+onnx>=1.10
+onnxruntime>=1.11
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=1.10.0+cpu
 transformers>=4.12.0

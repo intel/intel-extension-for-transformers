@@ -20,3 +20,4 @@ from .optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from .optimization.mixture.auto_distillation import AutoDistillation
 from .optimization.trainer import NLPTrainer
 from .optimization.utils.utility import LazyImport
+from .version import __version__

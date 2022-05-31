@@ -11,5 +11,3 @@ class QuantizationMode(Enum):
 
 
 SUPPORTED_QUANT_MODE = set([approach.name for approach in QuantizationMode])
-
-

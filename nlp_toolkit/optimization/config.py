@@ -244,6 +244,8 @@ class PruningConfig(object):
             self.epoch_range = epoch_range
         if metrics is not None:
             self.metrics = metrics
+        else:
+            self._metrics = None
         if pruner is not None:
             self.pruner = pruner
         else:
@@ -330,6 +332,8 @@ class DistillationConfig(object):
             self.criterion = criterion
         if metrics is not None:
             self.metrics = metrics
+        else:
+            self._metrics = None
 
     @property
     def framework(self):
@@ -448,7 +452,7 @@ class AutoDistillationConfig(object):
         if regular_distillation is not None:
             self.regular_distillation = regular_distillation
         if metrics is not None:
-            self.metrics = metrics
+            self._metrics = metrics
 
     @property
     def knowledge_transfer(self):
@@ -535,7 +539,7 @@ class AutoDistillationConfig(object):
 
 
 # pylint: disable=E0401
-class NncfConfig(object):
+class NncfConfig(object):   # pragma: no cover
     def __init__(
         self,
         nncf_config,

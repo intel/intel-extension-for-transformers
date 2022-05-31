@@ -168,7 +168,7 @@ class NoTrainerOptimizer:
         return quantizer
 
     # pylint: disable=E0401
-    def _nncf_quantize(self):
+    def _nncf_quantize(self):   # pragma: no cover
         from nlp_toolkit import NncfConfig
         from nncf import create_compressed_model
         compression_state = None

@@ -1,17 +1,23 @@
-import os
 import shutil
 import unittest
 
 from nlp_toolkit import (
+    NLPTrainer,
     DistillationConfig,
     metrics,
     objectives,
     Pruner,
     PruningConfig,
     QuantizationConfig,
+    AutoDistillationConfig,
+    FlashDistillationConfig,
 )
-from nlp_toolkit.optimization.distillation import Criterion as DistillationCriterion, \
-                                                  DistillationCriterionMode
+from nlp_toolkit.optimization.distillation import Criterion as DistillationCriterion
+from nlp_toolkit.optimization.distillation import DistillationCriterionMode
+
+from transformers import (
+    AutoModelForPreTraining,
+)
 
 
 class CustomPruner():
@@ -49,12 +55,27 @@ class TestConfig(unittest.TestCase):
                                 metrics=[metric1, metric2],
                                 objectives=[objective1, objective2],
                             )
-
         self.assertEqual(quantization_config.approach, "post_training_dynamic_quant")
         self.assertEqual(quantization_config.metrics[0].criterion, 0.02)
         self.assertEqual(quantization_config.objectives[1].name, "modelsize")
         self.assertEqual(quantization_config.timeout, 600)
         self.assertEqual(quantization_config.max_trials, 300)
+
+        from neural_compressor.utils import constant
+        quantization_config.op_wise = {
+            'bert.encoder.layer.0.output.dense': constant.FP32,
+        }
+        quantization_config.resume_path = './saved_results'
+        quantization_config.random_seed = 1
+        quantization_config.strategy = 'basic'
+        quantization_config.performance_only=True
+        quantization_config.tensorboard=True
+        self.assertTrue(isinstance(quantization_config.op_wise, dict))
+        self.assertTrue(isinstance(quantization_config.strategy, str))
+        self.assertEqual(quantization_config.random_seed, 1)
+        self.assertEqual(quantization_config.strategy, 'basic')
+        self.assertTrue(quantization_config.performance_only)
+        self.assertTrue(quantization_config.tensorboard)
 
     def test_quantization_config(self):
         quantization_config = QuantizationConfig()
@@ -93,6 +114,9 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(pruning_config.epoch_range, [0, 4])
         self.assertEqual(pruning_config.metrics, metric)
 
+        pruning_config.pruner = [pruner]
+        self.assertEqual(pruning_config.pruner, [pruner])
+
     def test_distillation_config(self):
         metric = metrics.Metric(name="eval_F1")
         criterion = DistillationCriterion(
@@ -111,6 +135,68 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(list(distillation_config.criterion.keys())[0],
                          DistillationCriterionMode[criterion.name.upper()].value)
         self.assertEqual(distillation_config.metrics, metric)
+
+        criterion = DistillationCriterion(
+            name="InterMediateLayersloss",
+            layer_mappings=[['classifier', 'classifier']],
+            loss_types=['MSE'],
+            loss_weight_ratio=[1.0],
+            add_origin_loss=False
+        )
+        distillation_config = DistillationConfig(
+            framework="pytorch",
+            criterion=criterion,
+            metrics=metric
+        )
+
+    def test_autodistillation_config(self):
+        metric = [metrics.Metric(name="eval_loss", greater_is_better=False)]
+        autodistillation_config = AutoDistillationConfig(
+            search_space={'hidden_size': [128, 256]},
+            metrics=metric,
+            knowledge_transfer=FlashDistillationConfig(
+                block_names=['mobilebert.encoder.layer.1'],
+                layer_mappings_for_knowledge_transfer=[
+                [('mobilebert.encoder.layer.1.output',
+                    'bert.encoder.layer.1.output')]
+                ],
+                train_steps=[3]),
+            regular_distillation=FlashDistillationConfig(
+                layer_mappings_for_knowledge_transfer=[
+                [('cls', '0', 'cls', '0')]
+                ],
+                loss_types=[['KL']],
+                add_origin_loss=[True],
+                train_steps=[5]
+            ),
+            max_trials=1,
+            seed=1,
+        )
+
+        self.assertEqual(autodistillation_config.framework, "pytorch")
+        self.assertEqual(autodistillation_config.search_algorithm, 'BO')
+        self.assertEqual(autodistillation_config.max_trials, 1)
+        self.assertEqual(autodistillation_config.seed, 1)
+        self.assertEqual(autodistillation_config.metrics, metric)
+        self.assertTrue(isinstance(autodistillation_config.search_space, dict))
+        self.assertTrue(isinstance(autodistillation_config.knowledge_transfer, dict))
+        self.assertTrue(isinstance(autodistillation_config.regular_distillation, dict))
+
+    def test_trainer_config(self):
+        model = AutoModelForPreTraining.from_pretrained(
+            'google/bert_uncased_L-2_H-128_A-2'
+        )
+        trainer = NLPTrainer(model)
+        trainer.resuming_checkpoint = 'saved_results'
+        trainer.eval_func = None
+        trainer.train_func = None
+        trainer.calib_dataloader = None
+        trainer.provider = 'inc'
+        self.assertEqual(trainer.resuming_checkpoint, 'saved_results')
+        self.assertEqual(trainer.eval_func, None)
+        self.assertEqual(trainer.train_func, None)
+        self.assertEqual(trainer.calib_dataloader, None)
+        self.assertEqual(trainer.provider, 'inc')
 
 
 if __name__ == "__main__":
