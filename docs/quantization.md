@@ -2,19 +2,19 @@
 ## script:
 ```python
 from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig,
-# Create a trainer like you do in transformers examples, just replace transformers.Trainer with NLPTrainer
-# ~~trainer = transformers.Trainer(......)~~
+# Replace transformers.Trainer with NLPTrainer
+# trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
-tune_metric = metrics.Metric(
+metric = metrics.Metric(
     name="eval_f1", is_relative=True, criterion=0.01
 )
 objective = objectives.performance
-quantization_config = QuantizationConfig(
+q_config = QuantizationConfig(
     approach="PostTrainingStatic",
-    metrics=[tune_metric],
+    metrics=[metric],
     objectives=[objective]
 )
-model = trainer.quantize(quant_config=quantization_config)
+model = trainer.quantize(quant_config=q_config)
 ```
 Please refer to [quantization example](../examples/optimize/pytorch/huggingface/text-classification/quantization/inc/run_glue.py) for the details
 
@@ -22,7 +22,7 @@ Please refer to [quantization example](../examples/optimize/pytorch/huggingface/
 The Metric define which metric will used to measure the performance of tuned models.
 - example:
     ```python
-    metrics.Metric(name="eval_f1", greater_is_better=True, is_relative=True, criterion=0.01, weight_ratio=None)
+    metric = metrics.Metric(name="eval_f1", greater_is_better=True, is_relative=True, criterion=0.01, weight_ratio=None)
     ```
 
     Please refer to [metrics document](metrics.md) for the details.
@@ -32,7 +32,7 @@ In terms of evaluating the status of a specific model during tuning, we should h
 
 - example:
     ```python
-    objectives.Objective(name="performance", greater_is_better=True, weight_ratio=None)
+    objective = objectives.Objective(name="performance", greater_is_better=True, weight_ratio=None)
     ```
 
     Please refer to [objective document](objectives.md) for the details.
@@ -52,9 +52,9 @@ The QuantizationConfig contains all the information related to the model quantiz
 
 - example:
     ```python
-    quantization_config = QuantizationConfig(
+    q_config = QuantizationConfig(
         approach="PostTrainingDynamic",
-        metrics=[tune_metric],
+        metrics=[metric],
         objectives=[objective]
     )
     ```
@@ -65,5 +65,5 @@ The QuantizationConfig contains all the information related to the model quantiz
     ```python
     from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig,
     trainer = NLPTrainer(......)
-    model = trainer.quantize(quant_config=quantization_config)
+    model = trainer.quantize(quant_config=q_config)
     ```

@@ -13,7 +13,7 @@ class PruningMode(Enum):
 SUPPORTED_PRUNING_MODE = set([approach.name for approach in PruningMode])
 
 
-class Pruner(INCPruner):
+class PrunerConfig(INCPruner):
     def __init__(self, epoch_range: List=[0, 4], initial_sparsity_ratio: float=0.0,
                  target_sparsity_ratio: float=0.97, update_frequency: int=1,
                  prune_type: str='BasicMagnitude', method: str='per_tensor',

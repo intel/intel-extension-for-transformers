@@ -4,12 +4,13 @@ import torch
 import torch.utils.data as data
 import unittest
 from nlp_toolkit import (
+    metrics,
     NLPTrainer,
+    objectives,
     OptimizedModel,
     QuantizationConfig,
-    QuantizationMode,
+    QuantizationMode
 )
-from nlp_toolkit import metrics, objectives
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer

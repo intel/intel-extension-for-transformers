@@ -48,14 +48,14 @@ Please refer to [quantization document](docs/quantization.md) for more details.
 
 ### Pruning
 ```python
-from nlp_toolkit import NLPTrainer, Pruner, PruningConfig
+from nlp_toolkit import NLPTrainer, PrunerConfig, PruningConfig
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
 trainer = NLPTrainer(...)
 metric = metrics.Metric(name="eval_accuracy")
-pruner = Pruner(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
-p_conf = PruningConfig(pruner=[pruner], metrics=metric)
+pruner_config = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
+p_conf = PruningConfig(pruner_config=[pruner_config], metrics=metric)
 model = trainer.prune(pruning_config=p_conf)
 ```
 

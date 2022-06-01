@@ -29,7 +29,7 @@ from datasets import load_dataset, load_metric
 from nlp_toolkit import (
     metrics,
     OptimizedModel,
-    Pruner,
+    PrunerConfig,
     PruningConfig,
     NLPTrainer,
 )
@@ -521,8 +521,8 @@ def main():
             if optim_args.pruning_approach else optim_args.pruning_approach
         target_sparsity_ratio = None \
             if optim_args.target_sparsity_ratio else optim_args.target_sparsity_ratio
-        pruner = Pruner(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
-        pruning_conf = PruningConfig(pruner=pruner, metrics=tune_metric)
+        pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
+        pruning_conf = PruningConfig(pruner_config=pruner_config, metrics=tune_metric)
 
         model = trainer.prune(pruning_config=pruning_conf)
         trainer.save_model(training_args.output_dir)

@@ -23,7 +23,7 @@ from nlp_toolkit import (
     PruningConfig,
     Orchestrate_optimizer
 )
-from nlp_toolkit.optimization.metrics import Metric
+from nlp_toolkit.optimization.utils.metrics import Metric
 from packaging import version
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
@@ -348,14 +348,14 @@ class NLPTrainer(Trainer):
             self.pruner.eval_func = self._eval_func
         else:
             assert self.metrics is not None, "Please pass metrics to trainer.pruning.metrics!"
-            assert self.pruning_config.pruner[0].prune_type == PruningMode.BASICMAGNITUDE.value, \
+            assert self.pruning_config.pruner_config[0].prune_type == PruningMode.BASICMAGNITUDE.value, \
                 "Please pass eval_func to trainer.eval_func"
             self.pruner.eval_func = self.builtin_eval_func
 
         if self._train_func is not None:
             self.pruner.pruning_func = self._train_func
         else:
-            assert self.pruning_config.pruner[0].prune_type == PruningMode.BASICMAGNITUDE.value, \
+            assert self.pruning_config.pruner_config[0].prune_type == PruningMode.BASICMAGNITUDE.value, \
                 "Please pass train_func to trainer.train_func"
             self.pruner.pruning_func = self.builtin_train_func
 

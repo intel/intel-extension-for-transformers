@@ -7,8 +7,8 @@ from neural_compressor.conf.config import (
 )
 from neural_compressor.conf.dotdict import DotDict
 from neural_compressor.utils import logger
-from nlp_toolkit.optimization.metrics import Metric
-from nlp_toolkit.optimization.objectives import Objective, performance
+from nlp_toolkit.optimization.utils.metrics import Metric
+from nlp_toolkit.optimization.utils.objectives import Objective, performance
 from nlp_toolkit.optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from nlp_toolkit.optimization.distillation import (
     Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
@@ -38,9 +38,13 @@ class QuantizationConfig(object):
         max_trials: int = 100,
         metrics: Union[Metric, List] = None,
         objectives: Union[Objective, List] = performance,
+        config_file: str = None
     ):
         super().__init__()
-        self.inc_config = Quantization_Conf()
+        if config_file is None:
+            self.inc_config = Quantization_Conf()
+        else:
+            self.inc_config = Quantization_Conf(config_file)
         self.framework = framework
         if approach is not None:
             self.approach = approach
@@ -68,6 +72,24 @@ class QuantizationConfig(object):
             f"quantization approach: {approach} is not support!" + \
             "PostTrainingStatic, PostTrainingDynamic and QuantizationAwareTraining are supported!"
         self.inc_config.usr_cfg.quantization.approach = QuantizationMode[approach].value
+
+    @property
+    def input_names(self):
+        return self.inc_config.usr_cfg.model.inputs
+
+    @input_names.setter
+    def input_names(self, input_names):
+        assert isinstance(input_names, list), "input_names must be a list"
+        self.inc_config.usr_cfg.model.inputs = input_names
+
+    @property
+    def output_names(self):
+        return self.inc_config.usr_cfg.model.outputs
+
+    @output_names.setter
+    def output_names(self, output_names):
+        assert isinstance(output_names, list), "input_names must be a list"
+        self.inc_config.usr_cfg.model.outputs = output_names
 
     @property
     def metrics(self):
@@ -112,7 +134,7 @@ class QuantizationConfig(object):
 
     @framework.setter
     def framework(self, framework):
-        assert framework in ["pytorch", "pytorch_fx"], \
+        assert framework in ["pytorch", "pytorch_fx", "tensorflow"], \
             "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework
 
@@ -227,15 +249,18 @@ class PruningConfig(object):
     def __init__(
         self,
         framework: str = "pytorch",
+        epochs: int = 1,
         epoch_range: List = [0, 4],
         initial_sparsity_ratio: float=0.0,
         target_sparsity_ratio: float = 0.97,
         metrics: Metric = None,
-        pruner: Union[List, Pruner] = None,
+        pruner_config: Union[List, Pruner] = None,
+        config_file: str = None
     ):
         super().__init__()
-        self.inc_config = Pruning_Conf()
+        self.inc_config = Pruning_Conf(config_file)
         self.framework = framework
+
         if initial_sparsity_ratio is not None:
             self.initial_sparsity_ratio = initial_sparsity_ratio
         if target_sparsity_ratio is not None:
@@ -246,26 +271,27 @@ class PruningConfig(object):
             self.metrics = metrics
         else:
             self._metrics = None
-        if pruner is not None:
-            self.pruner = pruner
+        if pruner_config is not None:
+            self.pruner_config = pruner_config
         else:
             self.init_prune_config()
+        self.epochs = epochs
 
 
     def init_prune_config(self):
-        pruner = Pruner()
-        self.inc_config.usr_cfg.pruning.approach.weight_compression['pruners'] = [pruner]
+        pruner_config = Pruner()
+        self.inc_config.usr_cfg.pruning.approach.weight_compression['pruners'] = [pruner_config]
 
     @property
-    def pruner(self):
+    def pruner_config(self):
         return self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners
 
-    @pruner.setter
-    def pruner(self, pruner):
-        if isinstance(pruner, list):
-            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = pruner
+    @pruner_config.setter
+    def pruner_config(self, pruner_config):
+        if isinstance(pruner_config, list):
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = pruner_config
         else:
-            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = [pruner]
+            self.inc_config.usr_cfg.pruning.approach.weight_compression.pruners = [pruner_config]
 
     @property
     def target_sparsity_ratio(self):
@@ -298,6 +324,18 @@ class PruningConfig(object):
         self.inc_config.usr_cfg.pruning.approach.weight_compression.end_epoch = epoch_range[1]
 
     @property
+    def epochs(self):
+        eps = self.inc_config.usr_cfg.pruning.train.epoch \
+            if hasattr(self.inc_config.usr_cfg.pruning, "train") else 1
+        return eps
+
+    @epochs.setter
+    def epochs(self, epochs):
+        assert isinstance(epochs, int) and epochs > 0, \
+          "You should set epochs > 0 and int, not {}.".format(epochs)
+        self.inc_config.usr_cfg.pruning["train"] = {"epoch": epochs}
+
+    @property
     def framework(self):
         return self.inc_config.usr_cfg.model.framework
 
@@ -314,8 +352,6 @@ class PruningConfig(object):
     @metrics.setter
     def metrics(self, metrics: Metric):
         self._metrics = metrics
-        assert isinstance(metrics, Metric), \
-            "metric should be a Metric calss!"
 
 
 class DistillationConfig(object):

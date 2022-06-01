@@ -2,13 +2,13 @@
 ## script:
 ```python
 from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig, Criterion
-# Create a trainer like you do in transformers examples, just replace transformers.Trainer with NLPTrainer
-# ~~trainer = transformers.Trainer(......)~~
+# Replace transformers.Trainer with NLPTrainer
+# trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
-tune_metric = metrics.Metric(name="eval_accuracy")
-distillation_conf = DistillationConfig(metrics=tune_metric)
+metric = metrics.Metric(name="eval_accuracy")
+d_conf = DistillationConfig(metrics=tune_metric)
 model = trainer.distill(
-    distillation_config=distillation_conf, teacher_model=teacher_model
+    distillation_config=d_conf, teacher_model=teacher_model
 )
 ```
 
@@ -18,7 +18,7 @@ Please refer to [example](../examples/optimize/pytorch/huggingface/text-classifi
 The Metric define which metric will used to measure the performance of tuned models.
 - example:
     ```python
-    Metric(name="eval_accuracy")
+    metric = metrics.Metric(name="eval_accuracy")
     ```
 
     Please refer to [metrics document](metrics.md) for the details.
@@ -38,11 +38,11 @@ The criterion used in training phase.
 
 - example:
     ```python
-    Criterion(name='KnowledgeLoss')
+    criterion = Criterion(name='KnowledgeLoss')
     ```
 
 ## Create an instance of DistillationConfig
-The DistillationConfig contains all the information related to the model distillation behavior. If you created Metric and Criterion instance, then you can create an instance of DistillationConfig. Metric and pruner is optional.
+The DistillationConfig contains all the information related to the model distillation behavior. If you created Metric and Criterion instance, then you can create an instance of DistillationConfig. Metric and pruner_config is optional.
 
 - arguments:
     |Argument   |Type       |Description                                        |Default value    |
@@ -53,7 +53,7 @@ The DistillationConfig contains all the information related to the model distill
 
 - example:
     ```python
-    distillation_conf = DistillationConfig(metrics=tune_metric)
+    d_conf = DistillationConfig(metrics=metric, criterion=criterion)
     ```
 
 ## Distill with Trainer
@@ -63,6 +63,6 @@ The DistillationConfig contains all the information related to the model distill
     from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig,
     trainer = NLPTrainer(......)
     model = trainer.distill(
-        distillation_config=distillation_conf, teacher_model=teacher_model
+        distillation_config=d_conf, teacher_model=teacher_model
     )
     ```

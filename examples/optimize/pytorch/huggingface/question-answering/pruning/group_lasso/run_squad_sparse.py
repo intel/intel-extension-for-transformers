@@ -1198,14 +1198,14 @@ def main():
     
     if args.do_prune:
         # Pruning!
-        from nlp_toolkit import NoTrainerOptimizer, Pruner, PruningConfig
-        pruner = Pruner(
+        from nlp_toolkit import NoTrainerOptimizer, PrunerConfig, PruningConfig
+        pruner_config = PrunerConfig(
             prune_type="GroupLasso",
             target_sparsity_ratio=0.7,
             names=['bert.encoder.layer.0.attention.output.dense.weight'],
             parameters={"alpha": 0.006, "pattern": "tile_pattern_1x2"},
         )
-        pruning_conf = PruningConfig(pruner=pruner)
+        pruning_conf = PruningConfig(pruner_config=pruner_config)
         no_trainer_optimizer = NoTrainerOptimizer(model, output_dir=args.output_dir)
         agent = no_trainer_optimizer.init_pruner(pruning_config=pruning_conf)
 

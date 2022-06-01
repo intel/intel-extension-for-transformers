@@ -83,15 +83,8 @@ class NoTrainerOptimizer:
         Args:
             model (:obj:`Union[PreTrainedModel, torch.nn.Module]`):
                 FP32 model specified for low precision tuning.
-            eval_func (:obj:`Callable`, `optional`):
-                Evaluation function to evaluate the tuning objective.
-            train_func (:obj:`Callable`, `optional`):
-                Training function for quantization aware training approach.
-            calib_dataloader (:obj:`DataLoader`, `optional`):
-                DataLoader for post-training quantization calibration.
-
-        Returns:
-            quantizer: NLPQuantizer object.
+            output_dir (:obj:`string`, `optional`):
+                The folder for saving the results.
         """
 
         self.model = model

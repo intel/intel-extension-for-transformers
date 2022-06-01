@@ -6,7 +6,7 @@ from nlp_toolkit import (
     DistillationConfig,
     metrics,
     objectives,
-    Pruner,
+    PrunerConfig,
     PruningConfig,
     QuantizationConfig,
     AutoDistillationConfig,
@@ -100,22 +100,22 @@ class TestConfig(unittest.TestCase):
 
     def test_pruning_config(self):
         pruning_config = PruningConfig()
-        pruner = Pruner()
+        pruner_config = PrunerConfig()
         metric = metrics.Metric(name="F1")
-        pruning_config.pruner = pruner
+        pruning_config.pruner_config = pruner_config
         pruning_config.framework = "pytorch"
         pruning_config.target_sparsity_ratio = 0.1
         pruning_config.epoch_range = [0, 4]
         pruning_config.metrics = metric
 
-        self.assertEqual(pruning_config.pruner, [pruner])
+        self.assertEqual(pruning_config.pruner_config, [pruner_config])
         self.assertEqual(pruning_config.framework, "pytorch")
         self.assertEqual(pruning_config.target_sparsity_ratio, 0.1)
         self.assertEqual(pruning_config.epoch_range, [0, 4])
         self.assertEqual(pruning_config.metrics, metric)
 
-        pruning_config.pruner = [pruner]
-        self.assertEqual(pruning_config.pruner, [pruner])
+        pruning_config.pruner_config = [pruner_config]
+        self.assertEqual(pruning_config.pruner_config, [pruner_config])
 
     def test_distillation_config(self):
         metric = metrics.Metric(name="eval_F1")

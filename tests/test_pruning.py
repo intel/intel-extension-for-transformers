@@ -7,7 +7,7 @@ from nlp_toolkit import (
     metrics,
     NLPTrainer,
     OptimizedModel,
-    Pruner,
+    PrunerConfig,
     PruningConfig,
     PruningMode,
 )
@@ -66,8 +66,8 @@ class TestPruning(unittest.TestCase):
                 eval_dataset=self.dummy_dataset,
             )
             metric = metrics.Metric(name="eval_loss")
-            pruner = Pruner(prune_type=mode.name, target_sparsity_ratio=0.9)
-            pruning_conf = PruningConfig(pruner=pruner, metrics=metric)
+            pruner_config = PrunerConfig(prune_type=mode.name, target_sparsity_ratio=0.9)
+            pruning_conf = PruningConfig(pruner_config=pruner_config, metrics=metric)
             agent = self.trainer.init_pruner(pruning_config=pruning_conf)
             pruned_model = self.trainer.prune()
             pruned_model.report_sparsity()
@@ -91,9 +91,9 @@ class TestPruning(unittest.TestCase):
             return model
 
         self.trainer = NLPTrainer(self.model)
-        pruner = Pruner(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
-        pruning_conf = PruningConfig(pruner=pruner)
-        self.trainer.prune(pruning_conf, 
+        pruner_conf = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
+        pruning_conf = PruningConfig(pruner_config=pruner_conf)
+        self.trainer.prune(pruning_conf,
                            provider="inc",
                            train_func = train_func,
                            eval_func = eval_func,)
