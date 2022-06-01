@@ -1487,6 +1487,7 @@ class NLPTrainer(Trainer):
             addition_op_to_quantize = []
             opset_version = 13
             quant_format='QDQ'
+            dtype='U8S8'
             logger.info("Engine only support opset_version=11 " + 
                         "and int8 MatMul.")
         else:
@@ -1560,16 +1561,25 @@ class NLPTrainer(Trainer):
         # Quantization
         quant_format = ortq.QuantFormat.QOperator if quant_format != 'QDQ' else ortq.QuantFormat.QDQ
 
-        if 'U8' in dtype:
-            weight_type = ortq.QuantType.QUInt8
+        if 'U8U8' in dtype:
             activation_type = ortq.QuantType.QUInt8
-        elif 'S8' in dtype:
-            weight_type = ortq.QuantType.QInt8
+            weight_type = ortq.QuantType.QUInt8
+        elif 'S8S8' in dtype:
             activation_type = ortq.QuantType.QInt8
+            weight_type = ortq.QuantType.QInt8
+        elif 'U8S8' in dtype:
+            if not self.enable_executor:
+                logger.error("Right now, we don't support dtype: {}, please use \
+                              U8U8/S8S8 or set trainer.enable_executor=True \
+                              for U8S8.".format(dtype))
+                sys.exit(0)
+            activation_type = ortq.QuantType.QUInt8
+            weight_type = ortq.QuantType.QInt8
         else:
             # Gather requires weight type be the same as activation.
             # So U8S8(acitvation|weight) option is not workable for best performance.
-            logger.error("Right now, we don't support dtype: {}".format(dtype))
+            logger.error("Right now, we don't support dtype: {}, \
+                          please use U8U8/U8S8/S8S8.".format(dtype))
             sys.exit(0)
         logger.info("Weight type: {}.".format(weight_type))
         logger.info("Activation type: {}.".format(activation_type))

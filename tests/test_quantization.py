@@ -115,7 +115,7 @@ class TestQuantization(unittest.TestCase):
                 self.trainer.export_to_onnx('int8-model.onnx')
                 self.assertTrue(check_onnx('int8-model.onnx', self.trainer.get_eval_dataloader()))
 
-            self.trainer.enable_engine = True
+            self.trainer.enable_executor = True
             self.trainer.export_to_onnx('int8-model.onnx')
             self.assertTrue(check_onnx('int8-model.onnx', self.trainer.get_eval_dataloader()))
 
