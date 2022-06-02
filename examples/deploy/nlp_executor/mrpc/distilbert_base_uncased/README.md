@@ -7,14 +7,16 @@
 ```shell
 conda create -n <env name> python=3.7
 conda activate <env name>
-cd <neural_compressor_folder>/examples/engine/nlp/mrpc/distilbert_base_uncased
+cd <neural_compressor_folder>/examples/baremetal/nlp/mrpc/distilbert_base_uncased
 pip install -r requirements.txt
 ```
-1.2 Install C++ environment (Optional)
-Install engine according to [Engine](../../../../../docs/engine.md) if need the performance in C++.
 Preload libiomp5.so can improve the performance when bs=1.
 ```
 export LD_PRELOAD=<path_to_libiomp5.so>
+```
+Preloading libjemalloc.so can improve the performance. It has been built in third_party/jemalloc/lib.
+```
+export LD_PRELOAD=<path_to_libjemalloc.so>
 ```
 ### 2. Prepare Dataset and pretrained model
 
@@ -39,7 +41,7 @@ bash prepare_model.sh
   ```
   or run shell
   ```shell
-  bash run_tuning.sh --config=bert.yaml --input_model=distilbert_base_uncased_mrpc.onnx --output_model=ir --dataset_location=data
+  bash run_tuning.sh --config=bert_static.yaml --input_model=distilbert_base_uncased_mrpc.onnx --output_model=ir --dataset_location=data
   ```
 
 ### 2. To get the benchmark of tuned model:
@@ -50,7 +52,7 @@ bash prepare_model.sh
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --config=bert.yaml --input_model=ir --dataset_location=data --batch_size=8 --mode=accuracy
+  bash run_benchmark.sh --config=bert_static.yaml --input_model=ir --dataset_location=data --batch_size=8 --mode=accuracy
   ```
 
   2.2 performance
@@ -60,7 +62,7 @@ bash prepare_model.sh
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --config=bert.yaml --input_model=ir --dataset_location=data --batch_size=8 --mode=performance
+  bash run_benchmark.sh --config=bert_static.yaml --input_model=ir --dataset_location=data --batch_size=8 --mode=performance
   ```
   or run C++
   The warmup below is recommended to be 1/10 of iterations and no less than 3.

@@ -1,7 +1,7 @@
 neural-compressor
 onnx
 onnxruntime
-onnxruntime-extensions
 transformers
-numpy==1.19
+numpy>1.19
 pycocotools==2.0.0
+onnxruntime_extensions

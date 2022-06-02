@@ -23,7 +23,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(engine_py, m) {
+PYBIND11_MODULE(executor_py, m) {
   m.doc() = "pybind11 engine plugin";
   py::class_<executor::Model>(m, "Model")
       .def(py::init<std::string, std::string>())

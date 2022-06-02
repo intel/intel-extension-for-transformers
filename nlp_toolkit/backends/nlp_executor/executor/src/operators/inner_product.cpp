@@ -218,7 +218,8 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
     }
   }
 #endif
-  is_dynamic_ = output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr);
+  is_dynamic_ =
+      output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
   if (is_dynamic_) LOG(INFO) << this->name() << " is DYNAMIC!!!";
   if (dense_flag_) {
     PrepareDense(input, output);
@@ -418,6 +419,22 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
     }
     attr_.set_output_scales(ic_dim, rescales);
   }
+  // cache weight here, save weight and bias memory descriptor
+  src1_shape_origin_ = src1_->shape();
+  vector<int64_t> src1_shape = GetShapes(src1_shape_origin_, src1_perm_);
+  vector<int64_t> src1_stride = GetStrides(src1_shape_origin_, src1_perm_);
+  src1_->set_shape(src1_shape);
+  any_src1_md_ = memory::desc(src1_shape, type2mem[src1_->dtype()], memory::format_tag::any);
+  src1_md_ = memory::desc(src1_shape, type2mem[src1_->dtype()], src1_stride);
+  src1_m_ = memory(src1_md_, eng_, src1_->mutable_data());
+
+  if (has_bias_) {
+    vector<int64_t> bias_shape = {src1_shape[0]};
+    vector<int64_t> bias_stride = GetStrides(bias_shape);
+    bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
+    any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
+    bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
+  }
 }
 
 void InnerProductOperator::CalculateCompensation(const vector<int64_t>& src1_shape, const vector<int64_t>& src1_stride,
@@ -442,9 +459,8 @@ void InnerProductOperator::CalculateCompensation(const vector<int64_t>& src1_sha
 // 1. Create primitive
 void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   dnnl::post_ops po;
-  vector<int64_t> src1_shape_origin = src1_->shape();
-  vector<int64_t> src1_shape = GetShapes(src1_shape_origin, src1_perm_);
-  vector<int64_t> src1_stride = GetStrides(src1_shape_origin, src1_perm_);
+  vector<int64_t> src1_shape = src1_->shape();
+  vector<int64_t> src1_stride = GetStrides(src1_shape_origin_, src1_perm_);
 
   if (is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
@@ -509,19 +525,6 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     po.append_eltwise(dst_scales_[0], algorithm::eltwise_linear, 1., zero_point);
   }
 
-  // cache weight here, save weight and bias memory descriptor
-  src1_->set_shape(src1_shape);
-  any_src1_md_ = memory::desc(src1_shape, type2mem[src1_->dtype()], memory::format_tag::any);
-  src1_md_ = memory::desc(src1_shape, type2mem[src1_->dtype()], src1_stride);
-  src1_m_ = memory(src1_md_, eng_, src1_->mutable_data());
-
-  if (has_bias_) {
-    vector<int64_t> bias_shape = {src1_shape[0]};
-    vector<int64_t> bias_stride = GetStrides(bias_shape);
-    bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
-    any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
-    bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
-  }
   // Part1: Derive operator's user proper shape and strides
   // 1.1 Transpose tensor shape and get it
   vector<int64_t> src0_shape_origin = src0_->shape();
@@ -601,29 +604,50 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   if (append_eltwise_ || append_sum_ || binary_add_ || is_dynamic_) attr_.set_post_ops(po);
   inner_product_pd_ = dnnl::inner_product_forward::primitive_desc(inner_product_d, attr_, eng_);
 
-  // 2.4 Prepare primitive objects (cached)
-  inner_product_p_ = dnnl::inner_product_forward(inner_product_pd_);
 
-  // 2.5 Prepare memory objects (cached)
+  // 2.4 Prepare memory objects (cached)
   src0_m_ = memory(src0_md, eng_);
   dst_m_ = memory(dst_md, eng_);
   if (!weight_cached_) {
     memory any_src1_m = src1_m_;
     if (inner_product_pd_.weights_desc() != src1_m_.get_desc()) {
       any_src1_m = memory(inner_product_pd_.weights_desc(), eng_);
+      if (src1_->is_shared()) {
+        int64_t weight_size = any_src1_m.get_desc().get_size();
+        void* weight_shm_ptr =
+            MemoryAllocator::ManagedShm().find_or_construct<char>(src1_->name().c_str())[weight_size](0);
+        any_src1_m.set_data_handle(weight_shm_ptr);
+      }
       dnnl::reorder(src1_m_, any_src1_m).execute(eng_stream_, src1_m_, any_src1_m);
     }
     memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m;
-    // bias in dynamic quantization should be calculate in runtime and cannot be cached
     if (!is_dynamic_ && has_bias_) {
       memory any_bias_m = bias_m_;
       if (inner_product_pd_.bias_desc() != bias_m_.get_desc()) {
         any_bias_m = memory(inner_product_pd_.bias_desc(), eng_);
+        if (bias_->is_shared()) {
+          int64_t bias_size = bias_m_.get_desc().get_size();
+          void* bias_shm_ptr =
+              MemoryAllocator::ManagedShm().find_or_construct<char>(bias_->name().c_str())[bias_size](0);
+          any_bias_m.set_data_handle(bias_shm_ptr);
+        }
         dnnl::reorder(bias_m_, any_bias_m).execute(eng_stream_, bias_m_, any_bias_m);
       }
       memory_args_[DNNL_ARG_BIAS] = any_bias_m;
     }
     weight_cached_ = true;
+  }
+
+  // If the inner product forward class in the cache pool, just get it from the pool.
+  // Otherwise, do the reshape and send the related class into the cache pool
+  size_t key = InnerProductPrimitiveFwdFactory::Key(src0_->dtype(), src1_->dtype(), output_dtype_,
+    src0_->shape(), src1_->shape(), dst_perm_, append_op_, post_->shape(), output_scale_, &eng_);
+  if (InnerProductPrimitiveFwdFactory::IsInFactory(key) && !InnerProductPrimitiveFwdFactory::DoNotCache()) {
+    inner_product_p_ = InnerProductPrimitiveFwdFactory::Get(key);
+  } else {
+    // 2.5 Prepare primitive objects (cached)
+    inner_product_p_ = dnnl::inner_product_forward(inner_product_pd_);
+    InnerProductPrimitiveFwdFactory::Set(key, inner_product_p_);
   }
 }
 
@@ -723,7 +747,9 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   if (is_dynamic_) {
     // quantize the fp32 result of inner_porduct
     if (output.size() > 1) {
-      RuntimeMinmax();
+      runtime_minmax(reinterpret_cast<float*>(inner_product_fp32_res.mutable_data()), inner_product_fp32_res.size(),
+                     reinterpret_cast<float*>(dst_min_->mutable_data()),
+                     reinterpret_cast<float*>(dst_max_->mutable_data()));
       // quantize
       if (output_dtype_ == "u8" || output_dtype_ == "s8") {
         auto scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());

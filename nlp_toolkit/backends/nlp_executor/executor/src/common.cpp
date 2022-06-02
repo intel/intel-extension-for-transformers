@@ -20,6 +20,12 @@ namespace executor {
 unordered_map<string, int> type2bytes = {{"fp32", sizeof(float)},       {"int8", sizeof(char)}, {"int32", sizeof(int)},
                                          {"u8", sizeof(unsigned char)}, {"s8", sizeof(char)},   {"s32", sizeof(int)},
                                          {"bf16", sizeof(uint16_t)}};
+const int CPU_COUNT = omp_get_max_threads();
+#if __AVX512F__
+const int ALIGN_NUM = 64;
+#else
+const int ALIGN_NUM = 32;
+#endif
 
 void GlobalInit(int* pargc, char*** pargv) {
   // Google flags.
@@ -64,28 +70,6 @@ void* read_file_to_type(const string& root, const string& type, const vector<int
   return p;
 }
 
-ipc::managed_shared_memory::handle_t load_shared_weight(const string& root, const string& type,
-                                                        const vector<int64_t>& shape, const vector<int64_t>& location) {
-  int64_t size = Product(shape);
-  int64_t bytes = size * type2bytes[type];
-  string weight_name = std::to_string(location[0]) + std::to_string(location[1]);
-  std::ifstream inFile(root, std::ios::in | std::ios::binary);
-  size_t file_size =
-      inFile ? static_cast<size_t>(inFile.seekg(0, std::ios::end).tellg()) : static_cast<size_t>(root.size());
-  // set redundent memory for shared buffer
-  static ipc::managed_shared_memory managed_shm(ipc::open_or_create, "SharedWeight", 3 * file_size);
-  auto shm_ptr = managed_shm.find_or_construct<char>(weight_name.c_str())[bytes](0);
-  if (inFile) {
-    inFile.seekg(location[0], std::ios::beg);
-    inFile.read(reinterpret_cast<char*>(shm_ptr), location[1]);
-    inFile.close();
-  } else {
-    std::memcpy(shm_ptr, &root[location[0]], location[1]);
-  }
-  const auto& handle = managed_shm.get_handle_from_address(shm_ptr);
-  return handle;
-}
-
 void InitVector(float* v, int buffer_size) {
   std::mt19937 gen;
   static int seed = 0;
@@ -98,16 +82,16 @@ void InitVector(float* v, int buffer_size) {
 }
 
 float Time(string state) {
-  static std::chrono::milliseconds millis_start = std::chrono::milliseconds();
-  static std::chrono::milliseconds millisec_end = std::chrono::milliseconds();
+  static std::chrono::microseconds micros_start = std::chrono::microseconds();
+  static std::chrono::microseconds micros_end = std::chrono::microseconds();
   std::chrono::system_clock::time_point now_time = std::chrono::system_clock::now();
   std::chrono::nanoseconds nanos = now_time.time_since_epoch();
   if (state == "start") {
-    millis_start = std::chrono::duration_cast<std::chrono::milliseconds>(nanos);
+    micros_start = std::chrono::duration_cast<std::chrono::microseconds>(nanos);
     return 0.;
   } else if (state == "end") {
-    millisec_end = std::chrono::duration_cast<std::chrono::milliseconds>(nanos);
-    return millisec_end.count() - millis_start.count();
+    micros_end = std::chrono::duration_cast<std::chrono::microseconds>(nanos);
+    return (micros_end.count() - micros_start.count()) / 1000.0;
   } else {
     LOG(FATAL) << "not supported state for time, only start and end...";
     return 0;
@@ -707,5 +691,366 @@ void add_ker(uint8_t* inout, uint8_t* in, size_t len) {
 #else
   ref_add_ker(inout, in, len);
 #endif
+}
+
+void runtime_minmax(float* data, size_t length, float* min_num, float* max_num) {
+  int block_size = (length / CPU_COUNT) / ALIGN_NUM * ALIGN_NUM;
+  if (block_size == 0) {
+    *min_num = *std::min_element(data, &data[length]);
+    *max_num = *std::max_element(data, &data[length]);
+    return;
+  }
+  int block_num = length / block_size;
+  vector<float> block_mins(block_num + (length % block_size != 0)), block_maxs(block_num + (length % block_size != 0));
+#if __AVX512F__
+#pragma omp parallel for
+  for (int i = 0; i < block_num; i++) {
+    block_minmax_avx512(data + i * block_size, block_size, &block_mins[i], &block_maxs[i]);
+  }
+  if (length % block_size != 0) {
+    block_minmax_avx512(data + block_num * block_size, length - block_num * block_size, &block_mins[block_num],
+                        &block_maxs[block_num]);
+  }
+#else
+#pragma omp parallel for
+  for (int i = 0; i < block_num; i++) {
+    block_minmax(data + i * block_size, block_size, &block_mins[i], &block_maxs[i]);
+  }
+  if (length % block_size != 0) {
+    block_minmax(data + block_num * block_size, length - block_num * block_size, &block_mins[block_num],
+                 &block_maxs[block_num]);
+  }
+#endif
+  *min_num = *std::min_element(block_mins.begin(), block_mins.end());
+  *max_num = *std::max_element(block_maxs.begin(), block_maxs.end());
+}
+
+void block_minmax_avx512(float* Input, size_t N, float* Min, float* Max) {
+  float tmp_min = std::numeric_limits<float>::max();
+  float tmp_max = std::numeric_limits<float>::lowest();
+
+  if (N >= 16) {
+    __m512 MaximumVector0 = _mm512_set1_ps(tmp_max);
+    __m512 MinimumVector0 = _mm512_set1_ps(tmp_min);
+
+    if (N >= 64) {
+      __m512 MaximumVector1 = MaximumVector0;
+      __m512 MaximumVector2 = MaximumVector0;
+      __m512 MaximumVector3 = MaximumVector0;
+
+      __m512 MinimumVector1 = MinimumVector0;
+      __m512 MinimumVector2 = MinimumVector0;
+      __m512 MinimumVector3 = MinimumVector0;
+
+      while (N >= 64) {
+        __m512 InputVector0 = _mm512_loadu_ps(Input);
+        __m512 InputVector1 = _mm512_loadu_ps(Input + 16);
+        __m512 InputVector2 = _mm512_loadu_ps(Input + 32);
+        __m512 InputVector3 = _mm512_loadu_ps(Input + 48);
+
+        MaximumVector0 = _mm512_max_ps(MaximumVector0, InputVector0);
+        MaximumVector1 = _mm512_max_ps(MaximumVector1, InputVector1);
+        MaximumVector2 = _mm512_max_ps(MaximumVector2, InputVector2);
+        MaximumVector3 = _mm512_max_ps(MaximumVector3, InputVector3);
+
+        MinimumVector0 = _mm512_min_ps(MinimumVector0, InputVector0);
+        MinimumVector1 = _mm512_min_ps(MinimumVector1, InputVector1);
+        MinimumVector2 = _mm512_min_ps(MinimumVector2, InputVector2);
+        MinimumVector3 = _mm512_min_ps(MinimumVector3, InputVector3);
+
+        Input += 64;
+        N -= 64;
+      }
+
+      MaximumVector0 = _mm512_max_ps(MaximumVector0, MaximumVector1);
+      MaximumVector2 = _mm512_max_ps(MaximumVector2, MaximumVector3);
+      MaximumVector0 = _mm512_max_ps(MaximumVector0, MaximumVector2);
+
+      MinimumVector0 = _mm512_min_ps(MinimumVector0, MinimumVector1);
+      MinimumVector2 = _mm512_min_ps(MinimumVector2, MinimumVector3);
+      MinimumVector0 = _mm512_min_ps(MinimumVector0, MinimumVector2);
+    }
+
+    while (N >= 16) {
+      __m512 InputVector0 = _mm512_loadu_ps(Input);
+      MaximumVector0 = _mm512_max_ps(MaximumVector0, InputVector0);
+      MinimumVector0 = _mm512_min_ps(MinimumVector0, InputVector0);
+
+      Input += 16;
+      N -= 16;
+    }
+
+    float minx16[32];
+    void* min_ptr = reinterpret_cast<void*>(minx16);
+    std::size_t min_space = sizeof(minx16) - 1;
+    std::align(64, sizeof(float), min_ptr, min_space);
+    float* aligned_min = reinterpret_cast<float*>(min_ptr);
+    _mm512_store_ps(aligned_min, MinimumVector0);
+    float maxx16[32];
+    void* max_ptr = reinterpret_cast<void*>(maxx16);
+    std::size_t max_space = sizeof(maxx16) - 1;
+    std::align(64, sizeof(float), max_ptr, max_space);
+    float* aligned_max = reinterpret_cast<float*>(max_ptr);
+    _mm512_store_ps(aligned_max, MaximumVector0);
+    for (int i = 0; i < 16; i++) {
+      tmp_max = std::max(tmp_max, aligned_max[i]);
+      tmp_min = std::min(tmp_min, aligned_min[i]);
+    }
+  }
+
+  while (N > 0) {
+    tmp_max = std::max(tmp_max, *Input);
+    tmp_min = std::min(tmp_min, *Input);
+
+    Input += 1;
+    N -= 1;
+  }
+
+  *Min = tmp_min;
+  *Max = tmp_max;
+}
+void block_minmax(float* Input, size_t N, float* Min, float* Max) {
+  float tmp_min = std::numeric_limits<float>::max();
+  float tmp_max = std::numeric_limits<float>::lowest();
+
+  if (N >= 8) {
+    __m256 MaximumVector0 = _mm256_set1_ps(tmp_max);
+    __m256 MinimumVector0 = _mm256_set1_ps(tmp_min);
+
+    if (N >= 32) {
+      __m256 MaximumVector1 = MaximumVector0;
+      __m256 MaximumVector2 = MaximumVector0;
+      __m256 MaximumVector3 = MaximumVector0;
+
+      __m256 MinimumVector1 = MinimumVector0;
+      __m256 MinimumVector2 = MinimumVector0;
+      __m256 MinimumVector3 = MinimumVector0;
+
+      while (N >= 32) {
+        __m256 InputVector0 = _mm256_loadu_ps(Input);
+        __m256 InputVector1 = _mm256_loadu_ps(Input + 8);
+        __m256 InputVector2 = _mm256_loadu_ps(Input + 16);
+        __m256 InputVector3 = _mm256_loadu_ps(Input + 24);
+
+        MaximumVector0 = _mm256_max_ps(MaximumVector0, InputVector0);
+        MaximumVector1 = _mm256_max_ps(MaximumVector1, InputVector1);
+        MaximumVector2 = _mm256_max_ps(MaximumVector2, InputVector2);
+        MaximumVector3 = _mm256_max_ps(MaximumVector3, InputVector3);
+
+        MinimumVector0 = _mm256_min_ps(MinimumVector0, InputVector0);
+        MinimumVector1 = _mm256_min_ps(MinimumVector1, InputVector1);
+        MinimumVector2 = _mm256_min_ps(MinimumVector2, InputVector2);
+        MinimumVector3 = _mm256_min_ps(MinimumVector3, InputVector3);
+
+        Input += 32;
+        N -= 32;
+      }
+
+      MaximumVector0 = _mm256_max_ps(MaximumVector0, MaximumVector1);
+      MaximumVector2 = _mm256_max_ps(MaximumVector2, MaximumVector3);
+      MaximumVector0 = _mm256_max_ps(MaximumVector0, MaximumVector2);
+
+      MinimumVector0 = _mm256_min_ps(MinimumVector0, MinimumVector1);
+      MinimumVector2 = _mm256_min_ps(MinimumVector2, MinimumVector3);
+      MinimumVector0 = _mm256_min_ps(MinimumVector0, MinimumVector2);
+    }
+
+    while (N >= 8) {
+      __m256 InputVector0 = _mm256_loadu_ps(Input);
+      MaximumVector0 = _mm256_max_ps(MaximumVector0, InputVector0);
+      MinimumVector0 = _mm256_min_ps(MinimumVector0, InputVector0);
+
+      Input += 8;
+      N -= 8;
+    }
+
+    float minx8[16];
+    void* min_ptr = reinterpret_cast<void*>(minx8);
+    std::size_t min_space = sizeof(minx8) - 1;
+    std::align(32, sizeof(float), min_ptr, min_space);
+    float* aligned_min = reinterpret_cast<float*>(min_ptr);
+    _mm256_store_ps(aligned_min, MinimumVector0);
+    float maxx8[16];
+    void* max_ptr = reinterpret_cast<void*>(maxx8);
+    std::size_t max_space = sizeof(maxx8) - 1;
+    std::align(32, sizeof(float), max_ptr, max_space);
+    float* aligned_max = reinterpret_cast<float*>(max_ptr);
+    _mm256_store_ps(aligned_max, MaximumVector0);
+    for (int i = 0; i < 8; i++) {
+      tmp_max = std::max(tmp_max, aligned_max[i]);
+      tmp_min = std::min(tmp_min, aligned_min[i]);
+    }
+  }
+
+  while (N > 0) {
+    tmp_max = std::max(tmp_max, *Input);
+    tmp_min = std::min(tmp_min, *Input);
+
+    Input += 1;
+    N -= 1;
+  }
+
+  *Min = tmp_min;
+  *Max = tmp_max;
+}
+
+/************ hash funtion for primitive cache ************/
+template <typename T>
+size_t hash_combine(size_t seed, const T &v) {
+  return seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template <typename T>
+void hash_val(size_t seed, const T& val) {
+  hash_combine(seed, val);
+}
+
+template <typename T, typename... Types>
+void hash_val(size_t seed, const T& val, const Types&... args) {
+  hash_combine(seed, val);
+  hash_val(seed, args...);
+}
+
+template <typename... Types>
+size_t hash_val(const Types&... args) {
+  size_t seed = 0;
+  hash_val(seed, args...);
+  return seed;
+}
+
+template <typename T>
+size_t get_array_hash(size_t seed, const T& v, int size) {
+  for (int i = 0; i < size; i++) {
+    seed = hash_combine(seed, v[i]);
+  }
+  return seed;
+}
+
+/************ InnerProductPrimitiveFwdFactory member function ************/
+size_t InnerProductPrimitiveFwdFactory::GenKey(const string& src0_dtype,
+  const string& src1_dtype, const string& dst_dtype, const vector<int64_t>& src0_shape,
+  const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm, const string& append_op,
+  const vector<int64_t>& post_op_shape, const float& output_scale, const dnnl::engine* eng) {
+  size_t seed = 0;
+  // primitive kind
+  string prefix = "inner_product_fwd_";
+  seed = hash_val(prefix, src0_dtype, src1_dtype, dst_dtype);
+  seed = get_array_hash(seed, src0_shape, src0_shape.size());
+  seed = get_array_hash(seed, src1_shape, src1_shape.size());
+  // if dst_shape has reverse_perm
+  if (!dst_perm.empty()) {
+    seed = get_array_hash(seed, dst_perm, dst_perm.size());
+  }
+  if (append_op != "") {
+    seed = hash_combine(seed, append_op);
+    if (append_op == "sum" || append_op == "binary_add") {
+      seed = get_array_hash(seed, post_op_shape, post_op_shape.size());
+    }
+  }
+  // if has output_scale
+  if (output_scale != 1.f) {
+    seed = hash_combine(seed, output_scale);
+  }
+  // hash each dnnl engine ptr
+  seed = hash_combine(seed, eng);
+  return seed;
+}
+
+size_t InnerProductPrimitiveFwdFactory::Key(const string& src0_dtype,
+  const string& src1_dtype, const string& dst_dtype, const vector<int64_t>& src0_shape,
+  const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm, const string& append_op,
+  const vector<int64_t>& post_op_shape, const float& output_scale, const dnnl::engine* eng) {
+  return InnerProductPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype,
+    src0_shape, src1_shape, dst_perm, append_op, post_op_shape, output_scale, eng);
+}
+
+bool InnerProductPrimitiveFwdFactory::IsInFactory(const size_t& key) {
+  return InnerProductPrimitiveFwdFactory::GetInstance().IsInCache(key);
+}
+
+dnnl::inner_product_forward& InnerProductPrimitiveFwdFactory::Get(const size_t& key) {
+  return static_cast<dnnl::inner_product_forward&>(
+    InnerProductPrimitiveFwdFactory::GetInstance().GetPrimitive(key));
+}
+
+void InnerProductPrimitiveFwdFactory::Set(const size_t& key, dnnl::primitive primitive) {
+  InnerProductPrimitiveFwdFactory::GetInstance().SetPrimitive(key, primitive);
+}
+
+void InnerProductPrimitiveFwdFactory::ClearFactory() {
+  InnerProductPrimitiveFwdFactory::GetInstance().Clear();
+}
+
+bool InnerProductPrimitiveFwdFactory::DoNotCache() {
+  return InnerProductPrimitiveFwdFactory::GetInstance().do_not_cache_;
+}
+
+InnerProductPrimitiveFwdFactory& InnerProductPrimitiveFwdFactory::GetInstance() {
+  static InnerProductPrimitiveFwdFactory instance_;
+  return instance_;
+}
+
+/************ MatMulPrimitiveFwdFactory member function ************/
+size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype,
+  const string& src1_dtype, const string& dst_dtype, const vector<int64_t>& src0_shape,
+  const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm, const string& append_op,
+  const vector<int64_t>& post_op_shape, const float& output_scale, const dnnl::engine* eng) {
+  size_t seed = 0;
+  // primitive kind
+  string prefix = "matmul_fwd_";
+  seed = hash_val(prefix, src0_dtype, src1_dtype, dst_dtype);
+  seed = get_array_hash(seed, src0_shape, src0_shape.size());
+  seed = get_array_hash(seed, src1_shape, src1_shape.size());
+  // if dst_shape has reverse_perm
+  if (!dst_perm.empty()) {
+    seed = get_array_hash(seed, dst_perm, dst_perm.size());
+  }
+  if (append_op != "") {
+    seed = hash_combine(seed, append_op);
+    if (append_op == "sum" || append_op == "binary_add") {
+      seed = get_array_hash(seed, post_op_shape, post_op_shape.size());
+    }
+  }
+  // if has output_scale
+  if (output_scale != 1.f) {
+    seed = hash_combine(seed, output_scale);
+  }
+  // hash each dnnl engine ptr
+  seed = hash_combine(seed, eng);
+  return seed;
+}
+
+size_t MatMulPrimitiveFwdFactory::Key(const string& src0_dtype,
+  const string& src1_dtype, const string& dst_dtype, const vector<int64_t>& src0_shape,
+  const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm, const string& append_op,
+  const vector<int64_t>& post_op_shape, const float& output_scale, const dnnl::engine* eng) {
+  return MatMulPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype,
+    src0_shape, src1_shape, dst_perm, append_op, post_op_shape, output_scale, eng);
+}
+
+bool MatMulPrimitiveFwdFactory::IsInFactory(const size_t& key) {
+  return MatMulPrimitiveFwdFactory::GetInstance().IsInCache(key);
+}
+
+dnnl::matmul& MatMulPrimitiveFwdFactory::Get(const size_t& key) {
+  return static_cast<dnnl::matmul&>(
+    MatMulPrimitiveFwdFactory::GetInstance().GetPrimitive(key));
+}
+
+void MatMulPrimitiveFwdFactory::Set(const size_t& key, dnnl::primitive primitive) {
+  MatMulPrimitiveFwdFactory::GetInstance().SetPrimitive(key, primitive);
+}
+
+void MatMulPrimitiveFwdFactory::ClearFactory() {
+  MatMulPrimitiveFwdFactory::GetInstance().Clear();
+}
+
+bool MatMulPrimitiveFwdFactory::DoNotCache() {
+  return MatMulPrimitiveFwdFactory::GetInstance().do_not_cache_;
+}
+
+MatMulPrimitiveFwdFactory& MatMulPrimitiveFwdFactory::GetInstance() {
+  static MatMulPrimitiveFwdFactory instance_;
+  return instance_;
 }
 }  // namespace executor

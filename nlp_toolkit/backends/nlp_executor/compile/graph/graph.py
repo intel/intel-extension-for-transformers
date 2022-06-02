@@ -24,6 +24,7 @@ import os
 
 
 class Graph(object):
+
     def __init__(self):
         self._nodes = []
         self._node_id = {}
@@ -82,7 +83,7 @@ class Graph(object):
             self._nodes[index].input_tensors[i].dest_op = [new_name]
             for pre_node_name in self._nodes[index].input_tensors[i].source_op:
                 tensor_idx = self.get_tensor_idx(pre_node_name,
-                                            self._nodes[index].input_tensors[i].name)
+                                                 self._nodes[index].input_tensors[i].name)
                 pre_node_idx = self._node_id[pre_node_name]
                 self._nodes[pre_node_idx].output_tensors[tensor_idx].dest_op.remove(old_name)
                 self._nodes[pre_node_idx].output_tensors[tensor_idx].dest_op.append(new_name)
@@ -90,7 +91,8 @@ class Graph(object):
             self._nodes[index].output_tensors[i].source_op = [new_name]
             for next_node_name in self._nodes[index].output_tensors[i].dest_op:
                 tensor_idx = self.get_tensor_idx(next_node_name,
-                                self._nodes[index].output_tensors[i].name, from_output=False)
+                                                 self._nodes[index].output_tensors[i].name,
+                                                 from_output=False)
                 next_node_idx = self._node_id[next_node_name]
                 self._nodes[next_node_idx].input_tensors[tensor_idx].source_op = [new_name]
 
@@ -218,7 +220,8 @@ class Graph(object):
                         tensor_idx = self.get_tensor_idx(dest_op_name, t.name, from_output=False)
                         if tensor_idx != -1:
                             self._nodes[dest_node_idx].input_tensors[tensor_idx].source_op = [
-                                node.name]
+                                node.name
+                            ]
         self._engine = None
 
         return node
@@ -230,8 +233,8 @@ class Graph(object):
         weight_bytes = bytearray()
         non_consts_len = 0
         for t in self._nodes[0].output_tensors:
-            assert self._nodes[0].op_type=='Input', 'The graph must have input data'
-            if t.source_op==[] and isinstance(t.data, np.ndarray):
+            assert self._nodes[0].op_type == 'Input', 'The graph must have input data'
+            if t.source_op == [] and isinstance(t.data, np.ndarray):
                 break
             else:
                 non_consts_len += 1
@@ -239,7 +242,7 @@ class Graph(object):
         for i in range(len(self._nodes)):
             for j in range(len(self._nodes[i].input_tensors)):
                 t = self._nodes[i].input_tensors[j]
-                if t.source_op==[] and isinstance(t.data, np.ndarray):
+                if t.source_op == [] and isinstance(t.data, np.ndarray):
                     data = t.data
                     start = len(weight_bytes)
                     data_bytes = data.tobytes()
@@ -271,7 +274,7 @@ class Graph(object):
                     for tensor in net_info['model']['operator'][node]['output']:
                         if 'location' in \
                             net_info['model']['operator'][node]['output'][tensor].keys():
-                            continue 
+                            continue
                         net_info['model']['operator']['output_data']['input'][tensor] = {}
         else:
             for tensor in tensor_list:
@@ -288,7 +291,7 @@ class Graph(object):
 
     # pybind engine executor
     def engine_init(self, net_info={}, weight_data=b""):
-        import engine_py as dp
+        import executor_py as dp
         if not weight_data:
             weight_data = self.weight_data
         if not net_info:
@@ -403,13 +406,15 @@ class Graph(object):
                         tensor_location = attrs['location']
                         bin_file.seek(tensor_location[0], 0)
                         tensor_data = copy.deepcopy(bin_file.read(tensor_location[1]))
-                        DTYPES_DICT = { "fp32": np.float32,
-                                        "s8": np.int8,
-                                        "s32": np.int32,
-                                        "u8": np.uint8,
-                                        "bf16": np.uint16,
-                                       }
-                        tensor_data = np.frombuffer(tensor_data, dtype=DTYPES_DICT[tensor_dtype])
+                        DTYPES_DICT = {
+                            "fp32": np.float32,
+                            "s8": np.int8,
+                            "s32": np.int32,
+                            "u8": np.uint8,
+                            "bf16": np.uint16,
+                        }
+                        tensor_data = np.frombuffer(tensor_data, dtype=DTYPES_DICT[tensor_dtype]).\
+                        reshape(tensor_shape)
                     tensorclass = Tensor()
                     if tensor_location == None:
                         tensorclass = Tensor(tensor_name, ['input_data'], [], tensor_shape,
@@ -435,6 +440,7 @@ class Graph(object):
                 for tensor_name in d['model']['operator'][node]['output']:
                     tensor = Tensor(tensor_name, [node])
                     tensor_name_2_class[tensor_name] = tensor
+                    tensor.source_op.append(node)
                     output_tensors.append(tensor)
                 for tensor_name in d['model']['operator'][node]['input']:
                     tensor = tensor_name_2_class[tensor_name]
@@ -471,10 +477,12 @@ class Graph(object):
             # for write list, no use '-' to split the list, which is the default action in yaml
             def list_representer(dumper, data):
                 return dumper.represent_sequence(u'tag:yaml.org,2002:seq', data, flow_style=True)
+
             # for write OrderedDict
 
             def dict_representer(dumper, data):
                 return dumper.represent_mapping("tag:yaml.org,2002:map", data.items())
+
             yaml.add_representer(list, list_representer)
             yaml.add_representer(OrderedDict, dict_representer)
             yaml.dump(net_info, f, default_flow_style=False, sort_keys=False)

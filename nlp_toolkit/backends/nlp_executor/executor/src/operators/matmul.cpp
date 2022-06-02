@@ -68,6 +68,8 @@ MatmulOperator::MatmulOperator(const OperatorConfig& conf)
   gelu_tanh_ = (iter != attrs_map.end() && iter->second == "gelu_tanh") ? true : false;
   tanh_ = (iter != attrs_map.end() && iter->second == "tanh") ? true : false;
   append_eltwise_ = gelu_erf_ || gelu_tanh_ || tanh_;
+  append_op_ = (iter != attrs_map.end()) ? iter->second : "";
+  LOG(INFO) << "append_op: " << append_op_;
 }
 
 MatmulOperator::~MatmulOperator() {}
@@ -182,7 +184,8 @@ void MatmulOperator::MapTensors(const vector<Tensor*>& input, const vector<Tenso
 void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   MapTensors(input, output);
   dst_->set_dtype(output_dtype_);
-  is_dynamic_ = output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr);
+  is_dynamic_ =
+      output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
   if (is_dynamic_) LOG(INFO) << this->name() << " is DYNAMIC!!!";
   if (!is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     int ic_dim = 0;
@@ -349,10 +352,7 @@ void MatmulOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   attr_.set_post_ops(po);
   matmul_pd_ = dnnl::matmul::primitive_desc(matmul_d, attr_, eng_);
 
-  // 2.4 Prepare primitive objects (cached)
-  matmul_p_ = dnnl::matmul(matmul_pd_);
-
-  // 2.5 Prepare memory objects (cached)
+  // 2.4 Prepare memory objects (cached)
   src0_m_ = memory(src0_md, eng_);
   dst_m_ = memory(dst_md, eng_);
   if (has_bias_) {
@@ -360,6 +360,11 @@ void MatmulOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
     memory any_bias_m = bias_m_;
     if (matmul_pd_.bias_desc() != bias_m_.get_desc()) {
       any_bias_m = memory(matmul_pd_.bias_desc(), eng_);
+      if (bias_->is_shared()) {
+        int64_t bias_size = bias_m_.get_desc().get_size();
+        void* bias_shm_ptr = MemoryAllocator::ManagedShm().find_or_construct<char>(bias_->name().c_str())[bias_size](0);
+        any_bias_m.set_data_handle(bias_shm_ptr);
+      }
       dnnl::reorder(bias_m_, any_bias_m).execute(eng_stream_, bias_m_, any_bias_m);
     }
     memory_args_[DNNL_ARG_BIAS] = any_bias_m;
@@ -370,11 +375,29 @@ void MatmulOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
     memory any_src1_m = src1_m_;
     if (matmul_pd_.weights_desc() != src1_m_.get_desc()) {
       any_src1_m = memory(matmul_pd_.weights_desc(), eng_);
+      if (src1_->is_shared()) {
+        int64_t weight_size = any_src1_m.get_desc().get_size();
+        void* weight_shm_ptr =
+            MemoryAllocator::ManagedShm().find_or_construct<char>(src1_->name().c_str())[weight_size](0);
+        any_src1_m.set_data_handle(weight_shm_ptr);
+      }
       dnnl::reorder(src1_m_, any_src1_m).execute(eng_stream_, src1_m_, any_src1_m);
     }
     memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m;
   } else {
     src1_m_ = memory(src1_md, eng_);
+  }
+
+  // If the matmul forward class in the cache pool, just get it from pool.
+  // Otherwise, do the reshape and send the related class into the cache pool
+  size_t key = MatMulPrimitiveFwdFactory::Key(src0_->dtype(), src1_->dtype(), output_dtype_,
+    src0_->shape(), src1_->shape(), dst_perm_, append_op_, post_->shape(), output_scale_, &eng_);
+  if (MatMulPrimitiveFwdFactory::IsInFactory(key) && !MatMulPrimitiveFwdFactory::DoNotCache()) {
+    matmul_p_ = MatMulPrimitiveFwdFactory::Get(key);
+  } else {
+    // 2.5 Prepare primitive objects (cached)
+    matmul_p_ = dnnl::matmul(matmul_pd_);
+    MatMulPrimitiveFwdFactory::Set(key, matmul_p_);
   }
 }
 
@@ -417,7 +440,7 @@ void MatmulOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
   // 1. Prepare memory objects with data_ptr
   src0_m_.set_data_handle(const_cast<void*>(src0_data), eng_stream_);
   src1_m_.set_data_handle(const_cast<void*>(src1_data), eng_stream_);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), eng_stream_);
+  dst_m_.set_data_handle(dst_data, eng_stream_);
 
   memory any_src0_m = src0_m_;
   memory any_src1_m = src1_m_;
@@ -452,7 +475,7 @@ void MatmulOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
   // has post_op: binary_add
   if (post_ != nullptr && binary_add_) {
     void* post_ptr = post_->mutable_data();
-    binary_m_.set_data_handle(reinterpret_cast<void*>(post_ptr), eng_stream_);
+    binary_m_.set_data_handle(post_ptr, eng_stream_);
     // dynamic quantization inserts additional post_ops
     int op_idx = 0;
     if (is_dynamic_) {
@@ -475,7 +498,9 @@ void MatmulOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
   if (is_dynamic_) {
     // quantize the fp32 result of matmul
     if (output.size() > 1) {
-      RuntimeMinmax();
+      runtime_minmax(reinterpret_cast<float*>(matmul_fp32_res.mutable_data()), matmul_fp32_res.size(),
+                     reinterpret_cast<float*>(dst_min_->mutable_data()),
+                     reinterpret_cast<float*>(dst_max_->mutable_data()));
       // quantize
       if (output_dtype_ == "u8" || output_dtype_ == "s8") {
         auto scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());

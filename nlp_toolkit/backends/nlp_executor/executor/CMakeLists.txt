@@ -11,6 +11,15 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -ffast-math -lm -ftree-loop-vectorize -fpic 
 set(THIRD_PARTY_DIR "${PROJECT_SOURCE_DIR}/third_party")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -Wall -s")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -Wall -s")
+
+find_library(LIBJEMALLOC jemalloc ${THIRD_PARTY_DIR}/jemalloc/lib)
+if(${LIBJEMALLOC} STREQUAL LIBJEMALLOC-NOTFOUND)
+  execute_process(COMMAND ./autogen.sh --disable-initial-exec-tls
+                  WORKING_DIRECTORY ${THIRD_PARTY_DIR}/jemalloc)
+  execute_process(COMMAND make -j
+                WORKING_DIRECTORY ${THIRD_PARTY_DIR}/jemalloc)
+endif()
+
 #execute_process(COMMAND cat /proc/cpuinfo
 #                COMMAND head -n 26
 #                COMMAND grep -c avx512
@@ -77,15 +86,11 @@ add_library(executor SHARED
     src/operators/slice.cpp
     src/operators/group_norm.cpp
     src/sparse_operators/sparse_inner_product.cpp
-    src/kernels/jit_naive_gemm_kernel.cpp
-    src/kernels/jit_naive_matmul.cpp
 )
 
 # Header file include path
 target_include_directories(executor
     PUBLIC
-        ./include/kernels
-        ./include/kernels/xbyak
         ./include/sparse_operators
         ./include/operators
         ./include
@@ -100,7 +105,7 @@ target_include_directories(executor
         ./third_party/boost/libs/interprocess/include
 )
 
-## link against the third party libraries
+# link against the third party libraries
 target_link_libraries(executor
     PUBLIC
         ${CMAKE_THREAD_LIBS_INIT}

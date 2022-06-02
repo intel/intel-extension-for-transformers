@@ -87,12 +87,14 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
   void* dst_data = dst_->mutable_data();
   const float* min_data = src_min_ != nullptr ? static_cast<const float*>(src_min_->data()) : nullptr;
   if (is_dynamic_) {
-    RuntimeMinmax();
+    runtime_minmax(reinterpret_cast<float*>(src_->mutable_data()), src_->size(),
+                   reinterpret_cast<float*>(dst_min_->mutable_data()),
+                   reinterpret_cast<float*>(dst_max_->mutable_data()));
     scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
     min_data = static_cast<const float*>(dst_min_->data());
   }
   // quantize
-  if (src_data != nullptr && dst_data != nullptr && min_data != nullptr) {
+  if (src_data != nullptr && dst_data != nullptr) {
 #if __AVX512F__
     Quantize_avx512(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
 #else

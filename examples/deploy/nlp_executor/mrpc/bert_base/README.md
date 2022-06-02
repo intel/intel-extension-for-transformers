@@ -8,16 +8,18 @@ Step-by-Step
 ```shell
 conda create -n <env name> python=3.7
 conda activate <env name>
-cd <nc_folder>/examples/deepengine/nlp/mrpc/bert_base
+cd <nc_folder>/examples/baremetal/nlp/mrpc/bert_base
 pip install 1.15.0 up2 from links below:
 https://storage.googleapis.com/intel-optimized-tensorflow/intel_tensorflow-1.15.0up2-cp37-cp37m-manylinux2010_x86_64.whl
 pip install -r requirements.txt
 ```
-1.2 Install C++ environment (Optional)
-Install engine according to [Engine](../../../../../docs/engine.md) if need the performance in C++.
 Preload libiomp5.so can improve the performance when bs=1.
 ```
 export LD_PRELOAD=<path_to_libiomp5.so>
+```
+Preloading libjemalloc.so can improve the performance. It has been built in third_party/jemalloc/lib.
+```
+export LD_PRELOAD=<path_to_libjemalloc.so>
 ```
 ### 2. Prepare Dataset and pretrained model
 ### 2.1 Get dataset
@@ -39,7 +41,7 @@ export LD_PRELOAD=<path_to_libiomp5.so>
   ```
   or run shell
   ```shell
-  bash run_tuning.sh --config=bert.yaml --input_model=model/bert_base_mrpc.pb --output_model=ir --dataset_location=data
+  bash run_tuning.sh --config=bert_static.yaml --input_model=model/bert_base_mrpc.pb --output_model=ir --dataset_location=data
   ```
 
 ### 2. To get the benchmark of tuned model:
@@ -50,7 +52,7 @@ export LD_PRELOAD=<path_to_libiomp5.so>
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --config=bert.yaml --input_model=ir --dataset_location=data --batch_size=1 --mode=accuracy
+  bash run_benchmark.sh --config=bert_static.yaml --input_model=ir --dataset_location=data --batch_size=1 --mode=accuracy
   ```
 
   2.2 performance
@@ -60,7 +62,7 @@ export LD_PRELOAD=<path_to_libiomp5.so>
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --config=bert.yaml --input_model=ir --dataset_location=data --batch_size=1 --mode=performance
+  bash run_benchmark.sh --config=bert_static.yaml --input_model=ir --dataset_location=data --batch_size=1 --mode=performance
   ```
   or run C++
   The warmup below is recommended to be 1/10 of iterations and no less than 3.

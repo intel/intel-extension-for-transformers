@@ -4,7 +4,7 @@
         "model_src_dir": "deploy/nlp_executor/mrpc/bert_base",
         "dataset_location": "/tf_dataset2/datasets/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_base_mrpc/bert_base_mrpc.pb",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 1,
         "new_benchmark": true
@@ -13,7 +13,7 @@
         "model_src_dir": "deploy/nlp_executor/squad/bert_large",
         "dataset_location": "/tf_dataset2/models/deep-engine/bert_large",
         "input_model": "/tf_dataset2/models/deep-engine/bert_large/model.pb",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 1,
         "new_benchmark": true
@@ -22,7 +22,7 @@
         "model_src_dir": "deploy/nlp_executor/mrpc/distilbert_base_uncased",
         "dataset_location": "/tf_dataset2/datasets/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/distilbert_base_uncased_mrpc/distilbert_base_uncased_mrpc.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true
@@ -31,7 +31,7 @@
         "model_src_dir": "deploy/nlp_executor/mrpc/bert_base_sparse",
         "dataset_location": "/tf_dataset2/datasets/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_base_sparse_mrpc/bert_base_sparse_mrpc.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true
@@ -40,7 +40,7 @@
         "model_src_dir": "deploy/nlp_executor/sst2/distilbert_base_uncased",
         "dataset_location": "/tf_dataset2/datasets/sst2_data",
         "input_model": "/tf_dataset2/models/deep-engine/distilbert_base_uncased_sst2/distilbert_base_uncased_sst2.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true
@@ -49,7 +49,7 @@
         "model_src_dir": "deploy/nlp_executor/financial_phrasebank/finbert",
         "dataset_location": "/tf_dataset2/datasets/financial_phrasebank_data",
         "input_model": "/tf_dataset2/models/deep-engine/finbert_financial_phrasebank/finbert_financial_phrasebank.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true
@@ -58,7 +58,7 @@
         "model_src_dir": "deploy/nlp_executor/wnli/distilroberta_base",
         "dataset_location": "/tf_dataset2/datasets/wnli_data",
         "input_model": "/tf_dataset2/models/deep-engine/distilroberta_base_wnli/distilroberta_base_wnli.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 71,
         "new_benchmark": true
@@ -67,7 +67,7 @@
         "model_src_dir": "deploy/nlp_executor/stsb/paraphrase_xlm_r_multilingual_v1",
         "dataset_location": "/tf_dataset2/datasets/stsb_data",
         "input_model": "/tf_dataset2/models/deep-engine/paraphrase_xlm_r_multilingual_v1_stsb/paraphrase_xlm_r_multilingual_v1_stsb.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 4,
         "new_benchmark": true
@@ -76,7 +76,7 @@
         "model_src_dir": "deploy/nlp_executor/mrpc/roberta_base",
         "dataset_location": "/tf_dataset2/models/deep-engine/roberta_base_mrpc/data",
         "input_model": "/tf_dataset2/models/deep-engine/roberta_base_mrpc/roberta_base_mrpc.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true
@@ -85,7 +85,7 @@
         "model_src_dir": "deploy/nlp_executor/emotion/distilbert_base_uncased",
         "dataset_location": "/tf_dataset2/datasets/emotion_data",
         "input_model": "/tf_dataset2/models/deep-engine/distilbert_base_uncased_emotion/distilbert_base_uncased_emotion.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true
@@ -94,7 +94,7 @@
         "model_src_dir": "deploy/nlp_executor/cola/roberta_large",
         "dataset_location": "/tf_dataset2/datasets/cola_data",
         "input_model": "/tf_dataset2/models/deep-engine/roberta_large_cola/roberta_large_cola.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 7,
         "new_benchmark": true
@@ -103,7 +103,7 @@
         "model_src_dir": "deploy/nlp_executor/sst2/minilm_l6_h384_uncased",
         "dataset_location": "/tf_dataset2/datasets/sst2_data",
         "input_model": "/tf_dataset2/models/deep-engine/minilm_l6_h384_uncased_sst2/minilm_l6_h384_uncased_sst2.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true
@@ -112,7 +112,7 @@
         "model_src_dir": "deploy/nlp_executor/mrpc/bert_base_cased",
         "dataset_location": "/tf_dataset2/models/deep-engine/bert_base_cased_mrpc/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_base_cased_mrpc/bert_base_cased_mrpc.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 1,
         "new_benchmark": true
@@ -121,7 +121,7 @@
         "model_src_dir": "deploy/nlp_executor/stsb/bert_base_nli_mean_tokens",
         "dataset_location": "/tf_dataset2/datasets/stsb_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_base_nli_mean_tokens_stsb/bert_base_nli_mean_tokens_stsb.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 4,
         "new_benchmark": true
@@ -130,7 +130,7 @@
         "model_src_dir": "deploy/nlp_executor/mrpc/bert_mini",
         "dataset_location": "/tf_dataset2/datasets/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_mini_mrpc/bert_mini_mrpc.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true
@@ -139,7 +139,7 @@
         "model_src_dir": "deploy/nlp_executor/sst2/bert_mini",
         "dataset_location": "/tf_dataset2/datasets/sst2_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_mini_sst2/bert_mini_sst2.onnx",
-        "yaml": "bert.yaml",
+        "yaml": "bert_static.yaml",
         "strategy": "basic",
         "batch_size": 8,
         "new_benchmark": true

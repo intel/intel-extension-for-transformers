@@ -92,10 +92,13 @@ class Tensor {
   inline size_t size() { return std::accumulate(shape_.begin(), shape_.end(), size_t(1), std::multiplies<size_t>()); }
 
   void set_shm_handle(const ipc::managed_shared_memory::handle_t& h) { shm_handle_ = h; }
+  bool is_shared() { return shm_handle_ != 0; }
 
   inline const string& name() const { return name_; }
   inline const int life() const { return life_count_; }
-  inline const int left_life() const { return MemoryAllocator::get().CheckMemory(data_); }
+  inline const int left_life() const {
+    return MemoryAllocator::get().CheckMemory(data_);
+  }  // return -1 represent the data should always be hold.
   inline const void* raw_data() const { return data_; }
   inline const vector<int64_t>& shape() const { return shape_; }
   inline const vector<int64_t>& location() const { return location_; }
