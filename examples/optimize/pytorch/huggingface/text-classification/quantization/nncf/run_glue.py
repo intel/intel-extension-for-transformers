@@ -27,8 +27,10 @@ import datasets
 import numpy as np
 from datasets import load_dataset, load_metric
 
-from paladin.nncf_utils import get_nncf_train_dataloader_for_init
 import transformers
+from nlp_toolkit import OptimizedModel
+from nlp_toolkit.backends.openvino.nncf_utils import get_nncf_train_dataloader_for_init
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from nncf import NNCFConfig
 from nncf.config.structures import BNAdaptationInitArgs
 from nncf.config.structures import QuantizationRangeInitArgs
@@ -50,11 +52,6 @@ from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
 
-from paladin import (
-    QuantizationMode,
-    NLPTrainer,
-)
-from paladin.model import OptimizedModel
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.9.0")

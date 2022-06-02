@@ -1,15 +1,13 @@
 import copy
 import os
-
-import torch
 import transformers
 from transformers import AutoConfig
 from transformers.file_utils import cached_path, hf_bucket_url
-
 from neural_compressor.utils import logger
-from neural_compressor.utils.pytorch import load
-
+from nlp_toolkit.optimization.utils.utility import LazyImport
 from .config import WEIGHTS_NAME
+
+torch = LazyImport("torch")
 
 
 class OptimizedModel:
@@ -24,7 +22,7 @@ class OptimizedModel:
         cls,
         model_name_or_path: str,
         **kwargs
-    ) -> torch.nn.Module:
+    ):
         """
         Instantiate a quantized pytorch model from a given Intel Neural Compressor (INC) configuration file.
         Args:
@@ -46,6 +44,7 @@ class OptimizedModel:
         Returns:
             q_model: Quantized model.
         """
+        from neural_compressor.utils.pytorch import load
         config = kwargs.pop("config", None)
         cache_dir = kwargs.pop("cache_dir", None)
         force_download = kwargs.pop("force_download", False)

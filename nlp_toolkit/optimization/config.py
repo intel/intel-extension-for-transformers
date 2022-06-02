@@ -1,12 +1,8 @@
-import os
-import yaml
 from enum import Enum
-from functools import reduce
 from neural_compressor.conf.config import (
     Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
 )
 from neural_compressor.conf.dotdict import DotDict
-from neural_compressor.utils import logger
 from nlp_toolkit.optimization.utils.metrics import Metric
 from nlp_toolkit.optimization.utils.objectives import Objective, performance
 from nlp_toolkit.optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
@@ -14,8 +10,7 @@ from nlp_toolkit.optimization.distillation import (
     Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
 )
 from nlp_toolkit.optimization.utils.utility import LazyImport
-from transformers.file_utils import cached_path, hf_bucket_url
-from typing import Any, List, Optional, Union
+from typing import List, Union
 from xmlrpc.client import boolean
 
 nncf = LazyImport("nncf")

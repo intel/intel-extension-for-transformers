@@ -30,7 +30,8 @@ python setup.py install
 
 ### Quantization
 ```python
-from nlp_toolkit import NLPTrainer, QuantizationConfig, metric, objectives
+from nlp_toolkit import QuantizationConfig, metric, objectives
+from nlp_toolkit.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -48,7 +49,8 @@ Please refer to [quantization document](docs/quantization.md) for more details.
 
 ### Pruning
 ```python
-from nlp_toolkit import NLPTrainer, PrunerConfig, PruningConfig
+from nlp_toolkit import PrunerConfig, PruningConfig
+from nlp_toolkit.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -63,7 +65,8 @@ Please refer to [pruning document](docs/pruning.md) for more details.
 
 ### Distillation
 ```python
-from nlp_toolkit import NLPTrainer, DistillationConfig, Criterion
+from nlp_toolkit import DistillationConfig, Criterion
+from nlp_toolkit.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)

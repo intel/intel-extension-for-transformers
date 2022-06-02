@@ -27,7 +27,8 @@ from dataclasses import dataclass, field
 from datasets import load_dataset
 from itertools import chain
 
-from nlp_toolkit import NLPTrainer, metrics, OptimizedModel, QuantizationConfig
+from nlp_toolkit import metrics, OptimizedModel, QuantizationConfig
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
     AutoConfig,
     AutoTokenizer,

@@ -31,8 +31,8 @@ from nlp_toolkit import (
     OptimizedModel,
     PrunerConfig,
     PruningConfig,
-    NLPTrainer,
 )
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,

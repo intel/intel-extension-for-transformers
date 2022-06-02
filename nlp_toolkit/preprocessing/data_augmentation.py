@@ -3,12 +3,13 @@ import json
 import math
 import numpy as np
 import os
-import torch
 from datasets import load_dataset
+from nlp_toolkit.optimization.utils.utility import LazyImport
 from operator import methodcaller
 from tqdm import tqdm
 from .utils import AugmenterType, get_augmenter_from_type
 
+torch = LazyImport("torch")
 
 DEFAULT_OUTPUT_FILE = "augmented_dataset"
 

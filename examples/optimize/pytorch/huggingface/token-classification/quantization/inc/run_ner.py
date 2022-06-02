@@ -29,10 +29,10 @@ from dataclasses import dataclass, field
 from datasets import ClassLabel, load_dataset, load_metric
 from nlp_toolkit import(
     metrics,
-    NLPTrainer,
     OptimizedModel,
     QuantizationConfig,
 )
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
     AutoConfig,
     AutoModelForTokenClassification,

@@ -19,7 +19,6 @@ import numpy as np
 import os
 import random
 import shutil
-import torch
 
 from functools import partial
 from multiprocessing import managers, Process
@@ -29,7 +28,10 @@ from neural_compressor.experimental import Distillation
 from neural_compressor.strategy.bayesian import BayesianOptimization
 from neural_compressor.utils import logger
 from nlp_toolkit.optimization.config import AutoDistillationConfig
+from nlp_toolkit.optimization.utils.utility import LazyImport
 from queue import Queue
+
+torch = LazyImport("torch")
 
 def distributed_log_wrapper(func, msg):
     if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:

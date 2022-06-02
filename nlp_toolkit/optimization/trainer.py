@@ -1,15 +1,12 @@
 import collections
 import inspect
 import math
-from operator import length_hint
 import numpy as np
 import os
 import copy
 import sys
 import time
 import warnings
-import torch
-import torch.distributed as dist
 from functools import partial
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
@@ -21,14 +18,10 @@ from nlp_toolkit import (
     QuantizationConfig,
     QuantizationMode,
     PruningConfig,
-    Orchestrate_optimizer
 )
 from nlp_toolkit.optimization.utils.metrics import Metric
+from nlp_toolkit.optimization.utils.utility import LazyImport
 from packaging import version
-from torch import nn
-from torch.utils.data.dataloader import DataLoader
-from torch.utils.data.dataset import IterableDataset
-from torch.utils.data.distributed import DistributedSampler
 from tqdm.auto import tqdm
 from transformers import __version__, Trainer, PreTrainedModel
 from transformers.configuration_utils import PretrainedConfig
@@ -60,8 +53,7 @@ from transformers.trainer_utils import (
     speed_metrics,
     denumpify_detensorize,
 )
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING, Union
-from .utils.utility import LazyImport
+from typing import Any, Callable, Dict, List, Optional, Union
 
 amp = LazyImport('apex.amp')
 datasets =  LazyImport('datasets')
@@ -70,6 +62,7 @@ onnx = LazyImport('onnx')
 ort = LazyImport('onnxruntime')
 ortq = LazyImport('onnxruntime.quantization')
 smp_forward_backward = LazyImport('transformers.trainer_pt_utils.smp_forward_backward')
+torch = LazyImport("torch")
 xm = LazyImport('torch_xla.core.xla_model')
 
 
@@ -426,6 +419,7 @@ class NLPTrainer(Trainer):
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
+        from nlp_toolkit.optimization.optimizer import Orchestrate_optimizer
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
         self._train_func = self.builtin_train_func if train_func is None else train_func
 
@@ -725,7 +719,8 @@ class NLPTrainer(Trainer):
             if self.compression_ctrl is not None:
                 self.compression_ctrl.scheduler.epoch_step()
                 print(self.compression_ctrl.statistics().to_str())
-            if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):
+            if isinstance(train_dataloader, torch.utils.data.dataloader.DataLoader) and \
+              isinstance(train_dataloader.sampler, torch.utils.data.distributed.DistributedSampler):
                 train_dataloader.sampler.set_epoch(epoch)
             elif isinstance(train_dataloader.dataset, IterableDatasetShard):
                 train_dataloader.dataset.set_epoch(epoch)
@@ -801,7 +796,7 @@ class NLPTrainer(Trainer):
                             model.clip_grad_norm_(args.max_grad_norm)
                         else:
                             # Revert to normal clipping otherwise, handling Apex or full precision
-                            nn.utils.clip_grad_norm_(
+                            torch.nn.utils.clip_grad_norm_(
                                 model.parameters(),
                                 args.max_grad_norm,
                             )
@@ -865,7 +860,7 @@ class NLPTrainer(Trainer):
         if args.load_best_model_at_end and self.state.best_model_checkpoint is not None:
             # Wait for everyone to get here so we are sur the model has been saved by process 0.
             if args.local_rank != -1:
-                dist.barrier()
+                torch.distributed.barrier()
 
             if version.parse(__version__) < version.parse("4.19"):
                 logger.info(
@@ -946,10 +941,11 @@ class NLPTrainer(Trainer):
             self._save_checkpoint(model, trial, metrics=metrics)
             self.control = self.callback_handler.on_save(self.args, self.state, self.control)
 
-    def training_step(self, 
-                      model: nn.Module, 
-                      inputs: Dict[str, Union[torch.Tensor, Any]]
-                      ) -> torch.Tensor:   # pragma: no cover
+    def training_step(
+        self,
+        model: torch.nn.Module,
+        inputs: Dict[str, Union[torch.Tensor, Any]]
+    ) -> torch.Tensor:  # pragma: no cover
         """
         Perform a training step on a batch of inputs.
         Subclass and override to inject custom behavior.
@@ -1253,7 +1249,7 @@ class NLPTrainer(Trainer):
 
     def auto_distil_evaluation_loop(
         self,
-        dataloader: DataLoader,
+        dataloader: torch.utils.data.dataloader.DataLoader,
         description: str,
         prediction_loss_only: Optional[bool] = None,
         ignore_keys: Optional[List[str]] = None,
@@ -1359,7 +1355,7 @@ class NLPTrainer(Trainer):
             all_losses = losses if all_losses is None else np.concatenate((all_losses, losses), axis=0)
 
         # Number of samples
-        if not isinstance(eval_dataset, IterableDataset):
+        if not isinstance(eval_dataset, torch.utils.data.dataset.IterableDataset):
             num_samples = len(eval_dataset)
         # The instance check is weird and does not actually check for the type, but whether the dataset has the right
         # methods. Therefore we need to make sure it also has the attribute.

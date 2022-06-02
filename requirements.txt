@@ -1,5 +1,3 @@
 neural_compressor
 numpy
 transformers>=4.12.0
---find-links https://download.pytorch.org/whl/torch_stable.html
-torch>=1.10.0+cpu

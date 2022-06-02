@@ -1,13 +1,10 @@
 import logging
 import os
-import torch
 
 from neural_compressor.experimental import(
     common,
     Component,
     Distillation,
-    Pruning,
-    Quantization
 )
 from neural_compressor.experimental.scheduler import Scheduler
 from nlp_toolkit import(
@@ -16,12 +13,13 @@ from nlp_toolkit import(
     QuantizationConfig,
     PruningConfig
 )
-
+from nlp_toolkit.optimization.utils.utility import LazyImport
 from nlp_toolkit.optimization.quantization import QuantizationMode
 from transformers import PreTrainedModel
 from transformers.file_utils import WEIGHTS_NAME
 from typing import Callable, Optional, Union, List
 
+torch = LazyImport("torch")
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +27,7 @@ logger = logging.getLogger(__name__)
 class Orchestrate_optimizer:
     def __init__(
         self,
-        model: Union[PreTrainedModel, torch.nn.Module],
+        model,
         components: Optional[List[Component]] = [],
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
@@ -76,7 +74,7 @@ class Orchestrate_optimizer:
 class NoTrainerOptimizer:
     def __init__(
         self,
-        model: Union[PreTrainedModel, torch.nn.Module],
+        model,
         output_dir: Optional[str] = "saved_results",
     ):
         """
@@ -139,7 +137,7 @@ class NoTrainerOptimizer:
         quant_config,
         provider: str = Provider.INC.value,
     ):
-        from neural_compressor.experimental import Quantization, common
+        from neural_compressor.experimental import Quantization
 
         assert isinstance(quant_config, QuantizationConfig), \
             "Please pass QuantizationConfig instance to trainer.quantize!"
@@ -243,7 +241,7 @@ class NoTrainerOptimizer:
         pruning_config = None,
         provider: str = Provider.INC.value,
     ):
-        from neural_compressor.experimental import Pruning, common
+        from neural_compressor.experimental import Pruning
         self.pruning_config = pruning_config
         self.metrics = self.pruning_config.metrics
         self._provider = Provider[provider.upper()].value
@@ -282,7 +280,7 @@ class NoTrainerOptimizer:
     def init_distiller(
         self,
         distillation_config,
-        teacher_model: Union[PreTrainedModel, torch.nn.Module],
+        teacher_model,
         provider: str = Provider.INC.value,
     ):
         from neural_compressor.experimental import Distillation, common
@@ -303,7 +301,7 @@ class NoTrainerOptimizer:
     def distill(
         self,
         distillation_config,
-        teacher_model: Union[PreTrainedModel, torch.nn.Module],
+        teacher_model,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,

@@ -31,9 +31,9 @@ from datasets import load_dataset, load_metric
 from nlp_toolkit import (
     metrics,
     DistillationConfig,
-    NLPTrainer,
     OptimizedModel,
 )
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from transformers import (

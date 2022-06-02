@@ -1,7 +1,8 @@
 # Pruning
 ## script:
 ```python
-from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig,
+from nlp_toolkit import metric, objectives, PrunerConfig, PruningConfig,
+from nlp_toolkit.optimization.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -60,9 +61,7 @@ The PruningConfig contains all the information related to the model pruning beha
 
 ## Prune with Trainer
 - Prune with Trainer
-    NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can quantize model with trainer.prune function.
+    NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can prune model with trainer.prune function.
     ```python
-    from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig,
-    trainer = NLPTrainer(......)
     model = trainer.prune(pruning_config=pruning_conf)
     ```

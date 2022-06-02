@@ -51,7 +51,7 @@ from nlp_toolkit import (
     FlashDistillationConfig,
     metrics
 )
-from nlp_toolkit import NLPTrainer as Trainer
+from nlp_toolkit.optimization.trainer import NLPTrainer as Trainer
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from transformers import (

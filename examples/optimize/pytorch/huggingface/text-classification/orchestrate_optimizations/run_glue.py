@@ -34,10 +34,10 @@ from nlp_toolkit import (
     PruningConfig,
     DistillationConfig,
     QuantizationConfig,
-    NLPTrainer,
     OptimizedModel,
     objectives
 )
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from transformers import (

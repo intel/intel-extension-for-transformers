@@ -2,7 +2,6 @@ import shutil
 import unittest
 
 from nlp_toolkit import (
-    NLPTrainer,
     DistillationConfig,
     metrics,
     objectives,
@@ -14,6 +13,7 @@ from nlp_toolkit import (
 )
 from nlp_toolkit.optimization.distillation import Criterion as DistillationCriterion
 from nlp_toolkit.optimization.distillation import DistillationCriterionMode
+from nlp_toolkit.optimization.trainer import NLPTrainer
 
 from transformers import (
     AutoModelForPreTraining,

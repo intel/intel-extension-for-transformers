@@ -10,9 +10,9 @@ from nlp_toolkit import (
     DistillationConfig,
     DistillationCriterionMode,
     metrics,
-    NLPTrainer,
     OptimizedModel,
 )
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from nlp_toolkit.optimization.distillation import Criterion
 from transformers import (
     AutoModelForSequenceClassification,

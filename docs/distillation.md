@@ -1,7 +1,8 @@
 # Distillation
 ## script:
 ```python
-from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig, Criterion
+from nlp_toolkit import metric, objectives, DistillationConfig, Criterion
+from nlp_toolkit.optimization.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -60,8 +61,6 @@ The DistillationConfig contains all the information related to the model distill
 - Distill with Trainer
     NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can distill model with trainer.distill function.
     ```python
-    from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig,
-    trainer = NLPTrainer(......)
     model = trainer.distill(
         distillation_config=d_conf, teacher_model=teacher_model
     )

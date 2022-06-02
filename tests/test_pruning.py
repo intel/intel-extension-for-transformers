@@ -5,12 +5,12 @@ import torch.utils.data as data
 import unittest
 from nlp_toolkit import (
     metrics,
-    NLPTrainer,
     OptimizedModel,
     PrunerConfig,
     PruningConfig,
     PruningMode,
 )
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer

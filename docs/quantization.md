@@ -1,7 +1,8 @@
 # Quantization
 ## script:
 ```python
-from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig,
+from nlp_toolkit import metric, objectives, QuantizationConfig
+from nlp_toolkit.optimization.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -63,7 +64,5 @@ The QuantizationConfig contains all the information related to the model quantiz
 - Quantization with Trainer
     NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can quantize model with trainer.quantize function.
     ```python
-    from nlp_toolkit import metric, NLPTrainer, objectives, QuantizationConfig,
-    trainer = NLPTrainer(......)
     model = trainer.quantize(quant_config=q_config)
     ```

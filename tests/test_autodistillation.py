@@ -6,8 +6,8 @@ from nlp_toolkit import (
     AutoDistillationConfig,
     FlashDistillationConfig,
     metrics,
-    NLPTrainer,
 )
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
     AutoModelForPreTraining,
     AutoTokenizer
