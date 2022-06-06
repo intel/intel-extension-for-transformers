@@ -45,6 +45,7 @@ add_library(${HOST_LIBRARY_NAME} SHARED
     src/cpu_engine.cpp
     src/utils.cpp
     src/amx_utils.cpp
+    src/benchmark_utils.cpp
     src/kernels/cpu_sparse_matmul_list.cpp
     src/kernels/cpu_postop_list.cpp
     src/kernels/sparse_data.cpp

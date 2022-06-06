@@ -41,7 +41,7 @@ float make_fp32(bfloat16_t x);
 bfloat16_t make_bf16(float x);
 
 template <typename T>
-void init_vector(T* v, int num_size, float bound1 = -10, float bound2 = 10);
+void init_vector(T* v, int num_size, float bound1 = -10, float bound2 = 10, int seed = 5489u);
 
 template <typename T>
 bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, T eps = static_cast<T>(1e-6));

@@ -44,19 +44,19 @@ bfloat16_t make_bf16(float x) {
 }
 
 template <typename T>
-void init_vector(T* v, int num_size, float range1, float range2) {
+void init_vector(T* v, int num_size, float range1, float range2, int seed) {
   float low_value = std::max(range1, static_cast<float>(std::numeric_limits<T>::lowest()) + 1);
-  std::mt19937 gen;
+  std::mt19937 gen(seed);
   std::uniform_real_distribution<float> u(low_value, range2);
   for (int i = 0; i < num_size; ++i) {
     v[i] = cast_to<T>(u(gen));
   }
 }
-template void init_vector<float>(float*, int, float, float);
-template void init_vector<int32_t>(int32_t*, int, float, float);
-template void init_vector<uint8_t>(uint8_t*, int, float, float);
-template void init_vector<int8_t>(int8_t*, int, float, float);
-template void init_vector<bfloat16_t>(bfloat16_t*, int, float, float);
+template void init_vector<float>(float*, int, float, float, int);
+template void init_vector<int32_t>(int32_t*, int, float, float, int);
+template void init_vector<uint8_t>(uint8_t*, int, float, float, int);
+template void init_vector<int8_t>(int8_t*, int, float, float, int);
+template void init_vector<bfloat16_t>(bfloat16_t*, int, float, float, int);
 
 template <typename T>
 bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, T eps) {
