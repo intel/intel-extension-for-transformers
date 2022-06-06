@@ -72,7 +72,6 @@ logger = logging.getLogger(__name__)
 class DataTrainingArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
-
     Using `HfArgumentParser` we can turn this class
     into argparse arguments to be able to specify them on
     the command line.
@@ -516,14 +515,13 @@ def main():
             else "accuracy"
         )
     )
-
+    model.config.save_pretrained(training_args.output_dir)
+    trainer.save_model(training_args.output_dir)
     if optim_args.tune:
 
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for quantization.")
 
-        model.config.save_pretrained(training_args.output_dir)
-        trainer.save_model(training_args.output_dir)
         if optim_args.quantization_approach != "PostTrainingDynamic":
             if not training_args.do_train:
                 raise ValueError(

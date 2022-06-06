@@ -1,21 +1,60 @@
 #!/bin/bash
 # set -x
+function main {
+  init_params "$@"
+  prepare_model
+}
 
-# Fine-tune the finbert model on the dataset financial_phrasebank
-python run_glue.py \
-  --model_name_or_path ProsusAI/finbert \
-  --dataset_name financial_phrasebank \
-  --dataset_config_name sentences_50agree \
-  --do_train \
-  --do_eval \
-  --max_seq_length 64 \
-  --warmup_ratio 0.2 \
-  --per_device_train_batch_size 64 \
-  --learning_rate 2e-5 \
-  --num_train_epochs 10 \
-  --output_dir ./tmp/finbert/
+# init params
+function init_params {
+  for var in "$@"
+  do
+    case $var in
+      --input_model=*)
+          input_model=$(echo $var |cut -f2 -d=)
+      ;;
+      --task_name=*)
+          task_name=$(echo $var |cut -f2 -d=)
+      ;;
+      --cache_dir=*)
+          cache_dir=$(echo $var |cut -f2 -d=)
+      ;;
+      --output_dir=*)
+          output_dir=$(echo $var |cut -f2 -d=)
+      ;;
+      --precision=*)
+          precision=$(echo $var |cut -f2 -d=)
+      ;;
+    esac
+  done
+}
 
-# export the model after training
-python finbert_export.py \
-   --input_dir=./tmp/finbert/ \
-   --output_model=finbert_financial_phrasebank.onnx
+function prepare_model {
+
+    mode_cmd=""
+    if [[ ${precision} = 'int8' ]]; then
+        mode_cmd=$mode_cmd" --tune --quantization_approach PostTrainingStatic"
+    fi
+    echo ${mode_cmd}
+   
+    cache="./tmp"
+    if [[ ${cache_dir} ]]; then
+        cache="$cache_dir"
+    fi
+    echo ${cache}
+ 
+    python run_glue.py \
+        --model_name_or_path ${input_model} \
+        --task_name ${task_name} \
+        --do_train \
+        --do_eval \
+        --cache_dir ${cache} \
+        --output_dir ${output_dir} \
+        --overwrite_output_dir \
+        --to_onnx \
+        ${mode_cmd}
+
+}
+
+main "$@"
+

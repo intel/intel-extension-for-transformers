@@ -147,6 +147,35 @@ class PositionEmbeddings(Pattern):
                     'returns': [5]
                 },
 
+                # bert_mini_int8
+                {
+                    'patterns': {
+                        'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Unsqueeze'),
+                                (3, 'Slice'), (4, 'Gather')]],
+                        'out': [[(0, 'Reshape'), (1, 'Reshape')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 'position_embeddings/after/reshape',
+                        1: 4
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            4: [0]
+                        }, {
+                            'input_data': [0]
+                        }], [[0, 1], 2]],
+                        1: [[], [[], 1]]
+                    },
+                    'output_tensors': {
+                        0: [[], [[], 1]],
+                        1: [[{
+                            4: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [4]
+                },
+
                 # bert_base_mrpc
                 {
                     'patterns': {

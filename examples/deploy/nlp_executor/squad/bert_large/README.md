@@ -56,11 +56,11 @@ Executor can parse Tensorflow/Pytorch/ONNX and IR model.
 Here are two examples to get ONNX model.
 You can get FP32 modol from optimize by setting precision=fp32 as follows:
 ```shell
-bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --output_dir=./model_and_tokenizer --precision=fp32
+bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=fp32
 ```
 And for better perfromance, you can also get a PTQ int8 model by setting tune.
 ```shell
-bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --task_name=squad --output_dir=./model_and_tokenizer --precision=int8
+bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=int8
 ```
 
 ### Benchmark

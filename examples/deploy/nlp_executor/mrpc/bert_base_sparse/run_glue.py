@@ -1,33 +1,33 @@
 #!/usr/bin/env python
 # coding=utf-8
-# Copyright 2020 The HuggingFace Inc. team. All rights reserved.
+#  Copyright 2021 The HuggingFace Team. All rights reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 """ Finetuning the library models for sequence classification on GLUE."""
 # You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
+import datasets
 import logging
+import numpy as np
 import os
 import random
 import sys
-from dataclasses import dataclass, field
-from typing import Optional
-
-import datasets
-import numpy as np
-from datasets import load_dataset, load_metric
-
 import transformers
+from dataclasses import dataclass, field
+from datasets import load_dataset, load_metric
+from nlp_toolkit import metrics, objectives, OptimizedModel, QuantizationConfig
+from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -36,20 +36,22 @@ from transformers import (
     EvalPrediction,
     HfArgumentParser,
     PretrainedConfig,
-    Trainer,
     TrainingArguments,
     default_data_collator,
     set_seed,
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
-from transformers.utils.versions import require_version
+from typing import Optional
+
+
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["WANDB_DISABLED"] = "true"
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-# check_min_version("4.11.0.dev0")
+check_min_version("4.12.0")
 
-require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/text-classification/requirements.txt")
 
 task_to_keys = {
     "cola": ("sentence", None),
@@ -70,7 +72,6 @@ logger = logging.getLogger(__name__)
 class DataTrainingArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
-
     Using `HfArgumentParser` we can turn this class
     into argparse arguments to be able to specify them on
     the command line.
@@ -130,7 +131,6 @@ class DataTrainingArguments:
     validation_file: Optional[str] = field(
         default=None, metadata={"help": "A csv or a json file containing the validation data."}
     )
-    test_file: Optional[str] = field(default=None, metadata={"help": "A csv or a json file containing the test data."})
 
     def __post_init__(self):
         if self.task_name is not None:
@@ -186,18 +186,60 @@ class ModelArguments:
     )
 
 
+@dataclass
+class OptimizationArguments:
+    """
+    Arguments pertaining to what type of optimization we are going to apply on the model.
+    """
+
+    tune: bool = field(
+        default=False,
+        metadata={"help": "Whether or not to apply quantization."},
+    )
+    quantization_approach: Optional[str] = field(
+        default="PostTrainingStatic",
+        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
+                  "PostTrainingDynamic and QuantizationAwareTraining."},
+    )
+    metric_name: Optional[str] = field(
+        default=None,
+        metadata={"help": "Metric used for the tuning strategy."},
+    )
+    is_relative: Optional[bool] = field(
+        default=True,
+        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
+    )
+    perf_tol: Optional[float] = field(
+        default=0.01,
+        metadata={"help": "Performance tolerance when optimizing the model."},
+    )
+    benchmark: bool = field(
+        default=False,
+        metadata={"help": "run benchmark."})
+    int8: bool = field(
+        default=False,
+        metadata={"help":"run benchmark."})
+    accuracy_only: bool = field(
+        default=False,
+        metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
+    to_onnx: bool = field(
+        default=False,
+        metadata={"help":"Transfer pytorch model to onnx model."})
+
 def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
+    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, OptimizationArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        model_args, data_args, training_args, optim_args = parser.parse_json_file(
+            json_file=os.path.abspath(sys.argv[1])
+        )
     else:
-        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+        model_args, data_args, training_args, optim_args = parser.parse_args_into_dataclasses()
 
     # Setup logging
     logging.basicConfig(
@@ -263,19 +305,6 @@ def main():
         # CSV/JSON training and evaluation files are needed.
         data_files = {"train": data_args.train_file, "validation": data_args.validation_file}
 
-        # Get the test dataset: you can provide your own CSV/JSON test file (see below)
-        # when you use `do_predict` without specifying a GLUE benchmark task.
-        if training_args.do_predict:
-            if data_args.test_file is not None:
-                train_extension = data_args.train_file.split(".")[-1]
-                test_extension = data_args.test_file.split(".")[-1]
-                assert (
-                    test_extension == train_extension
-                ), "`test_file` should have the same extension (csv or json) as `train_file`."
-                data_files["test"] = data_args.test_file
-            else:
-                raise ValueError("Need either a GLUE task or a test file for `do_predict`.")
-
         for key in data_files.keys():
             logger.info(f"load a local file for {key}: {data_files[key]}")
 
@@ -327,20 +356,25 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
-        cache_dir=model_args.cache_dir,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-    )
-    
-    # just only update the weights of task layers for bert_base_sparse model 
-    for para in model.bert.embeddings.parameters():
-        para.requires_grad = False
-    for para in model.bert.encoder.parameters():
-        para.requires_grad = False
+    if optim_args.int8:
+        # Load the model obtained after Intel Neural Compressor (INC) quantization
+        model = OptimizedModel.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
 
     # Preprocessing the raw_datasets
     if data_args.task_name is not None:
@@ -376,18 +410,15 @@ def main():
             label_to_id = {i: int(label_name_to_id[label_list[i]]) for i in range(num_labels)}
         else:
             logger.warning(
-                "Your model seems to have been trained with labels, but they don't match the dataset: ",
-                f"model labels: {list(sorted(label_name_to_id.keys()))}, dataset labels: {list(sorted(label_list))}."
-                "\nIgnoring the model labels as a result.",
+                f"Your model seems to have been trained with labels, but they don't match the dataset: "
+                f"model labels: {list(sorted(label_name_to_id.keys()))}, dataset labels: {list(sorted(label_list))}.\n"
+                f"Ignoring the model labels as a result."
             )
     elif data_args.task_name is None and not is_regression:
         label_to_id = {v: i for i, v in enumerate(label_list)}
 
     if label_to_id is not None:
         model.config.label2id = label_to_id
-        model.config.id2label = {id: label for label, id in config.label2id.items()}
-    elif data_args.task_name is not None and not is_regression:
-        model.config.label2id = {l: i for i, l in enumerate(label_list)}
         model.config.id2label = {id: label for label, id in config.label2id.items()}
 
     if data_args.max_seq_length > tokenizer.model_max_length:
@@ -411,10 +442,7 @@ def main():
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
         raw_datasets = raw_datasets.map(
-            preprocess_function,
-            batched=True,
-            load_from_cache_file=not data_args.overwrite_cache,
-            desc="Running tokenizer on dataset",
+            preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
         )
     if training_args.do_train:
         if "train" not in raw_datasets:
@@ -429,13 +457,6 @@ def main():
         eval_dataset = raw_datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
         if data_args.max_eval_samples is not None:
             eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
-
-    if training_args.do_predict or data_args.task_name is not None or data_args.test_file is not None:
-        if "test" not in raw_datasets and "test_matched" not in raw_datasets:
-            raise ValueError("--do_predict requires a test dataset")
-        predict_dataset = raw_datasets["test_matched" if data_args.task_name == "mnli" else "test"]
-        if data_args.max_predict_samples is not None:
-            predict_dataset = predict_dataset.select(range(data_args.max_predict_samples))
 
     # Log a few random samples from the training set:
     if training_args.do_train:
@@ -472,7 +493,7 @@ def main():
         data_collator = None
 
     # Initialize our Trainer
-    trainer = Trainer(
+    trainer = NLPTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
@@ -482,86 +503,70 @@ def main():
         data_collator=data_collator,
     )
 
-    # Training
-    if training_args.do_train:
-        checkpoint = None
-        if training_args.resume_from_checkpoint is not None:
-            checkpoint = training_args.resume_from_checkpoint
-        elif last_checkpoint is not None:
-            checkpoint = last_checkpoint
-        train_result = trainer.train(resume_from_checkpoint=checkpoint)
-        metrics = train_result.metrics
-        max_train_samples = (
-            data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
+    metric_name = (
+        optim_args.metric_name
+        if optim_args.metric_name is not None
+        else "eval_"
+        + (
+            "pearson"
+            if data_args.task_name == "stsb"
+            else "matthews_correlation"
+            if data_args.task_name == "cola"
+            else "accuracy"
         )
-        metrics["train_samples"] = min(max_train_samples, len(train_dataset))
+    )
+    model.config.save_pretrained(training_args.output_dir)
+    trainer.save_model(training_args.output_dir)
+    if optim_args.tune:
 
-        trainer.save_model()  # Saves the tokenizer too for easy upload
+        if not training_args.do_eval:
+            raise ValueError("do_eval must be set to True for quantization.")
 
-        trainer.log_metrics("train", metrics)
-        trainer.save_metrics("train", metrics)
-        trainer.save_state()
+        if optim_args.quantization_approach != "PostTrainingDynamic":
+            if not training_args.do_train:
+                raise ValueError(
+                    "do_train must be set to True for static and aware training quantization."
+                )
+            model.config.save_pretrained(training_args.output_dir)
+        elif optim_args.quantization_approach == "QuantizationAwareTraining":
+            early_stopping_patience = 6
+            early_stopping_threshold = 0.001 # optional
+            trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
+                                                                    early_stopping_threshold))
 
-    # Evaluation
-    if training_args.do_eval:
-        logger.info("*** Evaluate ***")
+        tune_metric = metrics.Metric(
+            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
+        )
+        objective = objectives.performance
+        quantization_config = QuantizationConfig(
+            approach=optim_args.quantization_approach,
+            max_trials=600,
+            metrics=[tune_metric],
+            objectives=[objective]
+        )
+        model = trainer.quantize(quant_config=quantization_config)
 
-        # Loop to handle MNLI double evaluation (matched, mis-matched)
-        tasks = [data_args.task_name]
-        eval_datasets = [eval_dataset]
-        if data_args.task_name == "mnli":
-            tasks.append("mnli-mm")
-            eval_datasets.append(raw_datasets["validation_mismatched"])
+    if optim_args.benchmark or optim_args.accuracy_only:
 
-        for eval_dataset, task in zip(eval_datasets, tasks):
-            metrics = trainer.evaluate(eval_dataset=eval_dataset)
+        results = trainer.evaluate()
+        logger.info("metrics keys: {}".format(results.keys()))
+        bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
+                              'eval_pearson', 'eval_mcc', 'eval_spearmanr']
+        ret = False
+        for key in bert_task_acc_keys:
+            if key in results.keys():
+                ret = True
+                throughput = results.get("eval_samples_per_second")
+                print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
+                print("Finally Eval {} Accuracy: {}".format(key, results[key]))
+                print("Latency: {:.3f} ms".format(1000 / throughput))
+                print("Throughput: {} samples/sec".format(throughput))
+                break
+        assert ret, "No metric returned, Please check inference metric!"
 
-            max_eval_samples = (
-                data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
-            )
-            metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
-
-            trainer.log_metrics("eval", metrics)
-            trainer.save_metrics("eval", metrics)
-
-    if training_args.do_predict:
-        logger.info("*** Predict ***")
-
-        # Loop to handle MNLI double evaluation (matched, mis-matched)
-        tasks = [data_args.task_name]
-        predict_datasets = [predict_dataset]
-        if data_args.task_name == "mnli":
-            tasks.append("mnli-mm")
-            predict_datasets.append(raw_datasets["test_mismatched"])
-
-        for predict_dataset, task in zip(predict_datasets, tasks):
-            # Removing the `label` columns because it contains -1 and Trainer won't like that.
-            predict_dataset = predict_dataset.remove_columns("label")
-            predictions = trainer.predict(predict_dataset, metric_key_prefix="predict").predictions
-            predictions = np.squeeze(predictions) if is_regression else np.argmax(predictions, axis=1)
-
-            output_predict_file = os.path.join(training_args.output_dir, f"predict_results_{task}.txt")
-            if trainer.is_world_process_zero():
-                with open(output_predict_file, "w") as writer:
-                    logger.info(f"***** Predict results {task} *****")
-                    writer.write("index\tprediction\n")
-                    for index, item in enumerate(predictions):
-                        if is_regression:
-                            writer.write(f"{index}\t{item:3.3f}\n")
-                        else:
-                            item = label_list[item]
-                            writer.write(f"{index}\t{item}\n")
-
-    if training_args.push_to_hub:
-        kwargs = {"finetuned_from": model_args.model_name_or_path, "tasks": "text-classification"}
-        if data_args.task_name is not None:
-            kwargs["language"] = "en"
-            kwargs["dataset_tags"] = "glue"
-            kwargs["dataset_args"] = data_args.task_name
-            kwargs["dataset"] = f"GLUE {data_args.task_name.upper()}"
-
-        trainer.push_to_hub(**kwargs)
-
+    if optim_args.to_onnx:
+        trainer.enable_executor = True
+        trainer.export_to_onnx()
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)

@@ -1,7 +1,10 @@
 neural-compressor
-onnx
-onnxruntime
-transformers
-numpy>1.19
-pycocotools==2.0.0
-onnxruntime_extensions
+transformers==4.18.0
+accelerate
+datasets >= 1.8.0
+sentencepiece != 0.1.92
+protobuf
+torch==1.10
+onnx==1.11.0
+onnxruntime==1.11.1
+onnxruntime-extensions

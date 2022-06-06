@@ -1,11 +1,60 @@
 #!/bin/bash
 # set -x
+function main {
+  init_params "$@"
+  prepare_model
+}
 
-# git clone the fine-tuned minilm model on task sst2
-git lfs clone https://huggingface.co/philschmid/MiniLM-L6-H384-uncased-sst2
+# init params
+function init_params {
+  for var in "$@"
+  do
+    case $var in
+      --input_model=*)
+          input_model=$(echo $var |cut -f2 -d=)
+      ;;
+      --task_name=*)
+          task_name=$(echo $var |cut -f2 -d=)
+      ;;
+      --cache_dir=*)
+          cache_dir=$(echo $var |cut -f2 -d=)
+      ;;
+      --output_dir=*)
+          output_dir=$(echo $var |cut -f2 -d=)
+      ;;
+      --precision=*)
+          precision=$(echo $var |cut -f2 -d=)
+      ;;
+    esac
+  done
+}
 
-# export the model
-python minilm_export.py \
-   --input_dir=./MiniLM-L6-H384-uncased-sst2 \
-   --task_name=SST-2 \
-   --output_model=minilm_l6_h384_uncased_sst2.onnx
+function prepare_model {
+
+    mode_cmd=""
+    if [[ ${precision} = 'int8' ]]; then
+        mode_cmd=$mode_cmd" --tune --quantization_approach PostTrainingStatic"
+    fi
+    echo ${mode_cmd}
+   
+    cache="./tmp"
+    if [[ ${cache_dir} ]]; then
+        cache="$cache_dir"
+    fi
+    echo ${cache}
+ 
+    python run_glue.py \
+        --model_name_or_path ${input_model} \
+        --task_name ${task_name} \
+        --do_train \
+        --do_eval \
+        --cache_dir ${cache} \
+        --output_dir ${output_dir} \
+        --overwrite_output_dir \
+        --to_onnx \
+        ${mode_cmd}
+
+}
+
+main "$@"
+

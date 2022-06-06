@@ -16,6 +16,9 @@ function init_params {
       --dataset_name=*)
           dataset_name=$(echo $var |cut -f2 -d=)
       ;;
+      --cache_dir=*)
+          cache_dir=$(echo $var |cut -f2 -d=)
+      ;;
       --output_dir=*)
           output_dir=$(echo $var |cut -f2 -d=)
       ;;
@@ -29,16 +32,23 @@ function init_params {
 function prepare_model {
 
     mode_cmd=""
-    if [[ ${precision}=='int8' ]]; then
+    if [[ ${precision} = 'int8' ]]; then
         mode_cmd=$mode_cmd" --tune --quantization_approach PostTrainingStatic"
     fi
     echo ${mode_cmd}
-
+   
+    cache="./tmp"
+    if [[ ${cache_dir} ]]; then
+        cache="$cache_dir"
+    fi
+    echo ${cache}
+ 
     python run_qa.py \
         --model_name_or_path ${input_model} \
         --dataset_name ${dataset_name} \
         --do_train \
         --do_eval \
+        --cache_dir ${cache} \
         --output_dir ${output_dir} \
         --overwrite_output_dir \
         --to_onnx \

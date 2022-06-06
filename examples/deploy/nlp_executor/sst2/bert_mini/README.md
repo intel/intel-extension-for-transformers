@@ -4,72 +4,100 @@
 
 ### 1. Installation
 1.1 Install python environment
+Create a new python environment
 ```shell
-conda create -n <env name> python=3.7
+conda create -n <env name> python=3.8
 conda activate <env name>
-cd <neural_compressor_folder>/examples/baremetal/nlp/sst2/bert_mini
+```
+Check the gcc version using $gcc-v, make sure the gcc version is higher than 7.0.
+If not, you need to update gcc by yourself.
+Make sure the cmake version is 3 rather than 2.
+If not, you need to install cmake.
+```shell
+cmake --version
+conda install cmake
+```
+Install NLPTookit from source code
+```shell
+cd <NLPToolkit_folder>
+git submodule update --init --recursive
+python setup.py install
+```
+Install package for examples
+```shell
+cd <NLPToolkit_folder>/examples/deploy/nlp_executor/sst2/bert_mini
 pip install -r requirements.txt
 ```
+1.2 Install C++ environment (Optional)
+Install engine according to [nlp_executor](<NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/docs/executor.md)
+if need the performance in C++.
 Preload libiomp5.so can improve the performance when bs=1.
 ```
 export LD_PRELOAD=<path_to_libiomp5.so>
 ```
-Preloading libjemalloc.so can improve the performance. It has been built in third_party/jemalloc/lib.
+Preload libjemalloc.so can improve the performance when multi instance.
 ```
-export LD_PRELOAD=<path_to_libjemalloc.so>
+export LD_PRELOAD=<NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/executor/third_party/jemalloc/lib/libjemalloc.so
+```
+Using weight sharing can save memory and improve the performance when multi instance.
+```
+export SHARED_INST_NUM=<inst_num>
 ```
 ### 2. Prepare Dataset and pretrained model
 
 ### 2.1 Get dataset
 
 ```shell
-python prepare_dataset.py --output_dir=./data
+python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./data
 ```
 
 ### 2.2 Get model
-
+Executor can parse Tensorflow/Pytorch/ONNX and IR model.  
+Here are two examples to get ONNX model.
+You can get FP32 modol from optimize by setting precision=fp32 as follows:
 ```shell
-bash prepare_model.sh
+bash prepare_model.sh --input_model=moshew/bert-mini-sst2-distilled  --task_name=sst2 --output_dir=./model_and_tokenizer --precision=fp32
+```
+And for better perfromance, you can also get a PTQ int8 model by setting precision=int8.
+```shell
+bash prepare_model.sh --input_model=moshew/bert-mini-sst2-distilled  --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
 ```
 
-### Run
+### Benchmark
 
-### 1. To get the tuned model and its accuracy:
+  2.1 accuracy  
   run python
   ```shell
-  GLOG_minloglevel=2 python run_engine.py --tune
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=8
   ```
   or run shell
   ```shell
-  bash run_tuning.sh --config=bert_static.yaml --input_model=bert_mini_sst2.onnx --output_model=ir --dataset_location=data
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --mode=accuracy --data_dir=./data --batch_size=8
   ```
 
-### 2. To get the benchmark of tuned model:
-  2.1 accuracy
+  2.2 performance  
   run python
   ```shell
-  GLOG_minloglevel=2 python run_engine.py --input_model=./ir --benchmark --mode=accuracy --batch_size=8
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --config=bert_static.yaml --input_model=ir --dataset_location=data --batch_size=8 --mode=accuracy
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --mode=performance --batch_size=8 --seq_len=128
   ```
-
-  2.2 performance
-  run python
-  ```shell
-  GLOG_minloglevel=2 python run_engine.py --input_model=./ir --benchmark --mode=performance --batch_size=8
+  or compile framwork model to IR using python API
   ```
-  or run shell
-  ```shell
-  bash run_benchmark.sh --config=bert_static.yaml --input_model=ir --dataset_location=data --batch_size=8 --mode=performance
+  from nlp_toolkit.backends.nlp_executor.compile import compile
+  graph = compile('./model_and_tokenizer/int8-model.onnx')
+  graph.save('./ir')
   ```
-  or run C++
+  and run C++  
   The warmup below is recommended to be 1/10 of iterations and no less than 3.
   ```
   export GLOG_minloglevel=2
   export OMP_NUM_THREADS=<cpu_cores>
   export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
   export UNIFIED_BUFFER=1
-  numactl -C 0-<cpu_cores-1> <neural_compressor_folder>/engine/bin/inferencer --batch_size=<batch_size> --iterations=<iterations> --w=<warmup> --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
+  numactl -C 0-<cpu_cores-1> <NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/bin/nlp_executor
+  --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
+  --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
   ```

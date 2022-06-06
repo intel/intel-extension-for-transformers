@@ -76,6 +76,8 @@ def graph_node_names_details(model):
     for node in model.nodes():
         node_name = node.name
         output_names = node.output
+        for index, output_name in enumerate(output_names):
+            output_names[index] = util.names_from_input(output_name)[1]
         # onnx output has different name from node name
         for output_name in output_names:
             if output_name not in node_names_details:
@@ -174,7 +176,7 @@ def onnx_extract_operator(node, model, nodes_dict):
     for input_tensor_name in input_tensor_names:
         origin_tensor_name, input_tensor_name = util.names_from_input(input_tensor_name)
         try:
-            pre_node = nodes_dict[nodes_dict[origin_tensor_name]].node
+            pre_node = nodes_dict[nodes_dict[input_tensor_name]].node
         except BaseException:
             pre_node = nodes_dict[origin_tensor_name].node
         

@@ -1,27 +1,21 @@
-#!/bin/bash
-# set -x
+#et -x
 
 export GLOG_minloglevel=2
-
-batch_size=1
-tokenizer_dir=distilbert-base-uncased-finetuned-sst-2-english
+batch_size=8
+seq_len=128
+warm_up=5
+iteration=10
 
 function main {
-
   init_params "$@"
   run_benchmark
-
 }
 
 # init params
 function init_params {
-  iters=100
   for var in "$@"
   do
     case $var in
-      --config=*)
-          config=$(echo $var |cut -f2 -d=)
-      ;;
       --input_model=*)
           input_model=$(echo $var |cut -f2 -d=)
       ;;
@@ -31,29 +25,32 @@ function init_params {
       --batch_size=*)
           batch_size=$(echo $var |cut -f2 -d=)
       ;;
-      --dataset_location=*)
-          dataset_location=$(echo $var |cut -f2 -d=)
+      --seq_len=*)
+          seq_len=$(echo $var |cut -f2 -d=)
       ;;
-      --tokenizer_dir=*)
-          tokenizer_dir=$(echo $var |cut -f2 -d=)
+      --warm_up=*)
+          warm_up=$(echo $var |cut -f2 -d=)
+      ;;
+      --iteration=*)
+          iteration=$(echo $var |cut -f2 -d=)
       ;;
     esac
   done
-
 }
 
-
-# run_tuning
+# run accuracy
 function run_benchmark {
-    python run_engine.py \
+    python run_executor.py \
       --input_model=${input_model} \
-      --data_dir=${dataset_location}/ \
-      --tokenizer_dir=$tokenizer_dir \
-      --batch_size=${batch_size} \
-      --config=$config \
-      --benchmark \
       --mode=$mode \
-
+      --batch_size=${batch_size} \
+      --seq_len=${seq_len} \
+      --warm_up=${warm_up} \
+      --iteration=${iteration} \
+      --dataset_name=glue \
+      --task_name=sst2 \
+      --data_dir=./data \
+      --tokenizer_dir=distilbert-base-uncased-finetuned-sst-2-english
 }
 
 main "$@"
