@@ -46,12 +46,15 @@ add_library(${HOST_LIBRARY_NAME} SHARED
     src/utils.cpp
     src/amx_utils.cpp
     src/kernels/cpu_sparse_matmul_list.cpp
+    src/kernels/cpu_postop_list.cpp
     src/kernels/sparse_data.cpp
     src/kernels/spmm_default.cpp
     src/kernels/spmm_amx_bf16_x16.cpp
+    src/kernels/postop_default.cpp
     src/jit_domain/jit_spmm_default.cpp
     src/jit_domain/jit_spmm_amx_bf16_x16.cpp
     src/jit_domain/jit_amx_configure.cpp
+    src/jit_domain/jit_postop_default.cpp
 )
 
 # Header file include path

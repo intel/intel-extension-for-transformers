@@ -105,6 +105,12 @@ class sparse_matmul_desc : public kernel_desc_proxy {
   virtual ~sparse_matmul_desc() {}
 };
 
+class postop_desc : public kernel_desc_proxy {
+ public:
+  postop_desc(){};
+  explicit postop_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~postop_desc() {}
+};
 /**
  * @brief Derived proxy class, interfacing to the real/cached sparse_matmul_t.
  */
@@ -113,6 +119,12 @@ class sparse_matmul : public kernel_proxy {
   sparse_matmul() {}
   explicit sparse_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~sparse_matmul() {}
+};
+class postop : public kernel_proxy {
+ public:
+  postop() {}
+  explicit postop(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~postop() {}
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_INTERFACE_HPP_

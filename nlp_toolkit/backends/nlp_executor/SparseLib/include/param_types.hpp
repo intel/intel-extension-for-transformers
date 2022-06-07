@@ -23,6 +23,7 @@ namespace jd {
 enum class kernel_kind : uint8_t {
   undef,
   sparse_matmul,
+  postop
 };
 
 // The propagation kind of kernel, temporarily defined as a specific function or

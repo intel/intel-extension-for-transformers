@@ -22,17 +22,18 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
 #define DECLARE_IMPL_LIST(kind) \
   const std::vector<impl_list_item_t>* get_##kind##_impl_list(const operator_desc& op_desc);
 
-  DECLARE_IMPL_LIST(sparse_matmul);
-
+DECLARE_IMPL_LIST(sparse_matmul);
+DECLARE_IMPL_LIST(postop)
 #undef DECLARE_IMPL_LIST
 
   // Call C API.
-#define CASE(kind)        \
+#define CASE(kind) \
   case kernel_kind::kind: \
     return get_##kind##_impl_list(op_desc);
 
   switch (op_desc.kernel_kind()) {
     CASE(sparse_matmul);
+    CASE(postop);
     default:
       return &cpu_engine::empty_list;
   }

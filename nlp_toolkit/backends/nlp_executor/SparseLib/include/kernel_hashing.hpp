@@ -14,15 +14,14 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNEL_HASHING_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNEL_HASHING_HPP_
-#include <functional>
+#include <vector>
 #include <string>
 #include <unordered_map>
-#include <vector>
-
-#include "engine.hpp"
-#include "operator_desc.hpp"
+#include <functional>
 #include "param_types.hpp"
 #include "tensor_desc.hpp"
+#include "operator_desc.hpp"
+#include "engine.hpp"
 
 namespace jd {
 /**
@@ -75,6 +74,9 @@ class hash_t {
         hash_combine(seed, op_attrs["mkn_blocks"]);
         hash_combine(seed, op_attrs["tile_shape"]);
         hash_combine(seed, op_attrs["sparse_scheme"]);
+        break;
+      case kernel_kind::postop:
+        hash_combine(seed, op_attrs["exp"]);
         break;
       default:
         break;

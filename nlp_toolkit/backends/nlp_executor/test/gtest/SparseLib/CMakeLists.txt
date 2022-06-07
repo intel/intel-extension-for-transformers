@@ -35,6 +35,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/../../../SparseLib/ ./hostlibs)
 #### PART2: build gtest cases ####
 file(GLOB KERNEL_TEST_CASES_SRC
     test_spmm_default_kernel.cpp
+    test_postop_default_kernel.cpp
 )
 
 if (SPARSE_LIB_USE_AMX) 
