@@ -1548,10 +1548,9 @@ class NLPTrainer(Trainer):
         for k, v in self.opt_model.tune_cfg['op'].items():
             if k[1] not in pytorch_op_types_to_quantize or 'int8' in v['weight']['dtype']:
                 continue
-            if k[0] not in module_node_mapping:
-                k[0] = k[0].split('.module')[0]
-            if k[0] in module_node_mapping:
-                fallback_op = module_node_mapping[k[0]]
+            k_0 = k[0].split('.module')[0] if k[0] not in module_node_mapping else k[0]
+            if k_0 in module_node_mapping:
+                fallback_op = module_node_mapping[k_0]
                 quantize_nodes.remove(fallback_op)
 
         # Quantization
