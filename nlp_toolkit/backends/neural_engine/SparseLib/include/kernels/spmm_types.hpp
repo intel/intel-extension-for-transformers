@@ -83,7 +83,8 @@ struct flat_data_t {
  */
 template <typename T>
 struct amx_params_t {
-  dim_t bs;
+  dim_t num_tileM;
+  dim_t tileM;
   dim_t shape[2];
   dim_t blocksize[2] = {16, 1};
   dim_t blocks_per_group = 64 / sizeof(T);
@@ -92,6 +93,7 @@ struct amx_params_t {
   dim_t* colidxs;
   dim_t* group_rowptr;
   T* weight;
+  bool has_bias;
 };
 
 typedef amx_params_t<bfloat16_t> amx_bf16_params_t;
@@ -103,6 +105,7 @@ template <typename src_t, typename wgt_t, typename dst_t>
 struct amx_inputs_t {
   src_t* weight;
   wgt_t* src;
+  float* bias;  // bias always be float for both bf16 and int8 kernels
   dst_t* dst;
   dim_t bs;
 };

@@ -17,6 +17,8 @@
 #include <immintrin.h>
 #include <mutex>  // NOLINT
 #include <cstdint>
+#include <omp.h>
+#include <vector>
 
 #include "jit_domain/jit_amx_configure.hpp"
 
@@ -60,9 +62,11 @@ class amx_tile_config_t {
   amx_tile_config_t() {
     tilecfg.create_kernel();
     tilerls.create_kernel();
+    int nthr = omp_get_max_threads();
+    param_.resize(nthr, {0});
   }
   ~amx_tile_config_t() {}
-  tile_param_t param_ = {0};
+  std::vector<tile_param_t> param_;
   tileconfig_t* config_ = new tileconfig_t({0});
 
  public:
@@ -86,8 +90,8 @@ class amx_tile_config_t {
    * Finally, any singleton should define some business logic, which can be
    * executed on its instance.
    */
-  bool amx_tile_configure(tile_param_t param);
-  bool amx_tile_release();
+  void amx_tile_configure(int thread_x, tile_param_t param);
+  void amx_tile_release();
   jd::jit_amx_config_t tilecfg;
   jd::jit_amx_release_t tilerls;
 };

@@ -27,19 +27,16 @@ amx_tile_config_t* amx_tile_config_t::GetInstance() {
   return atc_instance_;
 }
 
-bool amx_tile_config_t::amx_tile_configure(tile_param_t param) {
-  if (param != param_) {
-    param_ = param;
+void amx_tile_config_t::amx_tile_configure(int thread_x, tile_param_t param) {
+  int x = param_.size();
+  if (param != param_[thread_x]) {
+    param_[thread_x] = param;
     sparselib_configure_tiles(param, config_);
     tilecfg.tile_configure(reinterpret_cast<void*>(config_));
   }
-  return true;
 }
 
-bool amx_tile_config_t::amx_tile_release() {
-  tilerls.tile_release();
-  return true;
-}
+void amx_tile_config_t::amx_tile_release() { tilerls.tile_release(); }
 
 #pragma GCC push_options
 #pragma GCC optimize("O0")

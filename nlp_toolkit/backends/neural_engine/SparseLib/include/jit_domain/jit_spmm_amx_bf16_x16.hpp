@@ -41,12 +41,12 @@ class jit_spmm_amx_bf16_x16_t : public jit_generator {
   explicit jit_spmm_amx_bf16_x16_t(const ssd::amx_bf16_params_t& param) : jit_generator(), param_(param) {
     N = param_.shape[0];
     K = param_.shape[1];
-    M = param_.bs;
     nnz_group = param_.nnz_group;
     nrowptr = param_.nrowptr;
     colidxs = param_.colidxs;
     group_rowptr = param_.group_rowptr;
     weight_ = param_.weight;
+    tileM = param_.tileM;
   }
   virtual ~jit_spmm_amx_bf16_x16_t() {}
 
@@ -67,30 +67,28 @@ class jit_spmm_amx_bf16_x16_t : public jit_generator {
   const Xbyak::Reg64& reg_src = rdx;
   const Xbyak::Reg64& reg_dst = rcx;
   const Xbyak::Reg64& reg_bs = r8;
-  const Xbyak::Reg64& reg_K = rbx;
-  const Xbyak::Reg64& reg_N = rbp;
+  const Xbyak::Reg64& reg_m = rbp;
   const Xbyak::Reg64& reg_mstart = r9;
-  const Xbyak::Reg64& reg_nstart = r10;
+  const Xbyak::Reg64& reg_tileM = r10;
   const Xbyak::Reg64& reg_temp = rsi;
   const Xbyak::Zmm& reg_mask = zmm31;
-  Xbyak::Label loopMask;
+  Xbyak::Label loopMask, lM;
 
   dim_t N;
   dim_t K;
-  dim_t M;
   const dim_t blocks_per_group = 32;
   dim_t nnz_group;
   dim_t nrowptr;
   dim_t* colidxs;
   dim_t* group_rowptr;
   bfloat16_t* weight_;
-  const dim_t tileM = 64;  // 4x16
+  dim_t tileM;
 
   static constexpr int stack_space_needed_ = 5120;
 
   void read_inputs();
-  void main_compute(dim_t mstart);
-  void loop_N();
+  void main_compute();
+  void loop_M();
   void init_param();
 };
 }  // namespace jd

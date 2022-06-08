@@ -51,6 +51,7 @@ enum class format_type : uint8_t {
   a,
   ab,  // shape permutation = {0, 1}
   ba,  // shape permutation = {1, 0}
+  abc,
 
   // encoding format of sparse matrix
   uncoded,

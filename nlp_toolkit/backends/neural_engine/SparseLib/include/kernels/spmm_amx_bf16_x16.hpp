@@ -53,7 +53,7 @@ class spmm_amx_bf16_x16_kd_t : public kernel_desc_t {
   const ssd::amx_bf16_params_t& params() const { return params_; }
 
  private:
-  bool spmm_params_init(ssd::amx_bf16_params_t& param_ref, // NOLINT
+  bool spmm_params_init(ssd::amx_bf16_params_t& param_ref,  // NOLINT
                         const jd::operator_desc& op_cfg);
 
  private:
@@ -81,10 +81,14 @@ class spmm_amx_bf16_x16_k_t : public kernel_t {
 
  private:
   bool spmm_kernel_create(jit_spmm_amx_bf16_x16_t** ker_pp, const ssd::amx_bf16_params_t& param);
-  dim_t tileM = 64;
+  dim_t tileBS = 0;
+  dim_t num_tileBS = 0;
+  dim_t IC = 0;
+  dim_t OC = 0;
+  dim_t thread_num_ = 0;
 
  private:
-  jit_spmm_amx_bf16_x16_t* jit_kers_;
+  std::vector<jit_spmm_amx_bf16_x16_t*> jit_kers_;
   const tile_param_t tile_param_ = {16, 16, 32, true, 2};
   amx_tile_config_t* amx_config_;
 };

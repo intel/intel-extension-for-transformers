@@ -25,6 +25,7 @@
 #include "interface.hpp"
 #include "benchmark_utils.hpp"
 
+
 namespace jd {
 using dt = jd::data_type;
 using ft = jd::format_type;
@@ -44,28 +45,43 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   const auto& ts_descs = op_desc.tensor_descs();
   const auto& wei_desc = ts_descs[0];
   const auto& src_desc = ts_descs[1];
+  const auto& bia_desc = ts_descs[2];
   const auto& dst_desc = ts_descs[3];
-  int dims = wei_desc.shape().size();
   int N = wei_desc.shape()[0];
   int K = wei_desc.shape()[1];
-  int M = src_desc.shape()[1];
+  int NUM_M = src_desc.shape()[0];
+  int M_MICRO = src_desc.shape()[2];
   const auto& dst_dt = dst_desc.dtype();
   auto attrs_map = op_desc.attrs();
 
   // runtime data alias
   const auto wei_data = static_cast<const bfloat16_t*>(rt_data[0]);
   const auto src_data = static_cast<const bfloat16_t*>(rt_data[1]);
-  auto dst_data = const_cast<void*>(rt_data[3]);
-  auto fp_dst_data = static_cast<float*>(dst_data);
+  const auto bia_data = static_cast<const float*>(rt_data[2]);
+  void* dst_data = const_cast<void*>(rt_data[3]);
+
+  std::vector<float> float_dst_data(N * NUM_M * M_MICRO, 0);
+  float* fp_dst_data = static_cast<float*>(dst_data);
+  if (dst_dt == dt::bf16) {
+    bfloat16_t* fp_dst_data = static_cast<bfloat16_t*>(dst_data);
+  }
 
   // Computing the kernel
-  if (dims == 2) {
+  for (int num_m = 0; num_m < NUM_M; ++num_m) {
     for (int n = 0; n < N; ++n) {
-#pragma omp parallel for
-      for (int m = 0; m < M; ++m) {
-#pragma omp parallel for
+      // #pragma omp parallel for
+      for (int m = 0; m < M_MICRO; ++m) {
+        // #pragma omp parallel for
         for (int k = 0; k < K; ++k) {
-          fp_dst_data[n * M + m] += make_fp32(wei_data[n * K + k]) * make_fp32(src_data[k * M + m]);
+          float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] +=
+              make_fp32(wei_data[n * K + k]) * make_fp32(src_data[num_m * K * M_MICRO + k * M_MICRO + m]);
+        }
+        float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] += bia_data[n];
+        if (dst_dt == dt::bf16) {
+          fp_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] =
+              make_bf16(float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m]);
+        } else {
+          fp_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] = float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m];
         }
       }
     }
@@ -137,28 +153,41 @@ void prepare_sparse_data(T* weight, dim_t N, dim_t K, dim_t n_blksize, dim_t k_b
   }
 }
 
-std::pair<const void*, const void*> make_data_obj(const dt& tensor_dt, dim_t rows, dim_t cols, bool is_clear = false,
-                                                  bool is_sparse = false,
+std::pair<const void*, const void*> make_data_obj(const dt& tensor_dt, dim_t rows, dim_t cols, dim_t index,
                                                   const std::vector<float>& ranges = {-10, 10}) {
   dim_t elem_num = rows * cols;
   dim_t bytes_size = elem_num * type_size[tensor_dt];
   void* data_ptr = nullptr;
-  if (is_clear) {
-    // prepare dst
-    data_ptr = new float[elem_num];
-    memset(data_ptr, 0, bytes_size);
-  } else {
-    if (is_sparse) {
-      // prepare sparse weight
+  switch (index) {
+    case 0: {  // prepare wei
       float ratio = 0.9;
       data_ptr = new bfloat16_t[elem_num];
       bfloat16_t* bf16_ptr = static_cast<bfloat16_t*>(data_ptr);
       prepare_sparse_data<bfloat16_t>(bf16_ptr, rows, cols, 16, 1, ratio);
-    } else {
-      // prepare dense activation
+      break;
+    }
+    case 1: {  // prepare src
       data_ptr = new bfloat16_t[elem_num];
       bfloat16_t* bf16_ptr = static_cast<bfloat16_t*>(data_ptr);
       init_vector(bf16_ptr, elem_num, ranges[0], ranges[1]);
+      break;
+    }
+    case 2: {  // prepare bias
+      data_ptr = new float[elem_num];
+      // float* fp32_ptr = static_cast<float*>(data_ptr);
+      // init_vector(fp32_ptr, elem_num, ranges[0], ranges[1]);
+      memset(data_ptr, 0, bytes_size);
+      break;
+    }
+    case 3: {  // prepare dst
+      if (tensor_dt == dt::bf16) {
+        data_ptr = new bfloat16_t[elem_num];
+        memset(data_ptr, 0, bytes_size);
+      } else {
+        data_ptr = new float[elem_num];
+        memset(data_ptr, 0, bytes_size);
+      }
+      break;
     }
   }
 
@@ -177,11 +206,13 @@ std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const j
   dim_t K = ts_descs[0].shape()[1];
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
-    bool is_clear = (index == 2 | index == 3) ? true : false;
-    bool is_sparse = (index == 0) ? true : false;
     dim_t rows = ts_descs[index].shape()[0];
     dim_t cols = ts_descs[index].shape()[1];
-    auto data_pair = make_data_obj(ts_descs[index].dtype(), rows, cols, is_clear, is_sparse);
+    if (index == 1 || index == 3) {
+      rows = ts_descs[index].shape()[1];
+      cols = ts_descs[index].shape()[0] * ts_descs[index].shape()[2];
+    }
+    auto data_pair = make_data_obj(ts_descs[index].dtype(), rows, cols, index);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -206,15 +237,36 @@ static auto case_func = []() {
   tensor_desc src_desc;
   tensor_desc bia_desc;
   tensor_desc dst_desc;
+  int M;
+  int tileM;
 
   // case: sparse: bf16xbf16=f32, weight(N, K) * activation(K, M)
   // = dst(N, M)
-  wei_desc = {{64, 64}, dt::bf16, ft::bsr};
-  src_desc = {{64, 64}, dt::bf16, ft::ab};
-  bia_desc = {{64, 1}, dt::fp32, ft::ab};
-  dst_desc = {{64, 64}, dt::fp32, ft::ab};
+  M = 1024;
+  tileM = 64;
+  wei_desc = {{512, 512}, dt::bf16, ft::bsr};
+  src_desc = {{M/tileM, 512, tileM}, dt::bf16, ft::abc};
+  bia_desc = {{512, 1}, dt::fp32, ft::ab};
+  dst_desc = {{M/tileM, 512, tileM}, dt::fp32, ft::abc};
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
                             {wei_desc, src_desc, bia_desc, dst_desc})});
+
+  tileM = 128;
+  wei_desc = {{512, 512}, dt::bf16, ft::bsr};
+  src_desc = {{M/tileM, 512, tileM}, dt::bf16, ft::abc};
+  bia_desc = {{512, 1}, dt::fp32, ft::ab};
+  dst_desc = {{M/tileM, 512, tileM}, dt::fp32, ft::abc};
+  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
+                            {wei_desc, src_desc, bia_desc, dst_desc})});
+ 
+  // case: sparse: bf16xbf16=bf16, weight(N, K) * activation(K, M)
+  // = dst(N, M)
+  // wei_desc = {{64, 64}, dt::bf16, ft::bsr};
+  // src_desc = {{64, 64}, dt::bf16, ft::ab};
+  // bia_desc = {{64, 1}, dt::fp32, ft::ab};
+  // dst_desc = {{64, 64}, dt::bf16, ft::ab};
+  // cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
+  //                           {wei_desc, src_desc, bia_desc, dst_desc})});
 
   return ::testing::ValuesIn(cases);
 };

@@ -49,7 +49,7 @@ void init_vector(T* v, int num_size, float range1, float range2, int seed) {
   std::mt19937 gen(seed);
   std::uniform_real_distribution<float> u(low_value, range2);
   for (int i = 0; i < num_size; ++i) {
-    v[i] = cast_to<T>(u(gen));
+    v[i] = cast_to<T>(1);//u(gen));
   }
 }
 template void init_vector<float>(float*, int, float, float, int);
@@ -129,8 +129,8 @@ bool init_amx() {
 #define ARCH_GET_XCOMP_PERM 0x1022
 #define ARCH_REQ_XCOMP_PERM 0x1023
 
-  unsigned long bitmask = 0; // NOLINT
-  long status = syscall(SYS_arch_prctl, ARCH_GET_XCOMP_PERM, &bitmask); // NOLINT
+  unsigned long bitmask = 0;                                             // NOLINT
+  long status = syscall(SYS_arch_prctl, ARCH_GET_XCOMP_PERM, &bitmask);  // NOLINT
   if (0 != status) return false;
   if (bitmask & XFEATURE_MASK_XTILEDATA) return true;
 
