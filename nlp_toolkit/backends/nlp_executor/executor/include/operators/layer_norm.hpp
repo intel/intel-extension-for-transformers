@@ -49,6 +49,7 @@ class LayerNormOperator : public Operator {
   memory src_m_;
   memory dst_m_;
   unordered_map<int, memory> memory_args_;
+  memory scale_shift_m;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_LAYER_NORM_HPP_

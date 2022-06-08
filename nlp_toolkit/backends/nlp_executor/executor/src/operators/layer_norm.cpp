@@ -72,9 +72,9 @@ void LayerNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   dst_m_ = memory(dst_md, eng_);
   memory mean_m(lnorm_pd.mean_desc(), eng_);
   memory variance_m(lnorm_pd.variance_desc(), eng_);
-  memory scale_shift_m(scale_shift_md, eng_);
 
   if (!weight_cached_) {
+    scale_shift_m = memory(scale_shift_md, eng_);
     if (input[1]->is_shared() && input[2]->is_shared()) {
       int64_t scale_shift_size = scale_shift_m.get_desc().get_size();
       string scale_shift_name = input[1]->name() + input[2]->name();
