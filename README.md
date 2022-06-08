@@ -6,9 +6,10 @@ This toolkit allows developers to improve the productivity through ease-of-use m
 
 - Model Compression
 
-    |Framework          |Quantization          |Pruning/Sparsity |Distillation          |
-    |-------------------|:--------------------:|:---------------:|:--------------------:|
-    |PyTorch            |&#10004;              |&#10004;         |&#10004;              |
+    |Framework          |Quantization |Pruning/Sparsity |Distillation |autodistillation |
+    |-------------------|:-----------:|:---------------:|:-----------:|:--------------:|
+    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;        |
+    |TensorFlow         |&#10004;     |&#10004;         |$\times$     |$\times$        |
 
 - Data Augmentation for NLP Datasets
 - NLP Executor for Inference Acceleration

@@ -23,7 +23,7 @@ from nlp_toolkit.optimization.utils.metrics import Metric
 from nlp_toolkit.optimization.utils.utility import LazyImport
 from packaging import version
 from tqdm.auto import tqdm
-from transformers import __version__, Trainer, PreTrainedModel
+from transformers import __version__, Seq2SeqTrainer, Trainer, PreTrainedModel
 from transformers.configuration_utils import PretrainedConfig
 from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
 from transformers.file_utils import (
@@ -66,7 +66,7 @@ torch = LazyImport("torch")
 xm = LazyImport('torch_xla.core.xla_model')
 
 
-class NLPTrainer(Trainer):
+class BaseTrainer():
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.in_training = False
@@ -128,6 +128,7 @@ class NLPTrainer(Trainer):
 
     def builtin_eval_func(self, model):
         self.model = model
+        # pylint: disable=E1101
         if self.args.seed:
             torch.manual_seed(self.args.seed)
         results = self.evaluate()
@@ -156,6 +157,7 @@ class NLPTrainer(Trainer):
         logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
         return result
 
+    # pylint: disable=E1101
     def builtin_train_func(self, model):
         self.model_wrapped = model
         self.model = model
@@ -240,6 +242,7 @@ class NLPTrainer(Trainer):
             self.quantizer.eval_func = self.builtin_eval_func
 
         if self.quant_config.approach == QuantizationMode.POSTTRAININGSTATIC.value:
+            # pylint: disable=E1101
             self.quantizer.calib_dataloader = self.get_train_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
         elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
@@ -248,7 +251,9 @@ class NLPTrainer(Trainer):
         self.component = self.quantizer
         self.opt_model = self.quantizer.fit()
         self.enable_inc_quant = True
+        # pylint: disable=E1101
         self._save_inc_int8(self.opt_model, self.args.output_dir)
+        # pylint: disable=E1101
         logger.info(
             "quantized model and configure file have saved to {}".format(self.args.output_dir)
         )
@@ -303,6 +308,7 @@ class NLPTrainer(Trainer):
 
         pruning_start_epoch, pruning_end_epoch = self.pruning_config.epoch_range
 
+        # pylint: disable=E1101
         if pruning_start_epoch > self.args.num_train_epochs - 1:
             logger.warning(
                 f"Pruning end epoch {pruning_start_epoch} is higher than "
@@ -310,6 +316,7 @@ class NLPTrainer(Trainer):
                 f"{self.args.num_train_epochs}. No pruning will be applied."
             )
 
+        # pylint: disable=E1101
         if pruning_end_epoch > self.args.num_train_epochs - 1:
             logger.warning(
                 f"Pruning end epoch {pruning_end_epoch} is higher than "
@@ -486,8 +493,10 @@ class NLPTrainer(Trainer):
         resume_from_checkpoint = None if not resume_from_checkpoint else resume_from_checkpoint
 
         # memory metrics - must set up as early as possible
+        # pylint: disable=E1101
         self._memory_tracker.start()
 
+        # pylint: disable=E1101
         args = self.args
 
         self.is_in_train = True
@@ -564,6 +573,7 @@ class NLPTrainer(Trainer):
         train_dataset_is_sized = isinstance(self.train_dataset, collections.abc.Sized)
 
         # Data loader and number of training steps
+        # pylint: disable=E1101
         train_dataloader = self.get_train_dataloader()
 
         # Setting up training control variables:
@@ -594,6 +604,7 @@ class NLPTrainer(Trainer):
             num_update_steps_per_epoch = max_steps
             num_train_samples = args.max_steps * total_train_batch_size
 
+        # pylint: disable=E1101
         if DebugOption.UNDERFLOW_OVERFLOW in self.args.debug:
             if self.args.n_gpu > 1:
                 # nn.DataParallel(model) replicates the model, creating new variables and module
@@ -838,6 +849,7 @@ class NLPTrainer(Trainer):
                     model.train()
             self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
 
+            # pylint: disable=E1101
             if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
                 logger.warning(
                     "You enabled PyTorch/XLA debug metrics but you don't have a TPU "
@@ -901,6 +913,7 @@ class NLPTrainer(Trainer):
 
         return TrainOutput(self.state.global_step, train_loss, metrics)
 
+    # pylint: disable=E1101
     def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval):   # pragma: no cover
         if self.control.should_log:
             if is_torch_tpu_available():
@@ -941,6 +954,7 @@ class NLPTrainer(Trainer):
             self._save_checkpoint(model, trial, metrics=metrics)
             self.control = self.callback_handler.on_save(self.args, self.state, self.control)
 
+    # pylint: disable=E1101
     def training_step(
         self,
         model: torch.nn.Module,
@@ -999,6 +1013,7 @@ class NLPTrainer(Trainer):
 
         return loss.detach()
 
+    # pylint: disable=E1101
     def compute_loss(self, model, inputs, return_outputs=False):   # pragma: no cover
         """
         How the loss is computed by Trainer. By default, all models return the loss in the first element.
@@ -1079,6 +1094,7 @@ class NLPTrainer(Trainer):
                                dataset: "datasets.Dataset", 
                                description: Optional[str] = None
                                ):   # pragma: no cover
+        # pylint: disable=E1101
         if not self.args.remove_unused_columns:
             return dataset
         if self._signature_columns is None:
@@ -1127,6 +1143,7 @@ class NLPTrainer(Trainer):
                 "the customized model_builder."
             model_builder = partial(self.model_builder_builtin, model_cls=model_cls)
         agent = AutoDistillation(model_builder, self.autodistillation_config)
+        # pylint: disable=E1101
         self.args.lr_scheduler_type = 'constant'
 
         def take_train_steps(model, trainer, agent=None, train_steps=None,
@@ -1206,7 +1223,9 @@ class NLPTrainer(Trainer):
                 return model
             
             self.optimizer, self.lr_scheduler = None, None
+            # pylint: disable=E1101
             self._move_model_to_device(teacher_model, self.args.device)
+            # pylint: disable=E1101
             self._move_model_to_device(model, self.args.device)
             # create new distillers before each train process
             agent.create_distillers()
@@ -1232,6 +1251,7 @@ class NLPTrainer(Trainer):
             if train_func else train_func_builtin
         agent.eval_func = eval_func \
             if eval_func else eval_func_builtin
+        # pylint: disable=E1101
         return agent.search(self.args.output_dir)
     
     def model_builder_builtin(self, arch_paras=None, model_cls=None):
@@ -1261,6 +1281,7 @@ class NLPTrainer(Trainer):
         Works both with or without labels.
         Does not save all predictions and labels to avoid out of memory when predictions is huge.
         """
+        # pylint: disable=E1101
         prediction_loss_only = (
             prediction_loss_only if prediction_loss_only is not None else self.args.prediction_loss_only
         )
@@ -1269,6 +1290,7 @@ class NLPTrainer(Trainer):
 
         # if full fp16 is wanted on eval and this ``evaluation`` or ``predict`` isn't called while
         # ``train`` is running, halve it first and then put on device
+        # pylint: disable=E1101
         if not self.is_in_train and self.args.fp16_full_eval:
             model = model.half().to(self.args.device)
 
@@ -1287,6 +1309,7 @@ class NLPTrainer(Trainer):
         # Do this before wrapping.
         eval_dataset = dataloader.dataset
 
+        # pylint: disable=E1101
         if self.args.past_index >= 0:
             self._past = None
 
@@ -1322,6 +1345,7 @@ class NLPTrainer(Trainer):
             if labels is not None:
                 labels = self._pad_across_processes(labels)
                 labels = self._nested_gather(labels)
+            # pylint: disable=E1101
             self.control = self.callback_handler.on_prediction_step(self.args, self.state, self.control)
             if self.compute_metrics is not None and logits is not None and labels is not None:
                 metrics = self.compute_metrics(EvalPrediction(predictions=nested_numpify(logits), 
@@ -1336,6 +1360,7 @@ class NLPTrainer(Trainer):
                         all_metrics[k] += metrics[k]
 
             # Gather all tensors and put them back on the CPU if we have done enough accumulation steps.
+            # pylint: disable=E1101
             if self.args.eval_accumulation_steps is not None and (step + 1) % self.args.eval_accumulation_steps == 0:
                 if losses_host is not None:
                     losses = nested_numpify(losses_host)
@@ -1345,6 +1370,7 @@ class NLPTrainer(Trainer):
                 losses_host = None
                 # losses_host, preds_host, labels_host = None, None, None
 
+        # pylint: disable=E1101
         if self.args.past_index and hasattr(self, "_past"):
             # Clean the state at the end of the evaluation loop
             delattr(self, "_past")
@@ -1388,6 +1414,7 @@ class NLPTrainer(Trainer):
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         # If we are executing this function, we are the process zero, so we don't check for that.
+        # pylint: disable=E1101
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
         logger.info(f"Saving model checkpoint to {output_dir}")
@@ -1419,6 +1446,7 @@ class NLPTrainer(Trainer):
             self.tokenizer.save_pretrained(output_dir)
 
         # Good practice: save your training arguments together with the trained model
+        # pylint: disable=E1101
         torch.save(self.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
 
     def export_to_onnx(self, *args, **kwargs):
@@ -1438,10 +1466,13 @@ class NLPTrainer(Trainer):
         else:
             # Quantized model cannot be converted into onnx
             model = self.fp32_model.eval()
+        # pylint: disable=E1101
         onnx_save_path = save_path if save_path \
           else os.path.join(self.args.output_dir, 'fp32-model.onnx')
 
         # Prepare input data
+
+        # pylint: disable=E1101
         eval_dataloader = self.get_eval_dataloader()
         it = iter(eval_dataloader)
         input = next(it)
@@ -1507,8 +1538,10 @@ class NLPTrainer(Trainer):
                             "we reset opset_version={} here".format(opset_version))
         all_op_types_to_quantize = op_types_to_quantize + addition_op_to_quantize
 
+        # pylint: disable=E1101
         fp32_path = save_path + '.tmp' if save_path \
           else os.path.join(self.args.output_dir, 'int8-model.onnx.tmp')
+        # pylint: disable=E1101
         onnx_save_path = save_path if save_path \
           else os.path.join(self.args.output_dir, 'int8-model.onnx')
         self.export_to_fp32_onnx(fp32_path, opset_version=opset_version, 
@@ -1609,6 +1642,7 @@ class NLPTrainer(Trainer):
                 def get_next(self):
                     return next(self.data, None)
 
+            # pylint: disable=E1101
             calib_datareader = NLPDataReader(self.get_eval_dataloader())
             ortq.quantize_static(fp32_path,
                                 onnx_save_path,
@@ -1628,6 +1662,7 @@ class NLPTrainer(Trainer):
         logger.info(info)
         logger.info("*"*len(info))
 
+    # pylint: disable=E1101
     def export_to_jit(self):
         self.model.eval()
         eval_dataloader = self.get_eval_dataloader()
@@ -1728,3 +1763,69 @@ class NLPTrainer(Trainer):
             input.pop('start_positions')
             input.pop('end_positions')
         return input
+
+
+class NLPTrainer(BaseTrainer, Trainer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._max_length = None
+        self._num_beams = None
+
+    @property
+    def max_length(self):
+        return self._max_length
+
+    @max_length.setter
+    def max_length(self, max_length):
+        self._max_length = max_length
+
+    @property
+    def num_beams(self):
+        return self._num_beams
+
+    @num_beams.setter
+    def num_beams(self, num_beams):
+        self._num_beams = num_beams
+
+
+    def builtin_eval_func(self, model):
+        assert self.max_length is not None, \
+            """
+            Please set max_length in trainer, like as:
+            trainer.max_length = xxx
+            """
+        logger.info("max_length = {}, num_beams = {}".format(self.max_length, self.num_beams))
+        self.model = model
+        # pylint: disable=E1101
+        if self.args.seed:
+            torch.manual_seed(self.args.seed)
+        results = self.evaluate(max_length=self.max_length, num_beams=self.num_beams)
+        logger.info(results)
+        if isinstance(self.metrics, list):
+            nums = len(self.metrics)
+            for metric in self.metrics:
+                assert metric.name in results.keys(), \
+                    "Please set metric from {}".format(results.keys())
+            if nums == 1:
+                result = results.get(self.metrics[0].name)
+            else:
+                result = 0
+                for metric in self.metrics:
+                    assert metric.weight_ratio is not None, \
+                        "Please set weights for metric if you want to use more than one metric"
+                    result += results[metric.name] * metric.weighted
+            logger.info("metric: {}".format(result))
+        elif isinstance(self.metrics, Metric):
+            assert self.metrics.name in results.keys(), \
+                    "Please set metric from {}".format(results.keys())
+            result = results.get(self.metrics.name)
+            logger.info("metric: {}".format(result))
+        else:
+            assert False, "Please set the correct metrics format from the README"
+        logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
+        return result

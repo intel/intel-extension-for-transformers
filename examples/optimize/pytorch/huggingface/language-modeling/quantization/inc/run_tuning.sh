@@ -86,6 +86,12 @@ function run_tuning {
         DATASET_NAME="crime_and_punish"
         model_name_or_path="google/reformer-crime-and-punishment"
         approach="PostTrainingStatic"
+    elif [ "${topology}" = "ctrl_wikitext_static" ]; then
+        script="run_clm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="sshleifer/tiny-ctrl"
+        approach="PostTrainingStatic"
     fi
     python -u ./${script} \
         --model_name_or_path ${model_name_or_path} \

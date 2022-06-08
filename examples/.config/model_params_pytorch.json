@@ -278,6 +278,42 @@
           "strategy": "basic",
           "batch_size": 64,
           "new_benchmark": false
+        },
+        "ctrl_wikitext_static": {
+          "model_src_dir": "optimize/pytorch/huggingface/language-modeling/quantization/inc",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "pegasus_samsum_dynamic": {
+          "model_src_dir": "optimize/pytorch/huggingface/summarization/quantization",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "t5-small_dynamic": {
+          "model_src_dir": "optimize/pytorch/huggingface/translation/quantization",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
+        "marianmt_WMT_en_ro_dynamic": {
+          "model_src_dir": "optimize/pytorch/huggingface/translation/quantization",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
         }
     }
 }

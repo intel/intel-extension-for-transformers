@@ -558,9 +558,9 @@ def main():
                 ret = True
                 throughput = results.get("eval_samples_per_second")
                 print('Batch size = {}'.format(training_args.per_device_eval_batch_size))
-                print("Finally Eval {} Accuracy: {}".format(key, results[key]))
-                print("Latency: {:.3f} ms".format(1000 / throughput))
-                print("Throughput: {} samples/sec".format(throughput))
+                print("Finally Eval {} Accuracy: {:.5f}".format(key, results[key]))
+                print("Latency: {:.5f} ms".format(1000 / throughput))
+                print("Throughput: {:.5f} samples/sec".format(throughput))
                 break
         assert ret, "No metric returned, Please check inference metric!"
 

@@ -11,6 +11,8 @@ Welcome to Pytorch Huggingface examples. The examples is following from [Hugging
 |**`question-answering`**| ✅ | ✅ | ✅
 |**`text-classification`**| ✅ | ✅ | ✅
 |**`token-classification`**| ✅ | ✅ | ✅
+|**`summarization`**| ✅ | N/A | N/A
+|**`translation`**| ✅ | N/A | N/A
 
 ## Pruning approach
 
