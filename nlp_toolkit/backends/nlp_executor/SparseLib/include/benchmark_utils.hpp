@@ -68,10 +68,14 @@ void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& 
 
 double calc_flop_sparse_matmul(const std::vector<tensor_desc>& ts_descs);
 
+double calc_flop_postop(const std::vector<tensor_desc>& ts_descs);
+
 // Since different kernels may need to refresh different parts of runtime data,
 // please implement get_refresh_data_idx_xxxx for each kernel.
 
 std::vector<int> get_refresh_data_idx_sparse_matmul();
+
+std::vector<int> get_refresh_data_idx_postop();
 
 } // namespace jd
 

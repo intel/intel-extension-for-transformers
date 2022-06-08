@@ -14,6 +14,7 @@
 #include <map>
 #include "gtest/gtest.h"
 #include "interface.hpp"
+#include "benchmark_utils.hpp"
 
 #define exp_ln_flt_max_f 0x42b17218
 #define exp_ln_flt_min_f 0xc2aeac50
@@ -116,7 +117,8 @@ bool check_result(const test_params_t& t) {
     const auto& op_desc = p.op_desc;
     postop_desc postop_desc(op_desc);
     postop postop_kern(postop_desc);
-    postop_kern.execute(p.data);
+    //postop_kern.execute(p.data);
+    benchmarkOrExecute(&postop_kern, p.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;
@@ -206,9 +208,9 @@ static auto case_func = []() {
   tensor_desc data0_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
   cases.push_back(
-      {gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data0_desc}), false});
+      {gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data0_desc, data0_desc}), false});
   cases.push_back(
-      {gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data1_desc}), false});
+      {gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data1_desc, data1_desc}), false});
   return ::testing::ValuesIn(cases);
 };
 

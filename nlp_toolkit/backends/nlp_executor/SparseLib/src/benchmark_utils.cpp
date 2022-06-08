@@ -82,6 +82,7 @@ double calc_flop(const kernel_kind ker_kind, const std::vector<tensor_desc>& ts_
 
   switch (ker_kind){
     CASE(sparse_matmul);
+    CASE(postop);
     default:
       printf("calc_flop_<kernel_kind %d> not implemented.\n", ker_kind);
       return 0.0;
@@ -97,6 +98,7 @@ std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind){
 
   switch (ker_kind){
     CASE(sparse_matmul);
+    CASE(postop);
     default:
       printf("get_refresh_data_idx_<kernel_kind %d> not implemented.\n", ker_kind);
       return std::vector<int>(0);
@@ -160,8 +162,16 @@ double calc_flop_sparse_matmul(const std::vector<tensor_desc>& ts_descs){
   return (double)M * N * K * 2;
 }
 
+double calc_flop_postop(const std::vector<tensor_desc>& ts_descs){
+  return std::accumulate(ts_descs[0].shape().begin(), ts_descs[0].shape().end(), 1, std::multiplies<size_t>());
+}
+
 std::vector<int> get_refresh_data_idx_sparse_matmul(){
   return std::vector<int>{ssd::SRC, ssd::DST};
+}
+
+std::vector<int> get_refresh_data_idx_postop(){
+  return std::vector<int>{0, 1};
 }
 
 } // namespace jd
