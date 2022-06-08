@@ -13,7 +13,7 @@ The following example fine-tunes DistilBERT model of 90% sparsity on the sst-2 t
  
 ```
 python run_glue.py \
-    --model_name_or_distilbert-base-uncased-sparse-90-unstructured-pruneofa \
+    --model_name_or_path Intel/distilbert-base-uncased-sparse-90-unstructured-pruneofa \
     --teacher_model distilbert-base-uncased-finetuned-sst-2-english \
     --task_name sst2 \
     --quantization_approach QuantizationAwareTraining \

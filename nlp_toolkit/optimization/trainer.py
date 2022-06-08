@@ -449,7 +449,7 @@ class BaseTrainer():
             elif isinstance(config, PruningConfig):
                 component = self.init_pruner(config)
                 component.eval_func = self._eval_func
-                component.train_func = self._train_func
+                component.pruning_func = self._train_func
             elif isinstance(config, DistillationConfig):
                 assert isinstance(teacher_model, torch.nn.Module), \
                         "The teacher_model is needed for distiller"

@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
 from nlp_toolkit import (
     metrics,
-    Pruner,
+    PrunerConfig,
     PruningConfig,
     DistillationConfig,
     QuantizationConfig,
@@ -630,6 +630,7 @@ def main():
             "Unable to determine the names of the inputs of the model to trace, input_names is set to None and "
             "model.dummy_inputs().keys() will be used instead."
         )
+
     model = symbolic_trace(
                 model,
                 input_names=input_names,
@@ -663,8 +664,8 @@ def main():
             if optim_args.pruning_approach else optim_args.pruning_approach
         target_sparsity_ratio = None \
             if optim_args.target_sparsity_ratio else optim_args.target_sparsity_ratio
-        pruner = Pruner(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
-        pruning_conf = PruningConfig(framework="pytorch_fx", pruner=pruner, metrics=tune_metric)
+        pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
+        pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
         distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
 
         objective = objectives.performance
