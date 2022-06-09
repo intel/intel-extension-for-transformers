@@ -15,10 +15,6 @@
 #include "utils.hpp"
 #include "benchmark_utils.hpp"
 
-#include <cstring>
-#include <chrono>
-#include <algorithm>
-
 namespace jd{
 using dt = jd::data_type;
 

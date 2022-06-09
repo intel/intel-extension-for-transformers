@@ -17,6 +17,8 @@
 
 #include <vector>
 #include <string>
+#include <cstring>
+
 #include "interface.hpp"
 
 namespace jd{
