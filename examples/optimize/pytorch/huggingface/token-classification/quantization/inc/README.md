@@ -5,16 +5,16 @@ The script `run_ner.py` provides three quantization approaches (PostTrainingStat
 Here is how to run the script:
  
 ```
- python run_ner.py     
-    --model_name_or_path elastic/distilbert-base-uncased-finetuned-conll03-english \     
-    --dataset_name conll2003 \     
-    --tune \     
-    --quantization_approach PostTrainingStatic \    
-    --do_train \     
-    --do_eval \     
-    --pad_to_max_length \    
-    --output_dir ./tmp/conll03_output \ 
-    --overwrite_output_dir \
+ python run_ner.py \
+    --model_name_or_path elastic/distilbert-base-uncased-finetuned-conll03-english \
+    --dataset_name conll2003 \
+    --tune \
+    --quantization_approach PostTrainingStatic \
+    --do_train \
+    --do_eval \
+    --pad_to_max_length \
+    --output_dir ./tmp/conll03_output \
+    --overwrite_output_dir
 ```
 
 ### Validated model list

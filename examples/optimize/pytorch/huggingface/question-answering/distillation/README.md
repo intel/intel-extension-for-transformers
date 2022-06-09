@@ -5,13 +5,13 @@ The script `run_qa.py` provides the distillation approach based on [Intel® Neur
 Here is how to run the script:
  
 ```
-python run_qa.py     
+python run_qa.py \
     --model_name_or_path Intel/distilbert-base-uncased-sparse-90-unstructured-pruneofa \
     --teacher_model_name_or_path distilbert-base-uncased-distilled-squad \
     --dataset_name squad \
-    --distillation \     
-    --do_train \ 
-    --do_eval \     
+    --distillation \
+    --do_train \
+    --do_eval \
     --output_dir ./tmp/squad_output
 ```
 

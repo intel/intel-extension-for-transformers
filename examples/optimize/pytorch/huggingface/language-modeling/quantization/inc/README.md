@@ -1,5 +1,5 @@
 # Language modeling
-The scripts `run_clm.py`, `run_mlm.py` and `run_plm.py` provide three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+The scripts `run_clm.py`, `run_mlm.py` and `run_plm.py` provide three quantization approaches (PostTrainingDynamic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 Here is how to run the scripts:
 
@@ -22,30 +22,30 @@ python run_clm.py \
 **Masked Language modeling (MLM)**
 
 ```
-python run_mlm.py \     
-    --model_name_or_path bert-base-uncased \  
-    --dataset_name wikitext \     
-    --dataset_config_name wikitext-2-raw-v1 \     
-    --tune \    
-    --quantization_approach PostTrainingStatic \          
-    --do_train \     
-    --do_eval \     
-    --output_dir ./tmp/mlm_output \ 
+python run_mlm.py \
+    --model_name_or_path bert-base-uncased \
+    --dataset_name wikitext \
+    --dataset_config_name wikitext-2-raw-v1 \
+    --tune \
+    --quantization_approach PostTrainingStatic \
+    --do_train \
+    --do_eval \
+    --output_dir ./tmp/mlm_output \
     --overwrite_output_dir
 ```
 
 **Permutation Language modeling (PLM)**
 
 ```
-    python run_plm.py     
-    --model_name_or_path xlnet-base-cased  
-    --dataset_name wikitext     
-    --dataset_config_name wikitext-2-raw-v1     
-    --tune    
-    --quantization_approach PostTrainingStatic          
-    --do_train     
-    --do_eval     
-    --output_dir ./tmp/plm_output
+    python run_plm.py \
+    --model_name_or_path xlnet-base-cased \
+    --dataset_name wikitext \
+    --dataset_config_name wikitext-2-raw-v1 \
+    --tune \
+    --quantization_approach PostTrainingStatic \
+    --do_train \
+    --do_eval \
+    --output_dir ./tmp/plm_output \
     --overwrite_output_dir
 
 ```

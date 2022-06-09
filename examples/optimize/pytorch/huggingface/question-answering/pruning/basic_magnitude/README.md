@@ -3,7 +3,7 @@
 The script `run_qa.py` provides the pruning approach (Magnitude) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
 Here is how to run the script:
- 
+
 ```
 python run_qa.py \
     --model_name_or_path distilbert-base-uncased-distilled-squad \

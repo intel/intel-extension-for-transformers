@@ -10,7 +10,7 @@ the pattern lock pruning, distillation and quantization aware training are perfo
 
 
 The following example fine-tunes DistilBERT model of 90% sparsity on the sst-2 task through applying quantization aware-training, pattern lock pruning and distillation simultaneously.
- 
+
 ```
 python run_glue.py \
     --model_name_or_path Intel/distilbert-base-uncased-sparse-90-unstructured-pruneofa \
@@ -19,7 +19,7 @@ python run_glue.py \
     --quantization_approach QuantizationAwareTraining \
     --do_train \
     --do_eval \
-    --orchestrate_optimization \ 
+    --orchestrate_optimization \
     --output_dir ./saved_result  \
     --overwrite_output_dir 
 ```

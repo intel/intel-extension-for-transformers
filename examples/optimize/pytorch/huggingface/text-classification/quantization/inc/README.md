@@ -8,26 +8,26 @@ GLUE is made up of a total of 9 different tasks. Here is how to run the script o
  - To get int8 model
 
 ```
-python run_glue.py     
+python run_glue.py \
     --model_name_or_path distilbert-base-uncased-finetuned-sst-2-english \
-    --task_name sst2 \     
-    --tune \     
-    --quantization_approach PostTrainingStatic \     
-    --do_train \     
-    --do_eval \     
-    --output_dir ./saved_result \  
+    --task_name sst2 \
+    --tune \
+    --quantization_approach PostTrainingStatic \
+    --do_train \
+    --do_eval \
+    --output_dir ./saved_result \
     --overwrite_output_dir
 ```
  - To reload int8 model
 
 ```
-python run_glue.py     
+python run_glue.py \
     --model_name_or_path ./saved_result \
-    --task_name sst2 \     
+    --task_name sst2 \
     --benchmark \
     --int8 \
-    --do_eval \     
-    --output_dir ./tmp/sst2_output \  
+    --do_eval \
+    --output_dir ./tmp/sst2_output \
     --overwrite_output_dir
 ```
 
