@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include <chrono>
+#include <algorithm>
 
 namespace jd{
 using dt = jd::data_type;
@@ -156,10 +157,14 @@ void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& 
 double calc_flop_sparse_matmul(const std::vector<tensor_desc>& ts_descs){
   const auto& src0_desc = ts_descs[ssd::WEI];
   const auto& src1_desc = ts_descs[ssd::SRC];
-  const int M = src0_desc.shape()[0];
-  const int K = src0_desc.shape()[1];
-  const int N = src1_desc.shape()[1];
-  return (double)M * N * K * 2;
+  const int oc = src0_desc.shape()[0];
+  const int ic = src0_desc.shape()[1];
+  if (std::find(src1_desc.shape().begin(), src1_desc.shape().end(), ic) == src1_desc.shape().end()){
+    printf("ic is not found in SRC shape!\n");
+    return 0.0;
+  }
+  const int other_dim = std::accumulate(src1_desc.shape().begin(), src1_desc.shape().end(), 1, std::multiplies<size_t>()) / ic;
+  return (double)oc * other_dim * ic * 2;
 }
 
 double calc_flop_postop(const std::vector<tensor_desc>& ts_descs){
