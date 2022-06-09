@@ -117,7 +117,6 @@ bool check_result(const test_params_t& t) {
     const auto& op_desc = p.op_desc;
     postop_desc postop_desc(op_desc);
     postop postop_kern(postop_desc);
-    //postop_kern.execute(p.data);
     benchmarkOrExecute(&postop_kern, p.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
