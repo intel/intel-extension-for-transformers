@@ -58,7 +58,6 @@ class Executor(object):
                 )
         # compute metrics
         log.info("Compute metrics ......")
-        pdb.set_trace()
         accuracy_value = eval_metric.get("accuracy")
         log.info(f"Accuracy: {accuracy_value}")
 
