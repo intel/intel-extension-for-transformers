@@ -74,6 +74,52 @@ class TokenTypeEmbeddingsV1(Pattern):
                     },
                     'returns': [16]
                 },
+                # roberta_base int8
+                {
+                    'patterns': {
+                        'in': [[(0, 'Shape'), (2, 'Gather'), (3, 'Unsqueeze'), (7, 'Concat'),
+                                (8, 'Reshape'), (10, 'Where'), (11, 'Expand'), (12, 'Gather')],
+                                [(0, 'Shape'), (1, 'Gather'), (6, 'Unsqueeze'), (7, 'Concat')],
+                                [(2, 'Gather'), (4, 'Unsqueeze'), (5, 'Slice'), (11, 'Expand')],
+                                [(8, 'Reshape'), (9, 'Equal'), 
+                                (10, 'Where')]],
+                        'out': [[(0, 'TokenTypeIds'), (1, 'Reshape'),
+                                 (2, 'Gather'), (3, 'Reshape'), (4, 'Reshape')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 'token_type_embeddings/Expand_21',
+                        1: 'token_type_embeddings/reshape',
+                        2: 12,
+                        3: 'token_type_embeddings/after/reshape',
+                        4: 'token_type_embeddings/add_reshape',
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            'input_data': [0]
+                        }, {5: [0]}], [[0, 1], 2]],
+                        1: [[], [[], 1]],
+                        2: [[{
+                            12: [0]
+                        }], [[1], 2]],
+                        3: [[{
+                            'input_data': [0]
+                        }], [[1], 2]],
+                        4: [[{
+                            'input_data': [0]
+                        }], [[1], 2]],
+                    },
+                    'output_tensors': {
+                        0: [[], [[], 1]],
+                        1: [[], [[], 1]],
+                        2: [[], [[], 1]],
+                        3: [[], [[], 1]],
+                        4: [[{
+                            12: [0]
+                        }], [[0], 1]],
+                    },
+                    'returns': [12]
+                },
             ]
         }
 
@@ -110,21 +156,19 @@ class TokenTypeEmbeddingsV1(Pattern):
 
             reshape_2_node_idx = model.get_node_id(node_names[4])
             model.nodes[reshape_2_node_idx].attr = attr4
-
         
         # roberta_base
-        pattern_dict = pattern_mapping_config['TokenTypeEmbeddingsV1'][0]
-        model, new_node_names, ret_old_nodes = \
-            util.pattern_mapping('TokenTypeEmbeddingsV1', pattern_dict, model)
-        if len(new_node_names) != 0:
-            for i in range(len(new_node_names)):
-                gatherv2_node = ret_old_nodes[i][0]
-                hidden_size = int(gatherv2_node.input_tensors[0].shape[-1])
-                axis = gatherv2_node.attr['axis']
-                batch_dims = gatherv2_node.attr['batch_dims']
-                _set_attr(hidden_size, axis, batch_dims, new_node_names[i], model)
-            
-            return model
-        
+        for i in range(len(pattern_mapping_config['TokenTypeEmbeddingsV1'])):
+            pattern_dict = pattern_mapping_config['TokenTypeEmbeddingsV1'][i]
+            model, new_node_names, ret_old_nodes = \
+                util.pattern_mapping('TokenTypeEmbeddingsV1', pattern_dict, model)
+            if len(new_node_names) != 0:
+                for i in range(len(new_node_names)):
+                    gatherv2_node = ret_old_nodes[i][0]
+                    hidden_size = int(gatherv2_node.input_tensors[0].shape[-1])
+                    axis = gatherv2_node.attr['axis']
+                    batch_dims = gatherv2_node.attr['batch_dims']
+                    _set_attr(hidden_size, axis, batch_dims, new_node_names[i], model)
+
         
         return model

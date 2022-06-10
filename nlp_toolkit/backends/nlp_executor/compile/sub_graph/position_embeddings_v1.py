@@ -68,6 +68,48 @@ class PositionEmbeddingsV1(Pattern):
                     },
                     'returns': [8]
                 },
+                # roberta_base int8
+                {
+                    'patterns': {
+                        'in': [[(0, 'Equal'), (1, 'Not'), (2, 'Cast'), (3, 'CumSum'), 
+                                 (4, 'Mul'), (5, 'Cast'), (6, 'Add'), (7, 'Gather')]],
+                        'out': [[(0, 'PositionIds'), (1, 'Reshape'),
+                                 (2, 'Gather'), (3, 'Reshape'), (4, 'Reshape')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 'position_embeddings/Add_40',
+                        1: 'position_embeddings/reshape',
+                        2: 7,
+                        3: 'position_embeddings/after/reshape',
+                        4: 'position_embeddings/add_reshape',
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            'input_data': [0]
+                        }], [[0], 1]],
+                        1: [[], [[], 1]],
+                        2: [[{
+                            7: [0]
+                        }], [[1], 2]],
+                        3: [[{
+                            'input_data': [0]
+                        }], [[1], 2]],
+                        4: [[{
+                            'input_data': [0]
+                        }], [[1], 2]],
+                    },
+                    'output_tensors': {
+                        0: [[], [[], 1]],
+                        1: [[], [[], 1]],
+                        2: [[], [[], 1]],
+                        3: [[], [[], 1]],
+                        4: [[{
+                            7: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [7]
+                },
             ]
         }
 
@@ -103,17 +145,16 @@ class PositionEmbeddingsV1(Pattern):
                 model.nodes[reshape_2_node_idx].attr = attr4
 
         # bert_roberta_base
-        pattern_dict = pattern_mapping_config['PositionEmbeddingsV1'][0]
-        model, new_node_names, ret_old_nodes = \
-            util.pattern_mapping('PositionEmbeddingsV1', pattern_dict, model)
-        if len(new_node_names) != 0:
-            for i in range(len(new_node_names)):
-                gatherv2_node = ret_old_nodes[i][0]
-                hidden_size = int(gatherv2_node.input_tensors[0].shape[-1])
-                axis = gatherv2_node.attr['axis']
-                batch_dims = gatherv2_node.attr['batch_dims']
-                _set_attr(hidden_size, axis, batch_dims, new_node_names[i], model)
-                
-            return model
-        
+        for i in range(len(pattern_mapping_config['PositionEmbeddingsV1'])):
+            pattern_dict = pattern_mapping_config['PositionEmbeddingsV1'][i]
+            model, new_node_names, ret_old_nodes = \
+                util.pattern_mapping('PositionEmbeddingsV1', pattern_dict, model)
+            if len(new_node_names) != 0:
+                for i in range(len(new_node_names)):
+                    gatherv2_node = ret_old_nodes[i][0]
+                    hidden_size = int(gatherv2_node.input_tensors[0].shape[-1])
+                    axis = gatherv2_node.attr['axis']
+                    batch_dims = gatherv2_node.attr['batch_dims']
+                    _set_attr(hidden_size, axis, batch_dims, new_node_names[i], model)
+
         return model

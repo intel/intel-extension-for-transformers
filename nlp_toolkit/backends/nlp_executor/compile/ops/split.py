@@ -28,5 +28,9 @@ class Split(Operator):
         if framework == 'onnxruntime':
             axis = node.attribute[0].i
             self._attr['axis'] = axis
-            split = node.attribute[1].ints
-            self._attr['split'] = list2str(split)
+            if len(node.attribute) > 1:
+                split = node.attribute[1].ints
+                self._attr['split'] = list2str(split)
+            else:
+                split = node.attribute[0].i
+                self._attr['split'] = list2str([split])

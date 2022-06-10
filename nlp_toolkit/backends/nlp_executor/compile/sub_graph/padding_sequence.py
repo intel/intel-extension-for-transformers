@@ -24,6 +24,7 @@ from ..ops.tensor import Tensor
 
 @pattern_registry(pattern_type='PaddingSequence')
 class PaddingSequence(Pattern):
+
     def __call__(self, model):
 
         pattern_mapping_config = {
@@ -114,10 +115,9 @@ class PaddingSequence(Pattern):
                 {
                     'patterns': {
                         'in': [[(1, 'Unsqueeze'), (3, 'Concat'), (4, 'Reshape'), (6, 'Expand'),
-                                (7, 'Cast'), (8, 'Where')],
-                                [(), (2, 'Unsqueeze'), (3, 'Concat')],
-                                [(), (5, 'Shape'), (6, 'Expand')],
-                                [(), (0, 'Equal'), (4, 'Reshape')]],
+                                (7, 'Cast'), (8, 'Where')], [(), (2, 'Unsqueeze'), (3, 'Concat')],
+                               [(), (5, 'Shape'), (6, 'Expand')], [(), (0, 'Equal'),
+                                                                   (4, 'Reshape')]],
                         'out': [[(0, 'AddV2')]]
                     },
                     'search_mode': 'op_type',
@@ -137,6 +137,34 @@ class PaddingSequence(Pattern):
                         }], [[0], 1]]
                     },
                     'returns': [2]
+                },
+
+                # distil_bert_base_int8
+                {
+                    'patterns': {
+                        'in': [[(0, 'Unsqueeze'), (1, 'Concat'), (2, 'Reshape'), (3, 'Expand'),
+                                (4, 'Where')], [(), (5, 'Unsqueeze'), (1, 'Concat')],
+                               [(), (6, 'Shape'), (3, 'Expand')], [(), (7, 'Equal'),
+                                                                   (2, 'Reshape')]],
+                        'out': [[(0, 'AddV2')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 4
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            6: [0]
+                        }, {
+                            'padding_sequence': [0]
+                        }], [[0, 1], 2]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            4: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [5]
                 },
             ]
         }
@@ -171,10 +199,10 @@ class PaddingSequence(Pattern):
 
         def get_hidden_size(model, p=None, mat_idx=0):
             if p == None:
-                p = [[(0, 'MatMul'), (1, ['Add', 'AddV2']), (2, ['Add', 'AddV2']), 
-                        (3, 'LayerNorm')]]
+                p = [[(0, 'MatMul'), (1, ['Add', 'AddV2']), (2, ['Add', 'AddV2']),
+                      (3, 'LayerNorm')]]
             match_result = util.search_pattern(p, model)
-            if len(match_result)!=0:
+            if len(match_result) != 0:
                 mat_node = model.get_node_by_name(match_result[0][mat_idx])
                 hidden_size = int(mat_node.input_tensors[1].shape[-1])
             else:
@@ -192,7 +220,7 @@ class PaddingSequence(Pattern):
 
         pattern_dict = pattern_mapping_config['PaddingSequence'][1]
         model = _make_padding_sequence_node(2, 768, model)
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("PaddingSequence", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("PaddingSequence",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             return model
@@ -206,17 +234,17 @@ class PaddingSequence(Pattern):
         else:
             model = _make_padding_sequence_node(1, hidden_size, model)
         model, new_node_names, ret_old_nodes = util.pattern_mapping("PaddingSequence",
-                                                                     pattern_dict, model)
+                                                                    pattern_dict, model)
 
         if len(new_node_names) != 0:
-            assert hidden_size!=-1, "Wrong hidden size in padding_sequence!"
+            assert hidden_size != -1, "Wrong hidden size in padding_sequence!"
             return model
         else:
             model.remove_nodes(['padding_sequence'])
 
         pattern_dict = pattern_mapping_config['PaddingSequence'][3]
         model = _make_padding_sequence_node(1, 768, model)
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("PaddingSequence", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("PaddingSequence",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             # remove shape+gather in distil_bert_base
@@ -225,6 +253,19 @@ class PaddingSequence(Pattern):
                 gather_node = model.get_node_by_name(gather_node_name)
                 shape_node_name = gather_node.input_tensors[0].source_op[0]
                 model.remove_nodes([gather_node_name, shape_node_name])
+            return model
+        else:
+            model.remove_nodes(['padding_sequence'])
+
+        pattern_dict = pattern_mapping_config['PaddingSequence'][4]
+        model = _make_padding_sequence_node(1, 768, model)
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("PaddingSequence",
+                                                                    pattern_dict, model)
+        if len(new_node_names) != 0:
+            # remove gather in distil_bert_base
+            for i in range(len(ret_old_nodes)):
+                gather_node_name = ret_old_nodes[i][0].input_tensors[0].source_op[0]
+                model.remove_nodes([gather_node_name])
             return model
         else:
             model.remove_nodes(['padding_sequence'])
