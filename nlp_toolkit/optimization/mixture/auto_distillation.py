@@ -21,7 +21,6 @@ import random
 import shutil
 
 from functools import partial
-from multiprocessing import managers, Process
 from neural_compressor.conf.config import Conf, schema
 from neural_compressor.conf.dotdict import DotDict
 from neural_compressor.experimental import Distillation
@@ -29,7 +28,6 @@ from neural_compressor.strategy.bayesian import BayesianOptimization
 from neural_compressor.utils import logger
 from nlp_toolkit.optimization.config import AutoDistillationConfig
 from nlp_toolkit.optimization.utils.utility import LazyImport
-from queue import Queue
 
 torch = LazyImport("torch")
 
@@ -41,13 +39,6 @@ logger.info = partial(distributed_log_wrapper, logger.info)
 logger.warning = partial(distributed_log_wrapper, logger.info)
 logger.debug = partial(distributed_log_wrapper, logger.info)
 
-QUEUE = Queue()
-
-class QueueManager(managers.BaseManager):
-    def get_queue(self): return QUEUE # for pylint error only
-
-# needed for sharing QUEUE between processes
-QueueManager.register('get_queue', callable=lambda:QUEUE)
 
 class AutoDistillation(object):
     """
@@ -55,12 +46,12 @@ class AutoDistillation(object):
     Args:
         model_builder (function obj): A function to build model instance with the specified 
             model architecture parameters.
-        conf_fname_or_dict (string or obj): The path to the YAML configuration file or
-            a configuration dict containing search setting, flash distillation settings, etc.
+        conf_fname_or_obj (string or obj): The path to the YAML configuration file or
+            a configuration object containing search setting, flash distillation settings, etc.
 
     """
 
-    def __init__(self, model_builder, conf_fname_or_dict):
+    def __init__(self, model_builder, conf_fname_or_obj):
         self.search_space = {}
         self.model_builder = model_builder
         self._advisor = None
@@ -69,7 +60,7 @@ class AutoDistillation(object):
         self.search_results = {}
         self.best_model_archs = None
         self.seed = None
-        self.init_by_cfg(conf_fname_or_dict)
+        self.init_by_cfg(conf_fname_or_obj)
 
     def model_arch_proposition(self):
         """Propose architecture of the model based on search algorithm for next search iteration.
@@ -90,16 +81,11 @@ class AutoDistillation(object):
             Best model architecture found in search process.
         """
         if res_save_path is None or not os.path.isdir(res_save_path):
-            res_save_path = os.path.expanduser('~')
+            res_save_path = os.getcwd()
         save_path = os.path.join(res_save_path, 'AutoDistillationResults')
         self.model_paras_num = {}
         self.load_search_results(save_path)
         os.makedirs(save_path, exist_ok=True)
-        if torch.distributed.is_initialized() and torch.distributed.get_rank() == 0:
-            manager = QueueManager(address=('127.0.0.1', 50000), authkey=b'autodistillation')
-            server = manager.get_server()
-            server_process = Process(target=server.serve_forever)
-            server_process.start()
 
         for i in range(self.max_trials):
             logger.info(
@@ -111,22 +97,12 @@ class AutoDistillation(object):
                 model_arch_paras = self.model_arch_proposition()
                 logger.info("Model architecture {} proposed.".format(model_arch_paras))
             if torch.distributed.is_initialized():
-                if torch.distributed.get_rank() != 0:
-                    torch.distributed.barrier()
-                manager = QueueManager(address=('127.0.0.1', 50000), authkey=b'autodistillation')
-                manager.connect()
-                queue = manager.get_queue()
-                logger.info('Got Queue')
-                if torch.distributed.get_rank() != 0:
-                    model_arch_paras = queue.get()
-                    logger.info("Got model architecture {}.".format(model_arch_paras))
-                else:
-                    for _ in range(torch.distributed.get_world_size() - 1):
-                        queue.put(model_arch_paras)
-                    logger.info('Put model_arch_paras to Queue, wait for other worker.')
-                    torch.distributed.barrier()
+                model_arch_paras_sync = [model_arch_paras] \
+                    if torch.distributed.get_rank() == 0 else [None]
+                torch.distributed.broadcast_object_list(model_arch_paras_sync, src=0)
+                model_arch_paras = model_arch_paras_sync[0]
             model = self.model_builder(model_arch_paras)
-            model_paras = sum(p.numel() for p in model.parameters())
+            model_paras = self.count_model_parameters(model)
             logger.info(
                 "***** Number of model parameters: {:.2f}M *****".format(model_paras / 10**6)
             )
@@ -141,7 +117,7 @@ class AutoDistillation(object):
                 metrics = self.resumed_search_results[tuple(model_arch_paras.values())]
             else:
                 logger.info("Assessing model architecture: {}.".format(model_arch_paras))
-                metrics = self.performance_estimation(model)
+                metrics = self.estimate(model)
             logger.info(
                 "Metrics of model architecture {} is {}.".format(model_arch_paras, metrics)
             )
@@ -157,13 +133,9 @@ class AutoDistillation(object):
                 if model_arch_vec not in self.search_results:
                     self.search_results[model_arch_vec] = \
                         self.resumed_search_results[model_arch_vec]
+                    model = self.model_builder(self.params_vec2params_dict(model_arch_vec))
+                    self.model_paras_num[model_arch_vec] = self.count_model_parameters(model)
             self.dump_search_results(os.path.join(save_path, 'Final_results.txt'.format(i+1)))
-        if torch.distributed.is_initialized():
-            if torch.distributed.get_rank() == 0:
-                torch.distributed.barrier()
-                server_process.terminate()
-            else:
-                torch.distributed.barrier()
         self.find_best_model_archs()
         logger.info(
             "{fix} Found {n} best model architectures {fix}".format(
@@ -174,7 +146,7 @@ class AutoDistillation(object):
             logger.info("Best model architecture {}: {}".format(i+1, model_arch))
         return self.best_model_archs
 
-    def performance_estimation(self, model):
+    def estimate(self, model):
         """Train and evaluate the model.
 
         Returns:
@@ -184,6 +156,12 @@ class AutoDistillation(object):
             "train_func and eval_func must be set."
         model = self._train_func(model)
         return self._eval_func(model)
+
+    def count_model_parameters(self, model):
+        if isinstance(model, torch.nn.Module):
+            return sum(p.numel() for p in model.parameters())
+        else: # pragma: no cover
+            raise NotImplementedError("Only support torch model now.")
 
     def load_search_results(self, path):
         self.resumed_search_results = {}
@@ -253,24 +231,18 @@ class AutoDistillation(object):
             for metric, higher_is_better in zip(metrics, self.higher_is_better)]
         return converted_metrics
 
-    def init_by_cfg(self, conf_fname_or_dict):
-        if isinstance(conf_fname_or_dict, str):
-            if os.path.isfile(conf_fname_or_dict):
-                self.config = Conf(conf_fname_or_dict).usr_cfg
+    def init_by_cfg(self, conf_fname_or_obj):
+        if isinstance(conf_fname_or_obj, str): # pragma: no cover
+            if os.path.isfile(conf_fname_or_obj):
+                self.config = Conf(conf_fname_or_obj).usr_cfg
             else:
                 raise FileNotFoundError(
-                    "{} is not a file, please provide a file path.".format(conf_fname_or_dict)
+                    "{} is not a file, please provide a file path.".format(conf_fname_or_obj)
                 )
-        elif isinstance(conf_fname_or_dict, AutoDistillationConfig):
-            self.config = conf_fname_or_dict.config
+        elif isinstance(conf_fname_or_obj, AutoDistillationConfig):
+            self.config = conf_fname_or_obj.config
             schema.validate(self.config)
-        elif isinstance(conf_fname_or_dict, dict):
-            config = {}
-            config['model'] = {'name': 'AutoDistillation', 'framework': 'NA'}
-            config['auto_distillation'] = conf_fname_or_dict
-            self.config = DotDict(config)
-            schema.validate(self.config)
-        else:
+        else: # pragma: no cover
             raise NotImplementedError(
                 "Please provide a str path to config file or a config dict."
             )
@@ -305,7 +277,7 @@ class AutoDistillation(object):
             self.advisor = RandomSearcher(self.search_space, self.seed)
         elif self.search_algorithm.lower() == 'bo':
             self.advisor = BayesianOptimizationSearcher(self.search_space, self.seed)
-        else:
+        else: # pragma: no cover
             raise NotImplementedError(
                 'Unsupported \'{}\' search algorithm'.format(self.search_algorithm)
             )
@@ -405,7 +377,7 @@ class AutoDistillation(object):
     def eval_func(self, eval_func):
         self._eval_func = eval_func
     
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover
         return 'AutoDistillation'
 
 def create_search_space_pool(search_space, idx=0):
@@ -429,7 +401,7 @@ class Searcher(object):
             assert isinstance(self.search_space[k], (list, tuple)), \
                 "Value of key \'{}\' must be a list or tuple to specify choices".format(k)
 
-    def suggestion(self):
+    def suggestion(self): # pragma: no cover
         raise NotImplementedError('Depends on specific search algorithm.')
 
     def feedback(self, metric):
@@ -483,7 +455,7 @@ class BayesianOptimizationSearcher(Searcher):
             "to get parameters and the input metric is corresponding to this parameters."
         try:
             self.bo_agent._space.register(self.last_param_indices, metric)
-        except KeyError:
+        except KeyError: # pragma: no cover
             logger.debug("Find registered params, skip it.")
             pass
         self.last_param_indices = None
@@ -492,7 +464,7 @@ class BayesianOptimizationSearcher(Searcher):
         res = []
         for key, ind in indices.items():
             # keep ind within the index range of self.search_space[key]
-            ind = min(max(round(ind), 0), len(self.search_space[key])-1)
+            ind = int(min(max(round(ind), 0), len(self.search_space[key])-1))
             res.append(self.search_space[key][ind])
         return res
 

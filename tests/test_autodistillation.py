@@ -1,5 +1,6 @@
 import os
 import shutil
+import torch
 import torch.utils.data as data
 import unittest
 from nlp_toolkit import (
@@ -10,10 +11,61 @@ from nlp_toolkit import (
 from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
     AutoModelForPreTraining,
-    AutoTokenizer
+    AutoTokenizer,
+    TrainingArguments,
 )
 
 os.environ["WANDB_DISABLED"] = "true"
+
+
+def main_worker(rank, world_size, model, teacher_model, dataset):
+    print(rank, world_size)
+    torch.distributed.init_process_group(
+        "gloo", init_method='tcp://127.0.0.1:23456', world_size=world_size, rank=rank
+    )
+    training_args = TrainingArguments(
+        output_dir='tmp_trainer',
+        overwrite_output_dir=True,
+        no_cuda=True,
+        local_rank=rank
+    )
+    trainer = NLPTrainer(
+            model=model,
+            train_dataset=dataset,
+            eval_dataset=dataset,
+            args=training_args,
+    )
+    autodistillation_config = AutoDistillationConfig(
+        search_space={'hidden_size': [128, 256, 384, 512]},
+        search_algorithm='Grid',
+        metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)],
+        knowledge_transfer=FlashDistillationConfig(
+            block_names=['bert.encoder.layer.0'],
+            layer_mappings_for_knowledge_transfer=[
+                [
+                    (
+                        'bert.encoder.layer.0.output', 
+                        'bert.encoder.layer.0.output'
+                    )
+                ],
+            ],
+            train_steps=[3],
+            loss_types=[['MSE']],),
+        regular_distillation=FlashDistillationConfig(
+            layer_mappings_for_knowledge_transfer=[
+            [('cls', '0', 'cls', '0')]
+            ],
+            loss_types=[['KL']],
+            add_origin_loss=[True],
+            train_steps=[5]
+        ),
+    )
+    best_model_archs = trainer.autodistillation(
+        autodistillation_config,
+        teacher_model,
+        model_cls=AutoModelForPreTraining
+    )
+    assert len(best_model_archs) > 0, "Expected at least one best model archs."
 
 
 class DummyDataset(data.Dataset):
@@ -37,12 +89,8 @@ class DummyDataset(data.Dataset):
 class TestAutoDistillation(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.model = AutoModelForPreTraining.from_pretrained(
-            'google/mobilebert-uncased'
-        )
-        self.teacher_model = AutoModelForPreTraining.from_pretrained(
-            'bert-large-uncased'
-        )
+        self.model = AutoModelForPreTraining.from_pretrained('prajjwal1/bert-tiny')
+        self.teacher_model = AutoModelForPreTraining.from_pretrained('bert-base-uncased')
         self.dummy_dataset = DummyDataset()
         self.trainer = NLPTrainer(
             model=self.model,
@@ -54,34 +102,47 @@ class TestAutoDistillation(unittest.TestCase):
     def tearDownClass(self):
         shutil.rmtree('./tmp_trainer', ignore_errors=True)
 
-    def test_fx_model_distil(self):
-        autodistillation_config =\
-          AutoDistillationConfig(
-            search_space={'hidden_size': [128, 256]},
-            metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)],
-            knowledge_transfer=FlashDistillationConfig(
-              block_names=['mobilebert.encoder.layer.1'],
-              layer_mappings_for_knowledge_transfer=[
-                [('mobilebert.encoder.layer.1.output',
-                  'bert.encoder.layer.1.output')]
-                ],
-              train_steps=[3]),
-            regular_distillation=FlashDistillationConfig(
-              layer_mappings_for_knowledge_transfer=[
-                [('cls', '0', 'cls', '0')]
-                ],
-              loss_types=[['KL']],
-              add_origin_loss=[True],
-              train_steps=[5]
-          ),
+    def test_autodistillation(self):
+        for search_algorithm in ['BO', 'Grid', 'Random']:
+            max_trials = 6 if search_algorithm == 'Random' else 3
+            autodistillation_config = \
+              AutoDistillationConfig(
+                search_space={'hidden_size': [128, 256, 384, 512]},
+                search_algorithm=search_algorithm,
+                max_trials=max_trials,
+                metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)],
+                knowledge_transfer=FlashDistillationConfig(
+                    block_names=['bert.encoder.layer.0'],
+                    layer_mappings_for_knowledge_transfer=[
+                        [
+                            ('bert.encoder.layer.0.output', 'bert.encoder.layer.0.output')
+                        ],
+                    ],
+                    train_steps=[3],
+                    loss_types=[['MSE']],),
+                regular_distillation=FlashDistillationConfig(
+                    layer_mappings_for_knowledge_transfer=[
+                    [('cls', '0', 'cls', '0')]
+                    ],
+                    loss_types=[['KL']],
+                    add_origin_loss=[True],
+                    train_steps=[5]
+                ),
+            )
+            best_model_archs = self.trainer.autodistillation(
+                autodistillation_config,
+                self.teacher_model,
+                model_cls=AutoModelForPreTraining
+            )
+            # check best model architectures
+            self.assertTrue(len(best_model_archs) > 0)
+
+    def test_autodistillation_distributed(self):
+        ngpus_per_node = 2
+        torch.multiprocessing.spawn(
+            main_worker, nprocs=ngpus_per_node,
+            args=(ngpus_per_node, self.model, self.teacher_model, self.dummy_dataset)
         )
-        best_model_archs = self.trainer.autodistillation(
-            autodistillation_config,
-            self.teacher_model,
-            model_cls=AutoModelForPreTraining
-        )
-        # check best model architectures
-        self.assertTrue(len(best_model_archs) > 0)
 
 if __name__ == "__main__":
     unittest.main()
