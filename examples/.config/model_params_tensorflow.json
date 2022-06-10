@@ -1,7 +1,7 @@
 {
   "tensorflow": {
     "bert_base_mrpc_static": {
-      "model_src_dir": "optimize/tensorflow/huggingface/text-classification/quantization/inc/ptq",
+      "model_src_dir": "optimization/tensorflow/huggingface/text-classification/quantization/inc/ptq",
       "dataset_location": "",
       "input_model": "",
       "yaml": "",
