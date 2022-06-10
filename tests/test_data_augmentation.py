@@ -14,10 +14,12 @@ def build_fake_dataset(save_path):
     count = 10
     dataset = load_dataset('glue', 'sst2', split='validation')
     origin_data = os.path.join(save_path, split + '.csv')
+    print("original data:")
     with open(origin_data, 'w') as fw:
         fw.write('label' + '\t' + 'sentence' + '\n')
         for d in dataset:
             fw.write(str(d['label']) + '\t' + d['sentence'] + EOS + '\n')
+            print(str(d['label']) + '\t' + d['sentence'] + EOS + '\n')
             count -= 1
             if count == 0:
                 break
@@ -42,6 +44,10 @@ class TestDataAugmentation(unittest.TestCase):
         aug.augmenter_arguments = {'model_name_or_path': 'gpt2-medium'}
         aug.data_augment()
         raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", split="train")
+        print("Augmented data:")
+        with open(aug.output_path) as f:
+            for line in f:
+                print(line)
         self.assertTrue(len(raw_datasets) == 10)
 
     def test_keyboard_augmentation(self):
