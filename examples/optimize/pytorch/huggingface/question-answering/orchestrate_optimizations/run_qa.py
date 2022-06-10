@@ -29,10 +29,17 @@ from datasets import load_dataset, load_metric
 
 import functools
 import numpy as np
-import time
 import torch
 import transformers
-from nlp_toolkit import metrics, OptimizedModel, DistillationConfig
+from nlp_toolkit import (
+    metrics,
+    PrunerConfig,
+    PruningConfig,
+    DistillationConfig,
+    QuantizationConfig,
+    OptimizedModel,
+    objectives
+)
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -211,29 +218,66 @@ class OptimizationArguments:
     Arguments pertaining to what type of optimization we are going to apply on the model.
     """
 
-    distillation: bool = field(
+    prune: bool = field(
         default=False,
-        metadata={"help": "Whether or not to apply distillation."},
+        metadata={"help": "Whether or not to apply prune."},
     )
-    teacher_model_name_or_path: str = field(
-        default=False,
-        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
+    pruning_approach: Optional[str] = field(
+        default="BasicMagnitude",
+        metadata={"help": "Pruning approach. Supported approach is basic_magnite."},
     )
-    run_teacher_logits: bool = field(
-        default=False,
-        metadata={"help": "Whether or not to obtain teacher model's logits on train dataset before training."},
-        )
+    target_sparsity_ratio: Optional[float] = field(
+        default=None,
+        metadata={"help": "Targeted sparsity when pruning the model."},
+    )
     metric_name: Optional[str] = field(
-        default="eval_f1",
+        default=None,
         metadata={"help": "Metric used for the tuning strategy."},
     )
     tolerance_mode: Optional[str] = field(
         default="absolute",
         metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
     )
+    tune: bool = field(
+        default=False,
+        metadata={"help": "Whether or not to apply quantization."},
+    )
+    quantization_approach: Optional[str] = field(
+        default="QuantizationAwareTraining",
+        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
+                  "PostTrainingDynamic and QuantizationAwareTraining."},
+    )
+    metric_name: Optional[str] = field(
+        default="eval_f1",
+        metadata={"help": "Metric used for the tuning strategy."},
+    )
+    is_relative: Optional[bool] = field(
+        default=True,
+        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
+    )
     perf_tol: Optional[float] = field(
-        default=0.02,
+        default=0.01,
         metadata={"help": "Performance tolerance when optimizing the model."},
+    )
+    int8: bool = field(
+        default=False,
+        metadata={"help":"run benchmark."}
+    )
+    distillation: bool = field(
+        default=False,
+        metadata={"help": "Whether or not to apply distillation."},
+    )
+    teacher_model_name_or_path: str = field(
+        default=False,
+        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
+    )
+    run_teacher_logits: bool = field(
+        default=False,
+        metadata={"help": "Whether or not to obtain teacher model's logits on train dataset before training."},
+    )
+    orchestrate_optimizations: bool = field(
+        default=False,
+        metadata={"help":"for one shot."}
     )
     benchmark: bool = field(
         default=False,
@@ -612,107 +656,110 @@ def main():
     def compute_metrics(p: EvalPrediction):
         return metric.compute(predictions=p.predictions, references=p.label_ids)
 
-    if optim_args.distillation:
-        class QAModel_output_reshaped(torch.nn.Module):
-            def __init__(self, model):
-                super(QAModel_output_reshaped, self).__init__()
-                self.model = model
+    class QAModel_output_reshaped(torch.nn.Module):
+        def __init__(self, model):
+            super(QAModel_output_reshaped, self).__init__()
+            self.model = model
 
-            def forward(self, *args, **kwargs):
-                outputs = self.model(*args, **kwargs)
-                outputs_reshaped = torch.vstack([torch.vstack([sx, ex]) \
-                        for sx, ex in zip(outputs['start_logits'], outputs['end_logits'])])
-                return outputs_reshaped
+        def forward(self, *args, **kwargs):
+            outputs = self.model(*args, **kwargs)
+            outputs_reshaped = torch.vstack([torch.vstack([sx, ex]) \
+                    for sx, ex in zip(outputs['start_logits'], outputs['end_logits'])])
+            return outputs_reshaped
 
-        teacher_config = AutoConfig.from_pretrained(
-            optim_args.teacher_model_name_or_path,
-            use_auth_token=True if model_args.use_auth_token else None,
+    teacher_config = AutoConfig.from_pretrained(
+        optim_args.teacher_model_name_or_path,
+        use_auth_token=True if model_args.use_auth_token else None,
+    )
+    teacher_tokenizer = AutoTokenizer.from_pretrained(
+        optim_args.teacher_model_name_or_path,
+        use_fast=True,
+        use_auth_token=True if model_args.use_auth_token else None,
+    )
+    assert teacher_tokenizer.vocab == tokenizer.vocab, \
+            'teacher model and student model should have same tokenizer.'
+    teacher_model = AutoModelForQuestionAnswering.from_pretrained(
+        optim_args.teacher_model_name_or_path,
+        from_tf=bool(".ckpt" in model_args.model_name_or_path),
+        config=teacher_config,
+        use_auth_token=True if model_args.use_auth_token else None,
+    )
+    teacher_model.to(training_args.device)
+    
+    # Prepare datasets for teacher model
+    # Create train feature from dataset
+    with training_args.main_process_first(desc="train dataset map pre-processing"):
+        teacher_train_dataset = train_examples.map(
+            functools.partial(prepare_train_features, tokenizer=teacher_tokenizer),
+            batched=True,
+            num_proc=data_args.preprocessing_num_workers,
+            remove_columns=column_names,
+            load_from_cache_file=not data_args.overwrite_cache,
+            desc="Running tokenizer on train dataset",
         )
-        teacher_tokenizer = AutoTokenizer.from_pretrained(
-            optim_args.teacher_model_name_or_path,
-            use_fast=True,
-            use_auth_token=True if model_args.use_auth_token else None,
+    if data_args.max_train_samples is not None:
+        # Number of samples might increase during Feature Creation, We select only specified max samples
+        teacher_train_dataset = teacher_train_dataset.select(range(data_args.max_train_samples))
+
+    # Validation Feature Creation
+    with training_args.main_process_first(desc="validation dataset map pre-processing"):
+        teacher_eval_dataset = eval_examples.map(
+            functools.partial(prepare_validation_features, tokenizer=teacher_tokenizer),
+            batched=True,
+            num_proc=data_args.preprocessing_num_workers,
+            remove_columns=column_names,
+            load_from_cache_file=not data_args.overwrite_cache,
+            desc="Running tokenizer on validation dataset",
         )
-        assert teacher_tokenizer.vocab == tokenizer.vocab, \
-                'teacher model and student model should have same tokenizer.'
-        teacher_model = AutoModelForQuestionAnswering.from_pretrained(
-            optim_args.teacher_model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=teacher_config,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
-        teacher_model.to(training_args.device)
+    if data_args.max_eval_samples is not None:
+        # During Feature creation dataset samples might increase, we will select required samples again
+        teacher_eval_dataset = teacher_eval_dataset.select(range(data_args.max_eval_samples))
+
+    assert train_dataset.num_rows == teacher_train_dataset.num_rows and \
+        eval_dataset.num_rows == teacher_eval_dataset.num_rows, \
+        "Length of train or evaluation dataset of teacher doesnot match that of student."
         
-        # Prepare datasets for teacher model
-        # Create train feature from dataset
-        with training_args.main_process_first(desc="train dataset map pre-processing"):
-            teacher_train_dataset = train_examples.map(
-                functools.partial(prepare_train_features, tokenizer=teacher_tokenizer),
-                batched=True,
-                num_proc=data_args.preprocessing_num_workers,
-                remove_columns=column_names,
-                load_from_cache_file=not data_args.overwrite_cache,
-                desc="Running tokenizer on train dataset",
-            )
-        if data_args.max_train_samples is not None:
-            # Number of samples might increase during Feature Creation, We select only specified max samples
-            teacher_train_dataset = teacher_train_dataset.select(range(data_args.max_train_samples))
+    # get logits of teacher model
+    if optim_args.run_teacher_logits:
+        def dict_tensor_to_model_device(batch, model):
+            device = next(model.parameters()).device
+            for k in batch:
+                batch[k] = batch[k].to(device)
 
-        # Validation Feature Creation
-        with training_args.main_process_first(desc="validation dataset map pre-processing"):
-            teacher_eval_dataset = eval_examples.map(
-                functools.partial(prepare_validation_features, tokenizer=teacher_tokenizer),
-                batched=True,
-                num_proc=data_args.preprocessing_num_workers,
-                remove_columns=column_names,
-                load_from_cache_file=not data_args.overwrite_cache,
-                desc="Running tokenizer on validation dataset",
-            )
-        if data_args.max_eval_samples is not None:
-            # During Feature creation dataset samples might increase, we will select required samples again
-            teacher_eval_dataset = teacher_eval_dataset.select(range(data_args.max_eval_samples))
-
-        assert train_dataset.num_rows == teacher_train_dataset.num_rows and \
-            eval_dataset.num_rows == teacher_eval_dataset.num_rows, \
-            "Length of train or evaluation dataset of teacher doesnot match that of student."
+        assert data_args.pad_to_max_length, 'to run teacher logits must open pad_to_max_length due to padding issue'
+        def get_logits(teacher_model, train_dataset, teacher_train_dataset):
+            logger.info("***** Getting logits of teacher model *****")
+            logger.info(f"  Num examples = {len(train_dataset) }")
+            teacher_model.eval()
+            npy_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                '{}.{}.npy'.format(data_args.dataset_name, 
+                                optim_args.teacher_model_name_or_path.replace('/', '.')))
+            if os.path.exists(npy_file):
+                teacher_logits = [list(x) for x in np.load(npy_file, allow_pickle=True)]
+            else:
+                train_dataloader = DataLoader(teacher_train_dataset, 
+                                            collate_fn=data_collator, 
+                                            batch_size=training_args.per_device_eval_batch_size)
+                train_dataloader = tqdm(train_dataloader, desc="Evaluating")
+                teacher_logits = []
+                for step, batch in enumerate(train_dataloader):
+                    dict_tensor_to_model_device(batch, teacher_model)
+                    outputs = teacher_model(**batch).cpu().numpy()
+                    teacher_logits += [[s,e] for s,e in zip(outputs[0::2], outputs[1::2])]
+                np.save(npy_file, teacher_logits, allow_pickle=True)
+            return train_dataset.add_column('teacher_logits', teacher_logits[:data_args.max_train_samples])
+        with torch.no_grad():
+            train_dataset = get_logits(QAModel_output_reshaped(teacher_model), train_dataset, teacher_train_dataset)
             
-        # get logits of teacher model
-        if optim_args.run_teacher_logits:
-            def dict_tensor_to_model_device(batch, model):
-                device = next(model.parameters()).device
-                for k in batch:
-                    batch[k] = batch[k].to(device)
+    para_counter = lambda model:sum(p.numel() for p in model.parameters())
+    logger.info("***** Number of teacher model parameters: {:.2f}M *****".format(\
+                para_counter(teacher_model)/10**6))
+    logger.info("***** Number of student model parameters: {:.2f}M *****".format(\
+                para_counter(model)/10**6))
 
-            assert data_args.pad_to_max_length, 'to run teacher logits must open pad_to_max_length due to padding issue'
-            def get_logits(teacher_model, train_dataset, teacher_train_dataset):
-                logger.info("***** Getting logits of teacher model *****")
-                logger.info(f"  Num examples = {len(train_dataset) }")
-                teacher_model.eval()
-                npy_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                    '{}.{}.npy'.format(data_args.dataset_name, 
-                                    optim_args.teacher_model_name_or_path.replace('/', '.')))
-                if os.path.exists(npy_file):
-                    teacher_logits = [list(x) for x in np.load(npy_file, allow_pickle=True)]
-                else:
-                    train_dataloader = DataLoader(teacher_train_dataset, 
-                                                collate_fn=data_collator, 
-                                                batch_size=training_args.per_device_eval_batch_size)
-                    train_dataloader = tqdm(train_dataloader, desc="Evaluating")
-                    teacher_logits = []
-                    for step, batch in enumerate(train_dataloader):
-                        dict_tensor_to_model_device(batch, teacher_model)
-                        outputs = teacher_model(**batch).cpu().numpy()
-                        teacher_logits += [[s,e] for s,e in zip(outputs[0::2], outputs[1::2])]
-                    np.save(npy_file, teacher_logits, allow_pickle=True)
-                return train_dataset.add_column('teacher_logits', teacher_logits[:data_args.max_train_samples])
-            with torch.no_grad():
-                train_dataset = get_logits(QAModel_output_reshaped(teacher_model), train_dataset, teacher_train_dataset)
-                
-        para_counter = lambda model:sum(p.numel() for p in model.parameters())
-        logger.info("***** Number of teacher model parameters: {:.2f}M *****".format(\
-                    para_counter(teacher_model)/10**6))
-        logger.info("***** Number of student model parameters: {:.2f}M *****".format(\
-                    para_counter(model)/10**6))
+    # Trace model
+    from neural_compressor.adaptor.torch_utils.symbolic_trace import symbolic_trace
+    model = symbolic_trace(model, optim_args.quantization_approach=="QuantizationAwareTraining")
 
     # Initialize our Trainer
     trainer = QuestionAnsweringTrainer(
@@ -729,25 +776,33 @@ def main():
 
     metric_name = optim_args.metric_name
 
-    if optim_args.distillation:
+    if optim_args.orchestrate_optimizations:
 
-        if not training_args.do_eval:
-            raise ValueError("do_eval must be set to True for distillation.")
+        if not training_args.do_train:
+            raise ValueError("do_train must be set to True for pruning.")
 
-        tune_metric = metrics.Metric(name=metric_name)
-        distillation_conf = DistillationConfig(metrics=tune_metric)
-        model = trainer.distill(
-            distillation_config=distillation_conf, teacher_model=teacher_model
+        tune_metric = metrics.Metric(
+            name=metric_name, is_relative=optim_args.is_relative, criterion=optim_args.perf_tol
         )
-        trainer.save_model(training_args.output_dir)
+        prune_type = 'PatternLock' \
+            if optim_args.pruning_approach else optim_args.pruning_approach
+        target_sparsity_ratio = None \
+            if optim_args.target_sparsity_ratio else optim_args.target_sparsity_ratio
+        pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
+        pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
+        distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
+
+        objective = objectives.performance
+        quantization_conf = QuantizationConfig(
+            approach=optim_args.quantization_approach,
+            max_trials=600,
+            metrics=[tune_metric],
+            objectives=[objective]
+        )
+        conf_list = [pruning_conf, distillation_conf, quantization_conf]
+        model = trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=teacher_model)
 
     if optim_args.benchmark or optim_args.accuracy_only:
-
-        model = OptimizedModel.from_pretrained(
-            training_args.output_dir,
-        )
-        model.eval()
-        trainer.model = model
         start_time = timeit.default_timer()
         results = trainer.evaluate()
         evalTime = timeit.default_timer() - start_time

@@ -85,6 +85,7 @@ class BaseTrainer():
         self.fp32_model = None
         # This flag is set for the engine in the export_to_int8_onnx API.
         self.enable_executor = False
+        self.orchestrate_opt = False
 
     @property
     def resuming_checkpoint(self):
@@ -163,7 +164,8 @@ class BaseTrainer():
         self.model = model
         train_result = self.train(component=self.component, resume_from_checkpoint=self._resuming_checkpoint)
         metrics = train_result.metrics
-        self.save_model()  # Saves the tokenizer too for easy upload
+        if not self.orchestrate_opt:
+            self.save_model()  # Saves the tokenizer too for easy upload
         self.log_metrics("train", metrics)
         self.save_metrics("train", metrics)
         self.save_state()
@@ -427,16 +429,19 @@ class BaseTrainer():
         train_func: Optional[Callable] = None,
     ):
         from nlp_toolkit.optimization.optimizer import Orchestrate_optimizer
+        self.orchestrate_opt = True
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
         self._train_func = self.builtin_train_func if train_func is None else train_func
-
         components = self.create_optimizer_builtin(config_list, teacher_model)
-
         self.orchestrate_optimizer = Orchestrate_optimizer(self.model, components, \
                                      eval_func=self.eval_func, train_func=self.train_func)
         self.component = self.orchestrate_optimizer.scheduler.components[0]
         self.opt_model = self.orchestrate_optimizer.fit()
+        self._save_inc_int8(self.opt_model, self.args.output_dir)
 
+        logger.info(
+            "orchestrate_optimizations model and configure file have saved to {}".format(self.args.output_dir)
+        )
         return self.opt_model
 
     def create_optimizer_builtin(self, config_list, teacher_model=None):
@@ -445,7 +450,8 @@ class BaseTrainer():
             if isinstance(config, QuantizationConfig):
                 component = self.init_quantizer(config)
                 component.eval_func = self._eval_func
-                component.train_func = self._train_func
+                component.q_func = self._train_func
+                self.enable_inc_quant = True
             elif isinstance(config, PruningConfig):
                 component = self.init_pruner(config)
                 component.eval_func = self._eval_func

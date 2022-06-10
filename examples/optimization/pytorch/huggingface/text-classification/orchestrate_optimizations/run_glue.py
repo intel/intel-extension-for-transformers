@@ -609,6 +609,10 @@ def main():
     logger.info("***** Number of student model parameters: {:.2f}M *****".format(\
                 para_counter(model)/10**6))
 
+    # Trace model
+    from neural_compressor.adaptor.torch_utils.symbolic_trace import symbolic_trace
+    model = symbolic_trace(model, optim_args.quantization_approach=="QuantizationAwareTraining")
+
     # Initialize our Trainer
     trainer = NLPTrainer(
         model=model,
@@ -620,25 +624,6 @@ def main():
         data_collator=data_collator,
     )
 
-    eval_dataloader = trainer.get_eval_dataloader()
-    it = iter(eval_dataloader)
-    try:
-        input_names = next(it).keys()
-    except StopIteration:
-        input_names = None
-        logger.warning(
-            "Unable to determine the names of the inputs of the model to trace, input_names is set to None and "
-            "model.dummy_inputs().keys() will be used instead."
-        )
-
-    model = symbolic_trace(
-                model,
-                input_names=input_names,
-                batch_size=training_args.per_device_eval_batch_size,
-                sequence_length=max_seq_length,
-            )
-    trainer.model = model
-    resume_from_checkpoint = training_args.resume_from_checkpoint
     metric_name = (
         optim_args.metric_name
         if optim_args.metric_name is not None
@@ -667,7 +652,7 @@ def main():
         pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
         pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
         distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
-
+       
         objective = objectives.performance
         quantization_conf = QuantizationConfig(
             approach=optim_args.quantization_approach,
@@ -677,8 +662,6 @@ def main():
         )
         conf_list = [pruning_conf, distillation_conf, quantization_conf]
         model = trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=teacher_model)
-        trainer.save_model(training_args.output_dir)
-
 
     if optim_args.benchmark or optim_args.accuracy_only:
         # Load the model obtained after Intel Neural Compressor (INC) quantization

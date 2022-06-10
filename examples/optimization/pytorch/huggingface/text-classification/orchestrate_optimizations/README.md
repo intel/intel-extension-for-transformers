@@ -6,7 +6,6 @@ This document is used to list steps of introducing [Prune Once For All](https://
 
 the pattern lock pruning, distillation and quantization aware training are performed simultaneously on the fine tuned model from stage 1 to obtain the quantized model with the same sparsity pattern as the pre-trained sparse language model.
 
-> Note: torch <= 1.9.0+cpu,  4.12.0 <= transformers <= 4.16.0
 
 
 The following example fine-tunes DistilBERT model of 90% sparsity on the sst-2 task through applying quantization aware-training, pattern lock pruning and distillation simultaneously.
