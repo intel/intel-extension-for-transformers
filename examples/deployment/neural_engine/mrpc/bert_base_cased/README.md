@@ -25,7 +25,7 @@ python setup.py install
 ```
 Install package for examples
 ```shell
-cd <NLPToolkit_folder>/examples/deploy/nlp_executor/sst2/minilm_l6_h384_uncased
+cd <NLPToolkit_folder>/examples/deployment/neural_engine/mrpc/bert_base_cased
 pip install -r requirements.txt
 ```
 1.2 Install C++ environment (Optional)
@@ -48,7 +48,7 @@ export SHARED_INST_NUM=<inst_num>
 ### 2.1 Get dataset
 
 ```shell
-python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./data
+python prepare_dataset.py --dataset_name=glue --task_name=mrpc --output_dir=./data
 ```
 
 ### 2.2 Get model
@@ -56,11 +56,11 @@ Executor can parse Tensorflow/Pytorch/ONNX and IR model.
 Here are two examples to get ONNX model.
 You can get FP32 modol from optimize by setting precision=fp32 as follows:
 ```shell
-bash prepare_model.sh --input_model=philschmid/MiniLM-L6-H384-uncased-sst2   --task_name=sst2 --output_dir=./model_and_tokenizer --precision=fp32
+bash prepare_model.sh --input_model=bert-base-cased-finetuned-mrpc   --task_name=mrpc --output_dir=./model_and_tokenizer --precision=fp32
 ```
 And for better perfromance, you can also get a PTQ int8 model by setting precision=int8.
 ```shell
-bash prepare_model.sh --input_model=philschmid/MiniLM-L6-H384-uncased-sst2   --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
+bash prepare_model.sh --input_model=bert-base-cased-finetuned-mrpc   --task_name=mrpc --output_dir=./model_and_tokenizer --precision=int8
 ```
 
 ### Benchmark

@@ -22,7 +22,7 @@ from datasets import load_metric
 from transformers import EvalPrediction
 from utils_qa import postprocess_qa_predictions
 from executor_dataloader import DataLoader
-from examples.deploy.nlp_executor.common import (
+from examples.deployment.neural_engine.common import (
     log, 
     set_log_file,
     load_graph, 

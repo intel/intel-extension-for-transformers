@@ -25,7 +25,7 @@ python setup.py install
 ```
 Install package for examples
 ```shell
-cd <NLPToolkit_folder>/examples/deploy/nlp_executor/sst2/distilbert_base_uncased
+cd <NLPToolkit_folder>/examples/deployment/neural_engine/sst2/minilm_l6_h384_uncased
 pip install -r requirements.txt
 ```
 1.2 Install C++ environment (Optional)
@@ -56,11 +56,11 @@ Executor can parse Tensorflow/Pytorch/ONNX and IR model.
 Here are two examples to get ONNX model.
 You can get FP32 modol from optimize by setting precision=fp32 as follows:
 ```shell
-bash prepare_model.sh --input_model=distilbert-base-uncased-finetuned-sst-2-english  --task_name=sst2 --output_dir=./model_and_tokenizer --precision=fp32
+bash prepare_model.sh --input_model=philschmid/MiniLM-L6-H384-uncased-sst2   --task_name=sst2 --output_dir=./model_and_tokenizer --precision=fp32
 ```
 And for better perfromance, you can also get a PTQ int8 model by setting precision=int8.
 ```shell
-bash prepare_model.sh --input_model=distilbert-base-uncased-finetuned-sst-2-english  --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
+bash prepare_model.sh --input_model=philschmid/MiniLM-L6-H384-uncased-sst2   --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
 ```
 
 ### Benchmark

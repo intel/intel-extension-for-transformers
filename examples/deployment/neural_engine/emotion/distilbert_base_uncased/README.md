@@ -25,7 +25,7 @@ python setup.py install
 ```
 Install package for examples
 ```shell
-cd <NLPToolkit_folder>/examples/deploy/nlp_executor/squad/bert_large
+cd <NLPToolkit_folder>/examples/deployment/neural_engine/emotion/distilbert_base_uncased
 pip install -r requirements.txt
 ```
 1.2 Install C++ environment (Optional)
@@ -48,19 +48,19 @@ export SHARED_INST_NUM=<inst_num>
 ### 2.1 Get dataset
 
 ```shell
-python prepare_dataset.py --dataset_name=squad --output_dir=./data
+python prepare_dataset.py --dataset_name=emotion --task_name=None --output_dir=./data
 ```
 
 ### 2.2 Get model
-Executor can parse Tensorflow/Pytorch/ONNX and IR model.
+Executor can parse Tensorflow/Pytorch/ONNX and IR model.  
 Here are two examples to get ONNX model.
 You can get FP32 modol from optimize by setting precision=fp32 as follows:
 ```shell
-bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=fp32
+bash prepare_model.sh --input_model=bhadresh-savani/distilbert-base-uncased-emotion --task_name=emotion --output_dir=./model_and_tokenizer --precision=fp32
 ```
-And for better perfromance, you can also get a PTQ int8 model by setting tune.
+And for better perfromance, you can also get a PTQ int8 model by setting precision=int8.
 ```shell
-bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=int8
+bash prepare_model.sh --input_model=bhadresh-savani/distilbert-base-uncased-emotion --task_name=emotion --output_dir=./model_and_tokenizer --precision=int8
 ```
 
 ### Benchmark
@@ -68,30 +68,21 @@ bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetu
   2.1 accuracy  
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=1
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=4
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=1
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --mode=accuracy --data_dir=./data --batch_size=4
   ```
-  if you just want a quick start, you can run only a part of dataset, like this
-  ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
-  ```
-  or run shell
-  ```shell
-  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
-  ```
-  but the accuracy of quick start is unauthentic.
 
-  2.2 performance
+  2.2 performance  
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --seq_len=384
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --seq_len=384
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --mode=performance --batch_size=8 --seq_len=128
   ```
   or compile framwork model to IR using python API
   ```
@@ -108,5 +99,5 @@ bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetu
   export UNIFIED_BUFFER=1
   numactl -C 0-<cpu_cores-1> <NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/bin/nlp_executor
   --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
-  --seq_len=384 --config=./ir/conf.yaml --weight=./ir/model.bin
+  --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
   ```

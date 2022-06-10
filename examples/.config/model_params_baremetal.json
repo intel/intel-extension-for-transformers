@@ -1,7 +1,7 @@
 {
     "baremetal": {
       "bert_base_mrpc": {
-        "model_src_dir": "deploy/nlp_executor/mrpc/bert_base",
+        "model_src_dir": "deployment/neural_engine/mrpc/bert_base",
         "dataset_location": "/tf_dataset2/datasets/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_base_mrpc/bert_base_mrpc.pb",
         "yaml": "bert_static.yaml",
@@ -10,7 +10,7 @@
         "new_benchmark": true
       },
       "bert_large_squad": {
-        "model_src_dir": "deploy/nlp_executor/squad/bert_large",
+        "model_src_dir": "deployment/neural_engine/squad/bert_large",
         "dataset_location": "/tf_dataset2/models/deep-engine/bert_large",
         "input_model": "/tf_dataset2/models/deep-engine/bert_large/model.pb",
         "yaml": "bert_static.yaml",
@@ -19,7 +19,7 @@
         "new_benchmark": true
       },
       "distilbert_base_uncased_mrpc": {
-        "model_src_dir": "deploy/nlp_executor/mrpc/distilbert_base_uncased",
+        "model_src_dir": "deployment/neural_engine/mrpc/distilbert_base_uncased",
         "dataset_location": "/tf_dataset2/datasets/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/distilbert_base_uncased_mrpc/distilbert_base_uncased_mrpc.onnx",
         "yaml": "bert_static.yaml",
@@ -28,7 +28,7 @@
         "new_benchmark": true
       },
       "bert_base_sparse_mrpc": {
-        "model_src_dir": "deploy/nlp_executor/mrpc/bert_base_sparse",
+        "model_src_dir": "deployment/neural_engine/mrpc/bert_base_sparse",
         "dataset_location": "/tf_dataset2/datasets/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_base_sparse_mrpc/bert_base_sparse_mrpc.onnx",
         "yaml": "bert_static.yaml",
@@ -37,7 +37,7 @@
         "new_benchmark": true
       },
       "distilbert_base_uncased_sst2": {
-        "model_src_dir": "deploy/nlp_executor/sst2/distilbert_base_uncased",
+        "model_src_dir": "deployment/neural_engine/sst2/distilbert_base_uncased",
         "dataset_location": "/tf_dataset2/datasets/sst2_data",
         "input_model": "/tf_dataset2/models/deep-engine/distilbert_base_uncased_sst2/distilbert_base_uncased_sst2.onnx",
         "yaml": "bert_static.yaml",
@@ -46,7 +46,7 @@
         "new_benchmark": true
       },
       "finbert_financial_phrasebank": {
-        "model_src_dir": "deploy/nlp_executor/financial_phrasebank/finbert",
+        "model_src_dir": "deployment/neural_engine/financial_phrasebank/finbert",
         "dataset_location": "/tf_dataset2/datasets/financial_phrasebank_data",
         "input_model": "/tf_dataset2/models/deep-engine/finbert_financial_phrasebank/finbert_financial_phrasebank.onnx",
         "yaml": "bert_static.yaml",
@@ -55,7 +55,7 @@
         "new_benchmark": true
       },
       "distilroberta_base_wnli": {
-        "model_src_dir": "deploy/nlp_executor/wnli/distilroberta_base",
+        "model_src_dir": "deployment/neural_engine/wnli/distilroberta_base",
         "dataset_location": "/tf_dataset2/datasets/wnli_data",
         "input_model": "/tf_dataset2/models/deep-engine/distilroberta_base_wnli/distilroberta_base_wnli.onnx",
         "yaml": "bert_static.yaml",
@@ -64,7 +64,7 @@
         "new_benchmark": true
       },
       "paraphrase_xlm_r_multilingual_v1_stsb": {
-        "model_src_dir": "deploy/nlp_executor/stsb/paraphrase_xlm_r_multilingual_v1",
+        "model_src_dir": "deployment/neural_engine/stsb/paraphrase_xlm_r_multilingual_v1",
         "dataset_location": "/tf_dataset2/datasets/stsb_data",
         "input_model": "/tf_dataset2/models/deep-engine/paraphrase_xlm_r_multilingual_v1_stsb/paraphrase_xlm_r_multilingual_v1_stsb.onnx",
         "yaml": "bert_static.yaml",
@@ -73,7 +73,7 @@
         "new_benchmark": true
       },
       "roberta_base_mrpc": {
-        "model_src_dir": "deploy/nlp_executor/mrpc/roberta_base",
+        "model_src_dir": "deployment/neural_engine/mrpc/roberta_base",
         "dataset_location": "/tf_dataset2/models/deep-engine/roberta_base_mrpc/data",
         "input_model": "/tf_dataset2/models/deep-engine/roberta_base_mrpc/roberta_base_mrpc.onnx",
         "yaml": "bert_static.yaml",
@@ -82,7 +82,7 @@
         "new_benchmark": true
       },
       "distilbert_base_uncased_emotion": {
-        "model_src_dir": "deploy/nlp_executor/emotion/distilbert_base_uncased",
+        "model_src_dir": "deployment/neural_engine/emotion/distilbert_base_uncased",
         "dataset_location": "/tf_dataset2/datasets/emotion_data",
         "input_model": "/tf_dataset2/models/deep-engine/distilbert_base_uncased_emotion/distilbert_base_uncased_emotion.onnx",
         "yaml": "bert_static.yaml",
@@ -91,7 +91,7 @@
         "new_benchmark": true
       },
       "roberta_large_cola": {
-        "model_src_dir": "deploy/nlp_executor/cola/roberta_large",
+        "model_src_dir": "deployment/neural_engine/cola/roberta_large",
         "dataset_location": "/tf_dataset2/datasets/cola_data",
         "input_model": "/tf_dataset2/models/deep-engine/roberta_large_cola/roberta_large_cola.onnx",
         "yaml": "bert_static.yaml",
@@ -100,7 +100,7 @@
         "new_benchmark": true
       },
       "minilm_l6_h384_uncased_sst2": {
-        "model_src_dir": "deploy/nlp_executor/sst2/minilm_l6_h384_uncased",
+        "model_src_dir": "deployment/neural_engine/sst2/minilm_l6_h384_uncased",
         "dataset_location": "/tf_dataset2/datasets/sst2_data",
         "input_model": "/tf_dataset2/models/deep-engine/minilm_l6_h384_uncased_sst2/minilm_l6_h384_uncased_sst2.onnx",
         "yaml": "bert_static.yaml",
@@ -109,7 +109,7 @@
         "new_benchmark": true
       },
       "bert_base_cased_mrpc": {
-        "model_src_dir": "deploy/nlp_executor/mrpc/bert_base_cased",
+        "model_src_dir": "deployment/neural_engine/mrpc/bert_base_cased",
         "dataset_location": "/tf_dataset2/models/deep-engine/bert_base_cased_mrpc/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_base_cased_mrpc/bert_base_cased_mrpc.onnx",
         "yaml": "bert_static.yaml",
@@ -118,7 +118,7 @@
         "new_benchmark": true
       },
       "bert_base_nli_mean_tokens_stsb": {
-        "model_src_dir": "deploy/nlp_executor/stsb/bert_base_nli_mean_tokens",
+        "model_src_dir": "deployment/neural_engine/stsb/bert_base_nli_mean_tokens",
         "dataset_location": "/tf_dataset2/datasets/stsb_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_base_nli_mean_tokens_stsb/bert_base_nli_mean_tokens_stsb.onnx",
         "yaml": "bert_static.yaml",
@@ -127,7 +127,7 @@
         "new_benchmark": true
       },
       "bert_mini_mrpc": {
-        "model_src_dir": "deploy/nlp_executor/mrpc/bert_mini",
+        "model_src_dir": "deployment/neural_engine/mrpc/bert_mini",
         "dataset_location": "/tf_dataset2/datasets/mrpc_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_mini_mrpc/bert_mini_mrpc.onnx",
         "yaml": "bert_static.yaml",
@@ -136,7 +136,7 @@
         "new_benchmark": true
       },
       "bert_mini_sst2": {
-        "model_src_dir": "deploy/nlp_executor/sst2/bert_mini",
+        "model_src_dir": "deployment/neural_engine/sst2/bert_mini",
         "dataset_location": "/tf_dataset2/datasets/sst2_data",
         "input_model": "/tf_dataset2/models/deep-engine/bert_mini_sst2/bert_mini_sst2.onnx",
         "yaml": "bert_static.yaml",

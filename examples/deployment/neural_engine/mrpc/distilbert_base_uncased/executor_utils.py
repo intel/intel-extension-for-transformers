@@ -20,7 +20,7 @@ import numpy as np
 from tqdm import tqdm
 from datasets import load_metric
 from executor_dataloader import DataLoader
-from examples.deploy.nlp_executor.common import (
+from examples.deployment.neural_engine.common import (
     log, 
     set_log_file,
     load_graph, 

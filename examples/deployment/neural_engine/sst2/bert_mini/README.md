@@ -25,7 +25,7 @@ python setup.py install
 ```
 Install package for examples
 ```shell
-cd <NLPToolkit_folder>/examples/deploy/nlp_executor/sst2/bert_mini
+cd <NLPToolkit_folder>/examples/deployment/neural_engine/sst2/bert_mini
 pip install -r requirements.txt
 ```
 1.2 Install C++ environment (Optional)
