@@ -35,10 +35,6 @@ def distributed_log_wrapper(func, msg):
     if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
         func(msg)
 
-logger.info = partial(distributed_log_wrapper, logger.info)
-logger.warning = partial(distributed_log_wrapper, logger.info)
-logger.debug = partial(distributed_log_wrapper, logger.info)
-
 
 class AutoDistillation(object):
     """
