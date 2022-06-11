@@ -29,7 +29,7 @@ from common import (
     DummyDataLoader
 )
 
-class Executor(object):
+class Neural_Engine(object):
     def __init__(self, model_path, log_file):
         set_log_file(log, log_file)
         self.graph = load_graph(model_path)
@@ -47,7 +47,7 @@ class Executor(object):
         else:
             metric = load_metric("accuracy")
         # execute
-        log.info("Start executor ......")
+        log.info("Start engine ......")
         for idx in tqdm(range(len(dataset))):
             inputs = dataset[idx][0]
             labels = dataset[idx][1]
@@ -77,14 +77,14 @@ class Executor(object):
                                  dtypes=['int32', 'int32', 'int32'],
                                  iteration=iteration)
         # execute
-        log.info("Start executor ......")
+        log.info("Start engine ......")
         duration = []
         for idx in tqdm(range(len(dataset))):
             start_time = time.time()
             predictions = self.graph.inference(dataset[idx])
             end_time = time.time()
             duration.append(end_time - start_time)
-        log.info("End executor ......")
+        log.info("End engine ......")
         duration_w = duration[warm_up:]
         ave_latency = np.array(duration_w).mean() / batch_size
         p50_latency = np.percentile(duration_w, 50) / batch_size

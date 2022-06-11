@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import argparse
-from executor_utils import log, Executor
+from executor_utils import log, Neural_Engine
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -49,7 +49,7 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
-    executor = Executor(args.input_model, args.log_file)
+    executor = Neural_Engine(args.input_model, args.log_file)
     if args.mode == "accuracy":
         executor.accuracy(args.batch_size, args.max_eval_samples,
                           args.dataset_name, args.data_dir, args.tokenizer_dir)

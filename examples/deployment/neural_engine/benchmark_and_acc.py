@@ -1,4 +1,4 @@
-"""This script is for NLP Executor benchmaking."""
+"""This script is for NLP Neural_Engine benchmaking."""
 import os
 import subprocess
 import re

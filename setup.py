@@ -82,11 +82,11 @@ class build_ext(build_ext):
             os.chdir(str(build_temp))
             self.spawn([cmake_command, ext.sourcedir] + cmake_args)
             self.spawn(['make'] + build_args)
-            if os.path.exists('nlp_executor'):
-                shutil.copy('nlp_executor', executable_path)
+            if os.path.exists('neural_engine'):
+                shutil.copy('neural_engine', executable_path)
             os.chdir(str(cwd))
         else:
-            print("Executor is not support windows for now")
+            print("Neural Engine is not support windows for now")
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
@@ -135,7 +135,7 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/",
-        ext_modules=[CMakeExtension("executor_py", str(cwd) + '/nlp_toolkit/backends/nlp_executor/executor/')],
+        ext_modules=[CMakeExtension("neural_engine_py", str(cwd) + '/nlp_toolkit/backends/neural_engine/executor/')],
         packages = find_packages(),
         include_package_data = True,
         package_dir = {'':'.'},
@@ -147,7 +147,7 @@ if __name__ == '__main__':
             'build_ext': build_ext,
         },
         install_requires=['numpy', 'transformers>=4.12.0'],
-        scripts=['nlp_toolkit/backends/nlp_executor/bin/nlp_executor'],
+        scripts=['nlp_toolkit/backends/neural_engine/bin/neural_engine'],
         python_requires='>=3.6.0',
         classifiers=[
               'Intended Audience :: Science/Research',

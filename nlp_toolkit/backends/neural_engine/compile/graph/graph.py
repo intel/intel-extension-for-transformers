@@ -291,7 +291,7 @@ class Graph(object):
 
     # pybind engine executor
     def engine_init(self, net_info={}, weight_data=b""):
-        import executor_py as dp
+        import neural_engine_py as dp
         if not weight_data:
             weight_data = self.weight_data
         if not net_info:

@@ -19,25 +19,23 @@ conda install cmake
 ```
 Install NLPTookit from source code
 ```shell
-cd <NLPToolkit_folder>
+cd <NLP_Toolkit_folder>
 git submodule update --init --recursive
 python setup.py install
 ```
 Install package for examples
 ```shell
-cd <NLPToolkit_folder>/examples/deployment/neural_engine/sst2/bert_mini
+cd <NLP_Toolkit_folder>/examples/deployment/neural_engine/sst2/bert_mini
 pip install -r requirements.txt
 ```
-1.2 Install C++ environment (Optional)
-Install engine according to [nlp_executor](<NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/docs/executor.md)
-if need the performance in C++.
+1.2 Environment variables
 Preload libiomp5.so can improve the performance when bs=1.
 ```
 export LD_PRELOAD=<path_to_libiomp5.so>
 ```
 Preload libjemalloc.so can improve the performance when multi instance.
 ```
-export LD_PRELOAD=<NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/executor/third_party/jemalloc/lib/libjemalloc.so
+export LD_PRELOAD=<NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
 Using weight sharing can save memory and improve the performance when multi instance.
 ```
@@ -52,7 +50,7 @@ python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./da
 ```
 
 ### 2.2 Get model
-Executor can parse Tensorflow/Pytorch/ONNX and IR model.  
+Neural Engine can parse Tensorflow/Pytorch/ONNX and IR model.  
 Here are two examples to get ONNX model.
 You can get FP32 modol from optimize by setting precision=fp32 as follows:
 ```shell
@@ -86,7 +84,7 @@ bash prepare_model.sh --input_model=moshew/bert-mini-sst2-distilled  --task_name
   ```
   or compile framwork model to IR using python API
   ```
-  from nlp_toolkit.backends.nlp_executor.compile import compile
+  from nlp_toolkit.backends.neural_engine.compile import compile
   graph = compile('./model_and_tokenizer/int8-model.onnx')
   graph.save('./ir')
   ```
@@ -97,7 +95,7 @@ bash prepare_model.sh --input_model=moshew/bert-mini-sst2-distilled  --task_name
   export OMP_NUM_THREADS=<cpu_cores>
   export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
   export UNIFIED_BUFFER=1
-  numactl -C 0-<cpu_cores-1> <NLPToolkit_folder>/nlp_toolkit/backends/nlp_executor/bin/nlp_executor
+  numactl -C 0-<cpu_cores-1> <NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/bin/neural_engine
   --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
   --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
   ```

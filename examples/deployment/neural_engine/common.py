@@ -18,12 +18,12 @@
 import os
 import logging
 import numpy as np
-from nlp_toolkit.backends.nlp_executor.compile import compile
-from nlp_toolkit.backends.nlp_executor.compile.graph import Graph
+from nlp_toolkit.backends.neural_engine.compile import compile
+from nlp_toolkit.backends.neural_engine.compile.graph import Graph
 
 # set log
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("EXECUTOR-EXAMPLES")
+log = logging.getLogger("NEURAL-ENGINE--EXAMPLES")
 
 # set log file 
 def set_log_file(log, log_file):
