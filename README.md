@@ -1,18 +1,18 @@
-# NLP Toolkit：Optimization for Natural Language Processing (NLP) Models
-NLP Toolkit is a powerful toolkit for automatically applying model optimizations on Natural Language Processing Models. It leverages [Intel® Neural Compressor](https://intel.github.io/neural-compressor) to provide a variety of optimization methods: quantization, pruning, distillation and so on.
+# NLP Toolkit: Optimization for Natural Language Processing (NLP) Models
+NLP Toolkit is a powerful toolkit for automatically applying model optimizations on Natural Language Processing Models. It leverages [Intel® Neural Compressor](https://intel.github.io/neural-compressor) to provide a variety of model compression techniques: quantization, pruning, distillation and so on.
 
 ## What does NLP Toolkit offer?
 This toolkit allows developers to improve the productivity through ease-of-use model compression APIs by extending HuggingFace transformer APIs for deep learning models in NLP (Natural Language Processing) domain and accelerate the inference performance using compressed models.
 
 - Model Compression
 
-    |Framework          |Quantization |Pruning/Sparsity |Distillation |autodistillation |
+    |Framework          |Quantization |Pruning/Sparsity |Distillation |AutoDistillation |
     |-------------------|:-----------:|:---------------:|:-----------:|:--------------:|
     |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;        |
-    |TensorFlow         |&#10004;     |&#10004;         |$\times$     |$\times$        |
+    |TensorFlow         |&#10004;     |&#10004;         |Stay tuned :star:|Stay tuned :star:|
 
 - Data Augmentation for NLP Datasets
-- NLP Executor for Inference Acceleration
+- Neural Engine for Reference Deployment
 
 ## Getting Started
 ### Installation
@@ -96,8 +96,8 @@ raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", s
 
 Please refer to [data augmentation document](docs/data_augmentation.md) for more details.
 
-### NLP Executor
-NLP Executor is an inference executor for Natural Language Processing (NLP) models, providing the optimal performance by quantization and sparsity. The executor is a baremetal reference engine of NLP Toolkit and supports typical NLP models.
+### Neural Engine
+Neural Engine is one of reference deployments that NLP toolkit provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
 
 ```python
 from engine.compile import compile
@@ -107,5 +107,4 @@ inputs = ... # [input_ids, segment_ids, input_mask]
 model.inference(inputs)
 ```
 
-Please refer to [NLP executor document](docs/nlp_executor.md) for more details.
-
+Please refer to [Neural Engine](examples/deployment/) for more details.
