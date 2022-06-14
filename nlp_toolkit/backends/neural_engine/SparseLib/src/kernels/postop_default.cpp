@@ -16,9 +16,12 @@
 namespace jd {
 
 bool postop_default_kd_t::init() {
-  auto op_type = op_desc_.attrs();
-  if (op_type["post_op"] == "exp") {
+  auto op_desc = op_desc_.attrs();
+  auto op_type = op_desc["post_op"];
+  if (op_type == "exp") {
     params_.scheme = ssd::post_op_scheme::exp;
+  } else if (op_type == "gelu") {
+    params_.scheme = ssd::post_op_scheme::gelu;
   } else {
     return false;
   }
@@ -61,7 +64,7 @@ bool postop_default_k_t::execute(const std::vector<const void*>& rt_data) const 
   int remain_element = total_element - (nthr - 1) * element_num_each_th;
   const auto& jit_impl = jit_kers_;
   std::vector<ssd::postop_data_t> td(nthr);
-#pragma omp parallel for
+  #pragma omp parallel for
   for (int idx = 0; idx < nthr; idx++) {
     td[idx].src = (char*)rt_data[0] + idx * offset * element_num_each_th;
     td[idx].dst = (char*)rt_data[1] + idx * offset * element_num_each_th;
@@ -72,6 +75,7 @@ bool postop_default_k_t::execute(const std::vector<const void*>& rt_data) const 
     }
     (*jit_impl)(&(td[idx]));
   }
+  
   return true;
 }
 

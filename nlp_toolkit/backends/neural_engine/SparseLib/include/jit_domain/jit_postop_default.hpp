@@ -40,6 +40,8 @@ class jit_postop_default_t : public jit_generator {
   void assign_regs();
   void vector_compute(const Xbyak::Zmm& zmm_src);
   void exp_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void tanh_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void gelu_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void load_bf16_cvt_to_f32(Xbyak::Zmm reg_src, Xbyak::Reg64 src_addr, bool is_tail = false, size_t offset = 0);
   void cvt_f32_to_bf16_store(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst, bool is_tail = false, size_t offset = 0);
   void init_vcvtneps2bf16();
@@ -115,26 +117,36 @@ class jit_postop_default_t : public jit_generator {
   };
 
   enum key_t {
-    scale = 0,         // scale argument
-    alpha,             // alpha argument
-    beta,              // beta argument
-    zero,              // 0.f
-    half,              // 0.5f
-    one,               // 1.f  or  mask for exponent bits
-    two,               // 2.f
-    three,             // 3.f
-    six,               // 6.f
-    minus_one,         // -1.f  or  changes sign to opposite
-    minus_two,         // -2.f
-    minus_three,       // -3.f
-    ln2f,              // 0.69314718f
-    positive_mask,     // changes sign to positive
-    sign_mask,         // gets sign value
-    exponent_bias,     // (127 = 2^7 - 1), gets exponent bits
-    exp_log2ef,        // 1.44269502f - formula-based for approx
-    exp_ln_flt_max_f,  // logf(FLT_MAX) - max normal value
-    exp_ln_flt_min_f,  // logf(FLT_MIN) - min normal value
-    exp_pol,           // see correspondent table for float values
+    scale = 0,                            // scale argument
+    alpha,                                // alpha argument
+    beta,                                 // beta argument
+    zero,                                 // 0.f
+    half,                                 // 0.5f
+    one,                                  // 1.f  or  mask for exponent bits
+    two,                                  // 2.f
+    three,                                // 3.f
+    six,                                  // 6.f
+    minus_one,                            // -1.f  or  changes sign to opposite
+    minus_two,                            // -2.f
+    minus_three,                          // -3.f
+    ln2f,                                 // 0.69314718f
+    positive_mask,                        // changes sign to positive
+    sign_mask,                            // gets sign value
+    exponent_bias,                        // (127 = 2^7 - 1), gets exponent bits
+    exp_log2ef,                           // 1.44269502f - formula-based for approx
+    exp_ln_flt_max_f,                     // logf(FLT_MAX) - max normal value
+    exp_ln_flt_min_f,                     // logf(FLT_MIN) - min normal value
+    exp_pol,                              // see correspondent table for float values
+    gelu_tanh_fitting_const,              // 0.044715f
+    gelu_tanh_fitting_const_times_three,  // 0.134145f
+    gelu_tanh_sqrt_two_over_pi,           // sqrtf(2.f/pi) = 0.797884f
+    gelu_tanh_flt_max_x,
+    gelu_tanh_flt_min_x,
+    tanh_idx_bias,
+    tanh_idx_mask,
+    tanh_linear_ubound,
+    tanh_saturation_lbound,
+    tanh_pol_table,
     undef_key,
   };
 

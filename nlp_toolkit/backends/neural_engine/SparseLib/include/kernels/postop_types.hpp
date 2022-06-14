@@ -17,7 +17,7 @@
 
 namespace jd {
 namespace ssd {
-enum class post_op_scheme : uint8_t { exp };
+enum class post_op_scheme : uint8_t { exp, gelu };
 enum class data_type : uint8_t {
   bf16,
   fp32,

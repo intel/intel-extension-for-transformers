@@ -46,15 +46,13 @@ int get_data_width(jd::data_type dtype) {
   return data_width;
 }
 
-void assign_val(void* ptr, jd::data_type dtype, int val, int idx) {
+void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
   switch (dtype) {
     case jd::data_type::fp32:
       *((float*)ptr + idx) = val;
       break;
     case jd::data_type::bf16:
       *((unsigned short int*)ptr + idx) = fp32_2_bf16(val);
-      enum memo_mode { MALLOC, MEMSET };
-
       break;
     default:
       std::runtime_error(std::string("assign_val:unsupport this dtype."));
@@ -76,7 +74,6 @@ void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode)
   return ptr;
 }
 
-
 namespace jd {
 int num = 1;
 struct op_args_t {
@@ -97,13 +94,25 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
 
   float* src = (float*)rf_data[0];
   float* dst = (float*)rf_data[1];
+  auto attr = op_desc.attrs();
+  auto op_type = attr["post_op"];
   for (int i = 0; i < num; i++) {
-    if (src[i] > fmax) {
-      dst[i] = inf_float;
-    } else if (src[i] < fmin) {
-      dst[i] = 0;
-    } else {
-      dst[i] = expf(src[i]);
+    if (op_type == "exp") {
+      if (src[i] > fmax) {
+        dst[i] = inf_float;
+      } else if (src[i] < fmin) {
+        dst[i] = 0;
+      } else {
+        dst[i] = expf(src[i]);
+      }
+    }
+
+    if (op_type == "gelu") {
+      float x = src[i];
+      //an approximate fitting function of GELU(x)
+      //GELU(x)≈0.5x(1+tanh[(2/pi)^0.5)*(x+0.044715x^3)]
+      //for more details,pls refer this paper:https://arxiv.org/abs/1606.08415
+      dst[i] = 0.5 * x * (1 + tanhf32(0.797884 * (x + 0.0044715 * x * x * x)));
     }
   }
   return;
@@ -135,7 +144,7 @@ bool check_result(const test_params_t& t) {
     float err_rate;
     if (dtype == jd::data_type::fp32) {
       buf1 = const_cast<void*>(p.data[1]);
-      err_rate = 1e-2;
+      err_rate = 1e-1;
     } else if (dtype == jd::data_type::bf16) {
       buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
       auto bf16_buf1 = const_cast<void*>(p.data[1]);
@@ -146,8 +155,14 @@ bool check_result(const test_params_t& t) {
     }
 
     EXPECT_NE(buf1, buf2);
-    return compare_data<float>(buf1, num, buf2, num, err_rate);
+    auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
+    free(const_cast<void*>(p.data[0]));
+    free(const_cast<void*>(p.data[1]));
+    free(const_cast<void*>(q.data[0]));
+    free(const_cast<void*>(q.data[1]));
+    return ans;
   }
+  return false;
 }
 
 class PostopDefaultKernelTest : public testing::TestWithParam<test_params_t> {
@@ -164,12 +179,12 @@ TEST_P(PostopDefaultKernelTest, TestPostfix) {
 }
 
 std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const jd::kernel_prop ker_prop,
-                                         const jd::engine_kind eng_kind, const std::vector<tensor_desc>& ts_descs) {
-  std::unordered_map<std::string, std::string> op_attrs = {{"post_op", "exp"}};
+                                         const jd::engine_kind eng_kind, const std::vector<tensor_desc>& ts_descs,
+                                         const std::unordered_map<std::string, std::string> op_attrs) {
   num = 1;
   for (auto&& i : ts_descs[0].shape()) num *= i;
-  void* src;
-  void* dst;
+  void* src = nullptr;
+  void* dst = nullptr;
   memo_mode MALLOC = memo_mode::MALLOC;
   memo_mode MEMSET = memo_mode::MEMSET;
   auto dtype = ts_descs[0].dtype();
@@ -183,7 +198,7 @@ std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const j
   memset(dst_ref, 0, num * sizeof(float));
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
-    int rand_val = rand_r(&seed_tmp) % 5;
+    float rand_val = rand_r(&seed_tmp) % 5 + rand_r(&seed_tmp) % 10 / 10.0;
     assign_val(src, dtype, rand_val, i);
     src_ref[i] = rand_val;
   }
@@ -206,10 +221,18 @@ static auto case_func = []() {
   std::vector<test_params_t> cases;
   tensor_desc data0_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
-  cases.push_back(
-      {gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data0_desc, data0_desc}), false});
-  cases.push_back(
-      {gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data1_desc, data1_desc}), false});
+  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data0_desc,data0_desc},
+                            {{"post_op", "exp"}}),
+                   false});
+  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data1_desc,data1_desc},
+                            {{"post_op", "exp"}}),
+                   false});
+  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data0_desc,data0_desc},
+                            {{"post_op", "gelu"}}),
+                   false});
+  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data1_desc,data1_desc},
+                            {{"post_op", "gelu"}}),
+                   false});
   return ::testing::ValuesIn(cases);
 };
 
