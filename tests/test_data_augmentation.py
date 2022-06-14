@@ -48,7 +48,9 @@ class TestDataAugmentation(unittest.TestCase):
         with open(aug.output_path) as f:
             for line in f:
                 print(line)
-        self.assertTrue(len(raw_datasets) == 10)
+        print(raw_datasets)
+        print(len(raw_datasets))
+        self.assertTrue(raw_datasets.num_rows == 10)
 
     def test_keyboard_augmentation(self):
         aug = DataAugmentation(augmenter_type="KeyboardAug")
