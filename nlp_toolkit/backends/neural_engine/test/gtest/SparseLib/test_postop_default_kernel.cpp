@@ -112,7 +112,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
       //an approximate fitting function of GELU(x)
       //GELU(x)≈0.5x(1+tanh[(2/pi)^0.5)*(x+0.044715x^3)]
       //for more details,pls refer this paper:https://arxiv.org/abs/1606.08415
-      dst[i] = 0.5 * x * (1 + tanhf32(0.797884 * (x + 0.0044715 * x * x * x)));
+      dst[i] = 0.5 * x * (1 + tanhf(0.797884 * (x + 0.0044715 * x * x * x)));
     }
   }
   return;
