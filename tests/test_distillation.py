@@ -11,6 +11,7 @@ from nlp_toolkit import (
     DistillationCriterionMode,
     metrics,
     OptimizedModel,
+    NoTrainerOptimizer
 )
 from nlp_toolkit.optimization.trainer import NLPTrainer
 from nlp_toolkit.optimization.distillation import Criterion
@@ -33,6 +34,7 @@ class TestDistillation(unittest.TestCase):
         self.teacher_model = AutoModelForSequenceClassification.from_pretrained(
             'distilbert-base-uncased-finetuned-sst-2-english'
         )
+        self.optimizer = NoTrainerOptimizer(self.model)
         raw_datasets = load_dataset("glue", "sst2")["validation"]
         tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
         def preprocess_function(examples):
@@ -109,6 +111,20 @@ class TestDistillation(unittest.TestCase):
                            train_func = train_func,
                            eval_func = eval_func,)
 
+    def test_no_trainer_distill(self):
+        def eval_func(model):
+            return 1
 
+        def train_func(model):
+            return model
+
+        distillation_conf = DistillationConfig()
+        self.optimizer.eval_func = eval_func
+        self.optimizer.train_func = train_func
+        self.optimizer.distill(distillation_conf,
+                           teacher_model=self.teacher_model,
+                           provider="inc",
+                           train_func = train_func,
+                           eval_func = eval_func,)
 if __name__ == "__main__":
     unittest.main()

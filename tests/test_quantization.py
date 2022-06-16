@@ -8,7 +8,8 @@ from nlp_toolkit import (
     objectives,
     OptimizedModel,
     QuantizationConfig,
-    QuantizationMode
+    QuantizationMode,
+    NoTrainerOptimizer
 )
 from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
@@ -66,6 +67,8 @@ class TestQuantization(unittest.TestCase):
             train_dataset=self.dummy_dataset,
             eval_dataset=self.dummy_dataset,
         )
+        self.optimizer = NoTrainerOptimizer(self.model)
+
 
     @classmethod
     def tearDownClass(self):
@@ -147,6 +150,29 @@ class TestQuantization(unittest.TestCase):
                               provider="inc",
                               train_func = train_func,
                               eval_func = eval_func,)
+
+    def test_no_trainer_quant(self):
+        def eval_func(model):
+            return 1
+        def train_func(model):
+            return model
+        tune_metric = metrics.Metric(
+            name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
+        )
+        quantization_config = QuantizationConfig(
+            approach='PostTrainingStatic',
+            metrics=[tune_metric],
+            objectives=[objectives.performance]
+        )
+        self.optimizer.eval_func = eval_func
+        self.optimizer.train_func = train_func
+        self.optimizer.provider = "INC"
+        self.optimizer.calib_dataloader = self.trainer.get_eval_dataloader()
+
+        opt_model = self.optimizer.quantize(quant_config=quantization_config, 
+                              provider="inc",
+                              train_func = train_func,
+                              eval_func = eval_func)
 
 
 if __name__ == "__main__":

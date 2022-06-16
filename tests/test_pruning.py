@@ -9,6 +9,7 @@ from nlp_toolkit import (
     PrunerConfig,
     PruningConfig,
     PruningMode,
+    NoTrainerOptimizer
 )
 from nlp_toolkit.optimization.trainer import NLPTrainer
 from transformers import (
@@ -48,6 +49,7 @@ class TestPruning(unittest.TestCase):
             train_dataset=self.dummy_dataset,
             eval_dataset=self.dummy_dataset,
         )
+        self.optimizer = NoTrainerOptimizer(self.model)
 
     @classmethod
     def tearDownClass(self):
@@ -98,6 +100,20 @@ class TestPruning(unittest.TestCase):
                            train_func = train_func,
                            eval_func = eval_func,)
 
+    def test_no_trainer_prune(self):
+        def eval_func(model):
+            return 1
 
+        def train_func(model):
+            return model
+
+        pruner_conf = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
+        pruning_conf = PruningConfig(pruner_config=pruner_conf)
+        self.optimizer.eval_func = eval_func
+        self.optimizer.train_func = train_func
+        self.optimizer.prune(pruning_conf,
+                           provider="inc",
+                           train_func = train_func,
+                           eval_func = eval_func,)
 if __name__ == "__main__":
     unittest.main()
