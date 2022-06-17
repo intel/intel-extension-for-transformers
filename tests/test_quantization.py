@@ -9,12 +9,14 @@ from nlp_toolkit import (
     OptimizedModel,
     QuantizationConfig,
     QuantizationMode,
-    NoTrainerOptimizer
+    NoTrainerOptimizer,
 )
 from nlp_toolkit.optimization.trainer import NLPTrainer
+from nlp_toolkit.optimization.trainer import NLPSeq2SeqTrainer
 from transformers import (
     AutoModelForSequenceClassification,
-    AutoTokenizer
+    AutoTokenizer,
+    AutoModelForSeq2SeqLM,
 )
 
 os.environ["WANDB_DISABLED"] = "true"
@@ -154,8 +156,10 @@ class TestQuantization(unittest.TestCase):
     def test_no_trainer_quant(self):
         def eval_func(model):
             return 1
+
         def train_func(model):
             return model
+
         tune_metric = metrics.Metric(
             name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
         )
@@ -173,6 +177,28 @@ class TestQuantization(unittest.TestCase):
                               provider="inc",
                               train_func = train_func,
                               eval_func = eval_func)
+
+    def test_online_models(self):
+        model = OptimizedModel.from_pretrained(
+            'Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static'
+        )
+
+    def test_seq2seq_models(self):
+        model = AutoModelForSeq2SeqLM.from_pretrained('t5-small')
+        tokenizer = AutoTokenizer.from_pretrained('t5-small')
+        trainer = NLPSeq2SeqTrainer(
+                model=model,
+                tokenizer=tokenizer,
+                train_dataset=self.dummy_dataset,
+                eval_dataset=self.dummy_dataset,
+            )
+        trainer.max_length = 128
+        trainer.num_beams = 3
+        trainer.metrics = metrics.Metric(
+                name="eval_loss"
+            )
+        trainer.args.predict_with_generate = True
+        trainer.builtin_eval_func(self.model)
 
 
 if __name__ == "__main__":

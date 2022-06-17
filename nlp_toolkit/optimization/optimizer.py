@@ -71,7 +71,7 @@ class Orchestrate_optimizer:
 
 
 
-class NoTrainerOptimizer:
+class NoTrainerOptimizer:   # pragma: no cover
     def __init__(
         self,
         model,

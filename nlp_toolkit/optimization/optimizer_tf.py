@@ -150,7 +150,7 @@ class TFOptimization:
             model, x) for x in self.output_names]
 
         # pylint: disable=E0401
-        if self.eval_distributed:
+        if self.eval_distributed:   # pragma: no cover
             import horovod.tensorflow as hvd
             hvd.init()
             # If metric.hvd is not None then run distributed inference
@@ -202,7 +202,7 @@ class TFOptimization:
                 if isinstance(labels, tuple):
                     labels = labels[0].numpy()
 
-                if isinstance(logits, list) and len(logits) > 1:
+                if isinstance(logits, list) and len(logits) > 1:   # pragma: no cover
                     for val in logits:
                         if preds is None:
                             preds = val
@@ -232,7 +232,7 @@ class TFOptimization:
         if self.compute_metrics is not None and preds is not None and label_ids is not None:
             try:
                 loss = self.criterion(label_ids, preds) if self.criterion is not None else None
-            except Exception as e:
+            except Exception as e:   # pragma: no cover
                 logger.info(e)
                 logger.info("There is no loss function or loss compute error, \
                                 Please compute loss in compute_metrics function")
@@ -248,7 +248,7 @@ class TFOptimization:
                         "Please set metric from {}".format(results.keys())
                 if nums == 1:
                     result = results.get(self.metrics[0].name)
-                else:
+                else:   # pragma: no cover
                     result = 0
                     for metric in self.metrics:
                         assert metric.weight_ratio is not None, \
@@ -260,7 +260,7 @@ class TFOptimization:
                         "Please set metric from {}".format(results.keys())
                 result = results.get(self.metrics.name)
                 logger.info("metric Accuracy: {}".format(result))
-            else:
+            else:   # pragma: no cover
                 assert False, "Please set the correct metrics format from the README"
         else:
             result = 0
@@ -304,9 +304,10 @@ class TFOptimization:
             elif self._eval_dataset is not None:
                 self.quantizer.calib_dataloader = TFDataloader(self._eval_dataset,
                                                                batch_size=self.args.per_device_eval_batch_size)
-            else:
+            else:   # pragma: no cover
                 assert False, "Please pass calibration dataset to TFNoTrainerOptimizer.calib_dataloader"
         elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
+            # pragma: no cover
             assert False, \
                 "Unsupport quantization aware training for tensorflow framework"
 
@@ -396,7 +397,7 @@ class TFOptimization:
         self,
         distillation_config,
         teacher_model: PreTrainedModel,
-    ):
+    ):   # pragma: no cover
         from neural_compressor.experimental import Distillation
         assert isinstance(distillation_config, DistillationConfig), \
             "please pass a instance of PruningConfig to trainer.prune!"
@@ -417,7 +418,7 @@ class TFOptimization:
         teacher_model: PreTrainedModel,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
-    ):
+    ):   # pragma: no cover
         if self.distiller is None:
             self.init_distiller(
                 distillation_config=distillation_config,

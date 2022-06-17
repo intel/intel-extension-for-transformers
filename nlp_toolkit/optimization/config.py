@@ -33,7 +33,7 @@ class QuantizationConfig(object):
         max_trials: int = 100,
         metrics: Union[Metric, List] = None,
         objectives: Union[Objective, List] = performance,
-        config_file: str = None
+        config_file: str = None,
     ):
         super().__init__()
         if config_file is None:
@@ -83,7 +83,7 @@ class QuantizationConfig(object):
 
     @output_names.setter
     def output_names(self, output_names):
-        assert isinstance(output_names, list), "input_names must be a list"
+        assert isinstance(output_names, list), "output_names must be a list"
         self.inc_config.usr_cfg.model.outputs = output_names
 
     @property
@@ -110,7 +110,7 @@ class QuantizationConfig(object):
                 weight = 1 / len(metrics)
                 for metric in metrics:
                     metric.weight_ratio = weight
-            else:
+            else:   # pragma: no cover
                 assert all(weights), "Please set the weight ratio for all metrics!"
 
             assert all(metric.is_relative == metrics[0].is_relative for metric in metrics), \
@@ -238,6 +238,16 @@ class QuantizationConfig(object):
     def resume_path(self, path):
         assert isinstance(path, str), "resume_path should be a string of directory!"
         self.inc_config.usr_cfg.tuning.workspace.resume = path
+
+    @property
+    def sampling_size(self):
+        return self.inc_config.usr_cfg.quantization.calibration.sampling_size
+
+    @sampling_size.setter
+    def sampling_size(self, sampling_size):
+        assert type(sampling_size) == list, \
+            "The sampling_size must be a list of int numbers"
+        self.inc_config.usr_cfg.quantization.calibration.sampling_size = sampling_size
 
 
 class PruningConfig(object):

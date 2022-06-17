@@ -106,10 +106,10 @@ class DataAugmentation:
             if self._input_dataset.endswith(".csv"):
                 # Loading a dataset from local csv files
                 raw_datasets = load_dataset("csv", data_files=self._input_dataset, delimiter="\t", split="train")
-            else:
+            else:   # pragma: no cover
                 # Loading a dataset from local json files
                 raw_datasets = load_dataset("json", data_files=self._input_dataset)
-        else:
+        else:   # pragma: no cover
             if self._input_dataset == "glue":
                 assert self._data_config_or_task_name is not None, \
                     "Please pass the task name to DataAugmentation.data_config_or_task_name."
@@ -117,7 +117,7 @@ class DataAugmentation:
             raw_datasets = load_dataset(
                 self._input_dataset, self._data_config_or_task_name, split=self._split
             )
-        if extension is None:
+        if extension is None:   # pragma: no cover
             extension = "csv"
 
         if os.path.isfile(self._output_path):
@@ -274,7 +274,7 @@ class DataAugmentation:
 
                     file.flush()
 
-    def mit_data_augmentation(self, extension, raw_datasets):
+    def mit_data_augmentation(self, extension, raw_datasets):   # pragma: no cover
         column_names = raw_datasets.column_names
         if "idx" in column_names:
             column_names.remove("idx")

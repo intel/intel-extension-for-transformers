@@ -101,6 +101,20 @@ class TestTFPruning(unittest.TestCase):
         p_model.save_pretrained(self.args.output_dir, saved_model=True)
         loaded_model = tf.saved_model.load(os.path.join(self.args.output_dir, "saved_model/1"))
 
+        p_model = self.optimizer.prune(pruning_config=pruning_conf,
+                                        train_dataset=self.dummy_dataset,
+                                        eval_dataset=self.dummy_dataset,)
+
+        def eval_func(model):
+            return 1
+
+        def train_func(model):
+            return model
+        
+        self.optimizer.prune(pruning_config=pruning_conf,
+                             train_func=train_func, 
+                             eval_func=eval_func)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -89,6 +89,16 @@ class TestTFQuantization(unittest.TestCase):
             train_dataset=self.dummy_dataset, eval_dataset=self.dummy_dataset)
         loaded_model = tf.saved_model.load(args[0].output_dir)
 
+        def eval_func(model):
+            return 1
+
+        def train_func(model):
+            return model
+        
+        self.optimizer.quantize(quant_config=quantization_config,
+                                train_func=train_func, 
+                                eval_func=eval_func)
+
 
 if __name__ == "__main__":
     unittest.main()

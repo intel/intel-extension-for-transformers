@@ -11,7 +11,7 @@ torch = LazyImport("torch")
 
 
 class OptimizedModel:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):   # pragma: no cover
         raise EnvironmentError(
             f"{self.__class__.__name__} is designed to be instantiated using the"
             f"`{self.__class__.__name__}.from_pretrained(model_name_or_path)` method."
@@ -96,7 +96,7 @@ class OptimizedModel:
             missing_keys_to_ignore_on_load = [r"weight", r"bias"]
             if keys_to_ignore_on_load_missing is None:
                 model_class._keys_to_ignore_on_load_missing = missing_keys_to_ignore_on_load
-            else:
+            else:   # pragma: no cover
                 model_class._keys_to_ignore_on_load_missing.extend(missing_keys_to_ignore_on_load)
 
             model = model_class.from_pretrained(
@@ -125,7 +125,7 @@ class OptimizedModel:
                         resume_download=resume_download,
                         use_auth_token=use_auth_token,
                     )
-                except EnvironmentError as err:
+                except EnvironmentError as err:   # pragma: no cover
                     logger.error(err)
                     msg = (
                         f"Can't load weights for '{model_name_or_path}'. Make sure that:\n\n"

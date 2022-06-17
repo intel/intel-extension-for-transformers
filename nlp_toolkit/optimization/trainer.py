@@ -61,6 +61,7 @@ optuna = LazyImport('optuna')
 onnx = LazyImport('onnx')
 ort = LazyImport('onnxruntime')
 ortq = LazyImport('onnxruntime.quantization')
+# pylint: disable=E1102
 smp_forward_backward = LazyImport('transformers.trainer_pt_utils.smp_forward_backward')
 torch = LazyImport("torch")
 xm = LazyImport('torch_xla.core.xla_model')
@@ -141,7 +142,7 @@ class BaseTrainer():
                     "Please set metric from {}".format(results.keys())
             if nums == 1:
                 result = results.get(self.metrics[0].name)
-            else:
+            else:   # pragma: no cover 
                 result = 0
                 for metric in self.metrics:
                     assert metric.weight_ratio is not None, \
@@ -153,7 +154,7 @@ class BaseTrainer():
                     "Please set metric from {}".format(results.keys())
             result = results.get(self.metrics.name)
             logger.info("metric: {}".format(result))
-        else:
+        else:   # pragma: no cover 
             assert False, "Please set the correct metrics format from the README"
         logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
         return result
@@ -238,7 +239,7 @@ class BaseTrainer():
             self.init_quantizer(quant_config=quant_config, provider=provider)
         if self._eval_func is not None:
             self.quantizer.eval_func = self._eval_func
-        else:
+        else:   # pragma: no cover 
             assert self.metrics is not None, \
                 "Please pass the metrics to QuantizationConfig.metrics!"
             self.quantizer.eval_func = self.builtin_eval_func
@@ -277,7 +278,7 @@ class BaseTrainer():
         if self.quantizer is None:
             self._provider = Provider[provider.upper()].value
 
-        if self._provider == Provider.NNCF.value:
+        if self._provider == Provider.NNCF.value:   # pragma: no cover 
             return self._nncf_quantize()
         elif self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
@@ -463,7 +464,7 @@ class BaseTrainer():
                 component.eval_func = self._eval_func
                 component.train_func = self._train_func
                 component.create_criterion()
-            else:
+            else:   # pragma: no cover 
                 assert False, "Orchestrate_optimizations config_list requires at least one" \
                     "       `QuantizationConfig`, `PruningConfig` or `DistillationConfig` object"
             components.append(component)
@@ -1280,7 +1281,7 @@ class BaseTrainer():
         prediction_loss_only: Optional[bool] = None,
         ignore_keys: Optional[List[str]] = None,
         metric_key_prefix: str = "eval",
-    ) -> EvalLoopOutput:
+    ) -> EvalLoopOutput:   # pragma: no cover 
         """
         Prediction/evaluation loop, shared by :obj:`Trainer.evaluate()` and :obj:`Trainer.predict()`.
 
@@ -1538,7 +1539,7 @@ class BaseTrainer():
                 else:
                     addition_op_to_quantize = list(ortq.registry.QLinearOpsRegistry.keys())
 
-        if quant_format == 'QDQ' and opset_version < 13:
+        if quant_format == 'QDQ' and opset_version < 13:   # pragma: no cover 
             opset_version = 13
             logger.warning("QDQ format requires opset_version >= 13, " + 
                             "we reset opset_version={} here".format(opset_version))
@@ -1553,7 +1554,10 @@ class BaseTrainer():
         self.export_to_fp32_onnx(fp32_path, opset_version=opset_version, 
                                  do_constant_folding=False, verbose=False)
         model = onnx.load(fp32_path)
-        model = self._replace_gemm_with_matmul(model)
+        from neural_compressor.adaptor.onnxrt import ONNXRTAdaptor
+        # pylint: disable=E1120
+        inc_model = ONNXRTAdaptor._replace_gemm_with_matmul(model)
+        model = inc_model.model
         onnx.save(model, fp32_path)
 
         # Get weight name from onnx initializer
@@ -1583,8 +1587,8 @@ class BaseTrainer():
             if node.op_type in all_op_types_to_quantize:
                 quantize_nodes.append(node.name)
 
-        # Match pytorch module name with onnx node name
-        for k, v in self.opt_model.tune_cfg['op'].items():
+        # Match pytorch module name with onnx node name for fallbacked fp32 module
+        for k, v in self.opt_model.tune_cfg['op'].items():   # pragma: no cover
             if k[1] not in pytorch_op_types_to_quantize or 'int8' in v['weight']['dtype']:
                 continue
             k_0 = k[0].split('.module')[0] if k[0] not in module_node_mapping else k[0]
@@ -1595,21 +1599,21 @@ class BaseTrainer():
         # Quantization
         quant_format = ortq.QuantFormat.QOperator if quant_format != 'QDQ' else ortq.QuantFormat.QDQ
 
-        if 'U8U8' in dtype:
+        if 'U8U8' in dtype:   # pragma: no cover 
             activation_type = ortq.QuantType.QUInt8
             weight_type = ortq.QuantType.QUInt8
         elif 'S8S8' in dtype:
             activation_type = ortq.QuantType.QInt8
             weight_type = ortq.QuantType.QInt8
         elif 'U8S8' in dtype:
-            if not self.enable_executor:
+            if not self.enable_executor:   # pragma: no cover 
                 logger.error("Right now, we don't support dtype: {}, please use \
                               U8U8/S8S8 or set trainer.enable_executor=True \
                               for U8S8.".format(dtype))
                 sys.exit(0)
             activation_type = ortq.QuantType.QUInt8
             weight_type = ortq.QuantType.QInt8
-        else:
+        else:   # pragma: no cover 
             # Gather requires weight type be the same as activation.
             # So U8S8(acitvation|weight) option is not workable for best performance.
             logger.error("Right now, we don't support dtype: {}, \
@@ -1686,86 +1690,12 @@ class BaseTrainer():
         logger.info("*"*len(info))
         return jit_model
 
-    # will remove after next INC(1.12) release
-    def _replace_gemm_with_matmul(self, model):
-        new_nodes = []
-        from neural_compressor.model.onnx_model import ONNXModel
-        if not isinstance(model, ONNXModel):
-            model = ONNXModel(model)
-
-        for node in model.nodes():
-            if node.op_type == 'Gemm':
-                alpha = 1.0
-                beta = 1.0
-                transA = 0
-                transB = 0
-                for attr in node.attribute:
-                    if attr.name == 'alpha':
-                        alpha = onnx.helper.get_attribute_value(attr)
-                    elif attr.name == 'beta':
-                        beta = onnx.helper.get_attribute_value(attr)
-                    elif attr.name == 'transA':
-                        transA = onnx.helper.get_attribute_value(attr)
-                    elif attr.name == 'transB':
-                        transB = onnx.helper.get_attribute_value(attr)
-                if alpha == 1.0 and beta == 1.0 and transA == 0:
-                    inputB = node.input[1]
-                    if transB == 1:
-                        B = model.get_initializer(node.input[1])
-                        if B:
-                            # assume B is not used by any other node
-                            B_array = onnx.numpy_helper.to_array(B)
-                            B_trans = onnx.numpy_helper.from_array(B_array.T)
-                            B_trans.name = B.name
-                            model.remove_initializer(B)
-                            model.add_initializer(B_trans)
-
-                            #TBD this is for onnx model zoo, which are all in old IR version
-                            if model.model.ir_version < 4:
-                                for input in model.model.graph.input:
-                                    if input.name == B_trans.name:
-                                        for i, dim in enumerate(input.type.tensor_type.shape.dim):
-                                            dim.dim_value = B_array.T.shape[i]
-
-                        else:
-                            inputB += '_Transposed'
-                            transpose_node = onnx.helper.make_node('Transpose',
-                                                                inputs=[node.input[1]],
-                                                                outputs=[inputB],
-                                                                name=node.name+'_Transpose')
-                            new_nodes.append(transpose_node)
-
-                    matmul_node = onnx.helper.make_node('MatMul',
-                            inputs=[node.input[0], inputB],
-                            outputs=[node.output[0] + ('_MatMul' if len(node.input)>2 else '')],
-                            name=node.name + '_MatMul')
-                    new_nodes.append(matmul_node)
-
-                    if len(node.input) > 2:
-                        add_node = onnx.helper.make_node('Add',
-                            inputs=[node.output[0] + '_MatMul', node.input[2]],
-                            outputs=node.output,
-                            name=node.name + '_Add')
-                        new_nodes.append(add_node)
-
-                # unsupported
-                else:
-                    new_nodes.append(node)
-
-            # not GEMM
-            else:
-                new_nodes.append(node)
-
-        model.graph().ClearField('node')
-        model.graph().node.extend(new_nodes)
-
-        return model.model
-    
     @staticmethod
     def _remove_label(input):
         if "labels" in input: # for GLUE
             input.pop('labels')
         elif "start_positions" in input and "end_positions" in input: # for SQuAD
+            # pragma: no cover
             input.pop('start_positions')
             input.pop('end_positions')
         return input

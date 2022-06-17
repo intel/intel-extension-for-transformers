@@ -1,4 +1,6 @@
+import numpy
 import shutil
+import torch
 import unittest
 
 from nlp_toolkit import (
@@ -10,13 +12,20 @@ from nlp_toolkit import (
     QuantizationConfig,
     AutoDistillationConfig,
     FlashDistillationConfig,
+    TFOptimization,
 )
 from nlp_toolkit.optimization.distillation import Criterion as DistillationCriterion
 from nlp_toolkit.optimization.distillation import DistillationCriterionMode
 from nlp_toolkit.optimization.trainer import NLPTrainer
+from nlp_toolkit.optimization.utils.objectives import Objective
+from nlp_toolkit.optimization.utils.utility_tf import TFDataloader
+from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
 
 from transformers import (
     AutoModelForPreTraining,
+    HfArgumentParser,
+    TFTrainingArguments,
+    TFAutoModelForSequenceClassification,
 )
 
 
@@ -68,14 +77,21 @@ class TestConfig(unittest.TestCase):
         quantization_config.resume_path = './saved_results'
         quantization_config.random_seed = 1
         quantization_config.strategy = 'basic'
-        quantization_config.performance_only=True
-        quantization_config.tensorboard=True
+        quantization_config.performance_only = True
+        quantization_config.tensorboard = True
+        quantization_config.sampling_size = [300]
+        quantization_config.input_names = ['input_ids', 'tokentype_ids']
+        quantization_config.output_names = ['seq1, seq2']
         self.assertTrue(isinstance(quantization_config.op_wise, dict))
         self.assertTrue(isinstance(quantization_config.strategy, str))
         self.assertEqual(quantization_config.random_seed, 1)
         self.assertEqual(quantization_config.strategy, 'basic')
         self.assertTrue(quantization_config.performance_only)
         self.assertTrue(quantization_config.tensorboard)
+        self.assertTrue(quantization_config.resume_path, './saved_results')
+        self.assertTrue(quantization_config.sampling_size, [300])
+        self.assertTrue(quantization_config.input_names, ['input_ids', 'tokentype_ids'])
+        self.assertTrue(quantization_config.output_names, ['seq1, seq2'])
 
     def test_quantization_config(self):
         quantization_config = QuantizationConfig()
@@ -110,9 +126,11 @@ class TestConfig(unittest.TestCase):
 
         self.assertEqual(pruning_config.pruner_config, [pruner_config])
         self.assertEqual(pruning_config.framework, "pytorch")
+        self.assertEqual(pruning_config.initial_sparsity_ratio, 0)
         self.assertEqual(pruning_config.target_sparsity_ratio, 0.1)
         self.assertEqual(pruning_config.epoch_range, [0, 4])
         self.assertEqual(pruning_config.metrics, metric)
+        self.assertEqual(pruning_config.epochs, 1)
 
         pruning_config.pruner_config = [pruner_config]
         self.assertEqual(pruning_config.pruner_config, [pruner_config])
@@ -197,6 +215,61 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(trainer.train_func, None)
         self.assertEqual(trainer.calib_dataloader, None)
         self.assertEqual(trainer.provider, 'inc')
+
+    def test_TFOptimization_config(self):
+        parser = HfArgumentParser(TFTrainingArguments)
+        args = parser.parse_args_into_dataclasses(
+            args=["--output_dir", "./quantized_model",
+                  "--per_device_eval_batch_size", "2"]
+        )
+        model = TFAutoModelForSequenceClassification.from_pretrained(
+            'bhadresh-savani/distilbert-base-uncased-sentiment-sst2'
+        )
+        tf_optimizer = TFOptimization(model, args=args[0])
+        tf_optimizer.input = 1
+        tf_optimizer.eval_func = None
+        tf_optimizer.train_func = None
+        self.assertEqual(tf_optimizer.input, 1)
+        self.assertEqual(tf_optimizer.eval_func, None)
+        self.assertEqual(tf_optimizer.train_func, None)
+
+    def test_DataAugmentation_config(self):
+        aug = DataAugmentation(augmenter_type="TextGenerationAug")
+        aug.augmenter_type = "TextGenerationAug"
+        aug.input_dataset = None
+        aug.data_config_or_task_name = None
+        aug.column_names = None
+        aug.num_samples = 100
+        aug.augmenter_arguments = None
+        self.assertEqual(aug.augmenter_type, "textgenerationaug")
+        self.assertEqual(aug.input_dataset, None)
+        self.assertEqual(aug.data_config_or_task_name, None)
+        self.assertEqual(aug.column_names, None)
+        self.assertEqual(aug.num_samples, 100)
+        self.assertEqual(aug.augmenter_arguments, None)
+
+    def test_tf_dataloader(self):
+        def dummy_dataset(type='list'):
+            if type == 'list':
+                yield [torch.tensor(1),torch.tensor(2)], \
+                      [torch.tensor(1),torch.tensor(2)]
+            else:
+                yield torch.tensor(1), torch.tensor(1)
+
+        dataloader = TFDataloader(dummy_dataset())
+        for input, label in dataloader:
+            self.assertTrue(type(input) == list)
+            self.assertTrue(type(label) == list)
+        dataloader = TFDataloader(dummy_dataset(type='int'))
+        for input, label in dataloader:
+            self.assertTrue(type(input) == numpy.ndarray)
+            self.assertTrue(type(label) == numpy.ndarray)
+
+    def test_Objective_config(self):
+        perform= Objective.performance()
+        model_size = Objective.modelsize()
+        self.assertEqual(perform.name, 'performance')
+        self.assertEqual(model_size.name, 'modelsize')
 
 
 if __name__ == "__main__":
