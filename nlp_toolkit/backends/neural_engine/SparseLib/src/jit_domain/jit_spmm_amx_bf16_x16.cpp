@@ -27,8 +27,8 @@ namespace jd {
 void jit_spmm_amx_bf16_x16_t::read_inputs() {
   mov(reg_weight, ptr[reg_param + GET_OFF(weight)]);
   mov(reg_src, ptr[reg_param + GET_OFF(src)]);
+  mov(reg_bia, ptr[reg_param + GET_OFF(bias)]);
   mov(reg_dst, ptr[reg_param + GET_OFF(dst)]);
-  mov(reg_bs, ptr[reg_param + GET_OFF(bs)]);
 }
 
 void jit_spmm_amx_bf16_x16_t::main_compute() {
@@ -41,45 +41,52 @@ void jit_spmm_amx_bf16_x16_t::main_compute() {
     for (int group = group_rowptr[b_row]; group < group_rowptr[b_row + 1]; ++group) {
       dim_t* my_rows = colidxs + group * 32;
 
-      mov(r12, sizeof(src_t));
-      mov(r13, TILE_K);
-      imul(r13, r12);
-      tileloadd(tmm6, ptr[reg_weight + r13 + group * 512 * sizeof(src_t)]);
+      tileloadd(tmm6, ptr[reg_weight + reg_stride + group * 512 * sizeof(src_t)]);
 
       for (int m = 0; m < 4 * TILE_M; m += TILE_M) {
-        mov(eax, reg_src);
-        mov(reg_m, eax);
         add(reg_m, reg_mstart);
         for (int k = 0; k < 32; k += 2) {
-          vmovdqu(ymm0, ptr[reg_m + my_rows[k] * tileM * sizeof(src_t)]);
-          vmovdqu(ymm1, ptr[reg_m + my_rows[k + 1] * tileM * sizeof(src_t)]);
+          vmovdqu(ymm0, ptr[reg_m + (m + my_rows[k] * tileM) * sizeof(src_t)]);
+          vmovdqu(ymm1, ptr[reg_m + (m + my_rows[k + 1] * tileM) * sizeof(src_t)]);
           vinserti32x8(zmm0, zmm0, ymm1, 1);
           vpermw(zmm0, reg_mask, zmm0);
           vmovdqu32(qword[rsp + 0x40 + (m / TILE_M * 512 + k / 2 * 32) * 2], zmm0);
         }
+        sub(reg_m, reg_mstart);
       }
-      mov(rax, 64);
-      tileloadd(tmm4, ptr[rsp + rax + (0x40)]);
+      tileloadd(tmm4, ptr[rsp + reg_stride + (0x40)]);
       tdpbf16ps(tmm0, tmm6, tmm4);
-      tileloadd(tmm4, ptr[rsp + rax + (1024 + 0x40)]);
+      tileloadd(tmm4, ptr[rsp + reg_stride + (1024 + 0x40)]);
       tdpbf16ps(tmm1, tmm6, tmm4);
-      tileloadd(tmm4, ptr[rsp + rax + (2048 + 0x40)]);
+      tileloadd(tmm4, ptr[rsp + reg_stride + (2048 + 0x40)]);
       tdpbf16ps(tmm2, tmm6, tmm4);
-      tileloadd(tmm4, ptr[rsp + rax + (3072 + 0x40)]);
+      tileloadd(tmm4, ptr[rsp + reg_stride + (3072 + 0x40)]);
       tdpbf16ps(tmm3, tmm6, tmm4);
     }
-    mov(r12, sizeof(dst_t));
-    mov(rax, reg_bs);
-    imul(rax, r12);
-    mov(r12, b_row * 16 * tileM * sizeof(dst_t));
+    tilestored(ptr[rsp + reg_stride + (0x40)], tmm0);
+    tilestored(ptr[rsp + reg_stride + (0x40 + 1024)], tmm1);
+    tilestored(ptr[rsp + reg_stride + (0x40 + 2048)], tmm2);
+    tilestored(ptr[rsp + reg_stride + (0x40 + 3072)], tmm3);
+    mov(r12, b_row * 16 * tileM * size_of_dst_t);
     mov(reg_temp, reg_mstart);
-    add(reg_temp, reg_temp);
+    if (!bf16_out) {
+      add(reg_temp, reg_temp);  // sizeof(dst_t) = sizeof(src_t) + sizeof(src_t)
+    }
     add(r12, reg_temp);
     add(reg_dst, r12);
-    tilestored(ptr[reg_dst + rax], tmm0);
-    tilestored(ptr[reg_dst + rax + TILE_N * sizeof(dst_t)], tmm1);
-    tilestored(ptr[reg_dst + rax + TILE_N * sizeof(dst_t) * 2], tmm2);
-    tilestored(ptr[reg_dst + rax + TILE_N * sizeof(dst_t) * 3], tmm3);
+    for (int i = 0; i < TILE_N; ++i) {
+      vpbroadcastd(zmm0, ptr[reg_bia + (b_row * TILE_N + i) * sizeof(dst_t)]);
+      for (int j = 0; j < 4 * TILE_M; j += TILE_M) {
+        vmovdqu32(zmm1, ptr[rsp + (0x40) + (j * TILE_N + i * TILE_M) * sizeof(dst_t)]);
+        vaddps(zmm1, zmm1, zmm0);
+        if (bf16_out) {
+          vcvtneps2bf16(reg_bf16, zmm1);
+          vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], reg_bf16);
+        } else {
+          vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], zmm1);
+        }
+      }
+    }
     sub(reg_dst, r12);
   }
 }
@@ -96,6 +103,11 @@ void jit_spmm_amx_bf16_x16_t::loop_M() {
 void jit_spmm_amx_bf16_x16_t::init_param() {
   mov(reg_mstart, 0);
   mov(reg_temp, loopMask);
+  mov(eax, reg_src);
+  mov(reg_m, eax);
+  mov(eax, 0xffff);
+  kmovw(ktail_mask, eax);
+  mov(reg_stride, 64);
   vmovups(reg_mask, zword[reg_temp]);
 }
 

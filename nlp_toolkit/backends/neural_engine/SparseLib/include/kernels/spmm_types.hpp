@@ -94,6 +94,7 @@ struct amx_params_t {
   dim_t* group_rowptr;
   T* weight;
   bool has_bias;
+  bool bf16_out;
 };
 
 typedef amx_params_t<bfloat16_t> amx_bf16_params_t;
@@ -107,7 +108,6 @@ struct amx_inputs_t {
   wgt_t* src;
   float* bias;  // bias always be float for both bf16 and int8 kernels
   dst_t* dst;
-  dim_t bs;
 };
 
 typedef amx_inputs_t<bfloat16_t, bfloat16_t, float> amx_bf16f32_inputs_t;

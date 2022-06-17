@@ -73,8 +73,6 @@ class spmm_amx_bf16_x16_k_t : public kernel_t {
  public:
   bool init() override;
   bool execute(const std::vector<const void*>& rt_data) const override;
-  // bf16 output TBD
-  // bool execute(const amx_bf16bf16_inputs_t& rt_data) const override;
 
  public:
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }

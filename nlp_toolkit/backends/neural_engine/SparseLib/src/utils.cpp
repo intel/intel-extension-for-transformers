@@ -49,7 +49,7 @@ void init_vector(T* v, int num_size, float range1, float range2, int seed) {
   std::mt19937 gen(seed);
   std::uniform_real_distribution<float> u(low_value, range2);
   for (int i = 0; i < num_size; ++i) {
-    v[i] = cast_to<T>(1);//u(gen));
+    v[i] = cast_to<T>(u(gen));
   }
 }
 template void init_vector<float>(float*, int, float, float, int);
@@ -69,7 +69,7 @@ bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t siz
   const auto& buf1_data = static_cast<const T*>(buf1);
   const auto& buf2_data = static_cast<const T*>(buf2);
   for (int64_t i = 0; i < size1; ++i) {
-    auto err = fabs(buf1_data[i] - buf2_data[i]);
+    auto err = fabs(cast_to<float>(buf1_data[i]) - cast_to<float>(buf2_data[i]));
     if (err > eps) {
       return false;
     }

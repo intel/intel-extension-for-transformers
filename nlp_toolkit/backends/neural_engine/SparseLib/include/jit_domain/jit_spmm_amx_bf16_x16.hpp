@@ -47,6 +47,11 @@ class jit_spmm_amx_bf16_x16_t : public jit_generator {
     group_rowptr = param_.group_rowptr;
     weight_ = param_.weight;
     tileM = param_.tileM;
+    bf16_out = param_.bf16_out;
+    size_of_dst_t = 4;
+    if (bf16_out) {
+      size_of_dst_t = 2;
+    }
   }
   virtual ~jit_spmm_amx_bf16_x16_t() {}
 
@@ -65,13 +70,16 @@ class jit_spmm_amx_bf16_x16_t : public jit_generator {
   const Xbyak::Reg64& reg_param = rdi;
   const Xbyak::Reg64& reg_weight = r15;
   const Xbyak::Reg64& reg_src = rdx;
+  const Xbyak::Reg64& reg_bia = rbx;
   const Xbyak::Reg64& reg_dst = rcx;
-  const Xbyak::Reg64& reg_bs = r8;
   const Xbyak::Reg64& reg_m = rbp;
   const Xbyak::Reg64& reg_mstart = r9;
   const Xbyak::Reg64& reg_tileM = r10;
   const Xbyak::Reg64& reg_temp = rsi;
+  const Xbyak::Reg64& reg_stride = r8;
   const Xbyak::Zmm& reg_mask = zmm31;
+  const Xbyak::Ymm& reg_bf16 = ymm30;
+  const Xbyak::Opmask& ktail_mask = k2;
   Xbyak::Label loopMask, lM;
 
   dim_t N;
@@ -83,6 +91,8 @@ class jit_spmm_amx_bf16_x16_t : public jit_generator {
   dim_t* group_rowptr;
   bfloat16_t* weight_;
   dim_t tileM;
+  bool bf16_out;
+  dim_t size_of_dst_t;
 
   static constexpr int stack_space_needed_ = 5120;
 

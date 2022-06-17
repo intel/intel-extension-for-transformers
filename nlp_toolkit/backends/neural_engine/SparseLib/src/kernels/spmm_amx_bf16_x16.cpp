@@ -59,6 +59,7 @@ bool spmm_amx_bf16_x16_kd_t::spmm_params_init(ssd::amx_bf16_params_t& param_ref,
   param_ref.group_rowptr = const_cast<dim_t*>(bsr_data->indptr().data());
   param_ref.weight = const_cast<bfloat16_t*>(bsr_data->data().data());
   param_ref.has_bias = !bias_desc.shape().empty();
+  param_ref.bf16_out = dst_desc.dtype() == jd::data_type::bf16;
   return true;
 }
 
@@ -70,7 +71,7 @@ bool spmm_amx_bf16_x16_k_t::init() {
   if (!status) return false;
   thread_num_ = omp_get_max_threads();
   jit_kers_.resize(thread_num_);
-  for(int thread_idx = 0; thread_idx < thread_num_; ++thread_idx){
+  for (int thread_idx = 0; thread_idx < thread_num_; ++thread_idx) {
     jit_kers_[thread_idx] = ker;
   }
   amx_config_ = amx_tile_config_t::GetInstance();
@@ -92,17 +93,31 @@ bool spmm_amx_bf16_x16_k_t::spmm_kernel_create(jit_spmm_amx_bf16_x16_t** ker_pp,
 
 bool spmm_amx_bf16_x16_k_t::execute(const std::vector<const void*>& rt_data) const {
   bfloat16_t* weight = derived_kd()->params().weight;
+  bool bf16_out = derived_kd()->params().bf16_out;
+  if (!bf16_out) {
 #pragma omp parallel for num_threads(thread_num_)
-  for (dim_t micro_bs = 0; micro_bs < num_tileBS; micro_bs++) {
-    int thread_idx = omp_get_thread_num();
-    amx_config_->amx_tile_configure(thread_idx, tile_param_);
-    jd::ssd::amx_bf16f32_inputs_t inputs;
-    inputs.weight = weight;
-    inputs.src = static_cast<bfloat16_t*>(const_cast<void*>(rt_data[1])) + micro_bs * tileBS * IC;
-    inputs.bias = static_cast<float*>(const_cast<void*>(rt_data[2]));
-    inputs.dst = static_cast<float*>(const_cast<void*>(rt_data[3])) + micro_bs * tileBS * OC;
-    inputs.bs = tileBS;
-    (*jit_kers_[thread_idx])(inputs);
+    for (dim_t micro_bs = 0; micro_bs < num_tileBS; micro_bs++) {
+      int thread_idx = omp_get_thread_num();
+      amx_config_->amx_tile_configure(thread_idx, tile_param_);
+      jd::ssd::amx_bf16f32_inputs_t inputs;
+      inputs.weight = weight;
+      inputs.src = static_cast<bfloat16_t*>(const_cast<void*>(rt_data[1])) + micro_bs * tileBS * IC;
+      inputs.bias = static_cast<float*>(const_cast<void*>(rt_data[2]));
+      inputs.dst = static_cast<float*>(const_cast<void*>(rt_data[3])) + micro_bs * tileBS * OC;
+      (*jit_kers_[thread_idx])(inputs);
+    }
+  } else {
+#pragma omp parallel for num_threads(thread_num_)
+    for (dim_t micro_bs = 0; micro_bs < num_tileBS; micro_bs++) {
+      int thread_idx = omp_get_thread_num();
+      amx_config_->amx_tile_configure(thread_idx, tile_param_);
+      jd::ssd::amx_bf16bf16_inputs_t inputs;
+      inputs.weight = weight;
+      inputs.src = static_cast<bfloat16_t*>(const_cast<void*>(rt_data[1])) + micro_bs * tileBS * IC;
+      inputs.bias = static_cast<float*>(const_cast<void*>(rt_data[2]));
+      inputs.dst = static_cast<bfloat16_t*>(const_cast<void*>(rt_data[3])) + micro_bs * tileBS * OC;
+      (*jit_kers_[thread_idx])(inputs);
+    }
   }
   return true;
 }
