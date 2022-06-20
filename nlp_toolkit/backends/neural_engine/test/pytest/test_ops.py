@@ -4,8 +4,8 @@ from tensorflow.core.framework import attr_value_pb2
 from onnx import NodeProto
 from onnx.helper import make_attribute
 from collections import namedtuple
-from engine.compile.ops.op import OPERATORS, Operator
-from engine.compile.ops.tensor import Tensor
+from nlp_toolkit.backends.neural_engine.compile.ops.op import OPERATORS, Operator
+from nlp_toolkit.backends.neural_engine.compile.ops.tensor import Tensor
 
 
 class TestOps(unittest.TestCase):

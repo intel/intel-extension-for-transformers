@@ -1,6 +1,6 @@
 import unittest
 from tensorflow.core.framework import node_def_pb2 
-import engine.compile.tf_utils as util 
+import nlp_toolkit.backends.neural_engine.compile.tf_utils as util 
 
 
 class TestTfUtils(unittest.TestCase):

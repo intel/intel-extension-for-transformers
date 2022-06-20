@@ -1,8 +1,8 @@
 import unittest
-import engine.compile as compile
+import nlp_toolkit.backends.neural_engine.compile as compile
 import numpy as np
-from engine.compile.ops.op import OPERATORS, Operator
-from engine.compile.ops.tensor import Tensor
+from nlp_toolkit.backends.neural_engine.compile.ops.op import OPERATORS, Operator
+from nlp_toolkit.backends.neural_engine.compile.ops.tensor import Tensor
 
 
 class TestOnnxUtils(unittest.TestCase):

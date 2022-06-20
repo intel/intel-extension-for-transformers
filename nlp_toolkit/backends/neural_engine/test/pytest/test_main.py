@@ -1,6 +1,6 @@
 import unittest
-from engine.compile import compile
-from engine.compile.ops.tensor import Tensor
+from nlp_toolkit.backends.neural_engine.compile import compile
+from nlp_toolkit.backends.neural_engine.compile.ops.tensor import Tensor
 import numpy as np
 import os
 import shutil

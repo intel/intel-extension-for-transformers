@@ -1,9 +1,9 @@
 import unittest
 from collections import OrderedDict
-from engine.compile.ops.op import OPERATORS, Operator
-from engine.compile.ops.tensor import Tensor
-from engine.compile.graph import Graph
-from engine.compile.sub_graph.matmul_with_bias_tanh import MatmulWithBiasTanh
+from nlp_toolkit.backends.neural_engine.compile.ops.op import OPERATORS, Operator
+from nlp_toolkit.backends.neural_engine.compile.ops.tensor import Tensor
+from nlp_toolkit.backends.neural_engine.compile.graph import Graph
+from nlp_toolkit.backends.neural_engine.compile.sub_graph.matmul_with_bias_tanh import MatmulWithBiasTanh
 import numpy as np
 
 
