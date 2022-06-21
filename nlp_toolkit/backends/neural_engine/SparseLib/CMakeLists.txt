@@ -10,9 +10,7 @@ if (SPARSE_LIB_USE_AMX)
 else()
     set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 endif()
-set(THIRD_PARTY_DIR "${PROJECT_SOURCE_DIR}/third_party/")
 
-# -lpthread
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads)
 if(Threads_FOUND)
@@ -31,43 +29,12 @@ else()
     message(STATUS "Cannot find OpenMP")
 endif()
 
+set(THIRD_PARTY_DIR "${PROJECT_SOURCE_DIR}/third_party/")
+
 set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
 set(WITH_GTEST OFF CACHE BOOL "disable gtest for glog")
 add_subdirectory(${THIRD_PARTY_DIR}/glog)
 add_subdirectory(${THIRD_PARTY_DIR}/xbyak)
 
-add_library(${HOST_LIBRARY_NAME} SHARED
-    src/interface.cpp
-    src/kernel_desc.cpp
-    src/kernel.cpp
-    src/jit_generator.cpp
-    src/kernel_cache.cpp
-    src/cpu_engine.cpp
-    src/utils.cpp
-    src/amx_utils.cpp
-    src/benchmark_utils.cpp
-    src/kernels/cpu_sparse_matmul_list.cpp
-    src/kernels/cpu_postop_list.cpp
-    src/kernels/sparse_data.cpp
-    src/kernels/spmm_default.cpp
-    src/kernels/spmm_amx_bf16_x16.cpp
-    src/kernels/postop_default.cpp
-    src/jit_domain/jit_spmm_default.cpp
-    src/jit_domain/jit_spmm_amx_bf16_x16.cpp
-    src/jit_domain/jit_amx_configure.cpp
-    src/jit_domain/jit_postop_default.cpp
-)
+add_subdirectory(src)
 
-# Header file include path
-target_include_directories(${HOST_LIBRARY_NAME}
-    PUBLIC
-        ./include
-)
-
-## link against the third party libraries
-target_link_libraries(${HOST_LIBRARY_NAME}
-    PUBLIC
-        ${CMAKE_THREAD_LIBS_INIT}
-        glog
-        xbyak
-)
