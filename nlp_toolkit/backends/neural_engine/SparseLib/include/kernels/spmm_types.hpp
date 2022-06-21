@@ -85,6 +85,7 @@ template <typename T>
 struct amx_params_t {
   dim_t num_tileM;
   dim_t tileM;
+  dim_t tileN;
   dim_t shape[2];
   dim_t blocksize[2] = {16, 1};
   dim_t blocks_per_group = 64 / sizeof(T);

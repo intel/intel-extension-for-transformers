@@ -48,11 +48,21 @@ void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_dat
     }
   }
 
+  const char* bool_benchmark_refresh = std::getenv("BENCHMARK_NO_REFRESH");
+  bool if_refresh = true;
+  if (bool_benchmark_refresh != nullptr) {
+    if (strcmp(bool_benchmark_refresh, "1") == 0) {
+      if_refresh = false;
+    }
+  }
+
   double ns = 0.0;
   for (int i = 0; i < benchmark_iter; ++i){
     // refresh data
-    refresh_data(ts_descs, new_data, idx);
-    
+    if (if_refresh) {
+      refresh_data(ts_descs, new_data, idx);
+    }
+
     ns += exec_time(kp, tmp_data);
   }
 

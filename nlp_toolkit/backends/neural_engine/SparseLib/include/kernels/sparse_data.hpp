@@ -111,7 +111,7 @@ class bsr_data_t : public sparse_data_t<T> {
   inline const dim_t group() const { return group_; }
   inline const dim_t nnz_group() const { return nnz_group_; }
 
- public:
+ private:
   std::vector<dim_t> shape_;
   dim_t group_;
   dim_t nnz_group_;
@@ -127,7 +127,7 @@ template <typename T>
 sparse_data_t<T>* reorder_to(int rows, int cols, const void* uncoded_ptr, const format_type& dst_encode_fmt);
 
 template <typename T, dim_t group>
-bsr_data_t<T>* reorder_to_bsr_amx(dim_t rows, dim_t cols, const void* uncoded_ptr);
+std::vector<bsr_data_t<T>*>* reorder_to_bsr_amx(dim_t rows, dim_t cols, dim_t micro_rows, const void* uncoded_ptr);
 
 template <typename T>
 uint64_t get_uncoded_nnz(int rows, int cols, const T* uncoded_data, int line_idx = -1);

@@ -33,16 +33,22 @@ template sparse_data_t<int8_t>* reorder_to<int8_t>(int, int, const void*, const 
 template sparse_data_t<float>* reorder_to<float>(int, int, const void*, const format_type&);
 
 template <typename T, dim_t group>
-bsr_data_t<T>* reorder_to_bsr_amx(dim_t rows, dim_t cols, const void* uncoded_ptr) {
+std::vector<bsr_data_t<T>*>* reorder_to_bsr_amx(dim_t rows, dim_t cols, dim_t micro_rows, const void* uncoded_ptr) {
   const dim_t blk_row = 16;
   const dim_t blk_col = 1;
-  const T* uncoded_data = static_cast<const T*>(uncoded_ptr);
-  const auto bsr_data = to_bsr_amx<T, group>(rows, cols, blk_row, blk_col, uncoded_data);
-  return new bsr_data_t<T>({blk_row, blk_col}, {rows, cols}, bsr_data.indptr(), bsr_data.indices(), bsr_data.data(),
-                           group);
+  assert(rows % micro_rows == 0);
+  dim_t num_micro_rows = rows / micro_rows;
+  std::vector<bsr_data_t<T>*>* sparse_data = new  std::vector<bsr_data_t<T>*>;
+  for(int i = 0; i < num_micro_rows; ++i){
+    const T* uncoded_data = static_cast<const T*>(uncoded_ptr) + i * micro_rows * cols;
+    const auto bsr_data = to_bsr_amx<T, group>(micro_rows, cols, blk_row, blk_col, uncoded_data);
+    sparse_data->push_back(new bsr_data_t<T>({blk_row, blk_col}, {rows, cols}, bsr_data.indptr(), bsr_data.indices(), bsr_data.data(),
+                           group));
+  }
+  return sparse_data;
 }
-template bsr_data_t<int8_t>* reorder_to_bsr_amx<int8_t, 64>(dim_t, dim_t, const void*);
-template bsr_data_t<bfloat16_t>* reorder_to_bsr_amx<bfloat16_t, 32>(dim_t, dim_t, const void*);
+template std::vector<bsr_data_t<int8_t>*>* reorder_to_bsr_amx<int8_t, 64>(dim_t, dim_t, dim_t, const void*);
+template std::vector<bsr_data_t<bfloat16_t>*>* reorder_to_bsr_amx<bfloat16_t, 32>(dim_t, dim_t, dim_t, const void*);
 
 template <typename T>
 uint64_t get_uncoded_nnz(int rows, int cols, const T* uncoded_data, int line_idx) {

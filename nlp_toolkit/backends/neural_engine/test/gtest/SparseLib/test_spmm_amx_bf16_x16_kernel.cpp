@@ -197,14 +197,22 @@ std::pair<const void*, const void*> make_data_obj(const dt& tensor_dt, dim_t row
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const jd::kernel_prop ker_prop,
-                                         const jd::engine_kind eng_kind, const std::vector<tensor_desc>& ts_descs) {
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N,
+                                         dim_t micro_bs = 64,
+                                         dim_t micro_oc = -1,
+                                         bool bf16_out = true) {
   std::unordered_map<std::string, std::string> op_attrs;
   // Step 1: Construct runtime data
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
-  dim_t N = ts_descs[0].shape()[0];
-  dim_t K = ts_descs[0].shape()[1];
+  tensor_desc wei_desc = {{N, K}, dt::bf16, ft::bsr};
+  tensor_desc src_desc = {{M / micro_bs, K, micro_bs}, dt::bf16, ft::abc};
+  tensor_desc bia_desc = {{N, 1}, dt::fp32, ft::ab};
+  tensor_desc dst_desc = {{M / micro_bs, N, micro_bs}, dt::fp32, ft::abc};
+  if (bf16_out) {
+    dst_desc = {{M / micro_bs, N, micro_bs}, dt::bf16, ft::abc};
+  }
+  std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
     dim_t rows = ts_descs[index].shape()[0];
@@ -219,9 +227,13 @@ std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const j
   }
 
   // Step 2: sparse data encoding
-  volatile bsr_data_t<bfloat16_t>* sparse_ptr = spns::reorder_to_bsr_amx<bfloat16_t, 32>(N, K, rt_data1[0]);
+  if (micro_oc == -1) {
+    micro_oc = N;
+  }
+  volatile auto sparse_ptr = spns::reorder_to_bsr_amx<bfloat16_t, 32>(N, K, micro_oc, rt_data1[0]);
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
-  operator_desc an_op_desc(ker_kind, ker_prop, eng_kind, ts_descs, op_attrs);
+  op_attrs["micro_oc"] = std::to_string(micro_oc);
+  operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs);
 
   // Step 3: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1};
@@ -233,49 +245,24 @@ std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const j
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
-  // Config
-  tensor_desc wei_desc;
-  tensor_desc src_desc;
-  tensor_desc bia_desc;
-  tensor_desc dst_desc;
-  int M;
-  int tileM;
+  /* minimal case */
+  cases.push_back({gen_case(64, 32, 16, 64, -1, false)});
 
-  M = 64;
-  tileM = 64;
-  wei_desc = {{16, 32}, dt::bf16, ft::bsr};
-  src_desc = {{M / tileM, 32, tileM}, dt::bf16, ft::abc};
-  bia_desc = {{16, 1}, dt::fp32, ft::ab};
-  dst_desc = {{M / tileM, 16, tileM}, dt::bf16, ft::abc};
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {wei_desc, src_desc, bia_desc, dst_desc})});
+  /* BERT-LARGE case */
+  cases.push_back({gen_case(128, 768, 768, 64, -1, true)});
+  cases.push_back({gen_case(128, 768, 768, 64, 384, true)});
+  cases.push_back({gen_case(128, 768, 768, 64, 192, true)});
+  cases.push_back({gen_case(128, 768, 768, 128, -1, true)});
+  cases.push_back({gen_case(128, 768, 768, 64, -1, false)});
+  cases.push_back({gen_case(128, 768, 768, 64, 384, false)});
 
-  M = 1024;
-  tileM = 64;
-  wei_desc = {{512, 512}, dt::bf16, ft::bsr};
-  src_desc = {{M / tileM, 512, tileM}, dt::bf16, ft::abc};
-  bia_desc = {{512, 1}, dt::fp32, ft::ab};
-  dst_desc = {{M / tileM, 512, tileM}, dt::fp32, ft::abc};
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {wei_desc, src_desc, bia_desc, dst_desc})});
+  /* DLRM case */
+  cases.push_back({gen_case(32768, 1024, 1024, 64, -1, true)});
+  cases.push_back({gen_case(32768, 1024, 1024, 128, -1, true)});
+  cases.push_back({gen_case(32768, 1024, 1024, 64, 512, true)});
+  cases.push_back({gen_case(32768, 1024, 1024, 64, 256, true)});
 
-  tileM = 128;
-  wei_desc = {{512, 512}, dt::bf16, ft::bsr};
-  src_desc = {{M / tileM, 512, tileM}, dt::bf16, ft::abc};
-  bia_desc = {{512, 1}, dt::fp32, ft::ab};
-  dst_desc = {{M / tileM, 512, tileM}, dt::fp32, ft::abc};
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {wei_desc, src_desc, bia_desc, dst_desc})});
-
-  M = 32768;
-  tileM = 64;
-  wei_desc = {{1024, 1024}, dt::bf16, ft::bsr};
-  src_desc = {{M / tileM, 1024, tileM}, dt::bf16, ft::abc};
-  bia_desc = {{1024, 1}, dt::fp32, ft::ab};
-  dst_desc = {{M / tileM, 1024, tileM}, dt::bf16, ft::abc};
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {wei_desc, src_desc, bia_desc, dst_desc})});
-
+  cases.push_back({gen_case(32768, 512, 512, 64, -1, true)});
   return ::testing::ValuesIn(cases);
 };
 

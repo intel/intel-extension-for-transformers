@@ -50,15 +50,17 @@ class spmm_amx_bf16_x16_kd_t : public kernel_desc_t {
 
  public:
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
-  const ssd::amx_bf16_params_t& params() const { return params_; }
+  const std::vector<ssd::amx_bf16_params_t>& params() const { return params_; }
+  const dim_t& num_kernels() const { return num_kernels_; }
 
  private:
-  bool spmm_params_init(ssd::amx_bf16_params_t& param_ref,  // NOLINT
+  bool spmm_params_init(std::vector<ssd::amx_bf16_params_t>& param_ref,  // NOLINT
                         const jd::operator_desc& op_cfg);
 
  private:
   jd::operator_desc op_desc_;
-  ssd::amx_bf16_params_t params_;
+  std::vector<ssd::amx_bf16_params_t> params_;
+  dim_t num_kernels_;
 };
 
 /**
@@ -81,12 +83,15 @@ class spmm_amx_bf16_x16_k_t : public kernel_t {
   bool spmm_kernel_create(jit_spmm_amx_bf16_x16_t** ker_pp, const ssd::amx_bf16_params_t& param);
   dim_t tileBS = 0;
   dim_t num_tileBS = 0;
+  dim_t tileOC = 0;
+  dim_t num_tileOC = 0;
   dim_t IC = 0;
   dim_t OC = 0;
   dim_t thread_num_ = 0;
 
  private:
   std::vector<jit_spmm_amx_bf16_x16_t*> jit_kers_;
+  std::vector<bfloat16_t*> weights_;
   const tile_param_t tile_param_ = {16, 16, 32, true, 2};
   amx_tile_config_t* amx_config_;
 };
