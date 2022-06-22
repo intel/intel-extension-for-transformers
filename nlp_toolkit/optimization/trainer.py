@@ -86,6 +86,7 @@ class BaseTrainer():
         self.fp32_model = None
         # This flag is set for the engine in the export_to_int8_onnx API.
         self.enable_executor = False
+        self.enable_bf16 = False
         self.orchestrate_opt = False
 
     @property
@@ -1457,17 +1458,19 @@ class BaseTrainer():
         torch.save(self.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
 
     def export_to_onnx(self, *args, **kwargs):
-        if not self.enable_inc_quant:
+        if self.enable_bf16:
+            self.export_to_bf16_onnx(*args, **kwargs)
+        elif not self.enable_inc_quant:
             self.export_to_fp32_onnx(*args, **kwargs)
         else:
             self.export_to_int8_onnx(*args, **kwargs)
 
     def export_to_fp32_onnx(self, 
-            save_path=None, 
-            opset_version=14, 
-            do_constant_folding=True,
-            verbose=True,
-            ):
+        save_path=None, 
+        opset_version=14, 
+        do_constant_folding=True,
+        verbose=True,
+    ):
         if self.fp32_model is None:
             model = self.model.eval()
         else:
@@ -1499,17 +1502,64 @@ class BaseTrainer():
             do_constant_folding=do_constant_folding,
         )
         if verbose:
-            info = "ONNX Model exported to path: {0}".format(onnx_save_path)
+            info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
+            logger.info("*"*len(info))
+            logger.info(info)
+            logger.info("*"*len(info))
+
+    def export_to_bf16_onnx(self, 
+        save_path=None, 
+        opset_version=14, 
+        do_constant_folding=True,
+        verbose=True,
+    ):
+        fp32_path = save_path + '.tmp' if save_path \
+          else os.path.join(self.args.output_dir, 'bf16-model.onnx.tmp')
+        onnx_save_path = save_path if save_path \
+          else os.path.join(self.args.output_dir, 'bf16-model.onnx')
+        self.export_to_fp32_onnx(
+            save_path=fp32_path, 
+            opset_version=opset_version, 
+            do_constant_folding=do_constant_folding,
+            verbose=False,
+        )
+
+        model = onnx.load(fp32_path)
+        bf16_type_list = ['MatMul', 'Gemm']
+        bf16_tensor_name_list = []
+
+        for node in model.graph.node:
+            if node.op_type in bf16_type_list:
+                for inp in node.input:
+                    bf16_tensor_name_list.append(inp)
+
+        from onnx import TensorProto, helper, numpy_helper
+        original_initializer = copy.deepcopy(model.graph.initializer)
+        for tensor in original_initializer:
+            if tensor.name in bf16_tensor_name_list:
+                bf16_tensor = helper.make_tensor(
+                    name=tensor.name,
+                    data_type=TensorProto.BFLOAT16,
+                    dims=tensor.dims,
+                    vals=numpy_helper.to_array(tensor),
+                )
+                model.graph.initializer.remove(tensor)
+                model.graph.initializer.append(bf16_tensor)
+        onnx.save(model, onnx_save_path)
+        os.remove(fp32_path)
+
+        if verbose:
+            info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
             logger.info("*"*len(info))
             logger.info(info)
             logger.info("*"*len(info))
 
     def export_to_int8_onnx(self,
-            save_path=None,
-            quant_format='QDQ',
-            dtype='S8S8',
-            opset_version=14,
-            ):
+        save_path=None,
+        quant_format='QDQ',
+        dtype='S8S8',
+        opset_version=14,
+    ):
         if self.provider != 'inc':   # pragma: no cover
             logger.error("export_to_onnx API only supports INC model right now.")
             sys.exit(0)
@@ -1667,7 +1717,7 @@ class BaseTrainer():
                                 extra_options={})
 
         os.remove(fp32_path)
-        info = "ONNX Model exported to path: {0}".format(onnx_save_path)
+        info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
         logger.info("*"*len(info))
         logger.info(info)
         logger.info("*"*len(info))

@@ -1,4 +1,5 @@
 import os
+import onnx
 import shutil
 import torch
 import torch.utils.data as data
@@ -199,6 +200,28 @@ class TestQuantization(unittest.TestCase):
             )
         trainer.args.predict_with_generate = True
         trainer.builtin_eval_func(self.model)
+
+    def test_bf16_onnx(self):
+        model = AutoModelForSequenceClassification.from_pretrained(
+            'google/bert_uncased_L-2_H-128_A-2'
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            'google/bert_uncased_L-2_H-128_A-2'
+        )
+        trainer = NLPSeq2SeqTrainer(
+                model=model,
+                tokenizer=tokenizer,
+                train_dataset=self.dummy_dataset,
+                eval_dataset=self.dummy_dataset,
+            )
+        trainer.enable_bf16 = True
+        trainer.export_to_onnx()
+        from onnx import TensorProto
+        model = onnx.load('./tmp_trainer/bf16-model.onnx')
+        for tensor in model.graph.initializer:
+            if 'MatMul' in tensor.name:
+                self.assertEqual(tensor.data_type, TensorProto.BFLOAT16)
+                break
 
 
 if __name__ == "__main__":
