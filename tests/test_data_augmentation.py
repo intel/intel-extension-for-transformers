@@ -43,14 +43,14 @@ class TestDataAugmentation(unittest.TestCase):
         aug.output_path = os.path.join(self.result_path, "test1.cvs")
         aug.augmenter_arguments = {'model_name_or_path': 'gpt2-medium'}
         aug.data_augment()
-        raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", split="train")
         print("Augmented data:")
+        count = 0
         with open(aug.output_path) as f:
             for line in f:
+                count += 1
                 print(line)
-        print(raw_datasets)
-        print(len(raw_datasets))
-        self.assertTrue(raw_datasets.num_rows == 10)
+        print("count:", count)
+        self.assertTrue(count == 11)
 
     def test_keyboard_augmentation(self):
         aug = DataAugmentation(augmenter_type="KeyboardAug")
