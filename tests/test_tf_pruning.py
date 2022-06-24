@@ -49,7 +49,8 @@ class TestTFPruning(unittest.TestCase):
             collate_fn=data_collator,
             drop_remainder=False,
             # `label_cols` is needed for user-defined losses, such as in this example
-            label_cols="label" if "label" in dataset.column_names else None,
+            # datasets v2.3.x need "labels", not "label"
+            label_cols=["label", "labels"] if "label" in dataset.column_names else None,
         )
         parser = HfArgumentParser(TFTrainingArguments)
         self.args = parser.parse_args_into_dataclasses(args=["--output_dir", "./quantized_model",

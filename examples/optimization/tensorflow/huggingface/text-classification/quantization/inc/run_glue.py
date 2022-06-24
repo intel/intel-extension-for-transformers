@@ -468,7 +468,8 @@ def main():
                 collate_fn=data_collator,
                 drop_remainder=drop_remainder,
                 # `label_cols` is needed for user-defined losses, such as in this example
-                label_cols="label" if "label" in dataset.column_names else None,
+                # datasets v2.3.x need "labels", not "label"
+                label_cols=["labels", "label"] if "label" in dataset.column_names else None,
             )
             tf_data[key] = data
         # endregion

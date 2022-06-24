@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import shutil
-import tensorflow as tf 
+import tensorflow as tf
 import unittest
 from datasets import load_dataset, load_metric
 from nlp_toolkit import (
@@ -43,14 +43,15 @@ class TestTFQuantization(unittest.TestCase):
         data_collator = DefaultDataCollator(return_tensors="tf")
         dataset = raw_datasets.select(range(10))
         self.dummy_dataset = dataset.to_tf_dataset(
-            columns=[col for col in dataset.column_names if col not in 
+            columns=[col for col in dataset.column_names if col not in
                      set(non_label_column_names + ["label"])],
             shuffle=False,
             batch_size=2,
             collate_fn=data_collator,
             drop_remainder=False,
             # `label_cols` is needed for user-defined losses, such as in this example
-            label_cols="label" if "label" in dataset.column_names else None,
+            # datasets v2.3.x need "labels", not "label"
+            label_cols=["label", "labels"] if "label" in dataset.column_names else None,
         )
 
 
