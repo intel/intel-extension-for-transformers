@@ -28,7 +28,6 @@ amx_tile_config_t* amx_tile_config_t::GetInstance() {
 }
 
 void amx_tile_config_t::amx_tile_configure(int thread_x, tile_param_t param) {
-  int x = param_.size();
   if (param != param_[thread_x]) {
     param_[thread_x] = param;
     sparselib_configure_tiles(param, config_);

@@ -4,11 +4,9 @@ set(HOST_LIBRARY_NAME "kernellibs")
 
 option(SPARSE_LIB_USE_AMX OFF)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -march=native")
+set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -fpic -Wall -fopenmp -march=native")
 if (SPARSE_LIB_USE_AMX)
     set(CMAKE_CXX_FLAGS "-DSPARSE_LIB_USE_AMX ${CMAKE_CXX_FLAGS}")
-else()
-    set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)

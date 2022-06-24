@@ -21,14 +21,23 @@
 #define MZ 64      // (M / MT)
 #define NUM_M 4    // (MZ / TILE_N)
 
-#define GET_OFF(field) offsetof(ssd::amx_bf16f32_inputs_t, field)
+#define GET_OFF_FP32(field) offsetof(ssd::amx_bf16f32_inputs_t, field)
+#define GET_OFF_BF16(field) offsetof(ssd::amx_bf16bf16_inputs_t, field)
 
 namespace jd {
+
 void jit_spmm_amx_bf16_x16_t::read_inputs() {
-  mov(reg_weight, ptr[reg_param + GET_OFF(weight)]);
-  mov(reg_src, ptr[reg_param + GET_OFF(src)]);
-  mov(reg_bia, ptr[reg_param + GET_OFF(bias)]);
-  mov(reg_dst, ptr[reg_param + GET_OFF(dst)]);
+  if (bf16_out) {
+    mov(reg_weight, ptr[reg_param + GET_OFF_BF16(weight)]);
+    mov(reg_src, ptr[reg_param + GET_OFF_BF16(src)]);
+    mov(reg_bia, ptr[reg_param + GET_OFF_BF16(bias)]);
+    mov(reg_dst, ptr[reg_param + GET_OFF_BF16(dst)]);
+  } else {
+    mov(reg_weight, ptr[reg_param + GET_OFF_FP32(weight)]);
+    mov(reg_src, ptr[reg_param + GET_OFF_FP32(src)]);
+    mov(reg_bia, ptr[reg_param + GET_OFF_FP32(bias)]);
+    mov(reg_dst, ptr[reg_param + GET_OFF_FP32(dst)]);
+  }
 }
 
 void jit_spmm_amx_bf16_x16_t::main_compute() {
@@ -43,30 +52,39 @@ void jit_spmm_amx_bf16_x16_t::main_compute() {
 
       tileloadd(tmm6, ptr[reg_weight + reg_stride + group * 512 * sizeof(src_t)]);
 
+      add(reg_m, reg_mstart);
       for (int m = 0; m < 4 * TILE_M; m += TILE_M) {
-        add(reg_m, reg_mstart);
         for (int k = 0; k < 32; k += 2) {
-          vmovdqu(ymm0, ptr[reg_m + (m + my_rows[k] * tileM) * sizeof(src_t)]);
-          vmovdqu(ymm1, ptr[reg_m + (m + my_rows[k + 1] * tileM) * sizeof(src_t)]);
-          vinserti32x8(zmm0, zmm0, ymm1, 1);
-          vpermw(zmm0, reg_mask, zmm0);
-          vmovdqu32(qword[rsp + 0x40 + (m / TILE_M * 512 + k / 2 * 32) * 2], zmm0);
+          vmovdqu(Xbyak::Ymm(k % 16), ptr[reg_m + (m + my_rows[k] * tileM) * sizeof(src_t)]);
+          vmovdqu(Xbyak::Ymm(k % 16 + 1), ptr[reg_m + (m + my_rows[k + 1] * tileM) * sizeof(src_t)]);
+          vinserti32x8(Xbyak::Zmm(k % 16), Xbyak::Zmm(k % 16), Xbyak::Ymm(k % 16 + 1), 1);
+          vpermw(Xbyak::Zmm(k % 16), reg_mask, Xbyak::Zmm(k % 16));
+          vmovdqu32(qword[rsp + 0x40 + (m / TILE_M * 512 + k / 2 * 32) * 2], Xbyak::Zmm(k % 16));
         }
-        sub(reg_m, reg_mstart);
       }
-      tileloadd(tmm4, ptr[rsp + reg_stride + (0x40)]);
+      sub(reg_m, reg_mstart);
+
+      tileloaddt1(tmm4, ptr[rsp + reg_stride + (0x40)]);
       tdpbf16ps(tmm0, tmm6, tmm4);
-      tileloadd(tmm4, ptr[rsp + reg_stride + (1024 + 0x40)]);
+      if (group == group_rowptr[b_row + 1] - 1) {
+        tilestored(ptr[rsp + reg_stride + (0x40)], tmm0);
+      }
+      tileloaddt1(tmm4, ptr[rsp + reg_stride + (1024 + 0x40)]);
       tdpbf16ps(tmm1, tmm6, tmm4);
-      tileloadd(tmm4, ptr[rsp + reg_stride + (2048 + 0x40)]);
+      if (group == group_rowptr[b_row + 1] - 1) {
+        tilestored(ptr[rsp + reg_stride + (0x40 + 1024)], tmm1);
+      }
+      tileloaddt1(tmm4, ptr[rsp + reg_stride + (2048 + 0x40)]);
       tdpbf16ps(tmm2, tmm6, tmm4);
-      tileloadd(tmm4, ptr[rsp + reg_stride + (3072 + 0x40)]);
+      if (group == group_rowptr[b_row + 1] - 1) {
+        tilestored(ptr[rsp + reg_stride + (0x40 + 2048)], tmm2);
+      }
+      tileloaddt1(tmm4, ptr[rsp + reg_stride + (3072 + 0x40)]);
       tdpbf16ps(tmm3, tmm6, tmm4);
+      if (group == group_rowptr[b_row + 1] - 1) {
+        tilestored(ptr[rsp + reg_stride + (0x40 + 3072)], tmm3);
+      }
     }
-    tilestored(ptr[rsp + reg_stride + (0x40)], tmm0);
-    tilestored(ptr[rsp + reg_stride + (0x40 + 1024)], tmm1);
-    tilestored(ptr[rsp + reg_stride + (0x40 + 2048)], tmm2);
-    tilestored(ptr[rsp + reg_stride + (0x40 + 3072)], tmm3);
     mov(r12, b_row * 16 * tileM * size_of_dst_t);
     mov(reg_temp, reg_mstart);
     if (!bf16_out) {
@@ -75,15 +93,15 @@ void jit_spmm_amx_bf16_x16_t::main_compute() {
     add(r12, reg_temp);
     add(reg_dst, r12);
     for (int i = 0; i < TILE_N; ++i) {
-      vpbroadcastd(zmm0, ptr[reg_bia + (b_row * TILE_N + i) * sizeof(dst_t)]);
+      vpbroadcastd(Xbyak::Zmm(i), ptr[reg_bia + (b_row * TILE_N + i) * sizeof(dst_t)]);
       for (int j = 0; j < 4 * TILE_M; j += TILE_M) {
-        vmovdqu32(zmm1, ptr[rsp + (0x40) + (j * TILE_N + i * TILE_M) * sizeof(dst_t)]);
-        vaddps(zmm1, zmm1, zmm0);
+        vmovdqu32(Xbyak::Zmm(j / TILE_M + TILE_N), ptr[rsp + (0x40) + (j * TILE_N + i * TILE_M) * sizeof(dst_t)]);
+        vaddps(Xbyak::Zmm(j / TILE_M + TILE_N), Xbyak::Zmm(j / TILE_M + TILE_N), Xbyak::Zmm(i));
         if (bf16_out) {
-          vcvtneps2bf16(reg_bf16, zmm1);
+          vcvtneps2bf16(reg_bf16, Xbyak::Zmm(j / TILE_M + TILE_N));
           vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], reg_bf16);
         } else {
-          vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], zmm1);
+          vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], Xbyak::Zmm(j / TILE_M + TILE_N));
         }
       }
     }
@@ -147,4 +165,5 @@ void jit_spmm_amx_bf16_x16_t::generate() {
     db(mask[i], wordlen);
   }
 }
+
 }  // namespace jd
