@@ -985,17 +985,26 @@ class BaseTrainer():
         inputs = self._prepare_inputs(inputs)
 
         if is_sagemaker_mp_enabled():
-            scaler = self.scaler if self.use_amp else None
-            loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps, scaler=scaler)
+            # pylint: disable=E0401
+            if version.parse(__version__) < version.parse("4.20"):
+                scaler = self.scaler if self.use_amp else None
+                loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps, scaler=scaler)
+            else:
+                loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps)
             return loss_mb.reduce_mean().detach().to(self.args.device)
 
         # pylint: disable=E0401
-        if self.use_amp:
-            from torch.cuda.amp import autocast
-            with autocast():
+        if version.parse(__version__) < version.parse("4.20"):
+            if self.use_amp:
+                from torch.cuda.amp import autocast
+                with autocast():
+                    loss = self.compute_loss(model, inputs)
+            else:
                 loss = self.compute_loss(model, inputs)
         else:
-            loss = self.compute_loss(model, inputs)
+            # pylint: disable=E0401
+            with self.compute_loss_context_manager():
+                loss = self.compute_loss(model, inputs)
 
         if self.args.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
@@ -1008,16 +1017,29 @@ class BaseTrainer():
             compression_loss = self.compression_ctrl.loss()
             loss += compression_loss
 
-        if self.use_amp:
-            self.scaler.scale(loss).backward()
-        elif self.use_apex:
-            with amp.scale_loss(loss, self.optimizer) as scaled_loss:
-                scaled_loss.backward()
-        elif self.deepspeed:
-            # loss gets scaled under gradient_accumulation_steps in deepspeed
-            loss = self.deepspeed.backward(loss)
+        # pylint: disable=E0401
+        if version.parse(__version__) < version.parse("4.20"):
+            if self.use_amp:
+                self.scaler.scale(loss).backward()
+            elif self.use_apex:
+                with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                    scaled_loss.backward()
+            elif self.deepspeed:
+                # loss gets scaled under gradient_accumulation_steps in deepspeed
+                loss = self.deepspeed.backward(loss)
+            else:
+                loss.backward()
         else:
-            loss.backward()
+            if self.do_grad_scaling:
+                self.scaler.scale(loss).backward()
+            elif self.use_apex:
+                with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                    scaled_loss.backward()
+            elif self.deepspeed:
+                # loss gets scaled under gradient_accumulation_steps in deepspeed
+                loss = self.deepspeed.backward(loss)
+            else:
+                loss.backward()
 
         return loss.detach()
 
