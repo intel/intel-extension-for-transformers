@@ -672,7 +672,7 @@ def main():
         max_eval_samples = data_args.max_eval_samples \
             if data_args.max_eval_samples is not None else len(eval_dataset)
         eval_samples = min(max_eval_samples, len(eval_dataset))
-        samples = eval_samples - (eval_samples % batch_size) \
+        samples = eval_samples - (eval_samples % training_args.per_device_eval_batch_size) \
             if training_args.dataloader_drop_last else eval_samples
         logger.info("metrics keys: {}".format(results.keys()))
         bert_task_acc_keys = ['eval_f1', 'eval_accuracy', 'eval_matthews_correlation',
@@ -681,10 +681,10 @@ def main():
         for key in bert_task_acc_keys:
             if key in results.keys():
                 ret = True
-                print('Batch size = %d', training_args.per_device_eval_batch_size)
+                print('Batch size = ', training_args.per_device_eval_batch_size)
                 print("Finally Eval {} Accuracy: {}".format(key, results[key]))
-                print("Latency: %.3f ms", (evalTime / samples * 1000))
-                print("Throughput: {} samples/sec".format(samples/evalTime))
+                print("Latency: {:.5f} ms".format(evalTime / samples * 1000))
+                print("Throughput: {:.5f} samples/sec".format(samples/evalTime))
                 break
         assert ret, "No metric returned, Please check inference metric!"
 

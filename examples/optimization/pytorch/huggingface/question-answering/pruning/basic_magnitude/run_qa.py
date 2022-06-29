@@ -658,10 +658,10 @@ def main():
         for key in bert_task_acc_keys:
             if key in results.keys():
                 ret = True
-                print('Batch size = %d', training_args.per_device_eval_batch_size)
+                print('Batch size = ', training_args.per_device_eval_batch_size)
                 print("Finally Eval {} Accuracy: {}".format(key, results[key]))
-                print("Latency: %.3f ms", (evalTime / samples * 1000))
-                print("Throughput: {} samples/sec".format(samples/evalTime))
+                print("Latency: {:.5f} ms".format(evalTime / samples * 1000))
+                print("Throughput: {:.5f} samples/sec".format(samples/evalTime))
                 break
         assert ret, "No metric returned, Please check inference metric!"
 

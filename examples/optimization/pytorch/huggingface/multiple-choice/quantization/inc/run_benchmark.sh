@@ -56,11 +56,9 @@ function run_benchmark {
 
     if [ "${topology}" = "bert_base_swag_static" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        model_type="bert"
         approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_base_swag_dynamic" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        model_type="bert"
         approach="PostTrainingDynamic"
     fi
 
@@ -85,6 +83,7 @@ function run_benchmark {
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ./tmp/benchmark_output \
         --overwrite_output_dir \
+        --overwrite_cache \
         --no_cuda \
         ${mode_cmd} \
         ${extra_cmd}

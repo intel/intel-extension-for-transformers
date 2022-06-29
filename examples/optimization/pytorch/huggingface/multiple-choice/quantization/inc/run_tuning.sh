@@ -41,11 +41,9 @@ function init_params {
 function run_tuning {
     if [ "${topology}" = "bert_base_swag_static" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        model_type="bert"
         approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_base_swag_dynamic" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        model_type="bert"
         approach="PostTrainingDynamic"
     fi
 
@@ -61,6 +59,7 @@ function run_tuning {
         --quantization_approach ${approach} \
         --tune \
         --pad_to_max_length \
+        --overwrite_cache \
         --overwrite_output_dir 
 }
 

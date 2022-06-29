@@ -139,6 +139,7 @@ function run_benchmark {
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ./tmp/benchmark_output \
         --overwrite_output_dir \
+        --overwrite_cache \
         --no_cuda \
         ${mode_cmd} \
         ${extra_cmd}

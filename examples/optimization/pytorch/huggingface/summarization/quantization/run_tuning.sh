@@ -60,6 +60,7 @@ function run_tuning {
         --no_cuda \
         --tune \
         --overwrite_output_dir \
+        --overwrite_cache \
         --predict_with_generate \
         --quantization_approach ${approach} \
         ${extra_cmd}

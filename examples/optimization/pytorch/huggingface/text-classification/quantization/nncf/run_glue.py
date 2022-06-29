@@ -632,10 +632,10 @@ def main():
             if key in metrics.keys():
                 ret = True
                 throughput = metrics.get("eval_samples_per_second")
-                print('Batch size = %d', training_args.per_device_eval_batch_size)
+                print('Batch size = ', training_args.per_device_eval_batch_size)
                 print("Finally Eval {} Accuracy: {}".format(key, metrics[key]))
-                print("Latency: %.3f ms", (1000 / throughput))
-                print("Throughput: {} samples/sec".format(throughput))
+                print("Latency: {:.5f} ms".format(1000 / throughput))
+                print("Throughput: {:.5f} samples/sec".format(throughput))
         assert ret, "No metric returned, Please check inference metric!"
 
     return

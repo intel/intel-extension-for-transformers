@@ -86,6 +86,7 @@ function run_benchmark {
         --output_dir ${tuned_checkpoint} \
         --no_cuda \
         --overwrite_output_dir \
+        --overwrite_cache \
         --predict_with_generate \
         ${mode_cmd} \
         ${extra_cmd}

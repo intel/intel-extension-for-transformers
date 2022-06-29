@@ -136,6 +136,7 @@ function run_tuning {
         --no_cuda \
         --tune \
         --overwrite_output_dir \
+        --overwrite_cache \
         --quantization_approach ${approach} \
         ${extra_cmd}
 }
