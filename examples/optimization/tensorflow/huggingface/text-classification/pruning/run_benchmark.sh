@@ -76,6 +76,7 @@ function run_benchmark {
         --do_eval \
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ${tuned_checkpoint} \
+        --overwrite_cache \
         ${mode_cmd} \
         ${extra_cmd}
 

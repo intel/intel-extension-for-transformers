@@ -59,6 +59,7 @@ function run_tuning {
         --output_dir ${tuned_checkpoint} \
         --no_cuda \
         --overwrite_output_dir \
+        --overwrite_cache \
         --quantization_approach ${approach} \
         --do_train \
         --tune \
