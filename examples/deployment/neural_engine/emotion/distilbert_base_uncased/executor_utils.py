@@ -20,19 +20,19 @@ import numpy as np
 from tqdm import tqdm
 from datasets import load_metric
 from executor_dataloader import DataLoader
-import sys
-sys.path.append('../../')
-from common import (
+from examples.deployment.neural_engine.common import(    
     log, 
     set_log_file,
     load_graph, 
-    DummyDataLoader
+    DummyDataLoader,
+    compute_performance
 )
 
 class Neural_Engine(object):
     def __init__(self, model_path, log_file):
         set_log_file(log, log_file)
         self.graph = load_graph(model_path)
+        self.log_file = log_file
 
     def accuracy(self, batch_size, seq_len, 
                  dataset_name, task_name, data_dir, tokenizer_dir):
@@ -76,24 +76,4 @@ class Neural_Engine(object):
                                  highs=[128, 1],
                                  dtypes=['int32', 'int32'],
                                  iteration=iteration)
-        # execute
-        log.info("Start engine ......")
-        duration = []
-        for idx in tqdm(range(len(dataset))):
-            start_time = time.time()
-            predictions = self.graph.inference(dataset[idx])
-            end_time = time.time()
-            duration.append(end_time - start_time)
-        log.info("End engine ......")
-        duration_w = duration[warm_up:]
-        ave_latency = np.array(duration_w).mean() / batch_size
-        p50_latency = np.percentile(duration_w, 50) / batch_size
-        p90_latency = np.percentile(duration_w, 90) / batch_size
-        p99_latency = np.percentile(duration_w, 99) / batch_size
-        log.info("Batch size = {}".format(batch_size))
-        log.info("Sequence length = {}".format(seq_len))
-        log.info("P50 Latency: {:.3f} ms".format(p50_latency * 1000))
-        log.info("P90 Latency: {:.3f} ms".format(p90_latency * 1000))
-        log.info("P99 Latency: {:.3f} ms".format(p99_latency * 1000))
-        log.info("Average Latency: {:.3f} ms".format(ave_latency * 1000))
-        log.info("Throughput: {:.3f} samples/sec".format(1. / ave_latency))
+        compute_performance(dataset, self.graph, log, self.log_file, warm_up, batch_size, seq_len)

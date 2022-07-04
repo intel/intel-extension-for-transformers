@@ -20,6 +20,8 @@ import logging
 import numpy as np
 from nlp_toolkit.backends.neural_engine.compile import compile
 from nlp_toolkit.backends.neural_engine.compile.graph import Graph
+from tqdm import tqdm
+import time
 
 # set log
 logging.basicConfig(level=logging.INFO)
@@ -70,6 +72,31 @@ def load_graph_from_ir(model_path):
         raise ValueError()
 
     return graph
+def compute_performance(dataset, graph, log, log_file, warm_up, batch_size, seq_len):
+    log.info("Start executor ......")
+    duration = []
+    for idx in tqdm(range(len(dataset))):
+        start_time = time.time()
+        predictions = graph.inference(dataset[idx])
+        end_time = time.time()
+        duration.append(end_time - start_time)
+    log.info("End executor ......")
+    duration_w = duration[warm_up:]
+    all_latency = log_file.replace('.log', '.npy')
+    all_latency = all_latency.replace('neural_engine', 'neural_engine/all_latency')
+    All_latency = np.array(duration_w)
+    np.save(all_latency,All_latency,allow_pickle=True, fix_imports=True)
+    ave_latency = np.array(duration_w).mean() / batch_size
+    p50_latency = np.percentile(duration_w, 50) / batch_size
+    p90_latency = np.percentile(duration_w, 90) / batch_size
+    p99_latency = np.percentile(duration_w, 99) / batch_size
+    log.info("Batch size = {}".format(batch_size))
+    log.info("Sequence length = {}".format(seq_len))
+    log.info("P50 Latency: {:.3f} ms".format(p50_latency * 1000))
+    log.info("P90 Latency: {:.3f} ms".format(p90_latency * 1000))
+    log.info("P99 Latency: {:.3f} ms".format(p99_latency * 1000))
+    log.info("Average Latency: {:.3f} ms".format(ave_latency * 1000))
+    log.info("Throughput: {:.3f} samples/sec".format(1. / ave_latency))
 
 # dummy dataloader
 class DummyDataLoader(object):

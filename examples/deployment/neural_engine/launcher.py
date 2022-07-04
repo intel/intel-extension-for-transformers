@@ -152,21 +152,24 @@ def latency_mode_grab_log(input_path, output, config, is_best_write, first_write
     """
     grep logs
     """
+    all_latency = []
+    batch_size = config.get_batch()
     avg_latency = float(0)
     p50_latency = float(0)
     p90_latency = float(0)
     p99_latency = float(0)
     throughput = float(0)
     throughput_str = ""
-    p50_str = ""
-    p90_str = ""
-    p99_str = ""
     avg_latency_str = ""
     i = 0
     while i < config.get_instance():
         log_path = get_tmp_log_path(config, input_path, i)
-
+        latency_path = get_tmp_log_path(config, input_path + "/all_latency", i)
+        latency_path = latency_path.replace('.log', '.npy')
+        instance_all_latency = np.load(latency_path)
+        all_latency.append(instance_all_latency)
         i += 1
+        
         try:
             with open(log_path, 'r') as src_fp:
                 for line in src_fp.readlines():
@@ -175,30 +178,22 @@ def latency_mode_grab_log(input_path, output, config, is_best_write, first_write
                     elif line.find("Average Latency:") >= 0:
                         avg_latency_str = line
 
-                    if line.find("P50 Latency:") >= 0:
-                        p50_str = line
-                    elif line.find("P90 Latency:") >= 0:
-                        p90_str = line
-                    elif line.find("P99 Latency:") >= 0:
-                        p99_str = line
             float_re = re.compile(r'\d+\.\d+')
             floats_throughput = [float(i) for i in float_re.findall(throughput_str)]
             floats_latency = [float(i) for i in float_re.findall(avg_latency_str)]
-            floats_p50_latency = [float(i) for i in float_re.findall(p50_str)]
-            floats_p90_latency = [float(i) for i in float_re.findall(p90_str)]
-            floats_p99_latency = [float(i) for i in float_re.findall(p99_str)]
 
             throughput += floats_throughput[0]
             avg_latency += floats_latency[0]
-            p50_latency = floats_p50_latency[0]
-            p90_latency = floats_p90_latency[0]
-            p99_latency = floats_p99_latency[0]
         except OSError as ex:
             print(ex)
             src_fp.close()
         finally:
             src_fp.close()
     avg_latency = avg_latency / config.instance
+    all_latency = np.array(all_latency)
+    p50_latency = (np.percentile(all_latency, 50) / batch_size) * 1000
+    p90_latency = (np.percentile(all_latency, 90) / batch_size) * 1000
+    p99_latency = (np.percentile(all_latency, 99) / batch_size) * 1000
 
     write_mode = 'a'
 
@@ -462,6 +457,9 @@ class LatencyLauncher(Launcher):
                                          memory_allocator, memory_planning,
                                          memory_prefix_list[mp_list_idx], args.mode)
                     tmp_log_path = get_tmp_log_path(tmp_config, current_path, 0)
+                    if os.path.exists(current_path + "/all_latency") == 0 :
+                        os.mkdir(current_path + "/all_latency")
+
                     cmd.append("--log_file="+tmp_log_path)
                     cmd_for_print.append("--log_file="+tmp_log_path)
 
@@ -539,6 +537,10 @@ class LatencyLauncher(Launcher):
                                              memory_allocator, memory_planning,
                                              memory_prefix_list[mp_list_idx], args.mode)
                         tmp_log_path = get_tmp_log_path(tmp_config, current_path, 0)
+                        if os.path.exists(current_path + "/all_latency") == 0 :
+                            os.mkdir(current_path + "/all_latency")
+                        log_file_path = '--log_file={}'.format(tmp_log_path)
+                        cmd.append (log_file_path)
                         cmd_for_print.append("--log_file="+tmp_log_path)
                         cmd.append("--log_file="+tmp_log_path)
 
@@ -642,7 +644,10 @@ class ThroughputLauncher(Launcher):
                                              memory_allocator, memory_planning,
                                              memory_prefix_list[mp_list_idx], args.mode)
                         tmp_log_path = get_tmp_log_path(tmp_config, current_path, i)
-
+                        if os.path.exists(current_path + "/all_latency") == 0 :
+                            os.mkdir(current_path + "/all_latency")
+                        log_file_path = '--log_file={}'.format(tmp_log_path)
+                        cmd.append (log_file_path)
                         cmd_tmp = " ".join(cmd)
                         cmd_postfix = ' 2>&1|tee {} & \\\n'.format(tmp_log_path)
                         cmd_tmp += cmd_postfix
