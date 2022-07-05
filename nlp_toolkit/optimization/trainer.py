@@ -1597,7 +1597,7 @@ class BaseTrainer():
             logger.info("Engine only support opset_version=11 " + 
                         "and int8 MatMul.")
         else:
-            if 'dynamic' in self.opt_model.tune_cfg['approach']:
+            if 'dynamic' in self.opt_model.q_config['approach']:
                 op_types_to_quantize=['MatMul', 'Gather', "LSTM", 'Conv']
                 pytorch_op_types_to_quantize=['Linear', 'Embedding', "LSTM", 
                                               'Conv1d', 'Conv2d']
@@ -1660,7 +1660,7 @@ class BaseTrainer():
                 quantize_nodes.append(node.name)
 
         # Match pytorch module name with onnx node name for fallbacked fp32 module
-        for k, v in self.opt_model.tune_cfg['op'].items():   # pragma: no cover
+        for k, v in self.opt_model.q_config['op'].items():   # pragma: no cover
             if k[1] not in pytorch_op_types_to_quantize or 'int8' in v['weight']['dtype']:
                 continue
             k_0 = k[0].split('.module')[0] if k[0] not in module_node_mapping else k[0]
@@ -1694,7 +1694,7 @@ class BaseTrainer():
         logger.info("Weight type: {}.".format(weight_type))
         logger.info("Activation type: {}.".format(activation_type))
 
-        if 'dynamic' in self.opt_model.tune_cfg['approach']:
+        if 'dynamic' in self.opt_model.q_config['approach']:
             ortq.quantize_dynamic(fp32_path,
                                 onnx_save_path,
                                 per_channel=True,

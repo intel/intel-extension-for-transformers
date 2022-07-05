@@ -21,6 +21,7 @@ from ..graph.graph import Graph
 from ..ops.op import OPERATORS
 from ..onnx_utils import graph_node_names_details
 from ..graph_utils import names_from_input
+from nlp_toolkit.backends.neural_engine.compile.ops.tensor import Tensor
 
 
 class ONNXExtractor(object):
@@ -61,7 +62,8 @@ class ONNXExtractor(object):
                             if op_type == 'Constant':
                                 continue
                             else:
-                                import engine.compile.graph_utils as util
+                                import nlp_toolkit.backends.neural_engine.compile.graph_utils\
+                                    as util
                                 input_tensor_names = inner_node.input
                                 for input_tensor_name in input_tensor_names:
                                     origin_tensor_name, input_tensor_name = \
@@ -78,7 +80,6 @@ class ONNXExtractor(object):
                                         if pre_node in model.initializer() and has_tensor:
                                             from onnx.numpy_helper import to_array
                                             data = to_array(pre_node)
-                                            from engine.compile.ops.tensor import Tensor
                                             shape = list(data.shape) if data.shape != () else [1]
                                             dtype = util.get_data_dtype(data)
                                             loop_tensor = Tensor(name=origin_tensor_name,

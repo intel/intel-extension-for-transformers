@@ -40,7 +40,7 @@ pip install neural-compressor
 
 ```python
 # import compile api form engine
-from engine.compile import compile
+from nlp_toolkit.backends.neural_engine.compile import compile
 # get the engine intermediate graph (input onnx or tf model)
 graph = compile(<model_path>)
 # save the graph and get the final ir

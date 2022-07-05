@@ -16,10 +16,10 @@
 
 import subprocess
 import sys
-import engine
+import nlp_toolkit
 
 if __name__ == '__main__':
-    path = engine.__path__[0]
+    path = nlp_toolkit.__path__[0]
     command = [path + '/../neural_engine']
     command.extend(sys.argv)
     subprocess.call(command)

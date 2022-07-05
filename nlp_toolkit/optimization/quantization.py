@@ -1,7 +1,11 @@
 from enum import Enum
 from transformers.utils.versions import require_version
 
-require_version("neural_compressor>=1.9.0", "To fix: pip install neural_compressor")
+try:
+    require_version("neural_compressor>=1.9.0")
+except:
+    require_version("neural_compressor_full>=1.9.0", "To fix: pip install neural_compressor")
+
 
 class QuantizationMode(Enum):
 

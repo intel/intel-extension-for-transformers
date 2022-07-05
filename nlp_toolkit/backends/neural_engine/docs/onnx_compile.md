@@ -49,7 +49,7 @@ Then you will get the `distilbert_base` model  `model.onnx`  without task layer 
 
 ```python
 # import compile api form engine
-from engine.compile import compile
+from nlp_toolkit.backends.neural_engine.compile import compile
 # get the engine intermediate graph (if trained on MRPC task)
 graph = compile("distilbert_base_uncased_mrpc.onnx")
 # get the engine intermediate graph (if not trained on MRPC task)

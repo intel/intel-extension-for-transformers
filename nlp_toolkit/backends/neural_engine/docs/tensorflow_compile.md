@@ -42,7 +42,7 @@ Here is one example show that how to use `Engine` to compile `TensorFlow` model 
 
 ```python
 # import compile api form engine
-from engine.compile import compile
+from nlp_toolkit.backends.neural_engine.compile import compile
 # get the engine intermediate graph
 graph = compile("./model/bert_base_mrpc.pb")
 # save the graph and get the final ir

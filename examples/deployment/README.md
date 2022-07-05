@@ -71,7 +71,7 @@ Open/Close Log:(GLOG_minloglevel=1/GLOG_minloglevel=2)
 If you use pip install -e . to install the neural engine in your current folder, please make sure to export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/your/libneural_engine.so.
 
 ```python
-from engine_py import Model
+from neural_engine_py import Model
 # load the model, config_path:path of generated yaml, weight_path: path of generated bin
 model = Model(config_path, weight_path)
 # use model.forward to do inference

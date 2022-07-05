@@ -100,7 +100,7 @@ Please refer to [data augmentation document](docs/data_augmentation.md) for more
 Neural Engine is one of reference deployments that NLP toolkit provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
 
 ```python
-from engine.compile import compile
+from nlp_toolkit.backends.neural_engine.compile import compile
 # /path/to/your/model is a TensorFlow pb model or ONNX model
 model = compile('/path/to/your/model')
 inputs = ... # [input_ids, segment_ids, input_mask]

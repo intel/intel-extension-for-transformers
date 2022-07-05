@@ -14,7 +14,7 @@ First you should check whether the nodes' op_types in the pattern are registered
 
 ```python
 # make sure you have cloned neural_compressor repo and installed neural_compressor
-from engine.compile.ops.op import OPERATORS
+from nlp_toolkit.backends.neural_engine.compile.ops.op import OPERATORS
 # All the op_type names and objects are stored in `OPERATORS`
 print(OPERATORS)
 ```
@@ -87,7 +87,7 @@ python setup.py install
 
 ```python
 # check your code changes
-from engine.compile.ops.op import OPERATORS
+from nlp_toolkit.backends.neural_engine.compile.ops.op import OPERATORS
 'Sqrt' and 'ReduceMean' in OPERATORS
 ```
 
@@ -142,7 +142,7 @@ In `Engine`, we treat the pattern fusion as the process of pattern mapping: from
   Like the node op_type, the new pattern also need to be registered. You can check the existing pattern classes by the commands below.
 
   ```python
-  from engine.compile.sub_graph.pattern import PATTERNS
+  from nlp_toolkit.backends.neural_engine.compile.sub_graph.pattern import PATTERNS
   print(PATTERNS)
   ```
 
@@ -199,7 +199,7 @@ In `Engine`, we treat the pattern fusion as the process of pattern mapping: from
   After save this python file, you can check it by retrieving the `PATTERNS`
 
   ```python
-  from engine.compile.sub_graph.pattern import PATTERNS
+  from nlp_toolkit.backends.neural_engine.compile.sub_graph.pattern import PATTERNS
   'LayerNorm' in PATTERNS
   ```
 

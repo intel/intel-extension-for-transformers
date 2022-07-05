@@ -364,7 +364,7 @@ class Graph(object):
     def graph_init(self, config, weight_data=None):
         '''
         example:
-                from engine.compile.graph import Graph
+                from nlp_toolkit.backends.neural_engine.compile.graph import Graph
                 newgraph = Graph()
                 newgraph.graph_init('./ir/conf.yaml', './ir/model.bin')
                 out = newgraph.inference([input_0, input_1, input_2])

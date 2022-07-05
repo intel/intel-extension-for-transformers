@@ -9,7 +9,7 @@ In this tutorial, we will deploy a TF/ONNX model using Engine inference OR throu
 Only support TensorFlow and ONNX model for now.
 
 ```
-from engine.compile import compile
+from nlp_toolkit.backends.neural_engine.compile import compile
 model = compile('/path/to/your/model')
 model.save('/ir/path')   # Engine graph could be saved to path
 ```
@@ -82,7 +82,7 @@ All input tensors are in an operator typed Input. But slightly difference is som
 Parse the yaml and weight bin to Engine Graph
 
 ```
-from engine.compile.graph import Graph
+from nlp_toolkit.backends.neural_engine.compile.graph import Graph
 model = Graph()
 model.graph_init('./ir/conf.yaml', './ir/model.bin')
 input_data = [input_0, input_1, input_2]
