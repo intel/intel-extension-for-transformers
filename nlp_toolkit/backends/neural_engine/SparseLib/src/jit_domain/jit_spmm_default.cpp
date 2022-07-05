@@ -389,9 +389,11 @@ void jit_spmm_default_t::generate() {
           L(L_nt_loop);
           // init dst buffer, like init the value to bias or the previous intermediate result.
           handle_dst_buffer_init(kb_idx, m_indices);
-          auto k_indices_map = get_idx_balanced(m_indices, sparse_indptr, sparse_indices, kb_lo, kb_hi);
-          auto k_inddata_map = get_val_balanced(m_indices, sparse_indptr, sparse_indices, kb_lo, kb_hi, sparse_inddata);
-          repeat_THx4xTW_matmal(m_indices, k_indices_map, k_inddata_map);
+          if (sparse_indptr[i_start] != sparse_indptr[i_end]) {
+            auto k_indices_map = get_idx_balanced(m_indices, sparse_indptr, sparse_indices, kb_lo, kb_hi);
+            auto k_inddata_map = get_val_balanced(m_indices, sparse_indptr, sparse_indices, kb_lo, kb_hi, sparse_inddata);
+            repeat_THx4xTW_matmal(m_indices, k_indices_map, k_inddata_map);
+          }
           // generate the epilogue logic. This is different depending on B_blocks value (should we
           // cache intermediate results or write results with post-op to output)
           handle_dst_buffer_epilogue(kb_idx, m_indices);

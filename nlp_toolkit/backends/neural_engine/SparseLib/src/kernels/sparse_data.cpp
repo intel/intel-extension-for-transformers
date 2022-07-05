@@ -60,7 +60,14 @@ uint64_t get_uncoded_nnz(int rows, int cols, const T* uncoded_data, int line_idx
   uint64_t cnt = 0;
   for (int i = line_start; i < line_end; ++i) {
     for (int j = 0; j < cols; ++j) {
-      cnt += is_nonzero(uncoded_data[i * cols + j]);
+      int raw_i = (i / 4);
+      auto val0 = uncoded_data[raw_i * 4 * cols + j];
+      auto val1 = uncoded_data[(raw_i * 4 + 1) * cols + j];
+      auto val2 = uncoded_data[(raw_i * 4 + 2) * cols + j];
+      auto val3 = uncoded_data[(raw_i * 4 + 3) * cols + j];
+      if (is_nonzero(val0) || is_nonzero(val1) || is_nonzero(val2) || is_nonzero(val3)) {
+        ++cnt;
+      }    
     }
   }
   return cnt;
@@ -78,11 +85,15 @@ sparse_data_t<T> tocsr(int rows, int cols, const T* uncoded_data) {
   for (int i = 0; i < rows; ++i) {
     indptr[i] = pos;
     for (int j = 0; j < cols; ++j) {
-      auto val = uncoded_data[i * cols + j];
-      if (is_nonzero(val)) {
+      int raw_i = i / 4;
+      auto val0 = uncoded_data[raw_i * 4 * cols + j];
+      auto val1 = uncoded_data[(raw_i * 4 + 1) * cols + j];
+      auto val2 = uncoded_data[(raw_i * 4 + 2) * cols + j];
+      auto val3 = uncoded_data[(raw_i * 4 + 3) * cols + j];
+      if (is_nonzero(val0) || is_nonzero(val1) || is_nonzero(val2) || is_nonzero(val3)) {
         indices[pos] = j;
-        data[pos] = val;
-        ++pos;
+        data[pos] = uncoded_data[i * cols + j];
+        ++pos;      
       }
     }
     indptr[i + 1] = pos;
@@ -99,9 +110,6 @@ std::pair<std::vector<int64_t>, std::vector<int64_t>> csr_with_permute(int rows,
     for (int i = 0; i < rows; ++i) {
       int kdim_nnz = get_uncoded_nnz(rows, cols, uncoded_data, i);
       int kdim_nnz_align = align_nnz(kdim_nnz);
-      if (kdim_nnz_align == 0) {  // ignore empty rows
-        continue;
-      }
       auto iter = buckets.begin();
       while (iter != buckets.end()) {
         if (iter->first == kdim_nnz_align) {

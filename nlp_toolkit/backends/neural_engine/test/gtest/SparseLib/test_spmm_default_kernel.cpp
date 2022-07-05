@@ -102,8 +102,11 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
         }
         int dst_idx = i * dst_stride[0] + j * dst_stride[1];
         int scale_idx = i;
+        if (dst_dt == dt::fp32) {
+          value = value * scales_data[scale_idx];
+        }
         if (append_sum) {
-          value = value * scales_data[scale_idx] + dst_fp32[dst_idx];
+          value += dst_fp32[dst_idx];
         }
 
         // Quantize dst data
@@ -497,6 +500,17 @@ static auto case_func = []() {
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
     {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
 
+  // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
+  src0_desc = {{32, 32}, dt::s8, ft::csrp};
+  src1_desc = {{32, 128}, dt::u8, ft::ab};
+  bias_desc = {{32, 1}, dt::s32, ft::ab};
+  dst_desc = {{32, 128}, dt::fp32, ft::ab};
+  scales_desc = {{32, 1}, dt::fp32, ft::ab};
+  mkn_blocks = "1,1,1";
+  tile_shape = "4,4";
+  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
+    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+ 
   // case: sparse: s8xu8+s32=s8, n_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
   src0_desc = {{32, 32}, dt::s8, ft::csrp};
   src1_desc = {{32, 128}, dt::u8, ft::ab};

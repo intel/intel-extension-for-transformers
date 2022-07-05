@@ -42,6 +42,30 @@ void jit_spmm_amx_bf16_x16_t::read_inputs() {
 
 void jit_spmm_amx_bf16_x16_t::main_compute() {
   for (int b_row = 0; b_row < nrowptr - 1; ++b_row) {
+    if (group_rowptr[b_row] == group_rowptr[b_row + 1]) {  // the row is all zeros
+      mov(r12, b_row * 16 * tileM * size_of_dst_t);
+      mov(reg_temp, reg_mstart);
+      if (!bf16_out) {
+        add(reg_temp, reg_temp);  // sizeof(dst_t) = sizeof(src_t) + sizeof(src_t)
+      }
+      add(r12, reg_temp);
+      add(reg_dst, r12);
+
+      for (int i = 0; i < TILE_N; ++i) {
+        vpbroadcastd(Xbyak::Zmm(i), ptr[reg_bia + (b_row * TILE_N + i) * sizeof(dst_t)]);
+        for (int j = 0; j < 4 * TILE_M; j += TILE_M) {
+          if (bf16_out) {
+            vcvtneps2bf16(reg_bf16, Xbyak::Zmm(i));
+            vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], reg_bf16);
+          } else {
+            vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], Xbyak::Zmm(i));
+          }
+        }
+      }
+      sub(reg_dst, r12);
+      continue;
+    }
+
     tilezero(tmm0);
     tilezero(tmm1);
     tilezero(tmm2);
