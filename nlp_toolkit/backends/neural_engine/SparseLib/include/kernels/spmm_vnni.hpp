@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_DEFAULT_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_DEFAULT_HPP_
+#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_VNNI_HPP_
+#define ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_VNNI_HPP_
 #include <vector>
 #include <memory>
 #include "operator_desc.hpp"
@@ -22,7 +22,7 @@
 #include "utils.hpp"
 #include "kernels/spmm_types.hpp"
 #include "kernels/sparse_data.hpp"
-#include "jit_domain/jit_spmm_default.hpp"
+#include "jit_domain/jit_spmm_vnni.hpp"
 
 namespace jd {
 // By convention,
@@ -30,20 +30,20 @@ namespace jd {
 //   2. xxxx_k_t is a specific derived primitive/kernel.
 //   3. jit_xxxx_t is JIT assembly implementation of a specific derived primitive/kernel.
 //   where, "xxxx" represents an algorithm, such as brgemm, GEMM and so on.
-class spmm_default_k_t;
+class spmm_vnni_k_t;
 /**
  * @brief a derived kernel descriptor. flat_param_t is its class member.
  */
-class spmm_default_kd_t : public kernel_desc_t {
+class spmm_vnni_kd_t : public kernel_desc_t {
  public:
-  explicit spmm_default_kd_t(const jd::operator_desc& op_desc)
+  explicit spmm_vnni_kd_t(const jd::operator_desc& op_desc)
     : kernel_desc_t(kernel_kind::sparse_matmul), op_desc_(op_desc) {}
-  virtual ~spmm_default_kd_t() {}
+  virtual ~spmm_vnni_kd_t() {}
 
  public:
   bool init() override;
   // kernel_desc_t::create_primitive() override.
-  DECLARE_COMMON_PD_T(spmm_default_k_t, spmm_default_kd_t);
+  DECLARE_COMMON_PD_T(spmm_vnni_k_t, spmm_vnni_kd_t);
 
  public:
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
@@ -61,11 +61,11 @@ class spmm_default_kd_t : public kernel_desc_t {
 /**
  * @brief a derived kernel. kd_t and jit_domain are its class members.
  */
-class spmm_default_k_t : public kernel_t {
+class spmm_vnni_k_t : public kernel_t {
  public:
-  using kd_t = spmm_default_kd_t;
-  explicit spmm_default_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
-  virtual ~spmm_default_k_t() {}
+  using kd_t = spmm_vnni_kd_t;
+  explicit spmm_vnni_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
+  virtual ~spmm_vnni_k_t() {}
 
  public:
   bool init() override;
@@ -77,11 +77,11 @@ class spmm_default_k_t : public kernel_t {
   }
 
  private:
-  bool spmm_kernel_create(jit_spmm_default_t** ker_pp, const ssd::flat_param_t& param);
+  bool spmm_kernel_create(jit_spmm_vnni_t** ker_pp, const ssd::flat_param_t& param);
 
  private:
-  std::vector<jit_spmm_default_t*> jit_kers_;
+  std::vector<jit_spmm_vnni_t*> jit_kers_;
   int64_t nthr_;
 };
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_DEFAULT_HPP_
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_VNNI_HPP_

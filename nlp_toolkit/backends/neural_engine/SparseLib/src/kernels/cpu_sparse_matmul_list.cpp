@@ -18,7 +18,7 @@
 #include "cpu_engine.hpp"
 #include "impl_list_item.hpp"
 #include "kernels/spmm_amx_bf16_x16.hpp"
-#include "kernels/spmm_default.hpp"
+#include "kernels/spmm_vnni.hpp"
 #include "param_types.hpp"
 
 namespace jd {
@@ -39,8 +39,8 @@ static const std::map<map_key_t, std::vector<impl_list_item_t>> impl_list_map = 
      {CPU_INSTANCE(spmm_amx_bf16_x16_k_t), NULL_INSTANCE()}},
     {{kernel_prop::forward_inference, dt::bf16, dt::bf16, dt::bf16},
      {CPU_INSTANCE(spmm_amx_bf16_x16_k_t), NULL_INSTANCE()}},
-    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::s8}, {CPU_INSTANCE(spmm_default_k_t), NULL_INSTANCE()}},
-    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::fp32}, {CPU_INSTANCE(spmm_default_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::s8}, {CPU_INSTANCE(spmm_vnni_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::fp32}, {CPU_INSTANCE(spmm_vnni_k_t), NULL_INSTANCE()}},
 };
 
 const std::vector<impl_list_item_t>* get_sparse_matmul_impl_list(const operator_desc& op_desc) {

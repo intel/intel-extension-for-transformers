@@ -82,17 +82,19 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   // Computing the kernel
   if (dims == 2) {
     for (int i = 0; i < M; ++i) {
-      #pragma omp parallel for
+#pragma omp parallel for
       for (int j = 0; j < N; ++j) {
         float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
-        #pragma omp simd
+#pragma omp simd
         for (int k = 0; k < K; ++k) {
           int idx0 = i * left_stride[0] + k * left_stride[1];
           int idx1 = k * right_stride[0] + j * right_stride[1];
-          auto left_k = (left_dt == dt::fp32) ? left_fp32[idx0] : ((left_dt == dt::u8) ?
-            left_u8[idx0] : ((left_dt == dt::s8) ? left_s8[idx0] : 0));
-          auto right_k = (right_dt == dt::fp32) ? right_fp32[idx1] : ((right_dt == dt::u8) ?
-            right_u8[idx1] : ((right_dt == dt::s8) ? right_s8[idx1] : 0));
+          auto left_k = (left_dt == dt::fp32)
+                            ? left_fp32[idx0]
+                            : ((left_dt == dt::u8) ? left_u8[idx0] : ((left_dt == dt::s8) ? left_s8[idx0] : 0));
+          auto right_k = (right_dt == dt::fp32)
+                             ? right_fp32[idx1]
+                             : ((right_dt == dt::u8) ? right_u8[idx1] : ((right_dt == dt::s8) ? right_s8[idx1] : 0));
           value += left_k * right_k;
         }
 
@@ -162,15 +164,15 @@ bool check_result(const test_params_t& t) {
   return false;
 }
 
-class SpmmDefaultKernelTest : public testing::TestWithParam<test_params_t> {
+class SpmmVNNIKernelTest : public testing::TestWithParam<test_params_t> {
  protected:
-  SpmmDefaultKernelTest() {}
-  virtual ~SpmmDefaultKernelTest() {}
+  SpmmVNNIKernelTest() {}
+  virtual ~SpmmVNNIKernelTest() {}
   void SetUp() override {}
   void TearDown() override {}
 };
 
-TEST_P(SpmmDefaultKernelTest, TestPostfix) {
+TEST_P(SpmmVNNIKernelTest, TestPostfix) {
   test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
   EXPECT_TRUE(check_result(t));
 }
@@ -184,25 +186,24 @@ void prepare_sparse_data(T* vector_data, std::vector<int64_t> a_shape) {
   int64_t nums = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
   int64_t block_nums = nums / BLOCK;
   float sparse_ratio = 0.7;
-  std::unordered_set<int64_t> zero_block_index;
   uint32_t seed = 123;
-  while (zero_block_index.size() < block_nums * sparse_ratio) {
-    zero_block_index.insert((rand_r(&seed) % (block_nums - 1)));
-  }
-  for (const auto& i : zero_block_index) {
-    for (int j = 0; j < BLOCK; ++j) {
-      int64_t zero_idx = i * BLOCK + j;
-      int64_t zero_row = zero_idx / M;
-      int64_t zero_col = zero_idx % M;
-      // vector_data is (M, K). Block zeros is continuous in M-dim.
-      vector_data[zero_col * K + zero_row] = 0;
+  for (int mb = 0; mb < M / BLOCK; ++mb) {
+    for (int kb = 0; kb < K; ++kb) {
+      bool fill_zero = rand_r(&seed) % 100 <= (sparse_ratio * 100);
+      if (fill_zero) {
+        for (int m = 0; m < BLOCK; ++m) {
+          for (int k = 0; k < 1; ++k) {
+            vector_data[(mb * BLOCK + m) * K + kb + k] = 0;
+          }
+        }
+      }
     }
   }
 }
 
-std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_shape,
-    const dt& a_dt, bool is_clear = false, bool is_sparse = false,
-    const std::vector<float>& ranges = {-10, 10}) {
+std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_shape, const dt& a_dt,
+                                                  bool is_clear = false, bool is_sparse = false,
+                                                  const std::vector<float>& ranges = {-10, 10}) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
@@ -238,14 +239,12 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
 }
 
 std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const jd::kernel_prop ker_prop,
-  const jd::engine_kind eng_kind, const std::vector<tensor_desc>& ts_descs,
-  const std::string& mkn_blocks = "1,1,1", const std::string& tile_shape = "4,4", std::string post_op = "") {
+                                         const jd::engine_kind eng_kind, const std::vector<tensor_desc>& ts_descs,
+                                         const std::string& mkn_blocks = "1,1,1", const std::string& tile_shape = "4,4",
+                                         std::string post_op = "") {
   // Step 1: Construct operator config
   std::unordered_map<std::string, std::string> op_attrs = {
-    {"mkn_blocks", mkn_blocks},
-    {"tile_shape", tile_shape},
-    {"post_op", post_op}
-  };
+      {"mkn_blocks", mkn_blocks}, {"tile_shape", tile_shape}, {"post_op", post_op}};
   bool append_sum = (op_attrs["post_op"] == "append_sum");
 
   // Step 2: Construct runtime data
@@ -256,8 +255,7 @@ std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const j
     bool is_clear = (index == ssd::DST && !append_sum) ? true : false;
     bool is_sparse = (index == ssd::WEI) ? true : false;
     auto ranges = (index == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
-    auto data_pair =  make_data_obj(ts_descs[index].shape(), ts_descs[index].dtype(),
-                                    is_clear, is_sparse, ranges);
+    auto data_pair = make_data_obj(ts_descs[index].shape(), ts_descs[index].dtype(), is_clear, is_sparse, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -298,7 +296,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 256, K = 256, N = 384
   src0_desc = {{256, 256}, dt::s8, ft::csrp};
@@ -309,7 +308,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 256, K = 1024, N = 128
   src0_desc = {{256, 1024}, dt::s8, ft::csrp};
@@ -320,7 +320,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 256, K = 1024, N = 384
   src0_desc = {{256, 1024}, dt::s8, ft::csrp};
@@ -331,7 +332,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 1024, K = 256, N = 128
   src0_desc = {{1024, 256}, dt::s8, ft::csrp};
@@ -342,7 +344,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 1024, K = 256, N = 384
   src0_desc = {{1024, 256}, dt::s8, ft::csrp};
@@ -353,7 +356,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   /* bert-base config. case: spmm: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N) */
   // when M = 768, K = 768, N = 128
@@ -365,7 +369,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 768, K = 768, N = 384
   src0_desc = {{768, 768}, dt::s8, ft::csrp};
@@ -376,7 +381,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 768, K = 3072, N = 128
   src0_desc = {{768, 3072}, dt::s8, ft::csrp};
@@ -387,7 +393,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 768, K = 3072, N = 384
   src0_desc = {{768, 3072}, dt::s8, ft::csrp};
@@ -398,7 +405,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 3072, K = 768, N = 128
   src0_desc = {{3072, 768}, dt::s8, ft::csrp};
@@ -409,7 +417,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 3072, K = 768, N = 384
   src0_desc = {{3072, 768}, dt::s8, ft::csrp};
@@ -420,7 +429,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   /* bert-large config. case: spmm: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N) */
   // when M = 1024, K = 1024, N = 128
@@ -432,7 +442,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 1024, K = 1024, N = 384
   src0_desc = {{1024, 1024}, dt::s8, ft::csrp};
@@ -443,7 +454,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 1024, K = 4096, N = 128
   src0_desc = {{1024, 4096}, dt::s8, ft::csrp};
@@ -454,7 +466,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 1024, K = 4096, N = 384
   src0_desc = {{1024, 4096}, dt::s8, ft::csrp};
@@ -465,7 +478,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 4096, K = 1024, N = 128
   src0_desc = {{4096, 1024}, dt::s8, ft::csrp};
@@ -476,7 +490,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // when M = 4096, K = 1024, N = 384
   src0_desc = {{4096, 1024}, dt::s8, ft::csrp};
@@ -487,7 +502,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
   src0_desc = {{32, 32}, dt::s8, ft::csrp};
@@ -498,7 +514,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
   src0_desc = {{32, 32}, dt::s8, ft::csrp};
@@ -509,8 +526,9 @@ static auto case_func = []() {
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
- 
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
+
   // case: sparse: s8xu8+s32=s8, n_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
   src0_desc = {{32, 32}, dt::s8, ft::csrp};
   src1_desc = {{32, 128}, dt::u8, ft::ab};
@@ -520,7 +538,8 @@ static auto case_func = []() {
   mkn_blocks = "1,1,2";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // case: sparse: s8xu8+s32=s8, k_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
   src0_desc = {{32, 32}, dt::s8, ft::csrp};
@@ -531,7 +550,8 @@ static auto case_func = []() {
   mkn_blocks = "1,2,1";
   tile_shape = "4,4";
   cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape), false});
+                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
+                   false});
 
   // case: sparse: s8xu8+s32+append_fp32=fp32,
   // weight(M, K) * activation(K, N) + bias(M, 1) + append_sum(M, N) = dst(M, N)
@@ -542,11 +562,13 @@ static auto case_func = []() {
   scales_desc = {{32, 1}, dt::fp32, ft::ab};
   mkn_blocks = "1,1,1";
   tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-    {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape, "append_sum"), false});
+  cases.push_back(
+      {gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
+                {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape, "append_sum"),
+       false});
 
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, SpmmDefaultKernelTest, case_func());
+INSTANTIATE_TEST_SUITE_P(Prefix, SpmmVNNIKernelTest, case_func());
 }  // namespace jd

@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_SPMM_DEFAULT_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_SPMM_DEFAULT_HPP_
+#ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_SPMM_VNNI_HPP_
+#define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_SPMM_VNNI_HPP_
 
 #include <omp.h>
 #include <glog/logging.h>
@@ -27,14 +27,14 @@
 
 namespace jd {
 /**
- * @brief jit_spmm_default_t calculates this kind matmul: sparse x dense = dst.
+ * @brief jit_spmm_vnni_t calculates this kind matmul: sparse x dense = dst.
  *        weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
  */
-class jit_spmm_default_t : public jit_generator {
+class jit_spmm_vnni_t : public jit_generator {
  public:
-  explicit jit_spmm_default_t(const ssd::flat_param_t& param)
+  explicit jit_spmm_vnni_t(const ssd::flat_param_t& param)
       : jit_generator(), param_(param), csrp_(param_.sparse_ptr) {}
-  virtual ~jit_spmm_default_t() {}
+  virtual ~jit_spmm_vnni_t() {}
 
  public:
   const void* sequence_vals() const { return seq_vals_.data(); }
@@ -130,4 +130,4 @@ class jit_spmm_default_t : public jit_generator {
   static constexpr int USED_VREGS = 3;
 };
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_SPMM_DEFAULT_HPP_
+#endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_SPMM_VNNI_HPP_

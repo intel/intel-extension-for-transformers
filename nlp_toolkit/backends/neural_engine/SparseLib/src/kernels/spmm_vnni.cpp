@@ -12,11 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "kernels/spmm_default.hpp"
+#include "kernels/spmm_vnni.hpp"
 
 namespace jd {
-//// Part1: class spmm_default_kd_t
-bool spmm_default_kd_t::init() {
+//// Part1: class spmm_vnni_kd_t
+bool spmm_vnni_kd_t::init() {
   using dt = jd::data_type;
   const auto& wei_desc = op_desc_.tensor_descs()[ssd::WEI];
   const auto& src_desc = op_desc_.tensor_descs()[ssd::SRC];
@@ -45,7 +45,7 @@ bool spmm_default_kd_t::init() {
   return true;
 }
 
-bool spmm_default_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int nthr,
+bool spmm_vnni_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int nthr,
                                          int ithr) {
   const auto& wei_desc = op_desc.tensor_descs()[ssd::WEI];
   const auto& src_desc = op_desc.tensor_descs()[ssd::SRC];
@@ -78,7 +78,7 @@ bool spmm_default_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd:
   return true;
 }
 
-std::vector<int64_t> spmm_default_kd_t::get_avg_group(const csrp_data_t<int8_t>* sparse_ptr, int nthr, int ithr) {
+std::vector<int64_t> spmm_vnni_kd_t::get_avg_group(const csrp_data_t<int8_t>* sparse_ptr, int nthr, int ithr) {
   if (nthr == 1) {
     return sparse_ptr->xgroup();
   }
@@ -111,12 +111,12 @@ std::vector<int64_t> spmm_default_kd_t::get_avg_group(const csrp_data_t<int8_t>*
   return ans;
 }
 
-//// Part2: class spmm_default_k_t
-bool spmm_default_k_t::init() {
+//// Part2: class spmm_vnni_k_t
+bool spmm_vnni_k_t::init() {
   int nthr = kd()->operator_desc().impl_nthr();
   jit_kers_.resize(nthr);
   for (int idx = 0; idx < nthr; ++idx) {
-    jit_spmm_default_t* ker = nullptr;
+    jit_spmm_vnni_t* ker = nullptr;
     auto status = spmm_kernel_create(&ker, derived_kd()->params()[idx]);
     if (!status) {
       return false;
@@ -126,15 +126,15 @@ bool spmm_default_k_t::init() {
   return true;
 }
 
-bool spmm_default_k_t::spmm_kernel_create(jit_spmm_default_t** ker_pp, const ssd::flat_param_t& param) {
-  *ker_pp = new jit_spmm_default_t(param);
+bool spmm_vnni_k_t::spmm_kernel_create(jit_spmm_vnni_t** ker_pp, const ssd::flat_param_t& param) {
+  *ker_pp = new jit_spmm_vnni_t(param);
   if (*ker_pp == nullptr) {
     return false;
   }
   return (*ker_pp)->create_kernel();
 }
 
-bool spmm_default_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool spmm_vnni_k_t::execute(const std::vector<const void*>& rt_data) const {
   int nthr = kd()->operator_desc().impl_nthr();
   std::vector<ssd::flat_data_t> td(nthr);
 #pragma omp parallel for num_threads(nthr)

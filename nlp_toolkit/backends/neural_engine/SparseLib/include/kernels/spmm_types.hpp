@@ -34,7 +34,7 @@ static constexpr int DST = 3;
 static constexpr int SCALES = 4;
 
 /**
- * @brief Scenarios supported by spmm_default kernel/algorithm.
+ * @brief Scenarios supported by spmm_vnni kernel/algorithm.
  */
 enum class sparse_scheme : uint8_t {
   undef,

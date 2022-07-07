@@ -21,8 +21,9 @@ cd test/gtest/SparseLib/
 mkdir build
 cd build
 cmake ..
+# cmake .. -DSPARSE_LIB_USE_AMX=True // if enabling AMX support
 make -j
-./test_spmm_default_kernel
+./test_spmm_vnni_kernel
 ```
 
 ## API reference for users
@@ -37,7 +38,7 @@ make -j
   std::vector<const void*> rt_data = {data0, data1, data2, data3, data4};
   spmm_kern.execute(rt_data);
 ```
-See test_spmm_default_kernel.cpp for details.
+See test_spmm_vnni_kernel.cpp for details.
 
 ## Developer guide for developers
 * The jit_domain/ directory, containing different JIT assemblies (Derived class of Xbyak::CodeGenerator).
