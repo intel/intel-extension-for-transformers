@@ -38,8 +38,9 @@ Xbyak::Zmm jit_spmm_vnni_t::dst_tile_Vmm(int i, int j) {
 
 void jit_spmm_vnni_t::load_bias(const std::vector<int64_t>& m_indices) {
   for (int i = 0; i < TH_; ++i) {
-    for (int j = 0; j < TW_; ++j) {
-      vpbroadcastd(dst_tile_Vmm(i, j), ptr[reg_bias + m_indices[i] * BYTE4]);
+    vpbroadcastd(dst_tile_Vmm(i, 0), ptr[reg_bias + m_indices[i] * BYTE4]);
+    for (int j = 1; j < TW_; ++j) {
+      vmovdqa32(dst_tile_Vmm(i, j), dst_tile_Vmm(i, 0));
     }
   }
 }
