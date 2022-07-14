@@ -150,4 +150,15 @@ bool init_amx() {
   return false;
 #endif
 }
+
+template <typename T>
+inline bool all_zeros(const T* data, dim_t ld, dim_t nd1, dim_t nd2) {
+  for (dim_t i = 0; i < nd1; i++) {
+    for (dim_t j = 0; j < nd2; j++) {
+      if (data[i * ld + j] != 0) return false;
+    }
+  }
+  return true;
+}
+template bool all_zeros<float>(const float*, dim_t, dim_t, dim_t);
 }  // namespace jd

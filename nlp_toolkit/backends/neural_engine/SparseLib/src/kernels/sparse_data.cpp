@@ -247,5 +247,45 @@ template bsr_data_t<bfloat16_t> to_bsr_amx<bfloat16_t, 32>(dim_t rows, dim_t col
                                                            const bfloat16_t* uncoded_data);
 template bsr_data_t<int8_t> to_bsr_amx<int8_t, 64>(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col,
                                                    const int8_t* uncoded_data);
+
+template <typename T>
+bsc_data_t<T> tobsc(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data) {
+  assert(rows % blk_row == 0);
+  assert(cols % blk_col == 0);
+
+  std::vector<dim_t> colptr;
+  std::vector<dim_t> rowidxs;
+
+  for (dim_t ib_col = 0; ib_col < cols / blk_col; ib_col++) {
+    colptr.push_back(rowidxs.size());
+    for (dim_t ib_row = 0; ib_row < rows / blk_row; ib_row++) {
+      const T* blk_start = uncoded_data + ib_row * blk_row * cols + ib_col * blk_col;
+      if (!all_zeros(blk_start, rows, blk_row, blk_col)) {
+        rowidxs.push_back(ib_row);
+      }
+    }
+  }
+
+  dim_t blksize = blk_row * blk_col;
+  dim_t nnz = rowidxs.size();
+  colptr.push_back(nnz);
+
+  std::vector<T> data(nnz * blksize, 0);
+  T* curr_data_ptr = data.data();
+  for (dim_t ib_col = 0; ib_col < cols / blk_col; ib_col++) {
+    for (dim_t ib_row_idx = colptr[ib_col]; ib_row_idx < colptr[ib_col + 1]; ib_row_idx++) {
+      dim_t ib_row = rowidxs[ib_row_idx];
+      const T* dense_start = uncoded_data + ib_row * blk_row * cols + ib_col * blk_col;
+      for (dim_t i = 0; i < blk_row; i++) {
+        for (dim_t j = 0; j < blk_col; j++) {
+          *(curr_data_ptr++) = dense_start[i * cols + j];
+        }
+      }
+    }
+  }
+  return bsc_data_t<T>({blk_row, blk_col}, {rows, cols}, colptr, rowidxs, data);
+}
+template bsc_data_t<float> tobsc<float>(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col,
+                                        const float* uncoded_data);
 }  // namespace spns
 }  // namespace jd

@@ -23,6 +23,8 @@
 namespace jd {
 template <typename T>
 class csrp_data_t;
+template <typename T>
+class bsc_data_t;
 namespace ssd {
 /**
  * @brief tensors index configuration of this kernel.
@@ -113,6 +115,29 @@ struct amx_inputs_t {
 
 typedef amx_inputs_t<bfloat16_t, bfloat16_t, float> amx_bf16f32_inputs_t;
 typedef amx_inputs_t<bfloat16_t, bfloat16_t, bfloat16_t> amx_bf16bf16_inputs_t;
+
+struct avx512_fp32_params_t {
+  int64_t M;
+  int64_t K;
+  int64_t N;
+  bool has_bias;
+  bsc_data_t<float>* sparse_ptr;
+  int64_t im_start;  // start m-idx of dest to be calculated
+  int64_t im_end;    // end m-idx of dest to be calculated
+  int64_t in_start;  // start n-idx of dest to be calculated
+  int64_t in_end;    // end n-idx of dest to be calculated
+};
+
+/**
+ * @brief kernel data at runtime.
+ */
+struct avx512_data_t {
+  const float* dense;
+  const float* sparse;
+  const float* bias;
+  float* dst;
+};
+
 }  // namespace ssd
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_TYPES_HPP_

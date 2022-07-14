@@ -64,5 +64,18 @@ template <typename T>
 std::vector<T> split_str(const std::string& s, const char& delim = ',');
 
 bool init_amx();
+
+/**
+ * @brief Check if every element in a sub matrix is zero
+ *
+ * @tparam T Element type of the matrix data
+ * @param data pointer to the start element of th sub matrix to check
+ * @param ld leading dim of the data
+ * @param nd1 size in the major dimension
+ * @param nd2 size in another dimension
+ */
+template <typename T>
+bool all_zeros(const T* data, dim_t ld, dim_t nd1, dim_t nd2);
+
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_

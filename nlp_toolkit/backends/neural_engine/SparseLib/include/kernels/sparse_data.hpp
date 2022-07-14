@@ -43,6 +43,10 @@ class sparse_data_t {
   inline const std::vector<int64_t>& indptr() const { return indptr_; }
   inline const std::vector<int64_t>& indices() const { return indices_; }
   inline const std::vector<T>& data() const { return data_; }
+  /**
+   * @brief Get the number of non-zero elements / blocks (for blocked formats)
+   * of the matrix.
+   */
   virtual uint64_t getnnz(int idx = -1) const {
     if (indptr_.empty()) {
       return 0;
@@ -118,6 +122,24 @@ class bsr_data_t : public sparse_data_t<T> {
   std::vector<dim_t> block_size_;
 };
 
+// BSC data is still row-major inside a block
+template <typename T>
+class bsc_data_t : public sparse_data_t<T> {
+ public:
+  explicit bsc_data_t(const std::vector<dim_t> block_size, const std::vector<dim_t> shape,
+                      const std::vector<dim_t>& indptr, const std::vector<dim_t>& indices, const std::vector<T>& data)
+      : sparse_data_t<T>(indptr, indices, data), shape_(shape), block_size_(block_size) {}
+  virtual ~bsc_data_t() {}
+
+ public:
+  inline const std::vector<dim_t> shape() const { return shape_; }
+  inline const std::vector<dim_t> block_size() const { return block_size_; }
+
+ private:
+  std::vector<dim_t> shape_;
+  std::vector<dim_t> block_size_;
+};
+
 namespace spns {
 static constexpr int ADJ = 4;  // 4 is that "Multiply groups of 4 adjacent pairs..."(vpdpbusd).
 
@@ -143,6 +165,9 @@ bsr_data_t<T> tobsr(dim_t rows, dim_t cols, dim_t blocksize[2], const T* uncoded
 
 template <typename T, dim_t group>
 bsr_data_t<T> to_bsr_amx(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);
+
+template <typename T>
+bsc_data_t<T> tobsc(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);
 }  // namespace spns
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SPARSE_DATA_HPP_
