@@ -396,7 +396,7 @@ class Launcher():
         """
         pass
 
-class LatencyLauncher(Launcher):
+class OneInstanceLauncher(Launcher):
     r"""
      Launcher for latency
     """
@@ -584,7 +584,7 @@ class LatencyLauncher(Launcher):
         else:
             print("Latency mode only support instance=auto or instance=1 !!!")
 
-class ThroughputLauncher(Launcher):
+class MultiInstanceLauncher(Launcher):
     r"""
      Launcher for Throughput
     """
@@ -619,7 +619,7 @@ class ThroughputLauncher(Launcher):
             batch_size = int(batch_str)
             for instance_str in instance_num:
                 instance = int(instance_str)
-                cores = int(self.cores_per_socket/instance)
+                cores = int(self.cores_per_socket*self.sockets/instance)
                 cmd = []
 
                 for mp_list_idx, mp_list_item in enumerate(memory_prefix_list):
@@ -762,13 +762,13 @@ def main():
 
     launcher = None
     if args.mode == "min_latency":
-        launcher = LatencyLauncher()
+        launcher = OneInstanceLauncher()
     elif args.mode == "default_latency":
-        launcher = ThroughputLauncher()
+        launcher = MultiInstanceLauncher()
     elif args.mode == "max_throughput": #throughput
-        launcher = ThroughputLauncher()
+        launcher = MultiInstanceLauncher()
     elif args.mode == "default_throughput":
-        launcher = ThroughputLauncher()
+        launcher = MultiInstanceLauncher()
 
     launcher.launch(args, memory_prefix_list)
 
