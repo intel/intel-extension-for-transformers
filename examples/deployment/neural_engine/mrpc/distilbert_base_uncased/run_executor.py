@@ -32,7 +32,7 @@ def get_args():
                         help="Warm up iteration in performance mode.")
     parser.add_argument("--iteration", default=10, type=int,
                         help="Iteration in performance mode.")
-    parser.add_argument("--tokenizer_dir", default="./model_and_tokenizer", type=str,
+    parser.add_argument("--tokenizer_dir", default="textattack/distilbert-base-uncased-MRPC", type=str,
                         help="Pre-trained model tokenizer name or path")
     parser.add_argument("--data_dir", default="./data", type=str,
                         help="Data cache directory.")

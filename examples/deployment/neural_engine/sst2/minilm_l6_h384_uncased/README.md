@@ -66,11 +66,11 @@ bash prepare_model.sh --input_model=philschmid/MiniLM-L6-H384-uncased-sst2   --t
   2.1 accuracy  
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=8
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --mode=accuracy --data_dir=./data --batch_size=8
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
   ```
 
   2.2 performance  

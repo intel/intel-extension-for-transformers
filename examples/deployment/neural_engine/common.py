@@ -17,6 +17,7 @@
 
 import os
 import logging
+import sys
 import numpy as np
 from nlp_toolkit.backends.neural_engine.compile import compile
 from nlp_toolkit.backends.neural_engine.compile.graph import Graph
@@ -83,8 +84,12 @@ def compute_performance(dataset, graph, log, log_file, warm_up, batch_size, seq_
     log.info("End executor ......")
     duration_w = duration[warm_up:]
     all_latency = log_file.replace('.log', '.npy')
-    all_latency = all_latency.replace('neural_engine', 'neural_engine/all_latency')
-    All_latency = np.array(duration_w)
+    _,file_name = os.path.split(all_latency)
+    _ = os.getcwd() + '/all_latency'
+    if os.path.exists(_) == False :
+        os.mkdir(_)
+    all_latency = os.path.join(_,file_name)
+    All_latency = np.array(duration_w) 
     np.save(all_latency,All_latency,allow_pickle=True, fix_imports=True)
     ave_latency = np.array(duration_w).mean() / batch_size
     p50_latency = np.percentile(duration_w, 50) / batch_size

@@ -66,11 +66,11 @@ bash prepare_model.sh --input_model=bhadresh-savani/distilbert-base-uncased-emot
   2.1 accuracy  
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=4
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=4
   ```
   or run shell
   ```shell
-  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --mode=accuracy --data_dir=./data --batch_size=4
+  bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=4
   ```
 
   2.2 performance  

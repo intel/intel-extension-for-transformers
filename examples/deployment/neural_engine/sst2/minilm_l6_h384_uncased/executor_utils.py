@@ -20,7 +20,11 @@ import numpy as np
 from tqdm import tqdm
 from datasets import load_metric
 from executor_dataloader import DataLoader
-from examples.deployment.neural_engine.common import (
+import sys
+import os
+common_dir = os.path.join(sys.path[0],"../..")
+sys.path.append(common_dir)
+from common import (
     log, 
     set_log_file,
     load_graph, 
