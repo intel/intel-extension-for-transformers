@@ -31,7 +31,10 @@ class QunatizeFusion(Pattern):
             if node.input_tensors[0].source_op == []:
                 return (None, False)
             pre_node = model.get_node_by_name(node.input_tensors[0].source_op[0])
-            if pre_node.name in quant_info or pre_node.op_type == "Softmax":
+            if pre_node.name in quant_info or (pre_node.op_type == "Softmax") \
+               or (not quant_info and pre_node.op_type in EXECUTOR_TYPE \
+                   and (EXECUTOR_TYPE[pre_node.op_type] == "InnerProduct" or \
+                        EXECUTOR_TYPE[pre_node.op_type] == "Matmul")):
                 return (pre_node, True)
             elif pre_node.op_type == "Reshape":
                 return search_quant_fusion(pre_node)
@@ -39,26 +42,30 @@ class QunatizeFusion(Pattern):
                 return (None, False)
 
         quant_info = util.get_quant_info()
-        if not quant_info:
-            return model
+
         remove_node_name = []
         # fuse quant nodes to previous innerproduct or matmul output dtype to enhance perf
         for node in model.nodes:
             if node.op_type == "Quantize":
+                dtype = node.attr['output_dtype'] 
                 quant_node, can_fuse = search_quant_fusion(node)
                 if can_fuse:
-                    if quant_node.op_type == "Softmax":
-                        model.change_node_input_tensors(quant_node.name, 1, node.input_tensors[1],
-                                                        'insert')
-                        model.change_node_input_tensors(quant_node.name, 2, node.input_tensors[2],
-                                                        'insert')
-                        quant_node.attr['output_dtype'] = "u8"
-                    else:
-                        model.change_node_input_tensors(quant_node.name, -2, node.input_tensors[1],
-                                                        'modify')
-                        model.change_node_input_tensors(quant_node.name, -1, node.input_tensors[2],
-                                                        'modify')
-                        quant_node.attr['output_dtype'] = node.attr['output_dtype']
+                    if dtype == 'u8' or dtype == 's8':
+                        if quant_node.op_type == "Softmax":
+                            model.change_node_input_tensors(quant_node.name, 1, node.input_tensors[1],
+                                                            'insert')
+                            model.change_node_input_tensors(quant_node.name, 2, node.input_tensors[2],
+                                                            'insert')
+                            quant_node.attr['output_dtype'] = "u8"
+                        else:
+                            model.change_node_input_tensors(quant_node.name, -2, node.input_tensors[1],
+                                                            'modify')
+                            model.change_node_input_tensors(quant_node.name, -1, node.input_tensors[2],
+                                                            'modify')
+                            quant_node.attr['output_dtype'] = node.attr['output_dtype']
+                    elif dtype == 'bf16':
+                        quant_node.attr['output_dtype'] = dtype
+
                     for dst_node_name in node.output_tensors[0].dest_op:
                         dst_node = model.get_node_by_name(dst_node_name)
                         for idx, input_tensor in enumerate(dst_node.input_tensors):
@@ -67,6 +74,8 @@ class QunatizeFusion(Pattern):
                                                                 node.input_tensors[0], 'modify')
 
                     remove_node_name.append(node.name)
+
+
         model.remove_nodes(remove_node_name)
 
         return model

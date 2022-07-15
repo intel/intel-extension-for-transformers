@@ -55,6 +55,7 @@ supported_patterns = [
     'LayerNormWithReduceMean',
     'StartEndLogits',
     'InsertQuantNode',
+    'InsertBF16Node',
     'QunatizeFusion',
     'OutputData',
 ]

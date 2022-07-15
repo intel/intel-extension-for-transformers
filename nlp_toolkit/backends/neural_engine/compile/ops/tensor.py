@@ -22,14 +22,14 @@ import numpy as np
 class Tensor(object):
     def __init__(self,
                  name='',
-                 source_op=[],
-                 dest_op=[],
+                 source_op=None,
+                 dest_op=None,
                  shape=None,
                  data=None,
                  dtype=None,
                  location=None):
         self._name = name
-        # assume data in neural_compressor tensor should be numpy array
+        # assume data in tensor should be numpy array
         # however, we don't assign the data diretly if the tensor is
         # const like weight when parse model
         # otherwise it will make a bloated new graph
@@ -39,8 +39,14 @@ class Tensor(object):
         self._dtype = dtype
         # location in bin file if const
         self._location = location
-        self._source_op = source_op
-        self._dest_op = dest_op
+        if source_op == None:
+            self._source_op = []
+        else:
+            self._source_op = source_op
+        if dest_op == None:
+            self._dest_op = []
+        else:
+            self._dest_op = dest_op
 
     @property
     def name(self):

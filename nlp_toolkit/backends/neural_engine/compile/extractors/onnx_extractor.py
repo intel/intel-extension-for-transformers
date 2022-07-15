@@ -16,7 +16,7 @@
 # limitations under the License.
 
 
-from neural_compressor.utils import logger
+from .. import logger
 from ..graph.graph import Graph
 from ..ops.op import OPERATORS
 from ..onnx_utils import graph_node_names_details
@@ -30,7 +30,7 @@ class ONNXExtractor(object):
     and output_tensors, these tensors record the source/dest op name. All of these nodes 
     (in a list) will compose a graph, which is Graph class, as the return object.
     Args:
-        model: neural_compressor TensorflowBaseModel
+        model: ONNXModel
     Return:
         Graph: Graph class, the new graph object
 
@@ -42,12 +42,12 @@ class ONNXExtractor(object):
         logger.info('Start to extarct onnx model ops...')
         new_graph = Graph()
         new_graph.framework = 'onnxruntime'
-        for graph_input in model.graph().input:
+        for graph_input in model.graph.input:
             op_type = 'ONNXINPUT'
             new_node = OPERATORS[op_type]()
             new_node.extract('onnxruntime', graph_input, model, graph_nodes_dict)
             new_graph.insert_nodes(len(new_graph.nodes), [new_node])
-        for node in model.nodes():
+        for node in model.graph.node:
             op_type = node.op_type
             if op_type == 'Constant':
                 continue
@@ -77,7 +77,7 @@ class ONNXExtractor(object):
                                         for tensor in graph_node.input_tensors:
                                             if origin_tensor_name + ':0' == tensor.name: 
                                                 has_tensor = False
-                                        if pre_node in model.initializer() and has_tensor:
+                                        if pre_node in model.graph.initializer and has_tensor:
                                             from onnx.numpy_helper import to_array
                                             data = to_array(pre_node)
                                             shape = list(data.shape) if data.shape != () else [1]

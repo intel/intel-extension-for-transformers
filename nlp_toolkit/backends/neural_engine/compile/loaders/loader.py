@@ -15,17 +15,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from neural_compressor.model.model import MODELS, get_model_fwk_name, get_model_type
-from neural_compressor.utils.utility import LazyImport
+from ..graph_utils import LazyImport, get_model_fwk_name
+
 onnx = LazyImport('onnx')
- 
+tf = LazyImport('tensorflow')
+
 class Loader(object):
     def __call__(self, model):
         framework = get_model_fwk_name(model)
         if framework =='tensorflow':
-            model_type = get_model_type(model)
-            model =MODELS[framework](model_type, model)
+            if isinstance(model, str):
+                graph = tf.Graph()
+                graph_def = tf.compat.v1.GraphDef()
+                with open(model, 'rb') as f:
+                    graph_def.ParseFromString(f.read())
+                    with graph.as_default():
+                        tf.import_graph_def(graph_def, name='')
+                config = tf.compat.v1.ConfigProto()
+                model = tf.compat.v1.Session(graph=graph, config=config)
         if framework =='onnxruntime':
-            model = onnx.load(model)
-            model =MODELS[framework](model)
-        return model
+            if isinstance(model, str):
+                model = onnx.load(model)
+        return model, framework

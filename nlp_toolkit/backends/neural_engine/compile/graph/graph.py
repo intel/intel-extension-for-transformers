@@ -17,7 +17,7 @@
 
 import re
 from collections import OrderedDict
-from neural_compressor.utils import logger
+from .. import logger
 import numpy as np
 import yaml
 import os

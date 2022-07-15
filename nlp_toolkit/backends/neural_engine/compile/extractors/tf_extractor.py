@@ -16,7 +16,7 @@
 # limitations under the License.
 
 
-from neural_compressor.utils import logger
+from .. import logger
 from ..graph.graph import Graph
 from ..ops.op import OPERATORS
 from ..tf_utils import graph_node_names_details
@@ -29,14 +29,13 @@ class TensorflowExtractor(object):
     and output_tensors, these tensors record the source/dest op name. All of these nodes
     (in a list) will compose a graph, which is Graph class, as the return object.
     Args:
-        model: neural_compressor TensorflowBaseModel
+        model: TensorflowModel
     Return:
         Graph: Graph class, the new graph object
 
     """
     @classmethod
     def __call__(self, model):
-
         nodes = model.graph_def.node
         graph_nodes_dict = graph_node_names_details(nodes)
         logger.info('Start to extarct tensorflow model ops...')

@@ -1556,17 +1556,17 @@ class BaseTrainer():
                     bf16_tensor_name_list.append(inp)
 
         from onnx import TensorProto, helper, numpy_helper
-        original_initializer = copy.deepcopy(model.graph.initializer)
-        for tensor in original_initializer:
+        for tensor in model.graph.initializer:
             if tensor.name in bf16_tensor_name_list:
-                bf16_tensor = helper.make_tensor(
-                    name=tensor.name,
-                    data_type=TensorProto.BFLOAT16,
-                    dims=tensor.dims,
-                    vals=numpy_helper.to_array(tensor),
-                )
-                model.graph.initializer.remove(tensor)
-                model.graph.initializer.append(bf16_tensor)
+                def fp32_to_bf16(fp32_np):
+                    assert(fp32_np.dtype==np.float32)
+                    int32_np = fp32_np.view(dtype=np.int32)
+                    int32_np = int32_np >> 16
+                    bf16_np = int32_np.astype(np.int16)
+                    return bf16_np
+                fp16_data = fp32_to_bf16(numpy_helper.to_array(tensor))
+                tensor.raw_data = fp16_data.tobytes()
+                tensor.data_type = TensorProto.BFLOAT16
         onnx.save(model, onnx_save_path)
         os.remove(fp32_path)
 

@@ -15,12 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from neural_compressor.utils import logger
+from . import logger 
 import copy
 import re
+import os
 import numpy as np
 from collections import namedtuple, OrderedDict
 from schema import Schema, And, Or
+import importlib
 
 
 DTYPES_DICT = {"float16": "fp16",
@@ -941,3 +943,101 @@ def pattern_mapping_conf_validation(conf_dict):
     },  ignore_extra_keys=True)
 
     return dict_schema.validate(conf_dict)
+
+class LazyImport(object):
+    """Lazy import python module till use
+       Args:
+           module_name (string): The name of module imported later
+    """
+    def __init__(self, module_name):
+        self.module_name = module_name
+        self.module = None
+
+    def __getattr__(self, name):
+        try:
+            self.module = importlib.import_module(self.module_name)
+            mod = getattr(self.module, name)
+        except:
+            spec = importlib.util.find_spec(str(self.module_name + '.' + name))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+        return mod
+
+    def __call__(self, *args, **kwargs):
+        function_name = self.module_name.split('.')[-1]
+        module_name = self.module_name.split(f'.{function_name}')[0]
+        self.module = importlib.import_module(module_name)
+        function = getattr(self.module, function_name)
+        return function(*args, **kwargs)
+
+def get_model_fwk_name(model):
+    """Detect the input model belongs to which framework
+    Args:
+        model (string): framework name that supported by Neural Engine, 
+                        if there's no available fwk info, then return 'NA'.
+    """
+    onnx = LazyImport('onnx')
+    tf = LazyImport('tensorflow')
+    def _is_onnxruntime(model):
+        try:
+            if isinstance(model, str):
+                graph = onnx.load(model)
+                assert(len(graph.graph.node) != 0)
+            else:
+                graph = model.graph
+        except:
+            pass
+        else:
+            return 'onnxruntime'
+        return 'NA'
+
+    def _is_tensorflow(model):
+        try:
+            if isinstance(model, str):
+                graph_def = tf.compat.v1.GraphDef()
+                with open(model, 'rb') as f:
+                    graph_def.ParseFromString(f.read())
+            else:
+                graph = model.graph_def
+        except:
+            pass
+        else:
+            return 'tensorflow'
+        return 'NA'
+
+    def _is_neural_engine(model):
+        if model and os.path.isdir(model):
+            file_list = os.listdir(model)
+            is_engine = True
+            if len(file_list) == 2:
+                for file_name in file_list:
+                    file_ext= os.path.splitext(file_name)
+                    front, ext = file_ext
+                    if ext == ".yaml":
+                        is_engine &= True
+                    elif ext == ".bin":
+                        is_engine &= True
+                    else:
+                        is_engine &= False
+                        logger.error("Please Input yaml and bin for neural engine.")
+                        return 'NA'
+            else:
+                return 'NA'
+            if is_engine == True:
+                return 'neural engine'
+        else:
+            return 'NA'
+
+    if isinstance(model, str):
+        absmodel = os.path.abspath(os.path.expanduser(model))
+        assert os.path.exists(absmodel) or os.path.exists(absmodel+'.pb'), \
+            'invalid input path, the file does not exist!'
+
+    checker = [_is_onnxruntime, _is_neural_engine, _is_tensorflow]
+    for handler in checker:
+        fwk_name = handler(model)
+        if fwk_name != 'NA':
+            break
+    assert fwk_name != 'NA', 'Framework is not detected correctly from model format.'
+
+    return fwk_name

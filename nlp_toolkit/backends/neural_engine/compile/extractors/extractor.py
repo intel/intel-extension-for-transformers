@@ -17,8 +17,8 @@
 
 from .tf_extractor import TensorflowExtractor
 from .onnx_extractor import ONNXExtractor
-from neural_compressor.utils import logger
-
+from .. import logger
+from ..graph_utils import get_model_fwk_name
 
 EXTRACTORS = {
     'tensorflow': TensorflowExtractor,
@@ -33,9 +33,8 @@ class Extractor(object):
     """
 
     def __call__(self, model):
-        # framework = model.framework_specific_info['framework']
-        framework = model.framework()
+        framework = model[1]
         extractor = EXTRACTORS[framework]()
-        model = extractor(model)
+        model = extractor(model[0])
         logger.info('Extract {} model done...'.format(framework))
         return model

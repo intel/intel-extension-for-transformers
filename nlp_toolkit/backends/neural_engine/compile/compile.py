@@ -23,15 +23,11 @@
 4. Finally, convert them to .yaml file and .bin file for model configuration and inference.
 """
 
-import datetime
-import logging as log
-import os
-import sys
-import traceback
 from collections import OrderedDict
 from .loaders.loader import Loader
 from .extractors.extractor import Extractor
 from .sub_graph.subgraph_matcher import SubGraphMatcher
+from .graph_utils import get_model_fwk_name
 
 COMPILES = OrderedDict({
     'loader': Loader,
@@ -53,5 +49,10 @@ def start_pipeline(model, config=None):
 
 
 def compile(model, config=None):
-    model = start_pipeline(model, config=config)
+    if get_model_fwk_name(model) == 'neural engine':
+        from nlp_toolkit.backends.neural_engine.compile.graph import Graph
+        model = Graph()
+        model.graph_init(model + '/conf.yaml', model + '/model.bin')
+    else:
+        model = start_pipeline(model, config=config)
     return model

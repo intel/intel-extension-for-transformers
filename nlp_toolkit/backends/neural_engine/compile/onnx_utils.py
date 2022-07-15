@@ -19,21 +19,31 @@
 import numpy as np
 import re
 from collections import namedtuple, OrderedDict
-from neural_compressor.utils import logger
+from . import logger
 from .ops.tensor import Tensor
 from . import graph_utils as util
 
+def get_children(node, input_name_to_nodes=None):
+    if input_name_to_nodes is None:
+        input_name_to_nodes = {}
+
+    children = []
+    for output in node.output:
+        if output in input_name_to_nodes:
+            for child in input_name_to_nodes[output]:
+                children.append(child)
+    return children
 
 def get_node_children_names(model, node):
     """Get the node's output nodes' name in the graph
     Args:
-        model: neural_compressor ONNXModel
+        model: ONNXModel
         node: NodeProto in onnx model
     Returns:
         outputs: names list
     """
 
-    output_nodes = model.get_children(node)
+    output_nodes = get_children(node)
     outputs = [node.name for node in output_nodes]
     return outputs
 
@@ -41,13 +51,16 @@ def get_node_children_names(model, node):
 def get_initializer_children_names(model, initializer):
     """Get the initializer's output nodes' name in the graph
     Args:
-        model: neural_compressor ONNXModel
+        model: ONNXModel
         initializer: initializer in onnx model
     Returns:
         outputs: names list
     """
-
-    output_nodes = model.find_nodes_by_initializer(model.graph(), initializer)
+    output_nodes = []
+    for node in model.graph.node:
+        for node_input in node.input:
+            if node_input == initializer.name:
+                output_nodes.append(node)
     outputs = [node.name for node in output_nodes]
     return outputs
 
@@ -59,7 +72,7 @@ def graph_node_names_details(model):
     tensor value and the input_tensor source op; output_names in value
     is the node ouput name list; outputs in value is for output_tensor dest op
     Args:
-        model: neural_compressor ONNXModel
+        model: ONNXModel
     Returns:
         node_names_details: the graph node info dict
 
@@ -67,13 +80,13 @@ def graph_node_names_details(model):
 
     node_details = namedtuple('node_details', ['node', 'outputs'])
     node_names_details = {}
-    for initializer in model.initializer():
+    for initializer in model.graph.initializer:
         initializer_name = initializer.name
         each_node = node_details(node=initializer, outputs=[])
         if initializer_name not in node_names_details:
             each_node.outputs.extend(get_initializer_children_names(model, initializer))
             node_names_details[initializer_name] = each_node
-    for node in model.nodes():
+    for node in model.graph.node:
         node_name = node.name
         output_names = node.output
         for index, output_name in enumerate(output_names):
@@ -86,7 +99,7 @@ def graph_node_names_details(model):
         if node_name not in node_names_details:
             each_node.outputs.extend(get_node_children_names(model, node))
             node_names_details[node_name] = each_node
-    for graph_input in model.graph().input:
+    for graph_input in model.graph.input:
         outputs = []
         node_name = graph_input.name
         for k, v in node_names_details.items():
@@ -151,7 +164,7 @@ def onnx_extract_operator(node, model, nodes_dict):
     """decorate the operator in onnx
     Args:
         node: NodeProto
-        model: neural_compressor ONNXModel
+        model: ONNXModel
         nodes_dict: dict, return value from graph_node_names_details
         tf_dtypes: dict, for get the dtype string
 
@@ -181,10 +194,10 @@ def onnx_extract_operator(node, model, nodes_dict):
             pre_node = nodes_dict[origin_tensor_name].node
         
         data = None
-        if pre_node in model.initializer():
+        if pre_node in model.graph.initializer:
             data = to_array(pre_node)
         else:
-            if (pre_node not in model.graph().input) and (pre_node.op_type == 'Constant'):
+            if (pre_node not in model.graph.input) and (pre_node.op_type == 'Constant'):
                 data = to_array(pre_node.attribute[0].t)
         if isinstance(data, np.ndarray):
             if data.dtype == np.int64:
