@@ -156,16 +156,15 @@ void prepare_sparse_data(T* weight, dim_t N, dim_t K, dim_t n_blksize, dim_t k_b
 }
 
 std::pair<const void*, const void*> make_data_obj(const dt& tensor_dt, dim_t rows, dim_t cols, dim_t index,
-                                                  const std::vector<float>& ranges = {-1, 1}) {
+                                                  float sparsity = 0.f, const std::vector<float>& ranges = {-1, 1}) {
   dim_t elem_num = rows * cols;
   dim_t bytes_size = elem_num * type_size[tensor_dt];
   void* data_ptr = nullptr;
   switch (index) {
     case 0: {  // prepare wei
-      float ratio = 0.9;
       data_ptr = new bfloat16_t[elem_num];
       bfloat16_t* bf16_ptr = static_cast<bfloat16_t*>(data_ptr);
-      prepare_sparse_data<bfloat16_t>(bf16_ptr, rows, cols, 16, 1, ratio);
+      prepare_sparse_data<bfloat16_t>(bf16_ptr, rows, cols, 16, 1, sparsity);
       break;
     }
     case 1: {  // prepare src
@@ -197,10 +196,8 @@ std::pair<const void*, const void*> make_data_obj(const dt& tensor_dt, dim_t row
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N,
-                                         dim_t micro_bs = 64,
-                                         dim_t micro_oc = -1,
-                                         bool bf16_out = true) {
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = 64,
+                                         dim_t micro_oc = -1, bool bf16_out = true) {
   std::unordered_map<std::string, std::string> op_attrs;
   // Step 1: Construct runtime data
   std::vector<const void*> rt_data1;
@@ -221,7 +218,7 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N,
       rows = ts_descs[index].shape()[1];
       cols = ts_descs[index].shape()[0] * ts_descs[index].shape()[2];
     }
-    auto data_pair = make_data_obj(ts_descs[index].dtype(), rows, cols, index);
+    auto data_pair = make_data_obj(ts_descs[index].dtype(), rows, cols, index, sparsity);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -233,7 +230,8 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N,
   volatile auto sparse_ptr = spns::reorder_to_bsr_amx<bfloat16_t, 32>(N, K, micro_oc, rt_data1[0]);
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
   op_attrs["micro_oc"] = std::to_string(micro_oc);
-  operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs);
+  operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
+                           op_attrs);
 
   // Step 3: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1};
@@ -246,25 +244,25 @@ static auto case_func = []() {
   std::vector<test_params_t> cases;
 
   /* minimal case */
-  cases.push_back({gen_case(64, 32, 16, 64, -1, false)});
+  cases.push_back({gen_case(64, 32, 16, .9f, 64, -1, false)});
 
   /* BERT-LARGE case */
-  cases.push_back({gen_case(128, 768, 768, 64, -1, true)});
-  cases.push_back({gen_case(128, 768, 768, 64, 384, true)});
-  cases.push_back({gen_case(128, 768, 768, 64, 192, true)});
-  cases.push_back({gen_case(128, 768, 768, 128, -1, true)});
-  cases.push_back({gen_case(128, 768, 768, 64, -1, false)});
-  cases.push_back({gen_case(128, 768, 768, 64, 384, false)});
+  cases.push_back({gen_case(128, 768, 768, .9f, 64, -1, true)});
+  cases.push_back({gen_case(128, 768, 768, .9f, 64, 384, true)});
+  cases.push_back({gen_case(128, 768, 768, .9f, 64, 192, true)});
+  cases.push_back({gen_case(128, 768, 768, .9f, 128, -1, true)});
+  cases.push_back({gen_case(128, 768, 768, .9f, 64, -1, false)});
+  cases.push_back({gen_case(128, 768, 768, .9f, 64, 384, false)});
 
   /* DLRM case */
-  cases.push_back({gen_case(32768, 1024, 1024, 64, -1, true)});
-  cases.push_back({gen_case(32768, 1024, 1024, 128, -1, true)});
-  cases.push_back({gen_case(32768, 1024, 1024, 64, 512, true)});
-  cases.push_back({gen_case(32768, 1024, 1024, 64, 256, true)});
+  cases.push_back({gen_case(32768, 1024, 1024, .9f, 64, -1, true)});
+  cases.push_back({gen_case(32768, 1024, 1024, .9f, 128, -1, true)});
+  cases.push_back({gen_case(32768, 1024, 1024, .9f, 64, 512, true)});
+  cases.push_back({gen_case(32768, 1024, 1024, .9f, 64, 256, true)});
 
-  cases.push_back({gen_case(32768, 512, 512, 64, -1, true)});
+  cases.push_back({gen_case(32768, 512, 512, .9f, 64, -1, true)});
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, SpmmAMXX16KernelTest, case_func());
+INSTANTIATE_TEST_SUITE_P(SparseLib, SpmmAMXX16KernelTest, case_func());
 }  // namespace jd

@@ -145,23 +145,11 @@ static constexpr int ADJ = 4;  // 4 is that "Multiply groups of 4 adjacent pairs
 
 inline int align_nnz(const int& a_nnz) { return ceil_div(a_nnz, ADJ) * ADJ; }
 
-template <typename T>
-sparse_data_t<T>* reorder_to(int rows, int cols, const void* uncoded_ptr, const format_type& dst_encode_fmt);
-
 template <typename T, dim_t group>
 std::vector<bsr_data_t<T>*>* reorder_to_bsr_amx(dim_t rows, dim_t cols, dim_t micro_rows, const void* uncoded_ptr);
 
 template <typename T>
-uint64_t get_uncoded_nnz(int rows, int cols, const T* uncoded_data, int line_idx = -1);
-
-template <typename T>
-sparse_data_t<T> tocsr(int rows, int cols, const T* uncoded_data);
-
-template <typename T>
-std::pair<std::vector<int64_t>, std::vector<int64_t>> csr_with_permute(int rows, int cols, const T* uncoded_data);
-
-template <typename T>
-bsr_data_t<T> tobsr(dim_t rows, dim_t cols, dim_t blocksize[2], const T* uncoded_data);
+bsr_data_t<T> tobsr(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);
 
 template <typename T, dim_t group>
 bsr_data_t<T> to_bsr_amx(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);

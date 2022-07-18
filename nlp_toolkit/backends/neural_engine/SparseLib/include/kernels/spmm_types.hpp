@@ -25,6 +25,8 @@ template <typename T>
 class csrp_data_t;
 template <typename T>
 class bsc_data_t;
+template <typename T>
+class bsr_data_t;
 namespace ssd {
 /**
  * @brief tensors index configuration of this kernel.
@@ -56,15 +58,15 @@ struct flat_param_t {
   bool append_sum;
   data_type output_type;
   sparse_scheme scheme;
-  // optimization config of JIT machine code.
   std::vector<int64_t> mkn_blocks;
-  std::vector<int64_t> tile_shape;
+  std::vector<int64_t> tile_shape; // 2d vector for microkernel shape in terms of zmm registers
   bool sub_func;
-  int64_t start;
-  int64_t end;
+  int64_t im_start;  // start m-idx of dest to be calculated
+  int64_t im_end;    // end m-idx of dest to be calculated
+  int64_t in_start;  // start n-idx of dest to be calculated
+  int64_t in_end;    // end n-idx of dest to be calculated
   // sparse weight related
-  csrp_data_t<int8_t>* sparse_ptr;
-  std::vector<int64_t> avg_group;
+  bsr_data_t<int8_t>* sparse_ptr;
 };
 
 /**
@@ -76,8 +78,6 @@ struct flat_data_t {
   const void* ptr_bias;      // bias(M, 1).
   void* ptr_dst;             // dst(M, N).
   const void* ptr_scales;
-  int64_t start;
-  int64_t end;
 };
 
 /**

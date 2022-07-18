@@ -46,7 +46,7 @@ bool spmm_vnni_kd_t::init() {
 }
 
 bool spmm_vnni_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int nthr,
-                                         int ithr) {
+                                      int ithr) {
   const auto& wei_desc = op_desc.tensor_descs()[ssd::WEI];
   const auto& src_desc = op_desc.tensor_descs()[ssd::SRC];
   const auto& bias_desc = op_desc.tensor_descs()[ssd::BIAS];
@@ -70,45 +70,16 @@ bool spmm_vnni_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd::op
   const auto& temp2 = split_str<int64_t>(op_attrs["tile_shape"]);
   param_ref.tile_shape = temp2.empty() ? std::vector<int64_t>{4, 4} : temp2;
   param_ref.sub_func = (op_attrs["sub_func"] != "false");
-  param_ref.start = 0;
-  param_ref.end = param_ref.mkn_blocks[2];
-  const auto& temp_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
-  param_ref.sparse_ptr = reinterpret_cast<csrp_data_t<int8_t>*>(temp_addr);
-  param_ref.avg_group = get_avg_group(param_ref.sparse_ptr, nthr, ithr);
-  return true;
-}
+  param_ref.in_start = 0;  // TODO: partition with fixed size m/n blocks
+  param_ref.in_end = param_ref.N;
+  int64_t th_mb = ceil_div(param_ref.mkn_blocks[0], nthr);
+  int64_t MB = param_ref.M / param_ref.mkn_blocks[0];
+  param_ref.im_start = th_mb * ithr * MB;
+  param_ref.im_end = (param_ref.im_start + th_mb) * MB;
 
-std::vector<int64_t> spmm_vnni_kd_t::get_avg_group(const csrp_data_t<int8_t>* sparse_ptr, int nthr, int ithr) {
-  if (nthr == 1) {
-    return sparse_ptr->xgroup();
-  }
-  int average_nnz = ceil_div(sparse_ptr->getnnz(), nthr);
-  int lower_nnz = average_nnz * ithr;
-  int upper_nnz = average_nnz * (ithr + 1);
-  int pivot1 = -1;
-  int pivot2 = -1;
-  int amount = 0;
-  const auto& iperm = sparse_ptr->iperm();
-  int iperm_size = iperm.size();
-  for (int i = 0; i <= iperm_size; ++i) {
-    if (amount >= lower_nnz && pivot1 == -1) {
-      pivot1 = i;
-    } else if ((amount >= upper_nnz || i == iperm_size) && pivot2 == -1) {
-      pivot2 = i;
-    }
-    if (pivot1 != -1 && pivot2 != -1) {
-      break;
-    }
-    amount += sparse_ptr->getnnz(iperm[i]);
-  }
-  std::vector<int64_t> ans = {pivot1};
-  for (const auto& seg : sparse_ptr->xgroup()) {
-    if (seg > pivot1 && seg < pivot2) {
-      ans.push_back(seg);
-    }
-  }
-  ans.push_back(pivot2);
-  return ans;
+  const auto& temp_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
+  param_ref.sparse_ptr = reinterpret_cast<bsr_data_t<int8_t>*>(temp_addr);
+  return true;
 }
 
 //// Part2: class spmm_vnni_k_t
@@ -116,22 +87,12 @@ bool spmm_vnni_k_t::init() {
   int nthr = kd()->operator_desc().impl_nthr();
   jit_kers_.resize(nthr);
   for (int idx = 0; idx < nthr; ++idx) {
-    jit_spmm_vnni_t* ker = nullptr;
-    auto status = spmm_kernel_create(&ker, derived_kd()->params()[idx]);
-    if (!status) {
-      return false;
-    }
+    jit_spmm_vnni_t* ker = new jit_spmm_vnni_t(derived_kd()->params()[idx]);
+    if (ker == nullptr) return false;
+    if (!(ker->create_kernel())) return false;
     jit_kers_[idx] = ker;
   }
   return true;
-}
-
-bool spmm_vnni_k_t::spmm_kernel_create(jit_spmm_vnni_t** ker_pp, const ssd::flat_param_t& param) {
-  *ker_pp = new jit_spmm_vnni_t(param);
-  if (*ker_pp == nullptr) {
-    return false;
-  }
-  return (*ker_pp)->create_kernel();
 }
 
 bool spmm_vnni_k_t::execute(const std::vector<const void*>& rt_data) const {
@@ -139,15 +100,12 @@ bool spmm_vnni_k_t::execute(const std::vector<const void*>& rt_data) const {
   std::vector<ssd::flat_data_t> td(nthr);
 #pragma omp parallel for num_threads(nthr)
   for (int idx = nthr - 1; idx >= 0; --idx) {
-    const auto& jit_impl = jit_kers_[idx];
+    const jit_spmm_vnni_t* jit_impl = jit_kers_[idx];
     td[idx].ptr_seq_vals = jit_impl->sequence_vals();
     td[idx].ptr_dense = rt_data[ssd::SRC];
     td[idx].ptr_bias = rt_data[ssd::BIAS];
     td[idx].ptr_dst = const_cast<void*>(rt_data[ssd::DST]);
     td[idx].ptr_scales = rt_data[ssd::SCALES];
-    const auto& param = derived_kd()->params()[idx];
-    td[idx].start = param.start;
-    td[idx].end = param.end;
     (*jit_impl)(&(td[idx]));
   }
   return true;

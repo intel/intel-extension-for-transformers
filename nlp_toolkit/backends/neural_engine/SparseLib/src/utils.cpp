@@ -118,6 +118,15 @@ std::vector<T> split_str(const std::string& s, const char& delim) {
 }
 template std::vector<int64_t> split_str<int64_t>(const std::string&, const char&);
 
+std::string join_str(const std::vector<std::string>& ss, const std::string& delim) {
+  std::string ans;
+  for (size_t i = 0; i < ss.size(); ++i) {
+    if (i != 0) ans += delim;
+    ans += ss[i];
+  }
+  return ans;
+}
+
 bool init_amx() {
 #ifdef SPARSE_LIB_USE_AMX
 

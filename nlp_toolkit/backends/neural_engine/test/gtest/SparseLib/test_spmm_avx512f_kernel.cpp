@@ -31,6 +31,7 @@ using ft = jd::format_type;
 struct op_args_t {
   operator_desc op_desc;
   std::vector<const void*> rt_data;
+  float sparisty;  // sparsity of weight matrix; for testcase labeling
 };
 
 struct test_params_t {
@@ -148,7 +149,6 @@ void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, con
   LOG_IF(FATAL, sparsity < 0 and sparsity > 1) << "Sparsity should be a value between 0 and 1.";
   dim_t nb_k = K / BK;
   dim_t nb_n = N / BN;
-  dim_t block_nums = nb_k * nb_n;
 
   for (int ibk = 0; ibk < nb_k; ++ibk) {
     for (int ibn = 0; ibn < nb_n; ++ibn) {
@@ -167,9 +167,8 @@ void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, con
 }
 
 std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_shape, const dt& a_dt,
-                                                  bool is_clear = false,
-                                                  ft a_ft = ft::uncoded,  // uncoded for dense data
-                                                  const std::vector<float>& ranges = {-10, 10}) {
+                                                  bool is_clear = false, float sparsity = 0.f,  // 0 for dense
+                                                  ft a_ft = ft::uncoded, const std::vector<float>& ranges = {-10, 10}) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
@@ -186,17 +185,17 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_sh
         assert(false);
         break;
     }
-
-    switch (a_ft) {
-      case ft::bsc: {
-        std::vector<dim_t> block_shape = {1, 16};
-        float sparsity = .7f;
-        unsigned int seed = 123;
-        prepare_blocked_sparse_data(static_cast<float*>(data_ptr), a_shape, block_shape, sparsity, &seed);
-        break;
+    if (sparsity != 0.f) {
+      switch (a_ft) {
+        case ft::bsc: {
+          std::vector<dim_t> block_shape = {1, 16};
+          unsigned int seed = 123;
+          prepare_blocked_sparse_data(static_cast<float*>(data_ptr), a_shape, block_shape, sparsity, &seed);
+          break;
+        }
+        default:
+          break;
       }
-      default:
-        break;
     }
   }
 
@@ -205,7 +204,7 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_sh
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N) {
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity) {
   // Step 1: Construct operator config
   std::unordered_map<std::string, std::string> op_attrs = {};
 
@@ -221,7 +220,9 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N) {
   for (size_t i = 0; i < ts_descs.size(); ++i) {
     bool is_clear = i == ssd::DST || i == ssd::BIAS;
     std::vector<float> ranges = (i == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
-    auto data_pair = make_data_obj(ts_descs[i].shape(), ts_descs[i].dtype(), is_clear, ts_descs[i].ftype(), ranges);
+    float data_sparsity = (i == ssd::WEI) ? sparsity : 0;
+    auto data_pair =
+        make_data_obj(ts_descs[i].shape(), ts_descs[i].dtype(), is_clear, data_sparsity, ts_descs[i].ftype(), ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -230,14 +231,14 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N) {
 
   // Step 3: sparse data encoding
   bsc_data_t<float> bsc_obj = spns::tobsc<float>(K, N, 1, 16, static_cast<const float*>(rt_data1[ssd::WEI]));
-  auto sparse_ptr = new bsc_data_t<float>(bsc_obj); // Will be deleted in `check_result`
+  auto sparse_ptr = new bsc_data_t<float>(bsc_obj);  // Will be deleted in `check_result`
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
   operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                            op_attrs);
 
   // Step 4: op_args_t testcase pair
-  op_args_t op_args = {an_op_desc, rt_data1};
-  op_args_t op_args_copy = {an_op_desc, rt_data2};
+  op_args_t op_args = {an_op_desc, rt_data1, sparsity};
+  op_args_t op_args_copy = {an_op_desc, rt_data2, sparsity};
 
   return {op_args, op_args_copy};
 }
@@ -251,38 +252,37 @@ static auto case_func = []() {
   tensor_desc bias_desc;
   tensor_desc dst_desc;
 
-  cases.push_back({gen_case(128, 256, 256)});
-  cases.push_back({gen_case(384, 256, 256)});
-  cases.push_back({gen_case(128, 1024, 256)});
-  cases.push_back({gen_case(384, 1024, 256)});
-  cases.push_back({gen_case(128, 256, 1024)});
-  cases.push_back({gen_case(384, 256, 1024)});
-  cases.push_back({gen_case(128, 768, 768)});
-  cases.push_back({gen_case(384, 768, 768)});
-  cases.push_back({gen_case(128, 3072, 768)});
-  cases.push_back({gen_case(384, 3072, 768)});
-  cases.push_back({gen_case(128, 768, 3072)});
-  cases.push_back({gen_case(384, 768, 3072)});
-  cases.push_back({gen_case(128, 1024, 1024)});
-  cases.push_back({gen_case(384, 1024, 1024)});
-  cases.push_back({gen_case(128, 4096, 1024)});
-  cases.push_back({gen_case(384, 4096, 1024)});
-  cases.push_back({gen_case(128, 1024, 4096)});
-  cases.push_back({gen_case(384, 1024, 4096)});
+  cases.push_back({gen_case(128, 256, 256, .7f)});
+  cases.push_back({gen_case(384, 256, 256, .7f)});
+  cases.push_back({gen_case(128, 1024, 256, .7f)});
+  cases.push_back({gen_case(384, 1024, 256, .7f)});
+  cases.push_back({gen_case(128, 256, 1024, .7f)});
+  cases.push_back({gen_case(384, 256, 1024, .7f)});
+  cases.push_back({gen_case(128, 768, 768, .7f)});
+  cases.push_back({gen_case(384, 768, 768, .7f)});
+  cases.push_back({gen_case(128, 3072, 768, .7f)});
+  cases.push_back({gen_case(384, 3072, 768, .7f)});
+  cases.push_back({gen_case(128, 768, 3072, .7f)});
+  cases.push_back({gen_case(384, 768, 3072, .7f)});
+  cases.push_back({gen_case(128, 1024, 1024, .7f)});
+  cases.push_back({gen_case(384, 1024, 1024, .7f)});
+  cases.push_back({gen_case(128, 4096, 1024, .7f)});
+  cases.push_back({gen_case(384, 4096, 1024, .7f)});
+  cases.push_back({gen_case(128, 1024, 4096, .7f)});
+  cases.push_back({gen_case(384, 1024, 4096, .7f)});
 
   return ::testing::ValuesIn(cases);
 };
 
-
 std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
-  std::string ans;
+  std::vector<std::string> params;
   auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
-  ans += std::to_string(tensor_desc[ssd::SRC].shape()[0]);
-  ans += "_";
-  ans += std::to_string(tensor_desc[ssd::SRC].shape()[1]);
-  ans += "_";
-  ans += std::to_string(tensor_desc[ssd::WEI].shape()[1]);
-  return ans;
+  auto attrs_map = tpi.param.args.first.op_desc.attrs();
+  params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparisty * 100)));
+  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[0]));
+  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
+  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[1]));
+  return join_str(params, "_");
 }
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, SpmmAVX512FKernelTest, case_func(), test_suffix);

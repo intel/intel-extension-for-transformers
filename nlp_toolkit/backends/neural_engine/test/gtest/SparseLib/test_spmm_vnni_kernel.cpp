@@ -30,6 +30,7 @@ using ft = jd::format_type;
 struct op_args_t {
   operator_desc op_desc;
   std::vector<const void*> rt_data;
+  float sparisty;  // sparsity of weight matrix; for testcase labeling
 };
 
 struct test_params_t {
@@ -172,24 +173,21 @@ class SpmmVNNIKernelTest : public testing::TestWithParam<test_params_t> {
   void TearDown() override {}
 };
 
-TEST_P(SpmmVNNIKernelTest, TestPostfix) {
+TEST_P(SpmmVNNIKernelTest, ) {
   test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
   EXPECT_TRUE(check_result(t));
 }
 
 template <typename T>
-void prepare_sparse_data(T* vector_data, std::vector<int64_t> a_shape) {
+void prepare_sparse_data(T* vector_data, std::vector<int64_t> a_shape, float sparsity) {
   int64_t M = a_shape[0];
   int64_t K = a_shape[1];
   // Blocks zeros in the M dimension.
   int64_t BLOCK = 4;
-  int64_t nums = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
-  int64_t block_nums = nums / BLOCK;
-  float sparse_ratio = 0.7;
   uint32_t seed = 123;
   for (int mb = 0; mb < M / BLOCK; ++mb) {
     for (int kb = 0; kb < K; ++kb) {
-      bool fill_zero = rand_r(&seed) % 100 <= (sparse_ratio * 100);
+      bool fill_zero = rand_r(&seed) % 100 <= (sparsity * 100);
       if (fill_zero) {
         for (int m = 0; m < BLOCK; ++m) {
           for (int k = 0; k < 1; ++k) {
@@ -202,7 +200,7 @@ void prepare_sparse_data(T* vector_data, std::vector<int64_t> a_shape) {
 }
 
 std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_shape, const dt& a_dt,
-                                                  bool is_clear = false, bool is_sparse = false,
+                                                  bool is_clear = false, float sparsity = 0.f,
                                                   const std::vector<float>& ranges = {-10, 10}) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
@@ -223,12 +221,9 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
     } else if (a_dt == dt::s8) {
       data_ptr = new int8_t[elem_num];
       init_vector(static_cast<int8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
-      if (is_sparse) {
+      if (sparsity != 0.f) {
         int8_t* s8_ptr = static_cast<int8_t*>(data_ptr);
-        for (int i = 0; i < elem_num; ++i) {  // firstly remove zero.
-          s8_ptr[i] = (s8_ptr[i] == 0) ? 1 : s8_ptr[i];
-        }
-        prepare_sparse_data(s8_ptr, a_shape);
+        prepare_sparse_data(s8_ptr, a_shape, sparsity);
       }
     }
   }
@@ -238,8 +233,7 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const jd::kernel_prop ker_prop,
-                                         const jd::engine_kind eng_kind, const std::vector<tensor_desc>& ts_descs,
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, jd::data_type dt_dst = dt::s8,
                                          const std::string& mkn_blocks = "1,1,1", const std::string& tile_shape = "4,4",
                                          std::string post_op = "") {
   // Step 1: Construct operator config
@@ -248,28 +242,34 @@ std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const j
   bool append_sum = (op_attrs["post_op"] == "append_sum");
 
   // Step 2: Construct runtime data
+  tensor_desc wei_desc = {{M, K}, dt::s8, ft::bsr};
+  tensor_desc src_desc = {{K, N}, dt::u8, ft::ab};
+  tensor_desc bia_desc = {{M, 1}, dt::s32, ft::ab};
+  tensor_desc dst_desc = {{M, N}, dt_dst, ft::ab};
+  tensor_desc scales_desc = {{M, 1}, dt::fp32, ft::ab};
+  std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
+
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
-    bool is_clear = (index == ssd::DST && !append_sum) ? true : false;
-    bool is_sparse = (index == ssd::WEI) ? true : false;
+    bool is_clear = (index == ssd::DST && !append_sum);
+    float data_sparsity = (index == ssd::WEI) ? sparsity : 0;
     auto ranges = (index == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
-    auto data_pair = make_data_obj(ts_descs[index].shape(), ts_descs[index].dtype(), is_clear, is_sparse, ranges);
+    auto data_pair = make_data_obj(ts_descs[index].shape(), ts_descs[index].dtype(), is_clear, data_sparsity, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
 
   // Step 3: sparse data encoding
-  int M = ts_descs[ssd::WEI].shape()[0];
-  int K = ts_descs[ssd::WEI].shape()[1];
-  auto sparse_ptr = spns::reorder_to<int8_t>(M, K, rt_data1[ssd::WEI], format_type::csrp);
+  auto sparse_ptr = new bsr_data_t<int8_t>(spns::tobsr(M, K, 4, 1, static_cast<const int8_t*>(rt_data1[ssd::WEI])));
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
-  operator_desc an_op_desc(ker_kind, ker_prop, eng_kind, ts_descs, op_attrs);
+  operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
+                           op_attrs);
 
   // Step 4: op_args_t testcase pair
-  op_args_t op_args = {an_op_desc, rt_data1};
-  op_args_t op_args_copy = {an_op_desc, rt_data2};
+  op_args_t op_args = {an_op_desc, rt_data1, sparsity};
+  op_args_t op_args_copy = {an_op_desc, rt_data2, sparsity};
 
   return {op_args, op_args_copy};
 }
@@ -287,288 +287,67 @@ static auto case_func = []() {
   std::string tile_shape;
 
   /* bert-mini config. case: spmm: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N) */
-  // when M = 256, K = 256, N = 128
-  src0_desc = {{256, 256}, dt::s8, ft::csrp};
-  src1_desc = {{256, 128}, dt::u8, ft::ab};
-  bias_desc = {{256, 1}, dt::s32, ft::ab};
-  dst_desc = {{256, 128}, dt::s8, ft::ab};
-  scales_desc = {{256, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 256, K = 256, N = 384
-  src0_desc = {{256, 256}, dt::s8, ft::csrp};
-  src1_desc = {{256, 384}, dt::u8, ft::ab};
-  bias_desc = {{256, 1}, dt::s32, ft::ab};
-  dst_desc = {{256, 384}, dt::s8, ft::ab};
-  scales_desc = {{256, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 256, K = 1024, N = 128
-  src0_desc = {{256, 1024}, dt::s8, ft::csrp};
-  src1_desc = {{1024, 128}, dt::u8, ft::ab};
-  bias_desc = {{256, 1}, dt::s32, ft::ab};
-  dst_desc = {{256, 128}, dt::s8, ft::ab};
-  scales_desc = {{256, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 256, K = 1024, N = 384
-  src0_desc = {{256, 1024}, dt::s8, ft::csrp};
-  src1_desc = {{1024, 384}, dt::u8, ft::ab};
-  bias_desc = {{256, 1}, dt::s32, ft::ab};
-  dst_desc = {{256, 384}, dt::s8, ft::ab};
-  scales_desc = {{256, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 1024, K = 256, N = 128
-  src0_desc = {{1024, 256}, dt::s8, ft::csrp};
-  src1_desc = {{256, 128}, dt::u8, ft::ab};
-  bias_desc = {{1024, 1}, dt::s32, ft::ab};
-  dst_desc = {{1024, 128}, dt::s8, ft::ab};
-  scales_desc = {{1024, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 1024, K = 256, N = 384
-  src0_desc = {{1024, 256}, dt::s8, ft::csrp};
-  src1_desc = {{256, 384}, dt::u8, ft::ab};
-  bias_desc = {{1024, 1}, dt::s32, ft::ab};
-  dst_desc = {{1024, 384}, dt::s8, ft::ab};
-  scales_desc = {{1024, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  /* bert-base config. case: spmm: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N) */
-  // when M = 768, K = 768, N = 128
-  src0_desc = {{768, 768}, dt::s8, ft::csrp};
-  src1_desc = {{768, 128}, dt::u8, ft::ab};
-  bias_desc = {{768, 1}, dt::s32, ft::ab};
-  dst_desc = {{768, 128}, dt::s8, ft::ab};
-  scales_desc = {{768, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 768, K = 768, N = 384
-  src0_desc = {{768, 768}, dt::s8, ft::csrp};
-  src1_desc = {{768, 384}, dt::u8, ft::ab};
-  bias_desc = {{768, 1}, dt::s32, ft::ab};
-  dst_desc = {{768, 384}, dt::s8, ft::ab};
-  scales_desc = {{768, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 768, K = 3072, N = 128
-  src0_desc = {{768, 3072}, dt::s8, ft::csrp};
-  src1_desc = {{3072, 128}, dt::u8, ft::ab};
-  bias_desc = {{768, 1}, dt::s32, ft::ab};
-  dst_desc = {{768, 128}, dt::s8, ft::ab};
-  scales_desc = {{768, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 768, K = 3072, N = 384
-  src0_desc = {{768, 3072}, dt::s8, ft::csrp};
-  src1_desc = {{3072, 384}, dt::u8, ft::ab};
-  bias_desc = {{768, 1}, dt::s32, ft::ab};
-  dst_desc = {{768, 384}, dt::s8, ft::ab};
-  scales_desc = {{768, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 3072, K = 768, N = 128
-  src0_desc = {{3072, 768}, dt::s8, ft::csrp};
-  src1_desc = {{768, 128}, dt::u8, ft::ab};
-  bias_desc = {{3072, 1}, dt::s32, ft::ab};
-  dst_desc = {{3072, 128}, dt::s8, ft::ab};
-  scales_desc = {{3072, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 3072, K = 768, N = 384
-  src0_desc = {{3072, 768}, dt::s8, ft::csrp};
-  src1_desc = {{768, 384}, dt::u8, ft::ab};
-  bias_desc = {{3072, 1}, dt::s32, ft::ab};
-  dst_desc = {{3072, 384}, dt::s8, ft::ab};
-  scales_desc = {{3072, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  /* bert-large config. case: spmm: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N) */
-  // when M = 1024, K = 1024, N = 128
-  src0_desc = {{1024, 1024}, dt::s8, ft::csrp};
-  src1_desc = {{1024, 128}, dt::u8, ft::ab};
-  bias_desc = {{1024, 1}, dt::s32, ft::ab};
-  dst_desc = {{1024, 128}, dt::s8, ft::ab};
-  scales_desc = {{1024, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 1024, K = 1024, N = 384
-  src0_desc = {{1024, 1024}, dt::s8, ft::csrp};
-  src1_desc = {{1024, 384}, dt::u8, ft::ab};
-  bias_desc = {{1024, 1}, dt::s32, ft::ab};
-  dst_desc = {{1024, 384}, dt::s8, ft::ab};
-  scales_desc = {{1024, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 1024, K = 4096, N = 128
-  src0_desc = {{1024, 4096}, dt::s8, ft::csrp};
-  src1_desc = {{4096, 128}, dt::u8, ft::ab};
-  bias_desc = {{1024, 1}, dt::s32, ft::ab};
-  dst_desc = {{1024, 128}, dt::s8, ft::ab};
-  scales_desc = {{1024, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 1024, K = 4096, N = 384
-  src0_desc = {{1024, 4096}, dt::s8, ft::csrp};
-  src1_desc = {{4096, 384}, dt::u8, ft::ab};
-  bias_desc = {{1024, 1}, dt::s32, ft::ab};
-  dst_desc = {{1024, 384}, dt::s8, ft::ab};
-  scales_desc = {{1024, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 4096, K = 1024, N = 128
-  src0_desc = {{4096, 1024}, dt::s8, ft::csrp};
-  src1_desc = {{1024, 128}, dt::u8, ft::ab};
-  bias_desc = {{4096, 1}, dt::s32, ft::ab};
-  dst_desc = {{4096, 128}, dt::s8, ft::ab};
-  scales_desc = {{4096, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // when M = 4096, K = 1024, N = 384
-  src0_desc = {{4096, 1024}, dt::s8, ft::csrp};
-  src1_desc = {{1024, 384}, dt::u8, ft::ab};
-  bias_desc = {{4096, 1}, dt::s32, ft::ab};
-  dst_desc = {{4096, 384}, dt::s8, ft::ab};
-  scales_desc = {{4096, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
+  // when M = 256, K = 256, N = 128 ... and more size conbinations
+  cases.push_back({gen_case(256, 256, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(256, 256, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(256, 1024, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(256, 1024, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(1024, 256, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(1024, 256, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(768, 768, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(768, 768, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(768, 3072, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(768, 3072, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(3072, 768, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(3072, 768, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(1024, 1024, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(1024, 1024, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(1024, 4096, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(1024, 4096, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(4096, 1024, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  cases.push_back({gen_case(4096, 1024, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
 
   // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-  src0_desc = {{32, 32}, dt::s8, ft::csrp};
-  src1_desc = {{32, 128}, dt::u8, ft::ab};
-  bias_desc = {{32, 1}, dt::s32, ft::ab};
-  dst_desc = {{32, 128}, dt::s8, ft::ab};
-  scales_desc = {{32, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-  src0_desc = {{32, 32}, dt::s8, ft::csrp};
-  src1_desc = {{32, 128}, dt::u8, ft::ab};
-  bias_desc = {{32, 1}, dt::s32, ft::ab};
-  dst_desc = {{32, 128}, dt::fp32, ft::ab};
-  scales_desc = {{32, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
+  cases.push_back({gen_case(32, 32, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
+  // case: sparse: s8xu8+s32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
+  cases.push_back({gen_case(32, 32, 128, .7f, dt::fp32, "1,1,1", "4,4"), false});
   // case: sparse: s8xu8+s32=s8, n_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-  src0_desc = {{32, 32}, dt::s8, ft::csrp};
-  src1_desc = {{32, 128}, dt::u8, ft::ab};
-  bias_desc = {{32, 1}, dt::s32, ft::ab};
-  dst_desc = {{32, 128}, dt::s8, ft::ab};
-  scales_desc = {{32, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,2";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
+  cases.push_back({gen_case(32, 32, 128, .7f, dt::s8, "1,1,2", "4,4"), false});
   // case: sparse: s8xu8+s32=s8, k_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-  src0_desc = {{32, 32}, dt::s8, ft::csrp};
-  src1_desc = {{32, 128}, dt::u8, ft::ab};
-  bias_desc = {{32, 1}, dt::s32, ft::ab};
-  dst_desc = {{32, 128}, dt::s8, ft::ab};
-  scales_desc = {{32, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,2,1";
-  tile_shape = "4,4";
-  cases.push_back({gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                            {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape),
-                   false});
-
-  // case: sparse: s8xu8+s32+append_fp32=fp32,
-  // weight(M, K) * activation(K, N) + bias(M, 1) + append_sum(M, N) = dst(M, N)
-  src0_desc = {{32, 32}, dt::s8, ft::csrp};
-  src1_desc = {{32, 128}, dt::u8, ft::ab};
-  bias_desc = {{32, 1}, dt::s32, ft::ab};
-  dst_desc = {{32, 128}, dt::fp32, ft::ab};
-  scales_desc = {{32, 1}, dt::fp32, ft::ab};
-  mkn_blocks = "1,1,1";
-  tile_shape = "4,4";
-  cases.push_back(
-      {gen_case(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu,
-                {src0_desc, src1_desc, bias_desc, dst_desc, scales_desc}, mkn_blocks, tile_shape, "append_sum"),
-       false});
+  cases.push_back({gen_case(32, 32, 128, .7f, dt::s8, "1,2,1", "4,4"), false});
+  // case: sparse: s8xu8+s32+append_fp32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) + append(M, N) = dst(M, N)
+  cases.push_back({gen_case(32, 32, 128, .7f, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
 
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, SpmmVNNIKernelTest, case_func());
+std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
+  std::vector<std::string> params;
+  auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
+  auto attrs_map = tpi.param.args.first.op_desc.attrs();
+  params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparisty * 100)));
+  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[0]));
+  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[1]));
+  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
+  switch (tensor_desc[ssd::DST].dtype()) {
+    case dt::s8:
+      params.push_back("s8");
+      break;
+    case dt::fp32:
+      params.push_back("fp32");
+      break;
+    default:
+      assert(false);
+  }
+  std::vector<int64_t> mkn = split_str<int64_t>(attrs_map["mkn_blocks"]);
+  if (mkn[0] != 1) params.push_back("m" + std::to_string(mkn[0]));
+  if (mkn[1] != 1) params.push_back("k" + std::to_string(mkn[1]));
+  if (mkn[2] != 1) params.push_back("n" + std::to_string(mkn[2]));
+  if (attrs_map["post_op"] != "") {
+    params.push_back(attrs_map["post_op"]);
+  }
+  return join_str(params, "_");
+}
+
+INSTANTIATE_TEST_SUITE_P(SparseLib, SpmmVNNIKernelTest, case_func(), test_suffix);
 }  // namespace jd

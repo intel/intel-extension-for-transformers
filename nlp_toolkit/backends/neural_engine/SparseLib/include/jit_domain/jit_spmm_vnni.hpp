@@ -32,8 +32,7 @@ namespace jd {
  */
 class jit_spmm_vnni_t : public jit_generator {
  public:
-  explicit jit_spmm_vnni_t(const ssd::flat_param_t& param)
-      : jit_generator(), param_(param), csrp_(param_.sparse_ptr) {}
+  explicit jit_spmm_vnni_t(const ssd::flat_param_t& param);
   virtual ~jit_spmm_vnni_t() {}
 
  public:
@@ -41,7 +40,7 @@ class jit_spmm_vnni_t : public jit_generator {
 
  private:
   ssd::flat_param_t param_;
-  csrp_data_t<int8_t>* csrp_;
+  bsr_data_t<int8_t>* bsr_;
   std::vector<int8_t> seq_vals_;
 
  private:
@@ -54,30 +53,26 @@ class jit_spmm_vnni_t : public jit_generator {
   Xbyak::Zmm dst_tile_Vmm(int i, int j);  // Reg alloc of DST tile. 2D shape=(TH,TW), stride=(TW,1)
   void params_alias(const ssd::flat_param_t& param);
   void read_params();
-  void load_bias(const std::vector<int64_t>& m_indices);
+  void load_bias(int64_t m_start);
   void load_dense(const std::vector<int64_t>& k_indices);
-  void load_sparse();
+  void load_sparse(const int8_t* bsr_data, int64_t kp_lo, int64_t kp_hi);
   void tile_product(int tile_height, int tile_width);
-  void handle_dst_buffer_init(int kb_idx, const std::vector<int64_t>& m_indices);
-  void handle_dst_buffer_epilogue(int kb_idx, const std::vector<int64_t>& m_indices);
+  void handle_dst_buffer_init(int kb_idx, int64_t m_start);
+  void handle_dst_buffer_epilogue(int kb_idx, int64_t m_start);
   void mul_scale(int i);
   void move_out(int i, int j, int row_idx, int bytes = 1);
-  std::unordered_map<int64_t, std::vector<int64_t>> get_idx_balanced(const std::vector<int64_t>& m_indices,
+  std::unordered_map<int64_t, std::vector<int64_t>> get_idx_balanced(int64_t m_start,
                                                                      const std::vector<int64_t>& sparse_indptr,
                                                                      const std::vector<int64_t>& sparse_indices, int lo,
                                                                      int hi);
-  std::unordered_map<int64_t, std::vector<int8_t>> get_val_balanced(const std::vector<int64_t>& m_indices,
+  std::unordered_map<int64_t, std::vector<int8_t>> get_val_balanced(int64_t m_start,
                                                                     const std::vector<int64_t>& sparse_indptr,
                                                                     const std::vector<int64_t>& sparse_indices, int lo,
                                                                     int hi, const std::vector<int8_t>& sparse_inddata);
-  void repeat_THx4xTW_matmal(const std::vector<int64_t>& m_indices,
-                             const std::unordered_map<int64_t, std::vector<int64_t>>& k_indices_map,
-                             const std::unordered_map<int64_t, std::vector<int8_t>>& k_inddata_map);
+  void repeat_THx4xTW_matmal(int64_t imb);
   void clear_dst_tile();
-  void load_intermediate_dst(const std::vector<int64_t>& m_indices);
-  void store_intermediate_dst(const std::vector<int64_t>& m_indices);
-  void save_sequence_vals(const std::vector<int64_t>& m_indices,
-                          const std::unordered_map<int64_t, std::vector<int8_t>>& k_inddata_map, int pos1, int pos2);
+  void load_intermediate_dst(int64_t m_start);
+  void store_intermediate_dst(int64_t m_start);
   void gen_sub_function();
 
  private:

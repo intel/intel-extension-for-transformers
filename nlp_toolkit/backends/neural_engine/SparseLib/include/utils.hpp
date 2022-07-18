@@ -63,6 +63,8 @@ T str_to_num(const std::string& s);
 template <typename T>
 std::vector<T> split_str(const std::string& s, const char& delim = ',');
 
+std::string join_str(const std::vector<std::string>& ss, const std::string& delim = ",");
+
 bool init_amx();
 
 /**
