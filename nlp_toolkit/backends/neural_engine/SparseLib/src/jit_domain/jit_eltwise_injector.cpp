@@ -12,88 +12,131 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "jit_domain/jit_postop_default.hpp"
-#include "kernels/postop_types.hpp"
+#include "jit_domain/jit_eltwise_injector.hpp"
+
 namespace jd {
 
-void jit_postop_default_t::generate() {
-  this->preamble();
-  load_params();
-  load_table_addr();
-  if (is_bf16()) {
-    prepare_bf16_mask();
-  }
-  const auto shift = vlen();
-  cmp(remain_element_num, 16);
-  jl(reminder_loop_start, T_NEAR);
-  L(vectorized_loop_start);
-  if (is_bf16()) {
-    load_bf16_cvt_to_f32(reg_src, addr_src);
-    vector_compute(reg_src);
-    cvt_f32_to_bf16_store(reg_src, addr_dst);
-  } else {
-    vmovups(reg_src, ptr[addr_src]);
-    vector_compute(reg_src);
-    vmovups(ptr[addr_dst], reg_src);
-  }
-  add(addr_src, shift);
-  add(addr_dst, shift);
-  sub(remain_element_num, 16);
-  cmp(remain_element_num, 16);
-  jge(vectorized_loop_start, T_NEAR);
-
-  L(vectorized_loop_end);
-  L(reminder_loop_start);
-  cmp(remain_element_num, 0);
-  jle(reminder_loop_end, T_NEAR);
-  if (is_bf16()) {
-    load_bf16_cvt_to_f32(reg_src, addr_src, true);
-    vector_compute(reg_src);
-    cvt_f32_to_bf16_store(reg_src, addr_dst, true);
-  } else {
-    vmovss(Xmm(reg_src.getIdx()), ptr[addr_src]);
-    vector_compute(reg_src);
-    vmovss(ptr[addr_dst], Xmm(reg_src.getIdx()));
-  }
-
-  add(addr_src, dtype_size());
-  add(addr_dst, dtype_size());
-  dec(remain_element_num);
-  jmp(reminder_loop_start, T_NEAR);
-
-  L(reminder_loop_end);
-  this->postamble();
-
-  prepare_table();
+void jit_eltwise_injector::eltwise_injector_init(jit_generator* ptr, const std::vector<postop_attr>& postop_attrs) {
+  h = ptr;
+  register_table_entries(postop_attrs);
 }
 
-size_t jit_postop_default_t::table_off(key_t key, size_t key_off_val_shift) {
+size_t jit_eltwise_injector::table_off(key_t key, size_t key_off_val_shift) {
   const auto it = entry_map.find(key);
   assert(it != entry_map.end());
   const auto& te = (*it).second;
-  const auto scale = te.bcast ? vlen() : sizeof(table_entry_val_t);
+  const auto scale = te.bcast ? 64u : sizeof(table_entry_val_t);
   return te.off + key_off_val_shift * scale;
 }
 
-Xbyak::Address jit_postop_default_t::table_val(key_t key, size_t key_off_val_shift) {
+Xbyak::Address jit_eltwise_injector::table_val(key_t key, size_t key_off_val_shift) {
   auto off = table_off(key, key_off_val_shift);
-  return ptr[p_table + off];
+  return h->ptr[p_table + off];
 }
 
-void jit_postop_default_t::vector_compute(const Zmm& zmm_src) {
-  switch (param_.scheme) {
-    case ssd::post_op_scheme::exp:
-      exp_compute_vector_fwd(zmm_src);
-      break;
-    case ssd::post_op_scheme::gelu:
-      gelu_compute_vector_fwd(zmm_src);
-      break;
-    default:
-      break;
+void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_attrs) {
+  bool quant_flag = false;
+  int chain_len = postop_attrs.size();
+  for (int i = 0; i < chain_len; i++) {
+    auto cur_attr = postop_attrs[i];
+    auto cur_alg = cur_attr.op_alg;
+    auto cur_dt = cur_attr.dt;
+    if (i != chain_len - 1) assert(cur_alg != postop_alg::quantize);
+    if (i != 0) assert(cur_alg != postop_alg::dequantize);
+
+    if (cur_alg == postop_alg::quantize || cur_attr.op_alg == postop_alg::dequantize) quant_flag = true;
+
+    // de/quantize operator only support fp32<->u8
+    if (cur_alg == postop_alg::quantize) assert(cur_dt == data_type::fp32);
+    if (cur_alg == postop_alg::dequantize) assert(cur_dt == data_type::u8);
+
+    // normal op only support fp32/bf16,once contain quant related operator,only support fp32.
+    if (!quant_flag) {
+      assert(cur_dt == data_type::fp32 || cur_dt == data_type::bf16);
+    } else {
+      if (cur_alg != postop_alg::dequantize && cur_alg != postop_alg::quantize) assert(cur_dt == data_type::fp32);
+    }
   }
 }
 
-void jit_postop_default_t::tanh_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs) {
+  assert_check(postop_attrs);
+  assign_regs();
+  load_table_addr();
+
+  auto task_dispatch = [&](const Xbyak::Zmm& zmm_src) {
+    switch (cur_postop_attr_.op_alg) {
+      case postop_alg::exp:
+        exp_compute_vector_fwd(zmm_src);
+        break;
+      case postop_alg::tanh:
+        tanh_compute_vector_fwd(zmm_src);
+        break;
+      case postop_alg::gelu:
+        gelu_compute_vector_fwd(zmm_src);
+        break;
+      case postop_alg::relu:
+        relu_compute_vector_fwd(zmm_src);
+        break;
+      case postop_alg::quantize:
+        quantize_compute_vector_fwd(zmm_src);
+        break;
+      case postop_alg::dequantize:
+        dequantize_compute_vector_fwd(zmm_src);
+        break;
+      default:
+        break;
+    }
+  };
+
+  for (int i = 0; i < postop_attrs.size(); i++) {
+    cur_postop_attr_ = postop_attrs[i];
+    cur_iter_idx_ = i;
+
+    if (cur_postop_attr_.dt == data_type::bf16) {
+      h->vmovups(zmm_tmp, zmm_src);
+
+      Ymm ymm_src = Ymm(zmm_src.getIdx());
+      h->vpmovzxwd(zmm_src, ymm_src);
+      h->vpslld(zmm_src, zmm_src, 16);
+      task_dispatch(zmm_src);
+      h->vcvtneps2bf16(ymm_src, zmm_src);  // 0-255bit of zmm_src compute ans store in ymm_src.
+
+      ymm_tmp = Ymm(zmm_tmp.getIdx());
+      h->vextractf32x8(ymm_tmp, zmm_tmp, 1);  // shuffle the high 256bit to the low 256 bit.
+      h->vpmovzxwd(zmm_tmp, ymm_tmp);
+      h->vpslld(zmm_tmp, zmm_tmp, 16);
+      task_dispatch(zmm_tmp);
+      h->vcvtneps2bf16(ymm_tmp, zmm_tmp);  // 256-511bit of zmm_src compute ans store in ymm_tmp.
+
+      // permute
+      h->mov(reg64_tmp, 0xff00);
+      h->kmovq(k_mask, reg64_tmp);
+      h->vmovups(zmm_aux0, table_val(exchange_zmm_low256_high256));
+      h->vpermt2ps(zmm_src | k_mask, zmm_aux0, zmm_tmp);
+    } else {
+      task_dispatch(zmm_src);
+    }
+  }
+}
+
+// fp32=>u8(scale*(src-bias))
+void jit_eltwise_injector::quantize_compute_vector_fwd(const Zmm& zmm_src) {
+  h->vsubps(zmm_src, zmm_src, table_val(alpha, cur_iter_idx_));
+  h->vmulps(zmm_src, zmm_src, table_val(scale, cur_iter_idx_));
+  h->vcvtps2udq(zmm_src, zmm_src);               // fp32->u32
+  h->vpmovusdb(Xmm(zmm_src.getIdx()), zmm_src);  // u32->u8
+}
+
+// u8=>scale*(fp32(src)-bias)
+void jit_eltwise_injector::dequantize_compute_vector_fwd(const Zmm& zmm_src) {
+  h->vpmovzxbd(zmm_src, Xmm(zmm_src.getIdx()));  // u8->s32
+  h->vcvtdq2ps(zmm_src, zmm_src);                // s32->f32
+  h->vsubps(zmm_src, zmm_src, table_val(alpha, cur_iter_idx_));
+  h->vmulps(zmm_src, zmm_src, table_val(scale, cur_iter_idx_));
+}
+
+void jit_eltwise_injector::tanh_compute_vector_fwd(const Zmm& zmm_src) {
   // register mapping
   Zmm zmm_dst = zmm_aux1, zmm_src_shift = zmm_aux1, zmm_coeff = zmm_aux1, zmm_pol = zmm_aux2, zmm_indices = zmm_aux3,
       zmm_src_original = zmm_aux4, zmm_sign = zmm_aux4;
@@ -117,96 +160,89 @@ void jit_postop_default_t::tanh_compute_vector_fwd(const Zmm& zmm_src) {
   auto gather_coefficient = [&](Zmm vmm_coeff, int coeff_idx, Zmm vmm_pol_idx) {
     Zmm zmm_coeff(vmm_coeff.getIdx());
     Zmm zmm_pol_idx(vmm_pol_idx.getIdx());
-    vmovups(zmm_coeff, coeffs_address(coeff_idx, 0));
-    vpermt2ps(zmm_coeff, zmm_pol_idx, coeffs_address(coeff_idx, 16));
+    h->vmovups(zmm_coeff, coeffs_address(coeff_idx, 0));
+    h->vpermt2ps(zmm_coeff, zmm_pol_idx, coeffs_address(coeff_idx, 16));
   };
 
   // because tanh(x) = -tanh(-x), we extract sign to make x postive
   // and reapply sign at the end
-  vmovups(zmm_src_original, zmm_src);
-  vandps(zmm_src, zmm_src, table_val(positive_mask));
+  h->vmovups(zmm_src_original, zmm_src);
+  h->vpandd(zmm_src, zmm_src, table_val(positive_mask));
 
   // We compute the indices for the table lookup
-  vmovups(zmm_indices, zmm_src);
-  vpsubd(zmm_indices, zmm_indices, table_val(tanh_idx_bias));
-  vandps(zmm_indices, zmm_indices, table_val(tanh_idx_mask));
-  vpsrld(zmm_indices, zmm_indices, 22);
+  h->vmovups(zmm_indices, zmm_src);
+  h->vpsubd(zmm_indices, zmm_indices, table_val(tanh_idx_bias));
+  h->vpandd(zmm_indices, zmm_indices, table_val(tanh_idx_mask));
+  h->vpsrld(zmm_indices, zmm_indices, 22);
 
   // we do the argument reduction
-  vmovups(zmm_src_shift, zmm_src);
-  vandps(zmm_src_shift, zmm_src_shift, table_val(tanh_idx_mask));
-  vsubps(zmm_src, zmm_src, zmm_src_shift);
+  h->vmovups(zmm_src_shift, zmm_src);
+  h->vpandd(zmm_src_shift, zmm_src_shift, table_val(tanh_idx_mask));
+  h->vsubps(zmm_src, zmm_src, zmm_src_shift);
 
   // we gather and evaluate the polynonials
   gather_coefficient(zmm_pol, 6, zmm_indices);
   for (int deg = 5; deg >= 0; --deg) {
     gather_coefficient(zmm_coeff, deg, zmm_indices);
-    vfmadd213ps(zmm_pol, zmm_src, zmm_coeff);
+    h->vfmadd213ps(zmm_pol, zmm_src, zmm_coeff);
   }
 
   // we restore src with cleared sign, and keep sign
-  vmovups(zmm_src, zmm_src_original);
-  vandps(zmm_sign, zmm_sign, table_val(sign_mask));
-  vandps(zmm_src, zmm_src, table_val(positive_mask));
+  h->vmovups(zmm_src, zmm_src_original);
+  h->vpandd(zmm_sign, zmm_sign, table_val(sign_mask));
+  h->vpandd(zmm_src, zmm_src, table_val(positive_mask));
 
   // Now we blend the results
   // [saturation_ubound; +inf[ : we return +/- 1
-  vmovups(zmm_dst, table_val(one));
+  h->vmovups(zmm_dst, table_val(one));
   // [linear_ubound; saturation_lbound] : we return +/- P(x)
-  vmovups(zmm_mask, table_val(tanh_saturation_lbound));
-  vcmpps(k_mask, zmm_mask, zmm_src, _cmp_nle_us);
-  vblendmps(zmm_dst | k_mask, zmm_dst, zmm_pol);
+  h->vmovups(zmm_mask, table_val(tanh_saturation_lbound));
+  h->vcmpps(k_mask, zmm_mask, zmm_src, _cmp_nle_us);
+  h->vblendmps(zmm_dst | k_mask, zmm_dst, zmm_pol);
   // [0; linear_ubound]  : we return x
-  vmovups(zmm_mask, table_val(tanh_linear_ubound));
-  vcmpps(k_mask, zmm_mask, zmm_src, _cmp_nle_us);
-  vblendmps(zmm_dst | k_mask, zmm_dst, zmm_src);
+  h->vmovups(zmm_mask, table_val(tanh_linear_ubound));
+  h->vcmpps(k_mask, zmm_mask, zmm_src, _cmp_nle_us);
+  h->vblendmps(zmm_dst | k_mask, zmm_dst, zmm_src);
 
   // We reapply the sign and return
-  vxorps(zmm_dst, zmm_dst, zmm_sign);
-  vmovups(zmm_src, zmm_dst);
+  h->vpxord(zmm_dst, zmm_dst, zmm_sign);
+  h->vmovups(zmm_src, zmm_dst);
 }
 
-void jit_postop_default_t::gelu_compute_vector_fwd(const Zmm& zmm_src) {
-  vmovups(zmm_aux0, zmm_src);
+void jit_eltwise_injector::gelu_compute_vector_fwd(const Zmm& zmm_src) {
+  h->vmovups(zmm_aux0, zmm_src);
 
   // compute G(x) = sqrt_root_two_over_pi * x * (1 + fitting_const * x * x)
-  vmulps(zmm_src, zmm_src, zmm_src);
-  vmovups(zmm_aux1, table_val(gelu_tanh_fitting_const));
-  vfmadd213ps(zmm_src, zmm_aux1, table_val(one));
-  vmulps(zmm_src, zmm_src, zmm_aux0);
-  vmulps(zmm_src, zmm_src, table_val(gelu_tanh_sqrt_two_over_pi));
-
-  // save x on stack as tanh uses vmm_aux0
-  sub(rsp, 64);
-  vmovups(ptr[rsp], zmm_aux0);
+  h->vmulps(zmm_src, zmm_src, zmm_src);
+  h->vmovups(zmm_aux1, table_val(gelu_tanh_fitting_const));
+  h->vfmadd213ps(zmm_src, zmm_aux1, table_val(one));
+  h->vmulps(zmm_src, zmm_src, zmm_aux0);
+  h->vmulps(zmm_src, zmm_src, table_val(gelu_tanh_sqrt_two_over_pi));
 
   // compute tanh(G(x))
   tanh_compute_vector_fwd(zmm_src);
 
-  vmovups(zmm_aux0, ptr[rsp]);
-  add(rsp, 64);
-
   // compute 0.5 * x * (1 + tanh(G(x)))
-  vaddps(zmm_src, zmm_src, table_val(one));
-  vmulps(zmm_src, zmm_src, table_val(half));
-  vmulps(zmm_src, zmm_src, zmm_aux0);
+  h->vaddps(zmm_src, zmm_src, table_val(one));
+  h->vmulps(zmm_src, zmm_src, table_val(half));
+  h->vmulps(zmm_src, zmm_src, zmm_aux0);
 }
 
-void jit_postop_default_t::exp_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::exp_compute_vector_fwd(const Zmm& zmm_src) {
   /* exp code */
-  vcmpps(k_mask, zmm_src, table_val(exp_ln_flt_min_f), _cmp_lt_os);
-  vminps(zmm_src, zmm_src, table_val(exp_ln_flt_max_f));
-  vmaxps(zmm_src, zmm_src, table_val(exp_ln_flt_min_f));
-  vmovups(zmm_aux1, zmm_src);
-  vmulps(zmm_src, zmm_src, table_val(exp_log2ef));
-  vaddps(zmm_src, zmm_src, table_val(half));
-  vrndscaleps(zmm_aux2, zmm_src, _op_floor & 0x3);
+  h->vcmpps(k_mask, zmm_src, table_val(exp_ln_flt_min_f), _cmp_lt_os);
+  h->vminps(zmm_src, zmm_src, table_val(exp_ln_flt_max_f));
+  h->vmaxps(zmm_src, zmm_src, table_val(exp_ln_flt_min_f));
+  h->vmovups(zmm_aux1, zmm_src);
+  h->vmulps(zmm_src, zmm_src, table_val(exp_log2ef));
+  h->vaddps(zmm_src, zmm_src, table_val(half));
+  h->vrndscaleps(zmm_aux2, zmm_src, _op_floor & 0x3);
 
   // keep zmm_src = fx for further computations
-  vmovups(zmm_src, zmm_aux2);
+  h->vmovups(zmm_src, zmm_aux2);
 
   // x = x - fx * ln2
-  vfnmadd231ps(zmm_aux1, zmm_aux2, table_val(ln2f));
+  h->vfnmadd231ps(zmm_aux1, zmm_aux2, table_val(ln2f));
 
   // We do not count 2^n here, because n can reach 128 and 2^128 is not
   // representable by fp32, so to get around this problem, instead of computing
@@ -214,90 +250,147 @@ void jit_postop_default_t::exp_compute_vector_fwd(const Zmm& zmm_src) {
   // and 2 are numbers representable in fp32.
 
   // compute 2^(n-1)
-  vsubps(zmm_src, zmm_src, table_val(one));
-  vcvtps2dq(zmm_aux2, zmm_src);
-  vpaddd(zmm_aux2, zmm_aux2, table_val(exponent_bias));
-  vpslld(zmm_aux2, zmm_aux2, n_mantissa_bits);
+  h->vsubps(zmm_src, zmm_src, table_val(one));
+  h->vcvtps2dq(zmm_aux2, zmm_src);
+  h->vpaddd(zmm_aux2, zmm_aux2, table_val(exponent_bias));
+  h->vpslld(zmm_aux2, zmm_aux2, n_mantissa_bits);
 
   // use zmm_src as tmp zmm_zero when applying mask
-  vxorps(zmm_src, zmm_src, zmm_src);
+  h->vxorps(zmm_src, zmm_src, zmm_src);
 
   // set zeroes at those points which were < log(FLT_MIN)
-  vblendmps(zmm_aux2 | k_mask, zmm_aux2, zmm_src);
+  h->vblendmps(zmm_aux2 | k_mask, zmm_aux2, zmm_src);
 
   // compute polynomial
-  vmovups(zmm_src, table_val(exp_pol, 4));
-  vfmadd213ps(zmm_src, zmm_aux1, table_val(exp_pol, 3));
-  vfmadd213ps(zmm_src, zmm_aux1, table_val(exp_pol, 2));
-  vfmadd213ps(zmm_src, zmm_aux1, table_val(exp_pol, 1));
-  vfmadd213ps(zmm_src, zmm_aux1, table_val(exp_pol, 0));
-  vfmadd213ps(zmm_src, zmm_aux1, table_val(one));
+  h->vmovups(zmm_src, table_val(exp_pol, 4));
+  h->vfmadd213ps(zmm_src, zmm_aux1, table_val(exp_pol, 3));
+  h->vfmadd213ps(zmm_src, zmm_aux1, table_val(exp_pol, 2));
+  h->vfmadd213ps(zmm_src, zmm_aux1, table_val(exp_pol, 1));
+  h->vfmadd213ps(zmm_src, zmm_aux1, table_val(exp_pol, 0));
+  h->vfmadd213ps(zmm_src, zmm_aux1, table_val(one));
 
   // y = y * 2^n
 
-  vmulps(zmm_src, zmm_src, zmm_aux2);
-  vmulps(zmm_src, zmm_src, table_val(two));
+  h->vmulps(zmm_src, zmm_src, zmm_aux2);
+  h->vmulps(zmm_src, zmm_src, table_val(two));
 }
 
-void jit_postop_default_t::assign_regs() {
-  k_mask = Xbyak::Opmask(1);
-  zmm_aux1 = Zmm(1);
-  zmm_aux2 = Zmm(2);
-  zmm_aux3 = Zmm(3);
-  zmm_aux4 = Zmm(4);
-  reg_src = Zmm(6);
+void jit_eltwise_injector::relu_compute_vector_fwd(const Zmm& zmm_src) {
+  h->vmovups(zmm_aux1, zmm_src);
+  h->vcmpps(k_mask, zmm_src, table_val(zero), _cmp_nle_us);
+  h->vmulps(zmm_src, zmm_src, table_val(alpha, cur_iter_idx_));  // alpha=0 by default.
+  h->vblendmps(zmm_src | k_mask, zmm_src, zmm_aux1);
 }
 
-void jit_postop_default_t::prepare_bf16_mask() {
-  remain_task_mask = Xbyak::Opmask(6);
-  scratch_ = Xbyak::Reg64(r10);
-  
-  sub(rsp, 8);
-  mov(ptr[rsp], scratch_);
-  mov(scratch_.cvt32(), 0x1);
-  kmovd(remain_task_mask, scratch_.cvt32());
-  mov(scratch_, ptr[rsp]);
-  add(rsp, 8);
-}
-
-void jit_postop_default_t::load_bf16_cvt_to_f32(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_src, bool is_tail,
-                                                size_t offset) {
-  reg_src = is_tail ? reg_src | remain_task_mask | Xbyak::util::T_z : reg_src;
-  vpmovzxwd(reg_src, ptr[addr_src + offset]);
-  vpslld(reg_src, reg_src, 16);
-}
-
-void jit_postop_default_t::cvt_f32_to_bf16_store(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst, bool is_tail,
-                                                 size_t offset) {
-  Ymm ymm_bf16 = Ymm(reg_src.getIdx());
-
-  vcvtneps2bf16(ymm_bf16, reg_src);
-  if (!is_tail) {
-    vmovdqu16(ptr[addr_dst + offset], ymm_bf16);
+void jit_eltwise_injector::escape_regs(reg_type type, int reg_idx) {
+  auto iter = used_regs.find(type);
+  if (iter != used_regs.end()) {
+    iter->second.insert(reg_idx);
   } else {
-    vmovdqu16(ptr[addr_dst + offset] | remain_task_mask, ymm_bf16);
+    used_regs.insert(std::pair<reg_type, std::set<int>>(type, {reg_idx}));
   }
+};
+
+void jit_eltwise_injector::escape_erase(reg_type type, int reg_idx) {
+  auto iter = used_regs.find(type);
+  if (reg_idx != -1)
+    iter->second.erase(reg_idx);
+  else
+    iter->second.clear();
 }
 
-void jit_postop_default_t::prepare_table() {
-  align(64);
-  L(l_table);
+void jit_eltwise_injector::assign_regs() {
+  std::vector<Xbyak::Reg*> reg64_tb_allocate = {&p_table, &reg64_tmp};
+  std::vector<Xbyak::Reg*> mask_regs_tb_allocate = {&k_mask};
+  std::vector<Xbyak::Reg*> zmm_regs_tb_allocate = {&zmm_mask, &zmm_aux0, &zmm_aux1, &zmm_aux2,
+                                                   &zmm_aux3, &zmm_aux4, &zmm_tmp};
 
+  auto allocate_regs = [&](reg_type reg_type, int max_reg_idx,
+                           std::unordered_map<enum reg_type, std::set<int>>::const_iterator iter,
+                           std::vector<Xbyak::Reg*> tb_allocate_regs) {
+    int allocate_idx = 0;
+    std::set<int> used_reg_idxs = {};
+    if (iter != used_regs.end()) used_reg_idxs = iter->second;
+    while (tb_allocate_regs.size() != 0) {
+      while (used_reg_idxs.count(allocate_idx) != 0) allocate_idx++;
+      if (allocate_idx > max_reg_idx)
+        std::runtime_error("jit_eltwise allocate_regs error:too many registers be used in front op.");
+
+      Xbyak::Reg* reg = tb_allocate_regs.back();
+      if (reg_type == reg_type::mask) {
+        if (allocate_idx == 0) {
+          allocate_idx++;
+          continue;
+        }
+        *reg = Xbyak::Opmask(allocate_idx);
+      } else if (reg_type == reg_type::zmm) {
+        *reg = Zmm(allocate_idx);
+      } else if (reg_type == reg_type::reg64) {
+        // avoid allocate special usage registers such as rsp.front op dose not need to tell injector the usage
+        // information of these regs.
+        using Operand = Xbyak::Operand;
+        if (allocate_idx == Operand::RCX || allocate_idx == Operand::RDX || allocate_idx == Operand::RSI ||
+            allocate_idx == Operand::RDI || allocate_idx == Operand::RSP) {
+          allocate_idx++;
+          continue;
+        }
+        *reg = Xbyak::Reg64(allocate_idx);
+      }
+      tb_allocate_regs.pop_back();
+      allocate_idx++;
+    }
+  };
+
+  allocate_regs(reg_type::reg64, max_reg64_idx, used_regs.find(reg_type::reg64), reg64_tb_allocate);
+  allocate_regs(reg_type::mask, max_mask_idx, used_regs.find(reg_type::mask), mask_regs_tb_allocate);
+  allocate_regs(reg_type::zmm, max_zmm_idx, used_regs.find(reg_type::zmm), zmm_regs_tb_allocate);
+}
+
+// TODO:move this func to a utils func.
+template <typename T, typename U>
+inline T bit_cast(const U& u) {
+  static_assert(sizeof(T) == sizeof(U), "Bit-casting must preserve size.");
+  static_assert(std::is_trivial<T>::value, "T must be trivially copyable.");
+  static_assert(std::is_trivial<U>::value, "U must be trivially copyable.");
+
+  T t;
+  // Since bit_cast is used in SYCL kernels it cannot use std::memcpy as it
+  // can be implemented as @llvm.objectsize.* + __memcpy_chk for Release
+  // builds which cannot be translated to SPIR-V.
+  uint8_t* t_ptr = reinterpret_cast<uint8_t*>(&t);
+  const uint8_t* u_ptr = reinterpret_cast<const uint8_t*>(&u);
+  for (size_t i = 0; i < sizeof(U); i++) t_ptr[i] = u_ptr[i];
+  return t;
+}
+
+void jit_eltwise_injector::prepare_table() {
+  h->align(64);
+  h->L(l_table);
   assert(sizeof(table_entry_val_t) == 4);
 
   for (auto it = entry_map.begin(); it != entry_map.end(); it++) {
     const auto& te = (*it).second;
     const auto len = te.bcast ? 64u : sizeof(table_entry_val_t);
-    for (size_t d = 0; d < len; d += sizeof(table_entry_val_t)) dd(te.val);
+    for (size_t d = 0; d < len; d += sizeof(table_entry_val_t)) h->dd(te.val);
   }
 }
 
-void jit_postop_default_t::register_table_entries() {
+void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>& postop_attrs) {
   static const table_t common_values{{zero, {0x00000000, true}},      {half, {0x3f000000, true}},
                                      {one, {0x3f800000, true}},       {two, {0x40000000, true}},
                                      {minus_one, {0xbf800000, true}}, {minus_two, {0xc0000000, true}},
                                      {ln2f, {0x3f317218, true}},      {positive_mask, {0x7fffffff, true}},
                                      {sign_mask, {0x80000000, true}}, {exponent_bias, {0x0000007f, true}}};
+
+  static const table_t exchange_zmm_low256_high256_const{
+      {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000010, false}}, {exchange_zmm_low256_high256, {0x00000011, false}},
+      {exchange_zmm_low256_high256, {0x00000012, false}}, {exchange_zmm_low256_high256, {0x00000013, false}},
+      {exchange_zmm_low256_high256, {0x00000014, false}}, {exchange_zmm_low256_high256, {0x00000015, false}},
+      {exchange_zmm_low256_high256, {0x00000016, false}}, {exchange_zmm_low256_high256, {0x00000017, false}}};
 
   static const table_t exp_consts{
       {exp_log2ef, {0x3fb8aa3b, true}}, {exp_ln_flt_max_f, {0x42b17218, true}}, {exp_ln_flt_min_f, {0xc2aeac50, true}}};
@@ -573,38 +666,50 @@ void jit_postop_default_t::register_table_entries() {
   };
 
   struct need_t {
-    need_t(ssd::post_op_scheme op_type) {
-      switch (op_type) {
-        case ssd::post_op_scheme::exp:
-          exp_ = true;
-          break;
-        case ssd::post_op_scheme::gelu:
-          gelu_ = true;
-          tanh_ = true;
-          exp_ = true;
-        default:
-          break;
+    need_t(const std::vector<postop_attr>& postop_attrs) {
+      for (auto&& attr : postop_attrs) {
+        if (attr.dt == data_type::bf16) bf16_ = true;
+        if (attr.op_alg == postop_alg::exp) exp_ = true;
+        if (attr.op_alg == postop_alg::tanh) tanh_ = true;
+        if (attr.op_alg == postop_alg::gelu) gelu_ = true;
       }
     }
-
+    bool bf16_ = false;
     bool exp_ = false;
     bool tanh_ = false;
     bool gelu_ = false;
+
+    bool bf16() const { return bf16_; }
     bool exp() const { return exp_; }
     bool tanh() const { return tanh_; }
     bool gelu() const { return gelu_; }
   };
 
-  need_t need(param_.scheme);
+  need_t need(postop_attrs);
+
+  // todo:register alpha,beta,scale via postop_attrs vector.
+  static table_t alpha_const_table;
+  static table_t beta_const_table;
+  static table_t scale_const_table;
+
+  for (int i = 0; i < postop_attrs.size(); i++) {
+    mapped_table_entry_t alpha_entry{i, bit_cast<int, float>(postop_attrs[i].alpha), true};
+    mapped_table_entry_t beta_entry{i, bit_cast<int, float>(postop_attrs[i].beta), true};
+    mapped_table_entry_t scale_entry{i, bit_cast<int, float>(postop_attrs[i].scale), true};
+
+    entry_map.insert(std::make_pair(alpha, alpha_entry));
+    entry_map.insert(std::make_pair(beta, beta_entry));
+    entry_map.insert(std::make_pair(scale, scale_entry));
+  }
 
   push_entries_of(common_values);
 
+  if (need.bf16()) push_entries_of(exchange_zmm_low256_high256_const);
   if (need.exp()) {
     push_entries_of(exp_consts);
     push_entries_of(exp_polynomial);
   }
-
-  if (need.tanh()) {
+  if (need.tanh() || need.gelu()) {
     push_entries_of(tanh_consts);
     push_entries_of(tanh_polynomial_table);
   }

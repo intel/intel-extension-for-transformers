@@ -20,11 +20,13 @@
 
 namespace jd {
 // The main kinds of kernel.
-enum class kernel_kind : uint8_t {
-  undef,
-  sparse_matmul,
-  postop
-};
+enum class kernel_kind : uint8_t { undef, sparse_matmul, postop, eltwiseop };
+
+enum class postop_alg : uint8_t { exp, tanh, gelu, relu, quantize, dequantize };
+
+enum class postop_type : uint8_t { eltwise };
+
+enum class reg_type : uint8_t { mask, zmm, reg64 };
 
 // The propagation kind of kernel, temporarily defined as a specific function or
 // scenario. Further, the specific function can be implemented by different
@@ -66,6 +68,23 @@ enum class format_type : uint8_t {
 enum class engine_kind : uint8_t {
   undef,
   cpu,
+};
+
+// postop attribute for op-fusion
+class postop_attr {
+ public:
+  data_type dt;
+  postop_type op_type;
+  postop_alg op_alg;
+  float alpha = 0;
+  float beta = 0;
+  float scale = 0;
+
+  postop_attr(){};
+
+  postop_attr(const data_type& dt, const postop_type& op_type, const postop_alg& op_alg, float alpha = 0.0,
+              float beta = 0.0, float scale = 0.0)
+      : dt(dt), op_type(op_type), op_alg(op_alg), alpha(alpha), beta(beta), scale(scale) {}
 };
 
 static std::unordered_map<data_type, int> type_size = {

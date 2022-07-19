@@ -34,19 +34,15 @@ namespace jd {
  * @brief Proxy pattern. The proxy could interface to anything.
  *  Similar to onednn's "struct handle". oneapi/dnnl/dnnl.hpp:136.
  */
-template<typename T, typename arg_t = void>
+template <typename T, typename arg_t = void>
 class proxy_base {
  public:
   proxy_base() {}
   virtual ~proxy_base() {}
 
  public:
-  inline void reset_sp(const std::shared_ptr<const T>& sp) {
-    data_handle_ = sp;
-  }
-  inline const std::shared_ptr<const T>& get_sp() const {
-    return data_handle_;
-  }
+  inline void reset_sp(const std::shared_ptr<const T>& sp) { data_handle_ = sp; }
+  inline const std::shared_ptr<const T>& get_sp() const { return data_handle_; }
 
  protected:
   // internal functions of creat the proxy object.
@@ -86,13 +82,12 @@ class kernel_proxy : public proxy_base<kernel_t, std::shared_ptr<const kernel_de
 
  protected:
   bool create_proxy_object(std::shared_ptr<const kernel_t>& result_ref,
-    const std::shared_ptr<const kernel_desc_t>& kd) override;
+                           const std::shared_ptr<const kernel_desc_t>& kd) override;
 
  public:
   inline const jd::kernel_kind& kernel_kind() const { return get_sp()->kd()->kernel_kind(); }
   void execute(const std::vector<const void*>& rt_data);
 };
-
 
 //// The following paragraphs are the various derived kernels and its descriptors.
 /**
@@ -111,6 +106,14 @@ class postop_desc : public kernel_desc_proxy {
   explicit postop_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~postop_desc() {}
 };
+
+class eltwiseop_desc : public kernel_desc_proxy {
+ public:
+  eltwiseop_desc(){};
+  explicit eltwiseop_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~eltwiseop_desc() {}
+};
+
 /**
  * @brief Derived proxy class, interfacing to the real/cached sparse_matmul_t.
  */
@@ -126,5 +129,13 @@ class postop : public kernel_proxy {
   explicit postop(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~postop() {}
 };
+
+class eltwiseop : public kernel_proxy {
+ public:
+  eltwiseop() {}
+  explicit eltwiseop(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~eltwiseop() {}
+};
+
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_INTERFACE_HPP_

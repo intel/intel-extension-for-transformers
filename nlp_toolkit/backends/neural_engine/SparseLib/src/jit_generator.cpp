@@ -15,9 +15,13 @@
 #include "jit_generator.hpp"
 
 namespace jd {
+
+bool dump_asm_flag = false;
+
 bool jit_generator::create_kernel() {
   generate();
-  // dump_asm();
+  if (std::getenv("DUMP_ASM") != nullptr) dump_asm_flag = true;
+  if (dump_asm_flag) dump_asm();
   jit_ker_ = get_code();
   return (jit_ker_ != nullptr);
 }

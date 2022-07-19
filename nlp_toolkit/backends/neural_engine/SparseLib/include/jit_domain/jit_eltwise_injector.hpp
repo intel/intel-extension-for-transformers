@@ -12,91 +12,64 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_POSTOP_DEFAULT_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_POSTOP_DEFAULT_HPP_
+#ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
+#define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
 
 #include "jit_generator.hpp"
 #include "utils.hpp"
-#include "kernels/postop_types.hpp"
+#include "param_types.hpp"
 #include <map>
-
-#define GET_OFF(field) offsetof(ssd::postop_data_t, field)
+#include <set>
 
 namespace jd {
-class jit_postop_default_t : public jit_generator {
+class jit_eltwise_injector {
   using Zmm = Xbyak::Zmm;
   using Ymm = Xbyak::Ymm;
   using Xmm = Xbyak::Xmm;
 
  public:
-  explicit jit_postop_default_t(const ssd::postop_param_t& param) : jit_generator(), param_(param) {
-    register_table_entries();
-    assign_regs();
-  }
-  virtual ~jit_postop_default_t() {}
+  explicit jit_eltwise_injector(){};
+  virtual ~jit_eltwise_injector() {}
+
+  void eltwise_injector_init(jit_generator* ptr, const std::vector<postop_attr>& postop_attrs);
+  void vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs);
+  void escape_regs(reg_type type, int reg_idx);
+  void escape_erase(reg_type type, int reg_idx = -1);
+  void prepare_table();
 
  private:
-  void generate() override;
   void assign_regs();
-  void vector_compute(const Xbyak::Zmm& zmm_src);
   void exp_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void tanh_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void gelu_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
-  void load_bf16_cvt_to_f32(Xbyak::Zmm reg_src, Xbyak::Reg64 src_addr, bool is_tail = false, size_t offset = 0);
-  void cvt_f32_to_bf16_store(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst, bool is_tail = false, size_t offset = 0);
-
-  bool is_bf16() {
-    if (param_.dt == ssd::data_type::bf16) return true;
-    return false;
-  };
-
-  size_t vlen() {
-    switch (param_.dt) {
-      case jd::ssd::data_type::fp32:
-        return 64u;
-      case jd::ssd::data_type::bf16:
-        return 32u;
-    }
-    return 0;
-  };
-
-  size_t dtype_size() {
-    switch (param_.dt) {
-      case jd::ssd::data_type::fp32:
-        return 4u;
-      case jd::ssd::data_type::bf16:
-        return 2u;
-    }
-    return 0;
-  };
+  void relu_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void quantize_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void dequantize_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void register_table_entries(const std::vector<postop_attr>& postop_attrs);
+  void assert_check(const std::vector<postop_attr>& postop_attrs);
+  void load_table_addr() { h->mov(p_table, l_table); };
 
  private:
-  ssd::postop_param_t param_;
+  postop_attr cur_postop_attr_;
+  int cur_iter_idx_;  // for alpha,beta,scale lookup.
+  jit_generator* h;
+  std::unordered_map<reg_type, std::set<int>> used_regs;
 
   /*labels*/
   Xbyak::Label l_table;
-  Xbyak::Label vectorized_loop_start;
-  Xbyak::Label vectorized_loop_end;
-  Xbyak::Label reminder_loop_start;
-  Xbyak::Label reminder_loop_end;
 
-  /* registers for fwd*/
-  Xbyak::Reg64 reg_param = rdi;
-  Xbyak::Reg64 p_table = Xbyak::util::rax;
-  Zmm reg_src;
-  Xbyak::Reg64 addr_src = r15;
-  Xbyak::Reg64 addr_dst = r14;
-  Xbyak::Reg64 remain_element_num = rsi;
-
-  /* register for bf16 tasks*/
-  Xbyak::Opmask remain_task_mask;
-  Xbyak::Reg64 scratch_;
+  /*register for fwd*/
+  Xbyak::Reg64 p_table;
+  Xbyak::Reg64 reg64_tmp;
 
   Zmm zmm_mask, zmm_aux0, zmm_aux1, zmm_aux2, zmm_aux3, zmm_aux4, zmm_tmp;
   Ymm ymm_tmp;
   Xmm xmm_tmp;
   Xbyak::Opmask k_mask;
   static constexpr int n_mantissa_bits = 23;
+  static constexpr int max_mask_idx = 7;
+  static constexpr int max_zmm_idx = 31;
+  static constexpr int max_reg64_idx = 15;
 
   enum {
     _cmp_eq_oq = 0u,
@@ -141,6 +114,7 @@ class jit_postop_default_t : public jit_generator {
     tanh_linear_ubound,
     tanh_saturation_lbound,
     tanh_pol_table,
+    exchange_zmm_low256_high256,
     undef_key,
   };
 
@@ -161,17 +135,6 @@ class jit_postop_default_t : public jit_generator {
   };
   using table_t = std::multimap<key_t, table_entry_t>;
   using mapped_table_t = std::multimap<key_t, mapped_table_entry_t>;
-  void load_table_addr() { mov(p_table, l_table); };
-  void register_table_entries();
-  void prepare_table();
-  void prepare_bf16_mask();
-
-  void load_params() {
-    mov(addr_dst, ptr[reg_param + GET_OFF(dst)]);
-    mov(addr_src, ptr[reg_param + GET_OFF(src)]);
-    mov(remain_element_num, ptr[reg_param + GET_OFF(element_num)]);
-  }
-
   mapped_table_t entry_map;
 };
 }  // namespace jd

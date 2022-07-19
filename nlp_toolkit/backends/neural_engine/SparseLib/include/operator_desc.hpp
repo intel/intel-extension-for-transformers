@@ -35,15 +35,18 @@ class operator_desc {
         eng_kind_(jd::engine_kind::undef),
         impl_nthr_(0),
         ts_descs_({}),
-        attrs_({}) {}
+        attrs_({}),
+        apply_postops_list_({}) {}
   operator_desc(const jd::kernel_kind& ker_kind, const jd::kernel_prop& ker_prop, const jd::engine_kind& eng_kind,
-                const std::vector<tensor_desc>& ts_descs, const std::unordered_map<std::string, std::string>& attrs)
+                const std::vector<tensor_desc>& ts_descs, const std::unordered_map<std::string, std::string>& attrs,
+                const std::vector<postop_attr>& apply_postops_list = {})
       : ker_kind_(ker_kind),
         ker_prop_(ker_prop),
         eng_kind_(eng_kind),
         impl_nthr_((omp_get_max_threads() == omp_get_num_procs()) ? 1 : omp_get_max_threads()),
         ts_descs_(ts_descs),
-        attrs_(attrs) {}
+        attrs_(attrs),
+        apply_postops_list_(apply_postops_list) {}
   virtual ~operator_desc() {}
 
  public:
@@ -59,6 +62,7 @@ class operator_desc {
   inline const uint64_t& impl_nthr() const { return impl_nthr_; }
   inline const std::vector<tensor_desc>& tensor_descs() const { return ts_descs_; }
   inline const std::unordered_map<std::string, std::string>& attrs() const { return attrs_; }
+  inline const std::vector<postop_attr>& apply_postops_list() const { return apply_postops_list_; }
 
  private:
   jd::kernel_kind ker_kind_;
@@ -67,6 +71,7 @@ class operator_desc {
   uint64_t impl_nthr_;
   std::vector<tensor_desc> ts_descs_;
   std::unordered_map<std::string, std::string> attrs_;
+  std::vector<postop_attr> apply_postops_list_;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_OPERATOR_DESC_HPP_

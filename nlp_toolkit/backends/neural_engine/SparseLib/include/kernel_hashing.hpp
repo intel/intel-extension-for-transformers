@@ -65,7 +65,9 @@ class hash_t {
   uint64_t get_attr_hash(const std::unordered_map<std::string, std::string>& attrs, const kernel_kind& ker_kind) const {
     auto op_attrs = attrs;
     uint64_t seed = 0;
-    hash_combine(seed, op_attrs["post_op"]);
+    // if front op want to apply postop-fusion,they should add a filed named postop_list in op_attr
+    // for distinguishing.
+    hash_combine(seed, op_attrs["postop_list"]);
     switch (ker_kind) {
       case kernel_kind::undef:
         break;
@@ -75,8 +77,13 @@ class hash_t {
         hash_combine(seed, op_attrs["tile_shape"]);
         hash_combine(seed, op_attrs["sparse_scheme"]);
         break;
+        // todo:remove it.
       case kernel_kind::postop:
-        hash_combine(seed, op_attrs["exp"]);
+        break;
+      case kernel_kind::eltwiseop:
+        hash_combine(seed, op_attrs["reg64"]);
+        hash_combine(seed, op_attrs["zmm"]);
+        hash_combine(seed, op_attrs["mask"]);
         break;
       default:
         break;
