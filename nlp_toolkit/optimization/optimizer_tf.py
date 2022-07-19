@@ -2,9 +2,10 @@ import logging
 import numpy as np
 import os
 import time
+from neural_compressor import __version__
 from neural_compressor.experimental import common
 from neural_compressor.model.model import saved_model_session
-from nlp_toolkit import(
+from nlp_toolkit import (
     DistillationConfig,
     QuantizationConfig,
     PruningConfig
@@ -12,6 +13,7 @@ from nlp_toolkit import(
 from nlp_toolkit.optimization.quantization import QuantizationMode
 from nlp_toolkit.optimization.utils.metrics import Metric
 from nlp_toolkit.optimization.utils.utility import LazyImport
+from packaging import version
 from transformers import PreTrainedModel
 from transformers.training_args_tf import TFTrainingArguments
 from typing import Callable, Optional, List
@@ -385,9 +387,15 @@ class TFOptimization:
             self.pruner.eval_func = self.builtin_eval_func
 
         if self.train_func is not None:
-            self.pruner.pruning_func = self._train_func
+            if version.parse(__version__) <= version.parse("1.12"):
+                self.pruner.pruning_func = self._train_func
+            else:
+                self.pruner.train_func = self._train_func
         else:
-            self.pruner.pruning_func = self.kerase_train_func
+            if version.parse(__version__) <= version.parse("1.12"):
+                self.pruner.pruning_func = self.kerase_train_func
+            else:
+                self.pruner.train_func = self.kerase_train_func
 
         opt_model = self.pruner.fit()
 
@@ -446,22 +454,36 @@ class TFOptimization:
         hooks = callbacks['tf_pruning'](self.pruner.model, input_model, self.pruner.hooks)
         class PruningCb(tf.keras.callbacks.Callback):
             def on_train_begin(self, logs=None):
-                hooks['pre_epoch_begin']()
+                if version.parse(__version__) <= version.parse("1.12"):
+                    hooks['pre_epoch_begin'](logs)
+                else:
+                    hooks['on_train_begin'](logs)
 
             def on_train_end(self, logs=None):
-                hooks['post_epoch_end']()
+                if version.parse(__version__) <= version.parse("1.12"):
+                    hooks['post_epoch_end'](logs)
+                else:
+                    hooks['on_train_end'](logs)
 
             def on_epoch_begin(self, epoch, logs=None):
-                hooks['on_epoch_begin'](epoch)
+                # pylint: disable=E1121
+                hooks['on_epoch_begin'](epoch, logs)
 
             def on_epoch_end(self, epoch, logs=None):
-                hooks['on_epoch_end']()
+                hooks['on_epoch_end'](logs)
 
+            # pylint: disable=E1121
             def on_train_batch_begin(self, batch, logs=None):
-                hooks['on_batch_begin'](batch)
+                if version.parse(__version__) <= version.parse("1.12"):
+                    hooks['on_batch_begin'](batch, logs)
+                else:
+                    hooks['on_step_begin'](batch, logs)
 
             def on_train_batch_end(self, batch, logs=None):
-                hooks['on_batch_end']()
+                if version.parse(__version__) <= version.parse("1.12"):
+                    hooks['on_batch_end'](logs)
+                else:
+                    hooks['on_step_end'](logs)
 
         input_model.fit(self.train_dataset, validation_data=self.eval_dataset, epochs=epochs,
                         callbacks=[PruningCb()])

@@ -8,6 +8,7 @@ import sys
 import time
 import warnings
 from functools import partial
+from neural_compressor import __version__ as nc_version
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
 from nlp_toolkit import (
@@ -206,7 +207,7 @@ class BaseTrainer():
         compression_state = None
         assert isinstance(self.quant_config, NncfConfig), \
             "Please pass a NNCFConfig instance to trainer.quantize!"
-        
+
         self.metrics = self.quant_config.metrics
         nncf_compression_state_file = self.quant_config.compression_state
 
@@ -279,7 +280,7 @@ class BaseTrainer():
         if self.quantizer is None:
             self._provider = Provider[provider.upper()].value
 
-        if self._provider == Provider.NNCF.value:   # pragma: no cover 
+        if self._provider == Provider.NNCF.value:   # pragma: no cover
             return self._nncf_quantize()
         elif self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
@@ -1054,12 +1055,6 @@ class BaseTrainer():
             labels = inputs.pop("labels")
         else:
             labels = None
-        if "teacher_logits" in inputs:
-            teacher_logits = inputs.pop("teacher_logits")
-            if "start_positions" in inputs and "end_positions" in inputs: # for SQuAD
-                teacher_logits = torch.vstack(list(teacher_logits))
-        else:
-            teacher_logits = None
 
         outputs = model(**inputs)
         if self.in_training and hasattr(self, "component") and \
@@ -1067,6 +1062,7 @@ class BaseTrainer():
             qa_output_merger = lambda outputs : torch.vstack([torch.vstack([sl, el]) for sl, el in \
                                                 zip(outputs["start_logits"], outputs["end_logits"])])
             qa_output_spliter = lambda outputs : (outputs[0::2], outputs[1::2])
+
             def get_logits(outputs):
                 if isinstance(outputs, dict):
                     if "logits" in outputs:
@@ -1083,24 +1079,46 @@ class BaseTrainer():
                     logits = outputs[1]
                 return logits
 
-            if labels is None:
-                if "labels" in inputs: # for GLUE
-                    labels = inputs["labels"]
-                elif "start_positions" in inputs and "end_positions" in inputs: # for SQuAD
-                    labels = torch.hstack([torch.tensor([sp, ep]) for sp, ep in \
-                            zip(inputs["start_positions"], inputs["end_positions"])])
-                else:
-                    raise AssertionError("Labels of input data not provided, can't compute loss")
+            if "teacher_logits" in inputs:
+                teacher_logits = inputs.pop("teacher_logits")
+                if "start_positions" in inputs and "end_positions" in inputs: # for SQuAD
+                    teacher_logits = torch.vstack(list(teacher_logits))
+            else:
+                teacher_outputs = self.component.criterion.teacher_model_forward(inputs)
+                teacher_logits = get_logits(
+                    self.component.criterion.teacher_outputs if teacher_outputs is None
+                    else teacher_outputs
+                )
+
             logits = get_logits(outputs)
-            if hasattr(self.component, "on_post_forward"):
-                self.component.on_post_forward(inputs, teacher_output=teacher_logits)
-                if hasattr(self.component.criterion, "teacher_outputs"):
-                    self.component.criterion.teacher_outputs = \
-                        get_logits(self.component.criterion.teacher_outputs)
-            loss = self.component.criterion(logits, labels)
-            if hasattr(self.component.criterion, 'add_origin_loss') and \
-                self.component.criterion.add_origin_loss:
-                loss = loss + outputs['loss']
+            if version.parse(nc_version) <= version.parse("1.12"):
+                if labels is None:
+                    if "labels" in inputs: # for GLUE
+                        labels = inputs["labels"]
+                    elif "start_positions" in inputs and "end_positions" in inputs: # for SQuAD
+                        labels = torch.hstack([torch.tensor([sp, ep]) for sp, ep in \
+                                zip(inputs["start_positions"], inputs["end_positions"])])
+                    else:
+                        raise AssertionError("Labels of input data not provided, can't compute loss")
+                if hasattr(self.component, "on_post_forward"):
+                    self.component.on_post_forward(inputs, teacher_output=teacher_logits)
+                    if hasattr(self.component.criterion, "teacher_outputs"):
+                        self.component.criterion.teacher_outputs = \
+                            get_logits(self.component.criterion.teacher_outputs)
+                loss = self.component.criterion(logits, labels)
+                if hasattr(self.component.criterion, 'add_origin_loss') and \
+                    self.component.criterion.add_origin_loss:
+                    loss = loss + outputs['loss']
+            else:
+                if self.args.past_index >= 0:
+                    self._past = outputs[self.args.past_index]
+
+                if labels is not None:
+                    loss = self.label_smoother(outputs, labels)
+                else:
+                    # We don't use .loss here since the model may return tuples instead of ModelOutput.
+                    loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+                loss = self.component.on_after_compute_loss(inputs, logits, loss, teacher_logits)
             if "start_positions" in inputs and "end_positions" in inputs:
                 start_logits, end_logits = qa_output_spliter(logits)
                 outputs = {"start_logits":start_logits, "end_logits":end_logits, "loss":loss}
