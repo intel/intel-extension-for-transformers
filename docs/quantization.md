@@ -1,5 +1,21 @@
 # Quantization
-## script:
+Quantization is a widely-used model compression technique that can reduce model size while also improving inference and training latency. The full precision data converts to low-precision, there is little degradation in model accuracy, but the inference performance of quantized model can gain higher performance by saving the memory bandwidth and accelerating computations with low precision instructions. Intel provided several lower precision instructions (ex: 8-bit or 16-bit multipliers), both training and inference can get benefits from them. Refer to the Intel article on lower numerical precision inference and training in deep learning.
+
+## quantization approach
+### Post-Training Static Quantization performs quantization on already trained models, it requires an additional pass over the dataset to work, only activations do calibration.
+<img src="imgs/PTQ.png" width=256 height=129 alt="PTQ">
+<br>
+
+### Post-Training Dynamic Quantization: Weights are quantized ahead of time but the activations are dynamically quantized during inference, the scale factor for activations dynamically based on the data range observed at runtime.
+<img src="imgs/dynamic_quantization.png" width=270 height=124 alt="Dynamic Quantization">
+<br>
+
+### Quantization-aware Training (QAT) quantizes models during training and typically provides higher accuracy comparing with post-training quantization, but QAT may require additional hyper-parameter tuning and it may take more time to deployment.
+<img src="imgs/QAT.png" width=244 height=147 alt="QAT">
+
+
+## quantization usage
+### script:
 ```python
 from nlp_toolkit import metric, objectives, QuantizationConfig
 from nlp_toolkit.optimization.trainer import NLPTrainer
@@ -19,7 +35,7 @@ model = trainer.quantize(quant_config=q_config)
 ```
 Please refer to [quantization example](../examples/optimize/pytorch/huggingface/text-classification/quantization/inc/run_glue.py) for the details
 
-## Create an instance of Metric
+### Create an instance of Metric
 The Metric define which metric will used to measure the performance of tuned models.
 - example:
     ```python
@@ -28,7 +44,7 @@ The Metric define which metric will used to measure the performance of tuned mod
 
     Please refer to [metrics document](metrics.md) for the details.
 
-## Create an instance of Objective(Optional)
+### Create an instance of Objective(Optional)
 In terms of evaluating the status of a specific model during tuning, we should have general objectives to measure the status of different models.
 
 - example:
@@ -38,7 +54,7 @@ In terms of evaluating the status of a specific model during tuning, we should h
 
     Please refer to [objective document](objectives.md) for the details.
 
-## Create an instance of QuantizationConfig
+### Create an instance of QuantizationConfig
 The QuantizationConfig contains all the information related to the model quantization behavior. If you created Metric and Objective instance(default Objective is "performance"), then you can create an instance of QuantizationConfig.
 
 - arguments:
@@ -60,7 +76,7 @@ The QuantizationConfig contains all the information related to the model quantiz
     )
     ```
 
-## Quantization with Trainer
+### Quantization with Trainer
 - Quantization with Trainer
     NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can quantize model with trainer.quantize function.
     ```python

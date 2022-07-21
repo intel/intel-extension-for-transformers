@@ -1,5 +1,19 @@
 # Pruning
-## script:
+## introduction
+Pruning is the process of removing redundant parameters of a network. The idea is from Yan Lecun in 1990: [paper](http://yann.lecun.com/exdb/publis/pdf/lecun-90b.pdf) . There are two types of pruning: Unstructured and Structured. Unstructured pruning means finding and removing the less salient connection in the model, the place could be anywhere in the matrix. Structured pruning means deleting entire blocks, filters, or channels.
+
+## Pruning types in NLPToolkit
+- Magnitude (Unstructured)
+  - The algorithm prunes the weight by the lowest absolute value at each layer with given sparsity target. 
+
+- Group Lasso (Structured)
+  - The algorithm uses Group lasso regularization to prune entire rows, columns or blocks of parameters that result in a smaller dense network.
+
+- Pattern Lock (Unstructured & Structured)
+  - The algorithm locks the sparsity pattern in fine tune phase by freezing those zero values of weight tensor during weight update of training. 
+
+## usage
+### script:
 ```python
 from nlp_toolkit import metric, objectives, PrunerConfig, PruningConfig,
 from nlp_toolkit.optimization.trainer import NLPTrainer
@@ -13,7 +27,7 @@ model = trainer.prune(pruning_config=p_conf)
 ```
 Please refer to [example](../examples/optimize/pytorch/huggingface/text-classification/pruning/run_glue.py) for the details.
 
-## Create an instance of Metric
+### Create an instance of Metric
 The Metric define which metric will used to measure the performance of tuned models.
 - example:
     ```python
@@ -22,7 +36,7 @@ The Metric define which metric will used to measure the performance of tuned mod
 
     Please refer to [metrics document](metrics.md) for the details.
 
-## Create list of an instance of PrunerConfig(Optional)
+### Create list of an instance of PrunerConfig(Optional)
 PrunerConfig defines which pruning algorithm is used and how to apply it during training process. NLP Toolkit supports pruning type is "BasicMagnitude", "PatternLock", and "GroupLasso". You can create different pruner for different layers.
 
 - arguments:
@@ -42,7 +56,7 @@ PrunerConfig defines which pruning algorithm is used and how to apply it during 
     pruner_config = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=0.9)
     ```
 
-## Create an instance of PruningConfig
+### Create an instance of PruningConfig
 The PruningConfig contains all the information related to the model pruning behavior. If you created Metric and PrunerConfig instance, then you can create an instance of PruningConfig. Metric and pruner is optional.
 
 - arguments:
@@ -59,7 +73,7 @@ The PruningConfig contains all the information related to the model pruning beha
     pruning_conf = PruningConfig(pruner_config=[pruner_config], metrics=tune_metric)
     ```
 
-## Prune with Trainer
+### Prune with Trainer
 - Prune with Trainer
     NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can prune model with trainer.prune function.
     ```python

@@ -1,5 +1,12 @@
 # Distillation
-## script:
+## Introduction
+Knowledge distillation is one of popular approaches of network compression, which transfers knowledge from a large model to a smaller one without loss of validity. As smaller models are less expensive to evaluate, they can be deployed on less powerful hardware (such as a mobile device). Graph shown below is the workflow of the distillation, the teacher model will take the same input that feed into the student model to produce the output that contains knowledge of the teacher model to instruct the student model.
+<br>
+![Distillation Workflow](./imgs/Distillation_workflow.png)
+<br>
+
+## usage
+### script:
 ```python
 from nlp_toolkit import metric, objectives, DistillationConfig, Criterion
 from nlp_toolkit.optimization.trainer import NLPTrainer
@@ -15,7 +22,7 @@ model = trainer.distill(
 
 Please refer to [example](../examples/optimize/pytorch/huggingface/text-classification/distillation/run_glue.py) for the details.
 
-## Create an instance of Metric
+### Create an instance of Metric
 The Metric define which metric will used to measure the performance of tuned models.
 - example:
     ```python
@@ -24,7 +31,7 @@ The Metric define which metric will used to measure the performance of tuned mod
 
     Please refer to [metrics document](metrics.md) for the details.
 
-## Create an instance of Criterion(Optional)
+### Create an instance of Criterion(Optional)
 The criterion used in training phase.
 
 - arguments:
@@ -42,7 +49,7 @@ The criterion used in training phase.
     criterion = Criterion(name='KnowledgeLoss')
     ```
 
-## Create an instance of DistillationConfig
+### Create an instance of DistillationConfig
 The DistillationConfig contains all the information related to the model distillation behavior. If you created Metric and Criterion instance, then you can create an instance of DistillationConfig. Metric and pruner_config is optional.
 
 - arguments:
@@ -57,7 +64,7 @@ The DistillationConfig contains all the information related to the model distill
     d_conf = DistillationConfig(metrics=metric, criterion=criterion)
     ```
 
-## Distill with Trainer
+### Distill with Trainer
 - Distill with Trainer
     NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can distill model with trainer.distill function.
     ```python
