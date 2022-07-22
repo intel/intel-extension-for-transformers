@@ -22,7 +22,7 @@ from transformers import (
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
-MODEL_NAME = "distilbert-base-uncased"
+MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 
 class DummyDataset(data.Dataset):
     def __init__(self):
@@ -78,6 +78,8 @@ class TestQuantization(unittest.TestCase):
         shutil.rmtree('./mlruns', ignore_errors=True)
         shutil.rmtree('./tmp_trainer', ignore_errors=True)
         shutil.rmtree('./quantized_model', ignore_errors=True)
+        shutil.rmtree('fp32-model.onnx', ignore_errors=True)
+        shutil.rmtree('int8-model.onnx', ignore_errors=True)
 
     def test_fx_model_quant(self):
         fp32_output = self.trainer.predict(self.dummy_dataset).predictions
@@ -120,10 +122,6 @@ class TestQuantization(unittest.TestCase):
             else:
                 self.trainer.export_to_onnx('int8-model.onnx')
                 self.assertTrue(check_onnx('int8-model.onnx', self.trainer.get_eval_dataloader()))
-
-            self.trainer.enable_executor = True
-            self.trainer.export_to_onnx('int8-model.onnx')
-            self.assertTrue(check_onnx('int8-model.onnx', self.trainer.get_eval_dataloader()))
 
             # Check quantized model
             output_1 = self.trainer.predict(self.dummy_dataset).predictions

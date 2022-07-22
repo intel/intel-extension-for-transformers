@@ -61,7 +61,7 @@ class OptimizedModel:
                 use_auth_token=use_auth_token,
                 revision=revision,
                 **kwargs,
-                )
+            )
 
         model_class = eval(f'transformers.{config.architectures[0]}')
         if config.torch_dtype is not torch.int8:
@@ -151,4 +151,5 @@ class OptimizedModel:
                     os.path.expanduser(model_name_or_path)), WEIGHTS_NAME)
                 q_model = load(weights_file, model)
 
+            del model
             return q_model

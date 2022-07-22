@@ -1527,6 +1527,8 @@ class BaseTrainer():
         it = iter(eval_dataloader)
         input = next(it)
         self._remove_label(input)
+        if model.__class__.__name__ == 'XLNetForSequenceClassification':
+            input.pop('token_type_ids')
         # Set variable length axes
         symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
         axes_dict = {k: symbolic_names for k in input.keys()}
