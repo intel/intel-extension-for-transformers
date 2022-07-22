@@ -35,6 +35,9 @@ function prepare_model {
     if [[ ${precision} = 'int8' ]]; then
         mode_cmd=$mode_cmd" --tune --quantization_approach PostTrainingStatic"
     fi
+    if [[ ${precision} = 'bf16' ]]; then
+        mode_cmd=$mode_cmd" --enable_bf16"
+    fi
     echo ${mode_cmd}
    
     cache="./tmp"

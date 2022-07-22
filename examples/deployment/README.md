@@ -45,7 +45,7 @@ After succesful build, you will see `neural_engine` in the nlp_toolkit/build fol
 ##### 3. Generate optimal BERT model
 
 ```
-from neural_engine.compile import compile
+from nlp_toolkit.backends.neural_engine.compile import compile
 model = compile('/path/to/your/model')
 model.save('/ir/path')
 ```

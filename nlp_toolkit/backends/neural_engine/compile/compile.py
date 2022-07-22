@@ -50,9 +50,10 @@ def start_pipeline(model, config=None):
 
 def compile(model, config=None):
     if get_model_fwk_name(model) == 'neural engine':
-        from nlp_toolkit.backends.neural_engine.compile.graph import Graph
-        model = Graph()
-        model.graph_init(model + '/conf.yaml', model + '/model.bin')
+        from .graph import Graph
+        graph = Graph()
+        graph.graph_init(model + '/conf.yaml', model + '/model.bin')
+        model = graph
     else:
         model = start_pipeline(model, config=config)
     return model

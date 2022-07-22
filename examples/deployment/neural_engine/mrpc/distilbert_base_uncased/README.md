@@ -50,13 +50,12 @@ python prepare_dataset.py --dataset_name=glue --task_name=mrpc --output_dir=./da
 ```
 
 ### 2.2 Get model
-Neural_Engine can parse Tensorflow/Pytorch/ONNX and IR model.  
-Here are two examples to get ONNX model.
-You can get FP32 modol from optimize by setting precision=fp32 as follows:
+Neural Engine can parse Tensorflow/Pytorch/ONNX model and Neural Engine IR.  
+You can get FP32 ONNX modol from optimization module by setting precision=fp32, command as follows:
 ```shell
 bash prepare_model.sh --input_model=textattack/distilbert-base-uncased-MRPC  --task_name=mrpc --output_dir=./model_and_tokenizer --precision=fp32
 ```
-And for better perfromance, you can also get a PTQ int8 model by setting precision=int8.
+Throught setting precision=int8 you could get PTQ int8 model and setting precision=bf16 to get bf16 model.
 ```shell
 bash prepare_model.sh --input_model=textattack/distilbert-base-uncased-MRPC  --task_name=mrpc --output_dir=./model_and_tokenizer --precision=int8
 ```

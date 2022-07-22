@@ -62,6 +62,11 @@ class InsertBF16Node(Pattern):
                 node.input_tensors[0] = quant_output
                 dest_op = node.output_tensors[0].dest_op
                 if dest_op and model.get_node_by_name(dest_op[0]).op_type != 'LayerNorm':
+                    next_node = model.get_node_by_name(dest_op[0])
+                    next_dest_op = next_node.output_tensors[0].dest_op
+                    # when next_dest_op is Ouput op, output_type should be fp32
+                    if not next_dest_op:
+                        continue
                     node.attr['output_dtype'] = 'bf16'
 
 

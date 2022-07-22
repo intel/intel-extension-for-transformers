@@ -219,6 +219,9 @@ class OptimizationArguments:
     int8: bool = field(
         default=False,
         metadata={"help":"run benchmark."})
+    enable_bf16: bool = field(
+        default=False,
+        metadata={"help":"Whether or not to apply bf16."})
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
@@ -564,6 +567,8 @@ def main():
                 break
         assert ret, "No metric returned, Please check inference metric!"
 
+    if optim_args.enable_bf16:
+        trainer.enable_bf16 = True
     if optim_args.to_onnx:
         trainer.enable_executor = True
         trainer.export_to_onnx()
