@@ -50,10 +50,10 @@ endif()
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
 add_subdirectory(${THIRD_PARTY_DIR}/gflags)
 set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
-add_subdirectory(${THIRD_PARTY_DIR}/glog)
 add_subdirectory(${THIRD_PARTY_DIR}/oneDNN)
 add_subdirectory(${THIRD_PARTY_DIR}/pybind11)
 add_subdirectory(${THIRD_PARTY_DIR}/yaml-cpp)
+add_subdirectory(../SparseLib/ ./hostlibs)
 
 add_library(neural_engine SHARED
     src/model.cpp
@@ -91,6 +91,7 @@ add_library(neural_engine SHARED
 # Header file include path
 target_include_directories(neural_engine
     PUBLIC
+        ../
         ./include/sparse_operators
         ./include/operators
         ./include
@@ -114,6 +115,7 @@ target_link_libraries(neural_engine
         gflags
         glog
         rt
+        kernellibs
 )
 
 ## pybind11

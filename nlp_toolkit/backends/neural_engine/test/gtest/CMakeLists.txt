@@ -27,10 +27,10 @@ endif()
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/gflags ./gflags)
 set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/glog ./glog)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/oneDNN ./oneDNN)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/yaml-cpp ./yaml)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/googletest ./googletest)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../SparseLib/ ./hostlibs)
 
 #### PART1: build host_operators.so shared library ####
 add_library(host_operators SHARED
@@ -62,6 +62,7 @@ add_library(host_operators SHARED
 # Header file include path
 target_include_directories(host_operators
     PUBLIC
+        ${HOST_SRC_DIR}/..
         ${HOST_SRC_DIR}/include/sparse_operators
         ${HOST_SRC_DIR}/include/operators
         ${HOST_SRC_DIR}/include
@@ -86,6 +87,7 @@ target_link_libraries(host_operators
         gflags
         glog
         rt
+        kernellibs
 )
 
 
@@ -112,6 +114,7 @@ file(GLOB OPS_TEST_CASES_SRC
     test_embeddingbag_op.cpp
     test_convolution_op.cpp
     test_group_norm_op.cpp
+    test_sparse_inner_product.cpp
 )
 
 function(register_gtest_func exe src)
@@ -120,7 +123,8 @@ function(register_gtest_func exe src)
         PRIVATE
             ${CMAKE_THREAD_LIBS_INIT}
             GTest::gtest
-            host_operators)
+            host_operators
+            kernellibs)
 endfunction()
 
 foreach(TEST_FILE ${OPS_TEST_CASES_SRC})

@@ -17,11 +17,14 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <unordered_set>
 
 #include "../common.hpp"
 #include "../operator.hpp"
 #include "../sparse_operators/sparse_inner_product.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#include "SparseLib/include/interface.hpp"
+#include "SparseLib/include/benchmark_utils.hpp"
 
 namespace executor {
 
@@ -54,8 +57,14 @@ class InnerProductOperator : public Operator {
   void ForwardSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
   void PrepareSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* rescales_ptr,
-                      vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
+
+  void ReshapeSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
+#if __AVX512F__
+  void ForwardSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
+#endif
+  void PrepareSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
+  void DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
   void RuntimeMinmax();
   void CalculateCompensation(const vector<int64_t>& src1_shape, const vector<int64_t>& src1_stride,
                              const vector<int64_t>& zero_point_stride);
@@ -84,7 +93,9 @@ class InnerProductOperator : public Operator {
   bool is_dynamic_ = false;
   float output_scale_ = 1.f;
   vector<float> dst_scales_;
+  vector<float> rescales_;
   string output_dtype_ = "fp32";
+  vector<int64_t> src0_shape_origin_;
   vector<int64_t> src1_shape_origin_;
   vector<int64_t> src0_perm_;
   vector<int64_t> src1_perm_;
@@ -92,6 +103,14 @@ class InnerProductOperator : public Operator {
   vector<int64_t> compensation_;
   memory::desc scale_md_;
   memory::desc compensation_md_;
+
+  jd::tensor_desc src0_desc_;
+  jd::tensor_desc src1_desc_;
+  jd::tensor_desc bias_desc_ = {};
+  jd::tensor_desc dst_desc_;
+  jd::tensor_desc scales_desc_;
+  std::unordered_map<std::string, std::string> op_attrs_;
+  jd::sparse_matmul spmm_kern_;
 
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream eng_stream_ = dnnl::stream(eng_);
@@ -132,14 +151,13 @@ class InnerProductOperator : public Operator {
   Tensor* dst_min_ = nullptr;
   Tensor* dst_max_ = nullptr;
 
-  bool dense_flag_ = false;
+  enum { Unsupported, Dense, Sparse, SparseLib } kernel_type_ = Unsupported;
   float sparse_threshold_ = 0.7;
   float weight_zero_ratio_ = 0.0;
 
   BSCMatrix<float>* sparse_weight_ = nullptr;
   BSCMatrix<int8_t>* sparse_weight_int8_ = nullptr;
   vector<int64_t> blocksize_ = {1, 16};
-  vector<float> rescales_;
   // M dimension num of per BLOCK is 4 for sparse kernel algorithm
   int64_t M_NBLK_ = 4;
   string append_op_;

@@ -12,3 +12,6 @@
 tags
 build/
 _build
+dist/
+nlp_toolkit.egg-info/
+

@@ -154,6 +154,8 @@ bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2, int64_t 
   return true;
 }
 template bool CompareData<float>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<int8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<uint8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
 
 vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, const string& dtype) {
   const float* mins_p = static_cast<const float*>(mins);
@@ -696,8 +698,9 @@ void add_ker(uint8_t* inout, uint8_t* in, size_t len) {
 void runtime_minmax(float* data, size_t length, float* min_num, float* max_num) {
   int block_size = (length / CPU_COUNT) / ALIGN_NUM * ALIGN_NUM;
   if (block_size == 0) {
-    *min_num = *std::min_element(data, &data[length]);
-    *max_num = *std::max_element(data, &data[length]);
+    auto result = std::minmax_element(data, data + length);
+    *min_num = *result.first;
+    *max_num = *result.second;
     return;
   }
   int block_num = length / block_size;
@@ -896,7 +899,7 @@ void block_minmax(float* Input, size_t N, float* Min, float* Max) {
 
 /************ hash funtion for primitive cache ************/
 template <typename T>
-size_t hash_combine(size_t seed, const T &v) {
+size_t hash_combine(size_t seed, const T& v) {
   return seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
@@ -927,10 +930,11 @@ size_t get_array_hash(size_t seed, const T& v, int size) {
 }
 
 /************ InnerProductPrimitiveFwdFactory member function ************/
-size_t InnerProductPrimitiveFwdFactory::GenKey(const string& src0_dtype,
-  const string& src1_dtype, const string& dst_dtype, const vector<int64_t>& src0_shape,
-  const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm, const string& append_op,
-  const vector<int64_t>& post_op_shape, const float& output_scale, const dnnl::engine* eng) {
+size_t InnerProductPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string& src1_dtype,
+                                               const string& dst_dtype, const vector<int64_t>& src0_shape,
+                                               const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm,
+                                               const string& append_op, const vector<int64_t>& post_op_shape,
+                                               const float& output_scale, const dnnl::engine* eng) {
   size_t seed = 0;
   // primitive kind
   string prefix = "inner_product_fwd_";
@@ -956,12 +960,13 @@ size_t InnerProductPrimitiveFwdFactory::GenKey(const string& src0_dtype,
   return seed;
 }
 
-size_t InnerProductPrimitiveFwdFactory::Key(const string& src0_dtype,
-  const string& src1_dtype, const string& dst_dtype, const vector<int64_t>& src0_shape,
-  const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm, const string& append_op,
-  const vector<int64_t>& post_op_shape, const float& output_scale, const dnnl::engine* eng) {
-  return InnerProductPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype,
-    src0_shape, src1_shape, dst_perm, append_op, post_op_shape, output_scale, eng);
+size_t InnerProductPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
+                                            const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                            const vector<int64_t>& dst_perm, const string& append_op,
+                                            const vector<int64_t>& post_op_shape, const float& output_scale,
+                                            const dnnl::engine* eng) {
+  return InnerProductPrimitiveFwdFactory::GetInstance().GenKey(
+      src0_dtype, src1_dtype, dst_dtype, src0_shape, src1_shape, dst_perm, append_op, post_op_shape, output_scale, eng);
 }
 
 bool InnerProductPrimitiveFwdFactory::IsInFactory(const size_t& key) {
@@ -969,17 +974,14 @@ bool InnerProductPrimitiveFwdFactory::IsInFactory(const size_t& key) {
 }
 
 dnnl::inner_product_forward& InnerProductPrimitiveFwdFactory::Get(const size_t& key) {
-  return static_cast<dnnl::inner_product_forward&>(
-    InnerProductPrimitiveFwdFactory::GetInstance().GetPrimitive(key));
+  return static_cast<dnnl::inner_product_forward&>(InnerProductPrimitiveFwdFactory::GetInstance().GetPrimitive(key));
 }
 
 void InnerProductPrimitiveFwdFactory::Set(const size_t& key, dnnl::primitive primitive) {
   InnerProductPrimitiveFwdFactory::GetInstance().SetPrimitive(key, primitive);
 }
 
-void InnerProductPrimitiveFwdFactory::ClearFactory() {
-  InnerProductPrimitiveFwdFactory::GetInstance().Clear();
-}
+void InnerProductPrimitiveFwdFactory::ClearFactory() { InnerProductPrimitiveFwdFactory::GetInstance().Clear(); }
 
 bool InnerProductPrimitiveFwdFactory::DoNotCache() {
   return InnerProductPrimitiveFwdFactory::GetInstance().do_not_cache_;
@@ -991,10 +993,11 @@ InnerProductPrimitiveFwdFactory& InnerProductPrimitiveFwdFactory::GetInstance() 
 }
 
 /************ MatMulPrimitiveFwdFactory member function ************/
-size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype,
-  const string& src1_dtype, const string& dst_dtype, const vector<int64_t>& src0_shape,
-  const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm, const string& append_op,
-  const vector<int64_t>& post_op_shape, const float& output_scale, const dnnl::engine* eng) {
+size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
+                                         const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                         const vector<int64_t>& dst_perm, const string& append_op,
+                                         const vector<int64_t>& post_op_shape, const float& output_scale,
+                                         const dnnl::engine* eng) {
   size_t seed = 0;
   // primitive kind
   string prefix = "matmul_fwd_";
@@ -1020,12 +1023,13 @@ size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype,
   return seed;
 }
 
-size_t MatMulPrimitiveFwdFactory::Key(const string& src0_dtype,
-  const string& src1_dtype, const string& dst_dtype, const vector<int64_t>& src0_shape,
-  const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm, const string& append_op,
-  const vector<int64_t>& post_op_shape, const float& output_scale, const dnnl::engine* eng) {
-  return MatMulPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype,
-    src0_shape, src1_shape, dst_perm, append_op, post_op_shape, output_scale, eng);
+size_t MatMulPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
+                                      const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                      const vector<int64_t>& dst_perm, const string& append_op,
+                                      const vector<int64_t>& post_op_shape, const float& output_scale,
+                                      const dnnl::engine* eng) {
+  return MatMulPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype, src0_shape, src1_shape,
+                                                         dst_perm, append_op, post_op_shape, output_scale, eng);
 }
 
 bool MatMulPrimitiveFwdFactory::IsInFactory(const size_t& key) {
@@ -1033,21 +1037,16 @@ bool MatMulPrimitiveFwdFactory::IsInFactory(const size_t& key) {
 }
 
 dnnl::matmul& MatMulPrimitiveFwdFactory::Get(const size_t& key) {
-  return static_cast<dnnl::matmul&>(
-    MatMulPrimitiveFwdFactory::GetInstance().GetPrimitive(key));
+  return static_cast<dnnl::matmul&>(MatMulPrimitiveFwdFactory::GetInstance().GetPrimitive(key));
 }
 
 void MatMulPrimitiveFwdFactory::Set(const size_t& key, dnnl::primitive primitive) {
   MatMulPrimitiveFwdFactory::GetInstance().SetPrimitive(key, primitive);
 }
 
-void MatMulPrimitiveFwdFactory::ClearFactory() {
-  MatMulPrimitiveFwdFactory::GetInstance().Clear();
-}
+void MatMulPrimitiveFwdFactory::ClearFactory() { MatMulPrimitiveFwdFactory::GetInstance().Clear(); }
 
-bool MatMulPrimitiveFwdFactory::DoNotCache() {
-  return MatMulPrimitiveFwdFactory::GetInstance().do_not_cache_;
-}
+bool MatMulPrimitiveFwdFactory::DoNotCache() { return MatMulPrimitiveFwdFactory::GetInstance().do_not_cache_; }
 
 MatMulPrimitiveFwdFactory& MatMulPrimitiveFwdFactory::GetInstance() {
   static MatMulPrimitiveFwdFactory instance_;

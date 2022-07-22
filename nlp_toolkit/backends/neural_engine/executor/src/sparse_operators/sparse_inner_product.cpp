@@ -41,8 +41,9 @@ float GetSparseRatio(const T* data, const vector<int64_t>& shape, const vector<i
   float zero_ratio = blocknum == 0 ? 0 : static_cast<float>(zero_count) / blocknum;
   return zero_ratio;
 }
-template float GetSparseRatio(const float* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize);
-template float GetSparseRatio(const int8_t* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize);
+template float GetSparseRatio<float>(const float* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize);
+template float GetSparseRatio<int8_t>(const int8_t* data, const vector<int64_t>& shape,
+                                      const vector<int64_t>& blocksize);
 
 template <typename T>
 void TransposeMatrix(const T* input, const vector<int64_t>& shape, T* output) {
