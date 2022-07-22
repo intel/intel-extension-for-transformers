@@ -7,7 +7,6 @@
 
 #define exp_ln_flt_max_f 0x42b17218
 #define exp_ln_flt_min_f 0xc2aeac50
-#define inf_float 0x7f800000
 
 enum memo_mode { MALLOC, MEMSET };
 
@@ -49,7 +48,7 @@ float get_exp(float x) {
   float fmax = *reinterpret_cast<float*>(&max);
   float fmin = *reinterpret_cast<float*>(&min);
   if (x > fmax) {
-    return inf_float;
+    return INFINITY;
   } else if (x < fmin) {
     return 0;
   } else {

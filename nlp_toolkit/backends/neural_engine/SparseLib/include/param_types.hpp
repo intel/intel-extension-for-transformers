@@ -17,7 +17,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
-
+#include <map>
 namespace jd {
 // The main kinds of kernel.
 enum class kernel_kind : uint8_t { undef, sparse_matmul, postop, eltwiseop };
@@ -25,6 +25,11 @@ enum class kernel_kind : uint8_t { undef, sparse_matmul, postop, eltwiseop };
 enum class postop_alg : uint8_t { exp, tanh, gelu, relu, quantize, dequantize };
 
 enum class postop_type : uint8_t { eltwise };
+
+static std::map<postop_alg, const char*> postop_alg_name = {
+    {postop_alg::exp, "exp"},
+    {postop_alg::gelu, "gelu"},
+};
 
 enum class reg_type : uint8_t { mask, zmm, reg64 };
 

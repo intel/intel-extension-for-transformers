@@ -59,7 +59,7 @@ struct flat_param_t {
   data_type output_type;
   sparse_scheme scheme;
   std::vector<int64_t> mkn_blocks;
-  std::vector<int64_t> tile_shape; // 2d vector for microkernel shape in terms of zmm registers
+  std::vector<int64_t> tile_shape;  // 2d vector for microkernel shape in terms of zmm registers
   bool sub_func;
   int64_t im_start;  // start m-idx of dest to be calculated
   int64_t im_end;    // end m-idx of dest to be calculated
@@ -126,6 +126,7 @@ struct avx512_fp32_params_t {
   int64_t im_end;    // end m-idx of dest to be calculated
   int64_t in_start;  // start n-idx of dest to be calculated
   int64_t in_end;    // end n-idx of dest to be calculated
+  std::vector<postop_attr> postop_attrs;
 };
 
 /**

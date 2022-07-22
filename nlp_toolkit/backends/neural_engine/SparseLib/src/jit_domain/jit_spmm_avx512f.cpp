@@ -75,8 +75,17 @@ void jit_spmm_avx512f_t::generate() {
           vfmadd231ps(dst_tile_Vmm(ti), TH_Vmm(ti), TW_Vmm);
         }
       }
+
+      for (int ti = 0; ti < TH_; ++ti) {
+        eltwise_injector.escape_regs(reg_type::zmm, dst_tile_Vmm(ti).getIdx());
+      }
+      eltwise_injector.escape_regs(reg_type::reg64, reg_bias.getIdx());
+      eltwise_injector.escape_regs(reg_type::reg64, reg_dst.getIdx());
+      eltwise_injector.escape_regs(reg_type::reg64, reg_n.getIdx());
+      eltwise_injector.escape_regs(reg_type::reg64, reg_n_end.getIdx());
       // storeu
       for (int ti = 0; ti < TH_; ++ti) {
+        eltwise_injector.vector_compute(dst_tile_Vmm(ti), param_.postop_attrs);
         vmovups(dword[reg_dst + (param_.N * ti) * F32_BYTES + j * ZMM_BYTES], dst_tile_Vmm(ti));
       }
     }
@@ -85,7 +94,7 @@ void jit_spmm_avx512f_t::generate() {
     add(reg_dst, TH_ * param_.N * F32_BYTES);
     cmp(reg_dense, reg_dense_end);
     jl(L_m_loop, T_NEAR);  // End of loop-m: asm loop
-    
+
     mov(rbx, ptr[rsp + 0x00]);
     mov(rbp, ptr[rsp + 0x08]);
     mov(r12, ptr[rsp + 0x10]);
@@ -96,5 +105,6 @@ void jit_spmm_avx512f_t::generate() {
     ret();
   }
   outLocalLabel();  // end of local label
+  eltwise_injector.prepare_table();
 }
 }  // namespace jd

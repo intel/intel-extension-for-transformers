@@ -19,6 +19,7 @@
 #include "../kernels/sparse_data.hpp"
 #include "../kernels/spmm_types.hpp"
 #include "utils.hpp"
+#include "jit_eltwise_injector.hpp"
 
 #define GET_OFF(field) offsetof(ssd::avx512_data_t, field)
 
@@ -30,13 +31,16 @@ namespace jd {
 class jit_spmm_avx512f_t : public jit_generator {
  public:
   explicit jit_spmm_avx512f_t(const ssd::avx512_fp32_params_t& param)
-      : jit_generator(), param_(param), bsc_(param_.sparse_ptr) {}
+      : jit_generator(), param_(param), bsc_(param_.sparse_ptr) {
+    eltwise_injector.eltwise_injector_init(this, param_.postop_attrs);
+  }
   virtual ~jit_spmm_avx512f_t() {}
   bsc_data_t<float>* bsc_data() { return bsc_; }
 
  private:
   ssd::avx512_fp32_params_t param_;
   bsc_data_t<float>* bsc_;
+  jit_eltwise_injector eltwise_injector;
 
   void generate() override;
 
@@ -49,8 +53,8 @@ class jit_spmm_avx512f_t : public jit_generator {
   const Xbyak::Reg64& reg_sparse = rcx;
   const Xbyak::Reg64& reg_bias = r8;
   const Xbyak::Reg64& reg_dst = r9;
-  const Xbyak::Reg64& reg_n = r10;       // current n index
-  const Xbyak::Reg64& reg_n_end = r11;   // end of n index
+  const Xbyak::Reg64& reg_n = r10;      // current n index
+  const Xbyak::Reg64& reg_n_end = r11;  // end of n index
 
   // load params passed as avx512_data_t
   inline void load_params();

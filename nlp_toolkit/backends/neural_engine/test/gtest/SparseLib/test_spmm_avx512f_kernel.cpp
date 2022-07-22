@@ -23,6 +23,7 @@
 #include "interface.hpp"
 #include "benchmark_utils.hpp"
 #include "gtest/gtest.h"
+#include "unit_test_utils.hpp"
 
 namespace jd {
 using dt = jd::data_type;
@@ -78,6 +79,9 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
       if (has_bias) {
         value += bias_fp32[j];
       }
+
+      value = apply_postop_list(value, op_desc.apply_postops_list());
+
       dst_fp32[i * dst_stride[0] + j * dst_stride[1]] = static_cast<float>(value);
     }
   }
@@ -204,7 +208,8 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_sh
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity) {
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity,
+                                         std::vector<postop_alg> postop_algs = {}) {
   // Step 1: Construct operator config
   std::unordered_map<std::string, std::string> op_attrs = {};
 
@@ -233,8 +238,17 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   bsc_data_t<float> bsc_obj = spns::tobsc<float>(K, N, 1, 16, static_cast<const float*>(rt_data1[ssd::WEI]));
   auto sparse_ptr = new bsc_data_t<float>(bsc_obj);  // Will be deleted in `check_result`
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
+  if (postop_algs.size()) {
+    auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };
+    op_attrs["postop_list"] = std::accumulate(postop_algs.begin() + 1, postop_algs.end(),
+                                              std::string(postop_alg_name[postop_algs[0]]), accu_op);
+  }
+  std::vector<postop_attr> apply_postops_list;
+  std::for_each(postop_algs.begin(), postop_algs.end(), [&apply_postops_list](postop_alg alg) {
+    return apply_postops_list.push_back({data_type::fp32, postop_type::eltwise, alg});
+  });
   operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                           op_attrs);
+                           op_attrs, apply_postops_list);
 
   // Step 4: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1, sparsity};
@@ -252,24 +266,33 @@ static auto case_func = []() {
   tensor_desc bias_desc;
   tensor_desc dst_desc;
 
-  cases.push_back({gen_case(128, 256, 256, .7f)});
-  cases.push_back({gen_case(384, 256, 256, .7f)});
-  cases.push_back({gen_case(128, 1024, 256, .7f)});
-  cases.push_back({gen_case(384, 1024, 256, .7f)});
-  cases.push_back({gen_case(128, 256, 1024, .7f)});
-  cases.push_back({gen_case(384, 256, 1024, .7f)});
-  cases.push_back({gen_case(128, 768, 768, .7f)});
-  cases.push_back({gen_case(384, 768, 768, .7f)});
-  cases.push_back({gen_case(128, 3072, 768, .7f)});
-  cases.push_back({gen_case(384, 3072, 768, .7f)});
-  cases.push_back({gen_case(128, 768, 3072, .7f)});
-  cases.push_back({gen_case(384, 768, 3072, .7f)});
-  cases.push_back({gen_case(128, 1024, 1024, .7f)});
-  cases.push_back({gen_case(384, 1024, 1024, .7f)});
-  cases.push_back({gen_case(128, 4096, 1024, .7f)});
-  cases.push_back({gen_case(384, 4096, 1024, .7f)});
-  cases.push_back({gen_case(128, 1024, 4096, .7f)});
-  cases.push_back({gen_case(384, 1024, 4096, .7f)});
+  std::vector<std::vector<postop_alg>> postop_lists = {
+      {},
+      {postop_alg::gelu},
+      {postop_alg::exp},
+      {postop_alg::gelu, postop_alg::exp},
+  };
+
+  for (std::vector<postop_alg> algs : postop_lists) {
+    cases.push_back({gen_case(128, 256, 256, .7f, algs)});
+    cases.push_back({gen_case(384, 256, 256, .7f, algs)});
+    cases.push_back({gen_case(128, 1024, 256, .7f, algs)});
+    cases.push_back({gen_case(384, 1024, 256, .7f, algs)});
+    cases.push_back({gen_case(128, 256, 1024, .7f, algs)});
+    cases.push_back({gen_case(384, 256, 1024, .7f, algs)});
+    cases.push_back({gen_case(128, 768, 768, .7f, algs)});
+    cases.push_back({gen_case(384, 768, 768, .7f, algs)});
+    cases.push_back({gen_case(128, 3072, 768, .7f, algs)});
+    cases.push_back({gen_case(384, 3072, 768, .7f, algs)});
+    cases.push_back({gen_case(128, 768, 3072, .7f, algs)});
+    cases.push_back({gen_case(384, 768, 3072, .7f, algs)});
+    cases.push_back({gen_case(128, 1024, 1024, .7f, algs)});
+    cases.push_back({gen_case(384, 1024, 1024, .7f, algs)});
+    cases.push_back({gen_case(128, 4096, 1024, .7f, algs)});
+    cases.push_back({gen_case(384, 4096, 1024, .7f, algs)});
+    cases.push_back({gen_case(128, 1024, 4096, .7f, algs)});
+    cases.push_back({gen_case(384, 1024, 4096, .7f, algs)});
+  }
 
   return ::testing::ValuesIn(cases);
 };
@@ -282,6 +305,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[0]));
   params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
   params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[1]));
+  if (!attrs_map["postop_list"].empty()) params.push_back(attrs_map["postop_list"]);
   return join_str(params, "_");
 }
 

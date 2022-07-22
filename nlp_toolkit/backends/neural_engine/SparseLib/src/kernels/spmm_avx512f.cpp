@@ -65,6 +65,7 @@ bool spmm_avx512f_kd_t::spmm_params_init(const jd::operator_desc& op_desc) {
     params_[i].sparse_ptr = sparse_ptr;
     params_[i].in_start = 0;
     params_[i].in_end = N;
+    params_[i].postop_attrs = op_desc.apply_postops_list();
   }
 
   return true;
@@ -72,10 +73,10 @@ bool spmm_avx512f_kd_t::spmm_params_init(const jd::operator_desc& op_desc) {
 
 // Part2: class spmm_avx512f_k_t
 bool spmm_avx512f_k_t::init() {
-  auto& ker_params = derived_kd() -> params();
+  auto& ker_params = derived_kd()->params();
   jit_kers_.clear();
   jit_kers_.reserve(ker_params.size());
-  for (auto& param: ker_params) {
+  for (auto& param : ker_params) {
     jit_spmm_avx512f_t* ker = new jit_spmm_avx512f_t(param);
     if (ker == nullptr) return false;
     if (!ker->create_kernel()) return false;
@@ -86,7 +87,7 @@ bool spmm_avx512f_k_t::init() {
 
 bool spmm_avx512f_k_t::execute(const std::vector<const void*>& rt_data) const {
 #pragma omp parallel for
-  for (size_t i = 0; i < jit_kers_.size(); ++i){
+  for (size_t i = 0; i < jit_kers_.size(); ++i) {
     auto& jit_impl = jit_kers_[i];
     ssd::avx512_data_t rt_param;
     rt_param.sparse = jit_impl->bsc_data()->data().data();
