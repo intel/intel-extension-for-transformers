@@ -263,10 +263,9 @@ class OptimizationArguments:
     )
 
 def main():
-    # The flag below controls whether to allow TF32 on matmul. This flag defaults to True.
-    torch.backends.cuda.matmul.allow_tf32 = True
-    # The flag below controls whether to allow TF32 on cuDNN. This flag defaults to True.
-    torch.backends.cudnn.allow_tf32 = True
+    if int(os.environ.get("LOCAL_RANK", -1)) != -1 and '--no_cuda' in sys.argv:
+        from nlp_toolkit.optimization.utils.utility import distributed_init
+        distributed_init()
 
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.

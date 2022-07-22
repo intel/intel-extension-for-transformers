@@ -9,6 +9,7 @@ from nlp_toolkit import (
     metrics,
 )
 from nlp_toolkit.optimization.trainer import NLPTrainer
+from nlp_toolkit.optimization.utils.utility import distributed_init
 from transformers import (
     AutoModelForPreTraining,
     AutoTokenizer,
@@ -19,10 +20,8 @@ os.environ["WANDB_DISABLED"] = "true"
 
 
 def main_worker(rank, world_size, model, teacher_model, dataset):
-    print(rank, world_size)
-    torch.distributed.init_process_group(
-        "gloo", init_method='tcp://127.0.0.1:23456', world_size=world_size, rank=rank
-    )
+    distributed_init("gloo", world_size=world_size, rank=rank,
+                     init_method='tcp://127.0.0.1:23456')
     training_args = TrainingArguments(
         output_dir='tmp_trainer',
         overwrite_output_dir=True,
@@ -138,6 +137,10 @@ class TestAutoDistillation(unittest.TestCase):
             self.assertTrue(len(best_model_archs) > 0)
 
     def test_autodistillation_distributed(self):
+        try:
+            distributed_init() # for coverage purpose only
+        except:
+            pass
         ngpus_per_node = 2
         torch.multiprocessing.spawn(
             main_worker, nprocs=ngpus_per_node,

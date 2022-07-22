@@ -231,6 +231,10 @@ class OptimizationArguments:
 
 
 def main():
+    if int(os.environ.get("LOCAL_RANK", -1)) != -1 and '--no_cuda' in sys.argv:
+        from nlp_toolkit.optimization.utils.utility import distributed_init
+        distributed_init()
+
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
@@ -547,16 +551,40 @@ def main():
             if os.path.exists(npy_file):
                 teacher_logits = [x for x in np.load(npy_file)]
             else:
+                sampler = None
+                if training_args.world_size > 1:
+                    from transformers.trainer_pt_utils import ShardSampler
+                    sampler = ShardSampler(
+                        teacher_train_dataset,
+                        batch_size=training_args.per_device_eval_batch_size,
+                        num_processes=training_args.world_size,
+                        process_index=training_args.process_index,
+                    )
+                    teacher_model = torch.nn.parallel.DistributedDataParallel(
+                        teacher_model,
+                        device_ids=[training_args.local_rank] \
+                            if training_args._n_gpu != 0 else None,
+                        output_device=training_args.local_rank \
+                            if training_args._n_gpu != 0 else None,
+                    )
                 train_dataloader = DataLoader(teacher_train_dataset, 
-                                                collate_fn=data_collator, \
-                                                batch_size=training_args.per_device_eval_batch_size)
+                                              collate_fn=data_collator,
+                                              sampler=sampler,
+                                              batch_size=training_args.per_device_eval_batch_size)
                 train_dataloader = tqdm(train_dataloader, desc="Evaluating")
                 teacher_logits = []
                 for step, batch in enumerate(train_dataloader):
                     dict_tensor_to_model_device(batch, teacher_model)
                     outputs = teacher_model(**batch)
+                    if training_args.world_size > 1:
+                        outputs_list = [None for i in range(training_args.world_size)]
+                        torch.distributed.all_gather_object(outputs_list, outputs)
+                        outputs = torch.concat(outputs_list, dim=0)
                     teacher_logits += [x for x in outputs.cpu().numpy()]
-                np.save(npy_file, np.array(teacher_logits))
+                if training_args.world_size > 1:
+                    teacher_logits = teacher_logits[:len(teacher_train_dataset)]
+                if training_args.local_rank in [-1, 0]:
+                    np.save(npy_file, np.array(teacher_logits))
             return train_dataset.add_column('teacher_logits', teacher_logits)
         with torch.no_grad():
             train_dataset = get_logits(BertModelforLogitsOutputOnly(teacher_model), train_dataset, teacher_train_dataset)

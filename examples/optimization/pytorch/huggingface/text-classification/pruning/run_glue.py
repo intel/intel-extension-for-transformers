@@ -232,6 +232,10 @@ class OptimizationArguments:
 
 
 def main():
+    if int(os.environ.get("LOCAL_RANK", -1)) != -1 and '--no_cuda' in sys.argv:
+        from nlp_toolkit.optimization.utils.utility import distributed_init
+        distributed_init()
+
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
