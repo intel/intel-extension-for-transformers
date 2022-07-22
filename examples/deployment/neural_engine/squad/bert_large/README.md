@@ -51,7 +51,7 @@ python prepare_dataset.py --dataset_name=squad --output_dir=./data
 
 ### 2.2 Get model
 Neural Engine can parse Tensorflow/Pytorch/ONNX model and Neural Engine IR.  
-You can get FP32 ONNX modol from optimization module by setting precision=fp32, command as follows:
+You can get FP32 ONNX model from optimization module by setting precision=fp32, command as follows:
 ```shell
 bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=fp32
 ```
