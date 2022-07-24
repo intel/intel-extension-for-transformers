@@ -71,7 +71,14 @@ class Tensor {
   void set_data(void* data) {
     if (data_ != nullptr) MemoryAllocator::get().ResetMemory(data_, 0);
     auto exists_status = MemoryAllocator::get().CheckMemory(data);
-    if (exists_status != -1) MemoryAllocator::get().ResetMemory(data, this->life());
+    if (exists_status != -1) {
+      if (disposable_life_count_ != 0) {
+        MemoryAllocator::get().ResetMemory(data, disposable_life_count_);
+        disposable_life_count_ = 0;
+      } else {
+        MemoryAllocator::get().ResetMemory(data, this->life());
+      }
+    }
     data_ = data;
   }
 
@@ -85,9 +92,48 @@ class Tensor {
   }
 
   void set_name(const string& name) { name_ = name; }
-  void set_shape(const vector<int64_t>& shape) { shape_ = shape; }
-  void set_dtype(const string& dtype) { dtype_ = dtype; }
+
+  void set_shape(const vector<int64_t>& shape) {
+    shape_ = shape;
+    refresh_hash_ = true;
+  }
+
+  void set_dtype(const string& dtype) {
+    dtype_ = dtype;
+    refresh_hash_ = true;
+  }
+
+  // get tensor hash key for dispatcher
+  // combine shape and dtype
+  size_t get_hash() {
+    if (refresh_hash_) {
+      vector<int64_t> hash_vec(shape_);
+      hash_vec.push_back(type2bytes[dtype_]);
+      size_t seed = hash_vec.size();
+      hash_ = get_array_hash(seed, hash_vec, hash_vec.size());
+      refresh_hash_ = false;
+    }
+    return hash_;
+  }
+
+  void set_transpose(const bool& transpose = true) { is_transposed_ = transpose; }
+
   void add_tensor_life(const int count) { life_count_ += count; }
+  
+  // add extra tensor life for op tuning
+  // need to reset to real life_count after tuning
+  void disposable_extra_life(const int count) {
+    disposable_life_count_ = life_count_ + count;
+    if (location_.empty() && data_ != nullptr) {
+      auto exists_status = MemoryAllocator::get().CheckMemory(data_);
+      if (exists_status != -1) { 
+        MemoryAllocator::get().ResetMemory(data_, exists_status + count);
+        disposable_life_count_ = 0;
+        return;
+      }
+    }
+    LOG(WARNING) << "please set tensor data to make adding extra tensor life work...";
+  }
 
   inline size_t size() { return std::accumulate(shape_.begin(), shape_.end(), size_t(1), std::multiplies<size_t>()); }
 
@@ -104,17 +150,24 @@ class Tensor {
   inline const vector<int64_t>& location() const { return location_; }
   inline const string& dtype() const { return dtype_; }
   inline const vector<int64_t>& strides() const { return strides_; }
+  inline const bool& is_transposed() const { return is_transposed_; }
 
  protected:
   string name_;
   void* data_;
   vector<int64_t> shape_;
   string dtype_;
+  // for dispatcher, combine shape and dtype
+  bool refresh_hash_ = true;
+  size_t hash_ = 0;
   vector<int64_t> location_;
   vector<int64_t> strides_;
+  bool is_transposed_ = false;
 
   // for memory handling
   int life_count_ = 0;
+  // for op tuning memory handling
+  int disposable_life_count_ = 0;
 
   // If shm_handle_ not equal to 0, which means it is on shared memory
   ipc::managed_shared_memory::handle_t shm_handle_ = 0;

@@ -552,6 +552,8 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
   any_src1_md_ = memory::desc(src1_shape, type2mem[src1_->dtype()], memory::format_tag::any);
   src1_md_ = memory::desc(src1_shape, type2mem[src1_->dtype()], src1_stride);
   src1_m_ = memory(src1_md_, eng_, src1_->mutable_data());
+  if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{1, 0}) src1_->set_transpose();
+  if (!src0_perm_.empty() && src0_perm_ == vector<int64_t>{1, 0}) src0_->set_transpose();
 
   if (has_bias_) {
     vector<int64_t> bias_shape = {src1_shape[0]};
@@ -583,6 +585,20 @@ void InnerProductOperator::CalculateCompensation(const vector<int64_t>& src1_sha
 
 // 1. Create primitive
 void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  // shape infer for dispatcher
+  // save the OneDNN primitive forward class creation time
+  if (this->do_shape_infer()) {
+    vector<int64_t> src0_shape_origin = src0_->shape();
+    vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
+    vector<int64_t> dst_shape_origin = {src0_shape[0], src1_->shape()[0]};
+    vector<int64_t> dst_shape = GetShapes(dst_shape_origin, dst_perm_);
+    dst_->set_shape(dst_shape);
+    if (output.size() > 1) {
+      dst_min_->set_shape({1});
+      dst_max_->set_shape({1});
+    }
+    return;
+  }
   dnnl::post_ops po;
   vector<int64_t> src1_shape = src1_->shape();
   vector<int64_t> src1_stride = GetStrides(src1_shape_origin_, src1_perm_);

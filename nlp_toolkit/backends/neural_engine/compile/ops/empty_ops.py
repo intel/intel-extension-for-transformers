@@ -396,3 +396,8 @@ class Reorder(Operator):
 class MergedEmbeddingbag(Operator):
     def __init__(self):
         super().__init__()
+
+@operator_registry(operator_type='Convolution')
+class Convolution(Operator):
+    def __init__(self):
+        super().__init__()

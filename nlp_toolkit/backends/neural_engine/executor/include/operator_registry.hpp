@@ -30,7 +30,9 @@ class Operator;
 class OperatorRegistry {
  public:
   typedef shared_ptr<Operator> (*Creator)(const OperatorConfig&);
-  typedef std::map<string, Creator> CreatorRegistry;
+  // op_type-kernel_name-kernel
+  // register kernel class
+  typedef std::map<string, std::map<string, Creator>> CreatorRegistry;
 
   static CreatorRegistry& Registry() {
     static CreatorRegistry* g_registry_ = new CreatorRegistry();
@@ -38,20 +40,27 @@ class OperatorRegistry {
   }
 
   // Adds a creator.
-  static void AddCreator(const string& type, Creator creator) {
+  static void AddCreator(const string& type, const string& kernel_name, Creator creator) {
     CreatorRegistry& registry = Registry();
-    LOG(INFO) << "Gonna register " << type << "....";
-    CHECK_EQ(registry.count(type), 0) << "Operator type " << type << " already registered.";
-    registry[type] = creator;
+    LOG(INFO) << "Gonna register " << type << ", dispatch kernel " << kernel_name 
+              <<  "....";
+    if (registry.count(type) > 0) {
+      CHECK_EQ(registry[type].count(kernel_name), 0) 
+              << "Operator type " << type << ", dispatch kernel " << kernel_name
+              << " has already beed registered.";
+    }
+    registry[type][kernel_name] = creator;
   }
 
   // Get a operator using a OperatorConfig.
-  static shared_ptr<Operator> CreateOperator(const OperatorConfig& conf) {
+  static shared_ptr<Operator> CreateOperator(const OperatorConfig& conf, const string& kernel_name) {
     const string& type = conf.type();
     CreatorRegistry& registry = Registry();
     CHECK_EQ(registry.count(type), 1) << "Unknown operator type: " << type
-                                      << " (known types: " << OperatorTypeListString() << ")";
-    return registry[type](conf);
+                                      << " (known types: " << OperatorTypeListString() << ").";
+    CHECK_EQ(registry[type].count(kernel_name), 1) << "Unknown dispatch kernel: " << kernel_name 
+                                      << " in operator type: " << type;
+    return registry[type][kernel_name](conf);
   }
 
   static vector<string> OperatorTypeList() {
@@ -62,11 +71,6 @@ class OperatorRegistry {
     }
     return operator_types;
   }
-
- private:
-  // Operator registry should never be instantiated - everything is done with its
-  // static variables.
-  OperatorRegistry() {}
 
   static string OperatorTypeListString() {
     vector<string> operator_types = OperatorTypeList();
@@ -79,22 +83,37 @@ class OperatorRegistry {
     }
     return operator_types_str;
   }
+
+ private:
+  // Operator registry should never be instantiated - everything is done with its
+  // static variables.
+  OperatorRegistry() {}
 };
 
 class OperatorRegisterer {
  public:
-  OperatorRegisterer(const string& type, shared_ptr<Operator> (*creator)(const OperatorConfig&)) {
-    OperatorRegistry::AddCreator(type, creator);
+  OperatorRegisterer(const string& type, const string& kernel_name, 
+                    shared_ptr<Operator> (*creator)(const OperatorConfig&)) {
+    OperatorRegistry::AddCreator(type, kernel_name, creator);
   }
 };
 
-#define REGISTER_OPERATOR_CREATOR(type, creator) static OperatorRegisterer g_creator_##type(#type, creator);
+#define REGISTER_OPERATOR_CREATOR(type, kernel_name, creator)                      \
+  static OperatorRegisterer g_creator_##type##kernel_name(#type, #kernel_name, creator);
 
-#define REGISTER_OPERATOR_CLASS(type)                                         \
-  shared_ptr<Operator> Creator_##type##Operator(const OperatorConfig& conf) { \
-    return shared_ptr<Operator>(new type##Operator(conf));                    \
-  }                                                                           \
-  REGISTER_OPERATOR_CREATOR(type, Creator_##type##Operator)
+#define REGISTER_KERNEL_CLASS(type, kernel_name)                                   \
+  shared_ptr<Operator> Creator_##type##kernel_name##Operator(const OperatorConfig& conf) \
+  {                                                                                \
+    return shared_ptr<Operator>(new kernel_name##Operator(conf));                  \
+  }                                                                                \
+  REGISTER_OPERATOR_CREATOR(type, kernel_name, Creator_##type##kernel_name##Operator)
+
+#define REGISTER_OPERATOR_CLASS(type)                                              \
+  shared_ptr<Operator> Creator_##type##type##Operator(const OperatorConfig& conf)  \
+  {                                                                                \
+    return shared_ptr<Operator> (new type##Operator(conf));                        \
+  }                                                                                \
+  REGISTER_OPERATOR_CREATOR(type, type, Creator_##type##type##Operator)
 
 }  // namespace executor
 

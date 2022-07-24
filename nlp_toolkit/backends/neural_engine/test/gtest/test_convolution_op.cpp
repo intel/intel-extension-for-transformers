@@ -340,15 +340,15 @@ bool CheckResult(const TestParams& t) {
   return false;
 }
 
-class InnerProductTest : public testing::TestWithParam<TestParams> {
+class ConvolutionTest : public testing::TestWithParam<TestParams> {
  protected:
-  InnerProductTest() {}
-  ~InnerProductTest() {}
+  ConvolutionTest() {}
+  ~ConvolutionTest() {}
   void SetUp() override {}
   void TearDown() override {}
 };
 
-TEST_P(InnerProductTest, TestPostfix) {
+TEST_P(ConvolutionTest, TestPostfix) {
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckResult(t));
 }
@@ -611,7 +611,7 @@ static auto CasesFp32 = []() {
                    false});
 
   // case12: 1d conv, relu
-  src_shape = {3, 32, 13};
+  src_shape = {3, 32, 26};
   weight_shape = {64, 32, 3};
   bias_shape = {64};
   src_perm = "0,1,2";
@@ -695,4 +695,4 @@ static auto CasesFp32 = []() {
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, InnerProductTest, CasesFp32());
+INSTANTIATE_TEST_SUITE_P(Prefix, ConvolutionTest, CasesFp32());

@@ -78,6 +78,8 @@ ConvolutionOperator::ConvolutionOperator(const OperatorConfig& conf)
   sigmoid_ = (iter != attrs_map.end() && iter->second == "sigmoid") ? true : false;
   relu_ = (iter != attrs_map.end() && iter->second == "relu") ? true : false;
   append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_;
+  append_op_ = (iter != attrs_map.end()) ? iter->second : "";
+  LOG(INFO) << "append_op: " << append_op_;
 }
 
 void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -237,38 +239,93 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
 
   // cache weight here, save weight and bias memory descriptor
   vector<int64_t> weight_shape_origin = weight_->shape();
-  weight_shape_ = GetShapes(weight_shape_origin);
-  weight_->set_shape(weight_shape_);
-
-  vector<int64_t> weight_group_shape = weight_shape_origin;
-  if (group_ != 1) {
-    weight_group_shape.insert(weight_group_shape.begin(), group_);
-    weight_group_shape[1] /= group_;
-    if (weight_group_shape[1] % group_ != 0) {
-      LOG(ERROR) << "Output channel(" << weight_group_shape[1] << ") is not divisible by "
-                 << "group(" << group_ << ") in covolution!";
+  vector<int64_t> weight_stride_m;
+  vector<int64_t> weight_shape_m;
+  if (dispatch_from_ == "InnerProduct") {
+    // innerproduct has not any transpose, [M, K] x [K, N], after innerproduct prepare, shape becomes [M, K] x [N, K]
+    // innerproduct transpose src0, [K, M] x [K, N], after innerproduct prepare, shape becomes [K, M] x [N, K]
+    // innerproduct transpose src1, [M, K] x [N, K], after innerproduct prepare, shape becomes [M, K] x [N, K]
+    // innerproduct transpose src0 and src1, [K, M] x [N, K], after innerproduct prepare, shape becomes [K, M] x [N, K]
+    // innerproduct just changes shape (changes src0 shape at reshape period, scr1 shape at prepare period), 
+    // but keep strides as origin.
+    pads_ = {0, 0, 0, 0};
+    strides_ = {1, 1};
+    vector<int64_t> weight_perm;
+    // consider if onednn transpose wight or not
+    if (weight_->is_transposed()) {
+      weight_shape_origin = {weight_shape_origin[1], weight_shape_origin[0], 1, 1};
+      // [K, N, 1, 1] -> [N, K, 1, 1]
+      weight_perm = {1, 0, 2, 3};
+    } else {
+      weight_shape_origin = {weight_shape_origin[0], weight_shape_origin[1], 1, 1};
+      // [N, K, 1, 1] -> [N, K, 1, 1]
+      weight_perm = {0, 1, 2, 3};
     }
+    weight_shape_= GetShapes(weight_shape_origin, weight_perm);
+    weight_stride_m = GetStrides(weight_shape_origin, weight_perm);
+    weight_shape_m = weight_shape_;
+  } else {
+    weight_shape_ = GetShapes(weight_shape_origin);
+    weight_->set_shape(weight_shape_);
+    vector<int64_t> weight_group_shape = weight_shape_origin;
+    if (group_ != 1) {
+      weight_group_shape.insert(weight_group_shape.begin(), group_);
+      weight_group_shape[1] /= group_;
+      if (weight_group_shape[1] % group_ != 0) {
+        LOG(ERROR) << "Output channel(" << weight_group_shape[1] << ") is not divisible by "
+                  << "group(" << group_ << ") in covolution!";
+      }
+    }
+    vector<int64_t> weight_group_stride = GetStrides(weight_group_shape);
+    weight_stride_m = weight_group_stride;
+    weight_shape_m = weight_group_shape;
   }
-  vector<int64_t> weight_group_stride = GetStrides(weight_group_shape);
 
-  any_weight_md_ = memory::desc(weight_group_shape, type2mem[weight_->dtype()], memory::format_tag::any);
-  weight_md_ = memory::desc(weight_group_shape, type2mem[weight_->dtype()], weight_group_stride);
+  any_weight_md_ = memory::desc(weight_shape_m, type2mem[weight_->dtype()], memory::format_tag::any);
+  weight_md_ = memory::desc(weight_shape_m, type2mem[weight_->dtype()], weight_stride_m);
   weight_m_ = memory(weight_md_, eng_, weight_->mutable_data());
+
+  if (has_bias_) {
+    const vector<int64_t> bias_shape = bias_->shape();
+    const vector<int64_t> bias_stride = GetStrides(bias_shape);
+    bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
+    any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
+    bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
+  }
 }
 
 // 1. Create primitive
 void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // Part1: Derive operator's user proper shape and strides
   // 1.1 Transpose tensor shape and get it
-  vector<int64_t> src_shape_origin = src_->shape();
+  vector<int64_t> src_shape_origin;
+  if (dispatch_from_ == "InnerProduct") {
+    CHECK_EQ(dispatch_kernel_config["InnerProduct_to_Convolution"].size(), dispatch_config_.size() - 1) 
+            << "InnerProduct to Convolution has wrong dispatch kernel config...";
+    StringSplit<int64_t>(&src_shape_origin, dispatch_config_[1], ",");
+    CHECK_EQ(Product(src_shape_origin), Product(src_->shape())) << "Wrong dispatch input shape...";
+    // consider if model transpose src0 or not
+    if (src_->is_transposed()) {
+      // [C, N, H, W] -> [N, C, H, W]
+      src_perm_ = {1, 0, 2, 3};
+    } else {
+      // [N, H, W, C] -> [N, C, H, W]
+      src_perm_ = {0, 3, 1, 2};
+    }
+    // N, C, H, W ->N, H, W, C
+    dst_perm_ = {0, 2, 3, 1};
+  } else {
+    src_shape_origin = src_->shape();
+  }
   vector<int64_t> src_shape = GetShapes(src_shape_origin, src_perm_);
   vector<int64_t> src_stride = GetStrides(src_shape_origin, src_perm_);
-  src_->set_shape(src_shape);
+  if (dispatch_from_.empty()) src_->set_shape(src_shape);
 
   // 1.2 malloc tensor for output
   vector<int64_t> dst_shape_origin;
   vector<int64_t> padding_dims_l;
   vector<int64_t> padding_dims_r;
+  vector<int64_t> dst_shape_after_dispatch;
   switch (src_shape_origin.size()) {
     case 3: {
       // src_: N * IC* IH, weight_: OC * KC * KH
@@ -323,6 +380,8 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
       padding_dims_l = {PH_L, PW_L};
       padding_dims_r = {PH_R, PW_R};
       dst_shape_origin = {N, OC, OH, OW};
+      // if conv as a dispatch kernel, may need reshape after execute
+      if (dispatch_from_ == "InnerProduct") dst_shape_after_dispatch = {N * OH * OW, OC};
       break;
     }
     default:
@@ -348,14 +407,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
 
   // 1.5 Set dst shape and strides
   dst_->set_shape(dst_shape);
-
-  if (has_bias_) {
-    const vector<int64_t> bias_shape = bias_->shape();
-    const vector<int64_t> bias_stride = GetStrides(bias_shape);
-    bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
-    any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
-    bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
-  }
+  if (dispatch_from_ == "InnerProduct") dst_->set_shape(dst_shape_after_dispatch);
 
   // 2.2 Prepare op descriptors
   dnnl::convolution_forward::desc convolution_d =
@@ -390,10 +442,17 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
     gelu_m_ = memory(gelu_md, gelu_eng_);
   }
   if (binary_add_) {
+    // The binary primitive requires all source and destination tensors to have the same number of dimensions.
     dnnl::primitive_attr attr;
     dnnl::post_ops po;
     vector<int64_t> post_shape = post_->shape();
     vector<int64_t> post_stride = GetStrides(post_shape);
+    if (dispatch_from_ == "InnerProduct") {
+      // [M, N] -> [N, H, W, C] -> [N, C, H, W]
+      vector<int64_t> post_perm = {0, 3, 1, 2};
+      post_shape = GetShapes(dst_shape_origin, post_perm);
+      post_stride = GetStrides(dst_shape_origin, post_perm);
+    }
     memory::desc binary_md = memory::desc(post_shape, type2mem[post_->dtype()], post_stride);
     po.append_binary(algorithm::binary_add, binary_md);
     attr.set_post_ops(po);
@@ -403,10 +462,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
 
   convolution_pd_ = dnnl::convolution_forward::primitive_desc(convolution_d, attr_, eng_);
 
-  // 2.4 Prepare primitive objects (cached)
-  convolution_p_ = dnnl::convolution_forward(convolution_pd_);
-
-  // 2.5 Prepare memory objects (cached)
+  // 2.4 Prepare memory objects (cached)
   src_m_ = memory(src_md, eng_);
   dst_m_ = memory(dst_md, eng_);
   if (!weight_cached_) {
@@ -424,7 +480,20 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
       }
       memory_args_[DNNL_ARG_BIAS] = any_bias_m;
     }
-    weight_cached_ = true;
+    weight_cached_ = (dispatch_from_ == "InnerProduct") ? false : true;
+  }
+
+  // If the convolution forward class in the cache pool, just get it from the pool.
+  // Otherwise, do the reshape and send the related class into the cache pool
+  size_t key = ConvolutionPrimitiveFwdFactory::Key(src_->dtype(), weight_->dtype(), output_dtype_,
+    src_shape, weight_->shape(), dst_perm_, append_op_, post_->shape(), output_scale_, group_, pads_,
+    strides_, &eng_);
+  if (ConvolutionPrimitiveFwdFactory::IsInFactory(key) && !ConvolutionPrimitiveFwdFactory::DoNotCache()) {
+    convolution_p_ = ConvolutionPrimitiveFwdFactory::Get(key);
+  } else {
+    // 2.5 Prepare primitive objects (cached)
+    convolution_p_ = dnnl::convolution_forward(convolution_pd_);
+    ConvolutionPrimitiveFwdFactory::Set(key, convolution_p_);
   }
 }
 
@@ -492,4 +561,6 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
 }
 
 REGISTER_OPERATOR_CLASS(Convolution);
+//InnerProduct dispathcer class can have convolution kernel implementation
+REGISTER_KERNEL_CLASS(InnerProduct, Convolution);
 }  // namespace executor

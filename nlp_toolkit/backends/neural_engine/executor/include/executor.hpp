@@ -24,5 +24,6 @@
 #include "operator.hpp"
 #include "operator_registry.hpp"
 #include "tensor.hpp"
+#include "dispatcher.hpp"
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_EXECUTOR_HPP_

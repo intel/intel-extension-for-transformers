@@ -41,11 +41,15 @@ class Operator {
 
   virtual ~Operator() {}
 
+  virtual void Prepare(const vector<Tensor*>& input,
+                       const vector<Tensor*>& output) {}
+  
   // use Reshape to calculate the output shape from input tensor
-  virtual void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) = 0;
-
-  inline const string& name() const { return name_; }
-  inline const string& type() const { return type_; }
+  virtual void Reshape(const vector<Tensor*>& input,
+                       const vector<Tensor*>& output) = 0;
+  
+  virtual void Forward(const vector<Tensor*>& input,
+                       const vector<Tensor*>& output) = 0;
 
   inline void unref_tensors(const vector<Tensor*>& input) {
     for (size_t i = 0; i < input.size(); ++i) {
@@ -54,17 +58,23 @@ class Operator {
     }
   }
 
-  virtual void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) = 0;
-
-  virtual void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {}
-
+  inline const string& name() const { return name_; }
+  inline const string& type() const { return type_; }
   const OperatorConfig& operator_conf() const { return operator_conf_; }
+  // dispatch kernel may need to do reshape and receive config, like InnerProduct to Convolution
+  inline void set_dispatch_from_type(const string& type) { dispatch_from_ = type; }
+  inline void set_dispatch_config(const vector<string>& config) { dispatch_config_ = config; }
+  inline void set_do_shape_infer(const bool& do_shape_infer) { do_shape_infer_ = do_shape_infer; }
+  inline const bool& do_shape_infer() const { return do_shape_infer_; }
 
  protected:
   /** The conf that stores the operator configurations */
   string name_;
   string type_;
   OperatorConfig operator_conf_;
+  string dispatch_from_;
+  vector<string> dispatch_config_;
+  bool do_shape_infer_ = false;
 };  // class Operator
 
 }  // namespace executor

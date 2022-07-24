@@ -34,6 +34,7 @@ void Model::Init(const ModelConfig& conf) {
   // Clear the whole dnnl primitive cache map when init engine
   InnerProductPrimitiveFwdFactory::ClearFactory();
   MatMulPrimitiveFwdFactory::ClearFactory();
+  ConvolutionPrimitiveFwdFactory::ClearFactory();
   InitSharedWeight();
   name_ = conf.name();
   MemoryAllocator::InitStrategy();
@@ -45,7 +46,7 @@ void Model::Init(const ModelConfig& conf) {
   for (int operator_id = 0; operator_id < op_configs.size(); ++operator_id) {
     auto op_conf = op_configs[operator_id];
     auto operator_name = op_conf->name();
-    operators_.push_back(OperatorRegistry::CreateOperator(*op_conf));
+    operators_.push_back(std::make_shared<Dispatcher>(*op_conf));
     operator_names_.push_back(operator_name);
     operator_name_index_[operator_name] = operator_id;
     // handle the input/output tensors to the model
@@ -85,6 +86,16 @@ void Model::Init(const ModelConfig& conf) {
       }
     }
   }
+
+  is_dispatcher_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
+  dispatch_table_file_root_ = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT") == NULL ? \
+      string(getenv("HOME")) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt" : \
+      getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
+  has_dispatch_table_file_ = (access(dispatch_table_file_root_.c_str(), F_OK) != -1);
+  if (!has_dispatch_table_file_) LOG(INFO) << "Missing dispatch table file, " \
+                                  "all operators will use their own default kernels." \
+                                  "Recommend to turn on the tuning mode for better performance." \
+                                  "Ignore above info if you are doing tuning...";
 }
 
 void Model::RemoveSharedWeight(bool is_begin, char* count_space_name, char* count_name, char* space_name) {
@@ -232,24 +243,35 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
 
   if (reshape_model) {
     for (int i = 0; i < operators_.size(); ++i) {
-      LOG(INFO) << "operator " << operators_[i]->name() << " gonna reshape with type " << operators_[i]->type();
-      operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
+        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model, 
+                                    dispatch_table_file_root_, has_dispatch_table_file_);
     }
   }
-  int thread_count = 1;
-  for (int i = 0; i < operators_.size(); ++i) {
-    LOG(INFO) << "operator " << operators_[i]->name() << " gonna forward with type " << operators_[i]->type();
-    if (multi_stream_flag && multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
-      tp.resize(thread_count);
-      tp.commitTask(std::bind(&executor::Operator::Forward, operators_[i], input_vecs_[i], output_vecs_[i]));
-      if (thread_count >= multi_stream_tasks_[i]) {
-        tp.waitAllTaskRunOver();
-        tp.close();
-        thread_count = 0;
+  // save dispatch table file after tuniung
+  if (is_dispatcher_tuning_ && DispatchTable::Size() > 0) DispatchTable::Save(dispatch_table_file_root_);
+  
+  if (!is_dispatcher_tuning_) {
+    if (reshape_model) {
+      for (int i = 0; i < operators_.size(); ++i) {
+        LOG(INFO) << "operator " << operators_[i]->name() << " gonna reshape with type " << operators_[i]->type();
+        operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
       }
-      thread_count++;
-    } else {
-      operators_[i]->Forward(input_vecs_[i], output_vecs_[i]);
+    }
+    int thread_count = 1;
+    for (int i = 0; i < operators_.size(); ++i) {
+      LOG(INFO) << "operator " << operators_[i]->name() << " gonna forward with type " << operators_[i]->type();
+      if (multi_stream_flag && multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
+        tp.resize(thread_count);
+        tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i], input_vecs_[i], output_vecs_[i]));
+        if (thread_count >= multi_stream_tasks_[i]) {
+          tp.waitAllTaskRunOver();
+          tp.close();
+          thread_count = 0;
+        }
+        thread_count++;
+      } else {
+        operators_[i]->Forward(input_vecs_[i], output_vecs_[i]);
+      }
     }
   }
 

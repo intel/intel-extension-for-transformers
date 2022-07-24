@@ -164,7 +164,6 @@ class ModelConfig {
 
   ModelConfig(const string& name, const vector<OperatorConfig*>& operators) : name_(name), operators_(operators) {}
 
- public:
   void ParseOperator(const YAML::Node& node, vector<OperatorConfig*>& operators) {
     for (auto it = node.begin(); it != node.end(); ++it) {
       auto name = it->first.as<std::string>();

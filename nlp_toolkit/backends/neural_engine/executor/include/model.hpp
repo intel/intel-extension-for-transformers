@@ -30,6 +30,7 @@
 #include "glog/logging.h"
 #include "memory_allocator.hpp"
 #include "operator.hpp"
+#include "dispatcher.hpp"
 #include "operator_registry.hpp"
 #include "tensor.hpp"
 #include "thread_pool.hpp"
@@ -64,7 +65,7 @@ class Model {
   inline const string& name() const { return name_; }
   inline const vector<string>& operator_names() const { return operator_names_; }
   inline const vector<string>& tensor_names() const { return tensor_names_; }
-  inline const vector<shared_ptr<Operator> >& operators() const { return operators_; }
+  inline const vector<shared_ptr<Dispatcher> >& operators() const { return operators_; }
   inline const vector<Tensor*>& tensors() const { return tensors_; }
 
   inline int num_inputs() const { return model_input_tensors_.size(); }
@@ -88,6 +89,7 @@ class Model {
         memcpy(out_buffer, data_buffer, size * type2bytes[output_tensors_[i].dtype()]);
       } else {
         void* out_buffer = output_tensors_[i].mutable_data();
+        output_tensors_[i].set_shape(model_output_tensors_[i]->shape());
         memcpy(out_buffer, data_buffer, size * type2bytes[output_tensors_[i].dtype()]);
       }
     }
@@ -100,7 +102,7 @@ class Model {
  protected:
   string name_;
   string weight_root_;
-  vector<shared_ptr<Operator> > operators_;
+  vector<shared_ptr<Dispatcher> > operators_;
   vector<string> operator_names_;
   map<string, int> operator_name_index_;
   vector<Tensor*> tensors_;
@@ -120,6 +122,10 @@ class Model {
   unordered_map<int, int64_t> multi_stream_tasks_;
   ThreadPool tp;
   std::mutex rmutex_;
+  // for dispatcher
+  bool has_dispatch_table_file_ = false;
+  string dispatch_table_file_root_;
+  bool is_dispatcher_tuning_ = false;
 };
 
 }  // namespace executor
