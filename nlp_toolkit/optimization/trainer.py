@@ -10,6 +10,7 @@ import warnings
 from functools import partial
 from neural_compressor import __version__ as nc_version
 from neural_compressor.experimental import Component
+from neural_compressor.model.torch_model import PyTorchIpexModel
 from neural_compressor.utils import logger
 from nlp_toolkit import (
     AutoDistillation,
@@ -288,6 +289,9 @@ class BaseTrainer():
             assert False, "Unsupport provider:{}".format(self._provider)
 
     def _save_inc_int8(self, opt_model, output_dir):
+        if isinstance(opt_model, PyTorchIpexModel):
+            opt_model.save(output_dir)
+            return
         self.model.config.architectures = [self.model.__class__.__name__]
         self.model.config.torch_dtype = "int8"
         self.model.config.save_pretrained(output_dir)
