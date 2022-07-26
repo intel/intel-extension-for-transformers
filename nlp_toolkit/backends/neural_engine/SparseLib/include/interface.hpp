@@ -114,6 +114,13 @@ class eltwiseop_desc : public kernel_desc_proxy {
   virtual ~eltwiseop_desc() {}
 };
 
+class layernorm_ba_desc : public kernel_desc_proxy {
+ public:
+  layernorm_ba_desc(){};
+  explicit layernorm_ba_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~layernorm_ba_desc(){};
+};
+
 /**
  * @brief Derived proxy class, interfacing to the real/cached sparse_matmul_t.
  */
@@ -135,6 +142,13 @@ class eltwiseop : public kernel_proxy {
   eltwiseop() {}
   explicit eltwiseop(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~eltwiseop() {}
+};
+
+class layernorm_ba : public kernel_proxy {
+ public:
+  layernorm_ba() {}
+  explicit layernorm_ba(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~layernorm_ba() {}
 };
 
 }  // namespace jd

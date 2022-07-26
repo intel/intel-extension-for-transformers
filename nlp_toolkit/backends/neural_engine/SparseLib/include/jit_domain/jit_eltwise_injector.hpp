@@ -32,9 +32,14 @@ class jit_eltwise_injector {
   virtual ~jit_eltwise_injector() {}
 
   void eltwise_injector_init(jit_generator* ptr, const std::vector<postop_attr>& postop_attrs);
-  void vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs);
+  void vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs,
+                      std::vector<int> postop_idxs = {});
   void escape_regs(reg_type type, int reg_idx);
   void escape_erase(reg_type type, int reg_idx = -1);
+  void init_tb_allocate_set(const std::vector<postop_attr>& postop_attrs);
+  int max_zmm_allocate_num() { return zmm_tb_allocate.size(); };
+  int max_mask_allocate_num() { return mask_tb_allocate.size(); };
+  int max_reg64_allocate_num() { return reg64_tb_allocate.size(); };
   void prepare_table();
 
  private:
@@ -45,6 +50,7 @@ class jit_eltwise_injector {
   void relu_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void quantize_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void dequantize_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void linear_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void register_table_entries(const std::vector<postop_attr>& postop_attrs);
   void assert_check(const std::vector<postop_attr>& postop_attrs);
   void load_table_addr() { h->mov(p_table, l_table); };
@@ -54,6 +60,9 @@ class jit_eltwise_injector {
   int cur_iter_idx_;  // for alpha,beta,scale lookup.
   jit_generator* h;
   std::unordered_map<reg_type, std::set<int>> used_regs;
+  std::set<Xbyak::Reg*> reg64_tb_allocate;
+  std::set<Xbyak::Reg*> mask_tb_allocate;
+  std::set<Xbyak::Reg*> zmm_tb_allocate;
 
   /*labels*/
   Xbyak::Label l_table;

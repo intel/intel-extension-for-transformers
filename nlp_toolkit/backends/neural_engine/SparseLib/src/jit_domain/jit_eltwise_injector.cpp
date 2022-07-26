@@ -59,8 +59,14 @@ void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_a
   }
 }
 
-void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs) {
+void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs,
+                                          std::vector<int> postop_idxs) {
+  if (postop_idxs.size() == 0) {
+    for (int i = 0; i < postop_attrs.size(); i++) postop_idxs.push_back(i);
+  }
+
   assert_check(postop_attrs);
+  init_tb_allocate_set(postop_attrs);
   assign_regs();
   load_table_addr();
 
@@ -84,15 +90,17 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
       case postop_alg::dequantize:
         dequantize_compute_vector_fwd(zmm_src);
         break;
+      case postop_alg::linear:
+        linear_compute_vector_fwd(zmm_src);
+        break;
       default:
         break;
     }
   };
 
-  for (int i = 0; i < postop_attrs.size(); i++) {
+  for (auto&& i : postop_idxs) {
     cur_postop_attr_ = postop_attrs[i];
     cur_iter_idx_ = i;
-
     if (cur_postop_attr_.dt == data_type::bf16) {
       h->vmovups(zmm_tmp, zmm_src);
 
@@ -118,6 +126,11 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
       task_dispatch(zmm_src);
     }
   }
+}
+
+void jit_eltwise_injector::linear_compute_vector_fwd(const Zmm& zmm_src) {
+  h->vmovups(zmm_aux0, table_val(alpha, cur_iter_idx_));
+  h->vfmadd213ps(zmm_src, zmm_aux0, table_val(beta, cur_iter_idx_));
 }
 
 // fp32=>u8(scale*(src-bias))
@@ -293,17 +306,66 @@ void jit_eltwise_injector::escape_regs(reg_type type, int reg_idx) {
 
 void jit_eltwise_injector::escape_erase(reg_type type, int reg_idx) {
   auto iter = used_regs.find(type);
-  if (reg_idx != -1)
-    iter->second.erase(reg_idx);
-  else
-    iter->second.clear();
+  if (iter != used_regs.end()) {
+    if (reg_idx != -1)
+      iter->second.erase(reg_idx);
+    else
+      iter->second.clear();
+  }
+}
+
+void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& postop_attrs) {
+  reg64_tb_allocate.insert(&p_table);
+  for (auto&& i : postop_attrs) {
+    if (i.dt == data_type::bf16) {
+      reg64_tb_allocate.insert(&reg64_tmp);
+      zmm_tb_allocate.insert(&zmm_tmp);
+      zmm_tb_allocate.insert(&zmm_aux0);
+    }
+
+    if (i.op_alg == postop_alg::exp) {
+      mask_tb_allocate.insert(&k_mask);
+      zmm_tb_allocate.insert(&zmm_aux1);
+      zmm_tb_allocate.insert(&zmm_aux2);
+    }
+
+    if (i.op_alg == postop_alg::gelu) {
+      zmm_tb_allocate.insert(&zmm_aux0);
+      zmm_tb_allocate.insert(&zmm_aux1);
+      zmm_tb_allocate.insert(&zmm_aux2);
+      zmm_tb_allocate.insert(&zmm_aux3);
+      zmm_tb_allocate.insert(&zmm_aux4);
+      zmm_tb_allocate.insert(&zmm_mask);
+      mask_tb_allocate.insert(&k_mask);
+    }
+
+    if (i.op_alg == postop_alg::tanh) {
+      zmm_tb_allocate.insert(&zmm_aux1);
+      zmm_tb_allocate.insert(&zmm_aux2);
+      zmm_tb_allocate.insert(&zmm_aux3);
+      zmm_tb_allocate.insert(&zmm_aux4);
+      zmm_tb_allocate.insert(&zmm_mask);
+      mask_tb_allocate.insert(&k_mask);
+    }
+
+    if (i.op_alg == postop_alg::relu) {
+      zmm_tb_allocate.insert(&zmm_aux1);
+      mask_tb_allocate.insert(&k_mask);
+    }
+
+    if (i.op_alg == postop_alg::linear) {
+      zmm_tb_allocate.insert(&zmm_aux0);
+    }
+  }
 }
 
 void jit_eltwise_injector::assign_regs() {
-  std::vector<Xbyak::Reg*> reg64_tb_allocate = {&p_table, &reg64_tmp};
-  std::vector<Xbyak::Reg*> mask_regs_tb_allocate = {&k_mask};
-  std::vector<Xbyak::Reg*> zmm_regs_tb_allocate = {&zmm_mask, &zmm_aux0, &zmm_aux1, &zmm_aux2,
-                                                   &zmm_aux3, &zmm_aux4, &zmm_tmp};
+  std::vector<Xbyak::Reg*> reg64_allocate_vec;
+  std::vector<Xbyak::Reg*> mask_allocate_vec;
+  std::vector<Xbyak::Reg*> zmm_allocate_vec;
+  reg64_allocate_vec.assign(reg64_tb_allocate.begin(), reg64_tb_allocate.end());
+  mask_allocate_vec.assign(mask_tb_allocate.begin(), mask_tb_allocate.end());
+  zmm_allocate_vec.assign(zmm_tb_allocate.begin(), zmm_tb_allocate.end());
 
   auto allocate_regs = [&](reg_type reg_type, int max_reg_idx,
                            std::unordered_map<enum reg_type, std::set<int>>::const_iterator iter,
@@ -341,9 +403,9 @@ void jit_eltwise_injector::assign_regs() {
     }
   };
 
-  allocate_regs(reg_type::reg64, max_reg64_idx, used_regs.find(reg_type::reg64), reg64_tb_allocate);
-  allocate_regs(reg_type::mask, max_mask_idx, used_regs.find(reg_type::mask), mask_regs_tb_allocate);
-  allocate_regs(reg_type::zmm, max_zmm_idx, used_regs.find(reg_type::zmm), zmm_regs_tb_allocate);
+  allocate_regs(reg_type::reg64, max_reg64_idx, used_regs.find(reg_type::reg64), reg64_allocate_vec);
+  allocate_regs(reg_type::mask, max_mask_idx, used_regs.find(reg_type::mask), mask_allocate_vec);
+  allocate_regs(reg_type::zmm, max_zmm_idx, used_regs.find(reg_type::zmm), zmm_allocate_vec);
 }
 
 // TODO:move this func to a utils func.

@@ -23,7 +23,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
+#include "param_types.hpp"
 
 namespace jd {
 
@@ -78,6 +78,8 @@ bool init_amx();
  */
 template <typename T>
 bool all_zeros(const T* data, dim_t ld, dim_t nd1, dim_t nd2);
+
+int get_data_size(data_type dt);
 
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_

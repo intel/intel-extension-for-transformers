@@ -173,4 +173,21 @@ inline bool all_zeros(const T* data, dim_t ld, dim_t nd1, dim_t nd2) {
   return true;
 }
 template bool all_zeros<float>(const float*, dim_t, dim_t, dim_t);
+
+int get_data_size(jd::data_type dt) {
+  switch (dt) {
+    case data_type::fp32:
+    case data_type::s32:
+      return 4;
+    case data_type::bf16:
+    case data_type::fp16:
+      return 2;
+    case data_type::s8:
+    case data_type::u8:
+      return 1;
+    default:
+      std::runtime_error("unsupported data type.");
+  }
+}
+
 }  // namespace jd

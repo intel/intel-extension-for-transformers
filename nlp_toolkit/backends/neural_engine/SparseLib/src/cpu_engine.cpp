@@ -24,6 +24,8 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
   DECLARE_IMPL_LIST(sparse_matmul);
   DECLARE_IMPL_LIST(postop);
   DECLARE_IMPL_LIST(eltwiseop);
+  DECLARE_IMPL_LIST(layernorm_ba);
+
 #undef DECLARE_IMPL_LIST
 
   // Call C API.
@@ -35,6 +37,7 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
     CASE(sparse_matmul);
     CASE(postop);
     CASE(eltwiseop);
+    CASE(layernorm_ba);
     default:
       return &cpu_engine::empty_list;
   }

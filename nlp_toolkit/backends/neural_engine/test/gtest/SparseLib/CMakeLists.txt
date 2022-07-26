@@ -38,6 +38,7 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_spmm_avx512f_kernel.cpp
     test_postop_default_kernel.cpp
     test_eltwiseop_kernel.cpp
+    test_layernorm_ba_kernel.cpp
 )
 
 if (SPARSE_LIB_USE_AMX) 

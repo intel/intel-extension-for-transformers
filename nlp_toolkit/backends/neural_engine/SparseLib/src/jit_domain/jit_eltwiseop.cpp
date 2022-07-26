@@ -57,10 +57,6 @@ void jit_eltwiseop_t::assign_regs() {
   scratch_ = Xbyak::Reg64(r10);
   reg_src = Zmm(6);
 
-  auto escape_mock_regs = [&](reg_type type, const std::set<int>& idxs) {
-    for (auto&& i : idxs) eltwise_injector.escape_regs(type, i);
-  };
-
   eltwise_injector.escape_regs(reg_type::mask, remain_task_mask.getIdx());
   eltwise_injector.escape_regs(reg_type::reg64, scratch_.getIdx());
   eltwise_injector.escape_regs(reg_type::zmm, reg_src.getIdx());

@@ -97,15 +97,15 @@ bool check_result(const test_params_t& t) {
   return false;
 }
 
-class EltwiseopDefaultKernelTest : public testing::TestWithParam<test_params_t> {
+class EltwiseopKernelTest : public testing::TestWithParam<test_params_t> {
  protected:
-  EltwiseopDefaultKernelTest() {}
-  virtual ~EltwiseopDefaultKernelTest() {}
+  EltwiseopKernelTest() {}
+  virtual ~EltwiseopKernelTest() {}
   void SetUp() override {}
   void TearDown() override {}
 };
 
-TEST_P(EltwiseopDefaultKernelTest, TestPostfix) {
+TEST_P(EltwiseopKernelTest, TestPostfix) {
   test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
   EXPECT_TRUE(check_result(t));
 }
@@ -218,5 +218,5 @@ static auto case_func = []() {
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, EltwiseopDefaultKernelTest, case_func());
+INSTANTIATE_TEST_SUITE_P(Prefix, EltwiseopKernelTest, case_func());
 }  // namespace jd

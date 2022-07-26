@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 #include "kernels/eltwiseop.hpp"
-
+#include "utils.hpp"
 namespace jd {
 
 bool eltwiseop_kd_t::init() {
@@ -54,25 +54,15 @@ bool eltwiseop_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto eltwise_params = derived_kd()->params();
   auto head_op = derived_kd()->params().postop_attrs.front();
   auto tail_op = derived_kd()->params().postop_attrs.back();
-  auto dt_offset = [&] {
-    switch (derived_kd()->params().dt) {
-      case data_type::fp32:
-        return 4;
-      case data_type::bf16:
-        return 2;
-      default:
-        std::runtime_error("unsupported data type.");
-    }
-  };
 
   auto src_offset = [&] {
     if (head_op.op_alg == postop_alg::dequantize) return 1;
-    return dt_offset();
+    return get_data_size(derived_kd()->params().dt);
   };
 
   auto dst_offset = [&] {
     if (tail_op.op_alg == postop_alg::quantize) return 1;
-    return dt_offset();
+    return get_data_size(derived_kd()->params().dt);
   };
 
   const auto& jit_impl = jit_kers_;

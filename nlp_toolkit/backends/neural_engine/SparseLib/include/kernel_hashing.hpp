@@ -79,11 +79,12 @@ class hash_t {
         break;
         // todo:remove it.
       case kernel_kind::postop:
-        break;
       case kernel_kind::eltwiseop:
-        hash_combine(seed, op_attrs["reg64"]);
-        hash_combine(seed, op_attrs["zmm"]);
-        hash_combine(seed, op_attrs["mask"]);
+      case kernel_kind::layernorm_ba:
+        hash_combine(seed, op_attrs["matrix_shape"]);
+        hash_combine(seed, op_attrs["affine"]);
+        hash_combine(seed, op_attrs["alpha_ptr"]);
+        hash_combine(seed, op_attrs["beta_ptr"]);
         break;
       default:
         break;
