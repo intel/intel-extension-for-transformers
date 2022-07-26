@@ -9,7 +9,7 @@ Create a new python environment
 conda create -n <env name> python=3.8
 conda activate <env name>
 ```
-Check the gcc version using $gcc-v, make sure the gcc version is higher than 7.0.
+Check the gcc version using $gcc-v, make sure the gcc version is higher than 9.0.
 If not, you need to update gcc by yourself.
 Make sure the cmake version is 3 rather than 2.
 If not, you need to install cmake.
