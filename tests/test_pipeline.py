@@ -1,5 +1,7 @@
 import os
 import unittest
+import neural_compressor.adaptor.pytorch as nc_torch
+from distutils.version import LooseVersion
 from nlp_toolkit.optimization.pipeline import pipeline
 from transformers import (
     AutoConfig,
@@ -10,6 +12,7 @@ os.environ["WANDB_DISABLED"] = "true"
 os.environ["GLOG_minloglevel"] = "2"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
 
+PT_VERSION = nc_torch.get_torch_version()
 MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 
 message = "The output scores should be close to 0.9999."
@@ -17,14 +20,7 @@ message = "The output scores should be close to 0.9999."
 
 class TestPipeline(unittest.TestCase):
     @classmethod
-    def setUpClass(self):
-        from test_benchmark import TestBenchmark
-        TestBenchmark.setUpClass()
-        self.config = AutoConfig.from_pretrained(MODEL_NAME)
-        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-
-    @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         from test_benchmark import TestBenchmark
         TestBenchmark.tearDownClass()
 
@@ -38,7 +34,6 @@ class TestPipeline(unittest.TestCase):
         self.assertAlmostEqual(outputs[0]['score'], 0.9999, None, message, 0.0001)
 
     def test_int8_pt_model(self):
-        import torch
         text_classifier = pipeline(
             task="text-classification",
             model="Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static",
@@ -47,12 +42,28 @@ class TestPipeline(unittest.TestCase):
         outputs = text_classifier("This is great !")
         self.assertAlmostEqual(outputs[0]['score'], 0.9999, None, message, 0.0001)
 
+
+@unittest.skipIf(PT_VERSION >= LooseVersion("1.12.0"),
+    "Please use PyTroch 1.11 or lower version for executor backend")
+class TestExecutorPipeline(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from test_benchmark import TestExecutorBenchmark
+        TestExecutorBenchmark.setUpClass()
+        cls.config = AutoConfig.from_pretrained(MODEL_NAME)
+        cls.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+
+    @classmethod
+    def tearDownClass(cls):
+        from test_benchmark import TestExecutorBenchmark
+        TestExecutorBenchmark.tearDownClass()
+
     def test_fp32_executor_model(self):
         text_classifier = pipeline(
             task="text-classification",
             config=self.config,
             tokenizer=self.tokenizer,
-            model='fp32.onnx',
+            model='tmp_trainer/fp32-model.onnx',
             model_kwargs={'backend': "executor"},
         )
         outputs = text_classifier(
@@ -66,7 +77,7 @@ class TestPipeline(unittest.TestCase):
             task="text-classification",
             config=self.config,
             tokenizer=self.tokenizer,
-            model='int8.onnx',
+            model='tmp_trainer/int8-model.onnx',
             model_kwargs={'backend': "executor"},
         )
         outputs = text_classifier(
