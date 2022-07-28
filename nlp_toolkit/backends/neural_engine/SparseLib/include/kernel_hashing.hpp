@@ -53,6 +53,9 @@ class hash_t {
     uint64_t seed = 0;
     int tensor_cnt = ts_descs.size();
     for (int idx = 0; idx < tensor_cnt; ++idx) {
+      if (idx == 0 || idx == 3) {
+        continue;  // we don't care about shapes of src or dst while hashing
+      }
       for (const auto& dim : ts_descs[idx].shape()) {
         hash_combine(seed, static_cast<uint64_t>(dim));
       }
@@ -73,9 +76,6 @@ class hash_t {
         break;
       case kernel_kind::sparse_matmul:
         hash_combine(seed, op_attrs["sparse_ptr"]);
-        hash_combine(seed, op_attrs["mkn_blocks"]);
-        hash_combine(seed, op_attrs["tile_shape"]);
-        hash_combine(seed, op_attrs["sparse_scheme"]);
         break;
         // todo:remove it.
       case kernel_kind::postop:

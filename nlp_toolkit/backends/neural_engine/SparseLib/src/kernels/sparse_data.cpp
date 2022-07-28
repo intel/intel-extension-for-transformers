@@ -89,21 +89,21 @@ bsr_data_t<T> to_bsr_amx(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, c
   std::vector<dim_t> colidxs;
   std::vector<dim_t> group_rowptr(nrowptr, 0);
   for (dim_t b_row = 0; b_row < nrowptr - 1; ++b_row) {
-    group_rowptr[b_row] = colidxs.size() / 32;
+    group_rowptr[b_row] = colidxs.size() / group;
     dim_t b_col_idx = bsr_data.indptr()[b_row];
     while (b_col_idx < bsr_data.indptr()[b_row + 1]) {
       dim_t b_cnt = 0;
-      while (b_cnt < 32 && b_col_idx < bsr_data.indptr()[b_row + 1]) {
+      while (b_cnt < group && b_col_idx < bsr_data.indptr()[b_row + 1]) {
         colidxs.push_back(bsr_data.indices()[b_col_idx++]);
         ++b_cnt;
       }
       // padding for colidxs
-      while (b_cnt++ < 32) {
+      while (b_cnt++ < group) {
         colidxs.push_back(colidxs.back());
       }
     }
   }
-  dim_t nnz_group = colidxs.size() / 32;
+  dim_t nnz_group = colidxs.size() / group;
   group_rowptr[nrowptr - 1] = nnz_group;
 
   const dim_t blksize = blk_row * blk_col;
@@ -112,9 +112,9 @@ bsr_data_t<T> to_bsr_amx(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, c
   for (dim_t b_row = 0; b_row < nrowptr - 1; ++b_row) {
     dim_t nnz_idx = bsr_data.indptr()[b_row];
     for (dim_t group_idx = group_rowptr[b_row]; group_idx < group_rowptr[b_row + 1]; ++group_idx) {
-      dim_t b_col_idx = group_idx * 32 + 1;
+      dim_t b_col_idx = group_idx * group + 1;
       dim_t b_cnt = 1;
-      while (b_cnt < 32 && colidxs[b_col_idx] != colidxs[b_col_idx - 1]) {
+      while (b_cnt < group && colidxs[b_col_idx] != colidxs[b_col_idx - 1]) {
         ++b_cnt;
         ++b_col_idx;
       }
@@ -123,18 +123,18 @@ bsr_data_t<T> to_bsr_amx(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, c
         new_data[data_ptr + elem] = bsr_data.data()[nnz_idx * blksize + elem];
       }
       data_ptr += elem_num;
-      elem_num = (32 - b_cnt) * blksize;
+      elem_num = (group - b_cnt) * blksize;
       data_ptr += elem_num;
-      nnz_idx += 32;
+      nnz_idx += group;
     }
   }
 
   // reorder data to AMX layout
   std::vector<T> data(colidxs.size() * blksize, 0);
   data_ptr = 0;
-  for (dim_t start_col = 0; start_col < colidxs.size(); start_col += 32) {
+  for (dim_t start_col = 0; start_col < colidxs.size(); start_col += group) {
     for (dim_t i = 0; i < 16; ++i) {
-      for (dim_t j = start_col; j < start_col + 32; ++j) {
+      for (dim_t j = start_col; j < start_col + group; ++j) {
         data[data_ptr++] = new_data[j * 16 + i];
       }
     }
