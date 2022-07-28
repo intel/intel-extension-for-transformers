@@ -48,7 +48,7 @@ function run_tuning {
         approach="PostTrainingDynamic"
     elif [ "${topology}" = "marianmt_WMT_en_ro_dynamic" ]; then
         model_name_or_path='Helsinki-NLP/opus-mt-en-ro'
-        extra_cmd=$extra_cmd" --source_lang en --target_lang ro --dataset_name wmt16 --dataset_config_name ro-en"
+        extra_cmd=$extra_cmd" --source_lang en --target_lang ro --dataset_name wmt16 --dataset_config_name ro-en --max_eval_samples 1000 "
         approach="PostTrainingDynamic"
     else
         echo "unsupport topology: ${topology}"
