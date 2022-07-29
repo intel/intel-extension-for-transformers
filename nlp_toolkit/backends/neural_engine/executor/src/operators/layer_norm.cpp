@@ -26,9 +26,69 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{
 LayerNormOperator::LayerNormOperator(const OperatorConfig& conf) : Operator(conf), weight_cached_(false) {
   auto attrs_map = operator_conf_.attributes();
   epsilon_ = StringToNum<float>(attrs_map["epsilon"]);
+  auto iter = attrs_map.find("transpose_mode");
+  if (iter != attrs_map.end()) {
+    transpose_mode_ = true;
+  }
 }
 
 void LayerNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (transpose_mode_) {
+    ReshapewithTransMode(input, output);
+  } else {
+    ReshapewithOnednn(input, output);
+  }
+}
+
+void LayerNormOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (transpose_mode_) {
+    ForwardwithTransMode(input, output);
+  } else {
+    ForwardwithOnednn(input, output);
+  }
+}
+
+void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<int64_t> src_shape = input[0]->shape();
+  vector<int64_t> alpha_shape = input[1]->shape();
+  vector<int64_t> beta_shape = input[2]->shape();
+  src_desc_ = {src_shape, jd::data_type::fp32, jd::format_type::ba};
+  vector<jd::tensor_desc> ts_descs = {src_desc_};
+  std::unordered_map<std::string, std::string> op_attrs_;
+  auto& dst_tensor_ptr = output[0];
+  dst_tensor_ptr->set_shape(src_shape);
+
+  // for kernel hasing.
+  string src_shape_str;
+  for (auto&& i : src_shape) {
+    src_shape_str += std::to_string(i);
+    src_shape_str += "x";
+  }
+  op_attrs_["matrix_shape"] = src_shape_str;
+  // need to affine for aplha
+  auto alpha_ptr = input[1]->data();
+  auto beta_ptr = input[2]->data();
+  op_attrs_["affine"] = "1";
+  op_attrs_["alpha"] = std::to_string(reinterpret_cast<uint64_t>(alpha_ptr));
+  op_attrs_["beta"] = std::to_string(reinterpret_cast<uint64_t>(beta_ptr));
+
+  jd::operator_desc op_desc(jd::kernel_kind::layernorm_ba, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                            ts_descs, op_attrs_);
+  jd::layernorm_ba_desc layernorm_ba_desc(op_desc);
+  layernorm_ba_ker = jd::layernorm_ba(layernorm_ba_desc);
+}
+
+void LayerNormOperator::ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  // Inplace op.
+  Tensor* dst_ptr = output[0];
+  dst_ptr->mutable_data(); 
+  std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data()};
+  layernorm_ba_ker.execute(runtime_data);
+  // unref tensors
+  this->unref_tensors(input);
+}
+
+void LayerNormOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
   // 1.1: Prepare Tensor origin shape
   const memory::dims& src_shape_origin = input[0]->shape();
@@ -96,7 +156,7 @@ void LayerNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   memory_args_[DNNL_ARG_SCALE_SHIFT] = scale_shift_m;
 }
 
-void LayerNormOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LayerNormOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
   const auto& src_data = input[0]->data();
   // when change data value please use mutable_data

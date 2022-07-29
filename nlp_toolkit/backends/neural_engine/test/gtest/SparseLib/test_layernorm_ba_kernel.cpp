@@ -93,10 +93,11 @@ bool check_result(const test_params_t& t) {
     int num = get_element_num(q.op_desc);
     float err_rate = 1e-3;
     auto buf2 = q.data[0];
-    auto buf1 = p.data[0];
+    auto buf1 = p.data[1];
     EXPECT_NE(buf1, buf2);
     auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
     free(const_cast<void*>(p.data[0]));
+    free(const_cast<void*>(p.data[1]));
     free(const_cast<void*>(q.data[0]));
     free(const_cast<void*>(q.data[1]));
     free(const_cast<void*>(q.data[2]));
@@ -126,6 +127,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   int col = ts_descs[0].shape()[1];
   int num = row * col;
   float* src = new float[num];
+  float* dst = new float[num];
   float* src_ref = new float[num];
   float* alpha = new float[row];
   float* beta = new float[row];
@@ -155,6 +157,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   std::vector<const void*> rf_data2;
 
   rf_data1.emplace_back((void*)src);
+  rf_data1.emplace_back((void*)dst);
   rf_data2.emplace_back((void*)src_ref);
   rf_data2.push_back(alpha);
   rf_data2.push_back(beta);

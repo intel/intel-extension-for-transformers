@@ -95,7 +95,8 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
   for (int i = 0; i < nthr; i++) {
     const jit_layernorm_ba_t* jit_impl = jit_kers_[i];
     auto data_param = td[i];
-    data_param->martix = (char*)rt_data[0];
+    data_param->src = (char*)rt_data[0];
+    data_param->dst = (char*)rt_data[1];
     data_param->one_div_n = derived_kd()->one_div_n_ptr();
     data_param->eps = derived_kd()->eps_ptr();
     data_param->one = derived_kd()->one_ptr();

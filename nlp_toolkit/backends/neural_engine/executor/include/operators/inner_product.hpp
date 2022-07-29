@@ -152,7 +152,7 @@ class InnerProductOperator : public Operator {
   Tensor* dst_max_ = nullptr;
 
   enum { Unsupported, Dense, Sparse, SparseLib } kernel_type_ = Unsupported;
-  float sparse_threshold_ = 0.7;
+  float sparse_threshold_ = 0.52;
   float weight_zero_ratio_ = 0.0;
 
   BSCMatrix<float>* sparse_weight_ = nullptr;

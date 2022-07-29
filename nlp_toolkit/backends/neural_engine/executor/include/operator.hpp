@@ -66,6 +66,7 @@ class Operator {
   inline void set_dispatch_config(const vector<string>& config) { dispatch_config_ = config; }
   inline void set_do_shape_infer(const bool& do_shape_infer) { do_shape_infer_ = do_shape_infer; }
   inline const bool& do_shape_infer() const { return do_shape_infer_; }
+  inline const bool& monopolize_dispatcher() const { return monopolize_dispatcher_; }
 
  protected:
   /** The conf that stores the operator configurations */
@@ -75,6 +76,7 @@ class Operator {
   string dispatch_from_;
   vector<string> dispatch_config_;
   bool do_shape_infer_ = false;
+  bool monopolize_dispatcher_ = false;
 };  // class Operator
 
 }  // namespace executor

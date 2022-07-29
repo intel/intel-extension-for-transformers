@@ -21,6 +21,8 @@
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#include "SparseLib/include/interface.hpp"
+#include "SparseLib/include/benchmark_utils.hpp"
 
 namespace executor {
 using dnnl::algorithm;
@@ -41,6 +43,14 @@ class LayerNormOperator : public Operator {
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
+  void ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
+  void ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
+#if __AVX512F__
+  void ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
+#endif
+
  private:
   bool weight_cached_;
   float epsilon_;
@@ -50,6 +60,11 @@ class LayerNormOperator : public Operator {
   memory dst_m_;
   unordered_map<int, memory> memory_args_;
   memory scale_shift_m;
+
+  bool transpose_mode_ = false;
+  jd::tensor_desc src_desc_;
+  jd::tensor_desc dst_desc_;
+  jd::layernorm_ba layernorm_ba_ker;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_LAYER_NORM_HPP_

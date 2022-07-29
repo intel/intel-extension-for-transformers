@@ -74,6 +74,10 @@ class Dispatcher {
       auto kernel = k_pair.second;
       kernel->set_dispatch_from_type(type_);
       kernel->Prepare(input, output);
+      if (kernel->monopolize_dispatcher()) {
+        disable_dispatch_ = true;
+        break;
+      }
     }
   }
   
@@ -100,7 +104,7 @@ class Dispatcher {
         if (kernel_handler_.size() > 1) kernel_handler_[type_]->set_do_shape_infer(true);
         kernel_handler_[type_]->Reshape(input, output);
       }
-      if (has_dispatch_table_file) {
+      if (!disable_dispatch_ && has_dispatch_table_file) {
         // generate hash key and find the best kernel if has dispatch table
         // only load once
         if (DispatchTable::Size() == 0) {
@@ -124,7 +128,7 @@ class Dispatcher {
       if (type_ == "Input" || type_ == "Output") return;
       // skip same input_hash
       size_t input_hash = GetHash(input);
-      if (DispatchTable::Find(type_, input_hash).empty()) {
+      if (!disable_dispatch_ && DispatchTable::Find(type_, input_hash).empty()) {
         // keep kernel with the least time as first pair
         std::map<float, vector<string>, std::less<float>> timer;
         OpTuning op_tuning(type_);
@@ -169,6 +173,7 @@ class Dispatcher {
   inline const string& type() const { return type_; }
   inline const OperatorConfig& operator_conf() const { return operator_conf_; }
   inline const string& execute_kernel() const { return execute_kernel_; }
+  inline const bool& disable_dispatch() const { return disable_dispatch_; }
 
  protected:
   // get input_hash
@@ -187,6 +192,7 @@ class Dispatcher {
   KernelHandler kernel_handler_;
   string execute_kernel_;
   bool do_tuning_ = false;
+  bool disable_dispatch_ = false;
 };
 } //namespace executor
 

@@ -59,7 +59,8 @@ class jit_layernorm_ba_t : public jit_generator {
   void escape_regs(int degree);
 
   void load_params() {
-    mov(src_addr, ptr[reg_param + LNBA_GET_OFF(martix)]);
+    mov(src_addr, ptr[reg_param + LNBA_GET_OFF(src)]);
+    mov(dst_addr, ptr[reg_param + LNBA_GET_OFF(dst)]);
     mov(one_div_n, ptr[reg_param + LNBA_GET_OFF(one_div_n)]);
     mov(one, ptr[reg_param + LNBA_GET_OFF(one)]);
     mov(eps, ptr[reg_param + LNBA_GET_OFF(eps)]);
@@ -77,6 +78,7 @@ class jit_layernorm_ba_t : public jit_generator {
   Reg64 reg_param;
   Reg64 reg64_tmp;
   Reg64 src_addr;
+  Reg64 dst_addr;
   Reg64 one_div_n;
   Reg64 one;
   Reg64 eps;

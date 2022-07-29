@@ -45,8 +45,8 @@ void jit_layernorm_ba_t::generate() {
       remain_rows -= final_unroll_degree;
       // reverse sequence load rows data for cache performance.
       for (int k = 0; k < final_unroll_degree; k++) vmovups(Zmm(k), dword[src_addr + get_offset(col_idx, --row_idx)]);
-      for (int k = 0; k < final_unroll_degree; k++) vsubps(Zmm(k), Zmm(k), reg_mean);   // sub mean
-      for (int k = 0; k < final_unroll_degree; k++) vmulps(Zmm(k), Zmm(k), Zmm(k));  // pow(2)
+      for (int k = 0; k < final_unroll_degree; k++) vsubps(Zmm(k), Zmm(k), reg_mean);  // sub mean
+      for (int k = 0; k < final_unroll_degree; k++) vmulps(Zmm(k), Zmm(k), Zmm(k));    // pow(2)
       // calculate the sum of var of unroll rows data.
       binary_add(final_unroll_degree, reg_var);
     }
@@ -88,9 +88,9 @@ void jit_layernorm_ba_t::generate() {
       // store the value.
       for (int k = 0; k < final_unroll_degree; k++) {
         if (col_idx + 16 <= param_.process_col)
-          vmovups(dword[src_addr + get_offset(col_idx, row_idx_store++)], Zmm(k));
+          vmovups(dword[dst_addr + get_offset(col_idx, row_idx_store++)], Zmm(k));
         else
-          vmovups(dword[src_addr + get_offset(col_idx, row_idx_store++)] | remain_task_mask, Zmm(k));
+          vmovups(dword[dst_addr + get_offset(col_idx, row_idx_store++)] | remain_task_mask, Zmm(k));
       }
     }
   }
@@ -133,11 +133,13 @@ void jit_layernorm_ba_t::assign_regs() {
   reg_param = rdi;
   reg64_tmp = r10;
   src_addr = r11;
-  one_div_n = r12;
-  one = r13;
-  eps = r14;
+  dst_addr = r12;
+  one_div_n = r13;
+  one = r14;
+  eps = r15;
   reg_map.insert(std::pair<reg_type, std::set<int>>(
-      reg_type::reg64, {reg64_tmp.getIdx(), src_addr.getIdx(), one_div_n.getIdx(), one.getIdx(), eps.getIdx()}));
+      reg_type::reg64,
+      {reg64_tmp.getIdx(), src_addr.getIdx(), dst_addr.getIdx(), one_div_n.getIdx(), one.getIdx(), eps.getIdx()}));
 }
 
 void jit_layernorm_ba_t::prepare_mask() {

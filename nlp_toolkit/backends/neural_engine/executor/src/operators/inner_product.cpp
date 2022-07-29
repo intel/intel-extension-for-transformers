@@ -253,6 +253,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
       PrepareSparseLib(input, output);
       break;
   }
+  if (kernel_type_ != Dense) monopolize_dispatcher_ = true;
 }
 
 void InnerProductOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -519,7 +520,7 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
   }
   std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
                                            rescales_.data()};
-  jd::benchmarkOrExecute(&spmm_kern_, runtime_data);
+  spmm_kern_.execute(runtime_data);
 #endif
 }
 #endif

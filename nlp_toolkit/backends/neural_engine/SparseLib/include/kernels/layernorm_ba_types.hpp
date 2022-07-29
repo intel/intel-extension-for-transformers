@@ -30,7 +30,8 @@ struct layernorm_ba_param_t {
 };
 
 struct layernorm_ba_data_t {
-  void* martix;
+  void* src;
+  void* dst;
   const float* one_div_n;
   const float* one;
   const float* eps;
