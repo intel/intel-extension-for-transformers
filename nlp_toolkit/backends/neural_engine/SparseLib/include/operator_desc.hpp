@@ -43,7 +43,7 @@ class operator_desc {
       : ker_kind_(ker_kind),
         ker_prop_(ker_prop),
         eng_kind_(eng_kind),
-        impl_nthr_((omp_get_max_threads() == omp_get_num_procs()) ? 1 : omp_get_max_threads()),
+        impl_nthr_(omp_get_max_threads()),
         ts_descs_(ts_descs),
         attrs_(attrs),
         apply_postops_list_(apply_postops_list) {}

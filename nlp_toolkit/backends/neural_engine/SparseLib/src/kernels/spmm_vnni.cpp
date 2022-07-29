@@ -13,6 +13,9 @@
 //  limitations under the License.
 
 #include "kernels/spmm_vnni.hpp"
+#define TH 4
+#define TW 4
+#define VEC 16
 
 namespace jd {
 //// Part1: class spmm_vnni_kd_t
@@ -38,15 +41,21 @@ bool spmm_vnni_kd_t::init() {
 
   int nthr = op_desc_.impl_nthr();
   params_.resize(nthr);
+  const dim_t M = wei_desc.shape()[0];
+  int left_nthr = nthr;
+  int curr_midx = 0;
   for (int idx = 0; idx < nthr; ++idx) {
     ssd::flat_param_t& param = params_[idx];
-    spmm_params_init(param, op_desc_, nthr, idx);
+    int curr_block_m = (M - curr_midx) / (left_nthr--);
+    curr_block_m = curr_block_m / TH * TH;
+    spmm_params_init(param, op_desc_, curr_midx, curr_midx + curr_block_m);
+    curr_midx += curr_block_m;
   }
   return true;
 }
 
-bool spmm_vnni_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int nthr,
-                                      int ithr) {
+bool spmm_vnni_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int64_t im_start,
+                                      int64_t im_end) {
   const auto& wei_desc = op_desc.tensor_descs()[ssd::WEI];
   const auto& src_desc = op_desc.tensor_descs()[ssd::SRC];
   const auto& bias_desc = op_desc.tensor_descs()[ssd::BIAS];
@@ -72,10 +81,13 @@ bool spmm_vnni_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd::op
   param_ref.sub_func = (op_attrs["sub_func"] != "false");
   param_ref.in_start = 0;  // TODO: partition with fixed size m/n blocks
   param_ref.in_end = param_ref.N;
-  int64_t th_mb = ceil_div(param_ref.mkn_blocks[0], nthr);
-  int64_t MB = param_ref.M / param_ref.mkn_blocks[0];
-  param_ref.im_start = th_mb * ithr * MB;
-  param_ref.im_end = (param_ref.im_start + th_mb) * MB;
+  param_ref.im_start = im_start;
+  param_ref.im_end = im_end;
+  LOG_IF(ERROR, (param_ref.im_end - param_ref.im_start) % TH != 0)
+      << "Blocked m-size must be a multiple of " << TH << ", actual value: " << (param_ref.im_end - param_ref.im_start);
+  LOG_IF(ERROR, (param_ref.in_end - param_ref.in_start) % (TW * VEC) != 0)
+      << "Blocked n-size must be a multiple of " << (TW * VEC)
+      << ", actual value: " << (param_ref.in_end - param_ref.in_start);
 
   const auto& temp_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
   param_ref.sparse_ptr = reinterpret_cast<bsr_data_t<int8_t>*>(temp_addr);
@@ -106,7 +118,10 @@ bool spmm_vnni_k_t::execute(const std::vector<const void*>& rt_data) const {
     td[idx].ptr_bias = rt_data[ssd::BIAS];
     td[idx].ptr_dst = const_cast<void*>(rt_data[ssd::DST]);
     td[idx].ptr_scales = rt_data[ssd::SCALES];
-    (*jit_impl)(&(td[idx]));
+    auto& param = derived_kd()->params()[idx];
+    if (param.im_start != param.im_end) {  // when no M is allocate
+      (*jit_impl)(&(td[idx]));
+    }
   }
   return true;
 }

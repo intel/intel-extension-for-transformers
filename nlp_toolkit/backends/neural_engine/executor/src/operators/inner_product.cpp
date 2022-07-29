@@ -472,7 +472,7 @@ void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const 
   vector<int64_t> src0_shape = GetShapes(src0_shape_origin_, src0_perm_);
   vector<int64_t> src0_stride = GetStrides(src0_shape_origin_, src0_perm_);
   src0_->set_shape(src0_shape);
-  src0_desc_ = {src0_->shape(), jd::data_type::s8, jd::format_type::csrp};
+  src0_desc_ = {src0_->shape(), jd::data_type::s8, jd::format_type::bsr};
   if (has_bias_) bias_desc_ = {bias_->shape(), jd::data_type::s32, jd::format_type::ab};
 }
 

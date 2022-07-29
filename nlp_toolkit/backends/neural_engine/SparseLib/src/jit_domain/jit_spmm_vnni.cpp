@@ -23,6 +23,16 @@ jit_spmm_vnni_t::jit_spmm_vnni_t(const ssd::flat_param_t& param)
   nb_size_ = ceil_div(param.N, n_blocks_);
 
   TW_ = param.tile_shape[1];
+  int num_vec = nb_size_ / VEC;
+  if (num_vec % TW_ != 0) {
+    LOG(WARNING) << "Blocked batch size is not a multiple of 64, tile width is set to " << TW_ << ".";
+    // TODO: currently N like 224 will be computed with TW = 2
+    while (TW_ > 0) {
+      TW_--;
+      if (num_vec % TW_ == 0) break;
+    }
+    LOG_IF(FATAL, TW_ == 0) << "N must be a multiple of " << VEC;
+  }
   nt_size_ = TW_ * VEC;
   n_tiles_ = ceil_div(nb_size_, nt_size_);
 
@@ -179,7 +189,7 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(int64_t m_start) {
     //  Step 3: tile product. Note that k_indices length is processed.
     //  A tile product can calculate at least 1 row and 16 columns of DST.
     //  Min tile calculation: Tile width/height is 1, compute (1, ADJ) x (ADJ, 16) = (1, 16) matmul.
-    if (!param_.sub_func || TH_ != param_.tile_shape[0]) {
+    if (!param_.sub_func || TH_ != param_.tile_shape[0] || TW_ != param_.tile_shape[1]) {
       tile_product(TH_, TW_);
     } else {
       call(sub_func_fptr_);
@@ -248,10 +258,11 @@ void jit_spmm_vnni_t::read_params() {
 
 void jit_spmm_vnni_t::gen_sub_function() {
   Xbyak::util::StackFrame callee1_sf(this, 0);
-  tile_product(param_.tile_shape[0], param_.tile_shape[1]);
+  tile_product(TH_, TW_);
 }
 
 void jit_spmm_vnni_t::generate() {
+  const int nonvolatile_reg_size = 8 * 6;
   inLocalLabel();  // use local label for multiple instance
   if (param_.sub_func) {
     sub_func_fptr_ = getCurr();
@@ -261,7 +272,14 @@ void jit_spmm_vnni_t::generate() {
   Xbyak::Label g_label1;
   Xbyak::Label g_label2;
   {
-    Xbyak::util::StackFrame spmm_sf(this, 1, 0, stack_space_needed_);
+    sub(rsp, nonvolatile_reg_size);
+    mov(ptr[rsp + 0x00], rbx);
+    mov(ptr[rsp + 0x08], rbp);
+    mov(ptr[rsp + 0x10], r12);
+    mov(ptr[rsp + 0x18], r13);
+    mov(ptr[rsp + 0x20], r14);
+    mov(ptr[rsp + 0x28], r15);
+
     read_params();
     mov(reg_nb_start, param_.in_start);
     mov(reg_nb_end, param_.in_end);
@@ -280,7 +298,7 @@ void jit_spmm_vnni_t::generate() {
     LOG_IF(FATAL, k_blocks_ > 1) << "k-blocking is not fully implemented";
     for (int kb_idx = 0; kb_idx < k_blocks_; ++kb_idx) {
       // Loop-M2: CPP loop for each blocked row. Asm code unroll.
-      for (int im = 0; im < param_.M; im += TH_) {
+      for (int im = param_.im_start; im < param_.im_end; im += TH_) {
         xor_(reg_nt_relative_idx, reg_nt_relative_idx);
         mov(reg_nt_absolute_idx, reg_nb_start);
 
@@ -305,6 +323,15 @@ void jit_spmm_vnni_t::generate() {
     add(reg_nb_start, nb_size_);
     cmp(reg_nb_start, reg_nb_end);
     jl(L_nb_loop, T_NEAR);  // Loop-N1 end.
+
+    mov(rbx, ptr[rsp + 0x00]);
+    mov(rbp, ptr[rsp + 0x08]);
+    mov(r12, ptr[rsp + 0x10]);
+    mov(r13, ptr[rsp + 0x18]);
+    mov(r14, ptr[rsp + 0x20]);
+    mov(r15, ptr[rsp + 0x28]);
+    add(rsp, nonvolatile_reg_size);
+    ret();
   }
   int word_size = 1;
   int num_size = 16;

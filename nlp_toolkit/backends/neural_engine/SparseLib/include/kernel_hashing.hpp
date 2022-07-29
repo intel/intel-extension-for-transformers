@@ -71,6 +71,7 @@ class hash_t {
     // if front op want to apply postop-fusion,they should add a filed named postop_list in op_attr
     // for distinguishing.
     hash_combine(seed, op_attrs["postop_list"]);
+    hash_combine(seed, op_attrs["post_op"]); // TODO: remove when postop fusion is applied to all kernels
     switch (ker_kind) {
       case kernel_kind::undef:
         break;

@@ -69,19 +69,17 @@ class jit_generator : public Xbyak::CodeGenerator {
   const int EVEX_max_8b_offt = 0x200;
   const Xbyak::Reg64 reg_EVEX_max_8b_offt = rbp;
 
-#ifdef SPARSE_LIB_USE_AMX
+// Set to O0 to avoid undefined behavour of reinterpret_cast
+// Ref: https://stackoverflow.com/questions/25131019/reinterpret-cast-to-function-pointer
 #pragma GCC push_options
 #pragma GCC optimize("O0")
-#endif
   template <typename... T>
   inline void operator()(T... args) const {
     using func_ptr = void (*)(const T... args);
     auto fptr = reinterpret_cast<func_ptr>(jit_ker_);
     (*fptr)(std::forward<T>(args)...);
   }
-#ifdef SPARSE_LIB_USE_AMX
 #pragma GCC pop_options
-#endif
 
   virtual bool create_kernel();
 

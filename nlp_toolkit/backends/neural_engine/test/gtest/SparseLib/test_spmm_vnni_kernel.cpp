@@ -22,6 +22,9 @@
 #include "interface.hpp"
 #include "benchmark_utils.hpp"
 #include "gtest/gtest.h"
+#include "unit_test_utils.hpp"
+
+#define OMP_NUM_THREADS "OMP_NUM_THREADS"
 
 namespace jd {
 using dt = jd::data_type;
@@ -31,6 +34,7 @@ struct op_args_t {
   operator_desc op_desc;
   std::vector<const void*> rt_data;
   float sparisty;  // sparsity of weight matrix; for testcase labeling
+  int nthr;        // 0 for not touching OMP_NUM_THREADS and using what set outside
 };
 
 struct test_params_t {
@@ -132,6 +136,7 @@ bool check_result(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   try {
+    n_thread_t with_n_thread(p.nthr);
     const auto& op_desc = p.op_desc;
     sparse_matmul_desc spmm_desc(op_desc);
     sparse_matmul spmm_kern(spmm_desc);
@@ -233,9 +238,9 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, jd::data_type dt_dst = dt::s8,
-                                         const std::string& mkn_blocks = "1,1,1", const std::string& tile_shape = "4,4",
-                                         std::string post_op = "") {
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, int nthr = 0,
+                                         jd::data_type dt_dst = dt::s8, const std::string& mkn_blocks = "1,1,1",
+                                         const std::string& tile_shape = "4,4", std::string post_op = "") {
   // Step 1: Construct operator config
   std::unordered_map<std::string, std::string> op_attrs = {
       {"mkn_blocks", mkn_blocks}, {"tile_shape", tile_shape}, {"post_op", post_op}};
@@ -268,56 +273,69 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
                            op_attrs);
 
   // Step 4: op_args_t testcase pair
-  op_args_t op_args = {an_op_desc, rt_data1, sparsity};
-  op_args_t op_args_copy = {an_op_desc, rt_data2, sparsity};
+  op_args_t op_args = {an_op_desc, rt_data1, sparsity, nthr};
+  op_args_t op_args_copy = {an_op_desc, rt_data2, sparsity, nthr};
 
   return {op_args, op_args_copy};
 }
 
 static auto case_func = []() {
+  std::vector<int> nthr_cases;
+  if (getenv(OMP_NUM_THREADS) == nullptr || strlen(getenv(OMP_NUM_THREADS)) == 0) {
+    nthr_cases = {1, 2, 3, 4, 0};
+  } else {  // OMP_NUM_THREAD;S is set outside
+    nthr_cases = {0};
+  }
+
   std::vector<test_params_t> cases;
+  for (int nthr : nthr_cases) {
+    n_thread_t with_n_thread(nthr);
 
-  // Config
-  tensor_desc src0_desc;
-  tensor_desc src1_desc;
-  tensor_desc bias_desc;
-  tensor_desc dst_desc;
-  tensor_desc scales_desc;
-  std::string mkn_blocks;
-  std::string tile_shape;
+    // Append sum with super high sparsity
+    cases.push_back({gen_case(32, 32, 128, .99f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(32, 32, 128, .99f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+    cases.push_back({gen_case(32, 32, 128, 1.0f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
 
-  /* bert-mini config. case: spmm: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N) */
-  // when M = 256, K = 256, N = 128 ... and more size conbinations
-  cases.push_back({gen_case(256, 256, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(256, 256, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(256, 1024, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(256, 1024, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(1024, 256, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(1024, 256, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(768, 768, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(768, 768, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(768, 3072, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(768, 3072, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(3072, 768, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(3072, 768, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(1024, 1024, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(1024, 1024, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(1024, 4096, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(1024, 4096, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(4096, 1024, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  cases.push_back({gen_case(4096, 1024, 384, .7f, dt::s8, "1,1,1", "4,4"), false});
+    // Append sum with small batch size
+    cases.push_back({gen_case(32, 32, 32, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(32, 32, 32, .7f, nthr, dt::fp32, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(32, 32, 32, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+    cases.push_back({gen_case(32, 32, 16, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+    cases.push_back({gen_case(32, 32, 48, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+    cases.push_back({gen_case(32, 32, 224, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
 
-  // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-  cases.push_back({gen_case(32, 32, 128, .7f, dt::s8, "1,1,1", "4,4"), false});
-  // case: sparse: s8xu8+s32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-  cases.push_back({gen_case(32, 32, 128, .7f, dt::fp32, "1,1,1", "4,4"), false});
-  // case: sparse: s8xu8+s32=s8, n_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-  cases.push_back({gen_case(32, 32, 128, .7f, dt::s8, "1,1,2", "4,4"), false});
-  // case: sparse: s8xu8+s32=s8, k_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-  cases.push_back({gen_case(32, 32, 128, .7f, dt::s8, "1,2,1", "4,4"), false});
-  // case: sparse: s8xu8+s32+append_fp32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) + append(M, N) = dst(M, N)
-  cases.push_back({gen_case(32, 32, 128, .7f, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+    /* bert-mini config. case: spmm: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N) */
+    // when M = 256, K = 256, N = 128 ... and more size conbinations
+    cases.push_back({gen_case(256, 256, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(256, 256, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(256, 1024, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(256, 1024, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(1024, 256, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(1024, 256, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(768, 768, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(768, 768, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(768, 3072, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(768, 3072, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(3072, 768, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(3072, 768, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(1024, 1024, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(1024, 1024, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(1024, 4096, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(1024, 4096, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(4096, 1024, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    cases.push_back({gen_case(4096, 1024, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
 
+    // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
+    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+    // case: sparse: s8xu8+s32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
+    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::fp32, "1,1,1", "4,4"), false});
+    // case: sparse: s8xu8+s32=s8, n_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
+    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::s8, "1,1,2", "4,4"), false});
+    // case: sparse: s8xu8+s32=s8, k_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
+    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::s8, "1,2,1", "4,4"), false});
+    // case: sparse: s8xu8+s32+append_fp32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) + append(M, N) = dst(M, N)
+    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+  }
   return ::testing::ValuesIn(cases);
 };
 
@@ -325,6 +343,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   std::vector<std::string> params;
   auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
   auto attrs_map = tpi.param.args.first.op_desc.attrs();
+  params.push_back("c" + std::to_string(static_cast<int>(tpi.param.args.first.nthr)));
   params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparisty * 100)));
   params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[0]));
   params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[1]));

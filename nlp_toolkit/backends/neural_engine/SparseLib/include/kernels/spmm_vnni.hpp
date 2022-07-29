@@ -50,7 +50,7 @@ class spmm_vnni_kd_t : public kernel_desc_t {
   const std::vector<ssd::flat_param_t>& params() const { return params_; }
 
  private:
-  bool spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int nthr, int ithr);  // NOLINT
+  bool spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int64_t im_start, int64_t im_end);  // NOLINT
   std::vector<int64_t> get_avg_group(const csrp_data_t<int8_t>* sparse_ptr, int nthr, int ithr);
 
  private:

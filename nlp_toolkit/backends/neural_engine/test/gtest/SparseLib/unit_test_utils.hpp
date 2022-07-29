@@ -147,3 +147,14 @@ void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode)
   }
   return ptr;
 }
+
+class n_thread_t {
+ public:
+  n_thread_t(int nthr) : prev_nthr(omp_get_max_threads()) {
+    if (nthr > 0 && nthr != prev_nthr) omp_set_num_threads(nthr);
+  }
+  ~n_thread_t() { omp_set_num_threads(prev_nthr); }
+
+ private:
+  int prev_nthr;
+};
