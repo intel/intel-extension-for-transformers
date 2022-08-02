@@ -35,7 +35,7 @@ def main_worker(rank, world_size, model, teacher_model, dataset):
             args=training_args,
     )
     autodistillation_config = AutoDistillationConfig(
-        search_space={'hidden_size': [128, 256, 384, 512]},
+        search_space={'hidden_size': [128, 256], 'intermediate_size':[256, 512]},
         search_algorithm='Grid',
         metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)],
         knowledge_transfer=FlashDistillationConfig(
@@ -106,7 +106,7 @@ class TestAutoDistillation(unittest.TestCase):
             max_trials = 6 if search_algorithm == 'Random' else 3
             autodistillation_config = \
               AutoDistillationConfig(
-                search_space={'hidden_size': [128, 256, 384, 512]},
+                search_space={'hidden_size': [128, 256], 'intermediate_size':[256, 512]},
                 search_algorithm=search_algorithm,
                 max_trials=max_trials,
                 metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)],
