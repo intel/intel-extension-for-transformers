@@ -12,11 +12,12 @@ function main {
 function init_params {
   topology="bert_base_SST-2"
   tuned_checkpoint="saved_results"
-  extra_cmd=""
+  extra_cmd="--do_eval --do_train --max_seq_length 128 --no_cuda --overwrite_output_dir --overwrite_cache"
   batch_size=8
   MAX_SEQ_LENGTH=128
   model_type="bert"
   approach="PostTrainingStatic"
+  script="../run_glue.py"
   for var in "$@"
   do
     case $var in
@@ -123,20 +124,19 @@ function run_tuning {
         extra_cmd=$extra_cmd" --dataset_name xnli --dataset_config_name en"
         model_name_or_path="joeddav/xlm-roberta-large-xnli" 
         approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bert_base_SST-2_static_no_trainer" ]; then
+        extra_cmd=" --task_name sst2"
+        model_name_or_path="echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid"
+        approach="PostTrainingStatic"
+        script="../run_glue_no_trainer.py"
     fi
 
 
-    python -u ../run_glue.py \
+    python -u ${script} \
         --model_name_or_path ${model_name_or_path} \
-        --do_eval \
-        --do_train \
-        --max_seq_length ${MAX_SEQ_LENGTH} \
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ${tuned_checkpoint} \
-        --no_cuda \
         --tune \
-        --overwrite_output_dir \
-        --overwrite_cache \
         --quantization_approach ${approach} \
         ${extra_cmd}
 }

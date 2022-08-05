@@ -144,6 +144,15 @@
           "batch_size": 64,
           "new_benchmark": false
         },
+        "bert_base_SST-2_static_no_trainer": {
+          "model_src_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+          "dataset_location": "",
+          "input_model": "",
+          "yaml": "conf.yaml",
+          "strategy": "basic",
+          "batch_size": 64,
+          "new_benchmark": false
+        },
         "bert_base_SST-2_dynamic": {
           "model_src_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
           "dataset_location": "",

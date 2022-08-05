@@ -560,7 +560,7 @@ def main():
         config=teacher_config,
     )
     teacher_model.to(training_args.device)
-    
+
     # prepare datasets for teacher model
     teacher_processed_datasets = raw_datasets.map(
         functools.partial(preprocess_function, tokenizer=teacher_tokenizer), 

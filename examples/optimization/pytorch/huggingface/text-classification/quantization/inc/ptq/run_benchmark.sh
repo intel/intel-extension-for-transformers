@@ -13,6 +13,7 @@ function init_params {
   iters=100
   batch_size=16
   tuned_checkpoint=saved_results
+  script="../run_glue.py"
   for var in "$@"
   do
     case $var in
@@ -52,8 +53,7 @@ function init_params {
 
 # run_benchmark
 function run_benchmark {
-    extra_cmd=''
-    MAX_SEQ_LENGTH=128
+    extra_cmd="--do_eval --max_seq_length 128 --no_cuda --overwrite_output_dir --overwrite_cache"
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy_only"
@@ -123,7 +123,11 @@ function run_benchmark {
         model_name_or_path="textattack/albert-base-v2-MRPC" 
     elif [ "${topology}" = "xlm_roberta_large_XNLI_dynamic" ]; then
         extra_cmd=$extra_cmd" --dataset_name xnli --dataset_config_name en"
-        model_name_or_path="joeddav/xlm-roberta-large-xnli" 
+        model_name_or_path="joeddav/xlm-roberta-large-xnli"
+    elif [ "${topology}" = "bert_base_SST-2_static_no_trainer" ]; then
+        extra_cmd=" --task_name sst2"
+        model_name_or_path="echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid"
+        script="../run_glue_no_trainer.py" 
     fi
 
     if [[ ${int8} == "true" ]]; then
@@ -132,15 +136,10 @@ function run_benchmark {
     fi
     echo $extra_cmd
 
-    python -u ../run_glue.py \
+    python -u ${script} \
         --model_name_or_path ${model_name_or_path} \
-        --do_eval \
-        --max_seq_length ${MAX_SEQ_LENGTH} \
         --per_device_eval_batch_size ${batch_size} \
         --output_dir ./tmp/benchmark_output \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --no_cuda \
         ${mode_cmd} \
         ${extra_cmd}
 }
