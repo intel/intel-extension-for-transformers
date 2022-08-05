@@ -24,16 +24,16 @@
 
 class tile_param_t {
  public:
-  int TILE_M;
-  int TILE_N;
-  int TILE_K;
+  int M_tile;
+  int N_tile;
+  int K_tile;
   bool is_bf16;
-  int KPACK;
+  int K_pack;
 
  public:
   bool operator!=(const tile_param_t& rhs) {
-    return (TILE_M != rhs.TILE_M) | (TILE_K != rhs.TILE_K) | (TILE_N != rhs.TILE_N) | (is_bf16 != rhs.is_bf16) |
-           (KPACK != rhs.KPACK);
+    return (M_tile != rhs.M_tile) | (K_tile != rhs.K_tile) | (N_tile != rhs.N_tile) | (is_bf16 != rhs.is_bf16) |
+           (K_pack != rhs.K_pack);
   }
 };
 

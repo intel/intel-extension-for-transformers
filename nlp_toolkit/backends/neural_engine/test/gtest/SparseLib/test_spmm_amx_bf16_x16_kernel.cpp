@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "interface.hpp"
 #include "benchmark_utils.hpp"
+#include "unit_test_utils.hpp"
 
 namespace jd {
 using dt = jd::data_type;
@@ -32,6 +33,7 @@ using ft = jd::format_type;
 struct op_args_t {
   operator_desc op_desc;
   std::vector<const void*> rt_data;
+  float sparsity;
 };
 
 struct test_params_t {
@@ -68,12 +70,12 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
     for (int n = 0; n < N; ++n) {
 #pragma omp parallel for
       for (int m = 0; m < M_MICRO; ++m) {
-#pragma omp parallel for
         for (int k = 0; k < K; ++k) {
           float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] +=
               make_fp32(wei_data[n * K + k]) * make_fp32(src_data[num_m * K * M_MICRO + k * M_MICRO + m]);
         }
         float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] += bia_data[n];
+        float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] = apply_postop_list(float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m], op_desc.apply_postops_list());
         if (dst_dt == dt::bf16) {
           bf_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] =
               make_bf16(float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m]);
@@ -88,17 +90,25 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
 bool check_result(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
+  sparse_matmul* spmm_kern = nullptr;
   try {
     const auto& op_desc = p.op_desc;
     sparse_matmul_desc spmm_desc(op_desc);
-    sparse_matmul spmm_kern(spmm_desc);
-    benchmarkOrExecute(&spmm_kern, p.rt_data);
+    spmm_kern = new sparse_matmul(spmm_desc);
+    benchmarkOrExecute(spmm_kern, p.rt_data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;
     } else {
       return false;
     }
+  }
+  if (spmm_kern != nullptr) {
+    auto attrs_map = p.op_desc.attrs();
+    const uint64_t& sparse_addr = str_to_num<uint64_t>(attrs_map["sparse_ptr"]);
+    auto sparse_data_ptr = reinterpret_cast<void*>(sparse_addr);
+    delete sparse_data_ptr;
+    delete spmm_kern;
   }
   if (!t.expect_to_fail) {
     get_true_data(q.op_desc, q.rt_data);
@@ -197,7 +207,8 @@ std::pair<const void*, const void*> make_data_obj(const dt& tensor_dt, dim_t row
 }
 
 std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = 64,
-                                         dim_t micro_oc = -1, bool bf16_out = true) {
+                                         dim_t micro_oc = -1, bool bf16_out = true,
+                                         std::vector<postop_alg> postop_algs = {}) {
   std::unordered_map<std::string, std::string> op_attrs;
   // Step 1: Construct runtime data
   std::vector<const void*> rt_data1;
@@ -229,13 +240,23 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   }
   volatile auto sparse_ptr = spns::reorder_to_bsr_amx<bfloat16_t, 32>(N, K, micro_oc, rt_data1[0]);
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
+  if (postop_algs.size()) {
+    auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };
+    op_attrs["postop_list"] = std::accumulate(postop_algs.begin() + 1, postop_algs.end(),
+                                               std::string(postop_alg_name[postop_algs[0]]), accu_op);
+  }
+  std::vector<postop_attr> apply_postops_list;
+  std::for_each(postop_algs.begin(), postop_algs.end(), [&apply_postops_list](postop_alg alg) {
+     return apply_postops_list.push_back({data_type::bf16, postop_type::eltwise, alg});
+  });
+
   op_attrs["micro_oc"] = std::to_string(micro_oc);
   operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                            op_attrs);
 
   // Step 3: op_args_t testcase pair
-  op_args_t op_args = {an_op_desc, rt_data1};
-  op_args_t op_args_copy = {an_op_desc, rt_data2};
+  op_args_t op_args = {an_op_desc, rt_data1, sparsity};
+  op_args_t op_args_copy = {an_op_desc, rt_data2, sparsity};
 
   return {op_args, op_args_copy};
 }
@@ -243,16 +264,26 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
+  std::vector<std::vector<postop_alg>> postop_lists = {
+      {},
+      {postop_alg::gelu},
+      {postop_alg::exp},
+      {postop_alg::gelu, postop_alg::exp},
+  };
+
   /* minimal case */
   cases.push_back({gen_case(64, 32, 16, .9f, 64, -1, false)});
 
   /* BERT-LARGE case */
-  cases.push_back({gen_case(128, 768, 768, .9f, 64, -1, true)});
-  cases.push_back({gen_case(128, 768, 768, .9f, 64, 384, true)});
-  cases.push_back({gen_case(128, 768, 768, .9f, 64, 192, true)});
-  cases.push_back({gen_case(128, 768, 768, .9f, 128, -1, true)});
-  cases.push_back({gen_case(128, 768, 768, .9f, 64, -1, false)});
-  cases.push_back({gen_case(128, 768, 768, .9f, 64, 384, false)});
+  // To save time we only test post ops for BERT cases
+  for (std::vector<postop_alg> algs : postop_lists) {
+    cases.push_back({gen_case(128, 768, 768, .9f, 64, -1, true, algs)});
+    cases.push_back({gen_case(128, 768, 768, .9f, 64, 384, true, algs)});
+    cases.push_back({gen_case(128, 768, 768, .9f, 64, 192, true, algs)});
+    cases.push_back({gen_case(128, 768, 768, .9f, 128, -1, true, algs)});
+    cases.push_back({gen_case(128, 768, 768, .9f, 64, -1, false, algs)});
+    cases.push_back({gen_case(128, 768, 768, .9f, 64, 384, false, algs)});
+  }
 
   /* DLRM case */
   cases.push_back({gen_case(32768, 1024, 1024, .9f, 64, -1, true)});
@@ -264,5 +295,20 @@ static auto case_func = []() {
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(SparseLib, SpmmAMXX16KernelTest, case_func());
+std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
+  std::vector<std::string> params;
+  auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
+  auto attrs_map = tpi.param.args.first.op_desc.attrs();
+  params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparsity * 100)));
+  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[0]));
+  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
+  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[0]));
+  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[2]));
+  params.push_back(attrs_map["micro_oc"]);
+  params.push_back(std::to_string(tensor_desc[ssd::DST].dtype() == dt::bf16));
+  if (!attrs_map["postop_list"].empty()) params.push_back(attrs_map["postop_list"]);
+  return join_str(params, "_");
+}
+
+INSTANTIATE_TEST_SUITE_P(SparseLib, SpmmAMXX16KernelTest, case_func(), test_suffix);
 }  // namespace jd

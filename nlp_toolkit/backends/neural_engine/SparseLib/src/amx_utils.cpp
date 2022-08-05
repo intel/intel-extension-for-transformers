@@ -53,18 +53,18 @@ void sparselib_configure_tiles(tile_param_t param, tileconfig_t* sparselib_tc) {
   }
   // Configure C tiles
   for (int t = 0; t < 4; ++t) {
-    sparselib_tc->rows[t] = param.TILE_M;
-    sparselib_tc->colb[t] = param.TILE_N * sizeof_dst_dtype;
+    sparselib_tc->rows[t] = param.M_tile;
+    sparselib_tc->colb[t] = param.N_tile * sizeof_dst_dtype;
   }
   // Configure A tiles
   for (int t = 4; t < 6; ++t) {
-    sparselib_tc->rows[t] = param.TILE_M;
-    sparselib_tc->colb[t] = param.TILE_K * sizeof_src_dtype;
+    sparselib_tc->rows[t] = param.M_tile;
+    sparselib_tc->colb[t] = param.K_tile * sizeof_src_dtype;
   }
   // Configure B tile. B effectively has 64 rows and 16 columns.
   for (int t = 6; t < 8; ++t) {
-    sparselib_tc->rows[t] = param.TILE_K / param.KPACK;
-    sparselib_tc->colb[t] = param.TILE_N * param.KPACK * sizeof_src_dtype;
+    sparselib_tc->rows[t] = param.K_tile / param.K_pack;
+    sparselib_tc->colb[t] = param.N_tile * param.K_pack * sizeof_src_dtype;
   }
   // Zeroing other cols & rows
   for (int t = 8; t < 16; ++t) {

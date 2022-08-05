@@ -66,7 +66,8 @@ bool spmm_amx_bf16_x16_kd_t::spmm_params_init(std::vector<ssd::amx_bf16_params_t
     param_ref[i].group_rowptr = const_cast<dim_t*>(bsr_data->indptr().data());
     param_ref[i].weight = const_cast<bfloat16_t*>(bsr_data->data().data());
     param_ref[i].has_bias = !bias_desc.shape().empty();
-    param_ref[i].bf16_out = dst_desc.dtype() == jd::data_type::bf16;
+    param_ref[i].same_src_dtype = dst_desc.dtype() == jd::data_type::bf16;
+    param_ref[i].postop_attrs = op_desc.apply_postops_list();
   }
   return true;
 }
@@ -107,7 +108,7 @@ bool spmm_amx_bf16_x16_k_t::spmm_kernel_create(jit_spmm_amx_bf16_x16_t** ker_pp,
 }
 
 bool spmm_amx_bf16_x16_k_t::execute(const std::vector<const void*>& rt_data) const {
-  bool bf16_out = derived_kd()->params()[0].bf16_out;
+  bool bf16_out = derived_kd()->params()[0].same_src_dtype;
   if (!bf16_out) {
 #pragma omp parallel for collapse(2)
     for (dim_t micro_oc = 0; micro_oc < num_tileOC; micro_oc++) {

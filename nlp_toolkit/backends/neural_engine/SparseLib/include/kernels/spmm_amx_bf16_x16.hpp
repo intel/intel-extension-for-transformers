@@ -92,7 +92,7 @@ class spmm_amx_bf16_x16_k_t : public kernel_t {
  private:
   std::vector<jit_spmm_amx_bf16_x16_t*> jit_kers_;
   std::vector<bfloat16_t*> weights_;
-  const tile_param_t tile_param_ = {16, 16, 32, true, 2};
+  const tile_param_t tile_param_ = {TILE_M, TILE_N, TILE_K, true, 2};
   amx_tile_config_t* amx_config_;
 };
 }  // namespace jd

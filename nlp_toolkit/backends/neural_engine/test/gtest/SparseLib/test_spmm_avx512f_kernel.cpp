@@ -32,7 +32,7 @@ using ft = jd::format_type;
 struct op_args_t {
   operator_desc op_desc;
   std::vector<const void*> rt_data;
-  float sparisty;  // sparsity of weight matrix; for testcase labeling
+  float sparsity;  // sparsity of weight matrix; for testcase labeling
 };
 
 struct test_params_t {
@@ -119,15 +119,7 @@ bool check_result(const test_params_t& t) {
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
     const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST].dtype();
-    if (dst_type == dt::fp32) {
-      return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
-    } else if (dst_type == dt::s32) {
-      return compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
-    } else if (dst_type == dt::u8) {
-      return compare_data<uint8_t>(buf1, size1, buf2, size2, 5e-3);
-    } else if (dst_type == dt::s8) {
-      return compare_data<int8_t>(buf1, size1, buf2, size2, 5e-3);
-    }
+    return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
   }
   return false;
 }
@@ -261,10 +253,6 @@ static auto case_func = []() {
   std::vector<test_params_t> cases;
 
   // Config
-  tensor_desc wei_desc;
-  tensor_desc src_desc;
-  tensor_desc bias_desc;
-  tensor_desc dst_desc;
 
   std::vector<std::vector<postop_alg>> postop_lists = {
       {},
@@ -301,7 +289,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   std::vector<std::string> params;
   auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
   auto attrs_map = tpi.param.args.first.op_desc.attrs();
-  params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparisty * 100)));
+  params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparsity * 100)));
   params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[0]));
   params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
   params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[1]));

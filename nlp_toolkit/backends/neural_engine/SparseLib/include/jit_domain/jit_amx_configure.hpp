@@ -35,7 +35,7 @@ class jit_amx_release_t : public jit_generator {
   jit_amx_release_t() : jit_generator() {}
   virtual ~jit_amx_release_t() {}
 
-  void tile_release() const { (*this); }
+  void tile_release() const { (*this)(); }
 
  private:
   void generate() override;

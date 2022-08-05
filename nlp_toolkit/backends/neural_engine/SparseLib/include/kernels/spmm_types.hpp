@@ -97,24 +97,28 @@ struct amx_params_t {
   dim_t* group_rowptr;
   T* weight;
   bool has_bias;
-  bool bf16_out;
+  bool same_src_dtype;
+  std::vector<postop_attr> postop_attrs;
 };
 
 typedef amx_params_t<bfloat16_t> amx_bf16_params_t;
+typedef amx_params_t<int8_t> amx_int8_params_t;
 
 /**
  * @brief kernel inputs for kernel runtime
  */
-template <typename src_t, typename wgt_t, typename dst_t>
+template <typename src_t, typename wgt_t, typename dst_t, typename bia_t>
 struct amx_inputs_t {
   src_t* weight;
   wgt_t* src;
-  float* bias;  // bias always be float for both bf16 and int8 kernels
+  bia_t* bias;
   dst_t* dst;
+  float* scales = nullptr;
 };
 
-typedef amx_inputs_t<bfloat16_t, bfloat16_t, float> amx_bf16f32_inputs_t;
-typedef amx_inputs_t<bfloat16_t, bfloat16_t, bfloat16_t> amx_bf16bf16_inputs_t;
+typedef amx_inputs_t<bfloat16_t, bfloat16_t, float, float> amx_bf16f32_inputs_t;
+typedef amx_inputs_t<bfloat16_t, bfloat16_t, bfloat16_t, float> amx_bf16bf16_inputs_t;
+typedef amx_inputs_t<uint8_t, int8_t, uint8_t, int> amx_u8u8_inputs_t;
 
 struct avx512_fp32_params_t {
   int64_t M;
