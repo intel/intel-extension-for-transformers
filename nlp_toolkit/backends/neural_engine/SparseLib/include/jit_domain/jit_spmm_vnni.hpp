@@ -32,15 +32,14 @@ namespace jd {
  */
 class jit_spmm_vnni_t : public jit_generator {
  public:
-  explicit jit_spmm_vnni_t(const ssd::flat_param_t& param);
+  explicit jit_spmm_vnni_t(const ssd::vnni_param_t& param) : jit_generator(), param_(param){};
   virtual ~jit_spmm_vnni_t() {}
 
  public:
-  const void* sequence_vals() const { return seq_vals_.data(); }
+  const int8_t* sequence_vals() const { return seq_vals_.data(); }
 
  private:
-  ssd::flat_param_t param_;
-  bsr_data_t<int8_t>* bsr_;
+  ssd::vnni_param_t param_;
   std::vector<int8_t> seq_vals_;
 
  private:
@@ -51,7 +50,7 @@ class jit_spmm_vnni_t : public jit_generator {
   Xbyak::Zmm TH_Vmm(int i = 0);           // Register allocator of load weight. 1D shape=(TH)
   Xbyak::Zmm TW_Vmm(int i = 0);           // Register allocator of load activation. 1D shape=(TW)
   Xbyak::Zmm dst_tile_Vmm(int i, int j);  // Reg alloc of DST tile. 2D shape=(TH,TW), stride=(TW,1)
-  void params_alias(const ssd::flat_param_t& param);
+  void params_alias(const ssd::vnni_param_t& param);
   void read_params();
   void load_bias(int64_t m_start);
   void load_dense(const std::vector<int64_t>& k_indices);
@@ -75,19 +74,16 @@ class jit_spmm_vnni_t : public jit_generator {
   void store_intermediate_dst(int64_t m_start);
   void gen_sub_function();
 
+  inline int TH() const { return param_.blocksize[0]; }
+  inline int TW() const { return param_.tile_w; }
+  inline int nt_size() const { return TW() * VEC; }
+  inline int mt_size() const { return TH(); }
+  inline int n_tiles() const { return param_.BN / nt_size(); }
+  inline int m_tiles() const { return param_.BM / mt_size(); }
+  inline data_type output_type() const { return param_.output_type; };
+  inline int ld_dst() const { return param_.BN; }  // leading dimension of dst matrix
+
  private:
-  int64_t n_blocks_ = 0;  // The number of blocks divided in N dimension.
-  int64_t nb_size_ = 0;   // The number of columns contained in a block of N dimension.
-  int64_t k_blocks_ = 0;  // The number of blocks divided in K dimension.
-  int64_t kb_size_ = 0;   // The number of columns contained in a block of K dimension.
-  int64_t TW_ = 0;        // tile_width, its unit is different from numerical matrix.
-  int64_t nt_size_ = 0;   // The number of columns contained in a tile of N dimension.
-  int64_t n_tiles_ = 0;   // The number of tiles contained in a block of N dimension.
-  int64_t TH_ = 0;        // tile_height, its unit is different from numerical matrix.
-  int64_t mt_size_ = 0;   // The number of rows contained in a tile of M dimension.
-  int64_t m_tiles_ = 0;   // The number of tiles contained in a block of M dimension.
-  std::vector<int64_t> dst_stride_;
-  data_type output_type_;
   const int64_t PADDED_NEG_ONE = -1;
   const int64_t PADDED_ZERO = 0;
   int64_t seq_pos = 0;
@@ -111,12 +107,9 @@ class jit_spmm_vnni_t : public jit_generator {
   const Xbyak::Reg64& reg_bias = rsi;      // the third argument which is bias values pointer
   const Xbyak::Reg64& reg_dst = rax;       // the fourth argument which is output matrix pointer
   const Xbyak::Reg64& reg_scale = rbx;     // the scale
-  const Xbyak::Reg64& reg_nb_start = r8;   // start iteration count in the C dimension, useful for multithreading
-  const Xbyak::Reg64& reg_nb_end = r9;     // end iteration count in the C dimension, useful for multithreading
   const Xbyak::Opmask& reg_k1 = k1;
 
-  const Xbyak::Reg64& reg_nt_relative_idx = r10;
-  const Xbyak::Reg64& reg_nt_absolute_idx = r11;
+  const Xbyak::Reg64& reg_n_idx = r10;
 
   const Xbyak::Zmm& vpermt2d_arg_idx = zmm31;
   const Xbyak::Zmm& vpshufb_arg_b = zmm30;

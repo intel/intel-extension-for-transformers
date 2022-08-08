@@ -32,12 +32,12 @@ namespace jd {
 //   where, "xxxx" represents an algorithm, such as brgemm, GEMM and so on.
 class spmm_vnni_k_t;
 /**
- * @brief a derived kernel descriptor. flat_param_t is its class member.
+ * @brief a derived kernel descriptor. vnni_param_t is its class member.
  */
 class spmm_vnni_kd_t : public kernel_desc_t {
  public:
   explicit spmm_vnni_kd_t(const jd::operator_desc& op_desc)
-    : kernel_desc_t(kernel_kind::sparse_matmul), op_desc_(op_desc) {}
+      : kernel_desc_t(kernel_kind::sparse_matmul), op_desc_(op_desc) {}
   virtual ~spmm_vnni_kd_t() {}
 
  public:
@@ -47,15 +47,28 @@ class spmm_vnni_kd_t : public kernel_desc_t {
 
  public:
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
-  const std::vector<ssd::flat_param_t>& params() const { return params_; }
+  const std::vector<ssd::vnni_param_t>& params() const { return params_; }
+  inline dim_t M() const { return op_desc_.tensor_descs()[ssd::WEI].shape()[0]; }
+  inline dim_t K() const { return op_desc_.tensor_descs()[ssd::WEI].shape()[1]; }
+  inline dim_t BN() const {
+    auto& ds_src = op_desc_.tensor_descs()[ssd::SRC].shape();
+    return ds_src[ds_src.size() - 1];
+  }
+  inline dim_t N() const {
+    auto& ds_src = op_desc_.tensor_descs()[ssd::SRC].shape();
+    return BN() * (ds_src.size() == 3 ? ds_src[0] : 1);
+  }
+  inline dim_t BM() const { return BM_; }
+  inline bool has_bias() const { return !op_desc_.tensor_descs()[ssd::BIAS].shape().empty(); }
+  inline jd::data_type dst_type() const { return op_desc_.tensor_descs()[ssd::DST].dtype(); }
 
  private:
-  bool spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int64_t im_start, int64_t im_end);  // NOLINT
-  std::vector<int64_t> get_avg_group(const csrp_data_t<int8_t>* sparse_ptr, int nthr, int ithr);
+  bool spmm_params_init();
 
  private:
   jd::operator_desc op_desc_;
-  std::vector<ssd::flat_param_t> params_;
+  std::vector<ssd::vnni_param_t> params_;
+  dim_t BM_;
 };
 
 /**
@@ -64,24 +77,33 @@ class spmm_vnni_kd_t : public kernel_desc_t {
 class spmm_vnni_k_t : public kernel_t {
  public:
   using kd_t = spmm_vnni_kd_t;
-  explicit spmm_vnni_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
+  explicit spmm_vnni_k_t(const std::shared_ptr<const kd_t>& kd)
+      : kernel_t(kd),
+        M_(derived_kd()->M()),
+        N_(derived_kd()->N()),
+        K_(derived_kd()->K()),
+        BM_(derived_kd()->BM()),
+        BN_(derived_kd()->BN()) {}
   virtual ~spmm_vnni_k_t() {}
 
  public:
   bool init() override;
   bool execute(const std::vector<const void*>& rt_data) const override;
-
- public:
-  const std::shared_ptr<const kd_t> derived_kd() const {
-    return std::static_pointer_cast<const kd_t>(kd_);
-  }
+  const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 
  private:
-  bool spmm_kernel_create(jit_spmm_vnni_t** ker_pp, const ssd::flat_param_t& param);
+  bool spmm_kernel_create(jit_spmm_vnni_t** ker_pp, const ssd::vnni_param_t& param);
+  inline jd::data_type dst_type() const { return derived_kd()->dst_type(); }
+  template <typename dst_t>
+  bool execute_(const std::vector<const void*>& rt_data) const;
 
  private:
   std::vector<jit_spmm_vnni_t*> jit_kers_;
-  int64_t nthr_;
+  const dim_t M_;
+  const dim_t N_;
+  const dim_t K_;
+  const dim_t BM_;
+  const dim_t BN_;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_VNNI_HPP_

@@ -1,4 +1,5 @@
 #include <chrono>
+#include <glog/logging.h>
 #include "interface.hpp"
 #include <stdexcept>
 #include <cstring>

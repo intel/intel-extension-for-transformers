@@ -17,8 +17,31 @@
 #define TW 4
 #define VEC 16
 
+#define TILE_SIZE_M 4
+#define TILE_SIZE_N 64
+
 namespace jd {
 //// Part1: class spmm_vnni_kd_t
+
+void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {
+  if (BM == 0) {  // try to get optimized block size
+    int cores = omp_get_num_procs();
+    const dim_t blocks_n = N / BN;
+
+    BM = ceil_div(M, ceil_div(cores, blocks_n));
+    BM = ceil_div(BM, TILE_SIZE_M) * TILE_SIZE_M;
+    LOG(INFO) << "BM (micro output channel) automatically configured: BM=" << BM;
+  }
+}
+
+/**
+ * Entries of op_desc_.attrs:
+ *   sparse_ptr: pointer of the sparse data
+ *   post_op: deprecated postop config, can be "append_sum"
+ *   tile_n: n-size of a tile in terms of #registers; default is 4
+ *   sub_func: use "false" to disable sub_func optimization; empty and other values means true
+ *   micro_oc: m-size of a block; default is the whole M
+ */
 bool spmm_vnni_kd_t::init() {
   using dt = jd::data_type;
   const auto& wei_desc = op_desc_.tensor_descs()[ssd::WEI];
@@ -35,94 +58,98 @@ bool spmm_vnni_kd_t::init() {
   if (!is_supported) {
     return false;
   }
-  if (wei_desc.shape().back() != src_desc.shape().front()) {
+
+  bool shape_matched = wei_desc.shape().size() == 2 && (src_desc.shape().size() == 2 || src_desc.shape().size() == 3) &&
+                       (dst_desc.shape().size() == src_desc.shape().size()) &&
+                       wei_desc.shape().back() != src_desc.shape()[src_desc.shape().size() - 2];
+  if (shape_matched) {
     return false;
   }
 
-  int nthr = op_desc_.impl_nthr();
-  params_.resize(nthr);
-  const dim_t M = wei_desc.shape()[0];
-  int left_nthr = nthr;
-  int curr_midx = 0;
-  for (int idx = 0; idx < nthr; ++idx) {
-    ssd::flat_param_t& param = params_[idx];
-    int curr_block_m = (M - curr_midx) / (left_nthr--);
-    curr_block_m = curr_block_m / TH * TH;
-    spmm_params_init(param, op_desc_, curr_midx, curr_midx + curr_block_m);
-    curr_midx += curr_block_m;
-  }
+  auto op_attrs = op_desc_.attrs();
+  BM_ = str_to_num<dim_t>(op_attrs["micro_oc"]);  // block m
+  auto_blocking(BM_, BN(), M(), N());
+  LOG_IF(FATAL, BM_ % TILE_SIZE_M != 0) << "BM must be a multiple of TILE_SIZE_M";
+
+  spmm_params_init();
   return true;
 }
 
-bool spmm_vnni_kd_t::spmm_params_init(ssd::flat_param_t& param_ref, const jd::operator_desc& op_desc, int64_t im_start,
-                                      int64_t im_end) {
-  const auto& wei_desc = op_desc.tensor_descs()[ssd::WEI];
-  const auto& src_desc = op_desc.tensor_descs()[ssd::SRC];
-  const auto& bias_desc = op_desc.tensor_descs()[ssd::BIAS];
-  const auto& dst_desc = op_desc.tensor_descs()[ssd::DST];
-  param_ref.M = wei_desc.shape()[0];
-  param_ref.K = wei_desc.shape()[1];
-  param_ref.N = src_desc.shape()[1];
-  param_ref.has_bias = !bias_desc.shape().empty();
-  auto op_attrs = op_desc.attrs();
-  param_ref.append_sum = (op_attrs["post_op"] == "append_sum");
-  param_ref.output_type = dst_desc.dtype();
-  if (op_attrs["sparse_scheme"] == "dense_x_sparse") {
-    param_ref.scheme = ssd::sparse_scheme::dense_x_sparse;
-  } else if (op_attrs["sparse_scheme"] == "sparse_x_sparse") {
-    param_ref.scheme = ssd::sparse_scheme::sparse_x_sparse;
-  } else {
-    param_ref.scheme = ssd::sparse_scheme::sparse_x_dense;
-  }
-  const auto& temp1 = split_str<int64_t>(op_attrs["mkn_blocks"]);
-  param_ref.mkn_blocks = temp1.empty() ? std::vector<int64_t>{1, 1, 1} : temp1;
-  const auto& temp2 = split_str<int64_t>(op_attrs["tile_shape"]);
-  param_ref.tile_shape = temp2.empty() ? std::vector<int64_t>{4, 4} : temp2;
-  param_ref.sub_func = (op_attrs["sub_func"] != "false");
-  param_ref.in_start = 0;  // TODO: partition with fixed size m/n blocks
-  param_ref.in_end = param_ref.N;
-  param_ref.im_start = im_start;
-  param_ref.im_end = im_end;
-  LOG_IF(ERROR, (param_ref.im_end - param_ref.im_start) % TH != 0)
-      << "Blocked m-size must be a multiple of " << TH << ", actual value: " << (param_ref.im_end - param_ref.im_start);
-  LOG_IF(ERROR, (param_ref.in_end - param_ref.in_start) % (TW * VEC) != 0)
-      << "Blocked n-size must be a multiple of " << (TW * VEC)
-      << ", actual value: " << (param_ref.in_end - param_ref.in_start);
+bool spmm_vnni_kd_t::spmm_params_init() {
+  auto op_attrs = op_desc_.attrs();
+  const uint64_t data_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
+  bsr_data_t<int8_t>* bsr_data = reinterpret_cast<bsr_data_t<int8_t>*>(data_addr);
+  const bool sub_func = op_attrs["sub_func"] != "false";
 
-  const auto& temp_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
-  param_ref.sparse_ptr = reinterpret_cast<bsr_data_t<int8_t>*>(temp_addr);
+  dim_t num_mblock = ceil_div(M(), BM());
+  params_.resize(num_mblock);
+  assert(bsr_data->block_size().size() == 2 && bsr_data->block_size()[0] == params_[0].blocksize[0] &&
+         bsr_data->block_size()[1] == params_[0].blocksize[1]);
+
+  int tile_w = atoi(op_attrs["tile_n"].c_str());
+  if (tile_w == 0) {
+    tile_w = 4;
+    while (BN() % (tile_w * 16) != 0) tile_w--;
+  }
+
+  for (int i = 0, im_start = 0; i < num_mblock; ++i, im_start += BM()) {
+    params_[i].BN = BN();
+    params_[i].BM = std::min(BM(), M() - im_start);
+    params_[i].has_bias = has_bias();
+    params_[i].append_sum = op_attrs["post_op"] == "append_sum";
+    params_[i].output_type = dst_type();
+    params_[i].tile_w = tile_w;
+    params_[i].sub_func = sub_func;
+    params_[i].im_start = im_start;
+    params_[i].indptr = bsr_data->indptr();
+    params_[i].indices = bsr_data->indices();
+    params_[i].weight = bsr_data->data().data();
+  }
   return true;
 }
 
 //// Part2: class spmm_vnni_k_t
 bool spmm_vnni_k_t::init() {
-  int nthr = kd()->operator_desc().impl_nthr();
-  jit_kers_.resize(nthr);
-  for (int idx = 0; idx < nthr; ++idx) {
-    jit_spmm_vnni_t* ker = new jit_spmm_vnni_t(derived_kd()->params()[idx]);
+  dim_t num_mblock = ceil_div(M_, BM_);
+  jit_kers_.resize(num_mblock);
+  for (int i = 0; i < num_mblock; ++i) {
+    jit_spmm_vnni_t* ker = new jit_spmm_vnni_t(derived_kd()->params()[i]);
     if (ker == nullptr) return false;
     if (!(ker->create_kernel())) return false;
-    jit_kers_[idx] = ker;
+    jit_kers_[i] = ker;
+  }
+  return true;
+}
+
+template <typename dst_t>
+bool spmm_vnni_k_t::execute_(const std::vector<const void*>& rt_data) const {
+#pragma omp parallel for collapse(2)
+  for (dim_t im = 0; im < M_; im += BM_) {
+    for (dim_t in = 0; in < N_; in += BN_) {
+      const jit_spmm_vnni_t* jit_impl = jit_kers_[im / BM_];
+      ssd::vnni_data_t<dst_t> data;
+      data.ptr_seq_vals = jit_impl->sequence_vals();
+      data.ptr_dense = static_cast<const uint8_t*>(rt_data[ssd::SRC]) + in * K_;
+      data.ptr_bias = static_cast<const int32_t*>(rt_data[ssd::BIAS]) + im;
+      data.ptr_scales = static_cast<const float*>(rt_data[ssd::SCALES]) + im;
+      data.ptr_dst = const_cast<dst_t*>(static_cast<const dst_t*>(rt_data[ssd::DST])) + in * M_ + im * BN_;
+      (*jit_impl)(&data);
+    }
   }
   return true;
 }
 
 bool spmm_vnni_k_t::execute(const std::vector<const void*>& rt_data) const {
-  int nthr = kd()->operator_desc().impl_nthr();
-  std::vector<ssd::flat_data_t> td(nthr);
-#pragma omp parallel for num_threads(nthr)
-  for (int idx = nthr - 1; idx >= 0; --idx) {
-    const jit_spmm_vnni_t* jit_impl = jit_kers_[idx];
-    td[idx].ptr_seq_vals = jit_impl->sequence_vals();
-    td[idx].ptr_dense = rt_data[ssd::SRC];
-    td[idx].ptr_bias = rt_data[ssd::BIAS];
-    td[idx].ptr_dst = const_cast<void*>(rt_data[ssd::DST]);
-    td[idx].ptr_scales = rt_data[ssd::SCALES];
-    auto& param = derived_kd()->params()[idx];
-    if (param.im_start != param.im_end) {  // when no M is allocate
-      (*jit_impl)(&(td[idx]));
-    }
+  switch (dst_type()) {
+    case jd::data_type::fp32:
+      return execute_<float>(rt_data);
+    case jd::data_type::s8:
+      return execute_<int8_t>(rt_data);
+    default:
+      LOG(ERROR) << "Unexpected dst_type: " << static_cast<uint8_t>(dst_type());
+      break;
   }
-  return true;
+  return false;
 }
+
 }  // namespace jd

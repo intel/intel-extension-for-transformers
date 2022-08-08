@@ -45,23 +45,28 @@ struct test_params_t {
 void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   // shape configure alias
   const auto& ts_descs = op_desc.tensor_descs();
-  const auto& src0_desc = ts_descs[ssd::WEI];
-  const auto& src1_desc = ts_descs[ssd::SRC];
-  const auto& bias_desc = ts_descs[ssd::BIAS];
-  const auto& dst_desc = ts_descs[ssd::DST];
-  int dims = src0_desc.shape().size();
-  int M = src0_desc.shape()[0];
-  int K = src0_desc.shape()[1];
-  int N = src1_desc.shape()[1];
-  const auto& left_dt = src0_desc.dtype();
-  const auto& right_dt = src1_desc.dtype();
-  const auto& dst_dt = dst_desc.dtype();
-  bool has_bias = !bias_desc.shape().empty();
+  const auto& wei_shape = ts_descs[ssd::WEI].shape();
+  const auto& wei_type = ts_descs[ssd::WEI].dtype();
+  const auto& src_type = ts_descs[ssd::SRC].dtype();
+  const auto& src_shape = ts_descs[ssd::SRC].shape();
+  const auto& dst_type = ts_descs[ssd::DST].dtype();
+  const auto& dst_shape = ts_descs[ssd::DST].shape();
+  assert((src_shape.size() == 2 || src_shape.size() == 3) && src_shape.size() == dst_shape.size());
+
+  int oc = wei_shape[0];
+  int ic = wei_shape[1];
+  int micro_bs = src_shape.back();
+  int num_mbs = src_shape.size() == 2 ? 1 : src_shape[0];
+
+  const auto& left_dt = wei_type;
+  const auto& right_dt = src_type;
+  const auto& dst_dt = dst_type;
+  bool has_bias = !ts_descs[ssd::BIAS].shape().empty();
   auto attrs_map = op_desc.attrs();
   bool append_sum = (attrs_map["post_op"] == "append_sum");
-  std::vector<int64_t> left_stride = {K, 1};
-  std::vector<int64_t> right_stride = {N, 1};
-  std::vector<int64_t> dst_stride = {N, 1};
+  std::vector<dim_t> left_stride = {ic, 1};
+  std::vector<dim_t> right_stride = {micro_bs * ic, micro_bs, 1};
+  std::vector<dim_t> dst_stride = {micro_bs * oc, micro_bs, 1};
 
   // runtime data alias
   const auto left_data = rt_data[ssd::WEI];
@@ -81,25 +86,24 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
 
   auto dst_fp32 = static_cast<float*>(dst_data);  // ptr alias
   auto dst_s32 = static_cast<int32_t*>(dst_data);
-  auto dst_u8 = static_cast<uint8_t*>(dst_data);
   auto dst_s8 = static_cast<int8_t*>(dst_data);
 
-  // Computing the kernel
-  if (dims == 2) {
-    for (int i = 0; i < M; ++i) {
-#pragma omp parallel for
-      for (int j = 0; j < N; ++j) {
+// Computing the kernel
+#pragma omp parallel for collapse(3)
+  for (dim_t idx_mbs = 0; idx_mbs < num_mbs; ++idx_mbs)
+    for (dim_t i = 0; i < oc; ++i) {
+      for (dim_t j = 0; j < micro_bs; ++j) {
         float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
 #pragma omp simd
-        for (int k = 0; k < K; ++k) {
-          int idx0 = i * left_stride[0] + k * left_stride[1];
-          int idx1 = k * right_stride[0] + j * right_stride[1];
+        for (dim_t k = 0; k < ic; ++k) {
+          dim_t l_idx = i * left_stride[0] + k * left_stride[1];
+          dim_t r_idx = idx_mbs * right_stride[0] + k * right_stride[1] + j * right_stride[2];
           auto left_k = (left_dt == dt::fp32)
-                            ? left_fp32[idx0]
-                            : ((left_dt == dt::u8) ? left_u8[idx0] : ((left_dt == dt::s8) ? left_s8[idx0] : 0));
+                            ? left_fp32[l_idx]
+                            : ((left_dt == dt::u8) ? left_u8[l_idx] : ((left_dt == dt::s8) ? left_s8[l_idx] : 0));
           auto right_k = (right_dt == dt::fp32)
-                             ? right_fp32[idx1]
-                             : ((right_dt == dt::u8) ? right_u8[idx1] : ((right_dt == dt::s8) ? right_s8[idx1] : 0));
+                             ? right_fp32[r_idx]
+                             : ((right_dt == dt::u8) ? right_u8[r_idx] : ((right_dt == dt::s8) ? right_s8[r_idx] : 0));
           value += left_k * right_k;
         }
 
@@ -107,8 +111,8 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
         if (has_bias) {
           value += bias_data[i];
         }
-        int dst_idx = i * dst_stride[0] + j * dst_stride[1];
-        int scale_idx = i;
+        dim_t dst_idx = idx_mbs * dst_stride[0] + i * dst_stride[1] + j * dst_stride[2];
+        dim_t scale_idx = i;
         if (dst_dt == dt::fp32) {
           value = value * scales_data[scale_idx];
         }
@@ -129,7 +133,6 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
         }
       }
     }
-  }
 }
 
 bool check_result(const test_params_t& t) {
@@ -184,22 +187,18 @@ TEST_P(SpmmVNNIKernelTest, ) {
 }
 
 template <typename T>
-void prepare_sparse_data(T* vector_data, std::vector<int64_t> a_shape, float sparsity) {
-  int64_t M = a_shape[0];
-  int64_t K = a_shape[1];
-  // Blocks zeros in the M dimension.
-  int64_t BLOCK = 4;
-  uint32_t seed = 123;
-  for (int mb = 0; mb < M / BLOCK; ++mb) {
-    for (int kb = 0; kb < K; ++kb) {
-      bool fill_zero = rand_r(&seed) % 100 <= (sparsity * 100);
-      if (fill_zero) {
-        for (int m = 0; m < BLOCK; ++m) {
-          for (int k = 0; k < 1; ++k) {
-            vector_data[(mb * BLOCK + m) * K + kb + k] = 0;
+void prepare_sparse_data(T* vector_data, dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, float sparsity,
+                         uint32_t* seed = nullptr) {
+  uint32_t default_seed = 123;
+  if (seed == nullptr) seed = &default_seed;
+  for (int i = 0; i < rows; i += blk_row) {
+    for (int j = 0; j < cols; j += blk_col) {
+      bool fill_zero = rand_r(seed) % 100 <= (sparsity * 100);
+      if (fill_zero)
+        for (int bi = i; bi < i + blk_row; ++bi)
+          for (int bj = j; bj < j + blk_col; ++bj) {
+            vector_data[bi * cols + bj] = 0;
           }
-        }
-      }
     }
   }
 }
@@ -228,7 +227,7 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
       init_vector(static_cast<int8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
       if (sparsity != 0.f) {
         int8_t* s8_ptr = static_cast<int8_t*>(data_ptr);
-        prepare_sparse_data(s8_ptr, a_shape, sparsity);
+        prepare_sparse_data(s8_ptr, a_shape[0], a_shape[1], 4, 1, sparsity);
       }
     }
   }
@@ -238,19 +237,20 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, int nthr = 0,
-                                         jd::data_type dt_dst = dt::s8, const std::string& mkn_blocks = "1,1,1",
-                                         const std::string& tile_shape = "4,4", std::string post_op = "") {
-  // Step 1: Construct operator config
-  std::unordered_map<std::string, std::string> op_attrs = {
-      {"mkn_blocks", mkn_blocks}, {"tile_shape", tile_shape}, {"post_op", post_op}};
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = -1, int nthr = 0,
+                                         jd::data_type dt_dst = dt::s8,
+                                         std::unordered_map<std::string, std::string> op_attrs = {}) {
   bool append_sum = (op_attrs["post_op"] == "append_sum");
+  LOG_IF(FATAL, append_sum && dt_dst != dt::fp32) << "append_sum must be applied with fp32 dst type";
+  micro_bs = micro_bs == -1 ? N : micro_bs;
+  LOG_IF(FATAL, N % micro_bs != 0) << "micro_bs must be a multiple of N";
+  dim_t num_mbs = N / micro_bs;
 
-  // Step 2: Construct runtime data
+  // Step 1: Construct runtime data
   tensor_desc wei_desc = {{M, K}, dt::s8, ft::bsr};
-  tensor_desc src_desc = {{K, N}, dt::u8, ft::ab};
+  tensor_desc src_desc = {{num_mbs, K, micro_bs}, dt::u8, ft::ab};
   tensor_desc bia_desc = {{M, 1}, dt::s32, ft::ab};
-  tensor_desc dst_desc = {{M, N}, dt_dst, ft::ab};
+  tensor_desc dst_desc = {{num_mbs, M, micro_bs}, dt_dst, ft::ab};
   tensor_desc scales_desc = {{M, 1}, dt::fp32, ft::ab};
   std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
 
@@ -258,21 +258,22 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
+    auto& tsd = ts_descs[index];
     bool is_clear = (index == ssd::DST && !append_sum);
     float data_sparsity = (index == ssd::WEI) ? sparsity : 0;
     auto ranges = (index == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
-    auto data_pair = make_data_obj(ts_descs[index].shape(), ts_descs[index].dtype(), is_clear, data_sparsity, ranges);
+    auto data_pair = make_data_obj(tsd.shape(), tsd.dtype(), is_clear, data_sparsity, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
 
-  // Step 3: sparse data encoding
+  // Step 2: sparse data encoding
   auto sparse_ptr = new bsr_data_t<int8_t>(spns::tobsr(M, K, 4, 1, static_cast<const int8_t*>(rt_data1[ssd::WEI])));
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
   operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                            op_attrs);
 
-  // Step 4: op_args_t testcase pair
+  // Step 3: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1, sparsity, nthr};
   op_args_t op_args_copy = {an_op_desc, rt_data2, sparsity, nthr};
 
@@ -280,61 +281,91 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
 }
 
 static auto case_func = []() {
+  std::vector<std::vector<dim_t>> bert_sizes = {
+      // mini
+      {256, 256, 128},
+      {256, 256, 384},
+      {256, 1024, 128},
+      {256, 1024, 384},
+      {1024, 256, 128},
+      {1024, 256, 384},
+      // base
+      {768, 768, 128},
+      {768, 768, 384},
+      {768, 3072, 128},
+      {768, 3072, 384},
+      {3072, 768, 128},
+      {3072, 768, 384},
+      // large
+      {1024, 1024, 128},
+      {1024, 1024, 384},
+      {1024, 4096, 128},
+      {1024, 4096, 384},
+      {4096, 1024, 128},
+      {4096, 1024, 384},
+
+  };
+
+  google::InitGoogleLogging("SpmmVNNIKernelTest");
   std::vector<int> nthr_cases;
-  if (getenv(OMP_NUM_THREADS) == nullptr || strlen(getenv(OMP_NUM_THREADS)) == 0) {
-    nthr_cases = {1, 2, 3, 4, 0};
-  } else {  // OMP_NUM_THREAD;S is set outside
+  bool use_benchmark =
+      getenv("SPARSE_LIB_USE_BENCHMARK") != nullptr && strcmp(getenv("SPARSE_LIB_USE_BENCHMARK"), "1") == 0;
+  if (use_benchmark  // number cores is decided by numactl in benchmarking
+      || (getenv(OMP_NUM_THREADS) != nullptr && strlen(getenv(OMP_NUM_THREADS)) != 0)) {
     nthr_cases = {0};
+  } else {  // OMP_NUM_THREAD;S is set outside
+    nthr_cases = {1, 2, 3, 4, 0};
   }
 
   std::vector<test_params_t> cases;
   for (int nthr : nthr_cases) {
     n_thread_t with_n_thread(nthr);
 
-    // Append sum with super high sparsity
-    cases.push_back({gen_case(32, 32, 128, .99f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(32, 32, 128, .99f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
-    cases.push_back({gen_case(32, 32, 128, 1.0f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+    if (!use_benchmark) {
+      // Append sum with super high sparsity
+      cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::s8)});
+      cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
+      cases.push_back({gen_case(32, 32, 128, 1.0f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
 
-    // Append sum with small batch size
-    cases.push_back({gen_case(32, 32, 32, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(32, 32, 32, .7f, nthr, dt::fp32, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(32, 32, 32, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
-    cases.push_back({gen_case(32, 32, 16, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
-    cases.push_back({gen_case(32, 32, 48, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
-    cases.push_back({gen_case(32, 32, 224, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+      // TODO: Support smaller batch size (seq_len) as a mutiple of 16
+      // Append sum with small batch size
+      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::s8)});
+      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32)});
+      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
+      cases.push_back({gen_case(32, 32, 16, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
+      cases.push_back({gen_case(32, 32, 48, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
+      cases.push_back({gen_case(32, 32, 224, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
 
-    /* bert-mini config. case: spmm: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N) */
-    // when M = 256, K = 256, N = 128 ... and more size conbinations
-    cases.push_back({gen_case(256, 256, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(256, 256, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(256, 1024, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(256, 1024, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(1024, 256, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(1024, 256, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(768, 768, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(768, 768, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(768, 3072, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(768, 3072, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(3072, 768, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(3072, 768, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(1024, 1024, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(1024, 1024, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(1024, 4096, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(1024, 4096, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(4096, 1024, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    cases.push_back({gen_case(4096, 1024, 384, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
+      // Test blocking
+      cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, dt::s8)});
+      cases.push_back({gen_case(256, 1024, 384, .7f, -1, nthr, dt::s8, {{"micro_oc", "128"}})});
+      cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, dt::s8, {{"micro_oc", "128"}})});
 
-    // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::s8, "1,1,1", "4,4"), false});
-    // case: sparse: s8xu8+s32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::fp32, "1,1,1", "4,4"), false});
-    // case: sparse: s8xu8+s32=s8, n_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::s8, "1,1,2", "4,4"), false});
-    // case: sparse: s8xu8+s32=s8, k_blocks != 1, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::s8, "1,2,1", "4,4"), false});
-    // case: sparse: s8xu8+s32+append_fp32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) + append(M, N) = dst(M, N)
-    cases.push_back({gen_case(32, 32, 128, .7f, nthr, dt::fp32, "1,1,1", "4,4", "append_sum"), false});
+      // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::s8)});
+      // case: sparse: s8xu8+s32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32)});
+      // case: sparse: s8xu8+s32+append_fp32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) + append(M, N) = dst(M,
+      // N)
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
+    }
+
+    for (auto bert_size : bert_sizes) {
+      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, nthr, dt::s8)});
+    }
+
+    // multiple cores with multiple batches
+    int bs = omp_get_max_threads();
+    if (bs != 1 && use_benchmark) {
+      // without 3d input
+      for (auto bert_size : bert_sizes) {
+        cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2] * bs, .9f, -1, nthr, dt::s8)});
+      }
+      // with 3d input
+      for (auto bert_size : bert_sizes) {
+        cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2] * bs, .9f, bert_size[2], nthr, dt::s8)});
+      }
+    }
   }
   return ::testing::ValuesIn(cases);
 };
@@ -342,12 +373,19 @@ static auto case_func = []() {
 std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   std::vector<std::string> params;
   auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
+  auto& wei_shape = tensor_desc[ssd::WEI].shape();
+  auto& src_shape = tensor_desc[ssd::SRC].shape();
   auto attrs_map = tpi.param.args.first.op_desc.attrs();
+  dim_t oc = wei_shape[0];
+  dim_t ic = wei_shape[1];
+  dim_t bs = std::accumulate(src_shape.begin(), src_shape.end(), 1, std::multiplies<dim_t>()) / ic;
+  dim_t micro_bs = src_shape.back();
+
   params.push_back("c" + std::to_string(static_cast<int>(tpi.param.args.first.nthr)));
   params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparisty * 100)));
-  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[0]));
-  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[1]));
-  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
+  params.push_back(std::to_string(oc));
+  params.push_back(std::to_string(ic));
+  params.push_back(std::to_string(bs));
   switch (tensor_desc[ssd::DST].dtype()) {
     case dt::s8:
       params.push_back("s8");
@@ -358,10 +396,8 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
     default:
       assert(false);
   }
-  std::vector<int64_t> mkn = split_str<int64_t>(attrs_map["mkn_blocks"]);
-  if (mkn[0] != 1) params.push_back("m" + std::to_string(mkn[0]));
-  if (mkn[1] != 1) params.push_back("k" + std::to_string(mkn[1]));
-  if (mkn[2] != 1) params.push_back("n" + std::to_string(mkn[2]));
+  if (attrs_map["micro_oc"] != "") params.push_back("moc" + attrs_map["micro_oc"]);
+  if (micro_bs != bs) params.push_back("mbs" + std::to_string(micro_bs));
   if (attrs_map["post_op"] != "") {
     params.push_back(attrs_map["post_op"]);
   }

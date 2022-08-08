@@ -50,34 +50,32 @@ enum class sparse_scheme : uint8_t {
 /**
  * @brief kernel parameters passed between kernel/primitive and jit_domain.
  */
-struct flat_param_t {
-  int64_t M;
-  int64_t K;
-  int64_t N;
+struct vnni_param_t {
+  dim_t BN;  // size on N-dim; used as the leading dim of dense / dst, aka micro_bs
+  dim_t BM;  // size on M-dim for the blocks computed by this kernel, aka micro_oc;
   bool has_bias;
   bool append_sum;
   data_type output_type;
-  sparse_scheme scheme;
-  std::vector<int64_t> mkn_blocks;
-  std::vector<int64_t> tile_shape;  // 2d vector for microkernel shape in terms of zmm registers
+  int tile_w;  // width of a tile in terms of #registers; Note that the height is determined by the height of BSR block
   bool sub_func;
-  int64_t im_start;  // start m-idx of dest to be calculated
-  int64_t im_end;    // end m-idx of dest to be calculated
-  int64_t in_start;  // start n-idx of dest to be calculated
-  int64_t in_end;    // end n-idx of dest to be calculated
+  dim_t im_start;  // start m-idx of dest to be calculated; used as the m offset when reading sparse
   // sparse weight related
-  bsr_data_t<int8_t>* sparse_ptr;
+  dim_t blocksize[2] = {4, 1};
+  std::vector<dim_t> indptr;
+  std::vector<dim_t> indices;
+  const int8_t* weight;
 };
 
 /**
  * @brief kernel data at runtime.
  */
-struct flat_data_t {
-  const void* ptr_seq_vals;  // sequence nonzeros of sparse weight.
-  const void* ptr_dense;     // activation(K, N).
-  const void* ptr_bias;      // bias(M, 1).
-  void* ptr_dst;             // dst(M, N).
-  const void* ptr_scales;
+template <typename dst_t>
+struct vnni_data_t {
+  const int8_t* ptr_seq_vals;  // sequence nonzeros of sparse weight.
+  const uint8_t* ptr_dense;    // activation(K, N).
+  const int32_t* ptr_bias;     // bias(M, 1).
+  dst_t* ptr_dst;              // dst(M, N).
+  const float* ptr_scales;
 };
 
 /**
