@@ -51,7 +51,11 @@ class spmm_amx_bf16_x16_kd_t : public kernel_desc_t {
  public:
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
   const std::vector<ssd::amx_bf16_params_t>& params() const { return params_; }
-  const dim_t& num_kernels() const { return num_kernels_; }
+  inline const dim_t& num_kernels() const { return num_kernels_; }
+  inline std::vector<dim_t> shape() const {
+    return {op_desc_.tensor_descs()[ssd::WEI].shape()[0], op_desc_.tensor_descs()[ssd::WEI].shape()[1],
+            op_desc_.tensor_descs()[ssd::SRC].shape()[0] * op_desc_.tensor_descs()[ssd::SRC].shape()[2]};
+  }
 
  private:
   bool spmm_params_init(std::vector<ssd::amx_bf16_params_t>& param_ref,  // NOLINT

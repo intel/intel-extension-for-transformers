@@ -20,6 +20,8 @@
 #include <memory>
 #include "param_types.hpp"
 #include "operator_desc.hpp"
+#include "utils.hpp"
+#include "verbose.hpp"
 
 namespace jd {
 class engine;
@@ -50,24 +52,29 @@ class kernel_desc_t {
     return true;
   }
   // init kernel_desc_t
+  virtual inline std::vector<dim_t> shape() const { return {}; };
   virtual bool init() = 0;
   virtual bool create_primitive(std::shared_ptr<const kernel_t>& k_ref,  // NOLINT
-    const std::shared_ptr<const kernel_desc_t>& kd) const = 0;
+                                const std::shared_ptr<const kernel_desc_t>& kd) const = 0;
 
  public:
   virtual const jd::operator_desc& operator_desc() const = 0;
   inline const jd::kernel_kind& kernel_kind() const { return ker_kind_; }
+  const char* info() const {
+    if (!info_.is_initialized()) info_.init(ker_kind_, shape());
+    return info_.c_str();
+  }
 
  protected:
   jd::kernel_kind ker_kind_;
+  mutable jd::kd_info_t info_;
 };
 
 // kernel_desc_t::create_primitive() override.
-#define DECLARE_COMMON_PD_T(derived_k_t, derived_kd_t, ...) \
-  bool create_primitive(std::shared_ptr<const kernel_t>& k_ref, \
-    const std::shared_ptr<const kernel_desc_t>& kd) const override { \
-    return kernel_t::create<derived_k_t, derived_kd_t>(k_ref, kd); \
+#define DECLARE_COMMON_PD_T(derived_k_t, derived_kd_t, ...)                                                     \
+  bool create_primitive(std::shared_ptr<const kernel_t>& k_ref, const std::shared_ptr<const kernel_desc_t>& kd) \
+      const override {                                                                                          \
+    return kernel_t::create<derived_k_t, derived_kd_t>(k_ref, kd);                                              \
   }
-
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNEL_DESC_HPP_

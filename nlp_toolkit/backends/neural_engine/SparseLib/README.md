@@ -24,6 +24,8 @@ cmake ..
 # cmake .. -DSPARSE_LIB_USE_AMX=True // if enabling AMX support
 make -j
 ./test_spmm_vnni_kernel
+# if verbose needed
+SPARSELIB_VERBOSE=1 ./test_spmm_vnni_kernel
 ```
 
 ## API reference for users

@@ -251,7 +251,7 @@ void jit_postop_default_t::assign_regs() {
 void jit_postop_default_t::prepare_bf16_mask() {
   remain_task_mask = Xbyak::Opmask(6);
   scratch_ = Xbyak::Reg64(r10);
-  
+
   sub(rsp, 8);
   mov(ptr[rsp], scratch_);
   mov(scratch_.cvt32(), 0x1);

@@ -15,14 +15,14 @@
 #include "utils.hpp"
 #include "benchmark_utils.hpp"
 
-namespace jd{
+namespace jd {
 using dt = jd::data_type;
 
-void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_data){
+void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_data) {
   kp->execute(rt_data);
 
   const char* env_val = std::getenv("SPARSE_LIB_USE_BENCHMARK");
-  if (env_val == nullptr || strcmp(env_val, "1") != 0){
+  if (env_val == nullptr || strcmp(env_val, "1") != 0) {
     return;
   }
 
@@ -35,15 +35,15 @@ void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_dat
   std::vector<const void*> tmp_data(rt_data);
   std::vector<void*> new_data;
   std::vector<int> idx = get_refresh_data_idx(ker_kind);
-  if (!alloc_new_mem(ts_descs, tmp_data, new_data, idx)){
+  if (!alloc_new_mem(ts_descs, tmp_data, new_data, idx)) {
     return;
   }
 
   int benchmark_iter = 100;  // by default
   const char* input_benchmark_iter = std::getenv("BENCHMARK_ITER");
-  if (input_benchmark_iter != nullptr){
+  if (input_benchmark_iter != nullptr) {
     benchmark_iter = atoi(input_benchmark_iter);
-    if (benchmark_iter == 0){
+    if (benchmark_iter == 0) {
       printf("BENCHMARK_ITER is 0! Please ensure you set an integer to this variable\n");
     }
   }
@@ -57,7 +57,7 @@ void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_dat
   }
 
   double ns = 0.0;
-  for (int i = 0; i < benchmark_iter; ++i){
+  for (int i = 0; i < benchmark_iter; ++i) {
     // refresh data
     if (if_refresh) {
       refresh_data(ts_descs, new_data, idx);
@@ -75,19 +75,19 @@ void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_dat
   free_new_mem(new_data);
 }
 
-double exec_time(kernel_proxy* kp, const std::vector<const void*>& rt_data){
+double exec_time(kernel_proxy* kp, const std::vector<const void*>& rt_data) {
   auto begin = std::chrono::high_resolution_clock::now();
   kp->execute(rt_data);
   auto end = std::chrono::high_resolution_clock::now();
   return std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
 }
 
-double calc_flop(const kernel_kind ker_kind, const std::vector<tensor_desc>& ts_descs){
-#define CASE(kind)          \
+double calc_flop(const kernel_kind ker_kind, const std::vector<tensor_desc>& ts_descs) {
+#define CASE(kind)        \
   case kernel_kind::kind: \
     return calc_flop_##kind(ts_descs);
 
-  switch (ker_kind){
+  switch (ker_kind) {
     CASE(sparse_matmul);
     CASE(postop);
     default:
@@ -98,12 +98,12 @@ double calc_flop(const kernel_kind ker_kind, const std::vector<tensor_desc>& ts_
 #undef CASE
 }
 
-std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind){
-#define CASE(kind)          \
+std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind) {
+#define CASE(kind)        \
   case kernel_kind::kind: \
     return get_refresh_data_idx_##kind();
 
-  switch (ker_kind){
+  switch (ker_kind) {
     CASE(sparse_matmul);
     CASE(postop);
     default:
@@ -114,12 +114,14 @@ std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind){
 #undef CASE
 }
 
-bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data, std::vector<void*>& new_data, const std::vector<int>& idx){
-  for (int i = 0; i < idx.size(); ++i){
-    int elem_num = std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
+bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data,
+                   std::vector<void*>& new_data, const std::vector<int>& idx) {
+  for (int i = 0; i < idx.size(); ++i) {
+    int elem_num =
+        std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
     int byte_size = elem_num * type_size[ts_descs[idx[i]].dtype()];
     void* new_mem = malloc(byte_size);
-    if (!new_mem){
+    if (!new_mem) {
       printf("malloc failed.\n");
       return false;
     }
@@ -129,16 +131,18 @@ bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const v
   return true;
 }
 
-void free_new_mem(std::vector<void*>& new_data){
-  for (int i = 0; i < new_data.size(); ++i){
+void free_new_mem(std::vector<void*>& new_data) {
+  for (int i = 0; i < new_data.size(); ++i) {
     free(new_data[i]);
   }
 }
 
-void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data, const std::vector<int>& idx, const std::vector<float>& ranges){
-  for (int i = 0; i < idx.size(); ++i){
-    int elem_num = std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
-    switch (ts_descs[idx[i]].dtype()){
+void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data, const std::vector<int>& idx,
+                  const std::vector<float>& ranges) {
+  for (int i = 0; i < idx.size(); ++i) {
+    int elem_num =
+        std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
+    switch (ts_descs[idx[i]].dtype()) {
       case dt::fp32:
         init_vector(static_cast<float*>(new_data[i]), elem_num, ranges[0], ranges[1], rand());
         break;
@@ -160,30 +164,26 @@ void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& 
   }
 }
 
-double calc_flop_sparse_matmul(const std::vector<tensor_desc>& ts_descs){
+double calc_flop_sparse_matmul(const std::vector<tensor_desc>& ts_descs) {
   const auto& src0_desc = ts_descs[ssd::WEI];
   const auto& src1_desc = ts_descs[ssd::SRC];
   const int oc = src0_desc.shape()[0];
   const int ic = src0_desc.shape()[1];
-  if (std::find(src1_desc.shape().begin(), src1_desc.shape().end(), ic) == src1_desc.shape().end()){
+  if (std::find(src1_desc.shape().begin(), src1_desc.shape().end(), ic) == src1_desc.shape().end()) {
     printf("ic is not found in SRC shape!\n");
     return 0.0;
   }
-  const int other_dim = std::accumulate(src1_desc.shape().begin(), src1_desc.shape().end(), 1, std::multiplies<size_t>()) / ic;
+  const int other_dim =
+      std::accumulate(src1_desc.shape().begin(), src1_desc.shape().end(), 1, std::multiplies<size_t>()) / ic;
   return (double)oc * other_dim * ic * 2;
 }
 
-double calc_flop_postop(const std::vector<tensor_desc>& ts_descs){
+double calc_flop_postop(const std::vector<tensor_desc>& ts_descs) {
   return std::accumulate(ts_descs[0].shape().begin(), ts_descs[0].shape().end(), 1, std::multiplies<size_t>());
 }
 
-std::vector<int> get_refresh_data_idx_sparse_matmul(){
-  return std::vector<int>{ssd::SRC, ssd::DST};
-}
+std::vector<int> get_refresh_data_idx_sparse_matmul() { return std::vector<int>{ssd::SRC, ssd::DST}; }
 
-std::vector<int> get_refresh_data_idx_postop(){
-  return std::vector<int>{0, 1};
-}
+std::vector<int> get_refresh_data_idx_postop() { return std::vector<int>{0, 1}; }
 
-} // namespace jd
-
+}  // namespace jd

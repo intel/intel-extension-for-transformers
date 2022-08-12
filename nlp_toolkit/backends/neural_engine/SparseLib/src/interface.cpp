@@ -71,7 +71,19 @@ bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_r
 }
 
 void kernel_proxy::execute(const std::vector<const void*>& rt_data) {
-  auto status = get_sp()->execute(rt_data);
+  bool status = false;
+  if (get_verbose()) {
+    double start_ms = get_msec();
+    status = get_sp()->execute(rt_data);
+    double duration_ms = get_msec() - start_ms;
+    std::string stamp;
+    if (get_verbose_timestamp()) stamp = "," + std::to_string(start_ms);
+
+    printf("sparselib_verbose%s,exec,%s,%g\n", stamp.c_str(), get_sp()->kd()->info(), duration_ms);
+    fflush(stdout);
+  } else {
+    status = get_sp()->execute(rt_data);
+  }
   return;
 }
 }  // namespace jd

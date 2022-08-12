@@ -40,6 +40,7 @@ class layernorm_ba_kd_t : public kernel_desc_t {
   DECLARE_COMMON_PD_T(layernorm_ba_k_t, layernorm_ba_kd_t);
 
  public:
+  inline std::vector<dim_t> shape() const { return op_desc_.tensor_descs()[0].shape(); }
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
   const std::vector<ssd::layernorm_ba_param_t>& params() const { return params_; }
   const float* one_div_n_ptr() const { return one_div_n_; }

@@ -42,6 +42,7 @@ class eltwiseop_kd_t : public kernel_desc_t {
   DECLARE_COMMON_PD_T(eltwiseop_k_t, eltwiseop_kd_t);
 
  public:
+  inline std::vector<dim_t> shape() const { return op_desc_.tensor_descs()[0].shape(); }
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
   const ssd::eltwiseop_param_t& params() const { return params_; }
 

@@ -48,6 +48,7 @@ class spmm_vnni_kd_t : public kernel_desc_t {
  public:
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
   const std::vector<ssd::vnni_param_t>& params() const { return params_; }
+  inline std::vector<dim_t> shape() const { return {M(), K(), N()}; }
   inline dim_t M() const { return op_desc_.tensor_descs()[ssd::WEI].shape()[0]; }
   inline dim_t K() const { return op_desc_.tensor_descs()[ssd::WEI].shape()[1]; }
   inline dim_t BN() const {

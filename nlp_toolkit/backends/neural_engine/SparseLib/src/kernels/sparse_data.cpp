@@ -22,12 +22,12 @@ std::vector<bsr_data_t<T>*>* reorder_to_bsr_amx(dim_t rows, dim_t cols, dim_t mi
   const dim_t blk_col = 1;
   assert(rows % micro_rows == 0);
   dim_t num_micro_rows = rows / micro_rows;
-  std::vector<bsr_data_t<T>*>* sparse_data = new  std::vector<bsr_data_t<T>*>;
-  for(int i = 0; i < num_micro_rows; ++i){
+  std::vector<bsr_data_t<T>*>* sparse_data = new std::vector<bsr_data_t<T>*>;
+  for (int i = 0; i < num_micro_rows; ++i) {
     const T* uncoded_data = static_cast<const T*>(uncoded_ptr) + i * micro_rows * cols;
     const auto bsr_data = to_bsr_amx<T, group>(micro_rows, cols, blk_row, blk_col, uncoded_data);
-    sparse_data->push_back(new bsr_data_t<T>({blk_row, blk_col}, {rows, cols}, bsr_data.indptr(), bsr_data.indices(), bsr_data.data(),
-                           group));
+    sparse_data->push_back(new bsr_data_t<T>({blk_row, blk_col}, {rows, cols}, bsr_data.indptr(), bsr_data.indices(),
+                                             bsr_data.data(), group));
   }
   return sparse_data;
 }

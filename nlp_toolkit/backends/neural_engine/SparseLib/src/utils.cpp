@@ -69,8 +69,8 @@ bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t siz
   const auto& buf1_data = static_cast<const T*>(buf1);
   const auto& buf2_data = static_cast<const T*>(buf2);
   for (int64_t i = 0; i < size1; ++i) {
-    auto err =
-        fabs(cast_to<float>(buf1_data[i]) - cast_to<float>(buf2_data[i])) / std::max(fabs(cast_to<float>(buf2_data[i])), 1.0);
+    auto err = fabs(cast_to<float>(buf1_data[i]) - cast_to<float>(buf2_data[i])) /
+               std::max(fabs(cast_to<float>(buf2_data[i])), 1.0);
     if (err > eps) {
       std::cout << cast_to<float>(buf1_data[i]) << "vs" << cast_to<float>(buf2_data[i]) << std::endl;
       std::cout << err << std::endl;
