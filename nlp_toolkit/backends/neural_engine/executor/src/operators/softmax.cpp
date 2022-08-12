@@ -46,7 +46,7 @@ static inline __m512 i_exp(__m512 x) {
   return i_poly(z, q, _c);
 }
 
-void softmax_u8(void* out, void* in, float oscale, int64_t ld, int N) {
+void softmax_u8(void* out, void* in, const float oscale, const int64_t ld, const int N) {
   auto pin = reinterpret_cast<float(*)[ld]>(in);
   auto ld_16 = (ld + 15) / 16 * 16;
 
