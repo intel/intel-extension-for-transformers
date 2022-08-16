@@ -42,10 +42,10 @@ class OperatorRegistry {
   // Adds a creator.
   static void AddCreator(const string& type, const string& kernel_name, Creator creator) {
     CreatorRegistry& registry = Registry();
-    LOG(INFO) << "Gonna register " << type << ", dispatch kernel " << kernel_name 
+    LOG(INFO) << "Gonna register " << type << ", dispatch kernel " << kernel_name
               <<  "....";
     if (registry.count(type) > 0) {
-      CHECK_EQ(registry[type].count(kernel_name), 0) 
+      CHECK_EQ(registry[type].count(kernel_name), 0)
               << "Operator type " << type << ", dispatch kernel " << kernel_name
               << " has already beed registered.";
     }
@@ -58,7 +58,7 @@ class OperatorRegistry {
     CreatorRegistry& registry = Registry();
     CHECK_EQ(registry.count(type), 1) << "Unknown operator type: " << type
                                       << " (known types: " << OperatorTypeListString() << ").";
-    CHECK_EQ(registry[type].count(kernel_name), 1) << "Unknown dispatch kernel: " << kernel_name 
+    CHECK_EQ(registry[type].count(kernel_name), 1) << "Unknown dispatch kernel: " << kernel_name
                                       << " in operator type: " << type;
     return registry[type][kernel_name](conf);
   }
@@ -92,7 +92,7 @@ class OperatorRegistry {
 
 class OperatorRegisterer {
  public:
-  OperatorRegisterer(const string& type, const string& kernel_name, 
+  OperatorRegisterer(const string& type, const string& kernel_name,
                     shared_ptr<Operator> (*creator)(const OperatorConfig&)) {
     OperatorRegistry::AddCreator(type, kernel_name, creator);
   }

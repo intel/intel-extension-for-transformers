@@ -42,14 +42,15 @@ class MemoryAllocator {
   typedef std::map<std::thread::id, MemoryBuffer*> TreadMemory;
   typedef std::map<std::thread::id, BufferName*> TreadName;
 
-  static char* SharedEnv() {
-    static char* shared_env = getenv("SHARED_INST_NUM");
+  static char* SharedEnv(char* env_name = "WEIGHT_SHARING") {
+    static char* shared_env = getenv(env_name);
     return shared_env;
   }
-  static const int SharedInstNum() {
-    static const int shared_inst_num =
-        (getenv("SHARED_INST_NUM") != nullptr) ? std::atoi(getenv("SHARED_INST_NUM")) : 1;
-    return shared_inst_num;
+
+  static const int InstNum() {
+    static const int inst_num =
+        (getenv("INST_NUM") != nullptr) ? std::atoi(getenv("INST_NUM")) : 1;
+    return inst_num;
   }
 
   static MemoryBuffer& Buffer() {

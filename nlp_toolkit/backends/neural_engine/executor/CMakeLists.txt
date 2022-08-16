@@ -104,6 +104,13 @@ target_include_directories(neural_engine
         ./third_party/boost/libs/static_assert/include
         ./third_party/boost/libs/type_traits/include
         ./third_party/boost/libs/interprocess/include
+        ./third_party/boost/libs/unordered/include
+        ./third_party/boost/libs/container_hash/include
+        ./third_party/boost/libs/preprocessor/include
+        ./third_party/boost/libs/throw_exception/include
+        ./third_party/boost/libs/tuple/include
+        ./third_party/boost/libs/predef/include
+        ./third_party/boost/libs/mp11/include
 )
 
 # link against the third party libraries

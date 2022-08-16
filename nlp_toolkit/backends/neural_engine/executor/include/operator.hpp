@@ -43,11 +43,11 @@ class Operator {
 
   virtual void Prepare(const vector<Tensor*>& input,
                        const vector<Tensor*>& output) {}
-  
+
   // use Reshape to calculate the output shape from input tensor
   virtual void Reshape(const vector<Tensor*>& input,
                        const vector<Tensor*>& output) = 0;
-  
+
   virtual void Forward(const vector<Tensor*>& input,
                        const vector<Tensor*>& output) = 0;
 

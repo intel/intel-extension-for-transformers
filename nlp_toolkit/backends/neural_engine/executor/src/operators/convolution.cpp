@@ -246,7 +246,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
     // innerproduct transpose src0, [K, M] x [K, N], after innerproduct prepare, shape becomes [K, M] x [N, K]
     // innerproduct transpose src1, [M, K] x [N, K], after innerproduct prepare, shape becomes [M, K] x [N, K]
     // innerproduct transpose src0 and src1, [K, M] x [N, K], after innerproduct prepare, shape becomes [K, M] x [N, K]
-    // innerproduct just changes shape (changes src0 shape at reshape period, scr1 shape at prepare period), 
+    // innerproduct just changes shape (changes src0 shape at reshape period, scr1 shape at prepare period),
     // but keep strides as origin.
     pads_ = {0, 0, 0, 0};
     strides_ = {1, 1};
@@ -261,7 +261,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
       // [N, K, 1, 1] -> [N, K, 1, 1]
       weight_perm = {0, 1, 2, 3};
     }
-    weight_shape_= GetShapes(weight_shape_origin, weight_perm);
+    weight_shape_ = GetShapes(weight_shape_origin, weight_perm);
     weight_stride_m = GetStrides(weight_shape_origin, weight_perm);
     weight_shape_m = weight_shape_;
   } else {
@@ -300,7 +300,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   // 1.1 Transpose tensor shape and get it
   vector<int64_t> src_shape_origin;
   if (dispatch_from_ == "InnerProduct") {
-    CHECK_EQ(dispatch_kernel_config["InnerProduct_to_Convolution"].size(), dispatch_config_.size() - 1) 
+    CHECK_EQ(dispatch_kernel_config["InnerProduct_to_Convolution"].size(), dispatch_config_.size() - 1)
             << "InnerProduct to Convolution has wrong dispatch kernel config...";
     StringSplit<int64_t>(&src_shape_origin, dispatch_config_[1], ",");
     CHECK_EQ(Product(src_shape_origin), Product(src_->shape())) << "Wrong dispatch input shape...";
@@ -561,6 +561,6 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
 }
 
 REGISTER_OPERATOR_CLASS(Convolution);
-//InnerProduct dispathcer class can have convolution kernel implementation
+// InnerProduct dispathcer class can have convolution kernel implementation
 REGISTER_KERNEL_CLASS(InnerProduct, Convolution);
 }  // namespace executor

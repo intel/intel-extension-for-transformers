@@ -252,9 +252,9 @@ def latency_mode_grab_log(input_path, output, config, is_best_write, first_write
         return avg_latency
 
 
-def replace_share_memory_instance(cmd_str, instance):
-    """set shared memory instance numbers"""
-    return cmd_str.replace("SHARED_INST_NUM=", "SHARED_INST_NUM="+str(instance))
+def replace_instance_num(cmd_str, instance):
+    """set instance numbers"""
+    return cmd_str.replace("INST_NUM=", "INST_NUM="+str(instance))
 
 def get_cmd_prefix(core_list):
     """get memory prefix of cmd"""
@@ -268,7 +268,7 @@ def get_cmd_prefix2(core_list):
 
 def get_weight_sharing(cmd_str):
     """get weight sharing """
-    if cmd_str.find("SHARED_INST_NUM=") >= 0:
+    if cmd_str.find("WEIGHT_SHARING=") >= 0:
         return "enabled"
     return "disabled"
 
@@ -287,11 +287,11 @@ def get_memory_allocator(cmd_str):
 def add_weight_sharing_flag(prefix_list, weight_sharing):
     """set weight sharing flag."""
     if weight_sharing == "enabled":
-        prefix_list[:] = [prefix+ " SHARED_INST_NUM= " for prefix in prefix_list]
+        prefix_list[:] = [prefix+ " WEIGHT_SHARING=1 " for prefix in prefix_list]
     elif weight_sharing == "disabled":
         print("weight sharing disabled")
     elif weight_sharing == "auto":
-        prefix_list += [prefix+ " SHARED_INST_NUM= " for prefix in prefix_list]
+        prefix_list[:] = [prefix+ " WEIGHT_SHARING=1 " for prefix in prefix_list]
     else:
         print("weight sharing incorrect")
     return prefix_list
@@ -310,6 +310,10 @@ def add_memory_planning_flag(prefix_list, memory_planning):
         print("memory incorrect incorrect")
     return prefix_list
 
+def add_instance_num_flag(prefix_list):
+    """set instance num."""
+    prefix_list[:] = [prefix+ " INST_NUM= " for prefix in prefix_list]
+    return prefix_list
 
 def get_memory_settings(path, args):
     """append memory setting."""
@@ -329,6 +333,7 @@ def get_memory_settings(path, args):
 
     tmp_list = add_weight_sharing_flag(memory_prefix_list, args.weight_sharing)
     tmp_list = add_memory_planning_flag(tmp_list, args.memory_planning)
+    tmp_list = add_instance_num_flag(tmp_list)
 
     return tmp_list
 
@@ -355,10 +360,15 @@ def set_unified_buffer_env(env_cmd, memory_planning):
     if memory_planning == "unified_buffer":
         env_cmd["UNIFIED_BUFFER"] = str(1)
 
-def set_weight_sharing(env_cmd, weight_sharing, instance):
+def set_weight_sharing(env_cmd, weight_sharing):
     """set weight sharing env"""
     if weight_sharing == "enabled":
-        env_cmd["SHARED_INST_NUM"] = str(instance)
+        env_cmd["WEIGHT_SHARING"] = str(1)
+
+def set_instance_num(env_cmd, instance):
+    """set instance num"""
+    env_cmd["INST_NUM"] = str(instance)
+
 
 def replace_batch(cmd, args, batch):
     """set batch if your script input had batch."""
@@ -430,7 +440,7 @@ class OneInstanceLauncher(Launcher):
                 for mp_list_idx, mp_list_item in enumerate(memory_prefix_list):
                     cmd_prefix = get_cmd_prefix(core_list)
 
-                    cmd_prefix = replace_share_memory_instance(
+                    cmd_prefix = replace_instance_num(
                         memory_prefix_list[mp_list_idx], instance) + cmd_prefix
                     cmd.clear()
                     cmd_for_print.clear()
@@ -470,7 +480,8 @@ class OneInstanceLauncher(Launcher):
                     set_numactl_env(env_cmd, core_list)
                     set_jemalloc_env(env_cmd, memory_allocator, self.project_path)
                     set_unified_buffer_env(env_cmd, memory_planning)
-                    set_weight_sharing(env_cmd, weight_sharing, instance)
+                    set_weight_sharing(env_cmd, weight_sharing)
+                    set_instance_num(env_cmd, instance)
                     #print("env is "+str(env_cmd))
 
                     process = subprocess.Popen(cmd, env=env_cmd)
@@ -512,7 +523,7 @@ class OneInstanceLauncher(Launcher):
                     cmd_prefix = get_cmd_prefix(core_list)
 
                     for mp_list_idx, mp_list_item in enumerate(memory_prefix_list):
-                        cmd_prefix = replace_share_memory_instance(memory_prefix_list[mp_list_idx],
+                        cmd_prefix = replace_instance_num(memory_prefix_list[mp_list_idx],
                                                                    instance) + cmd_prefix
                         cmd.clear()
                         cmd_for_print.clear()
@@ -551,7 +562,8 @@ class OneInstanceLauncher(Launcher):
                         set_numactl_env(env_cmd, core_list)
                         set_jemalloc_env(env_cmd, memory_allocator, self.project_path)
                         set_unified_buffer_env(env_cmd, memory_planning)
-                        set_weight_sharing(env_cmd, weight_sharing, instance)
+                        set_weight_sharing(env_cmd, weight_sharing)
+                        set_instance_num(env_cmd, instance)
 
                         process = subprocess.Popen(cmd, env=env_cmd)
                         processes.append(process)
@@ -628,7 +640,7 @@ class MultiInstanceLauncher(Launcher):
                         cmd.clear()
                         core_list = np.arange(0, cores) + i*cores
                         cmd_prefix = get_cmd_prefix(core_list)
-                        cmd_prefix = replace_share_memory_instance(
+                        cmd_prefix = replace_instance_num(
                             memory_prefix_list[mp_list_idx], instance) + cmd_prefix
 
                         weight_sharing = get_weight_sharing(cmd_prefix)

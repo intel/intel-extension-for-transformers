@@ -50,7 +50,7 @@ inline isa get_max_isa() {
       return isa::avx512_core_bf16;
     case (dnnl::cpu_isa::avx512_core_amx):
       return isa::avx512_core_amx;
-    default: 
+    default:
       LOG(FATAL) << "Only support device with Intel AVX-512!";
   }
 }

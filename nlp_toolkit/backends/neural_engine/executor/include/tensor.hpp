@@ -119,14 +119,14 @@ class Tensor {
   void set_transpose(const bool& transpose = true) { is_transposed_ = transpose; }
 
   void add_tensor_life(const int count) { life_count_ += count; }
-  
+
   // add extra tensor life for op tuning
   // need to reset to real life_count after tuning
   void disposable_extra_life(const int count) {
     disposable_life_count_ = life_count_ + count;
     if (location_.empty() && data_ != nullptr) {
       auto exists_status = MemoryAllocator::get().CheckMemory(data_);
-      if (exists_status != -1) { 
+      if (exists_status != -1) {
         MemoryAllocator::get().ResetMemory(data_, exists_status + count);
         disposable_life_count_ = 0;
         return;

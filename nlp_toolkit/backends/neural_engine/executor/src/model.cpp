@@ -99,7 +99,7 @@ void Model::Init(const ModelConfig& conf) {
 }
 
 void Model::RemoveSharedWeight(bool is_begin, char* count_space_name, char* count_name, char* space_name) {
-  LOG(INFO) << "Shared instance number: " << MemoryAllocator::SharedInstNum();
+  LOG(INFO) << "Shared instance number: " << MemoryAllocator::InstNum();
   ipc::managed_shared_memory count_shm(ipc::open_or_create, count_space_name, 512);
   int* removed_count = count_shm.find_or_construct<int>(count_name)[sizeof(int)](0);
   rmutex_.lock();
@@ -108,11 +108,11 @@ void Model::RemoveSharedWeight(bool is_begin, char* count_space_name, char* coun
     if (*removed_count == 1) {
       ipc::shared_memory_object::remove(space_name);
     }
-    if (*removed_count == MemoryAllocator::SharedInstNum()) {
+    if (*removed_count == MemoryAllocator::InstNum()) {
       ipc::shared_memory_object::remove(count_space_name);
     }
   } else {  // In model release, remove shared space at the last thread
-    if (*removed_count == MemoryAllocator::SharedInstNum()) {
+    if (*removed_count == MemoryAllocator::InstNum()) {
       ipc::shared_memory_object::remove(space_name);
       ipc::shared_memory_object::remove(count_space_name);
     }
@@ -241,15 +241,23 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
     model_input_tensors_[i]->set_shape(input_data[i].shape());
   }
 
-  if (reshape_model) {
+  if (is_dispatcher_tuning_) {
     for (int i = 0; i < operators_.size(); ++i) {
-        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model, 
-                                    dispatch_table_file_root_, has_dispatch_table_file_);
+      operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model,
+                                      dispatch_table_file_root_, has_dispatch_table_file_);
+    }
+  } else {
+    if (reshape_model) {
+      for (int i = 0; i < operators_.size(); ++i) {
+        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model,
+                                        dispatch_table_file_root_, has_dispatch_table_file_);
+      }
     }
   }
+
   // save dispatch table file after tuniung
   if (is_dispatcher_tuning_ && DispatchTable::Size() > 0) DispatchTable::Save(dispatch_table_file_root_);
-  
+
   if (!is_dispatcher_tuning_) {
     if (reshape_model) {
       for (int i = 0; i < operators_.size(); ++i) {

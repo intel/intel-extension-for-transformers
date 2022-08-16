@@ -32,15 +32,15 @@ namespace executor {
 
 class OpTuning {
  public:
-  typedef void(OpTuning::*TuneFunc)(std::shared_ptr<Operator>, const vector<Tensor*>&, 
+  typedef void(OpTuning::*TuneFunc)(std::shared_ptr<Operator>, const vector<Tensor*>&,
                                     const vector<Tensor*>&, const bool&);
   explicit OpTuning(const string& type) : type_(type) {}
   ~OpTuning() {}
-  
+
   // call realted tune function by type and kernel_name
   // prepare tuning config, like extra tensor life
-  void Start(const string& kernel_name, std::shared_ptr<Operator> kernel, 
-             const vector<Tensor*>& input, const vector<Tensor*>& output, 
+  void Start(const string& kernel_name, std::shared_ptr<Operator> kernel,
+             const vector<Tensor*>& input, const vector<Tensor*>& output,
              const bool& reshape_model) {
     set_tune_func_name(kernel_name);
     stage_ = "start";
@@ -49,8 +49,8 @@ class OpTuning {
   }
 
   // tune kernel and record time and dispatch kernel config
-  void Run(const string& kernel_name, std::shared_ptr<Operator> kernel, 
-           const vector<Tensor*>& input, const vector<Tensor*>& output, 
+  void Run(const string& kernel_name, std::shared_ptr<Operator> kernel,
+           const vector<Tensor*>& input, const vector<Tensor*>& output,
            const bool& reshape_model) {
     kernel_config_.clear();
     kernel_config_.push_back(kernel_name);
@@ -58,25 +58,31 @@ class OpTuning {
     (this->*(tune_func_map_[tune_func_name_]))(kernel, input, output, reshape_model);
   }
 
-  void BaseTune(std::shared_ptr<Operator> kernel, const vector<Tensor*>& input, 
+  void BaseTune(std::shared_ptr<Operator> kernel, const vector<Tensor*>& input,
                 const vector<Tensor*>& output, const bool& reshape_model) {
     if (stage_ == "start") {
       extra_tensor_life_ += 1;
       return;
     }
-    float start_time = Time("start");
+    float start_time = 0;
     // consider kernel forward class creation time in Reshape
     // it may be time-consuming under dynamic shape
-    if (reshape_model) kernel->Reshape(input, output);
+    float reshape_time = 0;
+    if (reshape_model) {
+      start_time = Time("start");
+      kernel->Reshape(input, output);
+      reshape_time = Time("end") - start_time;
+    }
+    start_time = Time("start");
     kernel->Forward(input, output);
-    best_execute_time_ = Time("end") - start_time;
+    best_execute_time_ = Time("end") - start_time + reshape_time;
     LOG(INFO) << "BaseTune forward time is " << best_execute_time_ << "ms";
   }
-  
+
   // MxK x KxN to
   // Nx1xWxK(c_i) x 1x1xK(c_i)xN(c_o)
   // find the best N-W combination
-  void IpToConvTune(std::shared_ptr<Operator> kernel, const vector<Tensor*>& input, 
+  void IpToConvTune(std::shared_ptr<Operator> kernel, const vector<Tensor*>& input,
                     const vector<Tensor*>& output, const bool& reshape_model) {
     std::map<float, string, std::less<float>> input_shape_timer;
     vector<string> nw_comb;
@@ -96,11 +102,11 @@ class OpTuning {
       if (m_dim % i == 0) {
         if (!is_src0_transposed) {
           // [N, H, W, C], C=K, N*H*W=M
-          nw_comb.push_back(std::to_string(i) + ",1," + std::to_string(m_dim / i) + "," 
+          nw_comb.push_back(std::to_string(i) + ",1," + std::to_string(m_dim / i) + ","
                             + std::to_string(k_dim));
         } else {
           // [C, N, H, W], C=K, N*H*W=M
-          nw_comb.push_back(std::to_string(k_dim) + "," + std::to_string(i) + ",1," 
+          nw_comb.push_back(std::to_string(k_dim) + "," + std::to_string(i) + ",1,"
                             + std::to_string(m_dim / i));
         }
       }
@@ -114,10 +120,15 @@ class OpTuning {
     for (const auto& comb : nw_comb) {
       kernel_config_cpy[1] = comb;
       kernel->set_dispatch_config(kernel_config_cpy);
-      float start_time = Time("start");
+      float start_time = 0;
+      float reshape_time = 0;
+      start_time = Time("start");
       kernel->Reshape(input, output);
+      reshape_time = Time("end") - start_time;
+      start_time = Time("start");
       kernel->Forward(input, output);
       float execute_time = Time("end") - start_time;
+      if (reshape_model) execute_time += reshape_time;
       input_shape_timer[execute_time] = comb;
       LOG(INFO) << "IpToConvTune forward time is " << execute_time << "ms with src0 shape " << comb;
     }
@@ -138,7 +149,7 @@ class OpTuning {
   void set_tune_func_name(const string& kernel_name) {
     tune_func_name_ = type_ + "_to_" + kernel_name;
     if (tune_func_map_.count(tune_func_name_) == 0) {
-      if (kernel_name != type_) LOG(WARNING) << "No matching tuning function for " << tune_func_name_ 
+      if (kernel_name != type_) LOG(WARNING) << "No matching tuning function for " << tune_func_name_
                                               << ", gonna use BaseTune function instead...";
       tune_func_name_ = "Base";
     }
@@ -154,9 +165,9 @@ class OpTuning {
 };
 
 std::unordered_map<string, OpTuning::TuneFunc> OpTuning::tune_func_map_ = {
-    {"Base", &OpTuning::BaseTune}, 
+    {"Base", &OpTuning::BaseTune},
     {"InnerProduct_to_Convolution", &OpTuning::IpToConvTune}
 };
-} //namespace executor
+}  // namespace executor
 
-#endif //ENGINE_EXECUTOR_INCLUDE_OP_TUNING_HPP_
+#endif  // ENGINE_EXECUTOR_INCLUDE_OP_TUNING_HPP_
