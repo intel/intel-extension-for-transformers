@@ -25,41 +25,31 @@ BinaryAddOperator::BinaryAddOperator(const OperatorConfig& conf) : Operator(conf
 }
 
 void BinaryAddOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  //// Part1: Derive operator's user proper shape and strides
-  // 1.1: Prepare Tensor origin shape
+  // 1: Prepare op descriptor and set dst tensor shape.
   const memory::dims& src0_shape_origin = input[0]->shape();
   const memory::dims& src1_shape_origin = input[1]->shape();
 
-  // 1.2 Get tensor's adjusted shapes
-  int64_t dsize = src0_shape_origin.size();
-  // dst shape
-  memory::dims dst_shape(dsize, 0);
-  for (int64_t i = 0; i < dsize; ++i) {
-    dst_shape[i] = max(src0_shape_origin[i], src1_shape_origin[i]);
+  // check broadcast optimization
+  if (src0_shape_origin.size() == src1_shape_origin.size() && src0_shape_origin.size() > 1) {
+    bool tag = true;
+    for (int i = 1; i < src0_shape_origin.size(); i++) {
+      if (src0_shape_origin[i] != src1_shape_origin[i]) tag = false;
+    }
+    broadcast_ = tag;
   }
 
-  // 1.3 Get tensor's adjusted strides
-  memory::dims src0_stride = GetStrides(src0_shape_origin);
-  memory::dims src1_stride = GetStrides(src1_shape_origin);
-  memory::dims dst_stride = GetStrides(dst_shape);
-
-  // 1.4 Prepare memory descriptors
-  memory::desc user_src0_md(src0_shape_origin, memory::data_type::f32, src0_stride);
-  memory::desc user_src1_md(src1_shape_origin, memory::data_type::f32, src1_stride);
-  memory::desc user_dst_md(dst_shape, memory::data_type::f32, dst_stride);
-
-  // 1.5 Set dst tensor shape
+  dnnl::binary::desc binary_d;
   auto& dst_tensor_ptr = output[0];
-  dst_tensor_ptr->set_shape(dst_shape);
 
-  //// Part2: Derive operator's format_any memory::desc and memory.
-  // 2.1 Prepare format_any memory descriptors
-  memory::desc any_dst_md(user_dst_md.dims(), user_dst_md.data_type(), memory::format_tag::any);
+  if (broadcast_) {
+    binary_d = PrepareBroadcastBinaryDesc(src0_shape_origin, src1_shape_origin);
+    dst_tensor_ptr->set_shape(GetBroadcastBinaryDstShape(src0_shape_origin, src1_shape_origin));
+  } else {
+    binary_d = PrepareStrideBinaryDesc(src0_shape_origin, src1_shape_origin);
+    dst_tensor_ptr->set_shape(GetStrideBinaryDstShape(src0_shape_origin, src1_shape_origin));
+  }
 
-  // 2.2 Prepare op descriptors
-  dnnl::binary::desc binary_d(algorithm::binary_add, user_src0_md, user_src1_md, any_dst_md);
-
-  // 2.3 Prepare primitive descriptors (cached)
+  // 2: Prepare primitive descriptors (cached)
   dnnl::primitive_attr attr;
   if (append_sum_) {
     dnnl::post_ops po;
@@ -69,13 +59,8 @@ void BinaryAddOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   }
   binary_pd_ = dnnl::binary::primitive_desc(binary_d, attr, eng_);
 
-  // 2.4 Prepare primitive objects (cached)
+  // 3: Prepare primitive objects (cached)
   binary_p_ = dnnl::binary(binary_pd_);
-
-  // 2.5 Prepare memory objects (cached)
-  user_src0_m_ = memory(user_src0_md, eng_);
-  user_src1_m_ = memory(user_src1_md, eng_);
-  user_dst_m_ = memory(user_dst_md, eng_);
 }
 
 void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -109,10 +94,28 @@ void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   }
   auto dst_data = dst_ptr->mutable_data();
 
+  void* inf_src0_data = const_cast<void*>(src0_data);
+  void* inf_src1_data = const_cast<void*>(src1_data);
+
+  if (broadcast_) {
+    auto src0_shape = input[0]->shape();
+    auto src1_shape = input[1]->shape();
+    int src0_element_num = 1, src1_element_num = 1;
+    for (int i = 0; i < src0_shape.size(); i++) {
+      src0_element_num *= src0_shape[i];
+      src1_element_num *= src1_shape[i];
+    }
+    if (src1_element_num > src0_element_num) {
+      void* tmp_ptr = inf_src0_data;
+      inf_src0_data = inf_src1_data;
+      inf_src1_data = tmp_ptr;
+    }
+  }
+
   // 1. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  user_src0_m_.set_data_handle(const_cast<void*>(src0_data), s);
-  user_src1_m_.set_data_handle(const_cast<void*>(src1_data), s);
+  user_src0_m_.set_data_handle(inf_src0_data, s);
+  user_src1_m_.set_data_handle(inf_src1_data, s);
   user_dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
 
   memory any_src0_m = user_src0_m_;
@@ -138,6 +141,99 @@ void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   }
   // 6. unref tensors
   this->unref_tensors(inputs);
+}
+
+dnnl::binary::desc BinaryAddOperator::PrepareBroadcastBinaryDesc(const memory::dims& src0_shape_origin,
+                                                                 const memory::dims& src1_shape_origin) {
+  memory::dims jit_pass_src0_shape = src0_shape_origin, jit_pass_src1_shape = src1_shape_origin;
+  memory::format_tag dt_tag;
+  if (src0_shape_origin[0] < src1_shape_origin[0]) {
+    jit_pass_src0_shape = src1_shape_origin;
+    jit_pass_src1_shape = src0_shape_origin;
+  }
+
+  // set dt_tag
+  SetFormatTag(dt_tag, jit_pass_src0_shape.size());
+
+  // dst_shape is same as jit_pass_src0_shape, all 3 tensor's dt_tag are same.
+  memory::desc user_src0_md(jit_pass_src0_shape, memory::data_type::f32, dt_tag);
+  memory::desc user_src1_md(jit_pass_src1_shape, memory::data_type::f32, dt_tag);
+  memory::desc user_dst_md(jit_pass_src0_shape, memory::data_type::f32, dt_tag);
+
+  //  Prepare memory objects (cached)
+  user_src0_m_ = memory(user_src0_md, eng_);
+  user_src1_m_ = memory(user_src1_md, eng_);
+  user_dst_m_ = memory(user_dst_md, eng_);
+
+  dnnl::binary::desc binary_d(algorithm::binary_add, user_src0_md, user_src1_md, user_dst_md);
+
+  return binary_d;
+}
+
+// necessary assert checks have be done in PrepareBroadcastBinaryDesc
+memory::dims BinaryAddOperator::GetBroadcastBinaryDstShape(const memory::dims& src0_shape_origin,
+                                                           const memory::dims& src1_shape_origin) {
+  for (int i = 0; i < src0_shape_origin.size(); i++)
+    if (src0_shape_origin[i] < src1_shape_origin[i]) return src1_shape_origin;
+
+  return src0_shape_origin;
+}
+
+dnnl::binary::desc BinaryAddOperator::PrepareStrideBinaryDesc(const memory::dims& src0_shape_origin,
+                                                              const memory::dims& src1_shape_origin) {
+  // 1 Get tensor's adjusted shapes
+  auto dst_shape = GetStrideBinaryDstShape(src0_shape_origin, src1_shape_origin);
+
+  // 2 Get tensor's adjusted strides
+  memory::dims src0_stride = GetStrides(src0_shape_origin);
+  memory::dims src1_stride = GetStrides(src1_shape_origin);
+  memory::dims dst_stride = GetStrides(dst_shape);
+
+  // 3 Prepare memory descriptors
+  memory::desc user_src0_md(src0_shape_origin, memory::data_type::f32, src0_stride);
+  memory::desc user_src1_md(src1_shape_origin, memory::data_type::f32, src1_stride);
+  memory::desc user_dst_md(dst_shape, memory::data_type::f32, dst_stride);
+
+  // 4 Prepare format_any memory descriptors
+  memory::desc any_dst_md(user_dst_md.dims(), user_dst_md.data_type(), memory::format_tag::any);
+
+  // 5. Prepare memory objects (cached)
+  user_src0_m_ = memory(user_src0_md, eng_);
+  user_src1_m_ = memory(user_src1_md, eng_);
+  user_dst_m_ = memory(user_dst_md, eng_);
+
+  // 6. Prepare op descriptors
+  dnnl::binary::desc binary_d(algorithm::binary_add, user_src0_md, user_src1_md, any_dst_md);
+
+  return binary_d;
+}
+
+memory::dims BinaryAddOperator::GetStrideBinaryDstShape(const memory::dims& src0_shape_origin,
+                                                        const memory::dims& src1_shape_origin) {
+  int64_t dsize = src0_shape_origin.size();
+  memory::dims dst_shape(dsize, 0);
+  for (int64_t i = 0; i < dsize; ++i) {
+    dst_shape[i] = max(src0_shape_origin[i], src1_shape_origin[i]);
+  }
+  return dst_shape;
+}
+
+void BinaryAddOperator::SetFormatTag(memory::format_tag& tag, int tensor_dim) {
+  switch (tensor_dim) {
+    case 2:
+      tag = memory::format_tag::ab;
+      break;
+    case 3:
+      tag = memory::format_tag::abc;
+      break;
+    case 4:
+      tag = memory::format_tag::abcd;
+      break;
+    default:
+      assert(tensor_dim < 5 &&
+             tensor_dim > 1);  // we only support up to 4D now, but we can support up to 10D tensor in future.
+      break;
+  }
 }
 
 REGISTER_OPERATOR_CLASS(BinaryAdd);

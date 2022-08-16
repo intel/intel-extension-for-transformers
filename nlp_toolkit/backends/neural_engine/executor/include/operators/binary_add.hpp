@@ -41,6 +41,7 @@ class BinaryAddOperator : public Operator {
 
  private:
   bool append_sum_;
+  bool broadcast_ = false;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::binary::primitive_desc binary_pd_;
   dnnl::binary binary_p_;
@@ -48,6 +49,14 @@ class BinaryAddOperator : public Operator {
   memory user_src1_m_;
   memory user_dst_m_;
   unordered_map<int, memory> memory_args_;
+
+  dnnl::binary::desc PrepareBroadcastBinaryDesc(const memory::dims& src0_shape_origin,
+                                                const memory::dims& src1_shape_origin);
+  dnnl::binary::desc PrepareStrideBinaryDesc(const memory::dims& src0_shape_origin,
+                                             const memory::dims& src1_shape_origin);
+  memory::dims GetBroadcastBinaryDstShape(const memory::dims& src0_shape_origin, const memory::dims& src1_shape_origin);
+  memory::dims GetStrideBinaryDstShape(const memory::dims& src0_shape_origin, const memory::dims& src1_shape_origin);
+  void SetFormatTag(memory::format_tag& tag, int tensor_dim);
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_BINARY_ADD_HPP_
