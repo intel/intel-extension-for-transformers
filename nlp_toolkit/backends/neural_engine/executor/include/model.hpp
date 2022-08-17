@@ -99,6 +99,15 @@ class Model {
     return output_tensors_;
   }
 
+  void Profiling(char* space_name = "InstCount", char* count_name = "inst_count",
+                 char* mtx_name = "inst_mtx", int warm_up = 1);
+  void ProfilingSparse(FILE* fp);
+  void ProfilingOperator(FILE* fp, const shared_ptr<Dispatcher>& op);
+  void ProfilingTensors(FILE* fp, const vector<Tensor*>& tensors);
+  void ProfilingWeights(FILE* fp, const shared_ptr<Dispatcher>& op);
+  void ProfilingSparseEstimate(FILE* fp, const shared_ptr<Dispatcher>& op,
+                               const float average_latency = 0.);
+
  protected:
   string name_;
   string weight_root_;
@@ -126,6 +135,8 @@ class Model {
   bool has_dispatch_table_file_ = false;
   string dispatch_table_file_root_;
   bool is_dispatcher_tuning_ = false;
+  // for profiling
+  bool engine_profiling_ = false;
 };
 
 }  // namespace executor

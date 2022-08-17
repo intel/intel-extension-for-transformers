@@ -81,6 +81,11 @@ out = model.forward([input_ids, segment_ids, input_mask])
 The `input_ids`, `segment_ids` and `input_mask` are the input numpy array data of BERT model, and the input dimension is (batch_size x seq_len). 
 Note that the `out` is a list contains the bert model output numpy data (`out=[output numpy data]`). 
 
+##### 5. Analyze operator performance
+
+If you want to analyze performance of each operator, just export ENGINE_PROFILING=1 and export INST_NUM=<inst_num>.
+It will dump latency of each operator to <curr_path>/engine_profiling/profiling_<inst_id>.csv.
+
 ## IPEX
 Intel® Extension for PyTorch* extends PyTorch with optimizations for extra performance boost on Intel hardware. Sample deployment is coming soon.
 

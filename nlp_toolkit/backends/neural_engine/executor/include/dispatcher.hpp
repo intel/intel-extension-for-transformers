@@ -178,6 +178,29 @@ class Dispatcher {
   inline const string& execute_kernel() const { return execute_kernel_; }
   inline const bool& disable_dispatch() const { return disable_dispatch_; }
   inline const void set_warmup_iter(const int& warmup_iter) { warmup_iter_ = warmup_iter; }
+  // for profiling
+  inline void set_post_op(const string& post_op) { kernel_handler_[execute_kernel_]->set_post_op(post_op); }
+  inline const string& post_op() { return kernel_handler_[execute_kernel_]->post_op(); }
+  inline void set_latency(const float latency) { kernel_handler_[execute_kernel_]->set_latency(latency); }
+  inline const vector<float>& latency() { return kernel_handler_[execute_kernel_]->latency(); }
+  inline void set_enable_sparse(const bool enable_sparse) {
+    kernel_handler_[execute_kernel_]->set_enable_sparse(enable_sparse);
+  }
+  inline const float& enable_sparse() { return kernel_handler_[execute_kernel_]->enable_sparse(); }
+  inline const KERNEL_TYPE& kernel_type() { return kernel_handler_[execute_kernel_]->kernel_type(); }
+  inline const float& weight_zero_ratio() { return kernel_handler_[execute_kernel_]->weight_zero_ratio(); }
+  inline void set_weight_shape(const vector<int64_t>& weight_shape) {
+    kernel_handler_[execute_kernel_]->set_weight_shape(weight_shape);
+  }
+  inline const vector<int64_t>& weight_shape() { return kernel_handler_[execute_kernel_]->weight_shape(); }
+  inline void set_table_id(string table_id) {
+    kernel_handler_[execute_kernel_]->set_table_id(table_id);
+  }
+  inline const string& table_id() { return kernel_handler_[execute_kernel_]->table_id(); }
+  inline void set_perf_ratio_id(string perf_ratio_id) {
+    kernel_handler_[execute_kernel_]->set_perf_ratio_id(perf_ratio_id);
+  }
+  inline const string& perf_ratio_id() { return kernel_handler_[execute_kernel_]->perf_ratio_id(); }
 
  protected:
   // get input_hash
