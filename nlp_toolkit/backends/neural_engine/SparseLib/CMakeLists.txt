@@ -3,7 +3,11 @@ project(kernellibs)
 set(HOST_LIBRARY_NAME "kernellibs")
 
 option(SPARSE_LIB_USE_AMX OFF)
+option(SPARSE_LIB_USE_VTUNE OFF)
+option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
 
+set(EXTERNAL_INCLUDE_PATH "")
+set(EXTERNAL_LIBRARY_PAYH "")
 set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -march=native")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS}")
@@ -13,6 +17,12 @@ endif()
 
 if (SPARSE_LIB_USE_AMX)
     set(CMAKE_CXX_FLAGS "-DSPARSE_LIB_USE_AMX ${CMAKE_CXX_FLAGS}")
+endif()
+
+# include external cmake
+if (SPARSE_LIB_USE_VTUNE)
+    include(cmake/FindVTune.cmake)
+    message( STATUS "VTune enbled" )
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)

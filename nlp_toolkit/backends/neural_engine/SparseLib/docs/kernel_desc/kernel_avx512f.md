@@ -13,7 +13,7 @@ dst[MAX:512] := 0
 ## Sparse Pattern & Data Format
 Based on `vfmadd231ps`, the sparse pattern is set to 1 x 16, where 1 is the degree of reduction and 16 is the degree of the parallelization. In terms of neural network, 1 for input channel and 16 is for output channel. Therefore, for each `vfmadd231ps`, 1 element of activation is broadcasted 16 times and 16 contingent elements of weight are loaded as its operands.
 
-![AVX512F Base Pattern](./imgs/kernel_avx512f_pattern_base.png)
+![AVX512F Base Pattern](../imgs/kernel_avx512f_pattern_base.png)
 
 Given the sparse pattern, Block Compressed Column format (a column variant of [BSR](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.bsr_matrix.html)) is adopted to optimize memory access so that non-zero elements of weight are accessed sequentially along K-dimension.
 
@@ -38,4 +38,4 @@ The above 2 levels of loop are assembly loop in JIT objects.
 
 The last 3 levels of loop are inside the microkernel.
 
-![AVX512F Pattern with unrolling](./imgs/kernel_avx512f_pattern_unroll4.png)
+![AVX512F Pattern with unrolling](../imgs/kernel_avx512f_pattern_unroll4.png)

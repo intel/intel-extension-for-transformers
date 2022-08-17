@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.11)
 project(sparselib_ut)
 
 option(SPARSE_LIB_USE_AMX OFF)
+option(SPARSE_LIB_USE_VTUNE OFF)
+option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -march=native")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")

@@ -25,6 +25,10 @@
 #include <vector>
 #include "param_types.hpp"
 
+#ifdef SPARSE_LIB_USE_VTUNE
+#include <ittnotify.h>
+#endif
+
 namespace jd {
 
 typedef unsigned short bfloat16_t;  // NOLINT

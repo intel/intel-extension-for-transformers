@@ -77,6 +77,9 @@ class hash_t {
         break;
       case kernel_kind::sparse_matmul:
         hash_combine(seed, op_attrs["sparse_ptr"]);
+        hash_combine(seed, op_attrs["micro_oc"]);
+        hash_combine(seed, op_attrs["post_op"]);
+        hash_combine(seed, op_attrs["sub_func"]);
         break;
         // todo:remove it.
       case kernel_kind::postop:

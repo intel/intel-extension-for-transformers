@@ -23,7 +23,7 @@ int get_verbose() {
   if (!verbose.initialized()) {
     // Assumes that all threads see the same environment
     int sparselib_verbose_level = 0;
-    const char* val = std::getenv("SPARSELIB_VERBOSE");
+    const char* val = std::getenv("SPARSE_LIB_VERBOSE");
     if (val != nullptr) {
       if (strcmp(val, "1") == 0) {
         sparselib_verbose_level = 1;

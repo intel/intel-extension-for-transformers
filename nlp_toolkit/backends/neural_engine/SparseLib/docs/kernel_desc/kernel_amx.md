@@ -18,13 +18,13 @@ zero_tileconfig_start()
 Like the **VNNI**, **AMX-BF16** needs re-layout the right matrix as following:
 
 
-![image](imgs/kernel_amx_bf16x16_relayout.png)
+![image](../imgs/kernel_amx_bf16x16_relayout.png)
 
 
 As a result, as a successor to **AVX512** series sparse pattern, **AMX** pattern split the matrix into many **1x16** blocks and then concatenate them to meet AMX 32x16 requirements.
 
 
-![image](imgs/kernel_amx_bf16x16_calc.png)
+![image](../imgs/kernel_amx_bf16x16_calc.png)
 
 Let the left matrix in the above image be A and the right be B. In our case, A is transposed weight(sparse), B is transposed activation. A can be compressed offline or before the inference, so we could directly use `tileloadd` instruction for 32 nonzero blocks in A (they’re stored consecutively in memory). For B, We need 32 rows of 16 consecutive values for one `tdpbf16ps`. This may be good because 16 values in one row are consecutive and can be loaded via `vmovdqu32` (through we are handling BF16). However, there are two tradeoff. The first is that the 32x16 tiles of B need to be reordered to AMX layout as the images shows. The second is that the activation matrix needs to be transposed, which may be more time-consuming
 

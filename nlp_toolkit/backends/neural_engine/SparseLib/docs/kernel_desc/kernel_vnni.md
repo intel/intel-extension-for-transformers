@@ -28,20 +28,20 @@ After compression, we concatenate each **4x1** block in the same row into some *
 
 For a typical GEMM (M x K x N) problem, a high performance GEMM micro-kernel need to tile in (m x k x n) which means taking m rows of matrix A and n cols of matrix B to improve density of ```fma``` instructions, therefore reducing bubbles in the assembly line. In the **4x4** block, the **"4"** is corresponding to the **m** in micro-kernels, and the **"4"** by the concatenate along rows is just for VNNI accumulation dimensions. 
 
-![image](imgs/kernel_vnni_pattern_left_4x1.png)
+![image](../imgs/kernel_vnni_pattern_left_4x1.png)
 
 ## Candidate patterns
 Transposition is not a default option for matrix multiplication but a workaround we found after investigation. Without transposition, activation multiplies weight and the major dimension of left matrix (that is K) must be uses for accumulation. Therefore, we need to use the N dim for parallelization which is sparse. Unfortunately, it is hard to store the result to inconsecutively to destination memory. 
 
-![image](imgs/kernel_vnni_pattern_right_4x1.png)
+![image](../imgs/kernel_vnni_pattern_right_4x1.png)
 
 Adopting 1x16 pattern and using concatenation to get the accumulation dimension is also a bad idea as it means reading 4 skipping elements in a row on the dense matrix. Therefore, we must apply transposition so that the 2nd dimension of the dense matrix is used for accumulation leaving the leading dimension for parallelization.
 
-![image](imgs/kernel_vnni_pattern_right_1x16.png)
+![image](../imgs/kernel_vnni_pattern_right_1x16.png)
 
 Given that transposition is necessary, an alternative pattern is **"1x4"**, where the concatenation cost is saved but missing tiling means lower density of micro-kernels, which will bring more harm for performance.
 
-![image](imgs/kernel_vnni_pattern_left_1x4.png)
+![image](../imgs/kernel_vnni_pattern_left_1x4.png)
 
 > Comparison between **"1x4"** and **"4x1"**
 > 1. **"4x1"** does tiling along M dimensions, **"1x4"** does no tiling along this dimension.
@@ -49,6 +49,6 @@ Given that transposition is necessary, an alternative pattern is **"1x4"**, wher
 
 We performed a simulation by changing the **"4x1"** to **"2x1"**, which means tiling along the M dimensions becomes 2. As a result, the following table demonstrates about 1/3 perf drop, and we expect more performance drop with totally no tiling.
 
-![image](imgs/kernel_vnni_perf.png)
+![image](../imgs/kernel_vnni_perf.png)
 
 In conclusion, **"4x1"** brings higher performance which is about ~2(+) times against **"1x4"** (estimated from differences between tiling and no tiling.) 

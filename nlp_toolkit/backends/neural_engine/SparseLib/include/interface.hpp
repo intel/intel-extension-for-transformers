@@ -27,6 +27,7 @@
 #include "kernel.hpp"
 #include "kernel_cache.hpp"
 #include "utils.hpp"
+#include "vtune_wrapper.hpp"
 #include "kernels/sparse_data.hpp"
 
 namespace jd {

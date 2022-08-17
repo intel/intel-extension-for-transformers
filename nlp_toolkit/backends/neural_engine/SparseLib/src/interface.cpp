@@ -72,6 +72,12 @@ bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_r
 
 void kernel_proxy::execute(const std::vector<const void*>& rt_data) {
   bool status = false;
+  auto vtune_wrapper = vtune_wrapper_t();
+#ifdef SPARSE_LIB_USE_VTUNE
+  if (get_vtune()) {
+    vtune_wrapper.profiling_begin(get_sp()->kd()->info());
+  }
+#endif
   if (get_verbose()) {
     double start_ms = get_msec();
     status = get_sp()->execute(rt_data);
@@ -84,6 +90,11 @@ void kernel_proxy::execute(const std::vector<const void*>& rt_data) {
   } else {
     status = get_sp()->execute(rt_data);
   }
+#ifdef SPARSE_LIB_USE_VTUNE
+  if (get_vtune()) {
+    vtune_wrapper.profiling_end();
+  }
+#endif
   return;
 }
 }  // namespace jd

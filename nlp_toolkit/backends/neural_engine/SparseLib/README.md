@@ -7,7 +7,7 @@ SparseLib is a high-performance operator computing library implemented by assemb
 
 ## Installation
 ### Build
-```
+```shell
 cd SparseLib/
 mkdir build
 cd build
@@ -16,7 +16,7 @@ make -j
 ```
 
 ### Test
-```
+```shell
 cd test/gtest/SparseLib/
 mkdir build
 cd build
@@ -24,8 +24,6 @@ cmake ..
 # cmake .. -DSPARSE_LIB_USE_AMX=True // if enabling AMX support
 make -j
 ./test_spmm_vnni_kernel
-# if verbose needed
-SPARSELIB_VERBOSE=1 ./test_spmm_vnni_kernel
 ```
 
 ## API reference for users
