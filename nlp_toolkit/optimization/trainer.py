@@ -1667,6 +1667,45 @@ class BaseTrainer():
         self.export_to_fp32_onnx(fp32_path, opset_version=opset_version, 
                                  do_constant_folding=False, verbose=False)
         model = onnx.load(fp32_path)
+
+        if self.opt_model.q_config['approach'] is 'quant_aware_training':
+            # collect weights, bias from int8 QAT PT model
+            model_dict = self.opt_model.model.state_dict()
+            int8_model_dict = {}
+            for name, param in model_dict.items():
+                # '_packed_params._packed_weight' is specific for quantized Embedding
+                if '_packed_params._packed_weight' in name:
+                    name = name.replace('._packed_params._packed_weight', '').split('.module')[0]
+                    int8_model_dict[name+'.weight'] = param.dequantize()
+                # '_packed_params._packed_params' is specific for quantized Linear
+                elif '_packed_params._packed_params' in name and isinstance(param, tuple):
+                    name = name.replace('._packed_params._packed_params', '').split('.module')[0]
+                    int8_model_dict[name+'.bias'] = param[1]
+                    int8_model_dict[name+'.weight'] = param[0].dequantize()
+                # '.weight' and '.bias' is specific for quantized Conv
+                elif '.weight' in name:
+                    int8_model_dict[name] = param.dequantize()
+                elif '.bias' in name:
+                    int8_model_dict[name] = param
+                else:
+                    int8_model_dict[name] = param
+
+            # replace weight and bias in onnx fp32 model for QAT
+            from onnx import helper
+            tensor_list = [tensor for tensor in model.graph.initializer]
+            for tensor in tensor_list:
+                if tensor.name in int8_model_dict:
+                    np_tensor = int8_model_dict[tensor.name].detach().cpu().numpy()
+                    new_tensor = helper.make_tensor(
+                        name=tensor.name,
+                        data_type=tensor.data_type,
+                        dims=tensor.dims,
+                        vals=np_tensor,
+                    )
+                    model.graph.initializer.remove(tensor)
+                    model.graph.initializer.append(new_tensor)
+            onnx.save(model, fp32_path)
+
         from neural_compressor.adaptor.onnxrt import ONNXRTAdaptor
         # pylint: disable=E1120
         inc_model = ONNXRTAdaptor._replace_gemm_with_matmul(model)

@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import onnx
 import shutil
@@ -123,6 +124,16 @@ class TestQuantization(unittest.TestCase):
                 self.trainer.export_to_onnx('int8-model.onnx')
                 self.assertTrue(check_onnx('int8-model.onnx', self.trainer.get_eval_dataloader()))
 
+            if mode == QuantizationMode.QUANTIZATIONAWARETRAINING:
+                model = onnx.load('int8-model.onnx')
+                tensor_list = {tensor.name:tensor for tensor in model.graph.initializer}
+                torch_data = quantized_model.model.classifier.state_dict()\
+                                ['module._packed_params._packed_params'][0].\
+                                dequantize().detach().cpu().numpy().T
+                from onnx.numpy_helper import to_array
+                onnx_data = to_array(tensor_list['classifier.weight_quantized'])
+                onnx_scale = to_array(tensor_list['classifier.weight_scale'])
+                self.assertTrue(np.allclose(torch_data, onnx_data * onnx_scale, atol=0.001))
             # Check quantized model
             output_1 = self.trainer.predict(self.dummy_dataset).predictions
             loaded_model = OptimizedModel.from_pretrained(
