@@ -344,7 +344,7 @@ void Model::Profiling(char* space_name, char* count_name, char* mtx_name, int wa
     fprintf(fp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "operator type", "post op",
             "operator name", "input tensor name", "input shape", "input dtype", "output tensor name", "output shape",
             "output dtype", "weight shape", "weight sparse ratio", "sparse support", "operator latency (ms)",
-            "aim to weight sparse ratio", "sparse kernel perf improve", "aim to sparse latency(ms)");
+            "aim to weight sparse ratio", "sparse kernel pref ratio", "aim to sparse latency(ms)");
     float total_latency = 0;
     float enable_sparse_latency = 0.;
     // skip input and output node
