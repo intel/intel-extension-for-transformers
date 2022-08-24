@@ -93,6 +93,16 @@ void Model::Init(const ModelConfig& conf) {
         multi_stream_tasks_.insert({i, StringToNum<int64_t>(it->second)});
       }
     }
+    auto max_tasks = std::max_element(multi_stream_tasks_.begin(), multi_stream_tasks_.end(),
+        [] (const std::pair<int, int64_t>& a, const std::pair<int, int64_t>& b)
+           ->bool{ return a.second < b.second; } );
+    int tp_max_threads = max_tasks->second + (max_tasks->second & 1);
+    int total_available_threads = omp_get_num_procs();
+    tp_max_threads = tp_max_threads > total_available_threads ?
+                                      total_available_threads : tp_max_threads;
+    tp.begin(tp_max_threads);
+    LOG(INFO) << "Thread pool is initialized with " << tp_max_threads << " threads. (" <<
+                 "Total avaiable threads: " << total_available_threads << ")";
   }
 
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
@@ -280,7 +290,6 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
       for (int i = 0; i < operators_.size(); ++i) {
         LOG(INFO) << "operator " << operators_[i]->name() << " gonna forward with type " << operators_[i]->type();
         if (multi_stream_flag && multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
-          tp.resize(thread_count);
           float start = Time("start");
           tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i], input_vecs_[i], output_vecs_[i]));
           float end = Time("end");
@@ -288,7 +297,6 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
           LOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << end - start << " ms";
           if (thread_count >= multi_stream_tasks_[i]) {
             tp.waitAllTaskRunOver();
-            tp.close();
             thread_count = 0;
           }
           thread_count++;
@@ -304,11 +312,9 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
       for (int i = 0; i < operators_.size(); ++i) {
         LOG(INFO) << "operator " << operators_[i]->name() << " gonna forward with type " << operators_[i]->type();
         if (multi_stream_flag && multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
-          tp.resize(thread_count);
           tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i], input_vecs_[i], output_vecs_[i]));
           if (thread_count >= multi_stream_tasks_[i]) {
             tp.waitAllTaskRunOver();
-            tp.close();
             thread_count = 0;
           }
           thread_count++;

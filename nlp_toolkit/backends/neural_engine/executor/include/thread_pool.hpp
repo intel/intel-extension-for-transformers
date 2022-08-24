@@ -43,7 +43,7 @@ class ThreadPool {
   std::queue<Task> tasks;
   // sync of multi stream
   std::mutex tasks_lock;
-  std::condition_variable task_cond_var;
+  std::condition_variable task_cond_var, cond_finish_;
   std::atomic<unsigned int> idle_thread_num;
   std::atomic<unsigned int> work_thread_num;
   // is thread pool stoped
@@ -54,7 +54,7 @@ class ThreadPool {
     unsigned int index = pool.size();
     stoped.emplace_back(false);
     idle_thread_num++;
-    pool.emplace_back([this, index] {
+    pool.emplace_back(std::thread([this, index] {
       while (true) {
         // capature the task
         std::function<void()> task;
@@ -67,28 +67,33 @@ class ThreadPool {
             idle_thread_num--;
             return;
           }
+          idle_thread_num--; work_thread_num++;
           task = std::move(this->tasks.front());
           this->tasks.pop();
         }
 
         {
-          idle_thread_num--, work_thread_num++;
           task();  // run the task
-          idle_thread_num++, work_thread_num--;
+          std::unique_lock<std::mutex> lock(this->tasks_lock);
+          idle_thread_num++; work_thread_num--;
+          cond_finish_.notify_one();
         }
       }
-    });
+    }));
   }
 
  public:
   inline ThreadPool() {
     work_thread_num = 0;
+    idle_thread_num = 0;
     pool_stoped = false;
   }
   // wait for all threads to finish and stop all threads
   inline ~ThreadPool() {
+    std::unique_lock<std::mutex> lock(tasks_lock);
     for (auto item : stoped) item = true;
     task_cond_var.notify_all();  // wake up all thread to run
+    lock.unlock();
     for (auto& th : pool) {
       if (th.joinable()) th.join();
     }
@@ -161,13 +166,8 @@ class ThreadPool {
   bool hasStopedPool() { return pool_stoped; }
   // wait for all tasks to be completed
   void waitAllTaskRunOver() {
-    while (true) {
-      if (work_thread_num == 0) {
-        return;
-      } else {
-        std::this_thread::yield();
-      }
-    }
+    std::unique_lock<std::mutex> lock(tasks_lock);
+    cond_finish_.wait(lock, [this]{ return tasks.empty() && (work_thread_num == 0); });
   }
 };
 

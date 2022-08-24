@@ -193,6 +193,8 @@ class MemoryAllocator {
   }
 
   static void* GetMemory(size_t size, const int life_count) {
+    static std::mutex getmem_lock;
+    std::lock_guard<std::mutex> lock(getmem_lock);
     if (size == 0) {
       LOG(INFO) << "please set the tensor size...";
       return nullptr;

@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include "common.hpp"
 #include "operator_registry.hpp"
@@ -60,6 +61,8 @@ class Operator {
                        const vector<Tensor*>& output) = 0;
 
   inline void unref_tensors(const vector<Tensor*>& input) {
+    static std::mutex unref_lock;
+    std::lock_guard<std::mutex> lock(unref_lock);
     for (size_t i = 0; i < input.size(); ++i) {
       auto status = input[i]->unref_data();
       // (TODO) maybe check the tensors
