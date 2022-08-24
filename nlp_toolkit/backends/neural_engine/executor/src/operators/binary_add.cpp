@@ -153,7 +153,7 @@ dnnl::binary::desc BinaryAddOperator::PrepareBroadcastBinaryDesc(const memory::d
   }
 
   // set dt_tag
-  SetFormatTag(dt_tag, jit_pass_src0_shape.size());
+  dt_tag = SetFormatTag(jit_pass_src0_shape.size());
 
   // dst_shape is same as jit_pass_src0_shape, all 3 tensor's dt_tag are same.
   memory::desc user_src0_md(jit_pass_src0_shape, memory::data_type::f32, dt_tag);
@@ -218,21 +218,22 @@ memory::dims BinaryAddOperator::GetStrideBinaryDstShape(const memory::dims& src0
   return dst_shape;
 }
 
-void BinaryAddOperator::SetFormatTag(memory::format_tag& tag, int tensor_dim) {
+memory::format_tag BinaryAddOperator::SetFormatTag(int tensor_dim) {
+  memory::format_tag tag;
   switch (tensor_dim) {
     case 2:
       tag = memory::format_tag::ab;
-      break;
+      return tag;
     case 3:
       tag = memory::format_tag::abc;
-      break;
+      return tag;
     case 4:
       tag = memory::format_tag::abcd;
-      break;
+      return tag;
     default:
       assert(tensor_dim < 5 &&
              tensor_dim > 1);  // we only support up to 4D now, but we can support up to 10D tensor in future.
-      break;
+      return tag;
   }
 }
 

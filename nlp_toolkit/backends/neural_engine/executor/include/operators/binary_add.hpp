@@ -56,7 +56,7 @@ class BinaryAddOperator : public Operator {
                                              const memory::dims& src1_shape_origin);
   memory::dims GetBroadcastBinaryDstShape(const memory::dims& src0_shape_origin, const memory::dims& src1_shape_origin);
   memory::dims GetStrideBinaryDstShape(const memory::dims& src0_shape_origin, const memory::dims& src1_shape_origin);
-  void SetFormatTag(memory::format_tag& tag, int tensor_dim);
+  memory::format_tag SetFormatTag(int tensor_dim);
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_BINARY_ADD_HPP_

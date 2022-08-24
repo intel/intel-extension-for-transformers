@@ -17,6 +17,10 @@
 
 #include <map>
 #include <functional>
+#include <memory>
+#include <vector>
+#include <string>
+#include <unordered_map>
 #include <algorithm>
 #include <limits>
 

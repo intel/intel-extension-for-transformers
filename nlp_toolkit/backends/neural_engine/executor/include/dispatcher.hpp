@@ -15,6 +15,12 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_DISPATCHER_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_DISPATCHER_HPP_
 
+#include <functional>
+#include <map>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <memory>
 #include "op_tuning.hpp"
 #include "isa.hpp"
 

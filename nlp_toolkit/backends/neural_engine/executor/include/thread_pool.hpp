@@ -18,13 +18,13 @@
 #include <pthread.h>
 
 #include <atomic>
-#include <condition_variable>
+#include <condition_variable>  //NOLINT
 #include <functional>
-#include <future>
-#include <mutex>
+#include <future>  //NOLINT
+#include <mutex>  //NOLINT
 #include <queue>
 #include <string>
-#include <thread>
+#include <thread>  //NOLINT
 #include <vector>
 #include <memory>
 #include <utility>

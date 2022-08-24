@@ -930,7 +930,7 @@ size_t InnerProductPrimitiveFwdFactory::GenKey(const string& src0_dtype, const s
   return seed;
 }
 
-size_t InnerProductPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype, 
+size_t InnerProductPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype,
                                             const string& dst_dtype, const vector<int64_t>& src0_shape,
                                             const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm,
                                             const string& append_op, const vector<int64_t>& post_op_shape,
@@ -964,7 +964,7 @@ InnerProductPrimitiveFwdFactory& InnerProductPrimitiveFwdFactory::GetInstance() 
 }
 
 /************ MatMulPrimitiveFwdFactory member function ************/
-size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string& src1_dtype, 
+size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string& src1_dtype,
                                          const string& dst_dtype, const vector<int64_t>& src0_shape,
                                          const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm,
                                          const string& append_op, const vector<int64_t>& post_op_shape,
