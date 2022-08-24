@@ -120,4 +120,4 @@ class jit_eltwiseop_t : public jit_generator {
   }
 };
 }  // namespace jd
-#endif
+#endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISEOP_HPP_

@@ -38,7 +38,7 @@ Xbyak::Zmm jit_spmm_vnni_t::dst_tile_Vmm(int i, int j) {
   return Xbyak::Zmm(alloc_idx);
 }
 
-void jit_spmm_vnni_t::load_bias(int64_t m_start) {
+void jit_spmm_vnni_t::load_bias(dim_t m_start) {
   for (int i = 0; i < TH(); ++i) {
     vpbroadcastd(dst_tile_Vmm(i, 0), ptr[reg_bias + (m_start + i) * BYTE4]);
     for (int j = 1; j < TW(); ++j) {
@@ -55,7 +55,7 @@ void jit_spmm_vnni_t::clear_dst_tile() {
   }
 }
 
-void jit_spmm_vnni_t::load_intermediate_dst(int64_t m_start) {
+void jit_spmm_vnni_t::load_intermediate_dst(dim_t m_start) {
   for (int i = 0; i < TH(); ++i) {
     for (int j = 0; j < TW(); ++j) {
       int sliced_dst_idx = (m_start + i) * ld_dst() + j * VEC;
@@ -64,7 +64,7 @@ void jit_spmm_vnni_t::load_intermediate_dst(int64_t m_start) {
   }
 }
 
-void jit_spmm_vnni_t::handle_dst_buffer_init(int kb_idx, int64_t m_start) {
+void jit_spmm_vnni_t::handle_dst_buffer_init(int kb_idx, dim_t m_start) {
   // Note that m_indices length is processed.
   if (kb_idx == 0) {
     if (param_.has_bias) {
@@ -120,19 +120,13 @@ void jit_spmm_vnni_t::load_dense(const std::vector<int64_t>& k_indices) {
   }
 }
 
-void jit_spmm_vnni_t::load_sparse(const int8_t* bsr_data, int64_t kp_lo, int64_t kp_hi) {
+void jit_spmm_vnni_t::load_sparse(const Xbyak::Reg64& reg_addr, uint64_t offset) {
   for (int i = 0; i < TH(); ++i) {
-    for (int kp = kp_lo; kp < kp_lo + spns::ADJ; ++kp) {
-      if (kp < kp_hi)
-        seq_vals_.push_back(*(bsr_data + kp * TH() + i));
-      else
-        seq_vals_.push_back(0);
-    }
-    vpbroadcastd(TH_Vmm(i), ptr[reg_seq_vals + (seq_pos++) * spns::ADJ * BYTE1]);
+    vpbroadcastd(TH_Vmm(i), ptr[reg_addr + offset + i * spns::ADJ * sizeof(decltype(*param_.weight))]);
   }
 }
 
-void jit_spmm_vnni_t::repeat_THx4xTW_matmal(int64_t m_start) {
+void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
   int need_regs = TH() + TW() + TH() * TW() + USED_VREGS;
   LOG_IF(FATAL, need_regs >= VREG_NUMS) << "loading weight's REGs (TH=" << TH()
                                         << "), loading "
@@ -141,28 +135,49 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(int64_t m_start) {
                                         << "). "
                                            "Their sum "
                                         << need_regs << " mustn't exceed 32zmm.";
-  const int64_t imb = (param_.im_start + m_start) / TH();  // index of m-block
+  const dim_t imb = (param_.im_start + m_start) / TH();  // global index of m-block
+
   // ADJ=4 means 4 S8 combine a DST_S32. As ADJ repeats in K-dim, a DST_S32 also accumulates.
   // Note that a whole k-dim(segment) is processed.
   // Terminology:
-  const int64_t nnz = param_.indptr[imb + 1] - param_.indptr[imb];
+  const dim_t indptr_kernel_start = param_.indptr[param_.im_start / TH()] * spns::ADJ;
+  const dim_t indptr_lo = param_.indptr[imb] * spns::ADJ;      // min offset of index pointer
+  const dim_t indptr_hi = param_.indptr[imb + 1] * spns::ADJ;  // max offset of index pointer
+  const dim_t nnz = indptr_hi - indptr_lo;
+
   auto idx_begin = param_.indices.begin();
-  const std::vector<int64_t> k_indices(idx_begin + param_.indptr[imb], idx_begin + param_.indptr[imb + 1]);
-  const int8_t* bsr_data = param_.weight + param_.blocksize[0] * param_.blocksize[1] * (param_.indptr[imb]);
+  const std::vector<dim_t> k_indices(idx_begin + indptr_lo, idx_begin + indptr_hi);
+
+  if (param_.sub_func == ssd::subfunc_level::load_and_prod) {
+    mov(reg_seq_indices, reinterpret_cast<uint64_t>(dense_load_offsets.data() + indptr_lo - indptr_kernel_start));
+  }
+
   // kp (k-idx pointer is the idx of nnz blocks of the current row)
   for (int64_t kp_lo = 0; kp_lo < nnz; kp_lo += spns::ADJ) {
     const int64_t kp_hi = std::min(kp_lo + spns::ADJ, nnz);  // end of k-index pointer (noninclusive)
-    // Step 1: load dense (activation). Note that k_indices length is processed.
-    load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
+    dim_t element_offset = param_.blocksize[0] * param_.blocksize[1] * indptr_lo + kp_lo * TH();
+
+    // Step 1: load dense (activation). Note that k_indices length is processed.00-00
     // Step 2: load sparse (weight) and reorder data for that.
-    load_sparse(bsr_data, kp_lo, kp_hi);
-    //  Step 3: tile product. Note that k_indices length is processed.
-    //  A tile product can calculate at least 1 row and 16 columns of DST.
-    //  Min tile calculation: Tile width/height is 1, compute (1, ADJ) x (ADJ, 16) = (1, 16) matmul.
-    if (!param_.sub_func) {
-      tile_product(TH(), TW());
-    } else {
-      call(sub_func_fptr_);
+    // Step 3: tile product. Note that k_indices length is processed.
+    // A tile product can calculate at least 1 row and 16 columns of DST.
+    // Min tile calculation: Tile width/height is 1, compute (1, ADJ) x (ADJ, 16) = (1, 16) matmul.
+    switch (param_.sub_func) {
+      case ssd::subfunc_level::none:
+        load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
+        load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
+        tile_product(TH(), TW());
+        break;
+      case ssd::subfunc_level::prod:
+        load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
+        load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
+        call(sfptr_tile_prod_);
+        break;
+      case ssd::subfunc_level::load_and_prod:
+        load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
+        call(sfptr_load_prod_);
+      default:
+        break;
     }
   }
 }
@@ -183,7 +198,7 @@ void jit_spmm_vnni_t::move_out(int i, int j, int row_idx, int bytes) {
   }
 }
 
-void jit_spmm_vnni_t::store_intermediate_dst(int64_t m_start) {
+void jit_spmm_vnni_t::store_intermediate_dst(dim_t m_start) {
   LOG(FATAL) << "K-blocking is not implemented.";
   for (int i = 0; i < TH(); ++i) {
     for (int j = 0; j < TW(); ++j) {
@@ -193,7 +208,7 @@ void jit_spmm_vnni_t::store_intermediate_dst(int64_t m_start) {
   }
 }
 
-void jit_spmm_vnni_t::handle_dst_buffer_epilogue(int kb_idx, int64_t m_start) {
+void jit_spmm_vnni_t::handle_dst_buffer_epilogue(int kb_idx, dim_t m_start) {
   for (int i = 0; i < TH(); ++i) {
     int row_idx = m_start + i;
     vbroadcastss(vreg_dst_temp, ptr[reg_scale + row_idx * BYTE4]);  // move in scale.
@@ -215,26 +230,73 @@ void jit_spmm_vnni_t::handle_dst_buffer_epilogue(int kb_idx, int64_t m_start) {
 }
 
 void jit_spmm_vnni_t::read_params() {
-  mov(reg_seq_vals, ptr[param1 + GET_OFF(ptr_seq_vals)]);
   mov(reg_dense, ptr[param1 + GET_OFF(ptr_dense)]);
   mov(reg_bias, ptr[param1 + GET_OFF(ptr_bias)]);
   mov(reg_dst, ptr[param1 + GET_OFF(ptr_dst)]);
   mov(reg_scale, ptr[param1 + GET_OFF(ptr_scales)]);
 }
 
-void jit_spmm_vnni_t::gen_sub_function() {
+void jit_spmm_vnni_t::gen_subfunc_tile_prod() {
+  sfptr_tile_prod_ = getCurr();
   Xbyak::util::StackFrame callee1_sf(this, 0);
   tile_product(TH(), TW());
+}
+
+void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
+  sfptr_load_prod_ = getCurr();
+  add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
+
+  constexpr uint64_t idx_size = sizeof(decltype(param_.indices)::value_type);
+  mov(reg_addr_tmp[0], qword[reg_seq_indices + 0 * idx_size]);
+  mov(reg_addr_tmp[1], qword[reg_seq_indices + 1 * idx_size]);
+  mov(reg_addr_tmp[2], qword[reg_seq_indices + 2 * idx_size]);
+  mov(reg_addr_tmp[3], qword[reg_seq_indices + 3 * idx_size]);
+  add(reg_seq_indices, 4 * idx_size);
+
+  for (int j = 0; j < TW(); ++j) {
+    int vreg_idx = TW_Vmm(j).getIdx();
+    Xbyak::Xmm TW_xmm(vreg_idx);
+    Xbyak::Ymm TW_ymm = Xbyak::Ymm(vreg_idx) | reg_k1;
+    int vreg_temp_idx = vreg_temp.getIdx();
+    Xbyak::Xmm temp_xmm(vreg_temp_idx);
+    Xbyak::Ymm temp_ymm = Xbyak::Ymm(vreg_temp_idx) | reg_k1;
+    // assert(k_indices.size() > 0 && k_indices.size() <= spns::ADJ);
+
+    vmovdqu8(TW_xmm, ptr[reg_dense + reg_addr_tmp[0] + j * VEC]);
+    vbroadcasti32x4(TW_ymm, ptr[reg_dense + reg_addr_tmp[1] + j * VEC]);
+    vmovdqu8(temp_xmm, ptr[reg_dense + reg_addr_tmp[2] + j * VEC]);
+    vbroadcasti32x4(temp_ymm, ptr[reg_dense + reg_addr_tmp[3] + j * VEC]);
+
+    vpermt2d(TW_Vmm(j), vpermt2d_arg_idx, vreg_temp);
+    vpshufb(TW_Vmm(j), TW_Vmm(j), vpshufb_arg_b);
+
+    for (int i = 0; i < TH(); ++i) {
+      vpdpbusd(dst_tile_Vmm(i, j), TW_Vmm(j), TH_Vmm(i));
+    }
+  }
+
+  sub(reg_dense, reg_n_idx);  // reg_dense = reg_n_idx * BYTE1
+  ret();
 }
 
 void jit_spmm_vnni_t::generate() {
   const int nonvolatile_reg_size = 8 * 6;
   inLocalLabel();  // use local label for multiple instance
-  if (param_.sub_func) {
-    sub_func_fptr_ = getCurr();
-    gen_sub_function();
-    callee_functions_code_size_ = getSize();
+  switch (param_.sub_func) {
+    case ssd::subfunc_level::none:
+      break;
+    case ssd::subfunc_level::prod:
+      gen_subfunc_tile_prod();
+      break;
+    case ssd::subfunc_level::load_and_prod:
+      gen_subfunc_load_and_prod();
+      break;
+    default:
+      LOG(FATAL) << "Unexpected subfunc_level: " << static_cast<uint8_t>(param_.sub_func);
+      break;
   }
+  callee_functions_code_size_ = getSize();
+
   Xbyak::Label g_label1;
   Xbyak::Label g_label2;
   {
@@ -248,16 +310,18 @@ void jit_spmm_vnni_t::generate() {
 
     read_params();
 
+    mov(reg_wei, reinterpret_cast<uint64_t>(param_.weight));
+
     // initialize the control reg which we are going to use for permutes and shuffles.
     vpmovzxbd(vpermt2d_arg_idx, ptr[rip + g_label1]);
     vbroadcasti32x4(vpshufb_arg_b, ptr[rip + g_label2]);
-    auto temp_r32 = Xbyak::Reg32(param1.getIdx());
-    mov(temp_r32, 0xf0);  // param1 can be used as temp reg when all params are loaded
+    auto temp_r32 = Xbyak::Reg32(reg_tmp.getIdx());
+    mov(temp_r32, 0xf0);
     kmovb(reg_k1, temp_r32);
 
     // When K-dim is cut into k_blocks parts, it'll produce same number of DST intermediate results.
     // Loop-M2: CPP loop for each blocked row. Asm code unroll.
-    for (int im = 0; im < param_.BM; im += mt_size()) {
+    for (dim_t im = 0; im < param_.BM; im += mt_size()) {
       xor_(reg_n_idx, reg_n_idx);  // reg_n_idx = 0
 
       // n_blocks and n_tiles are N-dim loops, and can be used for N-dim multithread.

@@ -18,9 +18,11 @@ namespace jd {
 
 bool dump_asm_flag = false;
 
+int jit_generator::dump_idx = 0;
+
 bool jit_generator::create_kernel() {
   generate();
-  if (std::getenv("DUMP_ASM") != nullptr) dump_asm_flag = true;
+  if (std::getenv("SPARSE_LIB_DUMP") != nullptr) dump_asm_flag = true;
   if (dump_asm_flag) dump_asm();
   jit_ker_ = get_code();
   return (jit_ker_ != nullptr);
@@ -84,12 +86,11 @@ Xbyak::Address jit_generator::EVEX_compress_addr_safe(const Xbyak::Reg64& base, 
 }
 
 void jit_generator::dump_asm() {
-  std::string file_name("temp.bin");
+  std::string file_name("code_" + std::to_string(dump_idx++) + ".bin");
   std::ofstream out_file(file_name, std::ios::out | std::ios::binary);
   out_file.write(reinterpret_cast<const char*>(getCode()), getSize());
   out_file.close();
   std::string cmd = "objdump -M x86-64 -D -b binary -m i386 " + file_name;
   system(cmd.c_str());
-  remove(file_name.c_str());
 }
 }  // namespace jd

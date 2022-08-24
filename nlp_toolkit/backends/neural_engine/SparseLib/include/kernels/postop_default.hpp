@@ -87,4 +87,4 @@ class postop_default_k_t : public kernel_t {
 };
 
 }  // namespace jd
-#endif
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_POSTOP_DEFAULT_HPP_

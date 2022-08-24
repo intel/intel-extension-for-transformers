@@ -77,4 +77,4 @@ class eltwiseop_k_t : public kernel_t {
 };
 
 }  // namespace jd
-#endif
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_HPP_

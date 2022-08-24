@@ -36,5 +36,4 @@ struct postop_data_t {
 
 }  // namespace ssd
 }  // namespace jd
-#endif
-
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_POSTOP_TYPES_HPP_

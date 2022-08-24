@@ -443,8 +443,8 @@ void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const 
   // Step 1: Construct operator config
   op_attrs_ = {{"mkn_blocks", "1,1,1"}, {"tile_shape", "4,4"}, {"post_op", append_sum_ ? "append_sum" : ""}};
   // Step 2: sparse data encoding
-  auto sparse_ptr = new jd::bsr_data_t<int8_t>(
-      jd::spns::tobsr(src0_->shape()[0], src0_->shape()[1], 4, 1, static_cast<const int8_t*>(src0_->data())));
+  auto sparse_ptr = new jd::bsr_data_t<int8_t>(jd::spns::reorder_to_bsr_group<int8_t, 4>(
+      src0_->shape()[0], src0_->shape()[1], 4, 1, static_cast<const int8_t*>(src0_->data())));
   op_attrs_["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
 
   // Step 3: prepare desc and calculate scale for static quantization

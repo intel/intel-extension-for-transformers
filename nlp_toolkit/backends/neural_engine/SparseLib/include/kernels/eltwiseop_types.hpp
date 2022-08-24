@@ -38,4 +38,4 @@ struct eltwiseop_data_t {
 
 }  // namespace ssd
 }  // namespace jd
-#endif
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_TYPES_HPP_

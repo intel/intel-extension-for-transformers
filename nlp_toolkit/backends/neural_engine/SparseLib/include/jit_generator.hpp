@@ -135,6 +135,8 @@ class jit_generator : public Xbyak::CodeGenerator {
   int callee_functions_code_size_ = 0;
   const size_t num_abi_save_gpr_regs = sizeof(abi_save_gpr_regs) / sizeof(abi_save_gpr_regs[0]);
   const size_t size_of_abi_save_regs = num_abi_save_gpr_regs * rax.getBit() / 8 + xmm_to_preserve * VEC;
+
+  static int dump_idx;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_JIT_GENERATOR_HPP_

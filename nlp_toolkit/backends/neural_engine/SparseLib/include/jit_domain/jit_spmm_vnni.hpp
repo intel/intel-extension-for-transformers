@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <algorithm>
 #include "jit_generator.hpp"
 #include "../kernels/sparse_data.hpp"
 #include "../kernels/spmm_types.hpp"
@@ -32,15 +33,22 @@ namespace jd {
  */
 class jit_spmm_vnni_t : public jit_generator {
  public:
-  explicit jit_spmm_vnni_t(const ssd::vnni_param_t& param) : jit_generator(), param_(param) {}
-  virtual ~jit_spmm_vnni_t() {}
+  explicit jit_spmm_vnni_t(const ssd::vnni_param_t& param) : jit_generator(), param_(param) {
+    const dim_t imb_lo = param_.im_start / TH();
+    const dim_t imb_hi = (param_.im_start + param.BM) / TH();
+    const dim_t indptr_lo = param_.indptr[imb_lo] * spns::ADJ;
+    const dim_t indptr_hi = param_.indptr[imb_hi] * spns::ADJ;
+    const dim_t blk_size = param_.blocksize[0] * param_.blocksize[1];
+    dense_load_offsets.resize((indptr_hi - indptr_lo) * blk_size);
 
- public:
-  const int8_t* sequence_vals() const { return seq_vals_.data(); }
+    std::transform(param_.indices.begin() + indptr_lo, param_.indices.begin() + indptr_hi, dense_load_offsets.begin(),
+                   [&](decltype(param_.indices)::value_type k) { return k * ld_dst(); });
+  }
+  virtual ~jit_spmm_vnni_t() {}
 
  private:
   ssd::vnni_param_t param_;
-  std::vector<int8_t> seq_vals_;
+  std::vector<dim_t> dense_load_offsets;  // param_.indices * ld_dst
 
  private:
   void generate() override;
@@ -52,27 +60,20 @@ class jit_spmm_vnni_t : public jit_generator {
   Xbyak::Zmm dst_tile_Vmm(int i, int j);  // Reg alloc of DST tile. 2D shape=(TH,TW), stride=(TW,1)
   void params_alias(const ssd::vnni_param_t& param);
   void read_params();
-  void load_bias(int64_t m_start);
+  void load_bias(dim_t m_start);
   void load_dense(const std::vector<int64_t>& k_indices);
-  void load_sparse(const int8_t* bsr_data, int64_t kp_lo, int64_t kp_hi);
+  void load_sparse(const Xbyak::Reg64& reg_addr, uint64_t offset);
   void tile_product(int tile_height, int tile_width);
-  void handle_dst_buffer_init(int kb_idx, int64_t m_start);
-  void handle_dst_buffer_epilogue(int kb_idx, int64_t m_start);
+  void handle_dst_buffer_init(int kb_idx, dim_t m_start);
+  void handle_dst_buffer_epilogue(int kb_idx, dim_t m_start);
   void mul_scale(int i);
   void move_out(int i, int j, int row_idx, int bytes = 1);
-  std::unordered_map<int64_t, std::vector<int64_t>> get_idx_balanced(int64_t m_start,
-                                                                     const std::vector<int64_t>& sparse_indptr,
-                                                                     const std::vector<int64_t>& sparse_indices, int lo,
-                                                                     int hi);
-  std::unordered_map<int64_t, std::vector<int8_t>> get_val_balanced(int64_t m_start,
-                                                                    const std::vector<int64_t>& sparse_indptr,
-                                                                    const std::vector<int64_t>& sparse_indices, int lo,
-                                                                    int hi, const std::vector<int8_t>& sparse_inddata);
-  void repeat_THx4xTW_matmal(int64_t imb);
+  void repeat_THx4xTW_matmal(dim_t m_start);
   void clear_dst_tile();
-  void load_intermediate_dst(int64_t m_start);
-  void store_intermediate_dst(int64_t m_start);
-  void gen_sub_function();
+  void load_intermediate_dst(dim_t m_start);
+  void store_intermediate_dst(dim_t m_start);
+  void gen_subfunc_tile_prod();
+  void gen_subfunc_load_and_prod();
 
   inline int TH() const { return param_.blocksize[0]; }
   inline int TW() const { return param_.tile_w; }
@@ -86,8 +87,8 @@ class jit_spmm_vnni_t : public jit_generator {
  private:
   const int64_t PADDED_NEG_ONE = -1;
   const int64_t PADDED_ZERO = 0;
-  int64_t seq_pos = 0;
-  const uint8_t* sub_func_fptr_ = nullptr;
+  const uint8_t* sfptr_tile_prod_ = nullptr;  // subfunction for tile product
+  const uint8_t* sfptr_load_prod_ = nullptr;  // subfunction for dense load & tile product
 
  private:
   static constexpr int stack_space_needed_ = 200;
@@ -102,14 +103,18 @@ class jit_spmm_vnni_t : public jit_generator {
 #endif
   // Register decomposition
   const Xbyak::Reg64& param1 = rdi;
-  const Xbyak::Reg64& reg_seq_vals = rcx;  // the first argument which is packed nonzero values pointer
-  const Xbyak::Reg64& reg_dense = rdx;     // the second argument which is input matrix pointer
-  const Xbyak::Reg64& reg_bias = rsi;      // the third argument which is bias values pointer
-  const Xbyak::Reg64& reg_dst = rax;       // the fourth argument which is output matrix pointer
-  const Xbyak::Reg64& reg_scale = rbx;     // the scale
+
+  const Xbyak::Reg64& reg_wei = rcx;
+  const Xbyak::Reg64& reg_dense = rdx;  // the second argument which is input matrix pointer
+  const Xbyak::Reg64& reg_bias = rsi;   // the third argument which is bias values pointer
+  const Xbyak::Reg64& reg_dst = rax;    // the fourth argument which is output matrix pointer
+  const Xbyak::Reg64& reg_scale = rbx;  // the scale
   const Xbyak::Opmask& reg_k1 = k1;
 
+  const Xbyak::Reg64& reg_tmp = r9;
   const Xbyak::Reg64& reg_n_idx = r10;
+  const Xbyak::Reg64& reg_seq_indices = r11;
+  const Xbyak::Reg64 reg_addr_tmp[4] = {r12, r13, r14, r15};
 
   const Xbyak::Zmm& vpermt2d_arg_idx = zmm31;
   const Xbyak::Zmm& vpshufb_arg_b = zmm30;

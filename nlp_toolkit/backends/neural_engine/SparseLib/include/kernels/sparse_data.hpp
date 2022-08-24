@@ -44,8 +44,8 @@ class sparse_data_t {
   inline const std::vector<int64_t>& indices() const { return indices_; }
   inline const std::vector<T>& data() const { return data_; }
   /**
-   * @brief Get the number of non-zero elements / blocks (for blocked formats)
-   * of the matrix.
+   * @brief Get the number of non-zero elements / blocks (for blocked formats) / groups (for grouped data format) of the
+   * matrix.
    */
   virtual uint64_t getnnz(int idx = -1) const {
     if (indptr_.empty()) {
@@ -104,7 +104,7 @@ class bsr_data_t : public sparse_data_t<T> {
   explicit bsr_data_t(const std::vector<dim_t> block_size, const std::vector<dim_t> shape,
                       const std::vector<dim_t>& indptr, const std::vector<dim_t>& indices, const std::vector<T>& data,
                       const dim_t group = 1)
-      : sparse_data_t<T>(indptr, indices, data), group_(group), block_size_(block_size), shape_(shape) {
+      : sparse_data_t<T>(indptr, indices, data), shape_(shape), group_(group), block_size_(block_size) {
     nnz_group_ = indices.size() / group_;
   }
   virtual ~bsr_data_t() {}
@@ -151,8 +151,22 @@ std::vector<bsr_data_t<T>*>* reorder_to_bsr_amx(dim_t rows, dim_t cols, dim_t mi
 template <typename T>
 bsr_data_t<T> tobsr(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);
 
+/**
+ * @brief Reorder a dense matrix to BSR encoded sparse format, grouping a certain number of blocks in a row and reorder
+ * each groups in row-major, adding padding if no enough blocks left in a row. Note that colidxs will be padded with
+ * last value of the same row, while data will be padded with 0.
+ *
+ * @tparam T data type of matrix elements
+ * @tparam group the number of blocks to form a group
+ * @param rows the number of rows of the original matrix
+ * @param cols the number of columns of the original matrix
+ * @param blk_row the numebr of rows for a BSR block
+ * @param blk_col numebr of columns for a BSR block
+ * @param uncoded_data pointer to the start of the original dense matrix
+ * @return bsr_data_t<T> reordered and padded bsr matrix
+ */
 template <typename T, dim_t group>
-bsr_data_t<T> to_bsr_amx(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);
+bsr_data_t<T> reorder_to_bsr_group(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);
 
 template <typename T>
 bsc_data_t<T> tobsc(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);

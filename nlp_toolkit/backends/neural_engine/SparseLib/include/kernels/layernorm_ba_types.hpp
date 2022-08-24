@@ -42,5 +42,4 @@ struct layernorm_ba_data_t {
 
 }  // namespace ssd
 }  // namespace jd
-#endif
-
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_TYPES_HPP_

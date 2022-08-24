@@ -149,4 +149,4 @@ class jit_eltwise_injector {
   mapped_table_t entry_map;
 };
 }  // namespace jd
-#endif
+#endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_

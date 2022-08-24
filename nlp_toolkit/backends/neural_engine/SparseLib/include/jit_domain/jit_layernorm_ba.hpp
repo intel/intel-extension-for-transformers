@@ -89,4 +89,4 @@ class jit_layernorm_ba_t : public jit_generator {
   Opmask remain_task_mask;
 };  // namespace jd
 }  // namespace jd
-#endif
+#endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_

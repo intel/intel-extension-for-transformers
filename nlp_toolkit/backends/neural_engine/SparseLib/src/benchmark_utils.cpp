@@ -91,7 +91,7 @@ double calc_flop(const kernel_kind ker_kind, const std::vector<tensor_desc>& ts_
     CASE(sparse_matmul);
     CASE(postop);
     default:
-      printf("calc_flop_<kernel_kind %d> not implemented.\n", ker_kind);
+      printf("calc_flop_<kernel_kind %hhu> not implemented.\n", static_cast<const uint8_t>(ker_kind));
       return 0.0;
   }
 
@@ -107,7 +107,7 @@ std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind) {
     CASE(sparse_matmul);
     CASE(postop);
     default:
-      printf("get_refresh_data_idx_<kernel_kind %d> not implemented.\n", ker_kind);
+      printf("get_refresh_data_idx_<kernel_kind %hhu> not implemented.\n", static_cast<const uint8_t>(ker_kind));
       return std::vector<int>(0);
   }
 
@@ -116,7 +116,7 @@ std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind) {
 
 bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data,  // NOLINT
                    std::vector<void*>& new_data, const std::vector<int>& idx) {                  // NOLINT
-  for (int i = 0; i < idx.size(); ++i) {
+  for (size_t i = 0; i < idx.size(); ++i) {
     int elem_num =
         std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
     int byte_size = elem_num * type_size[ts_descs[idx[i]].dtype()];
@@ -139,7 +139,7 @@ void free_new_mem(std::vector<void*>& new_data) {  // NOLINT
 
 void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data, // NOLINT
                   const std::vector<int>& idx, const std::vector<float>& ranges) {
-  for (int i = 0; i < idx.size(); ++i) {
+  for (size_t i = 0; i < idx.size(); ++i) {
     int elem_num =
         std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
     switch (ts_descs[idx[i]].dtype()) {

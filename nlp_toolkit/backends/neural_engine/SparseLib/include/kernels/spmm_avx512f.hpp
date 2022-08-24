@@ -85,4 +85,4 @@ class spmm_avx512f_k_t : public kernel_t {
 };
 
 }  // namespace jd
-#endif
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_AVX512F_HPP_

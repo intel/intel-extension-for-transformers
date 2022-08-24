@@ -47,6 +47,13 @@ enum class sparse_scheme : uint8_t {
   sparse_x_sparse,
 };
 
+enum class subfunc_level : uint8_t {
+  none,       // No sub-function
+  prod,       // use sub-function for tile product
+  load_and_prod,  // use fused sub-function for dense loading & tile product
+};
+static constexpr subfunc_level MAX_SUBFUNC_LEVEL = subfunc_level::load_and_prod;
+
 /**
  * @brief kernel parameters passed between kernel/primitive and jit_domain.
  */
@@ -57,7 +64,7 @@ struct vnni_param_t {
   bool append_sum;
   data_type output_type;
   int tile_w;  // width of a tile in terms of #registers; Note that the height is determined by the height of BSR block
-  bool sub_func;
+  subfunc_level sub_func;
   dim_t im_start;  // start m-idx of dest to be calculated; used as the m offset when reading sparse
   // sparse weight related
   dim_t blocksize[2] = {4, 1};
@@ -71,10 +78,9 @@ struct vnni_param_t {
  */
 template <typename dst_t>
 struct vnni_data_t {
-  const int8_t* ptr_seq_vals;  // sequence nonzeros of sparse weight.
-  const uint8_t* ptr_dense;    // activation(K, N).
-  const int32_t* ptr_bias;     // bias(M, 1).
-  dst_t* ptr_dst;              // dst(M, N).
+  const uint8_t* ptr_dense;      // activation(K, N).
+  const int32_t* ptr_bias;       // bias(M, 1).
+  dst_t* ptr_dst;                // dst(M, N).
   const float* ptr_scales;
 };
 

@@ -72,8 +72,8 @@ bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_r
 
 void kernel_proxy::execute(const std::vector<const void*>& rt_data) {
   bool status = false;
-  auto vtune_wrapper = vtune_wrapper_t();
 #ifdef SPARSE_LIB_USE_VTUNE
+  auto vtune_wrapper = vtune_wrapper_t();
   if (get_vtune()) {
     vtune_wrapper.profiling_begin(get_sp()->kd()->info());
   }

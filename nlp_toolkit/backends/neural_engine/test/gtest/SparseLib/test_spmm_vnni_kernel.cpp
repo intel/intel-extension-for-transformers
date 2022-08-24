@@ -270,7 +270,8 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   }
 
   // Step 2: sparse data encoding
-  auto sparse_ptr = new bsr_data_t<int8_t>(spns::tobsr(M, K, 4, 1, static_cast<const int8_t*>(rt_data1[ssd::WEI])));
+  auto sparse_ptr = new bsr_data_t<int8_t>(
+      spns::reorder_to_bsr_group<int8_t, 4>(M, K, 4, 1, static_cast<const int8_t*>(rt_data1[ssd::WEI])));
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
   operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                            op_attrs);
@@ -328,7 +329,6 @@ static auto case_func = []() {
       cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
       cases.push_back({gen_case(32, 32, 128, 1.0f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
 
-      // TODO(yi1ding): Support smaller batch size (seq_len) as a mutiple of 16
       // Append sum with small batch size
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::s8)});
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32)});
@@ -341,6 +341,11 @@ static auto case_func = []() {
       cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, dt::s8)});
       cases.push_back({gen_case(256, 1024, 384, .7f, -1, nthr, dt::s8, {{"micro_oc", "128"}})});
       cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, dt::s8, {{"micro_oc", "128"}})});
+
+      // Test subfunc_level
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "0"}})});
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "1"}})});
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "2"}})});
 
       // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::s8)});
@@ -399,6 +404,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   }
   if (attrs_map["micro_oc"] != "") params.push_back("moc" + attrs_map["micro_oc"]);
   if (micro_bs != bs) params.push_back("mbs" + std::to_string(micro_bs));
+  if (attrs_map["sub_func"] != "") params.push_back("sfunc" + attrs_map["sub_func"]);
   if (attrs_map["post_op"] != "") {
     params.push_back(attrs_map["post_op"]);
   }

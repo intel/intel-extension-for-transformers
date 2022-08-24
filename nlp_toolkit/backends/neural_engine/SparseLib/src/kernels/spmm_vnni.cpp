@@ -39,7 +39,10 @@ void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  //NOLIN
  *   sparse_ptr: pointer of the sparse data
  *   post_op: deprecated postop config, can be "append_sum"
  *   tile_n: n-size of a tile in terms of #registers; default is 4
- *   sub_func: use "false" to disable sub_func optimization; empty and other values means true
+ *   sub_func: use 0 / 1 / 2 to specify sub_func folding level
+ *     0. no subfunction
+ *     1. subfunction for tile product
+ *     2. subfunction for dense loading & tile product
  *   micro_oc: m-size of a block; default is the whole M
  */
 bool spmm_vnni_kd_t::init() {
@@ -79,7 +82,11 @@ bool spmm_vnni_kd_t::spmm_params_init() {
   auto op_attrs = op_desc_.attrs();
   const uint64_t data_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
   bsr_data_t<int8_t>* bsr_data = reinterpret_cast<bsr_data_t<int8_t>*>(data_addr);
-  const bool sub_func = op_attrs["sub_func"] != "false";
+
+  ssd::subfunc_level sub_func = ssd::MAX_SUBFUNC_LEVEL;
+  if (op_attrs["sub_func"].length() != 0) {
+    sub_func = static_cast<ssd::subfunc_level>(atoi(op_attrs["sub_func"].c_str()));
+  }
 
   dim_t num_mblock = ceil_div(M(), BM());
   params_.resize(num_mblock);
@@ -128,7 +135,6 @@ bool spmm_vnni_k_t::execute_(const std::vector<const void*>& rt_data) const {
     for (dim_t in = 0; in < N_; in += BN_) {
       const jit_spmm_vnni_t* jit_impl = jit_kers_[im / BM_];
       ssd::vnni_data_t<dst_t> data;
-      data.ptr_seq_vals = jit_impl->sequence_vals();
       data.ptr_dense = static_cast<const uint8_t*>(rt_data[ssd::SRC]) + in * K_;
       data.ptr_bias = static_cast<const int32_t*>(rt_data[ssd::BIAS]) + im;
       data.ptr_scales = static_cast<const float*>(rt_data[ssd::SCALES]) + im;
