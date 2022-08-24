@@ -35,8 +35,8 @@ struct test_params_t {
 };
 
 void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rf_data) {
-  float* src = (float*)rf_data[0];
-  float* dst = (float*)rf_data[1];
+  float* src = reinterpret_cast<float*>(const_cast<void*>(rf_data[0]));
+  float* dst = reinterpret_cast<float*>(const_cast<void*>(rf_data[1]));
 
   int num = get_element_num(op_desc);
   auto attr = op_desc.apply_postops_list();
@@ -69,7 +69,7 @@ bool check_result(const test_params_t& t) {
     void* buf1;
     auto buf2 = q.data[1];
     auto dtype = p.op_desc.apply_postops_list().back().dt;
-    float err_rate;
+    float err_rate = 1e-1;
     if (p.op_desc.apply_postops_list().back().op_alg != postop_alg::quantize && dtype == jd::data_type::fp32) {
       buf1 = const_cast<void*>(p.data[1]);
       err_rate = 1e-1;
@@ -77,14 +77,15 @@ bool check_result(const test_params_t& t) {
       buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
       auto bf16_buf1 = const_cast<void*>(p.data[1]);
       for (int i = 0; i < num; i++) {
-        *((float*)buf1 + i) = bf16_2_fp32(*((unsigned short int*)bf16_buf1 + i));
+        *(reinterpret_cast<float*>(buf1) + i) = bf16_2_fp32(*(reinterpret_cast<bfloat16_t*>(bf16_buf1) + i));
       }
       err_rate = 5;
     } else if (p.op_desc.apply_postops_list().back().op_alg == postop_alg::quantize) {
       err_rate = 1e-1;
       buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
       auto int8_buf1 = const_cast<void*>(p.data[1]);
-      for (int i = 0; i < num; i++) *((float*)buf1 + i) = uint8_2_int32(*((uint8_t*)int8_buf1 + i));
+      for (int i = 0; i < num; i++)
+        *(reinterpret_cast<float*>(buf1) + i) = uint8_2_int32(*(reinterpret_cast<uint8_t*>(int8_buf1) + i));
     }
     EXPECT_NE(buf1, buf2);
     auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
@@ -153,10 +154,10 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   std::vector<const void*> rf_data1;
   std::vector<const void*> rf_data2;
 
-  rf_data1.emplace_back((void*)src);
-  rf_data1.emplace_back((void*)dst);
-  rf_data2.emplace_back((void*)src_ref);
-  rf_data2.emplace_back((void*)dst_ref);
+  rf_data1.emplace_back(reinterpret_cast<void*>(src));
+  rf_data1.emplace_back(reinterpret_cast<void*>(dst));
+  rf_data2.emplace_back(reinterpret_cast<void*>(src_ref));
+  rf_data2.emplace_back(reinterpret_cast<void*>(dst_ref));
 
   op_args_t p = {eltwiseop_desc, rf_data1};
   op_args_t q = {eltwiseop_desc, rf_data2};

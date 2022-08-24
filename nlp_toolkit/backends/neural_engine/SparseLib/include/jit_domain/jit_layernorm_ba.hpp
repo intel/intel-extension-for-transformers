@@ -15,10 +15,14 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_
 
-#include "../jit_generator.hpp"
+#include <utility>
+#include <vector>
+#include <map>
+#include <set>
+#include "jit_generator.hpp"
 #include "utils.hpp"
 #include "kernels/layernorm_ba_types.hpp"
-#include "jit_eltwise_injector.hpp"
+#include "jit_domain/jit_eltwise_injector.hpp"
 
 #define LNBA_GET_OFF(field) offsetof(ssd::layernorm_ba_data_t, field)
 
@@ -64,7 +68,7 @@ class jit_layernorm_ba_t : public jit_generator {
     mov(one_div_n, ptr[reg_param + LNBA_GET_OFF(one_div_n)]);
     mov(one, ptr[reg_param + LNBA_GET_OFF(one)]);
     mov(eps, ptr[reg_param + LNBA_GET_OFF(eps)]);
-  };
+  }
 
  private:
   ssd::layernorm_ba_param_t param_;

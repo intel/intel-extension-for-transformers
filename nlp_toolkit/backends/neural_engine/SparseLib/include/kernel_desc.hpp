@@ -52,7 +52,7 @@ class kernel_desc_t {
     return true;
   }
   // init kernel_desc_t
-  virtual inline std::vector<dim_t> shape() const { return {}; };
+  virtual inline std::vector<dim_t> shape() const { return {}; }
   virtual bool init() = 0;
   virtual bool create_primitive(std::shared_ptr<const kernel_t>& k_ref,  // NOLINT
                                 const std::shared_ptr<const kernel_desc_t>& kd) const = 0;

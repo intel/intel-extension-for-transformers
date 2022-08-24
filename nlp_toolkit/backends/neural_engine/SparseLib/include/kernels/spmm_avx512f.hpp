@@ -15,9 +15,9 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_AVX512F_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_AVX512F_HPP_
 
+#include <glog/logging.h>
 #include <memory>
 #include <vector>
-#include <glog/logging.h>
 
 #include "jit_domain/jit_spmm_avx512f.hpp"
 #include "kernel.hpp"

@@ -14,7 +14,10 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_TYPES_HPP_
+
+#include <vector>
 #include "param_types.hpp"
+
 namespace jd {
 namespace ssd {
 struct layernorm_ba_param_t {
@@ -40,3 +43,4 @@ struct layernorm_ba_data_t {
 }  // namespace ssd
 }  // namespace jd
 #endif
+

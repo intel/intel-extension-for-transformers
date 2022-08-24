@@ -66,8 +66,8 @@ bool postop_default_k_t::execute(const std::vector<const void*>& rt_data) const 
   std::vector<ssd::postop_data_t> td(nthr);
 #pragma omp parallel for
   for (int idx = 0; idx < nthr; idx++) {
-    td[idx].src = (char*)rt_data[0] + idx * offset * element_num_each_th;
-    td[idx].dst = (char*)rt_data[1] + idx * offset * element_num_each_th;
+    td[idx].src = const_cast<void*>(rt_data[0]) + idx * offset * element_num_each_th;
+    td[idx].dst = const_cast<void*>(rt_data[1]) + idx * offset * element_num_each_th;
     if (idx != nthr - 1) {
       td[idx].element_num = element_num_each_th;
     } else {
@@ -80,3 +80,4 @@ bool postop_default_k_t::execute(const std::vector<const void*>& rt_data) const 
 }
 
 }  // namespace jd
+

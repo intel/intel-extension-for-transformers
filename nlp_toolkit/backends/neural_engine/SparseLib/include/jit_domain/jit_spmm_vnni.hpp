@@ -32,7 +32,7 @@ namespace jd {
  */
 class jit_spmm_vnni_t : public jit_generator {
  public:
-  explicit jit_spmm_vnni_t(const ssd::vnni_param_t& param) : jit_generator(), param_(param){};
+  explicit jit_spmm_vnni_t(const ssd::vnni_param_t& param) : jit_generator(), param_(param) {}
   virtual ~jit_spmm_vnni_t() {}
 
  public:
@@ -80,7 +80,7 @@ class jit_spmm_vnni_t : public jit_generator {
   inline int mt_size() const { return TH(); }
   inline int n_tiles() const { return param_.BN / nt_size(); }
   inline int m_tiles() const { return param_.BM / mt_size(); }
-  inline data_type output_type() const { return param_.output_type; };
+  inline data_type output_type() const { return param_.output_type; }
   inline int ld_dst() const { return param_.BN; }  // leading dimension of dst matrix
 
  private:

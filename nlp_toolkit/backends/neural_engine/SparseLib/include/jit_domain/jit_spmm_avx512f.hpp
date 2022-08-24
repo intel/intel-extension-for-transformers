@@ -68,7 +68,7 @@ class jit_spmm_avx512f_t : public jit_generator {
   // Register allocator of load activation. TW = 1
   Xbyak::Zmm TW_Vmm = Xbyak::Zmm(VREG_NUMS - 1 - USED_VREGS - TH_);
   // Reg alloc of DST tile.
-  Xbyak::Zmm dst_tile_Vmm(int i = 0) { return Xbyak::Zmm(i); };
+  Xbyak::Zmm dst_tile_Vmm(int i = 0) { return Xbyak::Zmm(i); }
 
   static constexpr int stack_space_needed_ = 256;
   static constexpr int BYTE8 = 8;

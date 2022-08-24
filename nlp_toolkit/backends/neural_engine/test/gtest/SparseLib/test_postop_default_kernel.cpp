@@ -23,9 +23,10 @@
 
 enum memo_mode { MALLOC, MEMSET };
 
-unsigned short int fp32_2_bf16(float float_val) { return (*reinterpret_cast<unsigned int*>(&float_val)) >> 16; }
+using bfloat16_t = jd::bfloat16_t;
+bfloat16_t fp32_2_bf16(float float_val) { return (*reinterpret_cast<unsigned int*>(&float_val)) >> 16; }
 
-float bf16_2_fp32(unsigned short int bf16_val) {
+float bf16_2_fp32(bfloat16_t bf16_val) {
   unsigned int ans = bf16_val << 16;
   return *reinterpret_cast<float*>(&ans);
 }
@@ -49,10 +50,10 @@ int get_data_width(jd::data_type dtype) {
 void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
   switch (dtype) {
     case jd::data_type::fp32:
-      *((float*)ptr + idx) = val;
+      *(reinterpret_cast<float*>(ptr) + idx) = val;
       break;
     case jd::data_type::bf16:
-      *((unsigned short int*)ptr + idx) = fp32_2_bf16(val);
+      *(reinterpret_cast<bfloat16_t*>(ptr) + idx) = fp32_2_bf16(val);
       break;
     default:
       std::runtime_error(std::string("assign_val:unsupport this dtype."));
@@ -92,8 +93,8 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   float fmax = *reinterpret_cast<float*>(&max);
   float fmin = *reinterpret_cast<float*>(&min);
 
-  float* src = (float*)rf_data[0];
-  float* dst = (float*)rf_data[1];
+  float* src = reinterpret_cast<float*>(const_cast<void*>(rf_data[0]));
+  float* dst = reinterpret_cast<float*>(const_cast<void*>(rf_data[1]));
   auto attr = op_desc.attrs();
   auto op_type = attr["post_op"];
   for (int i = 0; i < num; i++) {
@@ -109,9 +110,9 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
 
     if (op_type == "gelu") {
       float x = src[i];
-      //an approximate fitting function of GELU(x)
-      //GELU(x)≈0.5x(1+tanh[(2/pi)^0.5)*(x+0.044715x^3)]
-      //for more details,pls refer this paper:https://arxiv.org/abs/1606.08415
+      // an approximate fitting function of GELU(x)
+      // GELU(x)≈0.5x(1+tanh[(2/pi)^0.5)*(x+0.044715x^3)]
+      // for more details,pls refer this paper:https://arxiv.org/abs/1606.08415
       dst[i] = 0.5 * x * (1 + tanhf(0.797884 * (x + 0.0044715 * x * x * x)));
     }
   }
@@ -149,7 +150,7 @@ bool check_result(const test_params_t& t) {
       buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
       auto bf16_buf1 = const_cast<void*>(p.data[1]);
       for (int i = 0; i < num; i++) {
-        *((float*)buf1 + i) = bf16_2_fp32(*((unsigned short int*)bf16_buf1 + i));
+        *(reinterpret_cast<float*>(buf1) + i) = bf16_2_fp32(*(reinterpret_cast<bfloat16_t*>(bf16_buf1) + i));
       }
       err_rate = 5;
     }
@@ -207,10 +208,10 @@ std::pair<op_args_t, op_args_t> gen_case(const jd::kernel_kind ker_kind, const j
   std::vector<const void*> rf_data1;
   std::vector<const void*> rf_data2;
 
-  rf_data1.emplace_back((void*)src);
-  rf_data1.emplace_back((void*)dst);
-  rf_data2.emplace_back((void*)src_ref);
-  rf_data2.emplace_back((void*)dst_ref);
+  rf_data1.emplace_back(reinterpret_cast<void*>(src));
+  rf_data1.emplace_back(reinterpret_cast<void*>(dst));
+  rf_data2.emplace_back(reinterpret_cast<void*>(src_ref));
+  rf_data2.emplace_back(reinterpret_cast<void*>(dst_ref));
 
   op_args_t p = {postop_desc, rf_data1};
   op_args_t q = {postop_desc, rf_data2};
@@ -221,17 +222,17 @@ static auto case_func = []() {
   std::vector<test_params_t> cases;
   tensor_desc data0_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
-  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data0_desc,data0_desc},
-                            {{"post_op", "exp"}}),
+  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu,
+                            {data0_desc, data0_desc}, {{"post_op", "exp"}}),
                    false});
-  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data1_desc,data1_desc},
-                            {{"post_op", "exp"}}),
+  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu,
+                            {data1_desc, data1_desc}, {{"post_op", "exp"}}),
                    false});
-  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data0_desc,data0_desc},
-                            {{"post_op", "gelu"}}),
+  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu,
+                            {data0_desc, data0_desc}, {{"post_op", "gelu"}}),
                    false});
-  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu, {data1_desc,data1_desc},
-                            {{"post_op", "gelu"}}),
+  cases.push_back({gen_case(kernel_kind::postop, kernel_prop::forward_inference, engine_kind::cpu,
+                            {data1_desc, data1_desc}, {{"post_op", "gelu"}}),
                    false});
   return ::testing::ValuesIn(cases);
 };

@@ -302,7 +302,7 @@ void jit_eltwise_injector::escape_regs(reg_type type, int reg_idx) {
   } else {
     used_regs.insert(std::pair<reg_type, std::set<int>>(type, {reg_idx}));
   }
-};
+}
 
 void jit_eltwise_injector::escape_erase(reg_type type, int reg_idx) {
   auto iter = used_regs.find(type);
@@ -408,7 +408,7 @@ void jit_eltwise_injector::assign_regs() {
   allocate_regs(reg_type::zmm, max_zmm_idx, used_regs.find(reg_type::zmm), zmm_allocate_vec);
 }
 
-// TODO:move this func to a utils func.
+// TODO(zhe1wang): move this func to a utils func.
 template <typename T, typename U>
 inline T bit_cast(const U& u) {
   static_assert(sizeof(T) == sizeof(U), "Bit-casting must preserve size.");
@@ -728,7 +728,7 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
   };
 
   struct need_t {
-    need_t(const std::vector<postop_attr>& postop_attrs) {
+    explicit need_t(const std::vector<postop_attr>& postop_attrs) {
       for (auto&& attr : postop_attrs) {
         if (attr.dt == data_type::bf16) bf16_ = true;
         if (attr.op_alg == postop_alg::exp) exp_ = true;
@@ -785,3 +785,4 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
   }
 }
 }  // namespace jd
+

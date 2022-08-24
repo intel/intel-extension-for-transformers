@@ -14,9 +14,12 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_TYPES_HPP_
-#include "param_types.hpp"
+
+#include <vector>
 #include <map>
 #include <set>
+#include "param_types.hpp"
+
 namespace jd {
 namespace ssd {
 struct eltwiseop_param_t {

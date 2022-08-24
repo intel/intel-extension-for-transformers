@@ -573,7 +573,7 @@ void jit_postop_default_t::register_table_entries() {
   };
 
   struct need_t {
-    need_t(ssd::post_op_scheme op_type) {
+    explicit need_t(ssd::post_op_scheme op_type) {
       switch (op_type) {
         case ssd::post_op_scheme::exp:
           exp_ = true;
@@ -618,3 +618,4 @@ void jit_postop_default_t::register_table_entries() {
   }
 }
 }  // namespace jd
+

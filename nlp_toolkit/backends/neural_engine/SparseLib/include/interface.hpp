@@ -103,23 +103,23 @@ class sparse_matmul_desc : public kernel_desc_proxy {
 
 class postop_desc : public kernel_desc_proxy {
  public:
-  postop_desc(){};
+  postop_desc() {}
   explicit postop_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~postop_desc() {}
 };
 
 class eltwiseop_desc : public kernel_desc_proxy {
  public:
-  eltwiseop_desc(){};
+  eltwiseop_desc() {}
   explicit eltwiseop_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~eltwiseop_desc() {}
 };
 
 class layernorm_ba_desc : public kernel_desc_proxy {
  public:
-  layernorm_ba_desc(){};
+  layernorm_ba_desc() {}
   explicit layernorm_ba_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
-  virtual ~layernorm_ba_desc(){};
+  virtual ~layernorm_ba_desc() {}
 };
 
 /**

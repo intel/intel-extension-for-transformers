@@ -13,13 +13,16 @@
 //  limitations under the License.
 #ifndef ENGINE_SPARSELIB_INCLUDE_VERBOSE_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_VERBOSE_HPP_
-#include <mutex>
+
+#include <omp.h>
+#include <sys/time.h>
+
+#include <mutex>      // NOLINT
 #include <string>
 #include <cstring>
-#include <sys/time.h>
 #include <cassert>
-#include <omp.h>
 #include <vector>
+
 #include "param_types.hpp"
 #include "utils.hpp"
 

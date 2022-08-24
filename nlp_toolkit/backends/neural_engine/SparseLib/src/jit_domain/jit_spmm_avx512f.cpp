@@ -27,7 +27,7 @@ void jit_spmm_avx512f_t::generate() {
   const auto& sparse_indptr = param_.sparse_ptr->indptr();
   const auto& sparse_indices = param_.sparse_ptr->indices();
   inLocalLabel();  // use local label for multiple instance
-  // TODO: sub_function
+  // TODO(yi1ding): sub_function
   {
     sub(rsp, nonvolatile_reg_size);
     mov(ptr[rsp + 0x00], rbx);
@@ -90,7 +90,7 @@ void jit_spmm_avx512f_t::generate() {
       }
     }
 
-    add(reg_dense, TH_ * param_.K * F32_BYTES);  // TODO: handel edge cases where desc is not a multiple of TH_
+    add(reg_dense, TH_ * param_.K * F32_BYTES);  // TODO(yi1ding): handel edge cases where desc is not a multiple of TH_
     add(reg_dst, TH_ * param_.N * F32_BYTES);
     cmp(reg_dense, reg_dense_end);
     jl(L_m_loop, T_NEAR);  // End of loop-m: asm loop

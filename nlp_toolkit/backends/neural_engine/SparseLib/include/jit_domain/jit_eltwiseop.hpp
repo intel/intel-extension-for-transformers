@@ -15,11 +15,11 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISEOP_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISEOP_HPP_
 
-#include "../jit_generator.hpp"
+#include <map>
+#include "jit_generator.hpp"
 #include "utils.hpp"
 #include "kernels/eltwiseop_types.hpp"
-#include "jit_eltwise_injector.hpp"
-#include <map>
+#include "jit_domain/jit_eltwise_injector.hpp"
 
 #define ELT_GET_OFF(field) offsetof(ssd::eltwiseop_data_t, field)
 
@@ -77,7 +77,7 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::bf16:
         return 2u;
     }
-  };
+  }
 
   size_t load_offset() {
     auto head_dt = param_.postop_attrs.front().dt;

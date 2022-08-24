@@ -15,11 +15,13 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
 
+#include <vector>
+#include <unordered_map>
+#include <map>
+#include <set>
 #include "jit_generator.hpp"
 #include "utils.hpp"
 #include "param_types.hpp"
-#include <map>
-#include <set>
 
 namespace jd {
 class jit_eltwise_injector {
@@ -28,7 +30,7 @@ class jit_eltwise_injector {
   using Xmm = Xbyak::Xmm;
 
  public:
-  explicit jit_eltwise_injector(){};
+  jit_eltwise_injector() {}
   virtual ~jit_eltwise_injector() {}
 
   void eltwise_injector_init(jit_generator* ptr, const std::vector<postop_attr>& postop_attrs);
@@ -37,9 +39,9 @@ class jit_eltwise_injector {
   void escape_regs(reg_type type, int reg_idx);
   void escape_erase(reg_type type, int reg_idx = -1);
   void init_tb_allocate_set(const std::vector<postop_attr>& postop_attrs);
-  int max_zmm_allocate_num() { return zmm_tb_allocate.size(); };
-  int max_mask_allocate_num() { return mask_tb_allocate.size(); };
-  int max_reg64_allocate_num() { return reg64_tb_allocate.size(); };
+  int max_zmm_allocate_num() { return zmm_tb_allocate.size(); }
+  int max_mask_allocate_num() { return mask_tb_allocate.size(); }
+  int max_reg64_allocate_num() { return reg64_tb_allocate.size(); }
   void prepare_table();
 
  private:
@@ -53,7 +55,7 @@ class jit_eltwise_injector {
   void linear_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void register_table_entries(const std::vector<postop_attr>& postop_attrs);
   void assert_check(const std::vector<postop_attr>& postop_attrs);
-  void load_table_addr() { h->mov(p_table, l_table); };
+  void load_table_addr() { h->mov(p_table, l_table); }
 
  private:
   postop_attr cur_postop_attr_;

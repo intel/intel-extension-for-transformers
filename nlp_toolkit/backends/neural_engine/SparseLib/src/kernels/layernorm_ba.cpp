@@ -19,12 +19,12 @@ namespace jd {
 bool layernorm_ba_kd_t::init() {
   auto tensor_desc = op_desc_.tensor_descs();
   assert(tensor_desc.size() == 1);
-  // todo:support more data_type.
+  // TODO(zhe1wang): support more data_type.
   auto dt = tensor_desc[0].dtype();
   assert(dt == data_type::fp32);
   assert(tensor_desc[0].ftype() == format_type::ba);
   auto tensor_shape = tensor_desc[0].shape();
-  // todo:support reduce dim.
+  // TODO(zhe1wang): support reduce dim.
   assert(tensor_shape.size() == 2);
 
   int row_num = tensor_shape[0];
@@ -53,7 +53,7 @@ bool layernorm_ba_kd_t::init() {
       cur_thr_col = col_num - i * col_per_thr;
     ssd::layernorm_ba_param_t param;
     param.dt = dt;
-    // TODO:support more dt in the future.
+    // TODO(zhe1wang): support more dt in the future.
     assert(dt == data_type::fp32);
     param.row_num = row_num;
     param.col_num = col_num;
@@ -95,8 +95,8 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
   for (int i = 0; i < nthr; i++) {
     const jit_layernorm_ba_t* jit_impl = jit_kers_[i];
     auto data_param = td[i];
-    data_param->src = (char*)rt_data[0];
-    data_param->dst = (char*)rt_data[1];
+    data_param->src = const_cast<void*>(rt_data[0]);
+    data_param->dst = const_cast<void*>(rt_data[1]);
     data_param->one_div_n = derived_kd()->one_div_n_ptr();
     data_param->eps = derived_kd()->eps_ptr();
     data_param->one = derived_kd()->one_ptr();
@@ -107,3 +107,4 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
 }
 
 }  // namespace jd
+

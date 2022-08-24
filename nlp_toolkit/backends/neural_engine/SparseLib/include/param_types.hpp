@@ -85,7 +85,7 @@ class postop_attr {
   float beta = 0;
   float scale = 0;
 
-  postop_attr(){};
+  postop_attr() {}
 
   postop_attr(const data_type& dt, const postop_type& op_type, const postop_alg& op_alg, float alpha = 0.0,
               float beta = 0.0, float scale = 0.0)

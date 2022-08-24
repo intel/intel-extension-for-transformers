@@ -14,10 +14,12 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNO_BA_HPP_
+
+#include <memory>
+#include <vector>
 #include "operator_desc.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
-#include <vector>
 #include "utils.hpp"
 #include "layernorm_ba_types.hpp"
 #include "jit_domain/jit_layernorm_ba.hpp"
@@ -27,7 +29,7 @@ class layernorm_ba_k_t;
 class layernorm_ba_kd_t : public kernel_desc_t {
  public:
   explicit layernorm_ba_kd_t(const jd::operator_desc& op_desc)
-      : kernel_desc_t(kernel_kind::layernorm_ba), op_desc_(op_desc){};
+      : kernel_desc_t(kernel_kind::layernorm_ba), op_desc_(op_desc) {}
 
   virtual ~layernorm_ba_kd_t() {
     delete one_;
@@ -77,3 +79,4 @@ class layernorm_ba_k_t : public kernel_t {
 
 }  // namespace jd
 #endif
+

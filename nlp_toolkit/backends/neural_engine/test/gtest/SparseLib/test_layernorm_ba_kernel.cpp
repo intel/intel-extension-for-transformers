@@ -42,9 +42,9 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   float* alpha = nullptr;
   float* beta = nullptr;
 
-  dst = (float*)rf_data[0];
-  alpha = (float*)rf_data[1];
-  beta = (float*)rf_data[2];
+  dst = reinterpret_cast<float*>(const_cast<void*>(rf_data[0]));
+  alpha = reinterpret_cast<float*>(const_cast<void*>(rf_data[1]));
+  beta = reinterpret_cast<float*>(const_cast<void*>(rf_data[2]));
 
   for (int i = 0; i < col; i++) {
     // calculate mean.
@@ -62,8 +62,9 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
     for (int j = 0; j < row; j++) dst[j * col + i] = (dst[j * col + i] - mean) * var;
 
     // affine.
-    if (op_desc.attrs().count("affine") != 0)
+    if (op_desc.attrs().count("affine") != 0) {
       for (int j = 0; j < row; j++) dst[j * col + i] = dst[j * col + i] * alpha[j] + beta[j];
+    }
   }
 
   // apply postop.
@@ -156,9 +157,9 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   std::vector<const void*> rf_data1;
   std::vector<const void*> rf_data2;
 
-  rf_data1.emplace_back((void*)src);
-  rf_data1.emplace_back((void*)dst);
-  rf_data2.emplace_back((void*)src_ref);
+  rf_data1.emplace_back(reinterpret_cast<void*>(src));
+  rf_data1.emplace_back(reinterpret_cast<void*>(dst));
+  rf_data2.emplace_back(reinterpret_cast<void*>(src_ref));
   rf_data2.push_back(alpha);
   rf_data2.push_back(beta);
 

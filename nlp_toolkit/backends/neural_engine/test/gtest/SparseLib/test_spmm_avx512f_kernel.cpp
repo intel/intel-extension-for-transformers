@@ -13,13 +13,15 @@
 //  limitations under the License.
 
 #include <omp.h>
+#include <glog/logging.h>
+
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <numeric>
 #include <exception>
-#include <glog/logging.h>
+
 #include "interface.hpp"
 #include "benchmark_utils.hpp"
 #include "gtest/gtest.h"
@@ -142,7 +144,7 @@ void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, con
                                  float sparsity, unsigned int* seed) {
   dim_t K = a_shape[0], N = a_shape[1], BK = block_shape[0], BN = block_shape[1];
   LOG_IF(FATAL, (K % BK | N % BN) != 0) << "Matrix dim must be a multiple of block dim.";
-  LOG_IF(FATAL, sparsity < 0 and sparsity > 1) << "Sparsity should be a value between 0 and 1.";
+  LOG_IF(FATAL, sparsity < 0 && sparsity > 1) << "Sparsity should be a value between 0 and 1.";
   dim_t nb_k = K / BK;
   dim_t nb_n = N / BN;
 

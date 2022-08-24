@@ -14,12 +14,15 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_POSTOP_DEFAULT_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_POSTOP_DEFAULT_HPP_
+
+#include <string>
+#include <memory>
+#include <vector>
 #include "operator_desc.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "kernels/postop_types.hpp"
 #include "jit_domain/jit_postop_default.hpp"
-#include <vector>
 #include "utils.hpp"
 
 namespace jd {
@@ -44,7 +47,7 @@ class postop_default_kd_t : public kernel_desc_t {
         std::runtime_error(std::string("unsupporting data type."));
         break;
     }
-  };
+  }
   virtual ~postop_default_kd_t() {}
 
  public:

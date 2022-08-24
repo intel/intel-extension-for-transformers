@@ -99,8 +99,8 @@ class jit_spmm_amx_bf16_x16_t : public jit_generator {
   dim_t tileM;
   bool bf16_out;
   dim_t size_of_dst_t;
-  dim_t size_of_src_t = sizeof(src_t); // size of bfloat16
-  dim_t size_of_out_t = sizeof(dst_t); // size of float since bf16 x bd16 = fp32
+  dim_t size_of_src_t = sizeof(src_t);  // size of bfloat16
+  dim_t size_of_out_t = sizeof(dst_t);  // size of float since bf16 x bd16 = fp32
 
   static constexpr int stack_space_needed_ = 5120;
 

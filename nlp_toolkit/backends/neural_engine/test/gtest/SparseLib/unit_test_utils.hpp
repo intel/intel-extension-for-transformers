@@ -1,16 +1,37 @@
-#include <chrono>
+//  Copyright (c) 2022 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+#ifndef ENGINE_TEST_GTEST_SPARSELIB_UNIT_TEST_UTILS_HPP_
+#define ENGINE_TEST_GTEST_SPARSELIB_UNIT_TEST_UTILS_HPP_
+
 #include <glog/logging.h>
-#include "interface.hpp"
+#include <chrono>  // NOLINT
 #include <stdexcept>
 #include <cstring>
 #include <iostream>
 #include <set>
+#include <vector>
+#include <string>
+
+#include "interface.hpp"
 
 #define exp_ln_flt_max_f 0x42b17218
 #define exp_ln_flt_min_f 0xc2aeac50
 
 enum memo_mode { MALLOC, MEMSET };
 
+using bfloat16_t = jd::bfloat16_t;
 // set mock regs.
 std::vector<std::string> string_split(const std::string& str, char delim) {
   std::stringstream ss(str);
@@ -22,16 +43,16 @@ std::vector<std::string> string_split(const std::string& str, char delim) {
     }
   }
   return elems;
-};
+}
 
 double ms_now() {
   auto timePointTmp = std::chrono::high_resolution_clock::now().time_since_epoch();
   return std::chrono::duration<double, std::milli>(timePointTmp).count();
 }
 
-unsigned short int fp32_2_bf16(float float_val) { return (*reinterpret_cast<unsigned int*>(&float_val)) >> 16; }
+bfloat16_t fp32_2_bf16(float float_val) { return (*reinterpret_cast<unsigned int*>(&float_val)) >> 16; }
 
-float bf16_2_fp32(unsigned short int bf16_val) {
+float bf16_2_fp32(bfloat16_t bf16_val) {
   unsigned int ans = bf16_val << 16;
   return *reinterpret_cast<float*>(&ans);
 }
@@ -41,7 +62,7 @@ int uint8_2_int32(uint8_t a) {
   return ans;
 }
 
-float rand_float_postfix() { return rand() / float(RAND_MAX); }
+float rand_float_postfix() { return rand() / static_cast<float>(RAND_MAX); }
 
 float get_exp(float x) {
   unsigned int max = exp_ln_flt_max_f;
@@ -122,13 +143,13 @@ float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) 
 void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
   switch (dtype) {
     case jd::data_type::fp32:
-      *((float*)ptr + idx) = val;
+      *(reinterpret_cast<float*>(ptr) + idx) = val;
       break;
     case jd::data_type::bf16:
-      *((unsigned short int*)ptr + idx) = fp32_2_bf16(val);
+      *(reinterpret_cast<bfloat16_t*>(ptr) + idx) = fp32_2_bf16(val);
       break;
     case jd::data_type::u8:
-      *((uint8_t*)ptr + idx) = (uint8_t)val;
+      *(reinterpret_cast<uint8_t*>(ptr) + idx) = (uint8_t)val;
     default:
       std::runtime_error(std::string("assign_val:unsupport this dtype."));
   }
@@ -151,7 +172,7 @@ void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode)
 
 class n_thread_t {
  public:
-  n_thread_t(int nthr) : prev_nthr(omp_get_max_threads()) {
+  explicit n_thread_t(int nthr) : prev_nthr(omp_get_max_threads()) {
     if (nthr > 0 && nthr != prev_nthr) omp_set_num_threads(nthr);
   }
   ~n_thread_t() { omp_set_num_threads(prev_nthr); }
@@ -159,3 +180,5 @@ class n_thread_t {
  private:
   int prev_nthr;
 };
+
+#endif  // ENGINE_TEST_GTEST_SPARSELIB_UNIT_TEST_UTILS_HPP_

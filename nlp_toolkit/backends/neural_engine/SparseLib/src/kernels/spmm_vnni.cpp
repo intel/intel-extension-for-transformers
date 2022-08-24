@@ -23,7 +23,7 @@
 namespace jd {
 //// Part1: class spmm_vnni_kd_t
 
-void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {
+void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  //NOLINT
   if (BM == 0) {  // try to get optimized block size
     int cores = omp_get_num_procs();
     const dim_t blocks_n = N / BN;

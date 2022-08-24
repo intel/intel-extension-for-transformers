@@ -75,7 +75,8 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
               make_fp32(wei_data[n * K + k]) * make_fp32(src_data[num_m * K * M_MICRO + k * M_MICRO + m]);
         }
         float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] += bia_data[n];
-        float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] = apply_postop_list(float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m], op_desc.apply_postops_list());
+        float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] =
+            apply_postop_list(float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m], op_desc.apply_postops_list());
         if (dst_dt == dt::bf16) {
           bf_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] =
               make_bf16(float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m]);
@@ -243,11 +244,11 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   if (postop_algs.size()) {
     auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };
     op_attrs["postop_list"] = std::accumulate(postop_algs.begin() + 1, postop_algs.end(),
-                                               std::string(postop_alg_name[postop_algs[0]]), accu_op);
+                                              std::string(postop_alg_name[postop_algs[0]]), accu_op);
   }
   std::vector<postop_attr> apply_postops_list;
   std::for_each(postop_algs.begin(), postop_algs.end(), [&apply_postops_list](postop_alg alg) {
-     return apply_postops_list.push_back({data_type::bf16, postop_type::eltwise, alg});
+    return apply_postops_list.push_back({data_type::bf16, postop_type::eltwise, alg});
   });
 
   op_attrs["micro_oc"] = std::to_string(micro_oc);

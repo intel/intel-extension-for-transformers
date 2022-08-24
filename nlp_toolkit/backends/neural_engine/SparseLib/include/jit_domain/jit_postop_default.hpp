@@ -15,10 +15,10 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_POSTOP_DEFAULT_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_POSTOP_DEFAULT_HPP_
 
+#include <map>
 #include "jit_generator.hpp"
 #include "utils.hpp"
 #include "kernels/postop_types.hpp"
-#include <map>
 
 #define GET_OFF(field) offsetof(ssd::postop_data_t, field)
 
@@ -48,7 +48,7 @@ class jit_postop_default_t : public jit_generator {
   bool is_bf16() {
     if (param_.dt == ssd::data_type::bf16) return true;
     return false;
-  };
+  }
 
   size_t vlen() {
     switch (param_.dt) {
@@ -58,7 +58,7 @@ class jit_postop_default_t : public jit_generator {
         return 32u;
     }
     return 0;
-  };
+  }
 
   size_t dtype_size() {
     switch (param_.dt) {
@@ -68,7 +68,7 @@ class jit_postop_default_t : public jit_generator {
         return 2u;
     }
     return 0;
-  };
+  }
 
  private:
   ssd::postop_param_t param_;
@@ -161,7 +161,7 @@ class jit_postop_default_t : public jit_generator {
   };
   using table_t = std::multimap<key_t, table_entry_t>;
   using mapped_table_t = std::multimap<key_t, mapped_table_entry_t>;
-  void load_table_addr() { mov(p_table, l_table); };
+  void load_table_addr() { mov(p_table, l_table); }
   void register_table_entries();
   void prepare_table();
   void prepare_bf16_mask();

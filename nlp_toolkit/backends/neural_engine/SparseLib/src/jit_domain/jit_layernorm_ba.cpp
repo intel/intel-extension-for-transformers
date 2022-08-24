@@ -189,3 +189,4 @@ bool jit_layernorm_ba_t::check_unroll_add_done() {
 }
 
 }  // namespace jd
+

@@ -194,11 +194,13 @@ void prepare_sparse_data(T* vector_data, dim_t rows, dim_t cols, dim_t blk_row, 
   for (int i = 0; i < rows; i += blk_row) {
     for (int j = 0; j < cols; j += blk_col) {
       bool fill_zero = rand_r(seed) % 100 <= (sparsity * 100);
-      if (fill_zero)
-        for (int bi = i; bi < i + blk_row; ++bi)
+      if (fill_zero) {
+        for (int bi = i; bi < i + blk_row; ++bi) {
           for (int bj = j; bj < j + blk_col; ++bj) {
             vector_data[bi * cols + bj] = 0;
           }
+        }
+      }
     }
   }
 }
@@ -303,7 +305,6 @@ static auto case_func = []() {
       {1024, 4096, 384},
       {4096, 1024, 128},
       {4096, 1024, 384},
-
   };
 
   google::InitGoogleLogging("SpmmVNNIKernelTest");
@@ -327,7 +328,7 @@ static auto case_func = []() {
       cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
       cases.push_back({gen_case(32, 32, 128, 1.0f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
 
-      // TODO: Support smaller batch size (seq_len) as a mutiple of 16
+      // TODO(yi1ding): Support smaller batch size (seq_len) as a mutiple of 16
       // Append sum with small batch size
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::s8)});
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32)});

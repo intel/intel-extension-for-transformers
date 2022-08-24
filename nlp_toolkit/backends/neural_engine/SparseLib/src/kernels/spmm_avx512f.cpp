@@ -99,3 +99,4 @@ bool spmm_avx512f_k_t::execute(const std::vector<const void*>& rt_data) const {
   return true;
 }
 }  // namespace jd
+

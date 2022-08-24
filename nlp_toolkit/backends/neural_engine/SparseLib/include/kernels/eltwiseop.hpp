@@ -14,12 +14,14 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_HPP_
+
+#include <memory>
+#include <vector>
 #include "operator_desc.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "eltwiseop_types.hpp"
 #include "jit_domain/jit_eltwiseop.hpp"
-#include <vector>
 #include "utils.hpp"
 
 namespace jd {
@@ -34,7 +36,7 @@ class eltwiseop_kd_t : public kernel_desc_t {
 
     auto dt = ts_desc[0].dtype();
     params_.dt = dt;
-  };
+  }
   virtual ~eltwiseop_kd_t() {}
 
  public:

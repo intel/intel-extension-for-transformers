@@ -14,10 +14,10 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_AMX_UTILS_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_AMX_UTILS_HPP_
+#include <omp.h>
 #include <immintrin.h>
 #include <mutex>  // NOLINT
 #include <cstdint>
-#include <omp.h>
 #include <vector>
 
 #include "jit_domain/jit_amx_configure.hpp"

@@ -114,8 +114,8 @@ std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind) {
 #undef CASE
 }
 
-bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data,
-                   std::vector<void*>& new_data, const std::vector<int>& idx) {
+bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data,  // NOLINT
+                   std::vector<void*>& new_data, const std::vector<int>& idx) {                  // NOLINT
   for (int i = 0; i < idx.size(); ++i) {
     int elem_num =
         std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
@@ -131,14 +131,14 @@ bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const v
   return true;
 }
 
-void free_new_mem(std::vector<void*>& new_data) {
+void free_new_mem(std::vector<void*>& new_data) {  // NOLINT
   for (int i = 0; i < new_data.size(); ++i) {
     free(new_data[i]);
   }
 }
 
-void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data, const std::vector<int>& idx,
-                  const std::vector<float>& ranges) {
+void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data, // NOLINT
+                  const std::vector<int>& idx, const std::vector<float>& ranges) {
   for (int i = 0; i < idx.size(); ++i) {
     int elem_num =
         std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
@@ -175,7 +175,7 @@ double calc_flop_sparse_matmul(const std::vector<tensor_desc>& ts_descs) {
   }
   const int other_dim =
       std::accumulate(src1_desc.shape().begin(), src1_desc.shape().end(), 1, std::multiplies<size_t>()) / ic;
-  return (double)oc * other_dim * ic * 2;
+  return static_cast<double>(oc) * other_dim * ic * 2;
 }
 
 double calc_flop_postop(const std::vector<tensor_desc>& ts_descs) {
