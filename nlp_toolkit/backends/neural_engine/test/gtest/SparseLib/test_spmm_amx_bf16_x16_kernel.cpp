@@ -304,7 +304,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[0]));
   params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
   params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[0]));
-  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[2])); // micro bs
+  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[2]));  // micro bs
   params.push_back(attrs_map["micro_oc"]);
   params.push_back(std::to_string(tensor_desc[ssd::DST].dtype() == dt::bf16));
   if (!attrs_map["postop_list"].empty()) params.push_back(attrs_map["postop_list"]);

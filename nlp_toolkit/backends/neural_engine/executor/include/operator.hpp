@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-#include <mutex>
+#include <mutex>  //NOLINT
 
 #include "common.hpp"
 #include "operator_registry.hpp"

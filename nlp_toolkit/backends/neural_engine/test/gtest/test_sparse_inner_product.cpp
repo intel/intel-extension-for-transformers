@@ -139,7 +139,7 @@ Tensor* make_int32_bias_obj(const TensorConfig* bias_tensor_config, const float*
 
   const float zp = *reinterpret_cast<const float*>(src_min->data());
   const float* weight_data = reinterpret_cast<const float*>(weight_fp32->data());
-  //#pragma omp parallel for
+  // #pragma omp parallel for
   for (int y = 0; y < weight_fp32->shape()[1]; y++) {
     float compensation = 0;
     for (int x = 0; x < weight_fp32->shape()[0]; x++) compensation += weight_data[x * weight_fp32->shape()[1] + y];
@@ -149,7 +149,7 @@ Tensor* make_int32_bias_obj(const TensorConfig* bias_tensor_config, const float*
 }
 
 Tensor* get_fp32_dst(const TensorConfig* dst_tensor_config, vector<Tensor*> inputs) {
-  using namespace dnnl;
+  // using namespace dnnl;
   Tensor* dst_tensor = new Tensor(*dst_tensor_config);
   dst_tensor->add_tensor_life(1);
   engine engine(engine::kind::cpu, 0);
@@ -246,7 +246,7 @@ vector<Tensor*> make_transposed_int8_tensor_obj(vector<const TensorConfig*> tens
   }
   delete[] transposed_data;
   return tensors;
-};
+}
 
 OpArgs GenenrateCopies(vector<TensorConfig*> old_configs, vector<Tensor*> old_tensors, Tensor* old_dst,
                        std::map<std::string, std::string> attr_map) {
