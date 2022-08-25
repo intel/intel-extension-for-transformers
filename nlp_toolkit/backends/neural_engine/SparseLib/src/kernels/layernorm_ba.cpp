@@ -24,11 +24,10 @@ bool layernorm_ba_kd_t::init() {
   assert(dt == data_type::fp32);
   assert(tensor_desc[0].ftype() == format_type::ba);
   auto tensor_shape = tensor_desc[0].shape();
-  // TODO(zhe1wang): support reduce dim.
-  assert(tensor_shape.size() == 2);
 
-  int row_num = tensor_shape[0];
-  int col_num = tensor_shape[1];
+  int row_num = 1;
+  for (int i = 0; i < tensor_shape.size() - 1; i++) row_num *= tensor_shape[i];
+  int col_num = tensor_shape.back();
 
   // init ptr
   one_ = new float(1.0);
@@ -40,43 +39,35 @@ bool layernorm_ba_kd_t::init() {
   }
 
   // init params
-  int nthr = op_desc_.impl_nthr();
-  params_.resize(nthr);
-  int col_per_thr = col_num / nthr;
-  for (int i = 0; i < nthr; i++) {
+  int max_eff_nthr = col_num / 16;
+  // TODO(zhe1wang):support col nums can't divded by 16.
+  assert(col_num % 16 == 0);
+  params_.resize(max_eff_nthr);
+  int col_per_thr = col_num / max_eff_nthr;
+  for (int i = 0; i < max_eff_nthr; i++) {
     int thread_offset;
-    int cur_thr_col;
     thread_offset = col_per_thr * i * get_data_size(dt);
-    if (i != nthr - 1)
-      cur_thr_col = col_per_thr;
-    else
-      cur_thr_col = col_num - i * col_per_thr;
     ssd::layernorm_ba_param_t param;
     param.dt = dt;
     // TODO(zhe1wang): support more dt in the future.
     assert(dt == data_type::fp32);
     param.row_num = row_num;
     param.col_num = col_num;
-    param.process_col = cur_thr_col;
+    param.process_col = col_per_thr;
     param.thread_offset = thread_offset;
     param.postop_attrs = op_desc_.apply_postops_list();
     auto op_attr = op_desc_.attrs();
-    if (op_attr.count("affine") != 0) {
-      param.affine = true;
-      const auto& alpha_ptr = str_to_num<uint64_t>(op_attr["alpha"]);
-      const auto beta_ptr = str_to_num<uint64_t>(op_attr["beta"]);
-      param.alpha = reinterpret_cast<float*>(alpha_ptr);
-      param.beta = reinterpret_cast<float*>(beta_ptr);
-    }
     params_[i] = param;
   }
   return true;
 }
 
 bool layernorm_ba_k_t::init() {
-  int nthr = kd()->operator_desc().impl_nthr();
-  jit_kers_.resize(nthr);
-  for (int i = 0; i < nthr; i++) {
+  auto op_desc = kd()->operator_desc();
+  auto col_num = op_desc.tensor_descs()[0].shape().back();
+  nthr_ = col_num / 16;
+  jit_kers_.resize(nthr_);
+  for (int i = 0; i < nthr_; i++) {
     td.push_back(new ssd::layernorm_ba_data_t());
     jit_layernorm_ba_t* ker = new jit_layernorm_ba_t(derived_kd()->params()[i]);
     if (ker == nullptr) return false;
@@ -88,15 +79,14 @@ bool layernorm_ba_k_t::init() {
 }
 
 bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
-  int nthr = kd()->operator_desc().impl_nthr();
-  int col_num = derived_kd()->params()[0].col_num;
-  int row_num = derived_kd()->params()[0].row_num;
 #pragma omp parallel for
-  for (int i = 0; i < nthr; i++) {
+  for (int i = 0; i < nthr_; i++) {
     const jit_layernorm_ba_t* jit_impl = jit_kers_[i];
     auto data_param = td[i];
     data_param->src = const_cast<void*>(rt_data[0]);
     data_param->dst = const_cast<void*>(rt_data[1]);
+    data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
+    data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
     data_param->one_div_n = derived_kd()->one_div_n_ptr();
     data_param->eps = derived_kd()->eps_ptr();
     data_param->one = derived_kd()->one_ptr();
@@ -107,4 +97,3 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
 }
 
 }  // namespace jd
-

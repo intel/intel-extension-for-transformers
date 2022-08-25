@@ -50,8 +50,6 @@ void LayerNormOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
 
 void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src_shape = input[0]->shape();
-  vector<int64_t> alpha_shape = input[1]->shape();
-  vector<int64_t> beta_shape = input[2]->shape();
   src_desc_ = {src_shape, jd::data_type::fp32, jd::format_type::ba};
   vector<jd::tensor_desc> ts_descs = {src_desc_};
   std::unordered_map<std::string, std::string> op_attrs_;
@@ -65,12 +63,6 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
     src_shape_str += "x";
   }
   op_attrs_["matrix_shape"] = src_shape_str;
-  // need to affine for aplha
-  auto alpha_ptr = input[1]->data();
-  auto beta_ptr = input[2]->data();
-  op_attrs_["affine"] = "1";
-  op_attrs_["alpha"] = std::to_string(reinterpret_cast<uint64_t>(alpha_ptr));
-  op_attrs_["beta"] = std::to_string(reinterpret_cast<uint64_t>(beta_ptr));
 
   jd::operator_desc op_desc(jd::kernel_kind::layernorm_ba, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
                             ts_descs, op_attrs_);
@@ -82,7 +74,7 @@ void LayerNormOperator::ForwardwithTransMode(const vector<Tensor*>& input, const
   // Inplace op.
   Tensor* dst_ptr = output[0];
   dst_ptr->mutable_data();
-  std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data()};
+  std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data(), input[1]->data(), input[2]->data()};
   layernorm_ba_ker.execute(runtime_data);
   // unref tensors
   this->unref_tensors(input);

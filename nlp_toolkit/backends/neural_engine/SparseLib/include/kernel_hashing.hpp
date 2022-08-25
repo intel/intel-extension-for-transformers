@@ -86,9 +86,6 @@ class hash_t {
       case kernel_kind::eltwiseop:
       case kernel_kind::layernorm_ba:
         hash_combine(seed, op_attrs["matrix_shape"]);
-        hash_combine(seed, op_attrs["affine"]);
-        hash_combine(seed, op_attrs["alpha_ptr"]);
-        hash_combine(seed, op_attrs["beta_ptr"]);
         break;
       default:
         break;

@@ -18,84 +18,70 @@ namespace jd {
 void jit_layernorm_ba_t::generate() {
   this->preamble();
   load_params();
-  prepare_mask();
   vbroadcastss(zmm_one, dword[one]);
-  for (int col_idx = 0; col_idx < param_.process_col; col_idx += 16) {
-    vxorps(reg_mean, reg_mean, reg_mean);
-    vxorps(reg_var, reg_var, reg_var);
-    int remain_rows = param_.row_num;
-    int row_idx = 0;
-
-    // loop1:compute mean.
-    while (remain_rows > 0) {
-      auto final_unroll_degree = remain_rows < unroll_degree ? remain_rows : unroll_degree;
-      remain_rows -= final_unroll_degree;
-      // load unroll rows data.
-      for (int k = 0; k < final_unroll_degree; k++) vmovups(Zmm(k), dword[src_addr + get_offset(col_idx, row_idx++)]);
-      // calculate the sum of mean.
-      binary_add(final_unroll_degree, reg_mean);
-    }
-    // then calculate the mean.
-    vmulps(reg_mean, reg_mean, dword[one_div_n]);
-
-    // loop2:compute var.
-    remain_rows = param_.row_num;
-    while (remain_rows > 0) {
-      auto final_unroll_degree = remain_rows < unroll_degree ? remain_rows : unroll_degree;
-      remain_rows -= final_unroll_degree;
-      // reverse sequence load rows data for cache performance.
-      for (int k = 0; k < final_unroll_degree; k++) vmovups(Zmm(k), dword[src_addr + get_offset(col_idx, --row_idx)]);
-      for (int k = 0; k < final_unroll_degree; k++) vsubps(Zmm(k), Zmm(k), reg_mean);  // sub mean
-      for (int k = 0; k < final_unroll_degree; k++) vmulps(Zmm(k), Zmm(k), Zmm(k));    // pow(2)
-      // calculate the sum of var of unroll rows data.
-      binary_add(final_unroll_degree, reg_var);
-    }
-    // calculate 1/[sqrt(var+eps)].
-    vmulps(reg_var, reg_var, dword[one_div_n]);
-    vaddps(reg_var, reg_var, dword[eps]);
-    vsqrtps(reg_var, reg_var);
-    vdivps(reg_var, zmm_one, reg_var);
-
-    // loop3:(x-mean)*var*α+β
-    remain_rows = param_.row_num;
-    while (remain_rows > 0) {
-      auto final_unroll_degree = remain_rows < unroll_degree ? remain_rows : unroll_degree;
-      remain_rows -= final_unroll_degree;
-      int row_idx_affine = row_idx;
-      int row_idx_store = row_idx;
-      // positive sqeuence load rows data for cache performance.
-      for (int k = 0; k < final_unroll_degree; k++) vmovups(Zmm(k), dword[src_addr + get_offset(col_idx, row_idx++)]);
-      for (int k = 0; k < final_unroll_degree; k++) vsubps(Zmm(k), Zmm(k), reg_mean);  // sub mean
-      for (int k = 0; k < final_unroll_degree; k++) vmulps(Zmm(k), Zmm(k), reg_var);   // mul 1/[sqrt(var+eps)]
-
-      // prepare for the op-fusion.
-      escape_regs(final_unroll_degree);
-
-      // affine
-      if (param_.affine) {
-        for (int k = 0; k < final_unroll_degree; k++)
-          eltwise_injector.vector_compute(Zmm(k), param_.postop_attrs, {row_idx_affine++});
-      }
-
-      // if contain postops,apply them.
-      if (!param_.affine || param_.postop_attrs.size() > param_.row_num) {
-        std::vector<int> postop_idxs;
-        for (int i = param_.row_num; i < param_.postop_attrs.size(); i++) postop_idxs.push_back(i);
-        for (int k = 0; k < final_unroll_degree; k++)
-          eltwise_injector.vector_compute(Zmm(k), param_.postop_attrs, postop_idxs);
-      }
-
-      // store the value.
-      for (int k = 0; k < final_unroll_degree; k++) {
-        if (col_idx + 16 <= param_.process_col)
-          vmovups(dword[dst_addr + get_offset(col_idx, row_idx_store++)], Zmm(k));
-        else
-          vmovups(dword[dst_addr + get_offset(col_idx, row_idx_store++)] | remain_task_mask, Zmm(k));
-      }
-    }
+  mov(reg_col, 0);
+  L(col_loop_start);
+  vxorps(zmm_mean, zmm_mean, zmm_mean);
+  vxorps(zmm_var, zmm_var, zmm_var);
+  vxorps(zmm_mean_pow, zmm_mean_pow, zmm_mean_pow);
+  vxorps(zmm_powx_mean, zmm_powx_mean, zmm_powx_mean);
+  mov(reg_offset, reg_col);
+  shl(reg_offset, log2(get_data_size(param_.dt)));
+  mov(reg_row, param_.row_num);
+  L(mean_loop_start);
+  // loop1:compute mean.
+  // load unroll rows data.
+  for (int k = 0; k < unroll_degree; k++) vmovups(Zmm(k), dword[src_addr + reg_offset + load_offset[k]]);
+  // calculate the sum of x
+  binary_add(unroll_degree, zmm_mean);
+  // calculate the sum of x^2 .
+  for (int k = 0; k < unroll_degree; k++) {
+    vmovups(Zmm(k), dword[src_addr + reg_offset + load_offset[k]]);
+    vmulps(Zmm(k), Zmm(k), Zmm(k));
   }
+  binary_add(unroll_degree, zmm_powx_mean);
+  add(reg_offset, unroll_degree * param_.col_num * get_data_size(param_.dt));
+  sub(reg_row, unroll_degree);
+  cmp(reg_row, 0);
+  jg(mean_loop_start, T_NEAR);
+
+  // then calculate the mean of x & mean of x^2.
+  vmulps(zmm_mean, zmm_mean, dword[one_div_n]);
+  vmulps(zmm_powx_mean, zmm_powx_mean, dword[one_div_n]);
+  vmulps(zmm_mean_pow, zmm_mean, zmm_mean);
+  vsubps(zmm_var, zmm_powx_mean, zmm_mean_pow);
+  sub(reg_offset, unroll_degree * param_.col_num * get_data_size(param_.dt));
+  vaddps(zmm_var, zmm_var, dword[eps]);
+  vsqrtps(zmm_var, zmm_var);
+  vdivps(zmm_var, zmm_one, zmm_var);
+
+  // loop2:(x-mean)*var*α+β
+  mov(reg_affine_offset, (param_.row_num - unroll_degree) * get_data_size(param_.dt));
+  L(norm_loop_start);
+  // positive sqeuence load rows data for cache performance.
+  for (int k = 0; k < unroll_degree; k++) {
+    vmovups(Zmm(k), dword[src_addr + reg_offset + load_offset[k]]);
+    vsubps(Zmm(k), Zmm(k), zmm_mean);
+    vmulps(Zmm(k), Zmm(k), zmm_var);
+    vbroadcastss(zmm_alpha, dword[reg_alpha + reg_affine_offset + k * get_data_size(param_.dt)]);
+    vbroadcastss(zmm_beta, dword[reg_beta + reg_affine_offset + k * get_data_size(param_.dt)]);
+    vfmadd213ps(Zmm(k), zmm_alpha, zmm_beta);
+  }
+  sub(reg_affine_offset, unroll_degree * get_data_size(param_.dt));
+  // store the value.
+  for (int k = 0; k < unroll_degree; k++) {
+    vmovups(dword[dst_addr + reg_offset + load_offset[k]], Zmm(k));
+  }
+  sub(reg_offset, unroll_degree * param_.col_num * get_data_size(param_.dt));
+  add(reg_row, unroll_degree);
+  cmp(reg_row, param_.row_num);
+  jl(norm_loop_start);
+
+  add(reg_col, 16);
+  cmp(reg_col, param_.process_col);
+  jl(col_loop_start, T_NEAR);
+
   this->postamble();
-  eltwise_injector.prepare_table();
 }
 
 // for pipline performance.
@@ -121,17 +107,23 @@ void jit_layernorm_ba_t::escape_regs(int degree) {
 }
 
 void jit_layernorm_ba_t::assign_regs() {
+  zmm_mean_pow = Zmm(25);
+  zmm_powx_mean = Zmm(26);
+  zmm_alpha = Zmm(27);
+  zmm_beta = Zmm(28);
   zmm_one = Zmm(29);
-  reg_mean = Zmm(30);
-  reg_var = Zmm(31);
-  // when apply affine&postop,the reg_mean&reg_var can be free.
+  zmm_mean = Zmm(30);
+  zmm_var = Zmm(31);
+  // when apply postop,all zmm can be free except zmm_one.
   reg_map.insert(std::pair<reg_type, std::set<int>>(reg_type::zmm, {zmm_one.getIdx()}));
 
-  remain_task_mask = Opmask(6);
-  reg_map.insert(std::pair<reg_type, std::set<int>>(reg_type::mask, {remain_task_mask.getIdx()}));
-
   reg_param = rdi;
-  reg64_tmp = r10;
+  reg_alpha = rax;
+  reg_beta = rbx;
+  reg_affine_offset = rcx;
+  reg_col = r8;
+  reg_offset = r9;
+  reg_row = r10;
   src_addr = r11;
   dst_addr = r12;
   one_div_n = r13;
@@ -139,25 +131,16 @@ void jit_layernorm_ba_t::assign_regs() {
   eps = r15;
   reg_map.insert(std::pair<reg_type, std::set<int>>(
       reg_type::reg64,
-      {reg64_tmp.getIdx(), src_addr.getIdx(), dst_addr.getIdx(), one_div_n.getIdx(), one.getIdx(), eps.getIdx()}));
+      {reg_affine_offset.getIdx(), reg_row.getIdx(), reg_col.getIdx(), src_addr.getIdx(), reg_alpha.getIdx(),
+       reg_offset.getIdx(), reg_beta.getIdx(), dst_addr.getIdx(), one_div_n.getIdx(), one.getIdx(), eps.getIdx()}));
 }
 
-void jit_layernorm_ba_t::prepare_mask() {
-  // even if dt is bf16, we will cvt it to fp32 first,then do next step.
-  int tail_task = param_.process_col % 16;
-  int mask = 0x0;
-  for (int i = 0; i < tail_task; i++) mask = (mask << 1) + 1;
-
-  mov(reg64_tmp.cvt32(), mask);
-  kmovd(remain_task_mask, reg64_tmp.cvt32());
-}
-
-// In bytes.
-size_t jit_layernorm_ba_t::get_offset(int col, int row) {
-  size_t offset = row * param_.col_num * get_data_size(param_.dt);
-  offset += param_.thread_offset;
-  offset += col * get_data_size(param_.dt);
-  return offset;
+void jit_layernorm_ba_t::gen_load_offset() {
+  size_t offset = param_.thread_offset;
+  for (int i = 0; i < unroll_degree; i++) {
+    load_offset.insert(std::make_pair(i, offset));
+    offset += param_.col_num * get_data_size(param_.dt);
+  }
 }
 
 void jit_layernorm_ba_t::reset_unroll_reg_idxs(int degree) {

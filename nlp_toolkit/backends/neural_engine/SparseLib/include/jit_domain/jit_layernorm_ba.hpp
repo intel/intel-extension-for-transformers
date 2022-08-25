@@ -34,37 +34,31 @@ class jit_layernorm_ba_t : public jit_generator {
 
  public:
   explicit jit_layernorm_ba_t(const ssd::layernorm_ba_param_t& param) : jit_generator(), param_(param) {
-    // insert the affine op to the front of the postop-chain.
-    // when we apply the true postops,the begin idx is row_num.
-    if (param_.affine) {
-      for (int i = param_.row_num - 1; i >= 0; i--) {
-        postop_attr tmp = {param_.dt, postop_type::eltwise, postop_alg::linear, param_.alpha[i], param_.beta[i]};
-        param_.postop_attrs.insert(param_.postop_attrs.begin(), tmp);
-      }
-    }
-
     eltwise_injector.init_tb_allocate_set(param_.postop_attrs);
-    // 29=32(all zmm regs num)-3(zmm_one,mean_,var_)
-    unroll_degree = 29 - eltwise_injector.max_zmm_allocate_num();
+    // 25=32(all zmm regs num)-3(zmm_one,mean_,pow_mean,powx_mean,var_,alpha,beta)
+    unroll_degree = 25 - eltwise_injector.max_zmm_allocate_num();
+    while (param_.row_num % unroll_degree != 0) unroll_degree -= 1;
     assign_regs();
     eltwise_injector.eltwise_injector_init(this, param_.postop_attrs);
+    gen_load_offset();
   }
   virtual ~jit_layernorm_ba_t() {}
 
  private:
   void generate() override;
-  size_t get_offset(int col, int row);
   void reset_unroll_reg_idxs(int degree);
   std::pair<int, int> get_unroll_add_idx(int begin);
   bool check_unroll_add_done();
   void binary_add(int degree, Zmm dst);
-  void prepare_mask();
   void assign_regs();
   void escape_regs(int degree);
+  void gen_load_offset();
 
   void load_params() {
     mov(src_addr, ptr[reg_param + LNBA_GET_OFF(src)]);
     mov(dst_addr, ptr[reg_param + LNBA_GET_OFF(dst)]);
+    mov(reg_alpha, ptr[reg_param + LNBA_GET_OFF(alpha)]);
+    mov(reg_beta, ptr[reg_param + LNBA_GET_OFF(beta)]);
     mov(one_div_n, ptr[reg_param + LNBA_GET_OFF(one_div_n)]);
     mov(one, ptr[reg_param + LNBA_GET_OFF(one)]);
     mov(eps, ptr[reg_param + LNBA_GET_OFF(eps)]);
@@ -75,18 +69,33 @@ class jit_layernorm_ba_t : public jit_generator {
   jit_eltwise_injector eltwise_injector;
   int unroll_degree;
   std::vector<int> unroll_reg_idxs;
+  std::map<int, int> load_offset;
   std::map<reg_type, std::set<int>> reg_map;
+
   Zmm zmm_one;
-  Zmm reg_mean;
-  Zmm reg_var;
+  Zmm zmm_mean;
+  Zmm zmm_mean_pow;
+  Zmm zmm_powx_mean;
+  Zmm zmm_var;
+  Zmm zmm_alpha;
+  Zmm zmm_beta;
   Reg64 reg_param;
-  Reg64 reg64_tmp;
   Reg64 src_addr;
   Reg64 dst_addr;
   Reg64 one_div_n;
   Reg64 one;
   Reg64 eps;
-  Opmask remain_task_mask;
+  Reg64 reg_col;
+  Reg64 reg_row;
+  Reg64 reg_offset;
+  Reg64 reg_alpha;
+  Reg64 reg_beta;
+  Reg64 reg_affine_offset;
+
+  Xbyak::Label col_loop_start;
+  Xbyak::Label mean_loop_start;
+  Xbyak::Label var_loop_start;
+  Xbyak::Label norm_loop_start;
 };  // namespace jd
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_

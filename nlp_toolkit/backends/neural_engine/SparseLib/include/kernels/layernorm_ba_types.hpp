@@ -27,9 +27,6 @@ struct layernorm_ba_param_t {
   int process_col;       // for control loop.
   size_t thread_offset;  // for load data.
   std::vector<postop_attr> postop_attrs;
-  bool affine = false;
-  float* alpha = nullptr;
-  float* beta = nullptr;
 };
 
 struct layernorm_ba_data_t {
@@ -38,6 +35,8 @@ struct layernorm_ba_data_t {
   const float* one_div_n;
   const float* one;
   const float* eps;
+  const float* alpha;
+  const float* beta;
 };
 
 }  // namespace ssd
