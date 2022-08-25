@@ -11,11 +11,14 @@ conda activate <env name>
 ```
 Check the gcc version using $gcc-v, make sure the gcc version is higher than 9.0.
 If not, you need to update gcc by yourself.
+Make sure you have the autoconf installed.
+If not, you need to install autoconf by yourself.
 Make sure the cmake version is 3 rather than 2.
 If not, you need to install cmake.
 ```shell
 cmake --version
 conda install cmake
+sudo apt install autoconf
 ```
 Install NLPTookit from source code
 ```shell
@@ -28,18 +31,14 @@ Install package for examples
 cd <NLP_Toolkit_folder>/examples/deployment/neural_engine/sst2/distilbert_base_uncased
 pip install -r requirements.txt
 ```
-1.2 Environment Variables
-Preload libiomp5.so can improve the performance when bs=1.
-```
-export LD_PRELOAD=<path_to_libiomp5.so>
-```
-Preload libjemalloc.so can improve the performance when multi instance.
+1.2 Environment Variables Preload libjemalloc.so can improve the performance when multi instance.
 ```
 export LD_PRELOAD=<NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
 Using weight sharing can save memory and improve the performance when multi instance.
 ```
-export SHARED_INST_NUM=<inst_num>
+export WEIGHT_SHARING=1
+export INST_NUM=<inst num>
 ```
 ### 2. Prepare Dataset and pretrained model
 
