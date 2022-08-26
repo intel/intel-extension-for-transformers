@@ -40,7 +40,7 @@ bool layernorm_ba_kd_t::init() {
 
   // init params
   int max_eff_nthr = col_num / 16;
-  // TODO(zhe1wang):support col nums can't divded by 16.
+  // TODO(zhe1wang): support col nums can't divded by 16.
   assert(col_num % 16 == 0);
   params_.resize(max_eff_nthr);
   int col_per_thr = col_num / max_eff_nthr;

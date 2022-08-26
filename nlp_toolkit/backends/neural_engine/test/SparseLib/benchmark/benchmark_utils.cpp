@@ -1,4 +1,4 @@
-//  Copyright (c) 2021 Intel Corporation
+//  Copyright (c) 2022 Intel Corporation
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -15,16 +15,41 @@
 #include "utils.hpp"
 #include "benchmark_utils.hpp"
 
+// Internal Control Variables
+int benchmark_iter = 100;
+bool benchmark_refresh = true;
+
+void read_benchmark_env() {
+  const char* input_benchmark_iter = std::getenv("BENCHMARK_ITER");
+  if (input_benchmark_iter != nullptr) {
+    benchmark_iter = atoi(input_benchmark_iter);
+    if (benchmark_iter == 0) {
+      printf("BENCHMARK_ITER is 0! Please ensure you set this variable to an integer\n");
+    }
+  }
+
+  const char* input_benchmark_refresh = std::getenv("BENCHMARK_NO_REFRESH");
+  if (input_benchmark_refresh != nullptr) {
+    if (strcmp(input_benchmark_refresh, "1") == 0) {
+      benchmark_refresh = false;
+    }
+  }
+}
+
 namespace jd {
 using dt = jd::data_type;
 
-void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_data) {
+bench_res_t benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_data, bench_mode mode) {
+  bench_res_t res;
+
   kp->execute(rt_data);
 
-  const char* env_val = std::getenv("SPARSE_LIB_USE_BENCHMARK");
-  if (env_val == nullptr || strcmp(env_val, "1") != 0) {
-    return;
+  if (mode == bench_mode::acc) {
+    res.stat = bench_status::success;
+    return res;
   }
+
+  read_benchmark_env();
 
   // Use op_desc to get kernel kind and tensor shape
   const auto& op_desc = kp->get_sp()->kd()->operator_desc();
@@ -36,30 +61,14 @@ void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_dat
   std::vector<void*> new_data;
   std::vector<int> idx = get_refresh_data_idx(ker_kind);
   if (!alloc_new_mem(ts_descs, tmp_data, new_data, idx)) {
-    return;
-  }
-
-  int benchmark_iter = 100;  // by default
-  const char* input_benchmark_iter = std::getenv("BENCHMARK_ITER");
-  if (input_benchmark_iter != nullptr) {
-    benchmark_iter = atoi(input_benchmark_iter);
-    if (benchmark_iter == 0) {
-      printf("BENCHMARK_ITER is 0! Please ensure you set an integer to this variable\n");
-    }
-  }
-
-  const char* bool_benchmark_refresh = std::getenv("BENCHMARK_NO_REFRESH");
-  bool if_refresh = true;
-  if (bool_benchmark_refresh != nullptr) {
-    if (strcmp(bool_benchmark_refresh, "1") == 0) {
-      if_refresh = false;
-    }
+    res.stat = bench_status::fail;
+    return res;
   }
 
   double ns = 0.0;
   for (int i = 0; i < benchmark_iter; ++i) {
     // refresh data
-    if (if_refresh) {
+    if (benchmark_refresh) {
       refresh_data(ts_descs, new_data, idx);
     }
 
@@ -68,11 +77,14 @@ void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_dat
 
   // get execution time and calculate GFLOPS
   ns = ns / benchmark_iter;
-  double gflops = calc_flop(ker_kind, ts_descs) / ns;
-  printf("kernel execution time: %lfms,  GFLOPS:%lf\n", ns / 1e6, gflops);
+  res.ms = ns / 1e6;
+  res.gflops = calc_flop(ker_kind, ts_descs) / ns;
 
   // free new memory
   free_new_mem(new_data);
+
+  res.stat = bench_status::success;
+  return res;
 }
 
 double exec_time(kernel_proxy* kp, const std::vector<const void*>& rt_data) {
@@ -83,35 +95,56 @@ double exec_time(kernel_proxy* kp, const std::vector<const void*>& rt_data) {
 }
 
 double calc_flop(const kernel_kind ker_kind, const std::vector<tensor_desc>& ts_descs) {
-#define CASE(kind)        \
-  case kernel_kind::kind: \
-    return calc_flop_##kind(ts_descs);
-
   switch (ker_kind) {
-    CASE(sparse_matmul);
-    CASE(postop);
+    case (kernel_kind::sparse_matmul): {
+      const auto& src0_desc = ts_descs[ssd::WEI];
+      const auto& src1_desc = ts_descs[ssd::SRC];
+      int oc = src0_desc.shape()[0];
+      int ic = src0_desc.shape()[1];
+
+      // Since avx512f kernel performs activation x weight, the shape of weight tensor is {ic, oc}
+      if (src0_desc.dtype() == dt::fp32 && src1_desc.dtype() == dt::fp32) {
+        std::swap(oc, ic);
+      }
+
+      if (std::find(src1_desc.shape().begin(), src1_desc.shape().end(), ic) == src1_desc.shape().end()) {
+        printf("ic is not found in SRC shape!\n");
+        return 0.0;
+      }
+      const int other_dim =
+          std::accumulate(src1_desc.shape().begin(), src1_desc.shape().end(), 1, std::multiplies<size_t>()) / ic;
+      return static_cast<double>(oc) * other_dim * ic * 2;
+    }
+    case (kernel_kind::eltwiseop): {
+      return std::accumulate(ts_descs[0].shape().begin(), ts_descs[0].shape().end(), 1, std::multiplies<size_t>());
+    }
+    case (kernel_kind::layernorm_ba): {
+      int elem_num =
+          std::accumulate(ts_descs[0].shape().begin(), ts_descs[0].shape().end(), 1, std::multiplies<size_t>());
+      // flop taken into consideration
+      // compute mean: elem_num
+      // compute variance: 3 * elem_num
+      // compute final result: 2 * elem_num
+      return 6 * elem_num;
+    }
     default:
-      printf("calc_flop_<kernel_kind %hhu> not implemented.\n", static_cast<const uint8_t>(ker_kind));
+      std::cerr << "calc_flop for this kernel is not implemented." << std::endl;
       return 0.0;
   }
-
-#undef CASE
 }
 
 std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind) {
-#define CASE(kind)        \
-  case kernel_kind::kind: \
-    return get_refresh_data_idx_##kind();
-
   switch (ker_kind) {
-    CASE(sparse_matmul);
-    CASE(postop);
+    case (kernel_kind::sparse_matmul):
+      return std::vector<int>{ssd::SRC, ssd::DST};
+    case (kernel_kind::eltwiseop):
+      return std::vector<int>{0, 1};
+    case (kernel_kind::layernorm_ba):
+      return std::vector<int>{0};
     default:
-      printf("get_refresh_data_idx_<kernel_kind %hhu> not implemented.\n", static_cast<const uint8_t>(ker_kind));
+      std::cerr << "get_refresh_data_idx for this kernel is not implemented." << std::endl;
       return std::vector<int>(0);
   }
-
-#undef CASE
 }
 
 bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data,  // NOLINT
@@ -122,7 +155,7 @@ bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const v
     int byte_size = elem_num * type_size[ts_descs[idx[i]].dtype()];
     void* new_mem = malloc(byte_size);
     if (!new_mem) {
-      printf("malloc failed.\n");
+      std::cerr << "malloc failed." << std::endl;
       return false;
     }
     rt_data[idx[i]] = new_mem;
@@ -137,7 +170,7 @@ void free_new_mem(std::vector<void*>& new_data) {  // NOLINT
   }
 }
 
-void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data, // NOLINT
+void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data,  // NOLINT
                   const std::vector<int>& idx, const std::vector<float>& ranges) {
   for (size_t i = 0; i < idx.size(); ++i) {
     int elem_num =
@@ -163,27 +196,5 @@ void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& 
     }
   }
 }
-
-double calc_flop_sparse_matmul(const std::vector<tensor_desc>& ts_descs) {
-  const auto& src0_desc = ts_descs[ssd::WEI];
-  const auto& src1_desc = ts_descs[ssd::SRC];
-  const int oc = src0_desc.shape()[0];
-  const int ic = src0_desc.shape()[1];
-  if (std::find(src1_desc.shape().begin(), src1_desc.shape().end(), ic) == src1_desc.shape().end()) {
-    printf("ic is not found in SRC shape!\n");
-    return 0.0;
-  }
-  const int other_dim =
-      std::accumulate(src1_desc.shape().begin(), src1_desc.shape().end(), 1, std::multiplies<size_t>()) / ic;
-  return static_cast<double>(oc) * other_dim * ic * 2;
-}
-
-double calc_flop_postop(const std::vector<tensor_desc>& ts_descs) {
-  return std::accumulate(ts_descs[0].shape().begin(), ts_descs[0].shape().end(), 1, std::multiplies<size_t>());
-}
-
-std::vector<int> get_refresh_data_idx_sparse_matmul() { return std::vector<int>{ssd::SRC, ssd::DST}; }
-
-std::vector<int> get_refresh_data_idx_postop() { return std::vector<int>{0, 1}; }
 
 }  // namespace jd

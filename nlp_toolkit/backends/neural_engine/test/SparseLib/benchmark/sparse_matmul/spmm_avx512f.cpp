@@ -12,36 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <omp.h>
-#include <glog/logging.h>
-
-#include <vector>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <numeric>
-#include <exception>
-
-#include "interface.hpp"
-#include "gtest/gtest.h"
-#include "unit_test_utils.hpp"
+#include "utils.hpp"
+#include "benchmark_utils.hpp"
+#include "common_utils.hpp"
+#include "sparse_matmul/spmm_avx512f.hpp"
 
 namespace jd {
+
 using dt = jd::data_type;
 using ft = jd::format_type;
 
-struct op_args_t {
-  operator_desc op_desc;
-  std::vector<const void*> rt_data;
-  float sparsity;  // sparsity of weight matrix; for testcase labeling
-};
-
-struct test_params_t {
-  std::pair<op_args_t, op_args_t> args;
-  bool expect_to_fail;
-};
-
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+void get_true_data_spmm_avx512f(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   // shape configure alias
   const auto& ts_descs = op_desc.tensor_descs();
   const auto& wei_desc = ts_descs[ssd::WEI];
@@ -88,59 +69,38 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   }
 }
 
-bool check_result(const test_params_t& t) {
-  const auto& p = t.args.first;
-  const auto& q = t.args.second;
-  sparse_matmul* spmm_kern = nullptr;
-  try {
-    const auto& op_desc = p.op_desc;
-    sparse_matmul_desc spmm_desc(op_desc);
-    spmm_kern = new sparse_matmul(spmm_desc);
-    spmm_kern->execute(p.rt_data);
-  } catch (const std::exception& e) {
-    if (t.expect_to_fail) {
-      return true;
-    } else {
-      return false;
-    }
+bool check_result_spmm_avx512f(const std::pair<op_args_t, op_args_t>& args) {
+  const auto& p = args.first;
+  const auto& q = args.second;
+
+  get_true_data_spmm_avx512f(q.op_desc, q.rt_data);
+  auto buf1 = p.rt_data[ssd::DST];
+  auto size1 = p.op_desc.tensor_descs()[ssd::DST].size();
+  auto buf2 = q.rt_data[ssd::DST];
+  auto size2 = q.op_desc.tensor_descs()[ssd::DST].size();
+  // Should compare buffer with different addresses
+  if (buf1 == buf2) {
+    printf("comparing the same buffer\n");
+    return false;
   }
-  if (spmm_kern != nullptr) {
-    auto attrs_map = p.op_desc.attrs();
-    const uint64_t& sparse_addr = str_to_num<uint64_t>(attrs_map["sparse_ptr"]);
-    auto sparse_data_ptr = reinterpret_cast<bsc_data_t<float>*>(sparse_addr);
-    delete sparse_data_ptr;
-    delete spmm_kern;
-  }
-  if (!t.expect_to_fail) {
-    get_true_data(q.op_desc, q.rt_data);
-    auto buf1 = p.rt_data[ssd::DST];
-    auto size1 = p.op_desc.tensor_descs()[ssd::DST].size();
-    auto buf2 = q.rt_data[ssd::DST];
-    auto size2 = q.op_desc.tensor_descs()[ssd::DST].size();
-    // Should compare buffer with different addresses
-    EXPECT_NE(buf1, buf2);
-    const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST].dtype();
+
+  const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST].dtype();
+  if (dst_type == dt::fp32) {
     return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+  } else if (dst_type == dt::s32) {
+    return compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
+  } else if (dst_type == dt::u8) {
+    return compare_data<uint8_t>(buf1, size1, buf2, size2, 5e-3);
+  } else if (dst_type == dt::s8) {
+    return compare_data<int8_t>(buf1, size1, buf2, size2, 5e-3);
   }
   return false;
 }
 
-class SpmmAVX512FKernelTest : public testing::TestWithParam<test_params_t> {
- protected:
-  SpmmAVX512FKernelTest() {}
-  virtual ~SpmmAVX512FKernelTest() {}
-  void SetUp() override {}
-  void TearDown() override {}
-};
-
-TEST_P(SpmmAVX512FKernelTest, ) {
-  test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
-  EXPECT_TRUE(check_result(t));
-}
-
 template <typename T>
-void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, const std::vector<dim_t>& block_shape,
-                                 float sparsity, unsigned int* seed) {
+void prepare_blocked_sparse_data_spmm_avx512f(T* data, const std::vector<dim_t>& a_shape,
+                                              const std::vector<dim_t>& block_shape, float sparsity,
+                                              unsigned int* seed) {
   dim_t K = a_shape[0], N = a_shape[1], BK = block_shape[0], BN = block_shape[1];
   LOG_IF(FATAL, (K % BK | N % BN) != 0) << "Matrix dim must be a multiple of block dim.";
   LOG_IF(FATAL, sparsity < 0 && sparsity > 1) << "Sparsity should be a value between 0 and 1.";
@@ -162,10 +122,12 @@ void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, con
     }
   }
 }
+template void prepare_blocked_sparse_data_spmm_avx512f<float>(float*, const std::vector<dim_t>&,
+                                                              const std::vector<dim_t>&, float, unsigned int*);
 
-std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_shape, const dt& a_dt,
-                                                  bool is_clear = false, float sparsity = 0.f,  // 0 for dense
-                                                  ft a_ft = ft::uncoded, const std::vector<float>& ranges = {-10, 10}) {
+std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector<dim_t>& a_shape, const dt& a_dt,
+                                                               bool is_clear, float sparsity, ft a_ft,
+                                                               const std::vector<float>& ranges) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
@@ -187,7 +149,8 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_sh
         case ft::bsc: {
           std::vector<dim_t> block_shape = {1, 16};
           unsigned int seed = 123;
-          prepare_blocked_sparse_data(static_cast<float*>(data_ptr), a_shape, block_shape, sparsity, &seed);
+          prepare_blocked_sparse_data_spmm_avx512f(static_cast<float*>(data_ptr), a_shape, block_shape, sparsity,
+                                                   &seed);
           break;
         }
         default:
@@ -201,8 +164,8 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_sh
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity,
-                                         std::vector<postop_alg> postop_algs = {}) {
+std::pair<op_args_t, op_args_t> gen_case_spmm_avx512f(dim_t M, dim_t K, dim_t N, float sparsity,
+                                                      std::vector<postop_alg> postop_algs) {
   // Step 1: Construct operator config
   std::unordered_map<std::string, std::string> op_attrs = {};
 
@@ -219,8 +182,8 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
     bool is_clear = i == ssd::DST || i == ssd::BIAS;
     std::vector<float> ranges = (i == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
     float data_sparsity = (i == ssd::WEI) ? sparsity : 0;
-    auto data_pair =
-        make_data_obj(ts_descs[i].shape(), ts_descs[i].dtype(), is_clear, data_sparsity, ts_descs[i].ftype(), ranges);
+    auto data_pair = make_data_obj_spmm_avx512f(ts_descs[i].shape(), ts_descs[i].dtype(), is_clear, data_sparsity,
+                                                ts_descs[i].ftype(), ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -229,7 +192,7 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
 
   // Step 3: sparse data encoding
   bsc_data_t<float> bsc_obj = spns::tobsc<float>(K, N, 1, 16, static_cast<const float*>(rt_data1[ssd::WEI]));
-  auto sparse_ptr = new bsc_data_t<float>(bsc_obj);  // Will be deleted in `check_result`
+  auto sparse_ptr = new bsc_data_t<float>(bsc_obj);  // Will be deleted in `check_result_spmm_avx512f`
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
   if (postop_algs.size()) {
     auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };
@@ -244,59 +207,61 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
                            op_attrs, apply_postops_list);
 
   // Step 4: op_args_t testcase pair
-  op_args_t op_args = {an_op_desc, rt_data1, sparsity};
-  op_args_t op_args_copy = {an_op_desc, rt_data2, sparsity};
+  op_args_t op_args = {an_op_desc, rt_data1};
+  op_args_t op_args_copy = {an_op_desc, rt_data2};
 
   return {op_args, op_args_copy};
 }
 
-static auto case_func = []() {
-  std::vector<test_params_t> cases;
-
-  // Config
-
-  std::vector<std::vector<postop_alg>> postop_lists = {
-      {},
-      {postop_alg::gelu},
-      {postop_alg::exp},
-      {postop_alg::gelu, postop_alg::exp},
-  };
-
-  for (std::vector<postop_alg> algs : postop_lists) {
-    cases.push_back({gen_case(128, 256, 256, .7f, algs)});
-    cases.push_back({gen_case(384, 256, 256, .7f, algs)});
-    cases.push_back({gen_case(128, 1024, 256, .7f, algs)});
-    cases.push_back({gen_case(384, 1024, 256, .7f, algs)});
-    cases.push_back({gen_case(128, 256, 1024, .7f, algs)});
-    cases.push_back({gen_case(384, 256, 1024, .7f, algs)});
-    cases.push_back({gen_case(128, 768, 768, .7f, algs)});
-    cases.push_back({gen_case(384, 768, 768, .7f, algs)});
-    cases.push_back({gen_case(128, 3072, 768, .7f, algs)});
-    cases.push_back({gen_case(384, 3072, 768, .7f, algs)});
-    cases.push_back({gen_case(128, 768, 3072, .7f, algs)});
-    cases.push_back({gen_case(384, 768, 3072, .7f, algs)});
-    cases.push_back({gen_case(128, 1024, 1024, .7f, algs)});
-    cases.push_back({gen_case(384, 1024, 1024, .7f, algs)});
-    cases.push_back({gen_case(128, 4096, 1024, .7f, algs)});
-    cases.push_back({gen_case(384, 4096, 1024, .7f, algs)});
-    cases.push_back({gen_case(128, 1024, 4096, .7f, algs)});
-    cases.push_back({gen_case(384, 1024, 4096, .7f, algs)});
+bench_res_t run_bench_spmm_avx512f(bench_mode mode, int argc, char** argv) {
+  bench_res_t res;
+  int64_t M = str_to_num<int64_t>(argv[0]);
+  int64_t K = str_to_num<int64_t>(argv[1]);
+  int64_t N = str_to_num<int64_t>(argv[2]);
+  float sparse_ratio = str_to_num<float>(argv[3]);
+  std::vector<postop_alg> postop_algs(0);
+  for (int i = SPMM_AVX512F_ARG_NUM - 1; i < argc; ++i) {
+    printf("%s\n", argv[i]);
+    if (!strcmp(argv[i], "gelu")) {
+      postop_algs.push_back(postop_alg::gelu);
+    } else if (!strcmp(argv[i], "exp")) {
+      postop_algs.push_back(postop_alg::exp);
+    } else if (!strcmp(argv[i], "relu")) {
+      postop_algs.push_back(postop_alg::relu);
+    } else if (!strcmp(argv[i], "tanh")) {
+      postop_algs.push_back(postop_alg::tanh);
+    } else {
+      std::cerr << "post-op " << argv[i] << " is not supported." << std::endl;
+    }
   }
 
-  return ::testing::ValuesIn(cases);
-};
+  std::pair<op_args_t, op_args_t> args = gen_case_spmm_avx512f(M, K, N, sparse_ratio, postop_algs);
+  sparse_matmul* spmm_kern = nullptr;
+  const auto& p = args.first;
+  try {
+    const auto& op_desc = p.op_desc;
+    sparse_matmul_desc spmm_desc(op_desc);
+    spmm_kern = new sparse_matmul(spmm_desc);
+    res = benchmarkOrExecute(spmm_kern, p.rt_data, mode);
+  } catch (const std::exception& e) {
+    std::cerr << "kernel exception occurred" << std::endl;
+    res.stat = bench_status::fail;
+    return res;
+  }
 
-std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
-  std::vector<std::string> params;
-  auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
-  auto attrs_map = tpi.param.args.first.op_desc.attrs();
-  params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparsity * 100)));
-  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[0]));
-  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
-  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[1]));
-  if (!attrs_map["postop_list"].empty()) params.push_back(attrs_map["postop_list"]);
-  return join_str(params, "_");
+  if (mode == bench_mode::acc) {
+    res.correct = check_result_spmm_avx512f(args);
+  }
+
+  if (spmm_kern != nullptr) {
+    auto attrs_map = p.op_desc.attrs();
+    const uint64_t& sparse_addr = str_to_num<uint64_t>(attrs_map["sparse_ptr"]);
+    auto sparse_data_ptr = reinterpret_cast<bsc_data_t<float>*>(sparse_addr);
+    delete sparse_data_ptr;
+    delete spmm_kern;
+  }
+
+  return res;
 }
 
-INSTANTIATE_TEST_SUITE_P(SparseLib, SpmmAVX512FKernelTest, case_func(), test_suffix);
 }  // namespace jd

@@ -13,7 +13,6 @@
 //  limitations under the License.
 #include <map>
 #include "gtest/gtest.h"
-#include "benchmark_utils.hpp"
 #include "unit_test_utils.hpp"
 
 namespace jd {
@@ -54,7 +53,7 @@ bool check_result(const test_params_t& t) {
     const auto& op_desc = p.op_desc;
     eltwiseop_desc eltwiseop_desc(op_desc);
     eltwiseop eltwiseop_kern(eltwiseop_desc);
-    benchmarkOrExecute(&eltwiseop_kern, p.data);
+    eltwiseop_kern.execute(p.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;

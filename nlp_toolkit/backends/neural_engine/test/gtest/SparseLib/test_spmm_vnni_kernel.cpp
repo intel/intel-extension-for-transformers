@@ -20,7 +20,6 @@
 #include <numeric>
 #include <exception>
 #include "interface.hpp"
-#include "benchmark_utils.hpp"
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
 
@@ -143,7 +142,7 @@ bool check_result(const test_params_t& t) {
     const auto& op_desc = p.op_desc;
     sparse_matmul_desc spmm_desc(op_desc);
     sparse_matmul spmm_kern(spmm_desc);
-    benchmarkOrExecute(&spmm_kern, p.rt_data);
+    spmm_kern.execute(p.rt_data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;

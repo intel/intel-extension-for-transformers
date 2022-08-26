@@ -14,7 +14,6 @@
 #include <map>
 #include "gtest/gtest.h"
 #include "interface.hpp"
-#include "benchmark_utils.hpp"
 
 #define exp_ln_flt_max_f 0x42b17218
 #define exp_ln_flt_min_f 0xc2aeac50
@@ -127,7 +126,7 @@ bool check_result(const test_params_t& t) {
     const auto& op_desc = p.op_desc;
     postop_desc postop_desc(op_desc);
     postop postop_kern(postop_desc);
-    benchmarkOrExecute(&postop_kern, p.data);
+    postop_kern.execute(p.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;

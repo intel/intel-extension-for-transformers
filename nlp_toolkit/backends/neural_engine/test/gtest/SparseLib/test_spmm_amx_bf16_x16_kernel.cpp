@@ -23,7 +23,6 @@
 
 #include "gtest/gtest.h"
 #include "interface.hpp"
-#include "benchmark_utils.hpp"
 #include "unit_test_utils.hpp"
 
 namespace jd {
@@ -96,7 +95,7 @@ bool check_result(const test_params_t& t) {
     const auto& op_desc = p.op_desc;
     sparse_matmul_desc spmm_desc(op_desc);
     spmm_kern = new sparse_matmul(spmm_desc);
-    benchmarkOrExecute(spmm_kern, p.rt_data);
+    spmm_kern->execute(p.rt_data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;

@@ -1,4 +1,4 @@
-//  Copyright (c) 2021 Intel Corporation
+//  Copyright (c) 2022 Intel Corporation
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -12,16 +12,54 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_BENCHMARK_UTILS_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_BENCHMARK_UTILS_HPP_
+#ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_
+#define ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_
 
+#include <iostream>
 #include <vector>
 #include <string>
 #include <cstring>
+#include <utility>
+#include <functional>
 
 #include "interface.hpp"
 
+/*
+ * @brief Internal Control Variables
+ */
+extern int benchmark_iter;
+extern bool benchmark_refresh;
+
+/*
+ * @brief Read environment vars and set internal control variables
+ */
+void read_benchmark_env();
+
 namespace jd {
+
+enum class bench_status : uint8_t {
+  success,
+  fail,
+  wrong_input,
+  unimplemented,
+};
+
+struct bench_res_t {
+  bench_status stat;
+  bool correct;
+  double ms;
+  double gflops;
+};
+
+enum class bench_mode : uint8_t {
+  acc,
+  perf,
+};
+
+struct op_args_t {
+  operator_desc op_desc;
+  std::vector<const void*> rt_data;
+};
 
 /*
  * @brief Run benchmark of kernel. Currently this mainly contains 3 parts:
@@ -29,11 +67,10 @@ namespace jd {
  *            2. Parse primitive and use execution time to calculate GFLOPS.
  *            3. Refresh some parts of runtime data for kernel before each execution.
  *
- *        To enable benchmark for a new kernel xxxx, you just need 2 steps:
- *            1. Implement calc_flop_xxxx and get_refresh_data_idx_xxxx for it.
- *            2. Simply add a case for it in calc_flop and get_refresh_data_idx in benchmark_utils.cpp
+ *        To enable benchmarkOrExecute for a new kernel xxxx, you need to
+ *        add a case for it in calc_flop and get_refresh_data_idx in benchmark_utils.cpp
  */
-void benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_data);
+bench_res_t benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_data, bench_mode mode);
 
 /*
  * @brief Get execution time of kernel.
@@ -53,13 +90,13 @@ std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind);
 /*
  * @brief Allocate new memory for some parts of runtime data for kernel.
  */
-bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data,    // NOLINT
-                   std::vector<void*>& new_data, const std::vector<int>& idx);                     // NOLINT
+bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data,  // NOLINT
+                   std::vector<void*>& new_data, const std::vector<int>& idx);                   // NOLINT
 
 /*
  * @brief Free new memory for some parts of runtime data for kernel.
  */
-void free_new_mem(std::vector<void*>& new_data);    // NOLINT
+void free_new_mem(std::vector<void*>& new_data);  // NOLINT
 
 /*
  * @brief Refresh some parts of runtime data for kernel.
@@ -67,20 +104,6 @@ void free_new_mem(std::vector<void*>& new_data);    // NOLINT
 void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data,  // NOLINT
                   const std::vector<int>& idx, const std::vector<float>& ranges = {-10.0, 10.0});
 
-// Since different kernels use different info to calculate FLOP,
-// please implement calc_flop_xxxx for each kernel.
-
-double calc_flop_sparse_matmul(const std::vector<tensor_desc>& ts_descs);
-
-double calc_flop_postop(const std::vector<tensor_desc>& ts_descs);
-
-// Since different kernels may need to refresh different parts of runtime data,
-// please implement get_refresh_data_idx_xxxx for each kernel.
-
-std::vector<int> get_refresh_data_idx_sparse_matmul();
-
-std::vector<int> get_refresh_data_idx_postop();
-
 }  // namespace jd
 
-#endif  // ENGINE_SPARSELIB_INCLUDE_BENCHMARK_UTILS_HPP_
+#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_
