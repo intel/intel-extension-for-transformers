@@ -24,7 +24,8 @@ namespace jd {
 namespace ssd {
 struct eltwiseop_param_t {
   size_t element_num;
-  data_type dt;
+  data_type in_dt;
+  data_type out_dt;
   std::vector<postop_attr> postop_attrs;
   size_t element_num_each_th = 0;
   size_t remain_element = 0;

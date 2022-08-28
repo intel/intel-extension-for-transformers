@@ -22,7 +22,7 @@ namespace jd {
 // The main kinds of kernel.
 enum class kernel_kind : uint8_t { undef, sparse_matmul, postop, eltwiseop, layernorm_ba };
 
-enum class postop_alg : uint8_t { exp, tanh, gelu, relu, quantize, dequantize, linear };
+enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, int8_lut };
 
 enum class postop_type : uint8_t { eltwise };
 

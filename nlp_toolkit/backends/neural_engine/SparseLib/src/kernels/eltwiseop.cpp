@@ -52,20 +52,10 @@ bool eltwiseop_k_t::eltwiseop_kernel_create(jit_eltwiseop_t** ker_pp, const ssd:
 bool eltwiseop_k_t::execute(const std::vector<const void*>& rt_data) const {
   int nthr = kd()->operator_desc().impl_nthr();
   auto eltwise_params = derived_kd()->params();
-  auto head_op = derived_kd()->params().postop_attrs.front();
-  auto tail_op = derived_kd()->params().postop_attrs.back();
-
-  auto src_offset = [&] {
-    if (head_op.op_alg == postop_alg::dequantize) return 1;
-    return get_data_size(derived_kd()->params().dt);
-  };
-
-  auto dst_offset = [&] {
-    if (tail_op.op_alg == postop_alg::quantize) return 1;
-    return get_data_size(derived_kd()->params().dt);
-  };
-
   const auto& jit_impl = jit_kers_;
+
+  auto src_offset = [&] { return get_data_size(derived_kd()->params().in_dt); };
+  auto dst_offset = [&] { return get_data_size(derived_kd()->params().out_dt); };
 
 #pragma omp parallel for
   for (int idx = 0; idx < nthr; idx++) {

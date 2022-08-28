@@ -20,6 +20,7 @@
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#include "SparseLib/include/interface.hpp"
 
 namespace executor {
 using dnnl::algorithm;
@@ -37,8 +38,20 @@ class GeluOperator : public Operator {
   explicit GeluOperator(const OperatorConfig& conf);
   virtual ~GeluOperator() {}
 
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+
+  void ReshapeWithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ForwardWithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
+  void ReshapeWithInt8LutAccTest(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ForwardWithInt8LutAccTest(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
+  void ReshapeWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ForwardWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
+  float TuneMatmulRange(float gelu_bound, float err, float step);
 
  private:
   string algorithm_;
@@ -46,6 +59,12 @@ class GeluOperator : public Operator {
   dnnl::eltwise_forward gelu_p_;
   memory src_m_;
   memory dst_m_;
+
+  bool int8_lut_optimize = false;
+  bool int8_lut_acc_test = false;
+  jd::tensor_desc src_desc_;
+  jd::tensor_desc dst_desc_;
+  jd::eltwiseop eltwiseop_ker;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_GELU_HPP_

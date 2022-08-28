@@ -34,8 +34,8 @@ class eltwiseop_kd_t : public kernel_desc_t {
     auto& ts_desc = op_desc_.tensor_descs();
     for (auto&& i : ts_desc[0].shape()) params_.element_num *= i;
 
-    auto dt = ts_desc[0].dtype();
-    params_.dt = dt;
+    params_.in_dt = ts_desc[0].dtype();
+    params_.out_dt = ts_desc[1].dtype();
   }
   virtual ~eltwiseop_kd_t() {}
 

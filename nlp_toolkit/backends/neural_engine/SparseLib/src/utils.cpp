@@ -190,4 +190,61 @@ int get_data_size(jd::data_type dt) {
   }
 }
 
+float get_exp(float x) {
+  unsigned int max = 0x42b17218;
+  unsigned int min = 0xc2aeac50;
+  float fmax = *reinterpret_cast<float*>(&max);
+  float fmin = *reinterpret_cast<float*>(&min);
+  if (x > fmax) {
+    return INFINITY;
+  } else if (x < fmin) {
+    return 0;
+  } else {
+    return expf(x);
+  }
+}
+
+// todo:add a erf_gelu version.
+float get_gelu(float x) {
+  // an approximate fitting function of GELU(x)
+  // GELU(x)≈0.5x(1+tanh[(2/pi)^0.5)*(x+0.044715x^3)]
+  // for more details,pls refer this paper:https://arxiv.org/abs/1606.08415
+  return 0.5 * x * (1 + tanhf(0.7978845834732056 * (x + 0.044714998453855515 * x * x * x)));
+}
+
+float get_relu(float x, float alpha) { return x > 0 ? x : alpha * x; }
+
+int get_quantize(float x, float alpha, float scale) {
+  x /= scale;
+  x += alpha;
+  int ans = std::nearbyint(x);
+  return ans;
+}
+
+float get_dequantize(float x, float alpha, float scale) {
+  x -= alpha;
+  x *= scale;
+  return x;
+}
+
+float get_linear(float x, float aplha, float beta) { return x * aplha + beta; }
+
+float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) {
+  for (auto&& i : attrs) {
+    if (i.op_type == jd::postop_type::eltwise) {
+      if (i.op_alg == jd::postop_alg::exp) value = get_exp(value);
+      if (i.op_alg == jd::postop_alg::gelu) value = get_gelu(value);
+      if (i.op_alg == jd::postop_alg::relu) value = get_relu(value, i.alpha);
+      if (i.op_alg == jd::postop_alg::quantize) value = get_quantize(value, i.alpha, i.scale);
+      if (i.op_alg == jd::postop_alg::dequantize) value = get_dequantize(value, i.alpha, i.scale);
+      if (i.op_alg == jd::postop_alg::tanh) value = tanh(value);
+      if (i.op_alg == jd::postop_alg::linear) value = get_linear(value, i.alpha, i.beta);
+      if (i.op_alg == jd::postop_alg::int8_lut) continue;
+    } else {
+      std::runtime_error("do not support postop type.");
+    }
+  }
+  return value;
+}
+
 }  // namespace jd

@@ -67,9 +67,9 @@ bool check_result(const test_params_t& t) {
     int num = get_element_num(q.op_desc);
     void* buf1;
     auto buf2 = q.data[1];
-    auto dtype = p.op_desc.apply_postops_list().back().dt;
-    float err_rate = 1e-1;
-    if (p.op_desc.apply_postops_list().back().op_alg != postop_alg::quantize && dtype == jd::data_type::fp32) {
+    auto dtype = q.op_desc.tensor_descs()[1].dtype();
+    float err_rate;
+    if (dtype == jd::data_type::fp32) {
       buf1 = const_cast<void*>(p.data[1]);
       err_rate = 1e-1;
     } else if (dtype == jd::data_type::bf16) {
@@ -79,12 +79,17 @@ bool check_result(const test_params_t& t) {
         *(reinterpret_cast<float*>(buf1) + i) = bf16_2_fp32(*(reinterpret_cast<bfloat16_t*>(bf16_buf1) + i));
       }
       err_rate = 5;
-    } else if (p.op_desc.apply_postops_list().back().op_alg == postop_alg::quantize) {
+    } else if (dtype == jd::data_type::s8 || dtype == jd::data_type::u8) {
       err_rate = 1e-1;
       buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
       auto int8_buf1 = const_cast<void*>(p.data[1]);
-      for (int i = 0; i < num; i++)
-        *(reinterpret_cast<float*>(buf1) + i) = uint8_2_int32(*(reinterpret_cast<uint8_t*>(int8_buf1) + i));
+      if (dtype == jd::data_type::u8) {
+        for (int i = 0; i < num; i++)
+          *(reinterpret_cast<float*>(buf1) + i) = uint8_2_int32(*(reinterpret_cast<uint8_t*>(int8_buf1) + i));
+      } else {
+        for (int i = 0; i < num; i++)
+          *(reinterpret_cast<float*>(buf1) + i) = *(reinterpret_cast<int8_t*>(int8_buf1) + i);
+      }
     }
     EXPECT_NE(buf1, buf2);
     auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
@@ -122,21 +127,12 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   memo_mode MALLOC = memo_mode::MALLOC;
   memo_mode MEMSET = memo_mode::MEMSET;
 
-  auto in_dt = eltwiseop_desc.apply_postops_list().front().dt;
-  auto out_dt = eltwiseop_desc.apply_postops_list().back().dt;
+  auto in_dt = ts_descs[0].dtype();
+  auto out_dt = ts_descs[1].dtype();
 
   src = sparselib_ut_memo(src, num, in_dt, MALLOC);
-
-  if (eltwiseop_desc.apply_postops_list().back().op_alg == postop_alg::quantize) {
-    dst = sparselib_ut_memo(dst, num, jd::data_type::u8, MALLOC);
-    sparselib_ut_memo(dst, num, jd::data_type::u8, MEMSET);
-  } else if (eltwiseop_desc.apply_postops_list().front().op_alg == postop_alg::dequantize) {
-    dst = sparselib_ut_memo(dst, num, jd::data_type::fp32, MALLOC);
-    sparselib_ut_memo(dst, num, jd::data_type::fp32, MEMSET);
-  } else {
-    dst = sparselib_ut_memo(dst, num, out_dt, MALLOC);
-    sparselib_ut_memo(dst, num, out_dt, MEMSET);
-  }
+  dst = sparselib_ut_memo(dst, num, out_dt, MALLOC);
+  sparselib_ut_memo(dst, num, out_dt, MEMSET);
 
   float* src_ref = reinterpret_cast<float*>(malloc(num * sizeof(float)));
   float* dst_ref = reinterpret_cast<float*>(malloc(num * sizeof(float)));
@@ -145,9 +141,12 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   memset(dst_ref, 0, num * sizeof(float));
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
-    float rand_val = rand_r(&seed_tmp) % 5 - rand_r(&seed_tmp) % 10 / 10.0;
+    float rand_val = rand_r(&seed_tmp) % 256 - 128;
     assign_val(src, in_dt, rand_val, i);
-    src_ref[i] = rand_val;
+    if (in_dt == data_type::u8)
+      src_ref[i] = *(reinterpret_cast<uint8_t*>(src) + i);
+    else
+      src_ref[i] = rand_val;
   }
 
   std::vector<const void*> rf_data1;
@@ -170,24 +169,41 @@ static auto case_func = []() {
   tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
   tensor_desc data2_desc = {{15, 1}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data3_desc = {{15, 1}, jd::data_type::bf16, jd::format_type::undef};
+  tensor_desc data4_desc = {{1024, 1024}, jd::data_type::u8, jd::format_type::undef};
+  tensor_desc data5_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
+  tensor_desc data6_desc = {{15, 1}, jd::data_type::u8, jd::format_type::undef};
 
   postop_attr fp32_exp_attr{data_type::fp32, postop_type::eltwise, postop_alg::exp};
   postop_attr bf16_exp_attr{data_type::bf16, postop_type::eltwise, postop_alg::exp};
   postop_attr fp32_gelu_attr{data_type::fp32, postop_type::eltwise, postop_alg::gelu};
   postop_attr bf16_gelu_attr{data_type::bf16, postop_type::eltwise, postop_alg::gelu};
   postop_attr fp32_relu_attr{data_type::fp32, postop_type::eltwise, postop_alg::relu, 2.0};
-  postop_attr quantize_attr(data_type::fp32, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.5);
-  postop_attr dequantize_attr(data_type::u8, postop_type::eltwise, postop_alg::dequantize, 0, 0, 2);
+  postop_attr quantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::quantize, -10, 0, 2);
+  postop_attr quantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::quantize, -10, 0, 2);
+  postop_attr dequantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::dequantize, -10, 0, 2);
+  postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, -10, 0, 2);
   postop_attr fp32_tanh_attr{data_type::fp32, postop_type::eltwise, postop_alg::tanh};
+  // u8 as input dt
+  postop_attr int8_lut_u8_attr{data_type::u8, postop_type::eltwise, postop_alg::int8_lut};
+  // s8 as input dt
+  postop_attr int8_lut_s8_attr{data_type::s8, postop_type::eltwise, postop_alg::int8_lut};
+
+  cases.push_back({gen_case({data4_desc, data4_desc}, {{"postop_list", "int8_lut_u8+dequantize+fp32_gelu+quantize"}},
+                            {int8_lut_u8_attr, dequantize_u8_attr, fp32_gelu_attr, quantize_u8_attr}),
+                   false});
+
+  cases.push_back({gen_case({data5_desc, data5_desc}, {{"postop_list", "int8_lut_s8+dequantize+fp32_gelu+quantize"}},
+                            {int8_lut_s8_attr, dequantize_s8_attr, fp32_gelu_attr, quantize_s8_attr}),
+                   false});
 
   cases.push_back({gen_case({data0_desc, data0_desc}, {{"postop_list", "fp32_tanh"}}, {fp32_tanh_attr}), false});
 
-  cases.push_back({gen_case({data0_desc, data0_desc}, {{"postop_list", "dequantize+fp32_relu+quantize"}},
-                            {dequantize_attr, fp32_relu_attr, quantize_attr}),
+  cases.push_back({gen_case({data4_desc, data4_desc}, {{"postop_list", "dequantize+fp32_gelu+quantize"}},
+                            {dequantize_u8_attr, fp32_gelu_attr, quantize_u8_attr}),
                    false});
 
   cases.push_back(
-      {gen_case({data0_desc, data0_desc}, {{"postop_list", "fp32_gelu+quantize"}}, {fp32_gelu_attr, quantize_attr}),
+      {gen_case({data0_desc, data5_desc}, {{"postop_list", "fp32_gelu+quantize"}}, {fp32_gelu_attr, quantize_s8_attr}),
        false});
 
   cases.push_back({gen_case({data0_desc, data0_desc}, {{"postop_list", "fp32_relu"}}, {fp32_relu_attr}), false});

@@ -53,8 +53,11 @@ class jit_eltwise_injector {
   void quantize_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void dequantize_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void linear_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void int8_lut_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void register_table_entries(const std::vector<postop_attr>& postop_attrs);
   void assert_check(const std::vector<postop_attr>& postop_attrs);
+  uint32_t get_int8_lut_term(int int8, const std::vector<postop_attr>& postop_attrs, data_type input_dt);
+
   void load_table_addr() { h->mov(p_table, l_table); }
 
  private:
@@ -126,6 +129,10 @@ class jit_eltwise_injector {
     tanh_saturation_lbound,
     tanh_pol_table,
     exchange_zmm_low256_high256,
+    int8_lut_term,
+    int8_64,
+    int8_255,
+    select_permt_idx,
     undef_key,
   };
 
