@@ -203,7 +203,9 @@ class Graph(object):
                         self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.append(
                             node.name)
                 if mode == 'remove':
-                    self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.remove(
+                    if node.name in \
+                    self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op:
+                        self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.remove(
                         node.name)
             # skip the const tensor and the node has been removed
             else:

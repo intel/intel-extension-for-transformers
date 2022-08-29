@@ -29,7 +29,7 @@ from abc import abstractmethod
 supported_patterns = [
     'InputFile',
     'InputData',
-    'CollectQDQInfo',
+    'CollectQuantInfo',
     'LayerNorm',
     'WordEmbeddings',
     'MergedEmbeddingbag',
