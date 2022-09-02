@@ -243,7 +243,7 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
                                          std::unordered_map<std::string, std::string> op_attrs = {}) {
   bool append_sum = (op_attrs["post_op"] == "append_sum");
   LOG_IF(FATAL, append_sum && dt_dst != dt::fp32) << "append_sum must be applied with fp32 dst type";
-  micro_bs = micro_bs == -1 ? N : micro_bs;
+  micro_bs = micro_bs <= 0 ? N : micro_bs;
   LOG_IF(FATAL, N % micro_bs != 0) << "micro_bs must be a multiple of N";
   dim_t num_mbs = N / micro_bs;
 
@@ -345,6 +345,7 @@ static auto case_func = []() {
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "0"}})});
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "1"}})});
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "2"}})});
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "3"}})});
 
       // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::s8)});

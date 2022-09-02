@@ -148,8 +148,16 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
   auto idx_begin = param_.indices.begin();
   const std::vector<dim_t> k_indices(idx_begin + indptr_lo, idx_begin + indptr_hi);
 
-  if (param_.sub_func == ssd::subfunc_level::load_and_prod) {
-    mov(reg_seq_indices, reinterpret_cast<uint64_t>(dense_load_offsets.data() + indptr_lo - indptr_kernel_start));
+  switch (param_.sub_func) {
+    case ssd::subfunc_level::dense_and_prod:
+      mov(reg_seq_indices, reinterpret_cast<uint64_t>(dense_load_offsets.data() + indptr_lo - indptr_kernel_start));
+      break;
+    case ssd::subfunc_level::load_and_prod:
+      mov(reg_seq_indices, reinterpret_cast<uint64_t>(dense_load_offsets.data() + indptr_lo - indptr_kernel_start));
+      mov(reg_wei, reinterpret_cast<uint64_t>(param_.weight + param_.blocksize[0] * param_.blocksize[1] * indptr_lo));
+      break;
+    default:
+      break;
   }
 
   // kp (k-idx pointer is the idx of nnz blocks of the current row)
@@ -173,9 +181,13 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
         load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
         call(sfptr_tile_prod_);
         break;
-      case ssd::subfunc_level::load_and_prod:
+      case ssd::subfunc_level::dense_and_prod:
         load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
-        call(sfptr_load_prod_);
+        call(sfptr_dense_and_prod_);
+        break;
+      case ssd::subfunc_level::load_and_prod:
+        call(sfptr_load_and_prod_);
+        break;
       default:
         break;
     }
@@ -242,8 +254,8 @@ void jit_spmm_vnni_t::gen_subfunc_tile_prod() {
   tile_product(TH(), TW());
 }
 
-void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
-  sfptr_load_prod_ = getCurr();
+void jit_spmm_vnni_t::gen_subfunc_dense_and_prod() {
+  sfptr_dense_and_prod_ = getCurr();
   add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
 
   constexpr uint64_t idx_size = sizeof(decltype(param_.indices)::value_type);
@@ -279,6 +291,50 @@ void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
   ret();
 }
 
+void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
+  sfptr_load_and_prod_ = getCurr();
+  add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
+
+  constexpr size_t idx_size = sizeof(decltype(param_.indices)::value_type);
+  mov(reg_addr_tmp[0], qword[reg_seq_indices + 0 * idx_size]);
+  mov(reg_addr_tmp[1], qword[reg_seq_indices + 1 * idx_size]);
+  mov(reg_addr_tmp[2], qword[reg_seq_indices + 2 * idx_size]);
+  mov(reg_addr_tmp[3], qword[reg_seq_indices + 3 * idx_size]);
+  add(reg_seq_indices, 4 * idx_size);
+
+  constexpr size_t wei_size = sizeof(decltype(*param_.weight));
+
+  for (int j = 0; j < TW(); ++j) {
+    int vreg_idx = TW_Vmm(j).getIdx();
+    Xbyak::Xmm TW_xmm(vreg_idx);
+    Xbyak::Ymm TW_ymm = Xbyak::Ymm(vreg_idx) | reg_k1;
+    int vreg_temp_idx = vreg_temp.getIdx();
+    Xbyak::Xmm temp_xmm(vreg_temp_idx);
+    Xbyak::Ymm temp_ymm = Xbyak::Ymm(vreg_temp_idx) | reg_k1;
+    // assert(k_indices.size() > 0 && k_indices.size() <= spns::ADJ);
+
+    vmovdqu8(TW_xmm, ptr[reg_dense + reg_addr_tmp[0] + j * VEC]);
+    vbroadcasti32x4(TW_ymm, ptr[reg_dense + reg_addr_tmp[1] + j * VEC]);
+    vmovdqu8(temp_xmm, ptr[reg_dense + reg_addr_tmp[2] + j * VEC]);
+    vbroadcasti32x4(temp_ymm, ptr[reg_dense + reg_addr_tmp[3] + j * VEC]);
+
+    vpermt2d(TW_Vmm(j), vpermt2d_arg_idx, vreg_temp);
+    vpshufb(TW_Vmm(j), TW_Vmm(j), vpshufb_arg_b);
+
+    for (int i = 0; i < TH(); ++i) {
+      // load sparse
+      if (j == 0) vpbroadcastd(TH_Vmm(i), ptr[reg_wei + i * spns::ADJ * wei_size]);
+
+      // tile prod
+      vpdpbusd(dst_tile_Vmm(i, j), TW_Vmm(j), TH_Vmm(i));
+    }
+    if (j == TW() / 2) add(reg_wei, TH() * spns::ADJ * wei_size);
+  }
+
+  sub(reg_dense, reg_n_idx);  // reg_dense = reg_n_idx * BYTE1
+  ret();
+}
+
 void jit_spmm_vnni_t::generate() {
   const int nonvolatile_reg_size = 8 * 6;
   inLocalLabel();  // use local label for multiple instance
@@ -287,6 +343,9 @@ void jit_spmm_vnni_t::generate() {
       break;
     case ssd::subfunc_level::prod:
       gen_subfunc_tile_prod();
+      break;
+    case ssd::subfunc_level::dense_and_prod:
+      gen_subfunc_dense_and_prod();
       break;
     case ssd::subfunc_level::load_and_prod:
       gen_subfunc_load_and_prod();

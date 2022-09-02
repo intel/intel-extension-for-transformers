@@ -48,11 +48,12 @@ enum class sparse_scheme : uint8_t {
 };
 
 enum class subfunc_level : uint8_t {
-  none,       // No sub-function
-  prod,       // use sub-function for tile product
-  load_and_prod,  // use fused sub-function for dense loading & tile product
+  none,            // No sub-function
+  prod,            // use sub-function for tile product
+  dense_and_prod,  // use fused sub-function for dense loading & tile product
+  load_and_prod,   // use fused sub-function for dense loading & sparse loading & tile product
+  subfunc_level_MAX = load_and_prod
 };
-static constexpr subfunc_level MAX_SUBFUNC_LEVEL = subfunc_level::load_and_prod;
 
 /**
  * @brief kernel parameters passed between kernel/primitive and jit_domain.
@@ -78,9 +79,9 @@ struct vnni_param_t {
  */
 template <typename dst_t>
 struct vnni_data_t {
-  const uint8_t* ptr_dense;      // activation(K, N).
-  const int32_t* ptr_bias;       // bias(M, 1).
-  dst_t* ptr_dst;                // dst(M, N).
+  const uint8_t* ptr_dense;  // activation(K, N).
+  const int32_t* ptr_bias;   // bias(M, 1).
+  dst_t* ptr_dst;            // dst(M, N).
   const float* ptr_scales;
 };
 

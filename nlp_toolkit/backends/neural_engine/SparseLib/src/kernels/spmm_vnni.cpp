@@ -23,8 +23,8 @@
 namespace jd {
 //// Part1: class spmm_vnni_kd_t
 
-void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  //NOLINT
-  if (BM == 0) {  // try to get optimized block size
+void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  // NOLINT
+  if (BM == 0) {                                                         // try to get optimized block size
     int cores = omp_get_num_procs();
     const dim_t blocks_n = N / BN;
 
@@ -83,7 +83,7 @@ bool spmm_vnni_kd_t::spmm_params_init() {
   const uint64_t data_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
   bsr_data_t<int8_t>* bsr_data = reinterpret_cast<bsr_data_t<int8_t>*>(data_addr);
 
-  ssd::subfunc_level sub_func = ssd::MAX_SUBFUNC_LEVEL;
+  ssd::subfunc_level sub_func = ssd::subfunc_level::subfunc_level_MAX;
   if (op_attrs["sub_func"].length() != 0) {
     sub_func = static_cast<ssd::subfunc_level>(atoi(op_attrs["sub_func"].c_str()));
   }

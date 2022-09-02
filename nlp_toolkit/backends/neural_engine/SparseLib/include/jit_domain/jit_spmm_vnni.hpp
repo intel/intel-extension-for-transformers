@@ -73,6 +73,7 @@ class jit_spmm_vnni_t : public jit_generator {
   void load_intermediate_dst(dim_t m_start);
   void store_intermediate_dst(dim_t m_start);
   void gen_subfunc_tile_prod();
+  void gen_subfunc_dense_and_prod();
   void gen_subfunc_load_and_prod();
 
   inline int TH() const { return param_.blocksize[0]; }
@@ -87,8 +88,9 @@ class jit_spmm_vnni_t : public jit_generator {
  private:
   const int64_t PADDED_NEG_ONE = -1;
   const int64_t PADDED_ZERO = 0;
-  const uint8_t* sfptr_tile_prod_ = nullptr;  // subfunction for tile product
-  const uint8_t* sfptr_load_prod_ = nullptr;  // subfunction for dense load & tile product
+  const uint8_t* sfptr_tile_prod_ = nullptr;       // subfunction for tile product
+  const uint8_t* sfptr_dense_and_prod_ = nullptr;  // subfunction for dense load & tile product
+  const uint8_t* sfptr_load_and_prod_ = nullptr;   // subfunction for dense load & sparse load & tile product
 
  private:
   static constexpr int stack_space_needed_ = 200;
