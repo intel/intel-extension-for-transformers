@@ -19,7 +19,7 @@ Here is how to run the script:
 
 ### Validated model list
 
-|Task|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
+|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
 |NER|elastic/distilbert-base-uncased-finetuned-conll03-english| ✅| ✅| N/A
 

@@ -6,11 +6,11 @@ Welcome to Pytorch Huggingface examples. The examples is following from [Hugging
 
 | Task | PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|:---:|:---:|:---:|
-|**`language-modeling`**| ✅ | ✅ | ✅
-|**`multi-choice`**| ✅ | ✅ | ✅
-|**`question-answering`**| ✅ | ✅ | ✅
+|**`language-modeling`**| ✅ | ✅ | N/A
+|**`multi-choice`**| ✅ | ✅ | N/A
+|**`question-answering`**| ✅ | ✅ | N/A
 |**`text-classification`**| ✅ | ✅ | ✅
-|**`token-classification`**| ✅ | ✅ | ✅
+|**`token-classification`**| ✅ | ✅ | N/A
 |**`summarization`**| ✅ | N/A | N/A
 |**`translation`**| ✅ | N/A | N/A
 
@@ -28,3 +28,10 @@ Welcome to Pytorch Huggingface examples. The examples is following from [Hugging
 |**`language-modeling`**| N/A | ✅ 
 |**`question-answering`**| ✅ | N/A
 |**`text-classification`**| ✅| N/A
+
+## Orchestrate
+
+| Task | Knowledge Distillation | Magnitude Pruning | Pattern Lock Pruning
+|---|:---:|:---:| 
+|**`question-answering`**| ✅ | ✅ | ✅
+|**`text-classification`**| ✅| ✅ | ✅
