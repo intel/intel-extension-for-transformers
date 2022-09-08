@@ -15,10 +15,10 @@ make -j
 ```
 + `mode` values can be `perf` for perfomance test or `acc` for accuracy test.
 + `kernel_type` is one of
-    + [sparse_matmul](#sparsematmul)
+    + [sparse_matmul](#sparse_matmul)
     + [eltwiseop](#eltwiseop)
-    + [layernorm_ba](#layernormba)
-+ `kernel_specification` specifies information like what algorithm is used for [sparse_matmul](#sparsematmul).
+    + [layernorm_ba](#layernorm_ba)
++ `kernel_specification` specifies information like what algorithm is used for [sparse_matmul](#sparse_matmul).
 + `config` contains information of the test case, for example tensor shapes.
 
 ### Environment variables
@@ -48,15 +48,16 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul avx512f
 
 #### spmm_vnni
 ```shell
-[<environment_variable>...] ./benchmark <mode> sparse_matmul vnni <M> <K> <N> <sparse_ratio> <is_fp32_out> <MKN_blocks> <tile_shape> <has_append_sum>
+[<environment_variable>...] ./benchmark <mode> sparse_matmul vnni <M> <K> <N> <sparse_ratio> <micro_bs> <is_fp32_out> <has_append_sum> <micro_oc> <sub_func_level>
 ```
-`MKN_blocks` is in the form of `<M_block>,<K_block>,<N_block>`.
 
-`tile_shape` is in the form of `<tile_M>,<tile_N>`.
+You can use `-1` to use default config for `micro_bs`, `micro_oc`,`sub_func_level`.
+
+`sub_func_level` can be positive integer up to `ssd::subfunc_level::subfunc_level_MAX`. Higher value means more code folding.
 
 ##### Examples
 ```shell
-BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul vnni 1024 1024 1024 0.7 0 1,1,1 4,4 0
+BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul vnni 1024 1024 1024 0.7 -1 0 0 -1 -1
 ```
 
 #### spmm_amx_bf16_x16

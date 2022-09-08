@@ -25,23 +25,28 @@ using ft = jd::format_type;
 void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   // shape configure alias
   const auto& ts_descs = op_desc.tensor_descs();
-  const auto& src0_desc = ts_descs[ssd::WEI];
-  const auto& src1_desc = ts_descs[ssd::SRC];
-  const auto& bias_desc = ts_descs[ssd::BIAS];
-  const auto& dst_desc = ts_descs[ssd::DST];
-  int dims = src0_desc.shape().size();
-  int M = src0_desc.shape()[0];
-  int K = src0_desc.shape()[1];
-  int N = src1_desc.shape()[1];
-  const auto& left_dt = src0_desc.dtype();
-  const auto& right_dt = src1_desc.dtype();
-  const auto& dst_dt = dst_desc.dtype();
-  bool has_bias = !bias_desc.shape().empty();
+  const auto& wei_shape = ts_descs[ssd::WEI].shape();
+  const auto& wei_type = ts_descs[ssd::WEI].dtype();
+  const auto& src_type = ts_descs[ssd::SRC].dtype();
+  const auto& src_shape = ts_descs[ssd::SRC].shape();
+  const auto& dst_type = ts_descs[ssd::DST].dtype();
+  const auto& dst_shape = ts_descs[ssd::DST].shape();
+  assert((src_shape.size() == 2 || src_shape.size() == 3) && src_shape.size() == dst_shape.size());
+
+  int oc = wei_shape[0];
+  int ic = wei_shape[1];
+  int micro_bs = src_shape.back();
+  int num_mbs = src_shape.size() == 2 ? 1 : src_shape[0];
+
+  const auto& left_dt = wei_type;
+  const auto& right_dt = src_type;
+  const auto& dst_dt = dst_type;
+  bool has_bias = !ts_descs[ssd::BIAS].shape().empty();
   auto attrs_map = op_desc.attrs();
   bool append_sum = (attrs_map["post_op"] == "append_sum");
-  std::vector<int64_t> left_stride = {K, 1};
-  std::vector<int64_t> right_stride = {N, 1};
-  std::vector<int64_t> dst_stride = {N, 1};
+  std::vector<dim_t> left_stride = {ic, 1};
+  std::vector<dim_t> right_stride = {micro_bs * ic, micro_bs, 1};
+  std::vector<dim_t> dst_stride = {micro_bs * oc, micro_bs, 1};
 
   // runtime data alias
   const auto left_data = rt_data[ssd::WEI];
@@ -61,25 +66,24 @@ void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<con
 
   auto dst_fp32 = static_cast<float*>(dst_data);  // ptr alias
   auto dst_s32 = static_cast<int32_t*>(dst_data);
-  auto dst_u8 = static_cast<uint8_t*>(dst_data);
   auto dst_s8 = static_cast<int8_t*>(dst_data);
 
-  // Computing the kernel
-  if (dims == 2) {
-    for (int i = 0; i < M; ++i) {
-#pragma omp parallel for
-      for (int j = 0; j < N; ++j) {
+// Computing the kernel
+#pragma omp parallel for collapse(3)
+  for (dim_t idx_mbs = 0; idx_mbs < num_mbs; ++idx_mbs)
+    for (dim_t i = 0; i < oc; ++i) {
+      for (dim_t j = 0; j < micro_bs; ++j) {
         float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
 #pragma omp simd
-        for (int k = 0; k < K; ++k) {
-          int idx0 = i * left_stride[0] + k * left_stride[1];
-          int idx1 = k * right_stride[0] + j * right_stride[1];
+        for (dim_t k = 0; k < ic; ++k) {
+          dim_t l_idx = i * left_stride[0] + k * left_stride[1];
+          dim_t r_idx = idx_mbs * right_stride[0] + k * right_stride[1] + j * right_stride[2];
           auto left_k = (left_dt == dt::fp32)
-                            ? left_fp32[idx0]
-                            : ((left_dt == dt::u8) ? left_u8[idx0] : ((left_dt == dt::s8) ? left_s8[idx0] : 0));
+                            ? left_fp32[l_idx]
+                            : ((left_dt == dt::u8) ? left_u8[l_idx] : ((left_dt == dt::s8) ? left_s8[l_idx] : 0));
           auto right_k = (right_dt == dt::fp32)
-                             ? right_fp32[idx1]
-                             : ((right_dt == dt::u8) ? right_u8[idx1] : ((right_dt == dt::s8) ? right_s8[idx1] : 0));
+                             ? right_fp32[r_idx]
+                             : ((right_dt == dt::u8) ? right_u8[r_idx] : ((right_dt == dt::s8) ? right_s8[r_idx] : 0));
           value += left_k * right_k;
         }
 
@@ -87,8 +91,8 @@ void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<con
         if (has_bias) {
           value += bias_data[i];
         }
-        int dst_idx = i * dst_stride[0] + j * dst_stride[1];
-        int scale_idx = i;
+        dim_t dst_idx = idx_mbs * dst_stride[0] + i * dst_stride[1] + j * dst_stride[2];
+        dim_t scale_idx = i;
         if (dst_dt == dt::fp32) {
           value = value * scales_data[scale_idx];
         }
@@ -102,11 +106,13 @@ void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<con
         } else if (dst_dt == dt::s32) {
           dst_s32[dst_idx] = static_cast<int32_t>(value);
         } else if (dst_dt == dt::s8) {
-          dst_s8[dst_idx] = fp32_2_s8(value, scales_data[scale_idx]);
+          int32_t data = nearbyint(value * scales_data[scale_idx]);
+          data = data < -128 ? -128 : data;
+          data = data > 127 ? 127 : data;
+          dst_s8[dst_idx] = static_cast<int8_t>(data);
         }
       }
     }
-  }
 }
 
 bool check_result_spmm_vnni(const std::pair<op_args_t, op_args_t>& args) {
@@ -138,26 +144,23 @@ bool check_result_spmm_vnni(const std::pair<op_args_t, op_args_t>& args) {
 }
 
 template <typename T>
-void prepare_sparse_data_spmm_vnni(T* vector_data, std::vector<int64_t> a_shape, float sparse_ratio) {
-  int64_t M = a_shape[0];
-  int64_t K = a_shape[1];
-  // Blocks zeros in the M dimension.
-  int64_t BLOCK = 4;
-  uint32_t seed = 123;
-  for (int mb = 0; mb < M / BLOCK; ++mb) {
-    for (int kb = 0; kb < K; ++kb) {
-      bool fill_zero = rand_r(&seed) % 100 <= (sparse_ratio * 100);
+void prepare_sparse_data_spmm_vnni(T* vector_data, dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, float sparsity,
+                                   uint32_t* seed = nullptr) {
+  uint32_t default_seed = 123;
+  if (seed == nullptr) seed = &default_seed;
+  for (int i = 0; i < rows; i += blk_row) {
+    for (int j = 0; j < cols; j += blk_col) {
+      bool fill_zero = rand_r(seed) % 100 <= (sparsity * 100);
       if (fill_zero) {
-        for (int m = 0; m < BLOCK; ++m) {
-          for (int k = 0; k < 1; ++k) {
-            vector_data[(mb * BLOCK + m) * K + kb + k] = 0;
+        for (int bi = i; bi < i + blk_row; ++bi) {
+          for (int bj = j; bj < j + blk_col; ++bj) {
+            vector_data[bi * cols + bj] = 0;
           }
         }
       }
     }
   }
 }
-template void prepare_sparse_data_spmm_vnni<int8_t>(int8_t*, std::vector<int64_t>, float);
 
 std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<int64_t>& a_shape, const dt& a_dt,
                                                             bool is_clear, float sparse_ratio,
@@ -183,7 +186,7 @@ std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<in
       init_vector(static_cast<int8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
       if (sparse_ratio != 0.f) {
         int8_t* s8_ptr = static_cast<int8_t*>(data_ptr);
-        prepare_sparse_data_spmm_vnni<int8_t>(s8_ptr, a_shape, sparse_ratio);
+        prepare_sparse_data_spmm_vnni<int8_t>(s8_ptr, a_shape[0], a_shape[1], 4, 1, sparse_ratio);
       }
     }
   }
@@ -193,19 +196,19 @@ std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<in
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, float sparsity, jd::data_type dt_dst,
-                                                   const std::string& mkn_blocks, const std::string& tile_shape,
-                                                   std::string post_op) {
+std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = -1,
+                                                   jd::data_type dt_dst = dt::s8,
+                                                   std::unordered_map<std::string, std::string> op_attrs = {}) {
   // Step 1: Construct operator config
-  std::unordered_map<std::string, std::string> op_attrs = {
-      {"mkn_blocks", mkn_blocks}, {"tile_shape", tile_shape}, {"post_op", post_op}};
   bool append_sum = (op_attrs["post_op"] == "append_sum");
+  micro_bs = micro_bs <= 0 ? N : micro_bs;
+  dim_t num_mbs = N / micro_bs;
 
   // Step 2: Construct runtime data
   tensor_desc wei_desc = {{M, K}, dt::s8, ft::bsr};
-  tensor_desc src_desc = {{K, N}, dt::u8, ft::ab};
+  tensor_desc src_desc = {{num_mbs, K, micro_bs}, dt::u8, ft::ab};
   tensor_desc bia_desc = {{M, 1}, dt::s32, ft::ab};
-  tensor_desc dst_desc = {{M, N}, dt_dst, ft::ab};
+  tensor_desc dst_desc = {{num_mbs, M, micro_bs}, dt_dst, ft::ab};
   tensor_desc scales_desc = {{M, 1}, dt::fp32, ft::ab};
   std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
 
@@ -213,11 +216,11 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, fl
   std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
+    auto& tsd = ts_descs[index];
     bool is_clear = (index == ssd::DST && !append_sum);
     float data_sparsity = (index == ssd::WEI) ? sparsity : 0;
     auto ranges = (index == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
-    auto data_pair =
-        make_data_obj_spmm_vnni(ts_descs[index].shape(), ts_descs[index].dtype(), is_clear, data_sparsity, ranges);
+    auto data_pair = make_data_obj_spmm_vnni(tsd.shape(), tsd.dtype(), is_clear, data_sparsity, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -238,17 +241,34 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, fl
 
 bench_res_t run_bench_spmm_vnni(bench_mode mode, int argc, char** argv) {
   bench_res_t res;
-  int64_t M = str_to_num<int64_t>(argv[0]);
-  int64_t K = str_to_num<int64_t>(argv[1]);
-  int64_t N = str_to_num<int64_t>(argv[2]);
-  float sparse_ratio = str_to_num<float>(argv[3]);
-  dt dt_dst = strcmp(argv[4], "1") ? dt::s8 : dt::fp32;
-  std::string mkn_blocks(argv[5]);
-  std::string tile_shape(argv[6]);
-  std::string post_op = strcmp(argv[7], "1") ? "" : "append_sum";
+  int64_t M = str_to_num<int64_t>(argv[0]);                   // M
+  int64_t K = str_to_num<int64_t>(argv[1]);                   // K
+  int64_t N = str_to_num<int64_t>(argv[2]);                   // N
+  float sparse_ratio = str_to_num<float>(argv[3]);            // sparse_ratio
+  int64_t micro_bs = str_to_num<int64_t>(argv[4]);            // micro_bs
+  dt dt_dst = strcmp(argv[5], "1") == 0 ? dt::fp32 : dt::s8;  // is_fp32_out
+  bool append_sum = strcmp(argv[6], "1") == 0;                // has_append_sum
+  if (append_sum && dt_dst != dt::fp32) {
+    std::cerr << "append_sum requires fp32" << std::endl;
+    bench_res_t res;
+    res.stat = bench_status::fail;
+    return res;
+  }
 
-  std::pair<op_args_t, op_args_t> args =
-      gen_case_spmm_vnni(M, K, N, sparse_ratio, dt_dst, mkn_blocks, tile_shape, post_op);
+  int64_t micro_oc = str_to_num<int64_t>(argv[7]);
+  int sub_func_level = strlen(argv[8]) == 0 ? -1 : str_to_num<int>(argv[8]);  // -1 for invalid/defalut config
+
+  std::unordered_map<std::string, std::string> op_attrs;
+  if (append_sum) op_attrs["post_op"] = "append_sum";
+  if (micro_oc >= 0) op_attrs["micro_oc"] = std::to_string(micro_oc);
+  if (sub_func_level >= 0) {
+    if (sub_func_level <= static_cast<uint8_t>(ssd::subfunc_level::subfunc_level_MAX)) {
+      op_attrs["sub_func"] = std::to_string(sub_func_level);
+    }
+  }
+
+  std::pair<op_args_t, op_args_t> args = gen_case_spmm_vnni(M, K, N, sparse_ratio, micro_bs, dt_dst, op_attrs);
+
   try {
     const auto& p = args.first;
     const auto& op_desc = p.op_desc;

@@ -104,6 +104,7 @@ T str_to_num(const std::string& s) {
   return static_cast<T>(atof(s.c_str()));
 }
 template float str_to_num<float>(const std::string&);
+template int str_to_num<int>(const std::string&);
 template int64_t str_to_num<int64_t>(const std::string&);
 template uint64_t str_to_num<uint64_t>(const std::string&);
 
