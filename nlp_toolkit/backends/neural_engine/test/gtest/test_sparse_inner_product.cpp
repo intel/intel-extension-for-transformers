@@ -149,11 +149,12 @@ Tensor* make_int32_bias_obj(const TensorConfig* bias_tensor_config, const float*
 }
 
 Tensor* get_fp32_dst(const TensorConfig* dst_tensor_config, vector<Tensor*> inputs) {
-  // using namespace dnnl;
+  using dnnl::matmul;
+  using dnnl::memory;
   Tensor* dst_tensor = new Tensor(*dst_tensor_config);
   dst_tensor->add_tensor_life(1);
-  engine engine(engine::kind::cpu, 0);
-  stream engine_stream = stream(engine);
+  dnnl::engine engine(dnnl::engine::kind::cpu, 0);
+  dnnl::stream engine_stream = dnnl::stream(engine);
   Tensor* src = inputs[0];
   Tensor* weight = inputs[1];
   Tensor* bias = inputs[2];
