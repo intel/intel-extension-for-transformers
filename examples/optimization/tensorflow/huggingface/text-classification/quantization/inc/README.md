@@ -46,13 +46,15 @@ python run_glue.py
  - To get int8 model
 
     ```
-    bash ./ptq/run_tuning.sh  --topology=[topology] --output_model=./saved_int8
+    cd ptq
+    bash run_tuning.sh  --topology=[topology] --output_model=./saved_int8
     ```
 
  - To reload int8 model
 
     ```
-    bash ./ptq/run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
+    cd ptq
+    bash run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
     ```
 
 #### QuantizationAwareTraining
@@ -63,13 +65,15 @@ python run_glue.py
  - To get int8 model
 
     ```
-    bash ./qat/run_tuning.sh  --topology=[topology] --output_model=./saved_int8
+    cd qat
+    bash run_tuning.sh  --topology=[topology] --output_model=./saved_int8
     ```
 
  - To reload int8 model
 
     ```
-    bash ./qat/run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
+    cd qat
+    bash run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
     ```
 
 
