@@ -89,7 +89,7 @@ float get_exp(float x);
 float get_linear(float x);
 float get_gelu(float x);
 float get_relu(float x, float alpha);
-int get_quantize(float x, float alpha, float scale);
+int get_quantize(float x, float alpha, float scale, data_type dt);
 float get_dequantize(float x, float alpha, float scale);
 float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs);
 

@@ -1,4 +1,4 @@
-### ncores_per_inst operator output_channel input_channel bsxseq sparsity micro_bs is_fp32_out has_append_sum micro_oc sub_func_level
+### ncores_per_inst operator output_channel input_channel bsxseq sparsity micro_bs is_fp32_out has_append_sum micro_oc sub_func_level postop
 
 # bert mini sp90 bs=1 c4
 4 vnni 256 256 128 0.9 -1 0 0 -1 0
@@ -17,6 +17,9 @@
 7 vnni 768 768 256 0.8 -1 0 0 -1 0
 7 vnni 768 3072 256 0.8 -1 0 0 -1 0
 7 vnni 3072 768 256 0.8 -1 0 0 -1 0
+7 vnni 768 768 256 0.8 -1 0 0 -1 0 gelu
+7 vnni 768 3072 256 0.8 -1 0 0 -1 0 gelu
+7 vnni 3072 768 256 0.8 -1 0 0 -1 0 gelu
 
 # distilbert sp80 bs=8 c7 micro_bs/micro_oc
 4 vnni 768 768 256 0.8 128 0 0 -1 0

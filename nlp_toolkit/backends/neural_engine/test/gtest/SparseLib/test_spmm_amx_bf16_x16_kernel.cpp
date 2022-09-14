@@ -252,7 +252,7 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
 
   op_attrs["micro_oc"] = std::to_string(micro_oc);
   operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                           op_attrs);
+                           op_attrs, apply_postops_list);
 
   // Step 3: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1, sparsity};

@@ -57,7 +57,7 @@ bool spmm_vnni_kd_t::init() {
       is_any_of({dt::s8, dt::fp32}, [&](const dt& a) { return wei_desc.dtype() == a; }) &&
       is_any_of({dt::u8, dt::fp32}, [&](const dt& a) { return src_desc.dtype() == a; }) &&
       (!has_bias || is_any_of({dt::s32, dt::fp32}, [&](const dt& a) { return bias_desc.dtype() == a; })) &&
-      is_any_of({dt::s8, dt::fp32}, [&](const dt& a) { return dst_desc.dtype() == a; });
+      is_any_of({dt::s8, dt::u8, dt::fp32}, [&](const dt& a) { return dst_desc.dtype() == a; });
   if (!is_supported) {
     return false;
   }
@@ -72,7 +72,7 @@ bool spmm_vnni_kd_t::init() {
   auto op_attrs = op_desc_.attrs();
   BM_ = str_to_num<dim_t>(op_attrs["micro_oc"]);  // block m
   auto_blocking(BM_, BN(), M(), N());
-  LOG_IF(FATAL, BM_ % TILE_SIZE_M != 0) << "BM must be a multiple of TILE_SIZE_M";
+  LOG_IF(FATAL, BM_ % TILE_SIZE_M != 0) << "BM must be a multiple of TILE_SIZE_M\n";
 
   spmm_params_init();
   return true;
@@ -90,9 +90,11 @@ bool spmm_vnni_kd_t::spmm_params_init() {
 
   dim_t num_mblock = ceil_div(M(), BM());
   params_.resize(num_mblock);
-  assert(bsr_data->block_size().size() == 2 && bsr_data->block_size()[0] == params_[0].blocksize[0] &&
-         bsr_data->block_size()[1] == params_[0].blocksize[1]);
-
+  LOG_IF(FATAL, bsr_data->block_size().size() != 2 || bsr_data->block_size()[0] != params_[0].blocksize[0] ||
+                    bsr_data->block_size()[1] != params_[0].blocksize[1])
+      << "different block sizes between sparse encoding and param\n";
+  LOG_IF(FATAL, op_attrs["append_sum"] != "true" && op_attrs["append_sum"] != "false" && op_attrs["append_sum"] != "")
+      << "append_sum must only be true/false\n";
   int tile_w = atoi(op_attrs["tile_n"].c_str());
   if (tile_w == 0) {
     tile_w = 4;
@@ -103,7 +105,7 @@ bool spmm_vnni_kd_t::spmm_params_init() {
     params_[i].BN = BN();
     params_[i].BM = std::min(BM(), M() - im_start);
     params_[i].has_bias = has_bias();
-    params_[i].append_sum = op_attrs["post_op"] == "append_sum";
+    params_[i].append_sum = op_attrs["append_sum"] == "true";
     params_[i].output_type = dst_type();
     params_[i].tile_w = tile_w;
     params_[i].sub_func = sub_func;
@@ -111,6 +113,7 @@ bool spmm_vnni_kd_t::spmm_params_init() {
     params_[i].indptr = bsr_data->indptr();
     params_[i].indices = bsr_data->indices();
     params_[i].weight = bsr_data->data().data();
+    params_[i].postop_attrs = op_desc_.apply_postops_list();
   }
   return true;
 }
@@ -151,6 +154,8 @@ bool spmm_vnni_k_t::execute(const std::vector<const void*>& rt_data) const {
       return execute_<float>(rt_data);
     case jd::data_type::s8:
       return execute_<int8_t>(rt_data);
+    case jd::data_type::u8:
+      return execute_<uint8_t>(rt_data);
     default:
       LOG(ERROR) << "Unexpected dst_type: " << static_cast<uint8_t>(dst_type());
       break;

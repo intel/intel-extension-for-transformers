@@ -15,6 +15,7 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
 
+#include <string>
 #include <vector>
 #include <unordered_map>
 #include <map>
@@ -57,14 +58,17 @@ class jit_eltwise_injector {
   void register_table_entries(const std::vector<postop_attr>& postop_attrs);
   void assert_check(const std::vector<postop_attr>& postop_attrs);
   uint32_t get_int8_lut_term(int int8, const std::vector<postop_attr>& postop_attrs, data_type input_dt);
+  std::string get_attr_idx_key(const postop_attr& attr);  // for get the key of alpha_idx,beta_idx,scale_idx map.
 
   void load_table_addr() { h->mov(p_table, l_table); }
 
  private:
   postop_attr cur_postop_attr_;
-  int cur_iter_idx_;  // for alpha,beta,scale lookup.
   jit_generator* h;
   std::unordered_map<reg_type, std::set<int>> used_regs;
+  std::unordered_map<std::string, int> alpha_idx_map;
+  std::unordered_map<std::string, int> beta_idx_map;
+  std::unordered_map<std::string, int> scale_idx_map;
   std::set<Xbyak::Reg*> reg64_tb_allocate;
   std::set<Xbyak::Reg*> mask_tb_allocate;
   std::set<Xbyak::Reg*> zmm_tb_allocate;

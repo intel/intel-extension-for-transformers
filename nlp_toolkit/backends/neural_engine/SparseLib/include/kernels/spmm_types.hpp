@@ -72,6 +72,7 @@ struct vnni_param_t {
   std::vector<dim_t> indptr;
   std::vector<dim_t> indices;
   const int8_t* weight;
+  std::vector<postop_attr> postop_attrs;
 };
 
 /**

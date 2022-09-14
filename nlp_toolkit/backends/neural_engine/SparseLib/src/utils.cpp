@@ -18,7 +18,9 @@
 #include <sys/signal.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <glog/logging.h>
 #include <iostream>
+
 namespace jd {
 template <typename T>
 T cast_to(float x) {
@@ -72,8 +74,7 @@ bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t siz
     auto err = fabs(cast_to<float>(buf1_data[i]) - cast_to<float>(buf2_data[i])) /
                std::max(fabs(cast_to<float>(buf2_data[i])), 1.0);
     if (err > eps) {
-      std::cout << cast_to<float>(buf1_data[i]) << "vs" << cast_to<float>(buf2_data[i]) << std::endl;
-      std::cout << err << std::endl;
+      LOG(ERROR) << cast_to<float>(buf1_data[i]) << "vs" << cast_to<float>(buf2_data[i]) << " idx=" << i << std::endl;
       return false;
     }
   }
@@ -215,9 +216,17 @@ float get_gelu(float x) {
 
 float get_relu(float x, float alpha) { return x > 0 ? x : alpha * x; }
 
-int get_quantize(float x, float alpha, float scale) {
+int get_quantize(float x, float alpha, float scale, data_type dt) {
   x /= scale;
   x += alpha;
+  if (dt == data_type::u8) {
+    x = x < 0 ? 0 : x;
+    x = x > 255 ? 255 : x;
+  }
+  if (dt == data_type::s8) {
+    x = x < -128 ? -128 : x;
+    x = x > 127 ? 127 : x;
+  }
   int ans = std::nearbyint(x);
   return ans;
 }
@@ -236,7 +245,7 @@ float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) 
       if (i.op_alg == jd::postop_alg::exp) value = get_exp(value);
       if (i.op_alg == jd::postop_alg::gelu) value = get_gelu(value);
       if (i.op_alg == jd::postop_alg::relu) value = get_relu(value, i.alpha);
-      if (i.op_alg == jd::postop_alg::quantize) value = get_quantize(value, i.alpha, i.scale);
+      if (i.op_alg == jd::postop_alg::quantize) value = get_quantize(value, i.alpha, i.scale, i.dt);
       if (i.op_alg == jd::postop_alg::dequantize) value = get_dequantize(value, i.alpha, i.scale);
       if (i.op_alg == jd::postop_alg::tanh) value = tanh(value);
       if (i.op_alg == jd::postop_alg::linear) value = get_linear(value, i.alpha, i.beta);

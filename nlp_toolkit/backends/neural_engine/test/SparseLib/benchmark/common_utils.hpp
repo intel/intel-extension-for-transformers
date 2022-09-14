@@ -15,6 +15,7 @@
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_COMMON_UTILS_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_COMMON_UTILS_HPP_
 
+#include <glog/logging.h>
 #include <vector>
 #include <string>
 #include <cstring>
@@ -33,7 +34,7 @@ inline int uint8_2_int32(uint8_t a) { return static_cast<int>(a); }
 
 inline float rand_float_postfix() { return rand() / static_cast<float>(RAND_MAX); }
 
-inline int8_t fp32_2_s8(float val, float scale) {
+inline int8_t fp32_2_s8(float val, float scale = 1.f) {
   int32_t res = nearbyint(val * scale);
   return static_cast<int8_t>(res < -128 ? -128 : res > 127 ? 127 : res);
 }

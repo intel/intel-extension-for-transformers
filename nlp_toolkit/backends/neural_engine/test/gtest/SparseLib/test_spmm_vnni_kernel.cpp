@@ -62,7 +62,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   const auto& dst_dt = dst_type;
   bool has_bias = !ts_descs[ssd::BIAS].shape().empty();
   auto attrs_map = op_desc.attrs();
-  bool append_sum = (attrs_map["post_op"] == "append_sum");
+  bool append_sum = (attrs_map["append_sum"] == "true");
   std::vector<dim_t> left_stride = {ic, 1};
   std::vector<dim_t> right_stride = {micro_bs * ic, micro_bs, 1};
   std::vector<dim_t> dst_stride = {micro_bs * oc, micro_bs, 1};
@@ -86,10 +86,14 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   auto dst_fp32 = static_cast<float*>(dst_data);  // ptr alias
   auto dst_s32 = static_cast<int32_t*>(dst_data);
   auto dst_s8 = static_cast<int8_t*>(dst_data);
+  auto dst_u8 = static_cast<uint8_t*>(dst_data);
+
+  // TODO(zhe1wang): add per channel support for post-op;
+  auto postop_list = op_desc.apply_postops_list();
 
 // Computing the kernel
 #pragma omp parallel for collapse(3)
-  for (dim_t idx_mbs = 0; idx_mbs < num_mbs; ++idx_mbs)
+  for (dim_t idx_mbs = 0; idx_mbs < num_mbs; ++idx_mbs) {
     for (dim_t i = 0; i < oc; ++i) {
       for (dim_t j = 0; j < micro_bs; ++j) {
         float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
@@ -112,26 +116,26 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
         }
         dim_t dst_idx = idx_mbs * dst_stride[0] + i * dst_stride[1] + j * dst_stride[2];
         dim_t scale_idx = i;
-        if (dst_dt == dt::fp32) {
+        if (dst_dt != dt::s32) {
           value = value * scales_data[scale_idx];
         }
         if (append_sum) {
           value += dst_fp32[dst_idx];
         }
-
+        value = apply_postop_list(value, postop_list);
         // Quantize dst data
         if (dst_dt == dt::fp32) {
           dst_fp32[dst_idx] = static_cast<float>(value);
         } else if (dst_dt == dt::s32) {
           dst_s32[dst_idx] = static_cast<int32_t>(value);
         } else if (dst_dt == dt::s8) {
-          int32_t data = nearbyint(value * scales_data[scale_idx]);
-          data = data < -128 ? -128 : data;
-          data = data > 127 ? 127 : data;
-          dst_s8[dst_idx] = static_cast<int8_t>(data);
+          dst_s8[dst_idx] = static_cast<int8_t>(value);
+        } else if (dst_dt == dt::u8) {
+          dst_u8[dst_idx] = static_cast<uint8_t>(value);
         }
       }
     }
+  }
 }
 
 bool check_result(const test_params_t& t) {
@@ -164,9 +168,9 @@ bool check_result(const test_params_t& t) {
     } else if (dst_type == dt::s32) {
       return compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
     } else if (dst_type == dt::u8) {
-      return compare_data<uint8_t>(buf1, size1, buf2, size2, 5e-3);
+      return compare_data<uint8_t>(buf1, size1, buf2, size2, 1);
     } else if (dst_type == dt::s8) {
-      return compare_data<int8_t>(buf1, size1, buf2, size2, 5e-3);
+      return compare_data<int8_t>(buf1, size1, buf2, size2, 1);
     }
   }
   return false;
@@ -238,10 +242,23 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
+std::vector<float> make_output_scale(dim_t size, const std::vector<float>& ranges = {0, 10}) {
+  std::vector<float> output_scale(size, 0);
+  init_vector(output_scale.data(), size * sizeof(float), ranges[0], ranges[1]);
+  return output_scale;
+}
+
+std::vector<float> make_output_zo(dim_t size, const std::vector<float>& ranges = {-100, -1}) {
+  std::vector<float> output_zo(size, 0);
+  init_vector(output_zo.data(), size * sizeof(float), ranges[0], ranges[1]);
+  return output_zo;
+}
+
 std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = -1, int nthr = 0,
                                          jd::data_type dt_dst = dt::s8,
-                                         std::unordered_map<std::string, std::string> op_attrs = {}) {
-  bool append_sum = (op_attrs["post_op"] == "append_sum");
+                                         std::unordered_map<std::string, std::string> op_attrs = {},
+                                         std::vector<postop_alg> postop_algs = {}) {
+  bool append_sum = (op_attrs["append_sum"] == "true");
   LOG_IF(FATAL, append_sum && dt_dst != dt::fp32) << "append_sum must be applied with fp32 dst type";
   micro_bs = micro_bs <= 0 ? N : micro_bs;
   LOG_IF(FATAL, N % micro_bs != 0) << "micro_bs must be a multiple of N";
@@ -268,12 +285,30 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
     rt_data2.emplace_back(data_pair.second);
   }
 
+  // TODO(zhe1wang): add per channel support for post-op;
+  float scale = make_output_scale(1)[0];
+  float zero_point = make_output_zo(1)[0];
+
   // Step 2: sparse data encoding
   auto sparse_ptr = new bsr_data_t<int8_t>(
       spns::reorder_to_bsr_group<int8_t, 4>(M, K, 4, 1, static_cast<const int8_t*>(rt_data1[ssd::WEI])));
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
+  std::vector<postop_attr> apply_postops_list;
+  if (postop_algs.size()) {
+    auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };
+    op_attrs["postop_list"] = std::accumulate(postop_algs.begin() + 1, postop_algs.end(),
+                                              std::string(postop_alg_name[postop_algs[0]]), accu_op);
+    for (auto& alg : postop_algs) {
+      postop_attr attr(dt::fp32, postop_type::eltwise, alg, 0.0, 0.0, scale);
+      apply_postops_list.push_back(attr);
+    }
+  }
+  if (dt_dst == dt::s8 || dt_dst == dt::u8) {
+    postop_attr attr(dt_dst, postop_type::eltwise, postop_alg::quantize, zero_point, 0.0, scale);
+    apply_postops_list.push_back(attr);
+  }
   operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                           op_attrs);
+                           op_attrs, apply_postops_list);
 
   // Step 3: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1, sparsity, nthr};
@@ -307,6 +342,11 @@ static auto case_func = []() {
       {4096, 1024, 384},
   };
 
+  std::vector<std::vector<postop_alg>> postop_lists = {
+      {},
+      {postop_alg::gelu},
+  };
+
   google::InitGoogleLogging("SpmmVNNIKernelTest");
   std::vector<int> nthr_cases;
   bool use_benchmark =
@@ -319,22 +359,33 @@ static auto case_func = []() {
   }
 
   std::vector<test_params_t> cases;
+
+  for (auto& algs : postop_lists) {
+    for (auto bert_size : bert_sizes) {
+      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, dt::u8, {}, algs)});
+      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, dt::s8, {}, algs)});
+      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, dt::fp32, {}, algs)});
+      cases.push_back(
+          {gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, dt::fp32, {{"append_sum", "true"}}, algs)});
+    }
+  }
+
   for (int nthr : nthr_cases) {
     n_thread_t with_n_thread(nthr);
 
     if (!use_benchmark) {
       // Append sum with super high sparsity
       cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::s8)});
-      cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
-      cases.push_back({gen_case(32, 32, 128, 1.0f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
+      cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 128, 1.0f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
 
       // Append sum with small batch size
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::s8)});
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32)});
-      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
-      cases.push_back({gen_case(32, 32, 16, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
-      cases.push_back({gen_case(32, 32, 48, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
-      cases.push_back({gen_case(32, 32, 224, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
+      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 16, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 48, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 224, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
 
       // Test blocking
       cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, dt::s8)});
@@ -351,13 +402,9 @@ static auto case_func = []() {
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::s8)});
       // case: sparse: s8xu8+s32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32)});
-      // case: sparse: s8xu8+s32+append_fp32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) + append(M, N) = dst(M,
-      // N)
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"post_op", "append_sum"}})});
-    }
-
-    for (auto bert_size : bert_sizes) {
-      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, nthr, dt::s8)});
+      // case: sparse: s8xu8+s32+append_fp32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) + append(M, N) =
+      // dst(M, N)
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
     }
 
     // multiple cores with multiple batches
@@ -399,15 +446,19 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
     case dt::fp32:
       params.push_back("fp32");
       break;
+    case dt::u8:
+      params.push_back("u8");
+      break;
     default:
       assert(false);
   }
   if (attrs_map["micro_oc"] != "") params.push_back("moc" + attrs_map["micro_oc"]);
   if (micro_bs != bs) params.push_back("mbs" + std::to_string(micro_bs));
   if (attrs_map["sub_func"] != "") params.push_back("sfunc" + attrs_map["sub_func"]);
-  if (attrs_map["post_op"] != "") {
-    params.push_back(attrs_map["post_op"]);
+  if (attrs_map["append_sum"] != "") {
+    params.push_back(attrs_map["append_sum"]);
   }
+  if (attrs_map["postop_list"] != "") params.push_back(attrs_map["postop_list"]);
   return join_str(params, "_");
 }
 

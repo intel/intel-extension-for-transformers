@@ -218,10 +218,10 @@ void GeluOperator::ForwardWithInt8LutAccTest(const vector<Tensor*>& input, const
   // turncat->u8 quantize->u8 dequantize->gelu->u8 quantize
   for (int i = 0; i < element_num; i++) {
     if (input_ptr[i] < -3.0) input_ptr[i] = -3.0;
-    output_s8ptr[i] = jd::get_quantize(input_ptr[i], matmul_zp, matmul_scale);
+    output_s8ptr[i] = jd::get_quantize(input_ptr[i], matmul_zp, matmul_scale, jd::data_type::u8);
     input_ptr[i] = jd::get_dequantize(output_s8ptr[i], matmul_zp, matmul_scale);
     input_ptr[i] = jd::get_gelu(input_ptr[i]);
-    output_u8ptr[i] = jd::get_quantize(input_ptr[i], gelu_zp, gelu_scale);
+    output_u8ptr[i] = jd::get_quantize(input_ptr[i], gelu_zp, gelu_scale, jd::data_type::u8);
   }
 
   this->unref_tensors(input);

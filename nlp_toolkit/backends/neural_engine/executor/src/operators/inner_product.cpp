@@ -21,6 +21,10 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{
     {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
     {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
 
+static unordered_map<string, jd::data_type> type2sparsemem{
+    {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
+    {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
+
 InnerProductOperator::InnerProductOperator(const OperatorConfig& conf)
     : Operator(conf),
       src0_perm_({}),
@@ -441,7 +445,7 @@ void InnerProductOperator::ForwardSparse(const vector<Tensor*>& input, const vec
 
 void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // Step 1: Construct operator config
-  op_attrs_ = {{"mkn_blocks", "1,1,1"}, {"tile_shape", "4,4"}, {"post_op", append_sum_ ? "append_sum" : ""}};
+  op_attrs_ = {{"mkn_blocks", "1,1,1"}, {"tile_shape", "4,4"}, {"append_sum", append_sum_ ? "true" : ""}};
   // Step 2: sparse data encoding
   auto sparse_ptr = new jd::bsr_data_t<int8_t>(jd::spns::reorder_to_bsr_group<int8_t, 4>(
       src0_->shape()[0], src0_->shape()[1], 4, 1, static_cast<const int8_t*>(src0_->data())));
@@ -488,11 +492,34 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
 
   vector<int64_t> dst_shape = {src0_->shape()[0], src1_shape[1]};
   dst_->set_shape(dst_shape);
-  dst_desc_ = {dst_shape, dst_->dtype() == "s8" ? jd::data_type::s8 : jd::data_type::fp32, jd::format_type::ab};
+
+  dst_desc_ = {dst_shape, type2sparsemem[dst_->dtype()], jd::format_type::ab};
+
+  vector<jd::postop_attr> postop_chain;
+
+  if (gelu_tanh_) {
+    jd::postop_attr gelu_attr(jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::gelu);
+    postop_chain.push_back(gelu_attr);
+    op_attrs_["postop_list"] = "fp32gelu";
+  }
+
+  if (gelu_tanh_ && (output_dtype_ == "u8" || output_dtype_ == "s8")) {
+    float zp, scale;
+    const float* min_p = static_cast<const float*>(dst_min_->data());
+    const float* max_p = static_cast<const float*>(dst_max_->data());
+    scale = (max_p[0] - min_p[0]) / 255;
+    zp = -min_p[0] / scale;
+    assert(dst_->dtype() == "s8" || dst_->dtype() == "u8");
+    jd::postop_attr quantize_attr(type2sparsemem[dst_->dtype()], jd::postop_type::eltwise, jd::postop_alg::quantize, zp,
+                                  0, scale);
+    op_attrs_["postop_list"] +=
+        "+" + dst_->dtype() + "quantize" + "scale" + std::to_string(scale) + "zp" + std::to_string(zp);
+    postop_chain.push_back(quantize_attr);
+  }
 
   vector<jd::tensor_desc> ts_descs = {src0_desc_, src1_desc_, bias_desc_, dst_desc_, scales_desc_};
   jd::operator_desc op_desc(jd::kernel_kind::sparse_matmul, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
-                            ts_descs, op_attrs_);
+                            ts_descs, op_attrs_, postop_chain);
   jd::sparse_matmul_desc spmm_desc(op_desc);
   spmm_kern_ = jd::sparse_matmul(spmm_desc);
 }
@@ -500,8 +527,8 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
 #if __AVX512F__
 void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
 #if __AVX512VNNI__
-  // has post_op: append_sum
   void* dst_data = dst_->mutable_data();
+  // has op: append_sum
   if (post_ != nullptr && !binary_add_) {
     LOG(INFO) << "inner product has post op " << post_->name();
     void* post_data_ptr = const_cast<void*>(post_->data());

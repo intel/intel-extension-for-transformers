@@ -113,7 +113,6 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
 
   for (auto&& i : postop_idxs) {
     cur_postop_attr_ = postop_attrs[i];
-    cur_iter_idx_ = i;
     if (cur_postop_attr_.dt == data_type::bf16) {
       h->vmovups(zmm_tmp, zmm_src);
 
@@ -159,21 +158,21 @@ void jit_eltwise_injector::int8_lut_compute_vector_fwd(const Zmm& zmm_src) {
 }
 
 void jit_eltwise_injector::linear_compute_vector_fwd(const Zmm& zmm_src) {
-  h->vmovups(zmm_aux0, table_val(alpha, cur_iter_idx_));
-  h->vfmadd213ps(zmm_src, zmm_aux0, table_val(beta, cur_iter_idx_));
+  auto key = get_attr_idx_key(cur_postop_attr_);
+  h->vmovups(zmm_aux0, table_val(alpha, alpha_idx_map[key]));
+  h->vfmadd213ps(zmm_src, zmm_aux0, table_val(beta, beta_idx_map[key]));
 }
 
 void jit_eltwise_injector::quantize_compute_vector_fwd(const Zmm& zmm_src) {
-  h->vdivps(zmm_src, zmm_src, table_val(scale, cur_iter_idx_));
-  h->vaddps(zmm_src, zmm_src, table_val(alpha, cur_iter_idx_));
+  auto key = get_attr_idx_key(cur_postop_attr_);
+  h->vmulps(zmm_src, zmm_src, table_val(scale, scale_idx_map[key]));
+  h->vaddps(zmm_src, zmm_src, table_val(alpha, alpha_idx_map[key]));
   if (cur_postop_attr_.dt == data_type::u8) {
     h->vcmpps(k_mask, zmm_src, table_val(zero), _cmp_lt_os);
     h->vmovups(zmm_src | k_mask, table_val(zero));
-    h->vcvtps2udq(zmm_src, zmm_src);               // fp32->u32
-    h->vpmovusdb(Xmm(zmm_src.getIdx()), zmm_src);  // u32->u8
+    h->vcvtps2udq(zmm_src, zmm_src);  // fp32->u32
   } else {
-    h->vcvtps2dq(zmm_src, zmm_src);               // fp32->s32
-    h->vpmovsdb(Xmm(zmm_src.getIdx()), zmm_src);  // s32->s8
+    h->vcvtps2dq(zmm_src, zmm_src);  // fp32->s32
   }
 }
 
@@ -182,9 +181,10 @@ void jit_eltwise_injector::dequantize_compute_vector_fwd(const Zmm& zmm_src) {
     h->vpmovzxbd(zmm_src, Xmm(zmm_src.getIdx()));  // u8->s32
   else
     h->vpmovsxbd(zmm_src, Xmm(zmm_src.getIdx()));  // s8->s32
-  h->vcvtdq2ps(zmm_src, zmm_src);                  // s32->f32
-  h->vsubps(zmm_src, zmm_src, table_val(alpha, cur_iter_idx_));
-  h->vmulps(zmm_src, zmm_src, table_val(scale, cur_iter_idx_));
+  h->vcvtdq2ps(zmm_src, zmm_src);
+  auto key = get_attr_idx_key(cur_postop_attr_);  // s32->f32
+  h->vsubps(zmm_src, zmm_src, table_val(alpha, alpha_idx_map[key]));
+  h->vmulps(zmm_src, zmm_src, table_val(scale, scale_idx_map[key]));
 }
 
 void jit_eltwise_injector::tanh_compute_vector_fwd(const Zmm& zmm_src) {
@@ -327,9 +327,10 @@ void jit_eltwise_injector::exp_compute_vector_fwd(const Zmm& zmm_src) {
 }
 
 void jit_eltwise_injector::relu_compute_vector_fwd(const Zmm& zmm_src) {
+  auto key = get_attr_idx_key(cur_postop_attr_);
   h->vmovups(zmm_aux1, zmm_src);
   h->vcmpps(k_mask, zmm_src, table_val(zero), _cmp_nle_us);
-  h->vmulps(zmm_src, zmm_src, table_val(alpha, cur_iter_idx_));  // alpha=0 by default.
+  h->vmulps(zmm_src, zmm_src, table_val(alpha, alpha_idx_map[key]));  // alpha=0 by default.
   h->vblendmps(zmm_src | k_mask, zmm_src, zmm_aux1);
 }
 
@@ -506,6 +507,29 @@ uint32_t jit_eltwise_injector::get_int8_lut_term(int int8, const std::vector<pos
   delete u8;
   delete s8;
   return ans;
+}
+
+std::string jit_eltwise_injector::get_attr_idx_key(const postop_attr& attr) {
+  std::string result;
+  switch (attr.op_alg) {
+    case postop_alg::quantize:
+      result += "quantize";
+      break;
+    case postop_alg::dequantize:
+      result += "dequantize";
+      break;
+    case postop_alg::linear:
+      result += "linear";
+      break;
+    case postop_alg::relu:
+      result += "relu";
+    default:
+      std::runtime_error("this alg_type do not need alpha/beta/scale.");
+  }
+  result += "+" + std::to_string(attr.alpha);
+  result += "+" + std::to_string(attr.beta);
+  result += "+" + std::to_string(attr.scale);
+  return result;
 }
 
 void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>& postop_attrs) {
@@ -868,14 +892,33 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
     return;
   }
 
-  for (int i = 0; i < postop_attrs.size(); i++) {
-    mapped_table_entry_t alpha_entry{i, bit_cast<int, float>(postop_attrs[i].alpha), true};
-    mapped_table_entry_t beta_entry{i, bit_cast<int, float>(postop_attrs[i].beta), true};
-    mapped_table_entry_t scale_entry{i, bit_cast<int, float>(postop_attrs[i].scale), true};
-
-    entry_map.insert(std::make_pair(alpha, alpha_entry));
-    entry_map.insert(std::make_pair(beta, beta_entry));
-    entry_map.insert(std::make_pair(scale, scale_entry));
+  int alpha_idx = 0, beta_idx = 0, scale_idx = 0;
+  for (auto&& attr : postop_attrs) {
+    mapped_table_entry_t alpha_entry{alpha_idx, bit_cast<int, float>(attr.alpha), true};
+    mapped_table_entry_t beta_entry{beta_idx, bit_cast<int, float>(attr.beta), true};
+    float final_scale;
+    if (attr.op_alg == postop_alg::quantize)
+      final_scale = 1 / attr.scale;
+    else
+      final_scale = attr.scale;
+    mapped_table_entry_t scale_entry{scale_idx, bit_cast<int, float>(final_scale), true};
+    auto key = get_attr_idx_key(attr);
+    if (attr.op_alg == postop_alg::quantize || attr.op_alg == postop_alg::dequantize) {
+      alpha_idx_map[key] = alpha_idx++;
+      scale_idx_map[key] = scale_idx++;
+      entry_map.insert(std::make_pair(alpha, alpha_entry));
+      entry_map.insert(std::make_pair(scale, scale_entry));
+    }
+    if (attr.op_alg == postop_alg::linear) {
+      alpha_idx_map[key] = alpha_idx++;
+      beta_idx_map[key] = beta_idx++;
+      entry_map.insert(std::make_pair(alpha, alpha_entry));
+      entry_map.insert(std::make_pair(beta, beta_entry));
+    }
+    if (attr.op_alg == postop_alg::relu) {
+      alpha_idx_map[key] = alpha_idx++;
+      entry_map.insert(std::make_pair(alpha, alpha_entry));
+    }
   }
 
   if (need.bf16()) push_entries_of(exchange_zmm_low256_high256_const);
@@ -892,4 +935,3 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
   set_table_term_offset();
 }
 }  // namespace jd
-

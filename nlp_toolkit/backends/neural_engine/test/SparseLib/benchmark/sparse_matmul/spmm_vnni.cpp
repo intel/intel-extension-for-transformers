@@ -67,10 +67,14 @@ void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<con
   auto dst_fp32 = static_cast<float*>(dst_data);  // ptr alias
   auto dst_s32 = static_cast<int32_t*>(dst_data);
   auto dst_s8 = static_cast<int8_t*>(dst_data);
+  auto dst_u8 = static_cast<uint8_t*>(dst_data);
+
+  // TODO(zhe1wang): add per channel support for post-op;
+  auto postop_list = op_desc.apply_postops_list();
 
 // Computing the kernel
 #pragma omp parallel for collapse(3)
-  for (dim_t idx_mbs = 0; idx_mbs < num_mbs; ++idx_mbs)
+  for (dim_t idx_mbs = 0; idx_mbs < num_mbs; ++idx_mbs) {
     for (dim_t i = 0; i < oc; ++i) {
       for (dim_t j = 0; j < micro_bs; ++j) {
         float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
@@ -93,26 +97,28 @@ void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<con
         }
         dim_t dst_idx = idx_mbs * dst_stride[0] + i * dst_stride[1] + j * dst_stride[2];
         dim_t scale_idx = i;
-        if (dst_dt == dt::fp32) {
+        if (dst_dt != dt::s32) {
           value = value * scales_data[scale_idx];
         }
         if (append_sum) {
           value += dst_fp32[dst_idx];
         }
-
+        value = apply_postop_list(value, postop_list);
         // Quantize dst data
         if (dst_dt == dt::fp32) {
           dst_fp32[dst_idx] = static_cast<float>(value);
         } else if (dst_dt == dt::s32) {
           dst_s32[dst_idx] = static_cast<int32_t>(value);
         } else if (dst_dt == dt::s8) {
-          int32_t data = nearbyint(value * scales_data[scale_idx]);
-          data = data < -128 ? -128 : data;
-          data = data > 127 ? 127 : data;
-          dst_s8[dst_idx] = static_cast<int8_t>(data);
+          value = value < -128 ? -128 : value;
+          value = value > 127 ? 127 : value;
+          dst_s8[dst_idx] = static_cast<int8_t>(value);
+        } else if (dst_dt == dt::u8) {
+          dst_u8[dst_idx] = static_cast<uint8_t>(value);
         }
       }
     }
+  }
 }
 
 bool check_result_spmm_vnni(const std::pair<op_args_t, op_args_t>& args) {
@@ -196,12 +202,20 @@ std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<in
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
+std::vector<float> make_output_scale(dim_t size, const std::vector<float>& ranges = {-10, 10}) {
+  std::vector<float> output_scale(size, 0);
+  init_vector(output_scale.data(), size * sizeof(float), ranges[0], ranges[1]);
+  return output_scale;
+}
+
 std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = -1,
                                                    jd::data_type dt_dst = dt::s8,
-                                                   std::unordered_map<std::string, std::string> op_attrs = {}) {
+                                                   std::unordered_map<std::string, std::string> op_attrs = {},
+                                                   std::vector<postop_alg> postop_algs = {}) {
   // Step 1: Construct operator config
-  bool append_sum = (op_attrs["post_op"] == "append_sum");
-  micro_bs = micro_bs <= 0 ? N : micro_bs;
+  bool append_sum = (op_attrs["append_sum"] == "true");
+  micro_bs = micro_bs == -1 ? N : micro_bs;
+  LOG_IF(FATAL, N % micro_bs != 0) << "micro_bs must be a multiple of N";
   dim_t num_mbs = N / micro_bs;
 
   // Step 2: Construct runtime data
@@ -225,12 +239,28 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, fl
     rt_data2.emplace_back(data_pair.second);
   }
 
+  float scale = make_output_scale(1)[0];
+
   // Step 3: sparse data encoding
   auto sparse_ptr = new bsr_data_t<int8_t>(
       spns::reorder_to_bsr_group<int8_t, 4>(M, K, 4, 1, static_cast<const int8_t*>(rt_data1[ssd::WEI])));
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
+  std::vector<postop_attr> apply_postops_list;
+  if (postop_algs.size()) {
+    auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };
+    op_attrs["postop_list"] = std::accumulate(postop_algs.begin() + 1, postop_algs.end(),
+                                              std::string(postop_alg_name[postop_algs[0]]), accu_op);
+    for (auto& alg : postop_algs) {
+      postop_attr attr(dt::fp32, postop_type::eltwise, alg, 0.0, 0.0, scale);
+      apply_postops_list.push_back(attr);
+    }
+  }
+  if (dt_dst == dt::s8 || dt_dst == dt::u8) {
+    postop_attr attr(dt_dst, postop_type::eltwise, postop_alg::quantize, 0.0, 0.0, scale);
+    apply_postops_list.push_back(attr);
+  }
   operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                           op_attrs);
+                           op_attrs, apply_postops_list);
 
   // Step 4: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1};
@@ -254,9 +284,11 @@ bench_res_t run_bench_spmm_vnni(bench_mode mode, int argc, char** argv) {
     res.stat = bench_status::fail;
     return res;
   }
-
   int64_t micro_oc = str_to_num<int64_t>(argv[7]);
   int sub_func_level = strlen(argv[8]) == 0 ? -1 : str_to_num<int>(argv[8]);  // -1 for invalid/defalut config
+  std::vector<postop_alg> postop_lists;
+  if (argc > 9 && strcmp(argv[9], "gelu")) postop_lists.push_back(postop_alg::gelu);
+  if (argc > 9 && strcmp(argv[9], "exp")) postop_lists.push_back(postop_alg::exp);
 
   std::unordered_map<std::string, std::string> op_attrs;
   if (append_sum) op_attrs["post_op"] = "append_sum";
@@ -267,7 +299,8 @@ bench_res_t run_bench_spmm_vnni(bench_mode mode, int argc, char** argv) {
     }
   }
 
-  std::pair<op_args_t, op_args_t> args = gen_case_spmm_vnni(M, K, N, sparse_ratio, micro_bs, dt_dst, op_attrs);
+  std::pair<op_args_t, op_args_t> args =
+      gen_case_spmm_vnni(M, K, N, sparse_ratio, micro_bs, dt_dst, op_attrs, postop_lists);
 
   try {
     const auto& p = args.first;

@@ -72,7 +72,10 @@ void jit_eltwiseop_t::store_dst(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst) {
   auto last_attr = param_.postop_attrs.back();
   auto first_attr = param_.postop_attrs.front();
   if (last_attr.op_alg == postop_alg::quantize && first_attr.op_alg != postop_alg::int8_lut) {
-    vmovups(ptr[addr_dst], Xmm(reg_src.getIdx()));
+    if (last_attr.dt == data_type::u8)
+      vpmovusdb(ptr[addr_dst], reg_src);  // u32->u8
+    else
+      vpmovsdb(ptr[addr_dst], reg_src);  // s32->s8
   } else {
     vmovups(ptr[addr_dst], reg_src);
   }
@@ -100,7 +103,13 @@ void jit_eltwiseop_t::load_tail(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_src) {
 
 void jit_eltwiseop_t::store_tail(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst) {
   auto last_attr = param_.postop_attrs.back();
-  if (last_attr.op_alg == postop_alg::quantize || param_.postop_attrs[0].op_alg == postop_alg::int8_lut) {
+  if (last_attr.op_alg == postop_alg::quantize) {
+    if (param_.postop_attrs[0].op_alg != postop_alg::int8_lut) {
+      if (last_attr.dt == data_type::u8)
+        vpmovusdb(Xmm(reg_src.getIdx()), reg_src);
+      else
+        vpmovsdb(Xmm(reg_src.getIdx()), reg_src);
+    }
     vmovdqu8(ptr[addr_dst] | remain_task_mask, Xmm(reg_src.getIdx()));
   } else if (last_attr.dt == data_type::fp32) {
     vmovss(ptr[addr_dst] | remain_task_mask, Xmm(reg_src.getIdx()));
@@ -110,4 +119,3 @@ void jit_eltwiseop_t::store_tail(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst) {
   }
 }
 }  // namespace jd
-

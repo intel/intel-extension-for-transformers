@@ -32,6 +32,8 @@
 
 namespace jd {
 
+using dt = jd::data_type;
+
 void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<const void*>& rt_data);
 
 bool check_result_spmm_vnni(const std::pair<op_args_t, op_args_t>& args);
@@ -43,9 +45,10 @@ std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<in
                                                             bool is_clear = false, float sparse_ratio = 0.7,
                                                             const std::vector<float>& ranges = {-10, 10});
 
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, data_type dt_dst = data_type::s8,
-                                         const std::string& mkn_blocks = "1,1,1", const std::string& tile_shape = "4,4",
-                                         std::string post_op = "");
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = -1,
+                                         jd::data_type dt_dst = dt::s8,
+                                         std::unordered_map<std::string, std::string> op_attrs = {},
+                                         std::vector<postop_alg> postop_algs = {});
 
 bench_res_t run_bench_spmm_vnni(bench_mode mode, int argc, char** argv);
 

@@ -21,10 +21,11 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm>
-#include "jit_generator.hpp"
-#include "../kernels/sparse_data.hpp"
-#include "../kernels/spmm_types.hpp"
 #include "utils.hpp"
+#include "jit_generator.hpp"
+#include "kernels/sparse_data.hpp"
+#include "kernels/spmm_types.hpp"
+#include "jit_domain/jit_eltwise_injector.hpp"
 
 namespace jd {
 /**
@@ -43,12 +44,14 @@ class jit_spmm_vnni_t : public jit_generator {
 
     std::transform(param_.indices.begin() + indptr_lo, param_.indices.begin() + indptr_hi, dense_load_offsets.begin(),
                    [&](decltype(param_.indices)::value_type k) { return k * ld_dst(); });
+    eltwise_injector_.eltwise_injector_init(this, param_.postop_attrs);
   }
   virtual ~jit_spmm_vnni_t() {}
 
  private:
   ssd::vnni_param_t param_;
   std::vector<dim_t> dense_load_offsets;  // param_.indices * ld_dst
+  jit_eltwise_injector eltwise_injector_;
 
  private:
   void generate() override;
@@ -65,9 +68,7 @@ class jit_spmm_vnni_t : public jit_generator {
   void load_sparse(const Xbyak::Reg64& reg_addr, uint64_t offset);
   void tile_product(int tile_height, int tile_width);
   void handle_dst_buffer_init(int kb_idx, dim_t m_start);
-  void handle_dst_buffer_epilogue(int kb_idx, dim_t m_start);
-  void mul_scale(int i);
-  void move_out(int i, int j, int row_idx, int bytes = 1);
+  void handle_dst_buffer_epilogue_sub();
   void repeat_THx4xTW_matmal(dim_t m_start);
   void clear_dst_tile();
   void load_intermediate_dst(dim_t m_start);
@@ -75,6 +76,9 @@ class jit_spmm_vnni_t : public jit_generator {
   void gen_subfunc_tile_prod();
   void gen_subfunc_dense_and_prod();
   void gen_subfunc_load_and_prod();
+  void gen_subfunc_dst_epilogue();
+  void handle_postop_escape_vmms();
+  void handle_postop_escape_regs();
 
   inline int TH() const { return param_.blocksize[0]; }
   inline int TW() const { return param_.tile_w; }
@@ -82,7 +86,7 @@ class jit_spmm_vnni_t : public jit_generator {
   inline int mt_size() const { return TH(); }
   inline int n_tiles() const { return param_.BN / nt_size(); }
   inline int m_tiles() const { return param_.BM / mt_size(); }
-  inline data_type output_type() const { return param_.output_type; }
+  const data_type output_type();
   inline int ld_dst() const { return param_.BN; }  // leading dimension of dst matrix
 
  private:
@@ -91,6 +95,7 @@ class jit_spmm_vnni_t : public jit_generator {
   const uint8_t* sfptr_tile_prod_ = nullptr;       // subfunction for tile product
   const uint8_t* sfptr_dense_and_prod_ = nullptr;  // subfunction for dense load & tile product
   const uint8_t* sfptr_load_and_prod_ = nullptr;   // subfunction for dense load & sparse load & tile product
+  const uint8_t* sfptr_dst_epilogue_ = nullptr;    // subfunction for dst handling
 
  private:
   static constexpr int stack_space_needed_ = 200;
@@ -114,6 +119,8 @@ class jit_spmm_vnni_t : public jit_generator {
   const Xbyak::Opmask& reg_k1 = k1;
 
   const Xbyak::Reg64& reg_tmp = r9;
+  const Xbyak::Reg64& reg_dst_idx = r8;
+  const Xbyak::Reg64& reg_m_idx = reg_tmp;
   const Xbyak::Reg64& reg_n_idx = r10;
   const Xbyak::Reg64& reg_seq_indices = r11;
   const Xbyak::Reg64 reg_addr_tmp[4] = {r12, r13, r14, r15};
