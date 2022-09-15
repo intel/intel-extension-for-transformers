@@ -23,6 +23,7 @@ import copy
 # Computes softmax activations.
 # tf.nn.softmax(logits, axis=None, name=None)
 @operator_registry(operator_type='Softmax')
+@operator_registry(operator_type='SoftmaxGraph')
 class Softmax(Operator):
     def __init__(self):
         super().__init__()

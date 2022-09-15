@@ -76,3 +76,7 @@
 [submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/mp11"]
 	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/mp11
 	url = https://github.com/boostorg/mp11.git
+[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/oneDNNGraph"]
+	path = nlp_toolkit/backends/neural_engine/executor/third_party/oneDNNGraph
+	url = https://github.com/oneapi-src/oneDNN.git
+	branch = dev-graph

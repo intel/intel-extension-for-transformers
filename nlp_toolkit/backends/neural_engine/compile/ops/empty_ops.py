@@ -101,6 +101,7 @@ class Identity(Operator):
 # Fused_op MatMul + BiasAdd
 # The inputs are two-dimensional matrices and 1-D const bias
 @operator_registry(operator_type='InnerProduct')
+@operator_registry(operator_type='InnerProductGraph')
 class InnerProduct(Operator):
     def __init__(self):
         super().__init__()
