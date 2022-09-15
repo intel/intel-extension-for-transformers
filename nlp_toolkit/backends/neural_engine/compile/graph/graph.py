@@ -24,7 +24,6 @@ import os
 
 
 class Graph(object):
-
     def __init__(self):
         self._nodes = []
         self._node_id = {}
@@ -67,8 +66,7 @@ class Graph(object):
             index = self._node_id[node_name]
             return index
         except BaseException:
-            raise ValueError(
-                'There is no node named {}, please check the input name.'.format(node_name))
+            raise ValueError('There is no node named {}, please check the input name.'.format(node_name))
 
     def get_node_by_name(self, node_name):
         index = self.get_node_id(node_name)
@@ -82,8 +80,7 @@ class Graph(object):
         for i in range(len(self._nodes[index].input_tensors)):
             self._nodes[index].input_tensors[i].dest_op = [new_name]
             for pre_node_name in self._nodes[index].input_tensors[i].source_op:
-                tensor_idx = self.get_tensor_idx(pre_node_name,
-                                                 self._nodes[index].input_tensors[i].name)
+                tensor_idx = self.get_tensor_idx(pre_node_name, self._nodes[index].input_tensors[i].name)
                 pre_node_idx = self._node_id[pre_node_name]
                 self._nodes[pre_node_idx].output_tensors[tensor_idx].dest_op.remove(old_name)
                 self._nodes[pre_node_idx].output_tensors[tensor_idx].dest_op.append(new_name)
@@ -120,8 +117,7 @@ class Graph(object):
             if source_node_idx is not None:
                 if node_name not in \
                 self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op:
-                    self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.append(
-                        node_name)
+                    self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.append(node_name)
             self._nodes[node_index].input_tensors.insert(index, tensor)
         elif mode == 'remove':
             if source_node_idx is not None:
@@ -200,13 +196,11 @@ class Graph(object):
                 if mode == 'insert':
                     if node.name not in \
                     self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op:
-                        self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.append(
-                            node.name)
+                        self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.append(node.name)
                 if mode == 'remove':
                     if node.name in \
                     self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op:
-                        self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.remove(
-                        node.name)
+                        self._nodes[source_node_idx].output_tensors[tensor_idx].dest_op.remove(node.name)
             # skip the const tensor and the node has been removed
             else:
                 continue
@@ -221,9 +215,7 @@ class Graph(object):
                         dest_node_idx = self.get_node_id(dest_op_name)
                         tensor_idx = self.get_tensor_idx(dest_op_name, t.name, from_output=False)
                         if tensor_idx != -1:
-                            self._nodes[dest_node_idx].input_tensors[tensor_idx].source_op = [
-                                node.name
-                            ]
+                            self._nodes[dest_node_idx].input_tensors[tensor_idx].source_op = [node.name]
         self._engine = None
 
         return node
@@ -325,8 +317,8 @@ class Graph(object):
                     tensor_dtype = 'fp32'
                     if "dtype" in attrs.keys():
                         tensor_dtype = attrs["dtype"]
-                    output_tensor = dp.tensor_config(output_name, tensor_shape, tensor_dtype,
-                                                     tensor_strides, tensor_location)
+                    output_tensor = dp.tensor_config(output_name, tensor_shape, tensor_dtype, tensor_strides,
+                                                     tensor_location)
                     tensor_output[-1].append(output_tensor)
 
             if 'attr' in opeartor.keys():
@@ -340,8 +332,7 @@ class Graph(object):
                 attr_map = dp.attrs_config({})
                 attr_map_list.append(attr_map)
             op_type = net_info['model']['operator'][node]['type']
-            op_config = dp.op_config(str(node), str(op_type), tensor_input[-1], tensor_output[-1],
-                                     attr_map_list[-1])
+            op_config = dp.op_config(str(node), str(op_type), tensor_input[-1], tensor_output[-1], attr_map_list[-1])
             op_configs.append(op_config)
 
         model_config = dp.model_config(net_info['model']['name'], op_configs)
@@ -419,11 +410,11 @@ class Graph(object):
                         reshape(tensor_shape)
                     tensorclass = Tensor()
                     if tensor_location == None:
-                        tensorclass = Tensor(tensor_name, ['input_data'], [], tensor_shape,
-                                             tensor_data, tensor_dtype, tensor_location)
+                        tensorclass = Tensor(tensor_name, ['input_data'], [], tensor_shape, tensor_data, tensor_dtype,
+                                             tensor_location)
                     else:
-                        tensorclass = Tensor(tensor_name, [], [], tensor_shape, tensor_data,
-                                             tensor_dtype, tensor_location)
+                        tensorclass = Tensor(tensor_name, [], [], tensor_shape, tensor_data, tensor_dtype,
+                                             tensor_location)
                     tensor_name_2_class[tensor_name] = tensorclass
                     output_tensors.append(tensorclass)
                 op = util.construct_node(node, 'Input', [], copy.deepcopy(output_tensors))
@@ -451,8 +442,8 @@ class Graph(object):
                 if 'attr' in d['model']['operator'][node].keys():
                     attr = d['model']['operator'][node]['attr']
 
-                op = util.construct_node(node, optype, copy.deepcopy(input_tensors),
-                                         copy.deepcopy(output_tensors), attr)
+                op = util.construct_node(node, optype, copy.deepcopy(input_tensors), copy.deepcopy(output_tensors),
+                                         attr)
             self.insert_nodes(len(self.nodes), [op])
 
     def save(self, output_dir=None):
@@ -490,3 +481,419 @@ class Graph(object):
             yaml.dump(net_info, f, default_flow_style=False, sort_keys=False)
 
         logger.info("Emit done...")
+
+    def get_sparse_nodes_name(self, threshold=0.7):
+        def get_zero_ratio(matrix, block):
+            sparse_ratio = -1
+            if matrix.ndim == 2 and len(block) == 2:
+                zero_block_count = 0
+                block_row = int(matrix.shape[0] / block[0])
+                block_col = int(matrix.shape[1] / block[1])
+                for mr in range(block_row):
+                    for mc in range(block_col):
+                        is_zero_block = True
+                        for br in range(block[0]):
+                            for bc in range(block[1]):
+                                if matrix[mr * block[0] + br][mc * block[1] + bc] != 0:
+                                    is_zero_block = False
+                                    break
+                            if not is_zero_block:
+                                break
+                        if is_zero_block == True:
+                            zero_block_count += 1
+                zero_ratio = float(zero_block_count) / (block_row * block_col)
+            return zero_ratio
+
+        sparse_nodes_name = []
+        for node in self.nodes:
+            if node.op_type == "InnerProduct":
+                # sparse kernel limitation:
+                # 1. int8
+                # 2. sparse_ratio > 0.5(1*4)
+                # 3. output channel of weight_shape = 4x
+                # 4. post op != tanh
+                if 'append_op' not in node.attr \
+                   or ('append_op' in node.attr and \
+                   node.attr['append_op'] != 'tanh'):
+                    weight = node.input_tensors[1]
+                    if type(weight.data) == np.ndarray and \
+                        (weight.data.dtype == 'int8' \
+                        or weight.data.dtype == 'uint8') \
+                        and weight.data.shape[1] % 4 == 0:
+
+                        zero_ratio = get_zero_ratio(weight.data, [1, 4])
+                        if zero_ratio >= threshold:
+                            sparse_nodes_name.append(node.name)
+        return sparse_nodes_name
+
+
+    def innerproduct_type_check(self, node):
+        innerproduct_type = {
+            # general_node
+            "general": "general",
+
+            # InnerProduct Nodes
+            "QKV_innerproduct": 'add_innerproduct_0',
+            'output_dense_bias': 'add_innerproduct_1',
+            'intermediate_dense_mul': 'mul_innerproduct_0',
+
+            # Matmul Nodes
+            'add_matmul': 'add_matmul_0',
+            'transpose_matmul': 'transpose_matmul_0',
+        }
+        if node.name.startswith('Add') and node.op_type == "InnerProduct":
+            if 'append_op' in node.attr:
+                return innerproduct_type['output_dense_bias']
+            else:
+                return innerproduct_type['QKV_innerproduct']
+
+        if node.name.startswith('Mul') and node.op_type == "InnerProduct":
+            return innerproduct_type['intermediate_dense_mul']
+
+        if node.name.startswith('Add') and node.op_type == 'Matmul':
+            return innerproduct_type['add_matmul']
+
+        if node.name.startswith('Transpose') and node.op_type == 'Matmul':
+            return innerproduct_type['transpose_matmul']
+        else:
+            return innerproduct_type['general']
+
+    def transpose_mode_int8(self, node_name_list=None):
+        from ..ops import Tensor
+        from .. import graph_utils as util
+        import copy
+        logger.info("Start to transpose_mode_int8 ......")
+        reorder_dict = {}
+
+        def create_new_attr(node):
+            if 'output_dtype' in node.attr:
+                new_attr = OrderedDict({
+                    'src_perm': '0,1',
+                    'dst_perm': '1,0',
+                    'output_dtype': node.attr['output_dtype']
+                })
+            else:
+                new_attr = OrderedDict({'src_perm': '0,1', 'dst_perm': '1,0'})
+            return new_attr
+
+        def reorder_node_insert(node, idx, insert_pos=None):
+            '''
+                idx: the position of variables that need to be transposed in node.input_tensors
+                insert_pos: the position of insert
+            '''
+            # check the node whether has been reordered
+            for index_node, reorder_node in reorder_dict.items():
+                if node.input_tensors[idx].name == reorder_node.input_tensors[0].name:
+                    # the variable that need to be transposed has been reordered.
+                    node.input_tensors[idx] = reorder_node.output_tensors[0]
+                    # append the current node to the reorder node output_tensors[0].dest_op
+                    reorder_node.output_tensors[0].dest_op.append(node.name)
+                    # no need to insert reorder node again
+                    return
+
+            pre_node = self.get_node_by_name(node.input_tensors[idx].source_op[0])
+            input_name = pre_node.output_tensors[0].name
+            reorder_node_name = node.name + "_Reorder_Post_" + str(idx)
+            reorder_output_tensor = Tensor(name=input_name + "_reorder",
+                                           source_op=[reorder_node_name],
+                                           dest_op=[node.name],
+                                           dtype=node.output_tensors[0].dtype)
+            node.input_tensors[idx] = reorder_output_tensor
+
+            new_attr = create_new_attr(pre_node)
+            reorder_node = util.construct_node(node_name=reorder_node_name,
+                                               op_type='Reorder',
+                                               input_tensors=[pre_node.output_tensors[0]],
+                                               output_tensors=[reorder_output_tensor],
+                                               attr=new_attr)
+
+            if insert_pos != None:
+                reorder_dict[insert_pos.name] = reorder_node
+            else:
+                reorder_dict[node.name] = reorder_node
+            return reorder_node
+
+        def swap_innertproduct_input(node, data_swap_list=[0, 1], swap_list_2=[], swap_list_3=[]):
+            '''
+                modify innertproduct nodes and the folloing reshape nodes.
+            '''
+            input_0 = data_swap_list[0]
+            input_1 = data_swap_list[1]
+            # swap(input_0, input1)
+            node.input_tensors[input_1].data = np.ascontiguousarray(node.input_tensors[input_1].data.T)
+            node.input_tensors[input_1].shape = list(node.input_tensors[input_1].data.shape)
+            tmp_node = copy.deepcopy(node.input_tensors[input_1])
+            node.input_tensors[input_1] = node.input_tensors[input_0]
+            node.input_tensors[input_0] = tmp_node
+
+            input_3 = swap_list_2[0]
+            input_5 = swap_list_2[1]
+            tmp_node = copy.deepcopy(node.input_tensors[input_3])
+            node.input_tensors[input_3] = node.input_tensors[input_5]
+            node.input_tensors[input_5] = tmp_node
+
+            input_4 = swap_list_3[0]
+            input_6 = swap_list_3[1]
+            tmp_node = copy.deepcopy(node.input_tensors[input_4])
+            node.input_tensors[input_4] = node.input_tensors[input_6]
+            node.input_tensors[input_6] = tmp_node
+            node.attr.pop('src1_perm')
+
+        def reorder_recover_node_insert(node, pre_node=None):
+            '''
+                pre_node: the first predecessor node of the reorder_recover node
+            '''
+            post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+            if len(node.output_tensors[0].dest_op) != 1:
+                logger.info("the post node is not only one.")
+            reorder_recover_node_name = node.name + '_Reorder_Recover'
+
+            if pre_node != None:
+                pre_node_output = pre_node.output_tensors[0]
+            else:
+                pre_node_output = node.output_tensors[0]
+            reorder_output_tensor = Tensor(name=pre_node_output.name + "_recover",
+                                           source_op=[reorder_recover_node_name],
+                                           dest_op=[post_node.name],
+                                           dtype=node.output_tensors[0].dtype)
+
+            new_attr = create_new_attr(node)
+            reorder_recover_node = util.construct_node(node_name=reorder_recover_node_name,
+                                                       op_type='Reorder',
+                                                       input_tensors=[pre_node_output],
+                                                       output_tensors=[reorder_output_tensor],
+                                                       attr=new_attr)
+
+            insert_idx = self.get_node_id(post_node.name)
+            self.insert_nodes(insert_idx, [reorder_recover_node])
+            if len(node.output_tensors[0].dest_op) != 1:
+                logger.info("the post node is not only one.")
+
+            idx = 0
+            for _ in post_node.input_tensors:
+                if node.output_tensors[0].name == _.name:
+                    break
+                else:
+                    idx = idx + 1
+
+            post_node.input_tensors[idx] = reorder_output_tensor
+            return reorder_recover_node
+
+        def modify_post_node_input_tensor(post_node, node, node_input_tensors_idx=0):
+            '''
+                post_node: the post node of the second parameter
+                node: the source of input_tensors
+                node_input_tensors_idx: assign the index of node.input_tensors to post_node.input_tensors
+            '''
+            idx = 0
+            for _ in post_node.input_tensors:
+                if node.output_tensors[0].name == _.name:
+                    break
+                else:
+                    idx = idx + 1
+            post_node.input_tensors[idx] = node.input_tensors[node_input_tensors_idx]
+            return
+
+        if node_name_list == []:
+            logger.info("The node_name_list is [].")
+            return
+
+        if node_name_list == None:
+            logger.info("The node_name_list is None. Start to get sparse nodes name...")
+            node_name_list = self.get_sparse_nodes_name()
+
+        pattern = '0001'
+        node_name_type_list = ''
+        for node_name in node_name_list:
+            node = self.get_node_by_name(node_name)
+            node_type = self.innerproduct_type_check(node)
+            if node_type == 'add_innerproduct_0':
+                node_name_type_list += '0'
+            if node_type == 'add_innerproduct_1':
+                node_name_type_list += '1'
+            if node_type == 'mul_innerproduct_0':
+                node_name_type_list += '2'
+
+        matched_idx = []
+        idx = node_name_type_list.find(pattern)
+        while idx != -1:
+            matched_idx.append(idx)
+            idx = node_name_type_list[idx + 1:].find(pattern, idx)
+
+        for node_name in node_name_list:
+            node = self.get_node_by_name(node_name)
+            node_type = self.innerproduct_type_check(node)
+            if node_type == 'general':
+                continue
+
+            if node_type == 'mul_innerproduct_0':
+                reorder_node_insert(node, 0)
+                swap_innertproduct_input(node, [0, 1], [3, 5], [4, 6])
+
+                def expand_gelu_tanh(node):
+                    if node.attr.get('append_op') == 'gelu_tanh':
+                        node.attr.pop('append_op')
+                        node.attr.pop('output_dtype')
+                        input_gelu_name = node.output_tensors[0].name
+                        data_type = node.output_tensors[0].dtype
+                        gelu_name = node.name + "_gelu"
+                        quant_name = gelu_name + "_quant"
+                        gelu_tensor = Tensor(name=input_gelu_name + "_gelu",
+                                             source_op=[gelu_name],
+                                             dest_op=[quant_name],
+                                             dtype=data_type)
+                        gelu_op = util.construct_node(node_name=gelu_name,
+                                                      op_type='Gelu',
+                                                      input_tensors=[node.output_tensors[0]],
+                                                      output_tensors=[gelu_tensor],
+                                                      attr=OrderedDict({'algorithm': 'gelu_tanh'}))
+
+                        quant_tensor = Tensor(name=input_gelu_name + "_quant",
+                                              source_op=[quant_name],
+                                              dest_op=node.output_tensors[0].dest_op,
+                                              dtype='u8')
+                        quant_op = util.construct_node(
+                            node_name=quant_name,
+                            op_type='Quantize',
+                            input_tensors=[gelu_tensor, node.input_tensors[-2], node.input_tensors[-1]],
+                            output_tensors=[quant_tensor],
+                            attr=OrderedDict({'output_dtype': 'u8'}))
+
+                        reorder_recover_node = reorder_recover_node_insert(node, quant_op)
+                        reorder_recover_node.attr['output_dtype'] = 'u8'
+                        insert_idx = self.get_node_id(reorder_recover_node.name)
+                        self.insert_nodes(insert_idx, [quant_op])
+                        insert_idx = self.get_node_id(quant_op.name)
+                        self.insert_nodes(insert_idx, [gelu_op])
+
+                expand_gelu_tanh(node)
+
+            if node_type == 'add_innerproduct_1':
+                reorder_node = reorder_node_insert(node, 0)
+                reorder_node.attr['output_dtype'] = 'u8'
+                reorder_node_insert(node, 3, reorder_node)
+
+                swap_innertproduct_input(node, [0, 1], [4, 6], [5, 7])
+                reorder_recover_node_insert(node)
+
+            if node_type == 'add_innerproduct_0':
+                reorder_node_insert(node, 0)
+                swap_innertproduct_input(node, [0, 1], [3, 5], [4, 6])
+                reorder_recover_node_insert(node)
+
+        for node_name in reorder_dict:
+            insert_idx = self.get_node_id(node_name)
+            self.insert_nodes(insert_idx, [reorder_dict[node_name]])
+        '''
+            Fusion 1: eliminate the two reorder nodes when a tensor passes through reorder_recover + reorder_post consecutively
+        '''
+        for node in self._nodes:
+            if 'Reorder_Post' in node.name and node.op_type == 'Reorder' and 'recover_reorder' in node.output_tensors[
+                    0].name:
+                pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
+                if 'Reorder_Recover' in pre_node.name and pre_node.op_type == 'Reorder':
+                    post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+                    idx = 0
+                    for _ in post_node.input_tensors:
+                        if node.output_tensors[0].name == _.name:
+                            break
+                        else:
+                            idx = idx + 1
+                    post_node.input_tensors[idx] = pre_node.input_tensors[0]
+                    self.remove_nodes([pre_node.name, node.name])
+
+        if matched_idx == []:
+            logger.info("transpose_mode_int8 done. No QKV fusion")
+            return
+        else:
+            tmp_node_name_list = []
+            for node_idx in matched_idx:
+                tmp_node_name_list.append(node_name_list[node_idx:node_idx + 4])
+            QKV_node_name_list = [i for item in tmp_node_name_list for i in item]
+            '''
+                Fusion 2: Place reorder_post nodes before the quantize node, especially for QKV and output dense
+            '''
+            reorder_dict = {}
+            for node in self._nodes:
+                if node.op_type == 'Reorder':
+                    pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
+                    if pre_node.op_type == 'Quantize':
+                        # swap the pre_node and the current node
+                        for post_node_name in node.output_tensors[0].dest_op:
+                            post_node = self.get_node_by_name(post_node_name)
+                            modify_post_node_input_tensor(post_node, node, 0)
+
+                        self.remove_nodes([node.name])
+                        reorder_node = reorder_node_insert(pre_node, 0)
+                        layernorm_node = self.get_node_by_name(reorder_node.input_tensors[0].source_op[0])
+
+                        # if the following node is reorder_post node, delete the Add_129_Reorder_Post_3
+                        if 'Reorder_Post' in layernorm_node.output_tensors[0].dest_op[0]:
+                            tmp = self.get_node_by_name(layernorm_node.output_tensors[0].dest_op[0])
+                            # Add_129
+                            post_node = self.get_node_by_name(tmp.output_tensors[0].dest_op[0])
+                            self.remove_nodes([tmp.name])
+                            layernorm_node.output_tensors[0].dest_op.append(post_node.name)
+                        # append the new reorder_node
+                        layernorm_node.output_tensors[0].dest_op.append(reorder_node.name)
+
+            for node_name in reorder_dict:
+                insert_idx = self.get_node_id(node_name)
+                self.insert_nodes(insert_idx, [reorder_dict[node_name]])
+
+            for node in self._nodes:
+                # Fusion 3: place the reorder_recover after reshape and matmul nodes
+                # step1: delte all recover nodes of innerProduct nodes and modify reshape inputs
+                node_type = self.innerproduct_type_check(node)
+                if node_type == 'add_innerproduct_0' and node in QKV_node_name_list:
+                    post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+                    if 'Reorder_Recover' in post_node.name:
+                        reshape_node = self.get_node_by_name(post_node.output_tensors[0].dest_op[0])
+                        if reshape_node.op_type == 'Reshape':
+                            idx = 0
+                            for _ in post_node.input_tensors:
+                                if node.output_tensors[0].name == _.name:
+                                    break
+                                else:
+                                    idx = idx + 1
+                            reshape_node.input_tensors[idx] = post_node.input_tensors[0]
+                            reshape_node.attr["dst_shape"] = '4,64,-1,-1'  #bert mini
+                            #reshape_node.attr["dst_shape"] = '12,64,-1,-1' #distilbert
+                            self.remove_nodes([post_node.name])
+
+                        # step2 : modify add_matmul and transpose_matmul nodes
+                        post_reshape_node = self.get_node_by_name(reshape_node.output_tensors[0].dest_op[0])
+                        if self.innerproduct_type_check(post_reshape_node) == 'add_matmul_0':
+
+                            def add_matmul_modification(node):
+                                if node.attr.get("src0_perm") == '0,2,1,3' and node.attr.get("src1_perm") == '0,2,3,1':
+                                    node.attr["src0_perm"] = '2,0,3,1'
+                                    node.attr["src1_perm"] = '2,0,1,3'
+                                if node.attr.get("src1_perm") == '0,2,1,3' and node.attr.get("dst_perm") == '0,2,1,3':
+                                    node.attr["src1_perm"] = '2,0,3,1'
+                                    node.attr["dst_perm"] = '1,3,0,2'
+
+                            add_matmul_modification(post_reshape_node)
+
+                        if self.innerproduct_type_check(post_reshape_node) == 'transpose_matmul_0':
+
+                            def transpose_matmul_modification(node):
+                                if node.attr.get("src0_perm") == '0,2,1,3' and node.attr.get("src1_perm") == '0,2,3,1':
+                                    node.attr["src0_perm"] = '2,0,3,1'
+                                    node.attr["src1_perm"] = '2,0,1,3'
+                                if node.attr.get("src1_perm") == '0,2,1,3' and node.attr.get("dst_perm") == '0,2,1,3':
+                                    node.attr["src1_perm"] = '2,0,3,1'
+                                    node.attr["dst_perm"] = '1,3,0,2'
+                                reshape_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+                                if reshape_node.op_type == "Reshape":
+                                    reshape_node.attr["dst_shape"] = '256,-1'  #bert mini
+                                    #reshape_node.attr["dst_shape"] = '768,-1'
+                                    reorder_node = self.get_node_by_name(reshape_node.output_tensors[0].dest_op[0])
+                                    innerproduct_node = self.get_node_by_name(reorder_node.output_tensors[0].dest_op[0])
+                                    if innerproduct_node.op_type == "InnerProduct":
+                                        modify_post_node_input_tensor(innerproduct_node, reorder_node, 0)
+                                        self.remove_nodes([reorder_node.name])
+
+                            transpose_matmul_modification(post_reshape_node)
+
+        logger.info("transpose_mode_int8 done")
