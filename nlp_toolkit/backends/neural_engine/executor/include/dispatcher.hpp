@@ -76,12 +76,25 @@ class Dispatcher {
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
     // (TODO) handle the case that different kernel with different output data type
     // Prepare will change some status on kernel, but should not on output
+    for (int i = 0; i < kernel_handler_.size(); ++i) sparselib_available_.push_back(false);
+    int idx = 0;
+    // let default kernel prepare first
+    kernel_handler_[type_]->Prepare(input, output);
     for (const auto& k_pair : kernel_handler_) {
+      auto kernel_name = k_pair.first;
       auto kernel = k_pair.second;
       kernel->set_dispatch_from_type(type_);
-      kernel->Prepare(input, output);
+      if (kernel_name != type_) kernel->Prepare(input, output);
+      sparselib_available_[idx++] = kernel->kernel_type() == SparseLib ? true : false;
+      if (tune_dense_in_sparse_ && do_tuning_ && kernel->kernel_type() == SparseLib) {
+        kernel->set_kernel_type(Dense);
+        kernel->Prepare(input, output);
+        kernel->set_kernel_type(SparseLib);
+      }
+      if ((kernel_handler_.size() < 2 || kernel->monopolize_dispatcher())
+          && !sparselib_available_[0]) no_tuning_space_ = true;
       if (kernel->monopolize_dispatcher()) {
-        disable_dispatch_ = true;
+        monopoly_kernel_ = kernel_name;
         break;
       }
     }
@@ -110,7 +123,7 @@ class Dispatcher {
         if (kernel_handler_.size() > 1) kernel_handler_[type_]->set_do_shape_infer(true);
         kernel_handler_[type_]->Reshape(input, output);
       }
-      if (!disable_dispatch_ && has_dispatch_table_file) {
+      if (!no_tuning_space_ && has_dispatch_table_file) {
         // generate hash key and find the best kernel if has dispatch table
         // only load once
         if (DispatchTable::Size() == 0) {
@@ -120,9 +133,16 @@ class Dispatcher {
         vector<string> kernel_config = DispatchTable::Find(type_, GetHash(input));
         if (!kernel_config.empty()) {
           string kernel_name = kernel_config[0];
-          if (kernel_handler_.count(kernel_name) > 0) {
-            execute_kernel_ = kernel_name;
-            kernel_handler_[kernel_name]->set_dispatch_config(kernel_config);
+          // sparselib
+          if (kernel_name == "SparseLib") {
+            execute_kernel_ = type_;
+            kernel_handler_[type_]->set_dispatch_config(kernel_config);
+          } else {
+            // dense
+            if (kernel_handler_.count(kernel_name) > 0) {
+              execute_kernel_ = kernel_name;
+              kernel_handler_[kernel_name]->set_dispatch_config(kernel_config);
+            }
           }
         }
       }
@@ -136,31 +156,47 @@ class Dispatcher {
       size_t input_hash = GetHash(input);
       iter_cnt_ += 1;
       // consider warmup when tuning
-      if (!disable_dispatch_ && kernel_handler_.size() > 1 && (iter_cnt_<= warmup_iter_ + 1 ||
-          DispatchTable::Find(type_, input_hash).empty())) {
+      if (!no_tuning_space_ && (iter_cnt_<= warmup_iter_ + 1 || DispatchTable::Find(type_, input_hash).empty())) {
         // keep kernel with the least time as first pair
         std::map<float, vector<string>, std::less<float>> timer;
         OpTuning op_tuning(type_);
         // increase input tensors' life when tune
         // default kernel does not count towards the extra life
+        int idx = 0;
+        string suffix;
         for (const auto& k_pair : kernel_handler_) {
           auto kernel_name = k_pair.first;
           auto kernel = k_pair.second;
-          op_tuning.Start(kernel_name, kernel, input, output, reshape_model);
+          suffix = sparselib_available_[idx++] ? "SparseLib" : kernel_name;
+          if (tune_dense_in_sparse_ && suffix == "SparseLib") {
+            kernel->set_kernel_type(Dense);
+            op_tuning.Start(kernel_name, kernel, input, output, reshape_model);
+            kernel->set_kernel_type(SparseLib);
+          }
+          op_tuning.Start(suffix, kernel, input, output, reshape_model);
+          if (monopoly_kernel_ == kernel_name) break;
         }
         for (auto& tensor : input) tensor->disposable_extra_life(op_tuning.extra_tensor_life());
         op_tuning.reset_extra_tensor_life();
         // tune kernel
+        idx = 0;
         for (const auto& k_pair : kernel_handler_) {
           auto kernel_name = k_pair.first;
           auto kernel = k_pair.second;
+          suffix = sparselib_available_[idx++] == true ? "SparseLib" : kernel_name;
           try {
-            op_tuning.Run(kernel_name, kernel, input, output, reshape_model);
+            if (tune_dense_in_sparse_ && suffix == "SparseLib") {
+              kernel->set_kernel_type(Dense);
+              op_tuning.Run(kernel_name, kernel, input, output, reshape_model);
+              kernel->set_kernel_type(SparseLib);
+            }
+            op_tuning.Run(suffix, kernel, input, output, reshape_model);
             timer[op_tuning.best_execute_time()] = op_tuning.kernel_config();
           // some kernels don't support specific dtype, fusion, etc.
           } catch (const std::exception& e) {
             LOG(WARNING) << kernel_name << " kernel tuning failure: " << e.what();
           }
+          if (monopoly_kernel_ == kernel_name) break;
         }
         if (timer.size() > 0) {
           execute_kernel_ = timer.begin()->second[0];
@@ -168,9 +204,12 @@ class Dispatcher {
           if (execute_kernel_ != type_) DispatchTable::Insert(type_, input_hash, timer.begin()->second);
         }
       } else {
-        LOG(INFO) << "Skip tuning function due to existing input hash...";
-        if (reshape_model) kernel_handler_[type_]->Reshape(input, output);
-        kernel_handler_[type_]->Forward(input, output);
+        LOG(INFO) << "Skip tuning function due to existing input hash or no tuning space...";
+        vector<string> kernel_config = DispatchTable::Find(type_, input_hash);
+        string kernel_name = (!kernel_config.empty() && kernel_config[0] != "SparseLib") ? kernel_config[0] : type_;
+        kernel_handler_[kernel_name]->set_dispatch_config(kernel_config);
+        if (reshape_model || !kernel_config.empty()) kernel_handler_[kernel_name]->Reshape(input, output);
+        kernel_handler_[kernel_name]->Forward(input, output);
       }
     }
   }
@@ -182,7 +221,7 @@ class Dispatcher {
   inline const string& type() const { return type_; }
   inline const OperatorConfig& operator_conf() const { return operator_conf_; }
   inline const string& execute_kernel() const { return execute_kernel_; }
-  inline const bool& disable_dispatch() const { return disable_dispatch_; }
+  inline const bool& no_tuning_space() const { return no_tuning_space_; }
   inline const void set_warmup_iter(const int& warmup_iter) { warmup_iter_ = warmup_iter; }
   // for profiling
   inline void set_post_op(const string& post_op) { kernel_handler_[execute_kernel_]->set_post_op(post_op); }
@@ -215,6 +254,7 @@ class Dispatcher {
     size_t input_hash = 0;
     for (const auto& tensor : input) combine_hash.push_back(tensor->get_hash());
     input_hash = get_array_hash(input_hash, combine_hash, combine_hash.size());
+    input_hash = get_array_hash(input_hash, sparselib_available_, sparselib_available_.size());
     return input_hash;
   }
 
@@ -225,9 +265,12 @@ class Dispatcher {
   KernelHandler kernel_handler_;
   string execute_kernel_;
   bool do_tuning_ = false;
-  bool disable_dispatch_ = false;
+  bool no_tuning_space_ = false;
   int64_t warmup_iter_ = 1;
   int64_t iter_cnt_ = 0;
+  vector<bool> sparselib_available_;
+  bool tune_dense_in_sparse_ = false;
+  string monopoly_kernel_;
 };
 }  // namespace executor
 

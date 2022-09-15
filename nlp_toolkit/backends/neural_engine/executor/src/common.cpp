@@ -21,6 +21,9 @@ unordered_map<string, int> type2bytes = {{"fp32", sizeof(float)},       {"int8",
                                          {"u8", sizeof(unsigned char)}, {"s8", sizeof(char)},   {"s32", sizeof(int)},
                                          {"bf16", sizeof(uint16_t)}};
 unordered_map<string, vector<string>> dispatch_kernel_config = {{"InnerProduct_to_Convolution", {"input_shape"}},
+                                                                {"InnerProduct_to_SparseLib", {"input_shape",
+                                                                                              "mkn_blocks",
+                                                                                              "tile_shape"}},
                                                                 };
 const int CPU_COUNT = omp_get_max_threads();
 #if __AVX512F__

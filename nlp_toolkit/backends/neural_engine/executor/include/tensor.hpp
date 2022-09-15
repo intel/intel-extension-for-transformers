@@ -19,6 +19,7 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "common.hpp"
 #include "conf.hpp"
@@ -133,6 +134,35 @@ class Tensor {
       }
     }
     LOG(WARNING) << "please set tensor data to make adding extra tensor life work...";
+  }
+
+  // reorder tensor
+  // for example, use reorder in sparselib, 2D for transpose mode, 3D for tuning and dispatch
+  // [a, b] -> [b, a], dst_perm: [1, 0]
+  // [a, b, c] -> [b, a, c], dst_perm: [1, 0 ,2]
+  void reorder(const vector<int64_t>& src_shape, const vector<int64_t>& dst_perm = {1, 0, 2}) {
+    static unordered_map<string, dnnl::memory::data_type> type2mem{
+    {"fp32", dnnl::memory::data_type::f32}, {"s32", dnnl::memory::data_type::s32},
+    {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
+    {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
+    // execute reorder primitive
+    vector<int64_t> src_stride = GetStrides(src_shape);
+    vector<int64_t> dst_shape = GetShapes(src_shape, dst_perm);
+    vector<int64_t> dst_stride = GetStrides(dst_shape, ReversePerm(dst_perm));
+    dnnl::memory::desc src_md(src_shape, type2mem[this->dtype()], src_stride);
+    dnnl::memory::desc dst_md(src_shape, type2mem[this->dtype()], dst_stride);
+    dnnl::engine reorder_eng(dnnl::engine::kind::cpu, 0);
+    dnnl::stream reorder_eng_stream(reorder_eng);
+    dnnl::reorder::primitive_desc reorder_src_pd(reorder_eng, src_md, reorder_eng, dst_md);
+    dnnl::memory src_m(src_md, reorder_eng);
+    dnnl::memory dst_m(dst_md, reorder_eng);
+    src_m.set_data_handle(const_cast<void*>(this->data()), reorder_eng_stream);
+    dnnl::reorder(src_m, dst_m).execute(reorder_eng_stream, src_m, dst_m);
+    reorder_eng_stream.wait();
+    // inplace dst
+    void* p = dst_m.get_data_handle();
+    size_t data_size = this->size() * type2bytes[this->dtype()];
+    memcpy(this->mutable_data(), p, data_size);
   }
 
   inline size_t size() { return std::accumulate(shape_.begin(), shape_.end(), size_t(1), std::multiplies<size_t>()); }

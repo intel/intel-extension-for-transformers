@@ -484,16 +484,36 @@ void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const 
 void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src1_shape_origin = src1_->shape();
   vector<int64_t> src1_shape = src1_shape_origin;
-  if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{0, 1}) {
-    src1_shape = {src1_shape[1], src1_shape[0]};
+  // set dispatch config from tuning
+  if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
+    // dispatch_config_ = {"SparseLib", "1,256,128", "1,1,1", "4,4"};
+    CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
+            << "InnerProduct to SparseLib has wrong dispatch kernel config...";
+    // 3D
+    vector<int64_t> src1_3d_shape;
+    StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
+    op_attrs_["mkn_blocks"] = dispatch_config_[2];
+    op_attrs_["tile_shape"] = dispatch_config_[3];
+
+    src1_->set_shape(src1_shape);
+    src1_desc_ = {src1_3d_shape, jd::data_type::u8, jd::format_type::ab};
+
+    vector<int64_t> dst_3d_shape = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
+    vector<int64_t> dst_2d_shape = {src0_->shape()[0], src1_3d_shape[0] * src1_3d_shape[2]};
+    dst_->set_shape(dst_2d_shape);
+    dst_desc_ = {dst_3d_shape, type2sparsemem[dst_->dtype()], jd::format_type::ab};
+  } else {
+    // 2D
+    if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{0, 1}) {
+      src1_shape = {src1_shape[1], src1_shape[0]};
+    }
+    src1_->set_shape(src1_shape);
+    src1_desc_ = {src1_shape, jd::data_type::u8, jd::format_type::ab};
+
+    vector<int64_t> dst_shape = {src0_->shape()[0], src1_shape[1]};
+    dst_->set_shape(dst_shape);
+    dst_desc_ = {dst_shape, type2sparsemem[dst_->dtype()], jd::format_type::ab};
   }
-  src1_->set_shape(src1_shape);
-  src1_desc_ = {src1_shape, jd::data_type::u8, jd::format_type::ab};
-
-  vector<int64_t> dst_shape = {src0_->shape()[0], src1_shape[1]};
-  dst_->set_shape(dst_shape);
-
-  dst_desc_ = {dst_shape, type2sparsemem[dst_->dtype()], jd::format_type::ab};
 
   vector<jd::postop_attr> postop_chain;
 
@@ -527,12 +547,32 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
 #if __AVX512F__
 void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
 #if __AVX512VNNI__
+  // reorder 2d to 3d
+  // 2D dense: [256, 768] x [768 328] -> [256, 328]
+  // 2D sparselib: [328, 768] x [768, 256] -> [328, 256]
+  // dispatch 3D sparselib: [328, 768] x [2, 768, 128] -> [2, 328, 128]
+  // reorder src activation
+  vector<int64_t> src1_3d_shape;
+  if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
+    // reshape to 3d then reorder
+    StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
+    vector<int64_t> src1_3d_shape_origin = {src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]};
+    src1_->reorder(src1_3d_shape_origin);
+  }
+
   void* dst_data = dst_->mutable_data();
   // has op: append_sum
+  // post life count
+  int life_count = 0;
   if (post_ != nullptr && !binary_add_) {
     LOG(INFO) << "inner product has post op " << post_->name();
+    // The sum primitive requires all source and destination tensors to have the same shape.
+    // Implicit broadcasting is not supported.
+    if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
+      post_->reorder({src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]});
+    }
     void* post_data_ptr = const_cast<void*>(post_->data());
-    auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
+    life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
     if (life_count == 1) {
       post_->unref_data(true);
@@ -548,6 +588,16 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
   std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
                                            rescales_.data()};
   spmm_kern_.execute(runtime_data);
+  // reorder dst activation (optional)
+  if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
+    // reorder to 3D then reshape
+    vector<int64_t> dst_3d_shape_origin = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
+    dst_->reorder(dst_3d_shape_origin);
+    // reorder to origin
+    src1_->reorder(src1_3d_shape);
+    if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty()
+        && dispatch_config_[0] == "SparseLib" && life_count > 1) post_->reorder(src1_3d_shape);
+  }
 #endif
 }
 #endif

@@ -88,6 +88,13 @@ class OpTuning {
   // find the best N-W combination
   void IpToConvTune(std::shared_ptr<Operator> kernel, const vector<Tensor*>& input,
                     const vector<Tensor*>& output, const bool& reshape_model) {
+    // only for tuning fp32 and bf16 dtype
+    if (input[1]->dtype() != "fp32"  && input[1]->dtype() != "bf16") {
+      LOG(WARNING) << "Only support fp32 or bf16 dtype when tuning kernel between InnerProduct and Convolution!";
+      best_execute_time_ = std::numeric_limits<float>::max();
+      kernel_config_.clear();
+      return;
+    }
     std::map<float, string, std::less<float>> input_shape_timer;
     vector<string> nw_comb;
     bool is_src0_transposed = input[0]->is_transposed();
@@ -144,6 +151,83 @@ class OpTuning {
     }
   }
 
+  // split the dimension from 2D to 3D when use sparselib gemm
+  void IpToSparseLibTune(std::shared_ptr<Operator> kernel, const vector<Tensor*>& input,
+                    const vector<Tensor*>& output, const bool& reshape_model) {
+    // only for tuning int8 dtype
+    if (input[1]->dtype() != "u8") {
+      LOG(WARNING) << "Only support int8 dtype when tuning InnerProduct kernel with SparseLib!";
+      best_execute_time_ = std::numeric_limits<float>::max();
+      kernel_config_.clear();
+      return;
+    }
+    // sparselib search space
+    vector<int64_t> bs_space = {64, 128, 196, 256};
+    vector<string> mkn_blocks_space = {"1,1,1"};
+    vector<string> tile_shape_space = {"4,4"};
+    // sparselib dispatch kernel config is {"input_shape", "mkn_blocks", "tile_shape"}
+    std::map<float, vector<string>, std::less<float>> bs_attr_timer;
+    // M x k -> mic_bs x K x bs
+    vector<string> micbs_bs_comb;
+    // sparselib graph ir should switch position of src and weight
+    vector<int64_t> src1_shape = input[1]->shape();
+    int64_t m_dim = src1_shape[1];
+    int64_t k_dim = src1_shape[0];
+    bool oneKM_shape_filling = false;
+    for (const auto& bs : bs_space) {
+      if (bs == 0) continue;
+      if (m_dim % bs > 0 && !oneKM_shape_filling) {
+        micbs_bs_comb.push_back("1," + std::to_string(k_dim) + "," + std::to_string(m_dim));
+        oneKM_shape_filling = true;
+      }
+      if (m_dim < bs) break;
+      if (m_dim % bs == 0) {
+        if (m_dim / bs == 1 && oneKM_shape_filling) continue;
+        micbs_bs_comb.push_back(std::to_string(m_dim / bs) + "," + std::to_string(k_dim) + "," + std::to_string(bs));
+        if (m_dim / bs == 1) oneKM_shape_filling = true;
+      }
+    }
+    vector<vector<string>> bs_attr_comb(micbs_bs_comb.size() * mkn_blocks_space.size() * tile_shape_space.size());
+#pragma omp parallel for
+    for (int i = 0; i < micbs_bs_comb.size(); ++i) {
+      for (int j = 0; j < mkn_blocks_space.size(); ++j) {
+#pragma omp simd
+        for (int k = 0; k < tile_shape_space.size(); ++k) {
+          bs_attr_comb[i * mkn_blocks_space.size() * tile_shape_space.size() + j * tile_shape_space.size() + k] = \
+            {micbs_bs_comb[i], mkn_blocks_space[j], tile_shape_space[k]};
+        }
+      }
+    }
+    // add tensor life
+    if (stage_ == "start") {
+      extra_tensor_life_ += bs_attr_comb.size();
+      return;
+    }
+    vector<string> kernel_config_cpy = {kernel_config_[0], "", "", ""};
+    for (const auto& comb : bs_attr_comb) {
+      for (int i = 0; i < comb.size(); ++i) kernel_config_cpy[i + 1] = comb[i];
+      kernel->set_dispatch_config(kernel_config_cpy);
+      float start_time = 0;
+      float reshape_time = 0;
+      start_time = Time("start");
+      kernel->Reshape(input, output);
+      reshape_time = Time("end") - start_time;
+      start_time = Time("start");
+      kernel->Forward(input, output);
+      float execute_time = Time("end") - start_time;
+      if (reshape_model) execute_time += reshape_time;
+      bs_attr_timer[execute_time] = kernel_config_cpy;
+      LOG(INFO) << "IpToSparseLibTune forward time is " << execute_time << "ms, activation shape: " << comb[0]
+                << ", mkn_blocks: " << comb[1] << ", tile_shape: " << comb[2];
+    }
+    if (bs_attr_timer.size() > 0) {
+      best_execute_time_ = bs_attr_timer.begin()->first;
+      kernel_config_ = bs_attr_timer.begin()->second;
+    } else {
+      LOG(FATAL) << "InnerProduct tuning fails with kernel SparseLib...";
+    }
+  }
+
   inline const float& best_execute_time() const { return best_execute_time_;}
   inline const vector<string>& kernel_config() const { return kernel_config_; }
   inline const int& extra_tensor_life() const { return extra_tensor_life_; }
@@ -170,7 +254,8 @@ class OpTuning {
 
 std::unordered_map<string, OpTuning::TuneFunc> OpTuning::tune_func_map_ = {
     {"Base", &OpTuning::BaseTune},
-    {"InnerProduct_to_Convolution", &OpTuning::IpToConvTune}
+    {"InnerProduct_to_Convolution", &OpTuning::IpToConvTune},
+    {"InnerProduct_to_SparseLib", &OpTuning::IpToSparseLibTune}
 };
 }  // namespace executor
 

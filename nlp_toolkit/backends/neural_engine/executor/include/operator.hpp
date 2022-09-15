@@ -74,7 +74,7 @@ class Operator {
   const OperatorConfig& operator_conf() const { return operator_conf_; }
   // dispatch kernel may need to do reshape and receive config, like InnerProduct to Convolution
   inline void set_dispatch_from_type(const string& type) { dispatch_from_ = type; }
-  inline void set_dispatch_config(const vector<string>& config) { dispatch_config_ = config; }
+  inline void set_dispatch_config(const vector<string>& config = {}) { dispatch_config_ = config; }
   inline void set_do_shape_infer(const bool& do_shape_infer) { do_shape_infer_ = do_shape_infer; }
   inline const bool& do_shape_infer() const { return do_shape_infer_; }
   inline const bool& monopolize_dispatcher() const { return monopolize_dispatcher_; }
@@ -86,6 +86,7 @@ class Operator {
   inline void set_enable_sparse(const bool enable_sparse) { enable_sparse_ = enable_sparse; }
   inline const float& enable_sparse() const { return enable_sparse_; }
   inline const KERNEL_TYPE& kernel_type() const { return kernel_type_; }
+  inline void set_kernel_type(const KERNEL_TYPE& kernel_type) { kernel_type_ = kernel_type; }
   inline const float& weight_zero_ratio() const { return weight_zero_ratio_; }
   inline void set_weight_shape(const vector<int64_t>& weight_shape) { weight_shape_ = weight_shape; }
   inline const vector<int64_t>& weight_shape() const { return weight_shape_; }
