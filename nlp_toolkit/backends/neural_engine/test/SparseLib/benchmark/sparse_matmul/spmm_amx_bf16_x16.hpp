@@ -30,14 +30,29 @@
 
 #include "interface.hpp"
 #include "benchmark_utils.hpp"
-
-#define SPMM_AMX_BF16_X16_ARG_NUM 8
+#include "sparse_matmul/sparse_matmul.hpp"
+#define SPMM_AMX_BF16_X16_ARG_NUM 7
 
 namespace jd {
+class spmm_amx_bf16_x16_bench : public sparse_matmul_bench {
+ private:
+  int64_t M, K, N;
+  float sparse_ratio;
+  int64_t micro_bs, micro_oc;
+  bool bf16_out;
 
-void get_true_data_spmm_amx_bf16_x16(const operator_desc& op_desc, const std::vector<const void*>& rt_data);
+ public:
+  spmm_amx_bf16_x16_bench() {}
+  virtual ~spmm_amx_bf16_x16_bench() {}
 
-bool check_result_spmm_amx_bf16_x16(const std::pair<op_args_t, op_args_t>& args);
+  bench_res_t set_config(int argc, char** argv) override;
+  // Just like that in gtest file
+  void get_true_data() override;
+  // Just like that in gtest file
+  bool check_result() override;
+  // Just like that in gtest file
+  void gen_case() override;
+};
 
 template <typename T>
 void prepare_sparse_data_spmm_amx_bf16_x16(T* weight, dim_t N, dim_t K, dim_t n_blksize, dim_t k_blksize, float ratio);
@@ -45,12 +60,6 @@ void prepare_sparse_data_spmm_amx_bf16_x16(T* weight, dim_t N, dim_t K, dim_t n_
 std::pair<const void*, const void*> make_data_obj_spmm_amx_bf16_x16(const data_type& tensor_dt, dim_t rows, dim_t cols,
                                                                     dim_t index, float ratio = 0.9,
                                                                     const std::vector<float>& ranges = {-1, 1});
-
-std::pair<op_args_t, op_args_t> gen_case_spmm_amx_bf16_x16(dim_t M, dim_t K, dim_t N, dim_t micro_bs = 64,
-                                                           dim_t micro_oc = -1, float ratio = 0.9,
-                                                           bool bf16_out = true);
-
-bench_res_t run_bench_spmm_amx_bf16_x16(bench_mode mode, int argc, char** argv);
 
 }  // namespace jd
 

@@ -15,12 +15,15 @@
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_
 
-#include <iostream>
-#include <vector>
-#include <string>
+#include <glog/logging.h>
+
 #include <cstring>
-#include <utility>
 #include <functional>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "interface.hpp"
 
@@ -61,48 +64,85 @@ struct op_args_t {
   std::vector<const void*> rt_data;
 };
 
-/*
- * @brief Run benchmark of kernel. Currently this mainly contains 3 parts:
- *            1. Run kernel for multiple iterations to get its execution time.
- *            2. Parse primitive and use execution time to calculate GFLOPS.
- *            3. Refresh some parts of runtime data for kernel before each execution.
- *
- *        To enable benchmarkOrExecute for a new kernel xxxx, you need to
- *        add a case for it in calc_flop and get_refresh_data_idx in benchmark_utils.cpp
- */
-bench_res_t benchmarkOrExecute(kernel_proxy* kp, const std::vector<const void*>& rt_data, bench_mode mode);
+// Kernel developers will implement utility functions by themselves
+class kernel_bench {
+ protected:
+  std::vector<tensor_desc> ts_descs;
+  std::vector<float> ranges = {10.0, 10.0};  // Usually size = 2, range of tensors' values
+  std::pair<op_args_t, op_args_t> args;
+  std::shared_ptr<kernel_proxy> kp;
 
-/*
- * @brief Get execution time of kernel.
- */
-double exec_time(kernel_proxy* kp, const std::vector<const void*>& rt_data);
+ public:
+  kernel_bench() {}
+  virtual ~kernel_bench() {}
+  // Use command line input to set config data
+  virtual bench_res_t set_config(int argc, char** argv) = 0;
+  // Calculate flop
+  virtual double calc_flop() const = 0;
+  // Determine which part of rt_data needs to be refreshed
+  // in every iteration before executing kernel
+  virtual std::vector<int> get_refresh_data_idx() const = 0;
+  // Calculate reference, only used when testing acc, just like that in gtest file
+  virtual void get_true_data() = 0;
+  // Test acc, just like that in gtest file
+  virtual bool check_result() = 0;
+  // Set args for kernel, just like that in gtest file
+  virtual void gen_case() = 0;
+  // Set kp, use kp->execute() to run kernel
+  virtual void set_kernel_proxy() = 0;
+  friend class bench_op;
+};
 
-/*
- * @brief Calculate FLOP.
- */
-double calc_flop(const kernel_kind, const std::vector<tensor_desc>& ts_descs);
+class bench_op {
+ private:
+  std::shared_ptr<kernel_bench> kb;
 
-/*
- * @brief Get indices of data that needs refreshing which indicate their positions in tensor vector.
- */
-std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind);
+ public:
+  bench_op() {}
+  explicit bench_op(const std::shared_ptr<kernel_bench>& kb) : kb(kb) {}
+  ~bench_op() {}
+  // Main procedure for benchmark
+  bench_res_t run_bench(bench_mode mode);
+  /*
+   * @brief Run benchmark of kernel. Currently this mainly contains 3 parts:
+   *            1. Run kernel for multiple iterations to get its execution time.
+   *            2. Parse primitive and use execution time to calculate GFLOPS.
+   *            3. Refresh some parts of runtime data for kernel before each execution.
+   *
+   *        To enable benchmarkOrExecute for a new kernel xxxx, you need to
+   *        add a case for it in calc_flop and get_refresh_data_idx in benchmark_utils.cpp
+   */
+  bench_res_t benchmarkOrExecute(bench_mode mode);
 
-/*
- * @brief Allocate new memory for some parts of runtime data for kernel.
- */
-bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>& rt_data,  // NOLINT
-                   std::vector<void*>& new_data, const std::vector<int>& idx);                   // NOLINT
+  /*
+   * @brief Get execution time of kernel.
+   */
+  double exec_time(std::shared_ptr<kernel_proxy> kp, const std::vector<const void*>& rt_data);
+  /*
+   * @brief Refresh some parts of runtime data for kernel.
+   */
+  void refresh_data(std::vector<void*>* new_data_pointer, const std::vector<int>& idx);
+  /*
+   * @brief Calculate FLOP.
+   */
+  double calc_flop(const kernel_kind, const std::vector<tensor_desc>& ts_descs);
 
-/*
- * @brief Free new memory for some parts of runtime data for kernel.
- */
-void free_new_mem(std::vector<void*>& new_data);  // NOLINT
+  /*
+   * @brief Get indices of data that needs refreshing which indicate their positions in tensor vector.
+   */
+  std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind);
 
-/*
- * @brief Refresh some parts of runtime data for kernel.
- */
-void refresh_data(const std::vector<tensor_desc>& ts_descs, std::vector<void*>& new_data,  // NOLINT
-                  const std::vector<int>& idx, const std::vector<float>& ranges = {-10.0, 10.0});
+  /*
+   * @brief Allocate new memory for some parts of runtime data for kernel.
+   */
+  bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>* rt_data_pointer,
+                     std::vector<void*>* new_data_pointer, const std::vector<int>& idx);
+
+  /*
+   * @brief Free new memory for some parts of runtime data for kernel.
+   */
+  void free_new_mem(std::vector<void*>* new_data_pointer);
+};
 
 }  // namespace jd
 

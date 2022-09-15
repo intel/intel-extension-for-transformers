@@ -28,14 +28,29 @@
 #include <utility>
 #include "interface.hpp"
 #include "benchmark_utils.hpp"
-
-#define SPMM_AVX512F_ARG_NUM 5
+#include "sparse_matmul/sparse_matmul.hpp"
+#define SPMM_AVX512F_ARG_NUM 4
 
 namespace jd {
 
-void get_true_data_spmm_avx512f(const operator_desc& op_desc, const std::vector<const void*>& rt_data);
+class spmm_avx512f_bench : public sparse_matmul_bench {
+ private:
+  int64_t M, K, N;
+  float sparse_ratio;
+  std::vector<postop_alg> postop_algs;
 
-bool check_result_spmm_avx512f(const std::pair<op_args_t, op_args_t>& args);
+ public:
+  spmm_avx512f_bench() {}
+  virtual ~spmm_avx512f_bench() {}
+
+  bench_res_t set_config(int argc, char** argv) override;
+  // Just like that in gtest file
+  void get_true_data() override;
+  // Just like that in gtest file
+  bool check_result() override;
+  // Just like that in gtest file
+  void gen_case() override;
+};
 
 template <typename T>
 void prepare_blocked_sparse_data_spmm_avx512f(T* data, const std::vector<dim_t>& a_shape,
@@ -47,11 +62,6 @@ std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector
                                                                float sparsity = 0.f,  // 0 for dense
                                                                format_type a_ft = format_type::uncoded,
                                                                const std::vector<float>& ranges = {-10, 10});
-
-std::pair<op_args_t, op_args_t> gen_case_spmm_avx512f(dim_t M, dim_t K, dim_t N, float sparsity,
-                                                      std::vector<postop_alg> postop_algs = {});
-
-bench_res_t run_bench_spmm_avx512f(bench_mode mode, int argc, char** argv);
 
 }  // namespace jd
 

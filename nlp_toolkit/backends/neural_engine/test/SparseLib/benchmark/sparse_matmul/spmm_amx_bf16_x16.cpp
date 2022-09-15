@@ -23,7 +23,26 @@ namespace jd {
 using dt = jd::data_type;
 using ft = jd::format_type;
 
-void get_true_data_spmm_amx_bf16_x16(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+bench_res_t spmm_amx_bf16_x16_bench::set_config(int argc, char** argv) {
+  LOG(INFO) << "spmm_amx_bf16_x16\n";
+  if (argc < SPMM_AMX_BF16_X16_ARG_NUM) {
+    LOG(ERROR) << "Not enough arguments passed";
+    return {bench_status::wrong_input};
+  }
+  M = str_to_num<int64_t>(argv[0]);
+  K = str_to_num<int64_t>(argv[1]);
+  N = str_to_num<int64_t>(argv[2]);
+  sparse_ratio = str_to_num<float>(argv[3]);
+  micro_bs = str_to_num<int64_t>(argv[4]);
+  micro_oc = str_to_num<int64_t>(argv[5]);
+  bf16_out = !strcmp(argv[6], "1");
+
+  return {bench_status::success};
+}
+
+void spmm_amx_bf16_x16_bench::get_true_data() {
+  auto& op_desc = args.second.op_desc;
+  auto& rt_data = args.second.rt_data;
   // shape configure alias
   const auto& ts_descs = op_desc.tensor_descs();
   const auto& wei_desc = ts_descs[0];
@@ -69,20 +88,15 @@ void get_true_data_spmm_amx_bf16_x16(const operator_desc& op_desc, const std::ve
   }
 }
 
-bool check_result_spmm_amx_bf16_x16(const std::pair<op_args_t, op_args_t>& args) {
+bool spmm_amx_bf16_x16_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
 
-  get_true_data_spmm_amx_bf16_x16(q.op_desc, q.rt_data);
+  get_true_data();
   auto buf1 = p.rt_data[3];
   auto size1 = p.op_desc.tensor_descs()[3].size();
   auto buf2 = q.rt_data[3];
   auto size2 = q.op_desc.tensor_descs()[3].size();
-  // Should compare buffer with different addresses
-  if (buf1 == buf2) {
-    printf("comparing the same buffer\n");
-    return false;
-  }
   float eps = 5e-3;
   const auto& dst_type = p.op_desc.tensor_descs()[3].dtype();
   if (dst_type == dt::bf16) {
@@ -159,8 +173,7 @@ std::pair<const void*, const void*> make_data_obj_spmm_amx_bf16_x16(const dt& te
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case_spmm_amx_bf16_x16(dim_t M, dim_t K, dim_t N, dim_t micro_bs, dim_t micro_oc,
-                                                           float ratio, bool bf16_out) {
+void spmm_amx_bf16_x16_bench::gen_case() {
   std::unordered_map<std::string, std::string> op_attrs;
   // Step 1: Construct runtime data
   std::vector<const void*> rt_data1;
@@ -172,7 +185,7 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_amx_bf16_x16(dim_t M, dim_t K, dim
   if (bf16_out) {
     dst_desc = {{M / micro_bs, N, micro_bs}, dt::bf16, ft::abc};
   }
-  std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
+  ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
     dim_t rows = ts_descs[index].shape()[0];
@@ -181,7 +194,7 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_amx_bf16_x16(dim_t M, dim_t K, dim
       rows = ts_descs[index].shape()[1];
       cols = ts_descs[index].shape()[0] * ts_descs[index].shape()[2];
     }
-    auto data_pair = make_data_obj_spmm_amx_bf16_x16(ts_descs[index].dtype(), rows, cols, index, ratio);
+    auto data_pair = make_data_obj_spmm_amx_bf16_x16(ts_descs[index].dtype(), rows, cols, index, sparse_ratio);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -200,38 +213,7 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_amx_bf16_x16(dim_t M, dim_t K, dim
   op_args_t op_args = {an_op_desc, rt_data1};
   op_args_t op_args_copy = {an_op_desc, rt_data2};
 
-  return {op_args, op_args_copy};
-}
-
-bench_res_t run_bench_spmm_amx_bf16_x16(bench_mode mode, int argc, char** argv) {
-  bench_res_t res;
-  int64_t M = str_to_num<int64_t>(argv[0]);
-  int64_t K = str_to_num<int64_t>(argv[1]);
-  int64_t N = str_to_num<int64_t>(argv[2]);
-  float sparse_ratio = str_to_num<float>(argv[3]);
-  int64_t micro_bs = str_to_num<int64_t>(argv[4]);
-  int64_t micro_oc = str_to_num<int64_t>(argv[5]);
-  bool bf16_out = !strcmp(argv[6], "1");
-
-  std::pair<op_args_t, op_args_t> args =
-      gen_case_spmm_amx_bf16_x16(M, K, N, micro_bs, micro_oc, sparse_ratio, bf16_out);
-  try {
-    const auto& p = args.first;
-    const auto& op_desc = p.op_desc;
-    sparse_matmul_desc spmm_desc(op_desc);
-    sparse_matmul spmm_kern(spmm_desc);
-    res = benchmarkOrExecute(&spmm_kern, p.rt_data, mode);
-  } catch (const std::exception& e) {
-    std::cerr << "kernel exception occurred" << std::endl;
-    res.stat = bench_status::fail;
-    return res;
-  }
-
-  if (mode == bench_mode::acc) {
-    res.correct = check_result_spmm_amx_bf16_x16(args);
-  }
-
-  return res;
+  args = {op_args, op_args_copy};
 }
 
 }  // namespace jd

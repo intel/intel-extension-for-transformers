@@ -12,17 +12,49 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "utils.hpp"
+#include "sparse_matmul/spmm_avx512f.hpp"
+
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
-#include "sparse_matmul/spmm_avx512f.hpp"
+#include "utils.hpp"
 
 namespace jd {
 
 using dt = jd::data_type;
 using ft = jd::format_type;
 
-void get_true_data_spmm_avx512f(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+bench_res_t spmm_avx512f_bench::set_config(int argc, char** argv) {
+  LOG(INFO) << "spmm_avx512f\n";
+  if (argc < SPMM_AVX512F_ARG_NUM) {
+    LOG(ERROR) << "Not enough arguments passed";
+    return {bench_status::wrong_input};
+  }
+  M = str_to_num<int64_t>(argv[0]);
+  K = str_to_num<int64_t>(argv[1]);
+  N = str_to_num<int64_t>(argv[2]);
+  sparse_ratio = str_to_num<float>(argv[3]);
+
+  postop_algs.clear();
+  for (int i = SPMM_AVX512F_ARG_NUM; i < argc; ++i) {
+    LOG(INFO) << argv[i];
+    if (!strcmp(argv[i], "gelu")) {
+      postop_algs.push_back(postop_alg::gelu);
+    } else if (!strcmp(argv[i], "exp")) {
+      postop_algs.push_back(postop_alg::exp);
+    } else if (!strcmp(argv[i], "relu")) {
+      postop_algs.push_back(postop_alg::relu);
+    } else if (!strcmp(argv[i], "tanh")) {
+      postop_algs.push_back(postop_alg::tanh);
+    } else {
+      LOG(ERROR) << "post-op " << argv[i] << " is not supported.";
+    }
+  }
+  return {bench_status::success};
+}
+
+void spmm_avx512f_bench::get_true_data() {
+  auto& op_desc = args.second.op_desc;
+  auto& rt_data = args.second.rt_data;
   // shape configure alias
   const auto& ts_descs = op_desc.tensor_descs();
   const auto& wei_desc = ts_descs[ssd::WEI];
@@ -69,20 +101,15 @@ void get_true_data_spmm_avx512f(const operator_desc& op_desc, const std::vector<
   }
 }
 
-bool check_result_spmm_avx512f(const std::pair<op_args_t, op_args_t>& args) {
+bool spmm_avx512f_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
 
-  get_true_data_spmm_avx512f(q.op_desc, q.rt_data);
+  get_true_data();
   auto buf1 = p.rt_data[ssd::DST];
   auto size1 = p.op_desc.tensor_descs()[ssd::DST].size();
   auto buf2 = q.rt_data[ssd::DST];
   auto size2 = q.op_desc.tensor_descs()[ssd::DST].size();
-  // Should compare buffer with different addresses
-  if (buf1 == buf2) {
-    printf("comparing the same buffer\n");
-    return false;
-  }
 
   const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST].dtype();
   if (dst_type == dt::fp32) {
@@ -164,8 +191,7 @@ std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-std::pair<op_args_t, op_args_t> gen_case_spmm_avx512f(dim_t M, dim_t K, dim_t N, float sparsity,
-                                                      std::vector<postop_alg> postop_algs) {
+void spmm_avx512f_bench::gen_case() {
   // Step 1: Construct operator config
   std::unordered_map<std::string, std::string> op_attrs = {};
 
@@ -174,14 +200,14 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_avx512f(dim_t M, dim_t K, dim_t N,
   tensor_desc wei_desc = {{K, N}, dt::fp32, ft::bsc};
   tensor_desc bia_desc = {{N, 1}, dt::fp32, ft::ab};
   tensor_desc dst_desc = {{M, N}, dt::fp32, ft::abc};
-  std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
+  ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
 
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
   for (size_t i = 0; i < ts_descs.size(); ++i) {
     bool is_clear = i == ssd::DST || i == ssd::BIAS;
     std::vector<float> ranges = (i == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
-    float data_sparsity = (i == ssd::WEI) ? sparsity : 0;
+    float data_sparsity = (i == ssd::WEI) ? sparse_ratio : 0;
     auto data_pair = make_data_obj_spmm_avx512f(ts_descs[i].shape(), ts_descs[i].dtype(), is_clear, data_sparsity,
                                                 ts_descs[i].ftype(), ranges);
     rt_data1.emplace_back(data_pair.first);
@@ -210,58 +236,7 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_avx512f(dim_t M, dim_t K, dim_t N,
   op_args_t op_args = {an_op_desc, rt_data1};
   op_args_t op_args_copy = {an_op_desc, rt_data2};
 
-  return {op_args, op_args_copy};
-}
-
-bench_res_t run_bench_spmm_avx512f(bench_mode mode, int argc, char** argv) {
-  bench_res_t res;
-  int64_t M = str_to_num<int64_t>(argv[0]);
-  int64_t K = str_to_num<int64_t>(argv[1]);
-  int64_t N = str_to_num<int64_t>(argv[2]);
-  float sparse_ratio = str_to_num<float>(argv[3]);
-  std::vector<postop_alg> postop_algs(0);
-  for (int i = SPMM_AVX512F_ARG_NUM - 1; i < argc; ++i) {
-    printf("%s\n", argv[i]);
-    if (!strcmp(argv[i], "gelu")) {
-      postop_algs.push_back(postop_alg::gelu);
-    } else if (!strcmp(argv[i], "exp")) {
-      postop_algs.push_back(postop_alg::exp);
-    } else if (!strcmp(argv[i], "relu")) {
-      postop_algs.push_back(postop_alg::relu);
-    } else if (!strcmp(argv[i], "tanh")) {
-      postop_algs.push_back(postop_alg::tanh);
-    } else {
-      std::cerr << "post-op " << argv[i] << " is not supported." << std::endl;
-    }
-  }
-
-  std::pair<op_args_t, op_args_t> args = gen_case_spmm_avx512f(M, K, N, sparse_ratio, postop_algs);
-  sparse_matmul* spmm_kern = nullptr;
-  const auto& p = args.first;
-  try {
-    const auto& op_desc = p.op_desc;
-    sparse_matmul_desc spmm_desc(op_desc);
-    spmm_kern = new sparse_matmul(spmm_desc);
-    res = benchmarkOrExecute(spmm_kern, p.rt_data, mode);
-  } catch (const std::exception& e) {
-    std::cerr << "kernel exception occurred" << std::endl;
-    res.stat = bench_status::fail;
-    return res;
-  }
-
-  if (mode == bench_mode::acc) {
-    res.correct = check_result_spmm_avx512f(args);
-  }
-
-  if (spmm_kern != nullptr) {
-    auto attrs_map = p.op_desc.attrs();
-    const uint64_t& sparse_addr = str_to_num<uint64_t>(attrs_map["sparse_ptr"]);
-    auto sparse_data_ptr = reinterpret_cast<bsc_data_t<float>*>(sparse_addr);
-    delete sparse_data_ptr;
-    delete spmm_kern;
-  }
-
-  return res;
+  args = {op_args, op_args_copy};
 }
 
 }  // namespace jd

@@ -32,7 +32,6 @@ float get_gelu(float x) {
   // an approximate fitting function of GELU(x)
   // GELU(x)≈0.5x(1+tanh[(2/pi)^0.5)*(x+0.044715x^3)]
   // for more details,pls refer this paper:https://arxiv.org/abs/1606.08415
-  // printf("gelu\n");
   return 0.5f * x * (1 + tanhf(0.7978845834732056f * (x + 0.044714998453855515f * x * x * x)));
 }
 
@@ -72,22 +71,6 @@ int get_data_width(jd::data_type dtype) {
   return data_width;
 }
 
-float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) {
-  for (auto&& i : attrs) {
-    if (i.op_type == jd::postop_type::eltwise) {
-      if (i.op_alg == jd::postop_alg::exp) value = get_exp(value);
-      if (i.op_alg == jd::postop_alg::gelu) value = get_gelu(value);
-      if (i.op_alg == jd::postop_alg::relu) value = get_relu(value, i.alpha);
-      if (i.op_alg == jd::postop_alg::quantize) value = get_quantize(value, i.alpha, i.scale);
-      if (i.op_alg == jd::postop_alg::dequantize) value = get_dequantize(value, i.alpha, i.scale);
-      if (i.op_alg == jd::postop_alg::tanh) value = tanh(value);
-    } else {
-      std::runtime_error("do not support postop type.");
-    }
-  }
-  return value;
-}
-
 void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
   switch (dtype) {
     case jd::data_type::fp32:
@@ -122,7 +105,7 @@ void* memo_op(void* ptr, int num, jd::data_type dtype, memo_mode mode) {
 int get_element_num(const jd::operator_desc& op_desc, int idx) {
   auto ts_descs = op_desc.tensor_descs();
   if (idx >= ts_descs.size()) {
-    std::cerr << "idx out of range" << std::endl;
+    LOG(ERROR) << "idx out of range";
     return 0;
   }
   int num = 1;
@@ -143,11 +126,11 @@ std::vector<postop_attr> get_postop_attr(const char* postop_str, data_type* dt_p
     size_t sep_idx = postop_str.find("_");
     if (sep_idx == postop_str.npos) {  // quantize or dequantize
       if (!strcmp(postop_str.c_str(), "quantize")) {
-        postop_attrs.emplace_back(data_type::fp32, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.5);
+        postop_attrs.emplace_back(data_type::u8, postop_type::eltwise, postop_alg::quantize, 0, 0, 2);
       } else if (!strcmp(postop_str.c_str(), "dequantize")) {
         postop_attrs.emplace_back(data_type::u8, postop_type::eltwise, postop_alg::dequantize, 0, 0, 2);
       } else {
-        std::cerr << postop_str << " is not supported" << std::endl;
+        LOG(ERROR) << postop_str << " is not supported";
       }
     } else {  // other algorithms
       // get data_type
@@ -157,7 +140,7 @@ std::vector<postop_attr> get_postop_attr(const char* postop_str, data_type* dt_p
       } else if (!strcmp(data_type_str, "bf16")) {
         *dt_ptr = data_type::bf16;
       } else {
-        std::cerr << "Unsupported data type: " << data_type_str << std::endl;
+        LOG(ERROR) << "Unsupported data type: " << data_type_str;
         continue;
       }
 
@@ -173,7 +156,7 @@ std::vector<postop_attr> get_postop_attr(const char* postop_str, data_type* dt_p
       } else if (!strcmp(alg_str, "tanh")) {
         alg = postop_alg::tanh;
       } else {
-        std::cerr << "Unsupported algorithm: " << alg_str << std::endl;
+        LOG(ERROR) << "Unsupported algorithm: " << alg_str;
         continue;
       }
 

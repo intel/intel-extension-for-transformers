@@ -12,17 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "utils.hpp"
+#include "sparse_matmul/spmm_vnni.hpp"
+
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
-#include "sparse_matmul/spmm_vnni.hpp"
+#include "utils.hpp"
 
 namespace jd {
 
 using dt = jd::data_type;
 using ft = jd::format_type;
 
-void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+void spmm_vnni_bench::get_true_data() {
+  auto& op_desc = args.second.op_desc;
+  auto& rt_data = args.second.rt_data;
   // shape configure alias
   const auto& ts_descs = op_desc.tensor_descs();
   const auto& wei_shape = ts_descs[ssd::WEI].shape();
@@ -77,7 +80,8 @@ void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<con
   for (dim_t idx_mbs = 0; idx_mbs < num_mbs; ++idx_mbs) {
     for (dim_t i = 0; i < oc; ++i) {
       for (dim_t j = 0; j < micro_bs; ++j) {
-        float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
+        float value = 0;  // Consistent with the actual precision (float or
+                          // double) of cpu instructions.
 #pragma omp simd
         for (dim_t k = 0; k < ic; ++k) {
           dim_t l_idx = i * left_stride[0] + k * left_stride[1];
@@ -121,21 +125,15 @@ void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<con
   }
 }
 
-bool check_result_spmm_vnni(const std::pair<op_args_t, op_args_t>& args) {
+bool spmm_vnni_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
 
-  get_true_data_spmm_vnni(q.op_desc, q.rt_data);
+  get_true_data();
   auto buf1 = p.rt_data[ssd::DST];
   auto size1 = p.op_desc.tensor_descs()[ssd::DST].size();
   auto buf2 = q.rt_data[ssd::DST];
   auto size2 = q.op_desc.tensor_descs()[ssd::DST].size();
-  // Should compare buffer with different addresses
-  if (buf1 == buf2) {
-    printf("comparing the same buffer\n");
-    return false;
-  }
-
   const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST].dtype();
   if (dst_type == dt::fp32) {
     return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
@@ -208,10 +206,7 @@ std::vector<float> make_output_scale(dim_t size, const std::vector<float>& range
   return output_scale;
 }
 
-std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = -1,
-                                                   jd::data_type dt_dst = dt::s8,
-                                                   std::unordered_map<std::string, std::string> op_attrs = {},
-                                                   std::vector<postop_alg> postop_algs = {}) {
+void spmm_vnni_bench::gen_case() {
   // Step 1: Construct operator config
   bool append_sum = (op_attrs["append_sum"] == "true");
   micro_bs = micro_bs == -1 ? N : micro_bs;
@@ -224,7 +219,7 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, fl
   tensor_desc bia_desc = {{M, 1}, dt::s32, ft::ab};
   tensor_desc dst_desc = {{num_mbs, M, micro_bs}, dt_dst, ft::ab};
   tensor_desc scales_desc = {{M, 1}, dt::fp32, ft::ab};
-  std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
+  ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
 
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
@@ -232,7 +227,7 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, fl
   for (int index = 0; index < tensor_num; ++index) {
     auto& tsd = ts_descs[index];
     bool is_clear = (index == ssd::DST && !append_sum);
-    float data_sparsity = (index == ssd::WEI) ? sparsity : 0;
+    float data_sparsity = (index == ssd::WEI) ? sparse_ratio : 0;
     auto ranges = (index == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
     auto data_pair = make_data_obj_spmm_vnni(tsd.shape(), tsd.dtype(), is_clear, data_sparsity, ranges);
     rt_data1.emplace_back(data_pair.first);
@@ -266,31 +261,33 @@ std::pair<op_args_t, op_args_t> gen_case_spmm_vnni(dim_t M, dim_t K, dim_t N, fl
   op_args_t op_args = {an_op_desc, rt_data1};
   op_args_t op_args_copy = {an_op_desc, rt_data2};
 
-  return {op_args, op_args_copy};
+  args = {op_args, op_args_copy};
 }
 
-bench_res_t run_bench_spmm_vnni(bench_mode mode, int argc, char** argv) {
-  bench_res_t res;
-  int64_t M = str_to_num<int64_t>(argv[0]);                   // M
-  int64_t K = str_to_num<int64_t>(argv[1]);                   // K
-  int64_t N = str_to_num<int64_t>(argv[2]);                   // N
-  float sparse_ratio = str_to_num<float>(argv[3]);            // sparse_ratio
-  int64_t micro_bs = str_to_num<int64_t>(argv[4]);            // micro_bs
-  dt dt_dst = strcmp(argv[5], "1") == 0 ? dt::fp32 : dt::s8;  // is_fp32_out
-  bool append_sum = strcmp(argv[6], "1") == 0;                // has_append_sum
+bench_res_t spmm_vnni_bench::set_config(int argc, char** argv) {
+  LOG(INFO) << "spmm_vnni\n";
+  if (argc < SPMM_VNNI_ARG_NUM) {
+    LOG(ERROR) << "Not enough arguments passed";
+    return {bench_status::wrong_input};
+  }
+  M = str_to_num<int64_t>(argv[0]);                        // M
+  K = str_to_num<int64_t>(argv[1]);                        // K
+  N = str_to_num<int64_t>(argv[2]);                        // N
+  sparse_ratio = str_to_num<float>(argv[3]);               // sparse_ratio
+  micro_bs = str_to_num<int64_t>(argv[4]);                 // micro_bs
+  dt_dst = strcmp(argv[5], "1") == 0 ? dt::fp32 : dt::s8;  // is_fp32_out
+  bool append_sum = strcmp(argv[6], "1") == 0;             // has_append_sum
   if (append_sum && dt_dst != dt::fp32) {
-    std::cerr << "append_sum requires fp32" << std::endl;
+    LOG(ERROR) << "append_sum requires fp32";
     bench_res_t res;
     res.stat = bench_status::fail;
     return res;
   }
   int64_t micro_oc = str_to_num<int64_t>(argv[7]);
   int sub_func_level = strlen(argv[8]) == 0 ? -1 : str_to_num<int>(argv[8]);  // -1 for invalid/defalut config
-  std::vector<postop_alg> postop_lists;
-  if (argc > 9 && strcmp(argv[9], "gelu")) postop_lists.push_back(postop_alg::gelu);
-  if (argc > 9 && strcmp(argv[9], "exp")) postop_lists.push_back(postop_alg::exp);
+  if (argc > 9 && strcmp(argv[9], "gelu")) postop_algs.push_back(postop_alg::gelu);
+  if (argc > 9 && strcmp(argv[9], "exp")) postop_algs.push_back(postop_alg::exp);
 
-  std::unordered_map<std::string, std::string> op_attrs;
   if (append_sum) op_attrs["post_op"] = "append_sum";
   if (micro_oc >= 0) op_attrs["micro_oc"] = std::to_string(micro_oc);
   if (sub_func_level >= 0) {
@@ -298,27 +295,7 @@ bench_res_t run_bench_spmm_vnni(bench_mode mode, int argc, char** argv) {
       op_attrs["sub_func"] = std::to_string(sub_func_level);
     }
   }
-
-  std::pair<op_args_t, op_args_t> args =
-      gen_case_spmm_vnni(M, K, N, sparse_ratio, micro_bs, dt_dst, op_attrs, postop_lists);
-
-  try {
-    const auto& p = args.first;
-    const auto& op_desc = p.op_desc;
-    sparse_matmul_desc spmm_desc(op_desc);
-    sparse_matmul spmm_kern(spmm_desc);
-    res = benchmarkOrExecute(&spmm_kern, p.rt_data, mode);
-  } catch (const std::exception& e) {
-    std::cerr << "kernel exception occurred" << std::endl;
-    res.stat = bench_status::fail;
-    return res;
-  }
-
-  if (mode == bench_mode::acc) {
-    res.correct = check_result_spmm_vnni(args);
-  }
-
-  return res;
+  return {bench_status::success};
 }
 
 }  // namespace jd

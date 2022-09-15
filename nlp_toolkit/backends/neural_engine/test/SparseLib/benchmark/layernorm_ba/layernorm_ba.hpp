@@ -15,29 +15,56 @@
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_LAYERNORM_BA_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_LAYERNORM_BA_HPP_
 
-#include <vector>
-#include <string>
+#include <functional>
 #include <iostream>
-#include <sstream>
 #include <map>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 #include <utility>
-#include "interface.hpp"
-#include "benchmark_utils.hpp"
+#include <vector>
 
+#include "benchmark_utils.hpp"
+#include "common_utils.hpp"
+#include "interface.hpp"
 #define LAYERNORM_BA_ARG_NUM 2
 
 namespace jd {
 
-void get_true_data_layernorm_ba(const operator_desc& op_desc, const std::vector<const void*>& rf_data);
+class layernorm_ba_bench : public kernel_bench {
+ private:
+  int64_t M;
+  int64_t N;
+  data_type dt;
+  bool affine;
+  std::vector<postop_attr> postop_attrs;
+  std::unordered_map<std::string, std::string> op_attrs;
 
-bool check_result_layernorm_ba(const std::pair<op_args_t, op_args_t>& args);
+ public:
+  layernorm_ba_bench() {}
+  virtual ~layernorm_ba_bench() {}
 
-std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
-                                         std::unordered_map<std::string, std::string> op_attrs, bool affine = true,
-                                         const std::vector<postop_attr>& postop_attr = {});
-
-bench_res_t run_bench_layernorm_ba(bench_mode mode, int argc, char** argv);
+  bench_res_t set_config(int argc, char** argv) override;
+  double calc_flop() const override {
+    // flop taken into consideration
+    // compute mean: elem_num
+    // compute variance: 3 * elem_num
+    // compute final result: 2 * elem_num
+    return 6 * std::accumulate(ts_descs[0].shape().begin(), ts_descs[0].shape().end(), 1, std::multiplies<size_t>());
+  }
+  std::vector<int> get_refresh_data_idx() const override { return std::vector<int>{0}; }
+  // Just like that in gtest file
+  void get_true_data() override;
+  // Just like that in gtest file
+  bool check_result() override;
+  // Just like that in gtest file
+  void gen_case() override;
+  void set_kernel_proxy() override {
+    layernorm_ba_desc layernorm_ba_desc(args.first.op_desc);
+    kp = std::make_shared<layernorm_ba>(layernorm_ba_desc);
+  }
+};
 
 }  // namespace jd
 

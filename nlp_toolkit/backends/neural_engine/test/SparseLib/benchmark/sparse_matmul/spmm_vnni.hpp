@@ -16,41 +16,50 @@
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_SPMM_VNNI_HPP_
 
 #include <omp.h>
+
+#include <exception>
+#include <functional>
 #include <iostream>
-#include <vector>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <numeric>
-#include <exception>
 #include <utility>
-#include <functional>
-#include "interface.hpp"
-#include "benchmark_utils.hpp"
+#include <vector>
 
-#define SPMM_VNNI_ARG_NUM 9
+#include "benchmark_utils.hpp"
+#include "interface.hpp"
+#include "sparse_matmul/sparse_matmul.hpp"
+
+#define SPMM_VNNI_ARG_NUM 8
 
 namespace jd {
+class spmm_vnni_bench : public sparse_matmul_bench {
+ private:
+  int64_t M, K, N, micro_bs = -1;
+  float sparse_ratio;
+  jd::data_type dt_dst = jd::data_type::s8;
+  std::unordered_map<std::string, std::string> op_attrs = {};
+  std::vector<postop_alg> postop_algs = {};
 
-using dt = jd::data_type;
+ public:
+  spmm_vnni_bench() {}
+  virtual ~spmm_vnni_bench() {}
 
-void get_true_data_spmm_vnni(const operator_desc& op_desc, const std::vector<const void*>& rt_data);
-
-bool check_result_spmm_vnni(const std::pair<op_args_t, op_args_t>& args);
-
+  bench_res_t set_config(int argc, char** argv) override;
+  // Just like that in gtest file
+  void get_true_data() override;
+  // Just like that in gtest file
+  bool check_result() override;
+  // Just like that in gtest file
+  void gen_case() override;
+};
 template <typename T>
 void prepare_sparse_data_spmm_vnni(T* vector_data, std::vector<int64_t> a_shape, float sparse_ratio);
 
 std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<int64_t>& a_shape, const data_type& a_dt,
                                                             bool is_clear = false, float sparse_ratio = 0.7,
                                                             const std::vector<float>& ranges = {-10, 10});
-
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = -1,
-                                         jd::data_type dt_dst = dt::s8,
-                                         std::unordered_map<std::string, std::string> op_attrs = {},
-                                         std::vector<postop_alg> postop_algs = {});
-
-bench_res_t run_bench_spmm_vnni(bench_mode mode, int argc, char** argv);
 
 }  // namespace jd
 

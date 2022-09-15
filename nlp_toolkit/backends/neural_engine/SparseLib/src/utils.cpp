@@ -237,6 +237,11 @@ float get_dequantize(float x, float alpha, float scale) {
   return x;
 }
 
+float get_softmax(float x) {
+  auto tmp = get_exp(-1.f * x);
+  return 1 / (1 + tmp);
+}
+
 float get_linear(float x, float aplha, float beta) { return x * aplha + beta; }
 
 float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) {

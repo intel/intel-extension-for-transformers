@@ -13,57 +13,69 @@
 //  limitations under the License.
 
 #include "benchmark_utils.hpp"
-#include "sparse_matmul/bench_sparse_matmul.hpp"
-#include "eltwiseop/bench_eltwiseop.hpp"
-#include "layernorm_ba/bench_layernorm_ba.hpp"
+#include "sparse_matmul/sparse_matmul.hpp"
+#include "eltwiseop/eltwiseop.hpp"
+#include "layernorm_ba/layernorm_ba.hpp"
 
 int main(int argc, char** argv) {
-  jd::bench_mode mode = jd::bench_mode::acc;
-  jd::bench_res_t res;
+  jd::bench_mode mode;
+  std::shared_ptr<jd::kernel_bench> kb;
 
   if (argc < 5) {
-    std::cerr << "Not enough arguments passed" << std::endl;
+    LOG(ERROR) << "Not enough arguments passed";
     return 1;
   }
 
   --argc;
   ++argv;
-
+  // Get mode from command line input
   if (!strcmp(argv[0], "acc")) {
     mode = jd::bench_mode::acc;
   } else if (!strcmp(argv[0], "perf")) {
     mode = jd::bench_mode::perf;
   } else {
-    std::cerr << "unknown mode" << std::endl;
+    LOG(ERROR) << "unknown mode";
     return 1;
   }
 
   --argc;
   ++argv;
-
+  // Determine kernel kind
   if (!strcmp(argv[0], "sparse_matmul")) {
-    res = jd::test_sparse_matmul(mode, --argc, ++argv);
-  } else if (!strcmp(argv[0], "eltwiseop")) {
-    res = jd::test_eltwiseop(mode, --argc, ++argv);
+    kb = std::make_shared<jd::sparse_matmul_bench>();
   } else if (!strcmp(argv[0], "layernorm_ba")) {
-    res = jd::test_layernorm_ba(mode, --argc, ++argv);
+    kb = std::make_shared<jd::layernorm_ba_bench>();
+  } else if (!strcmp(argv[0], "eltwiseop")) {
+    kb = std::make_shared<jd::eltwiseop_bench>();
   } else {
-    std::cerr << "unknown kernel type" << std::endl;
+    LOG(ERROR) << "unknown kernel type";
     return 1;
   }
+  // Use command line input to set config parameters
 
-  if (res.stat != jd::bench_status::success) {
-    std::cerr << "benchmark failed" << std::endl;
+  jd::bench_res_t res = kb->set_config(--argc, ++argv);
+  // Run benchmark
+  jd::bench_op bench(kb);
+
+  try {
+    res = bench.run_bench(mode);
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "kernel exception occurred";
+    res.stat = jd::bench_status::fail;
+  }
+  // Print result
+  if (res.stat == jd::bench_status::fail) {
+    LOG(INFO) << "benchmark failed\n";
     return 1;
   }
   if (mode == jd::bench_mode::acc) {
     if (res.correct) {
-      printf("result correct\n");
+      LOG(INFO) << "result correct\n";
     } else {
-      printf("result incorrect\n");
+      LOG(INFO) << "result incorrect\n";
     }
   } else if (mode == jd::bench_mode::perf) {
-    printf("kernel execution time: %lfms,  GFLOPS:%lf\n", res.ms, res.gflops);
+    LOG(INFO) << "kernel execution time:" << res.ms << "ms,  GFLOPS:" << res.gflops;
   }
 
   return 0;
