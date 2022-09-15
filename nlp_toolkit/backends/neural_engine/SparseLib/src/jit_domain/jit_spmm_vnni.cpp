@@ -155,44 +155,66 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
       mov(reg_seq_indices, reinterpret_cast<uint64_t>(dense_load_offsets.data() + indptr_lo - indptr_kernel_start));
       break;
     case ssd::subfunc_level::load_and_prod:
+    case ssd::subfunc_level::k_dims:
       mov(reg_seq_indices, reinterpret_cast<uint64_t>(dense_load_offsets.data() + indptr_lo - indptr_kernel_start));
       mov(reg_wei, reinterpret_cast<uint64_t>(param_.weight + param_.blocksize[0] * param_.blocksize[1] * indptr_lo));
       break;
     default:
       break;
   }
+  switch (param_.sub_func) {
+    case ssd::subfunc_level::none:
+    case ssd::subfunc_level::prod:
+    case ssd::subfunc_level::dense_and_prod:
+    case ssd::subfunc_level::load_and_prod:
+      // kp (k-idx pointer is the idx of nnz blocks of the current row)
+      for (int64_t kp_lo = 0; kp_lo < nnz; kp_lo += spns::ADJ) {
+        const int64_t kp_hi = std::min(kp_lo + spns::ADJ, nnz);  // end of k-index pointer (noninclusive)
+        dim_t element_offset = param_.blocksize[0] * param_.blocksize[1] * indptr_lo + kp_lo * TH();
 
-  // kp (k-idx pointer is the idx of nnz blocks of the current row)
-  for (int64_t kp_lo = 0; kp_lo < nnz; kp_lo += spns::ADJ) {
-    const int64_t kp_hi = std::min(kp_lo + spns::ADJ, nnz);  // end of k-index pointer (noninclusive)
-    dim_t element_offset = param_.blocksize[0] * param_.blocksize[1] * indptr_lo + kp_lo * TH();
+        // Step 1: load dense (activation). Note that k_indices length is processed.00-00
+        // Step 2: load sparse (weight) and reorder data for that.
+        // Step 3: tile product. Note that k_indices length is processed.
+        // A tile product can calculate at least 1 row and 16 columns of DST.
+        // Min tile calculation: Tile width/height is 1, compute (1, ADJ) x (ADJ, 16) = (1, 16) matmul.
+        switch (param_.sub_func) {
+          case ssd::subfunc_level::none:
+            load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
+            load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
+            tile_product(TH(), TW());
+            break;
+          case ssd::subfunc_level::prod:
+            load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
+            load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
+            call(sfptr_tile_prod_);
+            break;
+          case ssd::subfunc_level::dense_and_prod:
+            load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
+            call(sfptr_dense_and_prod_);
+            break;
+          case ssd::subfunc_level::load_and_prod:
+            call(sfptr_load_and_prod_);
+            break;
+          default:
+            break;
+        }
+      }
+      break;
+    case ssd::subfunc_level::k_dims:
+      if (nnz > 0) {  // at least one iteration
+        xor_(reg_k_ptr, reg_k_ptr);
+        add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
 
-    // Step 1: load dense (activation). Note that k_indices length is processed.00-00
-    // Step 2: load sparse (weight) and reorder data for that.
-    // Step 3: tile product. Note that k_indices length is processed.
-    // A tile product can calculate at least 1 row and 16 columns of DST.
-    // Min tile calculation: Tile width/height is 1, compute (1, ADJ) x (ADJ, 16) = (1, 16) matmul.
-    switch (param_.sub_func) {
-      case ssd::subfunc_level::none:
-        load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
-        load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
-        tile_product(TH(), TW());
+        Xbyak::Label L_adj_k_loop;
+        L(L_adj_k_loop);
+        load_dense_sparse_prod();
+        add(reg_k_ptr, spns::ADJ);
+        cmp(reg_k_ptr, static_cast<int>(nnz));
+        jl(L_adj_k_loop);  // Loop-N2 end.
+
+        sub(reg_dense, reg_n_idx);  // reg_dense = reg_n_idx * BYTE1
         break;
-      case ssd::subfunc_level::prod:
-        load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
-        load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
-        call(sfptr_tile_prod_);
-        break;
-      case ssd::subfunc_level::dense_and_prod:
-        load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
-        call(sfptr_dense_and_prod_);
-        break;
-      case ssd::subfunc_level::load_and_prod:
-        call(sfptr_load_and_prod_);
-        break;
-      default:
-        break;
-    }
+      }
   }
 }
 
@@ -316,10 +338,13 @@ void jit_spmm_vnni_t::gen_subfunc_dense_and_prod() {
   ret();
 }
 
-void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
-  sfptr_load_and_prod_ = getCurr();
-  add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
-
+/**
+ * Required registers:
+ *  reg_dense - the start of the current row of dense matrix
+ *  reg_seq_indices - the start of offset for each TW, it will be updated after read
+ *  reg_wei - the start of weight matrix, it will be updated after read
+ */
+void jit_spmm_vnni_t::load_dense_sparse_prod() {
   constexpr size_t idx_size = sizeof(decltype(param_.indices)::value_type);
   mov(reg_addr_tmp[0], qword[reg_seq_indices + 0 * idx_size]);
   mov(reg_addr_tmp[1], qword[reg_seq_indices + 1 * idx_size]);
@@ -353,8 +378,16 @@ void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
       // tile prod
       vpdpbusd(dst_tile_Vmm(i, j), TW_Vmm(j), TH_Vmm(i));
     }
+    // update reg_wei in the middle
     if (j == TW() / 2) add(reg_wei, TH() * spns::ADJ * wei_size);
   }
+}
+
+void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
+  sfptr_load_and_prod_ = getCurr();
+  add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
+
+  load_dense_sparse_prod();
 
   sub(reg_dense, reg_n_idx);  // reg_dense = reg_n_idx * BYTE1
   ret();
@@ -368,6 +401,7 @@ void jit_spmm_vnni_t::generate() {
   gen_subfunc_dst_epilogue();
   switch (param_.sub_func) {
     case ssd::subfunc_level::none:
+    case ssd::subfunc_level::k_dims:
       break;
     case ssd::subfunc_level::prod:
       gen_subfunc_tile_prod();

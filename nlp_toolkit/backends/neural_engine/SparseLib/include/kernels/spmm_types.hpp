@@ -52,7 +52,8 @@ enum class subfunc_level : uint8_t {
   prod,            // use sub-function for tile product
   dense_and_prod,  // use fused sub-function for dense loading & tile product
   load_and_prod,   // use fused sub-function for dense loading & sparse loading & tile product
-  subfunc_level_MAX = load_and_prod
+  k_dims,         // a whole THxKxTW tile generates a constent size of code
+  subfunc_level_MAX = k_dims
 };
 
 /**

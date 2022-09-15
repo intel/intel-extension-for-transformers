@@ -75,6 +75,7 @@ class jit_spmm_vnni_t : public jit_generator {
   void store_intermediate_dst(dim_t m_start);
   void gen_subfunc_tile_prod();
   void gen_subfunc_dense_and_prod();
+  void load_dense_sparse_prod();
   void gen_subfunc_load_and_prod();
   void gen_subfunc_dst_epilogue();
   void handle_postop_escape_vmms();
@@ -118,6 +119,7 @@ class jit_spmm_vnni_t : public jit_generator {
   const Xbyak::Reg64& reg_scale = rbx;  // the scale
   const Xbyak::Opmask& reg_k1 = k1;
 
+  const Xbyak::Reg64& reg_k_ptr = param1;
   const Xbyak::Reg64& reg_tmp = r9;
   const Xbyak::Reg64& reg_dst_idx = r8;
   const Xbyak::Reg64& reg_m_idx = reg_tmp;

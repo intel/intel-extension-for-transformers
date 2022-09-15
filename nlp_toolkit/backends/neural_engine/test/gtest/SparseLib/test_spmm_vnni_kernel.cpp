@@ -397,6 +397,7 @@ static auto case_func = []() {
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "1"}})});
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "2"}})});
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "3"}})});
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "4"}})});
 
       // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::s8)});
