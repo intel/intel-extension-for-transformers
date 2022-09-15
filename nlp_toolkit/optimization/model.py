@@ -18,28 +18,24 @@
 import copy
 import os
 import transformers
-from transformers import AutoConfig
-from transformers.file_utils import cached_path, hf_bucket_url
+from .config import WEIGHTS_NAME
 from neural_compressor.utils import logger
 from nlp_toolkit.optimization.utils.utility import LazyImport
-from .config import WEIGHTS_NAME
+from packaging.version import Version
+from transformers import AutoConfig
+from transformers.file_utils import cached_path, hf_bucket_url
 
 torch = LazyImport("torch")
 
 
 class OptimizedModel:
-    def __init__(self, *args, **kwargs):   # pragma: no cover
+    def __init__(self, *args, **kwargs):  # pragma: no cover
         raise EnvironmentError(
             f"{self.__class__.__name__} is designed to be instantiated using the"
-            f"`{self.__class__.__name__}.from_pretrained(model_name_or_path)` method."
-        )
+            f"`{self.__class__.__name__}.from_pretrained(model_name_or_path)` method.")
 
     @classmethod
-    def from_pretrained(
-        cls,
-        model_name_or_path: str,
-        **kwargs
-    ):
+    def from_pretrained(cls, model_name_or_path: str, **kwargs):
         """
         Instantiate a quantized pytorch model from a given Intel Neural Compressor (INC) configuration file.
         Args:
@@ -62,6 +58,7 @@ class OptimizedModel:
             q_model: Quantized model.
         """
         from neural_compressor.utils.pytorch import load
+        from neural_compressor import __version__
         config = kwargs.pop("config", None)
         cache_dir = kwargs.pop("cache_dir", None)
         force_download = kwargs.pop("force_download", False)
@@ -95,25 +92,24 @@ class OptimizedModel:
         else:
             logger.info("the quantization optimized model is loading.")
             keys_to_ignore_on_load_unexpected = copy.deepcopy(
-                getattr(model_class, "_keys_to_ignore_on_load_unexpected", None)
-            )
+                getattr(model_class, "_keys_to_ignore_on_load_unexpected", None))
             keys_to_ignore_on_load_missing = \
                 copy.deepcopy(getattr(model_class, "_keys_to_ignore_on_load_missing", None))
 
             # Avoid unnecessary warnings resulting from quantized model initialization
-            quantized_keys_to_ignore_on_load = [r"zero_point", r"scale", 
-                                                r"packed_params", r"constant", 
-                                                r"module", r"best_configure"]
+            quantized_keys_to_ignore_on_load = [
+                r"zero_point", r"scale", r"packed_params", r"constant", r"module",
+                r"best_configure"
+            ]
             if keys_to_ignore_on_load_unexpected is None:
                 model_class._keys_to_ignore_on_load_unexpected = quantized_keys_to_ignore_on_load
             else:
                 model_class._keys_to_ignore_on_load_unexpected.extend(
-                    quantized_keys_to_ignore_on_load
-                )
+                    quantized_keys_to_ignore_on_load)
             missing_keys_to_ignore_on_load = [r"weight", r"bias"]
             if keys_to_ignore_on_load_missing is None:
                 model_class._keys_to_ignore_on_load_missing = missing_keys_to_ignore_on_load
-            else:   # pragma: no cover
+            else:  # pragma: no cover
                 model_class._keys_to_ignore_on_load_missing.extend(missing_keys_to_ignore_on_load)
 
             model = model_class.from_pretrained(
@@ -124,15 +120,16 @@ class OptimizedModel:
                 use_auth_token=use_auth_token,
                 revision=revision,
                 **kwargs,
-                )
+            )
 
             model_class._keys_to_ignore_on_load_unexpected = keys_to_ignore_on_load_unexpected
             model_class._keys_to_ignore_on_load_missing = keys_to_ignore_on_load_missing
+            dataloader = kwargs.get("dataloader", None)
 
             if not os.path.isdir(model_name_or_path) and not os.path.isfile(model_name_or_path):
                 weights_file = hf_bucket_url(model_name_or_path,
-                                            filename=WEIGHTS_NAME,
-                                            revision=revision)
+                                             filename=WEIGHTS_NAME,
+                                             revision=revision)
                 try:
                     # Load from URL or cache if already cached
                     resolved_weights_file = cached_path(
@@ -142,31 +139,34 @@ class OptimizedModel:
                         resume_download=resume_download,
                         use_auth_token=use_auth_token,
                     )
-                except EnvironmentError as err:   # pragma: no cover
+                except EnvironmentError as err:  # pragma: no cover
                     logger.error(err)
-                    msg = (
-                        f"Can't load weights for '{model_name_or_path}'. Make sure that:\n\n"
-                        f"- '{model_name_or_path}' is a correct model identifier "
-                        f"listed on 'https://huggingface.co/models'\n  (make sure "
-                        f"'{model_name_or_path}' is not a path to a local directory with "
-                        f"something else, in that case)\n\n- or '{model_name_or_path}' is "
-                        f"the correct path to a directory containing a file "
-                        f"named one of {WEIGHTS_NAME}\n\n"
-                    )
+                    msg = (f"Can't load weights for '{model_name_or_path}'. Make sure that:\n\n"
+                           f"- '{model_name_or_path}' is a correct model identifier "
+                           f"listed on 'https://huggingface.co/models'\n  (make sure "
+                           f"'{model_name_or_path}' is not a path to a local directory with "
+                           f"something else, in that case)\n\n- or '{model_name_or_path}' is "
+                           f"the correct path to a directory containing a file "
+                           f"named one of {WEIGHTS_NAME}\n\n")
 
                     if revision is not None:
                         msg += (f"- or '{revision}' is a valid git identifier "
                                 f"(branch name, a tag name, or a commit id) that "
                                 f"exists for this model name as listed on its model "
-                                f"page on 'https://huggingface.co/models'\n\n"
-                            )
+                                f"page on 'https://huggingface.co/models'\n\n")
 
                     raise EnvironmentError(msg)
-                q_model = load(resolved_weights_file, model)
+                q_model = load(
+                    resolved_weights_file, model,
+                    dataloader=dataloader) if Version(__version__) > Version("1.13") else load(
+                        resolved_weights_file, model)
             else:
-                weights_file = os.path.join(os.path.abspath(
-                    os.path.expanduser(model_name_or_path)), WEIGHTS_NAME)
-                q_model = load(weights_file, model)
+                weights_file = os.path.join(
+                    os.path.abspath(os.path.expanduser(model_name_or_path)), WEIGHTS_NAME)
+                q_model = load(
+                    weights_file, model,
+                    dataloader=dataloader) if Version(__version__) > Version("1.13") else load(
+                        weights_file, model)
 
             del model
             return q_model

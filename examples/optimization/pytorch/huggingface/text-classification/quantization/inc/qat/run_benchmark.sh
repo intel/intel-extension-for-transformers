@@ -67,18 +67,6 @@ function run_benchmark {
     if [ "${topology}" = "bert_base_mrpc" ]; then
         TASK_NAME="mrpc"
         model_name_or_path="bert-base-uncased"
-        model_type="bert"
-        approach="QuantizationAwareTraining"
-        extra_cmd=$extra_cmd" --learning_rate 1e-5 \
-                   --num_train_epochs 6 \
-                   --eval_steps 100 \
-                   --save_steps 100 \
-                   --greater_is_better True \
-                   --load_best_model_at_end True \
-                   --evaluation_strategy steps \
-                   --save_strategy steps \
-                   --metric_for_best_model accuracy \
-                   --save_total_limit 1"
     fi
 
     if [[ ${int8} == "true" ]]; then

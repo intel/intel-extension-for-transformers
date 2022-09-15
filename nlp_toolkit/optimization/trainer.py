@@ -75,7 +75,7 @@ from transformers.trainer_utils import (
 from typing import Any, Callable, Dict, List, Optional, Union
 
 amp = LazyImport('apex.amp')
-datasets =  LazyImport('datasets')
+datasets = LazyImport('datasets')
 optuna = LazyImport('optuna')
 onnx = LazyImport('onnx')
 ort = LazyImport('onnxruntime')
@@ -162,7 +162,7 @@ class BaseTrainer():
                     "Please set metric from {}".format(results.keys())
             if nums == 1:
                 result = results.get(self.metrics[0].name)
-            else:   # pragma: no cover 
+            else:  # pragma: no cover
                 result = 0
                 for metric in self.metrics:
                     assert metric.weight_ratio is not None, \
@@ -174,7 +174,7 @@ class BaseTrainer():
                     "Please set metric from {}".format(results.keys())
             result = results.get(self.metrics.name)
             logger.info("metric: {}".format(result))
-        else:   # pragma: no cover 
+        else:  # pragma: no cover
             assert False, "Please set the correct metrics format from the README"
         logger.info("Throughput: {} samples/sec".format(results.get("eval_samples_per_second")))
         return result
@@ -183,7 +183,8 @@ class BaseTrainer():
     def builtin_train_func(self, model):
         self.model_wrapped = model
         self.model = model
-        train_result = self.train(component=self.component, resume_from_checkpoint=self._resuming_checkpoint)
+        train_result = self.train(component=self.component,
+                                  resume_from_checkpoint=self._resuming_checkpoint)
         metrics = train_result.metrics
         if not self.orchestrate_opt:
             self.save_model()  # Saves the tokenizer too for easy upload
@@ -219,7 +220,7 @@ class BaseTrainer():
         return quantizer
 
     # pylint: disable=E0401
-    def _nncf_quantize(self):   # pragma: no cover
+    def _nncf_quantize(self):  # pragma: no cover
         from nlp_toolkit import NncfConfig
         from nncf import create_compressed_model
         compression_state = None
@@ -235,9 +236,7 @@ class BaseTrainer():
             compression_state = None
 
         compression_algo_controller, model = create_compressed_model(
-            self.model, self.quant_config.nncf_config,
-            compression_state=compression_state
-        )
+            self.model, self.quant_config.nncf_config, compression_state=compression_state)
 
         self.compression_ctrl = \
             compression_algo_controller.distributed() \
@@ -253,22 +252,22 @@ class BaseTrainer():
         try:
             # we do deepcopy to keep the fp32 model for the export_to_int8_onnx API.
             self.fp32_model = copy.deepcopy(self.model)
-        except Exception as e:   # pragma: no cover
+        except Exception as e:  # pragma: no cover
             logger.warning("Model deepcopy failed: {}!".format(repr(e)))
         if self.quantizer is None:
             self.init_quantizer(quant_config=quant_config, provider=provider)
         if self._eval_func is not None:
             self.quantizer.eval_func = self._eval_func
-        else:   # pragma: no cover 
+        else:  # pragma: no cover
             assert self.metrics is not None, \
                 "Please pass the metrics to QuantizationConfig.metrics!"
             self.quantizer.eval_func = self.builtin_eval_func
 
-        if self.quant_config.approach == QuantizationMode.POSTTRAININGSTATIC.value:
+        if self.quant_config.approach != QuantizationMode.POSTTRAININGDYNAMIC.value:
             # pylint: disable=E1101
             self.quantizer.calib_dataloader = self.get_train_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
-        elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
+        if self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             self.quantizer.q_func = \
                 self.builtin_train_func if self._train_func is None else self._train_func
         self.component = self.quantizer
@@ -277,9 +276,8 @@ class BaseTrainer():
         # pylint: disable=E1101
         self._save_inc_int8(self.opt_model, self.args.output_dir)
         # pylint: disable=E1101
-        logger.info(
-            "quantized model and configure file have saved to {}".format(self.args.output_dir)
-        )
+        logger.info("quantized model and configure file have saved to {}".format(
+            self.args.output_dir))
         return self.opt_model
 
     def quantize(
@@ -298,7 +296,7 @@ class BaseTrainer():
         if self.quantizer is None:
             self._provider = Provider[provider.upper()].value
 
-        if self._provider == Provider.NNCF.value:   # pragma: no cover
+        if self._provider == Provider.NNCF.value:  # pragma: no cover
             return self._nncf_quantize()
         elif self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
@@ -312,16 +310,13 @@ class BaseTrainer():
         self.model.config.architectures = [self.model.__class__.__name__]
         self.model.config.torch_dtype = "int8"
         self.model.config.save_pretrained(output_dir)
-        weights_file = os.path.join(os.path.abspath(
-          os.path.expanduser(output_dir)), WEIGHTS_NAME)
+        weights_file = os.path.join(os.path.abspath(os.path.expanduser(output_dir)), WEIGHTS_NAME)
         torch.save(opt_model.quantized_state_dict(), weights_file)
-        logger.info(
-            "quantized model and configure file have saved to {}".format(weights_file)
-        )
+        logger.info("quantized model and configure file have saved to {}".format(weights_file))
 
     def init_pruner(
         self,
-        pruning_config = None,
+        pruning_config=None,
         provider: str = Provider.INC.value,
     ):
         from neural_compressor.experimental import Pruning, common
@@ -336,19 +331,16 @@ class BaseTrainer():
 
         # pylint: disable=E1101
         if pruning_start_epoch > self.args.num_train_epochs - 1:
-            logger.warning(
-                f"Pruning end epoch {pruning_start_epoch} is higher than "
-                f"the total number of training epoch "
-                f"{self.args.num_train_epochs}. No pruning will be applied."
-            )
+            logger.warning(f"Pruning end epoch {pruning_start_epoch} is higher than "
+                           f"the total number of training epoch "
+                           f"{self.args.num_train_epochs}. No pruning will be applied.")
 
         # pylint: disable=E1101
         if pruning_end_epoch > self.args.num_train_epochs - 1:
             logger.warning(
                 f"Pruning end epoch {pruning_end_epoch} is higher than "
                 f"the total number of training epoch "
-                f"{self.args.num_train_epochs}. The target sparsity will not be reached."
-            )
+                f"{self.args.num_train_epochs}. The target sparsity will not be reached.")
 
         pruner = Pruning(self.pruning_config.inc_config)
         pruner.model = common.Model(self.model)
@@ -358,7 +350,7 @@ class BaseTrainer():
 
     def prune(
         self,
-        pruning_config = None,
+        pruning_config=None,
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
@@ -420,11 +412,9 @@ class BaseTrainer():
         train_func: Optional[Callable] = None,
     ):
         if self.distiller is None:
-            self.init_distiller(
-                distillation_config=distillation_config,
-                teacher_model=teacher_model,
-                provider=provider
-            )
+            self.init_distiller(distillation_config=distillation_config,
+                                teacher_model=teacher_model,
+                                provider=provider)
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:
@@ -463,9 +453,8 @@ class BaseTrainer():
         self.opt_model = self.orchestrate_optimizer.fit()
         self._save_inc_int8(self.opt_model, self.args.output_dir)
 
-        logger.info(
-            "orchestrate_optimizations model and configure file have saved to {}".format(self.args.output_dir)
-        )
+        logger.info("orchestrate_optimizations model and configure file have saved to {}".format(
+            self.args.output_dir))
         return self.opt_model
 
     def create_optimizer_builtin(self, config_list, teacher_model=None):
@@ -487,7 +476,7 @@ class BaseTrainer():
                 component.eval_func = self._eval_func
                 component.train_func = self._train_func
                 component.create_criterion()
-            else:   # pragma: no cover 
+            else:  # pragma: no cover
                 assert False, "Orchestrate_optimizations config_list requires at least one" \
                     "       `QuantizationConfig`, `PruningConfig` or `DistillationConfig` object"
             components.append(component)
@@ -500,7 +489,7 @@ class BaseTrainer():
         trial: Union["optuna.Trial", Dict[str, Any]] = None,
         ignore_keys_for_eval: Optional[List[str]] = None,
         **kwargs,
-    ):   # pragma: no cover
+    ):  # pragma: no cover
         """
         Main training entry point.
 
@@ -546,7 +535,9 @@ class BaseTrainer():
                 FutureWarning,
             )
         if len(kwargs) > 0:
-            raise TypeError(f"train() received got unexpected keyword arguments: {', '.join(list(kwargs.keys()))}.")
+            raise TypeError(
+                f"train() received got unexpected keyword arguments: {', '.join(list(kwargs.keys()))}."
+            )
         # This might change the seed so needs to run first.
         self._hp_search_setup(trial)
 
@@ -564,7 +555,8 @@ class BaseTrainer():
         if isinstance(resume_from_checkpoint, bool) and resume_from_checkpoint:
             resume_from_checkpoint = get_last_checkpoint(args.output_dir)
             if resume_from_checkpoint is None:
-                raise ValueError(f"No valid checkpoint found in output directory ({args.output_dir})")
+                raise ValueError(
+                    f"No valid checkpoint found in output directory ({args.output_dir})")
 
         if resume_from_checkpoint is not None:
             if version.parse(__version__) < version.parse("4.19"):
@@ -574,7 +566,8 @@ class BaseTrainer():
                 logger.info(f"Loading model from {resume_from_checkpoint}).")
 
                 if os.path.isfile(os.path.join(resume_from_checkpoint, CONFIG_NAME)):
-                    config = PretrainedConfig.from_json_file(os.path.join(resume_from_checkpoint, CONFIG_NAME))
+                    config = PretrainedConfig.from_json_file(
+                        os.path.join(resume_from_checkpoint, CONFIG_NAME))
                     checkpoint_version = config.transformers_version
                     if checkpoint_version is not None and checkpoint_version != __version__:
                         logger.warn(
@@ -584,7 +577,8 @@ class BaseTrainer():
                         )
 
                 # We load the model state dict on the CPU to avoid an OOM error.
-                state_dict = torch.load(os.path.join(resume_from_checkpoint, WEIGHTS_NAME), map_location="cpu")
+                state_dict = torch.load(os.path.join(resume_from_checkpoint, WEIGHTS_NAME),
+                                        map_location="cpu")
                 # If the model is on the GPU, it still works!
                 self._load_state_dict_in_model(state_dict)
 
@@ -617,8 +611,7 @@ class BaseTrainer():
             if args.max_steps > 0:
                 max_steps = args.max_steps
                 num_train_epochs = args.max_steps // num_update_steps_per_epoch + int(
-                    args.max_steps % num_update_steps_per_epoch > 0
-                )
+                    args.max_steps % num_update_steps_per_epoch > 0)
                 # May be slightly incorrect if the last batch in the training datalaoder has a smaller size but it's
                 # the best we can do.
                 num_train_samples = args.max_steps * total_train_batch_size
@@ -639,10 +632,8 @@ class BaseTrainer():
             if self.args.n_gpu > 1:
                 # nn.DataParallel(model) replicates the model, creating new variables and module
                 # references registered here no longer work on other gpus, breaking the module
-                raise ValueError(
-                    "Currently --debug underflow_overflow is not supported under DP. "
-                    "Please use DDP (torch.distributed.launch)."
-                )
+                raise ValueError("Currently --debug underflow_overflow is not supported under DP. "
+                                 "Please use DDP (torch.distributed.launch).")
             else:
                 debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
 
@@ -675,15 +666,16 @@ class BaseTrainer():
         # self.model_wrapped is DDP(Transformers Model), Deepspeed(Transformers Model), etc.
 
         # Train!
-        num_examples = (
-            self.num_examples(train_dataloader) if train_dataset_is_sized else total_train_batch_size * args.max_steps
-        )
+        num_examples = (self.num_examples(train_dataloader)
+                        if train_dataset_is_sized else total_train_batch_size * args.max_steps)
 
         logger.info("***** Running training *****")
         logger.info(f"  Num examples = {num_examples}")
         logger.info(f"  Num Epochs = {num_train_epochs}")
         logger.info(f"  Instantaneous batch size per device = {args.per_device_train_batch_size}")
-        logger.info(f"  Total train batch size (w. parallel, distributed & accumulation) = {total_train_batch_size}")
+        logger.info(
+            f"  Total train batch size (w. parallel, distributed & accumulation) = {total_train_batch_size}"
+        )
         logger.info(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
         logger.info(f"  Total optimization steps = {max_steps}")
 
@@ -695,12 +687,13 @@ class BaseTrainer():
 
         # Check if continuing training from a checkpoint
         if resume_from_checkpoint is not None and os.path.isfile(
-            os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME)
-        ):
-            self.state = TrainerState.load_from_json(os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME))
+                os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME)):
+            self.state = TrainerState.load_from_json(
+                os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME))
             epochs_trained = self.state.global_step // num_update_steps_per_epoch
             if not args.ignore_data_skip:
-                steps_trained_in_current_epoch = self.state.global_step % (num_update_steps_per_epoch)
+                steps_trained_in_current_epoch = self.state.global_step % (
+                    num_update_steps_per_epoch)
                 steps_trained_in_current_epoch *= args.gradient_accumulation_steps
             else:
                 steps_trained_in_current_epoch = 0
@@ -752,7 +745,8 @@ class BaseTrainer():
                     break
         if isinstance(component, Component):
             if hasattr(self.component, "teacher_model"):
-                self.component.teacher_model._model = self._wrap_model(self.component.teacher_model.model)
+                self.component.teacher_model._model = self._wrap_model(
+                    self.component.teacher_model.model)
             component.pre_epoch_begin()
             if component.combination is not None and "Quantization" in component.combination:
                 model = component.model.model
@@ -772,9 +766,8 @@ class BaseTrainer():
             if args.past_index >= 0:
                 self._past = None
 
-            steps_in_epoch = (
-                len(epoch_iterator) if train_dataset_is_sized else args.max_steps * args.gradient_accumulation_steps
-            )
+            steps_in_epoch = (len(epoch_iterator) if train_dataset_is_sized else args.max_steps *
+                              args.gradient_accumulation_steps)
             self.control = self.callback_handler.on_epoch_begin(args, self.state, self.control)
             if isinstance(component, Component):
                 component.on_epoch_begin(epoch)
@@ -795,34 +788,33 @@ class BaseTrainer():
                     steps_trained_progress_bar = None
 
                 if step % args.gradient_accumulation_steps == 0:
-                    self.control = self.callback_handler.on_step_begin(args, self.state, self.control)
+                    self.control = self.callback_handler.on_step_begin(
+                        args, self.state, self.control)
                     if isinstance(component, Component):
                         component.on_batch_begin(step)
 
-                if (
-                    ((step + 1) % args.gradient_accumulation_steps != 0)
-                    and args.local_rank != -1
-                    and args._no_sync_in_gradient_accumulation
-                ):
+                if (((step + 1) % args.gradient_accumulation_steps != 0) and args.local_rank != -1
+                        and args._no_sync_in_gradient_accumulation):
                     # Avoid unnecessary DDP synchronization since there will be no backward pass on this example.
                     with model.no_sync():
                         tr_loss_step = self.training_step(model, inputs)
                 else:
                     tr_loss_step = self.training_step(model, inputs)
 
-                if args.logging_nan_inf_filter and (torch.isnan(tr_loss_step) or torch.isinf(tr_loss_step)):
+                if args.logging_nan_inf_filter and (torch.isnan(tr_loss_step)
+                                                    or torch.isinf(tr_loss_step)):
                     # if loss is nan or inf simply add the average of previous logged losses
-                    tr_loss += tr_loss / (1 + self.state.global_step - self._globalstep_last_logged)
+                    tr_loss += tr_loss / (1 + self.state.global_step -
+                                          self._globalstep_last_logged)
                 else:
                     tr_loss += tr_loss_step
 
                 self.current_flos += float(self.floating_point_ops(inputs))
 
                 if (step + 1) % args.gradient_accumulation_steps == 0 or (
-                    # last step in epoch but step is always smaller than gradient_accumulation_steps
-                    steps_in_epoch <= args.gradient_accumulation_steps
-                    and (step + 1) == steps_in_epoch
-                ):
+                        # last step in epoch but step is always smaller than gradient_accumulation_steps
+                        steps_in_epoch <= args.gradient_accumulation_steps and
+                    (step + 1) == steps_in_epoch):
                     if isinstance(component, Component):
                         component.on_post_grad()
 
@@ -855,12 +847,15 @@ class BaseTrainer():
                     self.state.global_step += 1
                     self.state.epoch = epoch + (step + 1) / steps_in_epoch
                     self.state.curr_loss = tr_loss_step.cpu().detach().item()
-                    self.control = self.callback_handler.on_step_end(args, self.state, self.control)
+                    self.control = self.callback_handler.on_step_end(args, self.state,
+                                                                     self.control)
                     if isinstance(component, Component):
                         component.on_batch_end()
-                    self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+                    self._maybe_log_save_evaluate(tr_loss, model, trial, epoch,
+                                                  ignore_keys_for_eval)
                 else:
-                    self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
+                    self.control = self.callback_handler.on_substep_end(
+                        args, self.state, self.control)
 
                 if self.control.should_epoch_stop or self.control.should_training_stop:
                     break
@@ -868,9 +863,9 @@ class BaseTrainer():
             self.in_training = False
             self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
             if isinstance(component, Component):
-                # When Distillation is involved, model will be evaluated in "on_epoch_end" hook, while in SQuAD 
+                # When Distillation is involved, model will be evaluated in "on_epoch_end" hook, while in SQuAD
                 # evaluation, "start_positions" and "end_positions" will be removed from inputs of the fx model,
-                # this will damage the training afterward, so use the copied model for evaluation, 
+                # this will damage the training afterward, so use the copied model for evaluation,
                 # and then restore the model.
                 component.model.model = copy.deepcopy(model)
                 component.on_epoch_end()
@@ -883,8 +878,7 @@ class BaseTrainer():
             if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
                 logger.warning(
                     "You enabled PyTorch/XLA debug metrics but you don't have a TPU "
-                    "configured. Check your training configuration if this is unexpected."
-                )
+                    "configured. Check your training configuration if this is unexpected.")
 
             if self.control.should_training_stop:
                 break
@@ -898,7 +892,9 @@ class BaseTrainer():
             # Clean the state at the end of training
             delattr(self, "_past")
 
-        logger.info("\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n")
+        logger.info(
+            "\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n"
+        )
         if args.load_best_model_at_end and self.state.best_model_checkpoint is not None:
             # Wait for everyone to get here so we are sur the model has been saved by process 0.
             if args.local_rank != -1:
@@ -916,11 +912,9 @@ class BaseTrainer():
                     # If the model is on the GPU, it still works!
                     self._load_state_dict_in_model(state_dict)
                 else:
-                    logger.warn(
-                        f"Could not locate the best model at {best_model_path}, "
-                        "if you are running a distributed training on multiple nodes, "
-                        "you should activate `--save_on_each_node`."
-                    )
+                    logger.warn(f"Could not locate the best model at {best_model_path}, "
+                                "if you are running a distributed training on multiple nodes, "
+                                "you should activate `--save_on_each_node`.")
             else:
                 self._load_best_model()
 
@@ -928,7 +922,10 @@ class BaseTrainer():
         self._total_loss_scalar += tr_loss.item()
         train_loss = self._total_loss_scalar / self.state.global_step
 
-        metrics = speed_metrics("train", start_time, num_samples=num_train_samples, num_steps=self.state.max_steps)
+        metrics = speed_metrics("train",
+                                start_time,
+                                num_samples=num_train_samples,
+                                num_steps=self.state.max_steps)
         self.store_flos()
         metrics["total_flos"] = self.state.total_flos
         metrics["train_loss"] = train_loss
@@ -944,7 +941,8 @@ class BaseTrainer():
         return TrainOutput(self.state.global_step, train_loss, metrics)
 
     # pylint: disable=E1101
-    def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval):   # pragma: no cover
+    def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch,
+                                 ignore_keys_for_eval):  # pragma: no cover
         if self.control.should_log:
             if is_torch_tpu_available():
                 xm.mark_step()
@@ -957,7 +955,8 @@ class BaseTrainer():
             # reset tr_loss to zero
             tr_loss -= tr_loss
 
-            logs["loss"] = round(tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged), 4)
+            logs["loss"] = round(
+                tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged), 4)
             logs["learning_rate"] = self._get_learning_rate()
 
             # pylint: disable=E0401
@@ -986,10 +985,8 @@ class BaseTrainer():
 
     # pylint: disable=E1101
     def training_step(
-        self,
-        model: torch.nn.Module,
-        inputs: Dict[str, Union[torch.Tensor, Any]]
-    ) -> torch.Tensor:  # pragma: no cover
+            self, model: torch.nn.Module,
+            inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:  # pragma: no cover
         """
         Perform a training step on a batch of inputs.
         Subclass and override to inject custom behavior.
@@ -1010,9 +1007,13 @@ class BaseTrainer():
             # pylint: disable=E0401
             if version.parse(__version__) < version.parse("4.20"):
                 scaler = self.scaler if self.use_amp else None
-                loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps, scaler=scaler)
+                loss_mb = smp_forward_backward(model,
+                                               inputs,
+                                               self.args.gradient_accumulation_steps,
+                                               scaler=scaler)
             else:
-                loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps)
+                loss_mb = smp_forward_backward(model, inputs,
+                                               self.args.gradient_accumulation_steps)
             return loss_mb.reduce_mean().detach().to(self.args.device)
 
         # pylint: disable=E0401
@@ -1066,23 +1067,25 @@ class BaseTrainer():
         return loss.detach()
 
     # pylint: disable=E1101
-    def compute_loss(self, model, inputs, return_outputs=False):   # pragma: no cover
+    def compute_loss(self, model, inputs, return_outputs=False):  # pragma: no cover
         """
         How the loss is computed by Trainer. By default, all models return the loss in the first element.
 
         Subclass and override for custom behavior.
         """
-        if self.label_smoother is not None and "labels" in inputs:
-            labels = inputs.pop("labels")
-        else:
-            labels = None
+        labels = inputs.pop("labels") \
+            if self.label_smoother is not None and "labels" in inputs else None
+
+        teacher_logits = inputs.pop("teacher_logits") if "teacher_logits" in inputs else None
 
         outputs = model(**inputs)
         if self.in_training and hasattr(self, "component") and \
            hasattr(self.component, "criterion"):
-            qa_output_merger = lambda outputs : torch.vstack([torch.vstack([sl, el]) for sl, el in \
-                                                zip(outputs["start_logits"], outputs["end_logits"])])
-            qa_output_spliter = lambda outputs : (outputs[0::2], outputs[1::2])
+            qa_output_merger = lambda outputs: torch.vstack([
+                torch.vstack([sl, el])
+                for sl, el in zip(outputs["start_logits"], outputs["end_logits"])
+            ])
+            qa_output_spliter = lambda outputs: (outputs[0::2], outputs[1::2])
 
             def get_logits(outputs):
                 if isinstance(outputs, dict):
@@ -1100,27 +1103,25 @@ class BaseTrainer():
                     logits = outputs[1]
                 return logits
 
-            if "teacher_logits" in inputs:
-                teacher_logits = inputs.pop("teacher_logits")
-                if "start_positions" in inputs and "end_positions" in inputs: # for SQuAD
+            if teacher_logits is not None:
+                if "start_positions" in inputs and "end_positions" in inputs:  # for SQuAD
                     teacher_logits = torch.vstack(list(teacher_logits))
             else:
                 teacher_outputs = self.component.criterion.teacher_model_forward(inputs)
-                teacher_logits = get_logits(
-                    self.component.criterion.teacher_outputs if teacher_outputs is None
-                    else teacher_outputs
-                )
+                teacher_logits = get_logits(self.component.criterion.teacher_outputs
+                                            if teacher_outputs is None else teacher_outputs)
 
             logits = get_logits(outputs)
             if version.parse(nc_version) <= version.parse("1.12"):
                 if labels is None:
-                    if "labels" in inputs: # for GLUE
+                    if "labels" in inputs:  # for GLUE
                         labels = inputs["labels"]
-                    elif "start_positions" in inputs and "end_positions" in inputs: # for SQuAD
+                    elif "start_positions" in inputs and "end_positions" in inputs:  # for SQuAD
                         labels = torch.hstack([torch.tensor([sp, ep]) for sp, ep in \
                                 zip(inputs["start_positions"], inputs["end_positions"])])
                     else:
-                        raise AssertionError("Labels of input data not provided, can't compute loss")
+                        raise AssertionError(
+                            "Labels of input data not provided, can't compute loss")
                 if hasattr(self.component, "on_post_forward"):
                     self.component.on_post_forward(inputs, teacher_output=teacher_logits)
                     if hasattr(self.component.criterion, "teacher_outputs"):
@@ -1142,9 +1143,9 @@ class BaseTrainer():
                 loss = self.component.on_after_compute_loss(inputs, logits, loss, teacher_logits)
             if "start_positions" in inputs and "end_positions" in inputs:
                 start_logits, end_logits = qa_output_spliter(logits)
-                outputs = {"start_logits":start_logits, "end_logits":end_logits, "loss":loss}
+                outputs = {"start_logits": start_logits, "end_logits": end_logits, "loss": loss}
             else:
-                outputs = {"logits":logits, "loss":loss}
+                outputs = {"logits": logits, "loss": loss}
         else:
             # Save past state if it exists
             # TODO: this needs to be fixed and made cleaner later.
@@ -1159,10 +1160,9 @@ class BaseTrainer():
 
         return (loss, outputs) if return_outputs else loss
 
-    def _remove_unused_columns(self, 
-                               dataset: "datasets.Dataset", 
-                               description: Optional[str] = None
-                               ):   # pragma: no cover
+    def _remove_unused_columns(self,
+                               dataset: "datasets.Dataset",
+                               description: Optional[str] = None):  # pragma: no cover
         # pylint: disable=E1101
         if not self.args.remove_unused_columns:
             return dataset
@@ -1185,9 +1185,9 @@ class BaseTrainer():
             )
 
         if version.parse(datasets.__version__) < version.parse("1.4.0"):
-            dataset.set_format(
-                type=dataset.format["type"], columns=columns, format_kwargs=dataset.format["format_kwargs"]
-            )
+            dataset.set_format(type=dataset.format["type"],
+                               columns=columns,
+                               format_kwargs=dataset.format["format_kwargs"])
             return dataset
         else:
             return dataset.remove_columns(ignored_columns)
@@ -1215,8 +1215,12 @@ class BaseTrainer():
         # pylint: disable=E1101
         self.args.lr_scheduler_type = 'constant'
 
-        def take_train_steps(model, trainer, agent=None, train_steps=None,
-                             block_name=None, checkpoint=None):
+        def take_train_steps(model,
+                             trainer,
+                             agent=None,
+                             train_steps=None,
+                             block_name=None,
+                             checkpoint=None):
             trainer.model_wrapped = model
             trainer.model = model
             if train_steps is not None and isinstance(train_steps, int):
@@ -1244,16 +1248,20 @@ class BaseTrainer():
             metric_names = ['eval_loss', 'latency'] if metric_names is None else metric_names
             for metric_name in metric_names:
                 logger.info("{}: {}".format(metric_name, metrics.get(metric_name)))
-            logger.info(
-                "Throughput: {} samples/sec".format(metrics.get("eval_samples_per_second"))
-                )
+            logger.info("Throughput: {} samples/sec".format(
+                metrics.get("eval_samples_per_second")))
             return {metric_name: metrics.get(metric_name) for metric_name in metric_names}
 
         def train_func_builtin(model):
             from torch.utils.data import Subset
-            def run_distillers(model, distillers, train_steps, block_names,
-                               checkpoints=None, presentation='flash distillation'):
-                max_train_steps=0
+
+            def run_distillers(model,
+                               distillers,
+                               train_steps,
+                               block_names,
+                               checkpoints=None,
+                               presentation='flash distillation'):
+                max_train_steps = 0
                 begin_time = time.time()
                 if checkpoints is None:
                     checkpoints = [None] * len(distillers)
@@ -1261,18 +1269,18 @@ class BaseTrainer():
                     enumerate(zip(distillers, train_steps, block_names, checkpoints)):
                     start_time = time.time()
                     distiller, ts, bln, checkpoint = elements
-                    logger.info(
-                        ' '.join(['='*30, 'Step {} of'.format(i+1), presentation, '='*30]))
+                    logger.info(' '.join(
+                        ['=' * 30, 'Step {} of'.format(i + 1), presentation, '=' * 30]))
                     distiller.student_model = model
                     distiller.teacher_model = teacher_model
-                    distiller.criterion = None # force creating new criterion object
+                    distiller.criterion = None  # force creating new criterion object
                     distiller.create_criterion()
                     if checkpoint is None:
                         max_train_steps = 0
                     max_train_steps += ts
                     distiller.train_func = \
-                        partial(take_train_steps, trainer=self, agent=distiller, 
-                                train_steps=max_train_steps, block_name=bln, 
+                        partial(take_train_steps, trainer=self, agent=distiller,
+                                train_steps=max_train_steps, block_name=bln,
                                 checkpoint=checkpoint)
                     # distiller.eval_func = \
                     #     partial(take_eval_steps, trainer=self, metric_name='eval_loss')
@@ -1281,16 +1289,16 @@ class BaseTrainer():
                     np.random.shuffle(indices)
                     self.train_dataset = Subset(self.train_dataset, indices)
                     model = distiller().model
-                    logger.info(
-                        ' '.join(['='*30, 'Step {} of'.format(i+1), presentation,
-                            'consumed {:.2f} min'.format((time.time()-start_time) / 60), '='*30])
-                        )
-                logger.info(
-                    ' '.join(['='*30, presentation,
-                        'consumed {:.2f} h'.format((time.time()-begin_time) / 3600), '='*30])
-                    )
+                    logger.info(' '.join([
+                        '=' * 30, 'Step {} of'.format(i + 1), presentation,
+                        'consumed {:.2f} min'.format((time.time() - start_time) / 60), '=' * 30
+                    ]))
+                logger.info(' '.join([
+                    '=' * 30, presentation, 'consumed {:.2f} h'.format(
+                        (time.time() - begin_time) / 3600), '=' * 30
+                ]))
                 return model
-            
+
             self.optimizer, self.lr_scheduler = None, None
             # pylint: disable=E1101
             self._move_model_to_device(teacher_model, self.args.device)
@@ -1299,21 +1307,20 @@ class BaseTrainer():
             # create new distillers before each train process
             agent.create_distillers()
             # run flash_distillers
-            model = run_distillers(model, 
-                                   agent.flash_distillers, 
-                                   agent.flash_train_steps, 
+            model = run_distillers(model, agent.flash_distillers, agent.flash_train_steps,
                                    agent.flash_block_names)
             # run regular_distillers
-            model = run_distillers(model, 
-                                   agent.regular_distillers, 
-                                   agent.regular_train_steps, 
+            model = run_distillers(model,
+                                   agent.regular_distillers,
+                                   agent.regular_train_steps,
                                    agent.regular_block_names,
                                    presentation='regular distillation')
             return model
 
         def eval_func_builtin(model):
-            return take_eval_steps(model, trainer=self, 
-                                   metric_names=agent.metrics, 
+            return take_eval_steps(model,
+                                   trainer=self,
+                                   metric_names=agent.metrics,
                                    save_metrics=True)
 
         agent.train_func = train_func \
@@ -1322,7 +1329,7 @@ class BaseTrainer():
             if eval_func else eval_func_builtin
         # pylint: disable=E1101
         return agent.search(self.args.output_dir)
-    
+
     def model_builder_builtin(self, arch_paras=None, model_cls=None):
         config = self.model.config
         if arch_paras is not None:
@@ -1330,7 +1337,7 @@ class BaseTrainer():
             for k in arch_paras:
                 if hasattr(config, k):
                     config.__setattr__(k, arch_paras[k])
-                    # for MobileBERT, 'intra_bottleneck_size' is associated with 
+                    # for MobileBERT, 'intra_bottleneck_size' is associated with
                     # 'true_hidden_size', and must have the same values.
                     if k == 'intra_bottleneck_size':
                         config.__setattr__('true_hidden_size', arch_paras[k])
@@ -1343,7 +1350,7 @@ class BaseTrainer():
         prediction_loss_only: Optional[bool] = None,
         ignore_keys: Optional[List[str]] = None,
         metric_key_prefix: str = "eval",
-    ) -> EvalLoopOutput:   # pragma: no cover 
+    ) -> EvalLoopOutput:  # pragma: no cover
         """
         Prediction/evaluation loop, shared by :obj:`Trainer.evaluate()` and :obj:`Trainer.predict()`.
 
@@ -1351,9 +1358,8 @@ class BaseTrainer():
         Does not save all predictions and labels to avoid out of memory when predictions is huge.
         """
         # pylint: disable=E1101
-        prediction_loss_only = (
-            prediction_loss_only if prediction_loss_only is not None else self.args.prediction_loss_only
-        )
+        prediction_loss_only = (prediction_loss_only if prediction_loss_only is not None else
+                                self.args.prediction_loss_only)
 
         model = self._wrap_model(self.model, training=False)
 
@@ -1402,12 +1408,16 @@ class BaseTrainer():
                     batch_size = observed_batch_size
 
             # Prediction step
-            loss, logits, labels = self.prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+            loss, logits, labels = self.prediction_step(model,
+                                                        inputs,
+                                                        prediction_loss_only,
+                                                        ignore_keys=ignore_keys)
 
             # Update containers on host
             if loss is not None:
                 losses = self._nested_gather(loss.repeat(batch_size))
-                losses_host = losses if losses_host is None else torch.cat((losses_host, losses), dim=0)
+                losses_host = losses if losses_host is None else torch.cat(
+                    (losses_host, losses), dim=0)
             if logits is not None:
                 logits = self._pad_across_processes(logits)
                 logits = self._nested_gather(logits)
@@ -1415,10 +1425,12 @@ class BaseTrainer():
                 labels = self._pad_across_processes(labels)
                 labels = self._nested_gather(labels)
             # pylint: disable=E1101
-            self.control = self.callback_handler.on_prediction_step(self.args, self.state, self.control)
+            self.control = self.callback_handler.on_prediction_step(self.args, self.state,
+                                                                    self.control)
             if self.compute_metrics is not None and logits is not None and labels is not None:
-                metrics = self.compute_metrics(EvalPrediction(predictions=nested_numpify(logits), 
-                                                              label_ids=nested_numpify(labels)))
+                metrics = self.compute_metrics(
+                    EvalPrediction(predictions=nested_numpify(logits),
+                                   label_ids=nested_numpify(labels)))
                 if not all_metrics:
                     all_metrics = metrics
                 else:
@@ -1430,10 +1442,12 @@ class BaseTrainer():
 
             # Gather all tensors and put them back on the CPU if we have done enough accumulation steps.
             # pylint: disable=E1101
-            if self.args.eval_accumulation_steps is not None and (step + 1) % self.args.eval_accumulation_steps == 0:
+            if self.args.eval_accumulation_steps is not None and (
+                    step + 1) % self.args.eval_accumulation_steps == 0:
                 if losses_host is not None:
                     losses = nested_numpify(losses_host)
-                    all_losses = losses if all_losses is None else np.concatenate((all_losses, losses), axis=0)
+                    all_losses = losses if all_losses is None else np.concatenate(
+                        (all_losses, losses), axis=0)
 
                 # Set back to None to begin a new accumulation
                 losses_host = None
@@ -1447,14 +1461,16 @@ class BaseTrainer():
         # Gather all remaining tensors and put them back on the CPU
         if losses_host is not None:
             losses = nested_numpify(losses_host)
-            all_losses = losses if all_losses is None else np.concatenate((all_losses, losses), axis=0)
+            all_losses = losses if all_losses is None else np.concatenate(
+                (all_losses, losses), axis=0)
 
         # Number of samples
         if not isinstance(eval_dataset, torch.utils.data.dataset.IterableDataset):
             num_samples = len(eval_dataset)
         # The instance check is weird and does not actually check for the type, but whether the dataset has the right
         # methods. Therefore we need to make sure it also has the attribute.
-        elif isinstance(eval_dataset, IterableDatasetShard) and hasattr(eval_dataset, "num_examples"):
+        elif isinstance(eval_dataset, IterableDatasetShard) and hasattr(
+                eval_dataset, "num_examples"):
             num_samples = eval_dataset.num_examples
         else:
             num_samples = observed_num_examples
@@ -1479,7 +1495,10 @@ class BaseTrainer():
             if not key.startswith(f"{metric_key_prefix}_"):
                 metrics[f"{metric_key_prefix}_{key}"] = metrics.pop(key)
 
-        return EvalLoopOutput(predictions=logits, label_ids=labels, metrics=metrics, num_samples=num_samples)
+        return EvalLoopOutput(predictions=logits,
+                              label_ids=labels,
+                              metrics=metrics,
+                              num_samples=num_samples)
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         # If we are executing this function, we are the process zero, so we don't check for that.
@@ -1489,10 +1508,11 @@ class BaseTrainer():
         logger.info(f"Saving model checkpoint to {output_dir}")
         # Save a trained model and configuration using `save_pretrained()`.
         # They can then be reloaded using `from_pretrained()`
-        if not isinstance(self.model, PreTrainedModel):   # pragma: no cover
+        if not isinstance(self.model, PreTrainedModel):  # pragma: no cover
             unwrapped_model = unwrap_model(self.model)
             if self._provider == "nncf":
-                is_pretrained = isinstance(unwrapped_model.get_nncf_wrapped_model(), PreTrainedModel)
+                is_pretrained = isinstance(unwrapped_model.get_nncf_wrapped_model(),
+                                           PreTrainedModel)
             else:
                 is_pretrained = isinstance(unwrapped_model, PreTrainedModel)
 
@@ -1501,7 +1521,8 @@ class BaseTrainer():
                     state_dict = unwrapped_model.state_dict()
                 unwrapped_model.save_pretrained(output_dir, state_dict=state_dict)
             else:
-                logger.info("Trainer.model is not a `PreTrainedModel`, only saving its state dict.")
+                logger.info(
+                    "Trainer.model is not a `PreTrainedModel`, only saving its state dict.")
                 if state_dict is None:
                     state_dict = self.model.state_dict()
                 torch.save(state_dict, os.path.join(output_dir, WEIGHTS_NAME))
@@ -1511,7 +1532,7 @@ class BaseTrainer():
                 self._save_inc_int8(self.opt_model, output_dir)
             else:
                 self.model.save_pretrained(output_dir, state_dict=state_dict)
-        if self.tokenizer is not None:   # pragma: no cover
+        if self.tokenizer is not None:  # pragma: no cover
             self.tokenizer.save_pretrained(output_dir)
 
         # Good practice: save your training arguments together with the trained model
@@ -1526,9 +1547,10 @@ class BaseTrainer():
         else:
             self.export_to_int8_onnx(*args, **kwargs)
 
-    def export_to_fp32_onnx(self, 
-        save_path=None, 
-        opset_version=14, 
+    def export_to_fp32_onnx(
+        self,
+        save_path=None,
+        opset_version=14,
         do_constant_folding=True,
         verbose=True,
     ):
@@ -1566,13 +1588,14 @@ class BaseTrainer():
         )
         if verbose:
             info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
-            logger.info("*"*len(info))
+            logger.info("*" * len(info))
             logger.info(info)
-            logger.info("*"*len(info))
+            logger.info("*" * len(info))
 
-    def export_to_bf16_onnx(self, 
-        save_path=None, 
-        opset_version=14, 
+    def export_to_bf16_onnx(
+        self,
+        save_path=None,
+        opset_version=14,
         do_constant_folding=True,
         verbose=True,
     ):
@@ -1581,8 +1604,8 @@ class BaseTrainer():
         onnx_save_path = save_path if save_path \
           else os.path.join(self.args.output_dir, 'bf16-model.onnx')
         self.export_to_fp32_onnx(
-            save_path=fp32_path, 
-            opset_version=opset_version, 
+            save_path=fp32_path,
+            opset_version=opset_version,
             do_constant_folding=do_constant_folding,
             verbose=False,
         )
@@ -1599,12 +1622,14 @@ class BaseTrainer():
         from onnx import TensorProto, helper, numpy_helper
         for tensor in model.graph.initializer:
             if tensor.name in bf16_tensor_name_list:
+
                 def fp32_to_bf16(fp32_np):
-                    assert(fp32_np.dtype==np.float32)
+                    assert (fp32_np.dtype == np.float32)
                     int32_np = fp32_np.view(dtype=np.int32)
                     int32_np = int32_np >> 16
                     bf16_np = int32_np.astype(np.int16)
                     return bf16_np
+
                 fp16_data = fp32_to_bf16(numpy_helper.to_array(tensor))
                 tensor.raw_data = fp16_data.tobytes()
                 tensor.data_type = TensorProto.BFLOAT16
@@ -1613,49 +1638,48 @@ class BaseTrainer():
 
         if verbose:
             info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
-            logger.info("*"*len(info))
+            logger.info("*" * len(info))
             logger.info(info)
-            logger.info("*"*len(info))
+            logger.info("*" * len(info))
 
-    def export_to_int8_onnx(self,
+    def export_to_int8_onnx(
+        self,
         save_path=None,
         quant_format='QDQ',
         dtype='S8S8',
         opset_version=14,
     ):
-        if self.provider != 'inc':   # pragma: no cover
+        if self.provider != 'inc':  # pragma: no cover
             logger.error("export_to_onnx API only supports INC model right now.")
             sys.exit(0)
 
         if self.enable_executor:
             # Will deprecate after engine supports QDQ format and other op_types.
-            op_types_to_quantize=['MatMul']
-            pytorch_op_types_to_quantize=['Linear']
+            op_types_to_quantize = ['MatMul']
+            pytorch_op_types_to_quantize = ['Linear']
             addition_op_to_quantize = []
             opset_version = 13
-            quant_format='QDQ'
-            dtype='U8S8'
-            logger.info("Engine only support opset_version=11 " + 
-                        "and int8 MatMul.")
+            quant_format = 'QDQ'
+            dtype = 'U8S8'
+            logger.info("Engine only support opset_version=11 " + "and int8 MatMul.")
         else:
             if 'dynamic' in self.opt_model.q_config['approach']:
-                op_types_to_quantize=['MatMul', 'Gather', "LSTM", 'Conv']
-                pytorch_op_types_to_quantize=['Linear', 'Embedding', "LSTM", 
-                                              'Conv1d', 'Conv2d']
+                op_types_to_quantize = ['MatMul', 'Gather', "LSTM", 'Conv']
+                pytorch_op_types_to_quantize = ['Linear', 'Embedding', "LSTM", 'Conv1d', 'Conv2d']
                 addition_op_to_quantize = list(ortq.registry.IntegerOpsRegistry.keys())
             else:
-                op_types_to_quantize=['MatMul', 'Gather', 'Conv']
-                pytorch_op_types_to_quantize=['Linear', 'Embedding', 'Conv1d', 'Conv2d']
+                op_types_to_quantize = ['MatMul', 'Gather', 'Conv']
+                pytorch_op_types_to_quantize = ['Linear', 'Embedding', 'Conv1d', 'Conv2d']
                 if quant_format == 'QDQ':
                     addition_op_to_quantize = list(ortq.registry.QDQRegistry.keys())
-                    addition_op_to_quantize.remove('Relu') # ValueError: x not in list
+                    addition_op_to_quantize.remove('Relu')  # ValueError: x not in list
                 else:
                     addition_op_to_quantize = list(ortq.registry.QLinearOpsRegistry.keys())
 
-        if quant_format == 'QDQ' and opset_version < 13:   # pragma: no cover 
+        if quant_format == 'QDQ' and opset_version < 13:  # pragma: no cover
             opset_version = 13
-            logger.warning("QDQ format requires opset_version >= 13, " + 
-                            "we reset opset_version={} here".format(opset_version))
+            logger.warning("QDQ format requires opset_version >= 13, " +
+                           "we reset opset_version={} here".format(opset_version))
         all_op_types_to_quantize = op_types_to_quantize + addition_op_to_quantize
 
         # pylint: disable=E1101
@@ -1664,8 +1688,10 @@ class BaseTrainer():
         # pylint: disable=E1101
         onnx_save_path = save_path if save_path \
           else os.path.join(self.args.output_dir, 'int8-model.onnx')
-        self.export_to_fp32_onnx(fp32_path, opset_version=opset_version, 
-                                 do_constant_folding=False, verbose=False)
+        self.export_to_fp32_onnx(fp32_path,
+                                 opset_version=opset_version,
+                                 do_constant_folding=False,
+                                 verbose=False)
         model = onnx.load(fp32_path)
 
         if self.opt_model.q_config['approach'] is 'quant_aware_training':
@@ -1676,12 +1702,12 @@ class BaseTrainer():
                 # '_packed_params._packed_weight' is specific for quantized Embedding
                 if '_packed_params._packed_weight' in name:
                     name = name.replace('._packed_params._packed_weight', '').split('.module')[0]
-                    int8_model_dict[name+'.weight'] = param.dequantize()
+                    int8_model_dict[name + '.weight'] = param.dequantize()
                 # '_packed_params._packed_params' is specific for quantized Linear
                 elif '_packed_params._packed_params' in name and isinstance(param, tuple):
                     name = name.replace('._packed_params._packed_params', '').split('.module')[0]
-                    int8_model_dict[name+'.bias'] = param[1]
-                    int8_model_dict[name+'.weight'] = param[0].dequantize()
+                    int8_model_dict[name + '.bias'] = param[1]
+                    int8_model_dict[name + '.weight'] = param[0].dequantize()
                 # '.weight' and '.bias' is specific for quantized Conv
                 elif '.weight' in name:
                     int8_model_dict[name] = param.dequantize()
@@ -1725,13 +1751,13 @@ class BaseTrainer():
             if node.op_type not in op_types_to_quantize:
                 for inp in node.input:
                     if inp in weight_name_list and 'weight' in inp:
-                        tmp_node_mapping.update({node.output[0] : inp.split('.weight')[0]})
+                        tmp_node_mapping.update({node.output[0]: inp.split('.weight')[0]})
                     elif inp in tmp_node_mapping:
-                        tmp_node_mapping.update({node.output[0] : tmp_node_mapping[inp]})
+                        tmp_node_mapping.update({node.output[0]: tmp_node_mapping[inp]})
             else:
                 for inp in node.input:
                     if inp in weight_name_list and 'weight' in inp:
-                        module_node_mapping.update({inp.split('.weight')[0] : node.name})
+                        module_node_mapping.update({inp.split('.weight')[0]: node.name})
                     elif inp in tmp_node_mapping:
                         module_node_mapping.update({tmp_node_mapping[inp]: node.name})
 
@@ -1740,7 +1766,7 @@ class BaseTrainer():
                 quantize_nodes.append(node.name)
 
         # Match pytorch module name with onnx node name for fallbacked fp32 module
-        for k, v in self.opt_model.q_config['op'].items():   # pragma: no cover
+        for k, v in self.opt_model.q_config['op'].items():  # pragma: no cover
             if k[1] not in pytorch_op_types_to_quantize or 'int8' in v['weight']['dtype']:
                 continue
             k_0 = k[0].split('.module')[0] if k[0] not in module_node_mapping else k[0]
@@ -1751,21 +1777,21 @@ class BaseTrainer():
         # Quantization
         quant_format = ortq.QuantFormat.QOperator if quant_format != 'QDQ' else ortq.QuantFormat.QDQ
 
-        if 'U8U8' in dtype:   # pragma: no cover 
+        if 'U8U8' in dtype:  # pragma: no cover
             activation_type = ortq.QuantType.QUInt8
             weight_type = ortq.QuantType.QUInt8
         elif 'S8S8' in dtype:
             activation_type = ortq.QuantType.QInt8
             weight_type = ortq.QuantType.QInt8
         elif 'U8S8' in dtype:
-            if not self.enable_executor:   # pragma: no cover 
+            if not self.enable_executor:  # pragma: no cover
                 logger.error("Right now, we don't support dtype: {}, please use \
                               U8U8/S8S8 or set trainer.enable_executor=True \
                               for U8S8.".format(dtype))
                 sys.exit(0)
             activation_type = ortq.QuantType.QUInt8
             weight_type = ortq.QuantType.QInt8
-        else:   # pragma: no cover 
+        else:  # pragma: no cover
             # Gather requires weight type be the same as activation.
             # So U8S8(acitvation|weight) option is not workable for best performance.
             logger.error("Right now, we don't support dtype: {}, \
@@ -1775,22 +1801,24 @@ class BaseTrainer():
         logger.info("Activation type: {}.".format(activation_type))
 
         if 'dynamic' in self.opt_model.q_config['approach']:
-            ortq.quantize_dynamic(fp32_path,
-                                onnx_save_path,
-                                per_channel=True,
-                                weight_type=weight_type,
-                                nodes_to_quantize=quantize_nodes,
-                                nodes_to_exclude=[],
-                                #op_types_to_quantize=op_types_to_quantize,
-                                extra_options={})
+            ortq.quantize_dynamic(
+                fp32_path,
+                onnx_save_path,
+                per_channel=True,
+                weight_type=weight_type,
+                nodes_to_quantize=quantize_nodes,
+                nodes_to_exclude=[],
+                #op_types_to_quantize=op_types_to_quantize,
+                extra_options={})
         else:
+
             class NLPDataReader(ortq.CalibrationDataReader):
                 def __init__(self, dataloader, sample_size=100):
                     import math
                     self.dataloader = dataloader
                     self.batch_size = dataloader.batch_size
-                    self.batch_num = math.ceil(sample_size/self.batch_size)
-                    self.datasize = self.batch_num*self.batch_size
+                    self.batch_num = math.ceil(sample_size / self.batch_size)
+                    self.datasize = self.batch_num * self.batch_size
 
                     self.data = []
                     for i, batch in enumerate(self.dataloader):
@@ -1806,23 +1834,24 @@ class BaseTrainer():
 
             # pylint: disable=E1101
             calib_datareader = NLPDataReader(self.get_eval_dataloader())
-            ortq.quantize_static(fp32_path,
-                                onnx_save_path,
-                                calib_datareader,
-                                quant_format=quant_format,
-                                per_channel=True,
-                                weight_type=weight_type,
-                                activation_type=activation_type,
-                                nodes_to_quantize=quantize_nodes,
-                                nodes_to_exclude=[],
-                                #op_types_to_quantize=op_types_to_quantize,
-                                extra_options={})
+            ortq.quantize_static(
+                fp32_path,
+                onnx_save_path,
+                calib_datareader,
+                quant_format=quant_format,
+                per_channel=True,
+                weight_type=weight_type,
+                activation_type=activation_type,
+                nodes_to_quantize=quantize_nodes,
+                nodes_to_exclude=[],
+                #op_types_to_quantize=op_types_to_quantize,
+                extra_options={})
 
         os.remove(fp32_path)
         info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
-        logger.info("*"*len(info))
+        logger.info("*" * len(info))
         logger.info(info)
-        logger.info("*"*len(info))
+        logger.info("*" * len(info))
 
     # pylint: disable=E1101
     def export_to_jit(self):
@@ -1831,22 +1860,18 @@ class BaseTrainer():
         it = iter(eval_dataloader)
         input = next(it)
         self._remove_label(input)
-        jit_model = torch.jit.trace(
-            self.model,
-            tuple(input.values()),
-            strict=False
-        )
+        jit_model = torch.jit.trace(self.model, tuple(input.values()), strict=False)
         info = "JIT Model exported"
-        logger.info("*"*len(info))
+        logger.info("*" * len(info))
         logger.info(info)
-        logger.info("*"*len(info))
+        logger.info("*" * len(info))
         return jit_model
 
     @staticmethod
     def _remove_label(input):
-        if "labels" in input: # for GLUE
+        if "labels" in input:  # for GLUE
             input.pop('labels')
-        elif "start_positions" in input and "end_positions" in input: # for SQuAD
+        elif "start_positions" in input and "end_positions" in input:  # for SQuAD
             # pragma: no cover
             input.pop('start_positions')
             input.pop('end_positions')
@@ -1879,7 +1904,6 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
     @num_beams.setter
     def num_beams(self, num_beams):
         self._num_beams = num_beams
-
 
     def builtin_eval_func(self, model):
         assert self.max_length is not None, \
