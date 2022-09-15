@@ -34,7 +34,7 @@ from packaging import version
 from transformers import PreTrainedModel
 from transformers.training_args_tf import TFTrainingArguments
 from typing import Callable, Optional, List
-from .utils.utility_tf import TFDataloader, TMPPATH
+from .utils.utility_tf import TFDataloader, TMPPATH, get_filepath
 
 tf = LazyImport("tensorflow")
 logger = logging.getLogger(__name__)
@@ -50,6 +50,8 @@ class TFOptimization:
         compute_metrics: Optional[Callable] = None,
         criterion = None,
         optimizer = None,
+        task_type = None,
+        task_id = None,
     ):
         """
         Args:
@@ -78,11 +80,14 @@ class TFOptimization:
         self.compute_metrics = compute_metrics
         self.args = args
         self.optimizer = optimizer
+        self.task_type = task_type
+        self.task_id = task_id
         self.criterion = criterion if criterion is not None else \
             self.model.loss if hasattr(self.model, "loss") else None
-        self.model.save_pretrained(TMPPATH, saved_model=True)
+        self.model.save_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id), saved_model=True)
         _, self.input_names, self.output_names = saved_model_session(
-            os.path.join(TMPPATH,"saved_model/1"), input_tensor_names=[], output_tensor_names=[])
+            os.path.join(get_filepath(TMPPATH, self.task_type, self.task_id), "saved_model/1"), input_tensor_names=[],
+             output_tensor_names=[])
         self.eval_distributed = False
 
     @property
@@ -298,7 +303,8 @@ class TFOptimization:
         self.metrics = self.quant_config.metrics
 
         quantizer = Quantization(self.quant_config.inc_config)
-        quantizer.model = common.Model(os.path.join(TMPPATH,"saved_model/1"), modelType="saved_model")
+        quantizer.model = common.Model(
+            os.path.join(get_filepath(TMPPATH, self.task_type, self.task_id),"saved_model/1"), modelType="saved_model")
 
         self.quantizer = quantizer
         return quantizer
@@ -325,8 +331,7 @@ class TFOptimization:
                                                                batch_size=self.args.per_device_eval_batch_size)
             else:   # pragma: no cover
                 assert False, "Please pass calibration dataset to TFNoTrainerOptimizer.calib_dataloader"
-        elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
-            # pragma: no cover
+        elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:   # pragma: no cover
             assert False, \
                 "Unsupport quantization aware training for tensorflow framework"
 
@@ -369,7 +374,7 @@ class TFOptimization:
             "please pass a instance of PruningConfig to trainer.prune!"
 
         pruner = Pruning(self.pruning_config.inc_config)
-        pruner.model = os.path.join(TMPPATH,"saved_model/1")
+        pruner.model = os.path.join(get_filepath(TMPPATH, self.task_type, self.task_id),"saved_model/1")
         pruner.model.model_type = "saved_model"
 
         self.pruner = pruner
@@ -416,7 +421,11 @@ class TFOptimization:
 
         opt_model = self.pruner.fit()
 
-        return self.model
+        opt_model.save(self.args.output_dir)
+        logger.info(
+            "pruned model have saved to {}".format(self.args.output_dir)
+        )
+        return opt_model.model
 
     def init_distiller(
         self,
@@ -506,4 +515,4 @@ class TFOptimization:
                         callbacks=[PruningCb()])
 
         self.pruner.model._sess = None
-        input_model.save_pretrained(TMPPATH, saved_model=True)
+        input_model.save_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id), saved_model=True)

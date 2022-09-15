@@ -1,3 +1,4 @@
+from nlp_toolkit.optimization.utils.utility_tf import get_filepath
 import numpy as np
 import os
 import shutil
@@ -74,6 +75,19 @@ class TestTFPruning(unittest.TestCase):
         shutil.rmtree('./quantized_model', ignore_errors=True)
 
     def test_tf_model_quant(self):
+        # check whether it is possible to set distributed environment
+        # only for coverage currently
+        from nlp_toolkit.optimization.utils.utility_tf import distributed_init
+        distributed_init(["localhost:12345","localhost:23456"], "worker", 0)
+        self.assertTrue(os.environ['TF_CONFIG'] != None)
+        del os.environ['TF_CONFIG']
+        # check whether filepath can be set correctly if using distributed environment
+        # only for coverage currently
+        from nlp_toolkit.optimization.utils.utility_tf import get_filepath
+        self.assertTrue(type(get_filepath("dummy", "worker", 0)) == str)
+        self.assertTrue(type(get_filepath("dummy", "worker", 1)) == str)
+        self.assertTrue(get_filepath("dummy", "worker", 0) != get_filepath("dummy", "worker", 1))
+
         metric = load_metric("glue", "sst2")
         def compute_metrics(preds, label_ids):
             preds = preds["logits"]
@@ -99,12 +113,10 @@ class TestTFPruning(unittest.TestCase):
             epochs=int(1), pruner_config=pruner_config, metrics=tune_metric
         )
         p_model = self.optimizer.prune(pruning_config=pruning_conf)
-        p_model.save_pretrained(self.args.output_dir, saved_model=True)
-        loaded_model = tf.saved_model.load(os.path.join(self.args.output_dir, "saved_model/1"))
-
+        loaded_model = tf.saved_model.load(self.args.output_dir)
         p_model = self.optimizer.prune(pruning_config=pruning_conf,
-                                        train_dataset=self.dummy_dataset,
-                                        eval_dataset=self.dummy_dataset,)
+                                train_dataset=self.dummy_dataset,
+                                eval_dataset=self.dummy_dataset,)
 
         def eval_func(model):
             return 1

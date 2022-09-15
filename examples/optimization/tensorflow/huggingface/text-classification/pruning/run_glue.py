@@ -215,8 +215,21 @@ class OptimizationArguments:
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
 
-# endregion
+@dataclass
+class DistributedArguments:
+    """
+    Arguments setting the distributed multinode environment
+    """
 
+    worker: str = field(
+        default=None,
+        metadata={"help": "List of node ip addresses in a string, and there should not be space between addresses."},
+    )
+    task_index: int = field(
+        default=0,
+        metadata={"help": "Worker index, and 0 represents the chief worker while other workers are set as 1,2,3..."},
+    )
+# endregion
 
 def main():
     # region Argument parsing
@@ -224,17 +237,35 @@ def main():
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TFTrainingArguments, OptimizationArguments))
+    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TFTrainingArguments, OptimizationArguments, DistributedArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args, optim_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        model_args, data_args, training_args, optim_args, distributed_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
-        model_args, data_args, training_args, optim_args = parser.parse_args_into_dataclasses()
+        model_args, data_args, training_args, optim_args, distributed_args = parser.parse_args_into_dataclasses()
 
     if not (training_args.do_train or training_args.do_eval or training_args.do_predict):
         exit("Must specify at least one of --do_train, --do_eval or --do_predict!")
     # endregion
+
+    # region Set the multinode environment, the strategy and paths
+    strategy = None
+    worker_list = None
+    if distributed_args.worker is not None:
+        logger.info("distributed environment initialization...")
+
+        worker_list = distributed_args.worker.split(",")
+
+        from nlp_toolkit.optimization.utils.utility_tf import distributed_init
+        distributed_init(worker_list, "worker", distributed_args.task_index)
+
+        strategy = tf.distribute.MultiWorkerMirroredStrategy()
+        from nlp_toolkit.optimization.utils.utility_tf import get_filepath
+        training_args.output_dir = get_filepath(training_args.output_dir, strategy.cluster_resolver.task_type, strategy.cluster_resolver.task_id)
+    else:
+        strategy = training_args.strategy
+    #endregion
 
     # region Checkpoints
     checkpoint = None
@@ -397,9 +428,12 @@ def main():
         if len(result) > 1:
             result["combined_score"] = np.mean(list(result.values())).item()
         return result
-
     # endregion
-    with training_args.strategy.scope():
+
+    if distributed_args.worker is None:
+        strategy = training_args.strategy
+    
+    with strategy.scope():
         # region Load pretrained model
         if checkpoint is None:
             model_path = model_args.model_name_or_path
@@ -445,16 +479,17 @@ def main():
             "test_mismatched": data_args.max_predict_samples,
             "user_data": None,
         }
+
         for key in datasets.keys():
             if key == "train" or key.startswith("validation"):
                 assert "label" in datasets[key].features, f"Missing labels from {key} data!"
             if key == "train":
                 shuffle = True
-                batch_size = training_args.per_device_train_batch_size
+                batch_size = training_args.per_device_train_batch_size * (len(worker_list) if worker_list is not None else 1)
                 drop_remainder = True  # Saves us worrying about scaling gradients for the last batch
             else:
                 shuffle = False
-                batch_size = training_args.per_device_eval_batch_size
+                batch_size = training_args.per_device_eval_batch_size * (len(worker_list) if worker_list is not None else 1)
                 drop_remainder = False
             samples_limit = max_samples[key]
             dataset = datasets[key]
@@ -472,124 +507,127 @@ def main():
             )
             tf_data[key] = data
         # endregion
-        if optim_args.prune:
-            from nlp_toolkit import metrics, PrunerConfig, PruningConfig, TFOptimization
-            optimization = TFOptimization(
-                model=model,
-                args=training_args,
-                train_dataset=tf_data["train"],
-                eval_dataset=tf_data["validation"],
-                compute_metrics=compute_metrics,
-                criterion=loss_fn,
-                optimizer=optimizer,
-            )
-            tune_metric = metrics.Metric(
-                name="accuracy", greater_is_better=True, is_relative=True, criterion=0.01,
-            )
-            prune_type = 'BasicMagnitude' \
-                if optim_args.pruning_approach else optim_args.pruning_approach
-            target_sparsity_ratio = None \
-                if optim_args.target_sparsity_ratio is None else optim_args.target_sparsity_ratio
-            pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
-            pruning_conf = PruningConfig(
-                epochs=int(training_args.num_train_epochs), pruner_config=pruner_config, metrics=tune_metric
-            )
-            p_model = optimization.prune(pruning_config=pruning_conf)
-            p_model.save_pretrained(training_args.output_dir, saved_model=True)
-            p_model.config.save_pretrained(training_args.output_dir)
-            tokenizer.save_pretrained(training_args.output_dir)
-            return
 
-        # region Training and validation
-        if training_args.do_train:
-            callbacks = [SavePretrainedCallback(output_dir=training_args.output_dir)]
-            if training_args.do_eval and not data_args.task_name == "mnli":
-                # Do both evaluation and training in the Keras fit loop, unless the task is MNLI
-                # because MNLI has two validation sets
-                validation_data = tf_data["validation"]
-            else:
-                validation_data = None
-            model.fit(
-                tf_data["train"],
-                validation_data=validation_data,
-                epochs=int(training_args.num_train_epochs),
-                callbacks=callbacks,
-            )
-        # endregion
+    # region Pruning
+    if optim_args.prune:
+        from nlp_toolkit import metrics, PrunerConfig, PruningConfig, TFOptimization
+        optimization = TFOptimization(
+            model=model,
+            args=training_args,
+            train_dataset=tf_data["train"],
+            eval_dataset=tf_data["validation"],
+            compute_metrics=compute_metrics,
+            criterion=loss_fn,
+            optimizer=optimizer,
+            task_type=strategy.cluster_resolver.task_type if isinstance(strategy, tf.distribute.MultiWorkerMirroredStrategy) else None,
+            task_id=strategy.cluster_resolver.task_id if isinstance(strategy, tf.distribute.MultiWorkerMirroredStrategy) else None,
+        )
+        tune_metric = metrics.Metric(
+            name="accuracy", greater_is_better=True, is_relative=True, criterion=0.01,
+        )
+        prune_type = 'BasicMagnitude' \
+            if optim_args.pruning_approach else optim_args.pruning_approach
+        target_sparsity_ratio = None \
+            if optim_args.target_sparsity_ratio is None else optim_args.target_sparsity_ratio
+        pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
+        pruning_conf = PruningConfig(
+            epochs=int(training_args.num_train_epochs), pruner_config=pruner_config, metrics=tune_metric,
+            framework="tensorflow"
+        )
+        p_model = optimization.prune(pruning_config=pruning_conf)
+        return
+    # endregion
 
-        # region Evaluation
-        if training_args.do_eval:
-            # We normally do validation as part of the Keras fit loop, but we run it independently
-            # if there was no fit() step (because we didn't train the model) or if the task is MNLI,
-            # because MNLI has a separate validation-mismatched validation set
-            logger.info("*** Evaluate ***")
+    # region Training and validation
+    if training_args.do_train:
+        callbacks = [SavePretrainedCallback(output_dir=training_args.output_dir)]
+        if training_args.do_eval and not data_args.task_name == "mnli":
+            # Do both evaluation and training in the Keras fit loop, unless the task is MNLI
+            # because MNLI has two validation sets
+            validation_data = tf_data["validation"]
+        else:
+            validation_data = None
+        model.fit(
+            tf_data["train"],
+            validation_data=validation_data,
+            epochs=int(training_args.num_train_epochs),
+            callbacks=callbacks,
+        )
+    # endregion
 
-            # Loop to handle MNLI double evaluation (matched, mis-matched)
+    # region Evaluation
+    if training_args.do_eval:
+        # We normally do validation as part of the Keras fit loop, but we run it independently
+        # if there was no fit() step (because we didn't train the model) or if the task is MNLI,
+        # because MNLI has a separate validation-mismatched validation set
+        logger.info("*** Evaluate ***")
+
+        # Loop to handle MNLI double evaluation (matched, mis-matched)
+        if data_args.task_name == "mnli":
+            tasks = ["mnli", "mnli-mm"]
+            tf_datasets = [tf_data["validation_matched"], tf_data["validation_mismatched"]]
+            raw_datasets = [datasets["validation_matched"], datasets["validation_mismatched"]]
+        else:
+            tasks = [data_args.task_name]
+            tf_datasets = [tf_data["validation"]]
+            raw_datasets = [datasets["validation"]]
+
+        total_time = 0
+        for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
+            num_examples = sum(1 for _ in tf_dataset.unbatch())
+            start = time.time()
+            eval_predictions = model.predict(tf_dataset)
+            total_time += time.time() - start
+            eval_metrics = compute_metrics(eval_predictions, raw_dataset["label"])
+            print(f"Evaluation metrics ({task}) Accuracy: ", eval_metrics)
+        print("Throughput: ", num_examples / total_time)
+
+    # endregion
+
+    # region Prediction
+    if training_args.do_predict or data_args.predict_file:
+        logger.info("*** Predict ***")
+
+        # Loop to handle MNLI double evaluation (matched, mis-matched)
+        tasks = []
+        tf_datasets = []
+        raw_datasets = []
+        if training_args.do_predict:
             if data_args.task_name == "mnli":
-                tasks = ["mnli", "mnli-mm"]
-                tf_datasets = [tf_data["validation_matched"], tf_data["validation_mismatched"]]
-                raw_datasets = [datasets["validation_matched"], datasets["validation_mismatched"]]
+                tasks.extend(["mnli", "mnli-mm"])
+                tf_datasets.extend([tf_data["test_matched"], tf_data["test_mismatched"]])
+                raw_datasets.extend([datasets["test_matched"], datasets["test_mismatched"]])
             else:
-                tasks = [data_args.task_name]
-                tf_datasets = [tf_data["validation"]]
-                raw_datasets = [datasets["validation"]]
+                tasks.append(data_args.task_name)
+                tf_datasets.append(tf_data["test"])
+                raw_datasets.append(datasets["test"])
+        if data_args.predict_file:
+            tasks.append("user_data")
+            tf_datasets.append(tf_data["user_data"])
+            raw_datasets.append(datasets["user_data"])
 
-            total_time = 0
-            for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
-                num_examples = sum(1 for _ in tf_dataset.unbatch())
-                start = time.time()
-                eval_predictions = model.predict(tf_dataset)
-                total_time += time.time() - start
-                eval_metrics = compute_metrics(eval_predictions, raw_dataset["label"])
-                print(f"Evaluation metrics ({task}) Accuracy: ", eval_metrics)
-            print("Throughput: ", num_examples / total_time)
+        for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
+            test_predictions = model.predict(tf_dataset)
+            if "label" in raw_dataset:
+                test_metrics = compute_metrics(test_predictions, raw_dataset["label"])
+                print(f"Test metrics ({task}):")
+                print(test_metrics)
 
-        # endregion
+            if is_regression:
+                predictions_to_write = np.squeeze(test_predictions["logits"])
+            else:
+                predictions_to_write = np.argmax(test_predictions["logits"], axis=1)
 
-        # region Prediction
-        if training_args.do_predict or data_args.predict_file:
-            logger.info("*** Predict ***")
-
-            # Loop to handle MNLI double evaluation (matched, mis-matched)
-            tasks = []
-            tf_datasets = []
-            raw_datasets = []
-            if training_args.do_predict:
-                if data_args.task_name == "mnli":
-                    tasks.extend(["mnli", "mnli-mm"])
-                    tf_datasets.extend([tf_data["test_matched"], tf_data["test_mismatched"]])
-                    raw_datasets.extend([datasets["test_matched"], datasets["test_mismatched"]])
-                else:
-                    tasks.append(data_args.task_name)
-                    tf_datasets.append(tf_data["test"])
-                    raw_datasets.append(datasets["test"])
-            if data_args.predict_file:
-                tasks.append("user_data")
-                tf_datasets.append(tf_data["user_data"])
-                raw_datasets.append(datasets["user_data"])
-
-            for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
-                test_predictions = model.predict(tf_dataset)
-                if "label" in raw_dataset:
-                    test_metrics = compute_metrics(test_predictions, raw_dataset["label"])
-                    print(f"Test metrics ({task}):")
-                    print(test_metrics)
-
-                if is_regression:
-                    predictions_to_write = np.squeeze(test_predictions["logits"])
-                else:
-                    predictions_to_write = np.argmax(test_predictions["logits"], axis=1)
-
-                output_predict_file = os.path.join(training_args.output_dir, f"predict_results_{task}.txt")
-                with open(output_predict_file, "w") as writer:
-                    logger.info(f"***** Writing prediction results for {task} *****")
-                    writer.write("index\tprediction\n")
-                    for index, item in enumerate(predictions_to_write):
-                        if is_regression:
-                            writer.write(f"{index}\t{item:3.3f}\n")
-                        else:
-                            item = model.config.id2label[item]
-                            writer.write(f"{index}\t{item}\n")
+            output_predict_file = os.path.join(training_args.output_dir, f"predict_results_{task}.txt")
+            with open(output_predict_file, "w") as writer:
+                logger.info(f"***** Writing prediction results for {task} *****")
+                writer.write("index\tprediction\n")
+                for index, item in enumerate(predictions_to_write):
+                    if is_regression:
+                        writer.write(f"{index}\t{item:3.3f}\n")
+                    else:
+                        item = model.config.id2label[item]
+                        writer.write(f"{index}\t{item}\n")
         # endregion
 
 

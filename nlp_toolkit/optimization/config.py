@@ -363,7 +363,7 @@ class PruningConfig(object):
 
     @framework.setter
     def framework(self, framework):
-        assert framework.lower() in ["pytorch", "pytorch_fx"], \
+        assert framework.lower() in ["pytorch", "pytorch_fx", "tensorflow"], \
             "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework.lower()
 

@@ -1,5 +1,23 @@
-from collections import OrderedDict, UserDict
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2022 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+from collections import OrderedDict, UserDict
+import json
+import os
 
 TMPPATH = "tmp"
 class TFDataloader(object):
@@ -32,3 +50,27 @@ class TFDataloader(object):
             else:
                 labels = labels.numpy()
             yield inputs, labels
+
+
+def distributed_init(worker_addresses, type='worker', index=0):
+    tf_config = {
+        'cluster': {
+            'worker': worker_addresses
+        },
+        'task': {'type': type, 'index': index}
+    }
+    os.environ['TF_CONFIG'] = json.dumps(tf_config)
+
+def _is_chief(task_type, task_id):
+    # here only consider the case in which TF_CONFIG task_type is set as worker
+    # and task_id=0 represents the chief
+    return (task_type == 'worker' and task_id == 0)
+
+# get model folder path for the distributed environment
+def get_filepath(base_dirpath, task_type, task_id):
+    if task_type is None:    # single node
+        return base_dirpath
+    elif _is_chief(task_type, task_id):
+        return os.path.join(base_dirpath, 'chief')
+    else:
+        return os.path.join(base_dirpath, 'worker_' + str(task_id))
