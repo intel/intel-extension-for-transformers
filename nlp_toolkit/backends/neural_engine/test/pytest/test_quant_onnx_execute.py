@@ -36,6 +36,7 @@ class TestQuantOnnxExecute(unittest.TestCase):
         input_2 = np.random.uniform(low=0, high=1, size=[1, 128]).astype('int32')
         # compile and execute qlinear model
         qlinear_model_path = "/tf_dataset2/models/nlp_toolkit/qlinear/bert_mini_sst2_qlinear.onnx"
+        os.environ['GLOG_minloglevel'] = '2'
         self.assertTrue(os.path.exists(qlinear_model_path),
             'ONNX QLinear model is not found, please set your own model path!')
         qlinear_model = compile(qlinear_model_path)
