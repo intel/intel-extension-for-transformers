@@ -31,11 +31,7 @@ class layernorm_ba_kd_t : public kernel_desc_t {
   explicit layernorm_ba_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::layernorm_ba), op_desc_(op_desc) {}
 
-  virtual ~layernorm_ba_kd_t() {
-    delete one_;
-    delete[] one_div_n_;
-    delete[] eps_;
-  }
+  virtual ~layernorm_ba_kd_t() { delete[] one_div_n_; }
 
  public:
   bool init() override;
@@ -46,15 +42,11 @@ class layernorm_ba_kd_t : public kernel_desc_t {
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
   const std::vector<ssd::layernorm_ba_param_t>& params() const { return params_; }
   const float* one_div_n_ptr() const { return one_div_n_; }
-  const float* eps_ptr() const { return eps_; }
-  const float* one_ptr() const { return one_; }
 
  private:
   jd::operator_desc op_desc_;
   std::vector<ssd::layernorm_ba_param_t> params_;
   float* one_div_n_;
-  float* one_;
-  float* eps_;
 };
 
 class layernorm_ba_k_t : public kernel_t {
@@ -79,4 +71,3 @@ class layernorm_ba_k_t : public kernel_t {
 
 }  // namespace jd
 #endif
-

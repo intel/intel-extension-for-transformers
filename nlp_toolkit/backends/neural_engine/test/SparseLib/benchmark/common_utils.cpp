@@ -14,43 +14,6 @@
 
 #include "common_utils.hpp"
 
-float get_exp(float x) {
-  unsigned int max = exp_ln_flt_max_f;
-  unsigned int min = exp_ln_flt_min_f;
-  float fmax = *reinterpret_cast<float*>(&max);
-  float fmin = *reinterpret_cast<float*>(&min);
-  if (x > fmax) {
-    return INFINITY;
-  } else if (x < fmin) {
-    return 0;
-  } else {
-    return expf(x);
-  }
-}
-
-float get_gelu(float x) {
-  // an approximate fitting function of GELU(x)
-  // GELU(x)≈0.5x(1+tanh[(2/pi)^0.5)*(x+0.044715x^3)]
-  // for more details,pls refer this paper:https://arxiv.org/abs/1606.08415
-  return 0.5f * x * (1 + tanhf(0.7978845834732056f * (x + 0.044714998453855515f * x * x * x)));
-}
-
-int get_quantize(float x, float alpha, float scale) {
-  x = scale * (x - alpha);
-  int ans = std::round(x);
-  ans = ans > 255 ? 255 : ans;
-  ans = ans < 0 ? 0 : ans;
-  return ans;
-}
-
-float get_dequantize(float x, float alpha, float scale) {
-  uint8_t tmp = x;
-  float ans = tmp;
-  ans -= alpha;
-  ans *= scale;
-  return ans;
-}
-
 int get_data_width(jd::data_type dtype) {
   int data_width = 0;
   switch (dtype) {

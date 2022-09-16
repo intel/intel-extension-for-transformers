@@ -35,8 +35,8 @@ class jit_layernorm_ba_t : public jit_generator {
  public:
   explicit jit_layernorm_ba_t(const ssd::layernorm_ba_param_t& param) : jit_generator(), param_(param) {
     eltwise_injector.init_tb_allocate_set(param_.postop_attrs);
-    // 25=32(all zmm regs num)-3(zmm_one,mean_,pow_mean,powx_mean,var_,alpha,beta)
-    unroll_degree = 25 - eltwise_injector.max_zmm_allocate_num();
+    // xmm max num=16
+    unroll_degree = 16;
     while (param_.row_num % unroll_degree != 0) unroll_degree -= 1;
     assign_regs();
     eltwise_injector.eltwise_injector_init(this, param_.postop_attrs);
@@ -60,16 +60,16 @@ class jit_layernorm_ba_t : public jit_generator {
     mov(reg_alpha, ptr[reg_param + LNBA_GET_OFF(alpha)]);
     mov(reg_beta, ptr[reg_param + LNBA_GET_OFF(beta)]);
     mov(one_div_n, ptr[reg_param + LNBA_GET_OFF(one_div_n)]);
-    mov(one, ptr[reg_param + LNBA_GET_OFF(one)]);
-    mov(eps, ptr[reg_param + LNBA_GET_OFF(eps)]);
   }
 
  private:
   ssd::layernorm_ba_param_t param_;
   jit_eltwise_injector eltwise_injector;
   int unroll_degree;
+  const int zmm_byte_size = 64;
   std::vector<int> unroll_reg_idxs;
-  std::map<int, int> load_offset;
+  std::map<int, int> src_load_offset;
+  std::map<int, int> dst_load_offset;
   std::map<reg_type, std::set<int>> reg_map;
 
   Zmm zmm_one;
@@ -79,15 +79,15 @@ class jit_layernorm_ba_t : public jit_generator {
   Zmm zmm_var;
   Zmm zmm_alpha;
   Zmm zmm_beta;
+  Zmm zmm_eps;
   Reg64 reg_param;
   Reg64 src_addr;
   Reg64 dst_addr;
   Reg64 one_div_n;
-  Reg64 one;
-  Reg64 eps;
   Reg64 reg_col;
   Reg64 reg_row;
-  Reg64 reg_offset;
+  Reg64 reg_src_offset;
+  Reg64 reg_dst_offset;
   Reg64 reg_alpha;
   Reg64 reg_beta;
   Reg64 reg_affine_offset;
@@ -96,6 +96,6 @@ class jit_layernorm_ba_t : public jit_generator {
   Xbyak::Label mean_loop_start;
   Xbyak::Label var_loop_start;
   Xbyak::Label norm_loop_start;
-};  // namespace jd
+};
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_

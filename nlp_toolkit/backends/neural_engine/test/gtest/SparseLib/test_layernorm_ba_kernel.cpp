@@ -99,8 +99,20 @@ bool check_result(const test_params_t& t) {
     int num = get_element_num(q.op_desc);
     float err_rate = 1e-3;
     auto buf2 = q.data[0];
-    auto buf1 = p.data[1];
+    void* buf1;
+    auto dtype = p.op_desc.tensor_descs()[1].dtype();
     EXPECT_NE(buf1, buf2);
+    if (dtype == jd::data_type::fp32) buf1 = const_cast<void*>(p.data[1]);
+    if (dtype == jd::data_type::u8 || dtype == jd::data_type::s8) {
+      buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
+      auto int8_buf = const_cast<void*>(p.data[1]);
+      for (int i = 0; i < num; i++) {
+        if (dtype == jd::data_type::u8)
+          *(reinterpret_cast<float*>(buf1) + i) = uint8_2_int32(*(reinterpret_cast<uint8_t*>(int8_buf) + i));
+        if (dtype == jd::data_type::s8)
+          *(reinterpret_cast<float*>(buf1) + i) = *(reinterpret_cast<int8_t*>(int8_buf) + i);
+      }
+    }
     auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
     free(const_cast<void*>(p.data[0]));
     free(const_cast<void*>(p.data[1]));
@@ -126,14 +138,22 @@ TEST_P(LayernormBaKernelTest, TestPostfix) {
 }
 
 std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
-                                         std::unordered_map<std::string, std::string> op_attrs, bool affine = false,
+                                         std::unordered_map<std::string, std::string> op_attrs,
                                          const std::vector<postop_attr>& postop_attr = {}) {
   // malloc memory
   int row = gert_reduce_row_num(ts_descs);
   int col = ts_descs[0].shape().back();
   int num = row * col;
-  float* src = reinterpret_cast<float*>(aligned_alloc(64, num * sizeof(float)));
-  float* dst = reinterpret_cast<float*>(aligned_alloc(64, num * sizeof(float)));
+  void* src = nullptr;
+  void* dst = nullptr;
+  memo_mode MALLOC = memo_mode::MALLOC;
+  memo_mode MEMSET = memo_mode::MEMSET;
+
+  auto in_dt = ts_descs[0].dtype();
+  auto out_dt = ts_descs[1].dtype();
+
+  src = sparselib_ut_memo(src, num, in_dt, MALLOC);
+  dst = sparselib_ut_memo(dst, num, out_dt, MALLOC);
   float* src_ref = reinterpret_cast<float*>(aligned_alloc(64, num * sizeof(float)));
   float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
   float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
@@ -143,11 +163,13 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   for (int i = 0; i < row; i++) beta[i] = 1 + rand_float_postfix();
 
   // init matrix.
+  const unsigned int seed = 667095;
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j++) {
-      float tmp = 5 + rand_float_postfix();
-      src[i * col + j] = tmp;
-      src_ref[i * col + j] = tmp;
+      unsigned int seed_tmp = seed + i;
+      float rand_val = rand_r(&seed_tmp) % 256 - 128 + rand_float_postfix();
+      assign_val(src, in_dt, rand_val, i * col + j);
+      src_ref[i * col + j] = rand_val;
     }
   }
 
@@ -174,21 +196,35 @@ static auto case_func = []() {
   std::vector<test_params_t> cases;
 
   tensor_desc data_desc0 = {{768, 32}, jd::data_type::fp32, jd::format_type::ba};
-  tensor_desc data_desc1 = {{768, 224}, jd::data_type::fp32, jd::format_type::ba};
+  tensor_desc data_desc1 = {{768, 256}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc2 = {{128, 2, 128}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc3 = {{1024, 224}, jd::data_type::fp32, jd::format_type::ba};
+  tensor_desc data_desc4 = {{768, 256}, jd::data_type::s8, jd::format_type::ba};
+  tensor_desc affine_data_attr = {{}, jd::data_type::fp32, jd::format_type::ba};
 
   postop_attr fp32_gelu_attr = {data_type::fp32, postop_type::eltwise, postop_alg::gelu};
+  postop_attr s8_quantize = {data_type::s8,       postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0,
+                             rand_float_postfix()};
+  postop_attr u8_quantize = {data_type::u8,       postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0,
+                             rand_float_postfix()};
 
   std::string tensor_shape0 = "728x32";
   std::string tensor_shape1 = "768x224";
   std::string tensor_shape2 = "256x128";
   std::string tensor_shape3 = "1024x256";
+  std::string quantize_attrs8 = "s8quantize";
+  std::string quantize_attru8 = "u8quantize";
 
-  cases.push_back({gen_case({data_desc0}, {{"matrix_shape", tensor_shape0}}, true), false});
-  cases.push_back({gen_case({data_desc1}, {{"matrix_shape", tensor_shape1}}, true), false});
-  cases.push_back({gen_case({data_desc2}, {{"matrix_shape", tensor_shape2}}, true), false});
-  cases.push_back({gen_case({data_desc3}, {{"matrix_shape", tensor_shape3}}, true), false});
+  cases.push_back({gen_case({data_desc0, data_desc0, affine_data_attr}, {{"matrix_shape", tensor_shape0}}), false});
+  cases.push_back({gen_case({data_desc1, data_desc1, affine_data_attr}, {{"matrix_shape", tensor_shape1}}), false});
+  cases.push_back({gen_case({data_desc2, data_desc2, affine_data_attr}, {{"matrix_shape", tensor_shape2}}), false});
+  cases.push_back({gen_case({data_desc3, data_desc3, affine_data_attr}, {{"matrix_shape", tensor_shape3}}), false});
+  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr},
+                            {{"matrix_shape", tensor_shape0}, {"postop_list", quantize_attrs8}}, {s8_quantize}),
+                   false});
+  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr},
+                            {{"matrix_shape", tensor_shape0}, {"postop_list", quantize_attru8}}, {u8_quantize}),
+                   false});
 
   return ::testing::ValuesIn(cases);
 };

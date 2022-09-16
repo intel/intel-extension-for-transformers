@@ -13,10 +13,10 @@ function run_multi_inst {
             export OMP_NUM_THREADS=$ncores_per_inst
         fi
         echo "${numa_prefix}${cmd}" >>$unified_log
-        ${numa_prefix}${cmd} |
+        ${numa_prefix}${cmd} 2>&1 |
             tee -a $unified_log |
             grep "kernel execution time" |
-            sed -r "s/^kernel execution time: (.+?)ms,  GFLOPS:(.+?)$/\1 \2/" &
+            sed -r "s/^.*?kernel execution time:\s*(.+?)ms,\s*GFLOPS:\s*(.+?)$/\1 \2/" &
     done
     wait
     echo -e "<<< end run_multi_inst $1 $2" >>"$unified_log"
@@ -50,8 +50,7 @@ function asset_non_empty {
     fi
 }
 
-export BENCHMARK_NO_REFRESH=0
-export GLOG_minloglevel=1
+export BENCHMARK_NO_REFRESH=1
 echo "$@"
 if [[ !($WORKSPACE) ]]; then WORKSPACE="."; fi
 
@@ -103,7 +102,7 @@ done
 asset_non_empty "batch_path"
 asset_non_empty "modes"
 asset_non_empty "op"
-if [[ !($raw_log) ]] ; then raw_log="${WORKSPACE}/benchmark_raw_$op.log"; fi
+if [[ !($raw_log) ]] ; then raw_log="${WORKSPACE}/benchmark_raw_$op-$(basename $batch_path).log"; fi
 rm -f $raw_log
 dirname $raw_log | xargs mkdir -p
 touch $raw_log

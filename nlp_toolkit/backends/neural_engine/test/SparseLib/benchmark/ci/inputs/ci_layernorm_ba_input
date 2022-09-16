@@ -1,4 +1,6 @@
-### ncores_per_inst output_channel bsxseq
+### ncores_per_inst output_channel bsxseq in_dt out_dt
 
-8 256 128 
-8 728 32
+8 256 128 fp32 fp32 
+8 768 256 fp32 fp32 
+8 256 128 fp32 s8 
+8 768 256 fp32 u8

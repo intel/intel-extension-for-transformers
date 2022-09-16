@@ -67,7 +67,7 @@ void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode)
   int data_width = get_data_size(dtype);
   switch (mode) {
     case MALLOC:
-      ptr = malloc(num * data_width); /* code */
+      ptr = aligned_alloc(64, num * data_width); /* code */
       break;
     case MEMSET:
       std::memset(ptr, 0, num * data_width);

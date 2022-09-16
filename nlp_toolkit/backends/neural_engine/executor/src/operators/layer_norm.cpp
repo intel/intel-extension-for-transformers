@@ -30,6 +30,9 @@ LayerNormOperator::LayerNormOperator(const OperatorConfig& conf) : Operator(conf
   if (iter != attrs_map.end()) {
     transpose_mode_ = true;
   }
+  if (attrs_map.find("quantize_fuse") != attrs_map.end()) {
+    quantize_fuse_ = true;
+  }
 }
 
 void LayerNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -50,8 +53,16 @@ void LayerNormOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
 
 void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src_shape = input[0]->shape();
+  // TODO(zhe1wang): support more input data type.
   src_desc_ = {src_shape, jd::data_type::fp32, jd::format_type::ba};
-  vector<jd::tensor_desc> ts_descs = {src_desc_};
+  jd::tensor_desc affine_desc = {{}, jd::data_type::fp32, jd::format_type::ba};
+  jd::data_type dst_dt;
+  if (output[0]->dtype() == "fp32") dst_dt = jd::data_type::fp32;
+  if (output[0]->dtype() == "s8") dst_dt = jd::data_type::s8;
+  if (output[0]->dtype() == "u8") dst_dt = jd::data_type::u8;
+  dst_desc_ = {output[0]->shape(), dst_dt, jd::format_type::ba};
+
+  vector<jd::tensor_desc> ts_descs = {src_desc_, dst_desc_, affine_desc};
   std::unordered_map<std::string, std::string> op_attrs_;
   auto& dst_tensor_ptr = output[0];
   dst_tensor_ptr->set_shape(src_shape);
@@ -63,9 +74,17 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
     src_shape_str += "x";
   }
   op_attrs_["matrix_shape"] = src_shape_str;
+  vector<jd::postop_attr> postops = {};
+  if (quantize_fuse_) {
+    float zp, scale;
+    // TODO: get zp & scale.
+    jd::postop_attr u8_quantize = {jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, zp, 0, scale};
+    postops.push_back(u8_quantize);
+    op_attrs_["postop_list"] = "s8quant+" + std::to_string(zp) + "+" + std::to_string(scale);
+  }
 
   jd::operator_desc op_desc(jd::kernel_kind::layernorm_ba, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
-                            ts_descs, op_attrs_);
+                            ts_descs, op_attrs_, postops);
   jd::layernorm_ba_desc layernorm_ba_desc(op_desc);
   layernorm_ba_ker = jd::layernorm_ba(layernorm_ba_desc);
 }

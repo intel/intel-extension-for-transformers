@@ -61,6 +61,7 @@ class LayerNormOperator : public Operator {
   memory scale_shift_m;
 
   bool transpose_mode_ = false;
+  bool quantize_fuse_ = false;
   jd::tensor_desc src_desc_;
   jd::tensor_desc dst_desc_;
   jd::layernorm_ba layernorm_ba_ker;

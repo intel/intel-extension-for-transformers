@@ -39,19 +39,16 @@ inline int8_t fp32_2_s8(float val, float scale = 1.f) {
   return static_cast<int8_t>(res < -128 ? -128 : res > 127 ? 127 : res);
 }
 
-float get_exp(float x);
-
-float get_gelu(float x);
-
-inline float get_relu(float x, float alpha) { return x > 0 ? x : alpha * x; }
-
-int get_quantize(float x, float alpha, float scale);
-
-float get_dequantize(float x, float alpha, float scale);
+inline jd::data_type str_2_dt(std::string str) {
+  if (str == "fp32") return jd::data_type::fp32;
+  if (str == "fp16") return jd::data_type::fp16;
+  if (str == "bf16") return jd::data_type::bf16;
+  if (str == "s8") return jd::data_type::s8;
+  if (str == "u8") return jd::data_type::u8;
+  LOG(ERROR) << "sparselib do not support " + str + " dt now." << std::endl;
+}
 
 int get_data_width(jd::data_type dtype);
-
-float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs);
 
 void assign_val(void* ptr, jd::data_type dtype, float val, int idx);
 

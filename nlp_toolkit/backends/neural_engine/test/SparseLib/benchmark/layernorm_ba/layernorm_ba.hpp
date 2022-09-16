@@ -28,7 +28,7 @@
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
-#define LAYERNORM_BA_ARG_NUM 2
+#define LAYERNORM_BA_ARG_NUM 4
 
 namespace jd {
 
@@ -36,8 +36,8 @@ class layernorm_ba_bench : public kernel_bench {
  private:
   int64_t M;
   int64_t N;
-  data_type dt;
-  bool affine;
+  data_type in_dt;
+  data_type out_dt;
   std::vector<postop_attr> postop_attrs;
   std::unordered_map<std::string, std::string> op_attrs;
 

@@ -21,11 +21,13 @@
 namespace jd {
 namespace ssd {
 struct layernorm_ba_param_t {
-  data_type dt;
+  data_type input_dt;
+  data_type output_dt;
+  data_type affine_dt;
   int row_num;
   int col_num;
-  int process_col;       // for control loop.
-  size_t thread_offset;  // for load data.
+  int process_col;           // for control loop.
+  size_t thread_elt_offset;  // for load data.
   std::vector<postop_attr> postop_attrs;
 };
 
@@ -33,8 +35,8 @@ struct layernorm_ba_data_t {
   void* src;
   void* dst;
   const float* one_div_n;
-  const float* one;
-  const float* eps;
+  const float one = 1;
+  const float eps = 1e-5;
   const float* alpha;
   const float* beta;
 };

@@ -17,6 +17,12 @@
 
 namespace jd {
 
+int gert_reduce_row_num(const std::vector<tensor_desc>& ts_descs) {
+  int row = 1;
+  for (int i = 0; i < ts_descs[0].shape().size() - 1; i++) row *= ts_descs[0].shape()[i];
+  return row;
+}
+
 bench_res_t layernorm_ba_bench::set_config(int argc, char** argv) {
   if (argc < LAYERNORM_BA_ARG_NUM) {
     LOG(ERROR) << "Not enough arguments passed";
@@ -26,12 +32,20 @@ bench_res_t layernorm_ba_bench::set_config(int argc, char** argv) {
   LOG(INFO) << "layernorm_ba\n";
   M = str_to_num<int64_t>(argv[0]);
   N = str_to_num<int64_t>(argv[1]);
-  dt = data_type::fp32;
+  std::string in_dt_str = argv[2];
+  std::string out_dt_str = argv[3];
   std::string shape_str = std::string(argv[0]) + std::string("x") + std::string(argv[1]);
-  affine = true;
-  std::vector<postop_attr> postop_attrs(0);
+  in_dt = str_2_dt(in_dt_str);
+  out_dt = str_2_dt(out_dt_str);
+  tensor_desc input_data_desc = {{M, N}, in_dt, jd::format_type::ba};
+  tensor_desc output_data_desc = {{M, N}, out_dt, jd::format_type::ba};
+  if (out_dt == data_type::s8 || out_dt == data_type::u8) {
+    postop_attrs.push_back(
+        {out_dt, postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0, rand_float_postfix()});
+  }
   op_attrs = {{"matrix_shape", shape_str}};
-  ts_descs = {{{M, N}, data_type::fp32, jd::format_type::ba}};
+  ts_descs = {
+      {{M, N}, in_dt, jd::format_type::ba}, {{M, N}, out_dt, jd::format_type::ba}, {{}, in_dt, jd::format_type::ba}};
   return {bench_status::success};
 }
 
@@ -39,8 +53,8 @@ void layernorm_ba_bench::get_true_data() {
   auto& op_desc = args.second.op_desc;
   auto& rf_data = args.second.rt_data;
   auto tensor_desc = op_desc.tensor_descs();
-  int row = tensor_desc[0].shape()[0];
-  int col = tensor_desc[0].shape()[1];
+  int row = gert_reduce_row_num(tensor_desc);
+  int col = tensor_desc[0].shape().back();
   float* dst = nullptr;
   float* alpha = nullptr;
   float* beta = nullptr;
@@ -81,7 +95,24 @@ bool layernorm_ba_bench::check_result() {
   int num = get_element_num(q.op_desc);
   float err_rate = 1e-3;
   auto buf2 = q.rt_data[0];
-  auto buf1 = p.rt_data[1];
+  void* buf1;
+  // Should compare buffer with different addresses
+  if (buf1 == buf2) {
+    printf("comparing the same buffer\n");
+    return false;
+  }
+  auto dtype = p.op_desc.tensor_descs()[1].dtype();
+  if (dtype == jd::data_type::fp32) buf1 = const_cast<void*>(p.rt_data[1]);
+  if (dtype == jd::data_type::u8 || dtype == jd::data_type::s8) {
+    buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
+    auto int8_buf = const_cast<void*>(p.rt_data[1]);
+    for (int i = 0; i < num; i++) {
+      if (dtype == jd::data_type::u8)
+        *(reinterpret_cast<float*>(buf1) + i) = uint8_2_int32(*(reinterpret_cast<uint8_t*>(int8_buf) + i));
+      if (dtype == jd::data_type::s8)
+        *(reinterpret_cast<float*>(buf1) + i) = *(reinterpret_cast<int8_t*>(int8_buf) + i);
+    }
+  }
   auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
   free(const_cast<void*>(p.rt_data[0]));
   free(const_cast<void*>(p.rt_data[1]));
@@ -93,25 +124,35 @@ bool layernorm_ba_bench::check_result() {
 
 void layernorm_ba_bench::gen_case() {
   // malloc memory
-  int row = ts_descs[0].shape()[0];
-  int col = ts_descs[0].shape()[1];
+  int row = gert_reduce_row_num(ts_descs);
+  int col = ts_descs[0].shape().back();
   int num = row * col;
-  float* src = new float[num];
-  float* dst = new float[num];
-  float* src_ref = new float[num];
-  float* alpha = new float[row];
-  float* beta = new float[row];
+  void* src = nullptr;
+  void* dst = nullptr;
+  memo_mode MALLOC = memo_mode::MALLOC;
+  memo_mode MEMSET = memo_mode::MEMSET;
+
+  auto in_dt = ts_descs[0].dtype();
+  auto out_dt = ts_descs[1].dtype();
+
+  src = memo_op(src, num, in_dt, MALLOC);
+  dst = memo_op(dst, num, out_dt, MALLOC);
+  float* src_ref = reinterpret_cast<float*>(aligned_alloc(64, num * sizeof(float)));
+  float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
+  float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
 
   // init alpha&beta
   for (int i = 0; i < row; i++) alpha[i] = 1 + rand_float_postfix();
   for (int i = 0; i < row; i++) beta[i] = 1 + rand_float_postfix();
 
   // init matrix.
+  const unsigned int seed = 667095;
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j++) {
-      float tmp = 5 + rand_float_postfix();
-      src[i * col + j] = tmp;
-      src_ref[i * col + j] = tmp;
+      unsigned int seed_tmp = seed + i;
+      float rand_val = rand_r(&seed_tmp) % 256 - 128 + rand_float_postfix();
+      assign_val(src, in_dt, rand_val, i * col + j);
+      src_ref[i * col + j] = rand_val;
     }
   }
 

@@ -18,10 +18,12 @@ namespace jd {
 
 bool layernorm_ba_kd_t::init() {
   auto tensor_desc = op_desc_.tensor_descs();
-  assert(tensor_desc.size() == 1);
+  assert(tensor_desc.size() == 3);
   // TODO(zhe1wang): support more data_type.
-  auto dt = tensor_desc[0].dtype();
-  assert(dt == data_type::fp32);
+  auto input_dt = tensor_desc[0].dtype();
+  auto output_dt = tensor_desc[1].dtype();
+  auto affine_dt = tensor_desc[2].dtype();
+  assert(input_dt == data_type::fp32);
   assert(tensor_desc[0].ftype() == format_type::ba);
   auto tensor_shape = tensor_desc[0].shape();
 
@@ -30,31 +32,32 @@ bool layernorm_ba_kd_t::init() {
   int col_num = tensor_shape.back();
 
   // init ptr
-  one_ = new float(1.0);
-  one_div_n_ = new float[col_num];
-  eps_ = new float[col_num];
-  for (int i = 0; i < col_num; i++) {
-    one_div_n_[i] = 1.0 / row_num;
-    eps_[i] = 1e-5;
-  }
+  one_div_n_ = reinterpret_cast<float*>(aligned_alloc(64, col_num * sizeof(float)));
+  for (int i = 0; i < col_num; i++) one_div_n_[i] = 1.0 / row_num;
 
   // init params
-  int max_eff_nthr = col_num / 16;
   // TODO(zhe1wang): support col nums can't divded by 16.
   assert(col_num % 16 == 0);
+  int max_eff_nthr = col_num / 16;
+  int max_enable_thr = omp_get_max_threads();
+  max_eff_nthr = max_eff_nthr < max_enable_thr ? max_eff_nthr : max_enable_thr;
+  while (col_num % (16 * max_eff_nthr) != 0) max_eff_nthr -= 1;
+  if (get_data_size(output_dt) == 1 && max_eff_nthr > 4) {
+    max_eff_nthr /= 4;
+    while (col_num % (16 * max_eff_nthr != 0)) max_eff_nthr -= 1;
+  }
   params_.resize(max_eff_nthr);
   int col_per_thr = col_num / max_eff_nthr;
   for (int i = 0; i < max_eff_nthr; i++) {
-    int thread_offset;
-    thread_offset = col_per_thr * i * get_data_size(dt);
+    int thread_elt_offset = col_per_thr * i;
     ssd::layernorm_ba_param_t param;
-    param.dt = dt;
-    // TODO(zhe1wang): support more dt in the future.
-    assert(dt == data_type::fp32);
+    param.input_dt = input_dt;
+    param.output_dt = output_dt;
+    param.affine_dt = affine_dt;
     param.row_num = row_num;
     param.col_num = col_num;
     param.process_col = col_per_thr;
-    param.thread_offset = thread_offset;
+    param.thread_elt_offset = thread_elt_offset;
     param.postop_attrs = op_desc_.apply_postops_list();
     auto op_attr = op_desc_.attrs();
     params_[i] = param;
@@ -64,8 +67,16 @@ bool layernorm_ba_kd_t::init() {
 
 bool layernorm_ba_k_t::init() {
   auto op_desc = kd()->operator_desc();
+  auto output_dt = op_desc.tensor_descs()[1].dtype();
   auto col_num = op_desc.tensor_descs()[0].shape().back();
   nthr_ = col_num / 16;
+  int max_enable_thr = omp_get_max_threads();
+  nthr_ = nthr_ < max_enable_thr ? nthr_ : max_enable_thr;
+  while (col_num % (16 * nthr_) != 0) nthr_ -= 1;
+  if (get_data_size(output_dt) == 1 && nthr_ > 4) {
+    nthr_ /= 4;
+    while (col_num % (16 * nthr_) != 0) nthr_ -= 1;
+  }
   jit_kers_.resize(nthr_);
   for (int i = 0; i < nthr_; i++) {
     td.push_back(new ssd::layernorm_ba_data_t());
@@ -79,6 +90,7 @@ bool layernorm_ba_k_t::init() {
 }
 
 bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
+  omp_set_num_threads(nthr_);
 #pragma omp parallel for
   for (int i = 0; i < nthr_; i++) {
     const jit_layernorm_ba_t* jit_impl = jit_kers_[i];
@@ -88,8 +100,6 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
     data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
     data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
     data_param->one_div_n = derived_kd()->one_div_n_ptr();
-    data_param->eps = derived_kd()->eps_ptr();
-    data_param->one = derived_kd()->one_ptr();
     (*jit_impl)(td[i]);
   }
 
