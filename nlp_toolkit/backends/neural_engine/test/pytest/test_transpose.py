@@ -32,12 +32,9 @@ class TestTranspose(unittest.TestCase):
         pass
 
     def test_transpose(self):
-        model_dir = '/home/tensorflow/inc_ut/engine/bert_mini_int8_original_IR'
-        if not os.path.exists(model_dir):
-            print(
-                "The model dir is not not found, therefore test may not all round"
-            )
-            return
+        model_dir = '/home/tensorflow/localfile/nlptoolkit_ut_model/bert_mini_int8_original_IR'
+        self.assertTrue(os.path.exists(model_dir),
+            'INT8 IR model is not found, please set your own model path!')
         model = compile(model_dir)
         model.transpose_mode_int8()
 

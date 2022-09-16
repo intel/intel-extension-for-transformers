@@ -37,7 +37,7 @@ class TestGraphDispatch(unittest.TestCase):
         input_2 = np.random.uniform(low=0, high=1, size=shape).astype('int32')
     
         # validate int8 sparse graph tuning
-        int8_model_path = "/home/tensorflow/inc_ut/engine/bert_mini_int8_original_IR"
+        int8_model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/bert_mini_int8_original_IR"
         self.assertTrue(os.path.exists(int8_model_path),
             'INT8 IR model is not found, please set your own model path!')
         int8_model = compile(int8_model_path)
@@ -51,7 +51,7 @@ class TestGraphDispatch(unittest.TestCase):
         self.assertTrue((int8_output == int8_dispatch_output).all())
 
         # validate onednn graph tuning
-        fp32_model_path = "/home/tensorflow/inc_ut/engine/bert_mini_sst2_1x4_fp32.onnx"
+        fp32_model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/bert_mini_sst2_1x4_fp32.onnx"
         self.assertTrue(os.path.exists(fp32_model_path),
             'FP32 ONNX model is not found, please set your own model path!')
         fp32_model = compile(fp32_model_path)
