@@ -60,6 +60,9 @@ class Operator {
   virtual void Forward(const vector<Tensor*>& input,
                        const vector<Tensor*>& output) = 0;
 
+  // modify tensors before (in) or after (out) Forward
+  virtual void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {}
+
   inline void unref_tensors(const vector<Tensor*>& input) {
     static std::mutex unref_lock;
     std::lock_guard<std::mutex> lock(unref_lock);
@@ -75,6 +78,7 @@ class Operator {
   // dispatch kernel may need to do reshape and receive config, like InnerProduct to Convolution
   inline void set_dispatch_from_type(const string& type) { dispatch_from_ = type; }
   inline void set_dispatch_config(const vector<string>& config = {}) { dispatch_config_ = config; }
+  inline const vector<string>& dispatch_config() const { return dispatch_config_; }
   inline void set_do_shape_infer(const bool& do_shape_infer) { do_shape_infer_ = do_shape_infer; }
   inline const bool& do_shape_infer() const { return do_shape_infer_; }
   inline const bool& monopolize_dispatcher() const { return monopolize_dispatcher_; }

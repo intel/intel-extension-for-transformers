@@ -229,6 +229,25 @@ void Model::SetOutput(const vector<OperatorConfig*>& conf, const int operator_id
   }
 }
 
+void Model::SetDispatchKernel(const bool& reshape_model) {
+  if (is_dispatcher_tuning_) {
+    for (int i = 0; i < operators_.size(); ++i) {
+      operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model,
+                                      dispatch_table_file_root_, has_dispatch_table_file_);
+    }
+  } else {
+    if (reshape_model) {
+      for (int i = 0; i < operators_.size(); ++i) {
+        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model,
+                                        dispatch_table_file_root_, has_dispatch_table_file_);
+      }
+    }
+  }
+
+  // save dispatch table file after tuniung
+  if (is_dispatcher_tuning_ && DispatchTable::Size() > 0) DispatchTable::Save(dispatch_table_file_root_);
+}
+
 vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
   CHECK_EQ(input_data.size(), model_input_tensors_.size())
       << "input data size not equal with model input tensor size....";
@@ -261,22 +280,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
     model_input_tensors_[i]->set_shape(input_data[i].shape());
   }
 
-  if (is_dispatcher_tuning_) {
-    for (int i = 0; i < operators_.size(); ++i) {
-      operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model,
-                                      dispatch_table_file_root_, has_dispatch_table_file_);
-    }
-  } else {
-    if (reshape_model) {
-      for (int i = 0; i < operators_.size(); ++i) {
-        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model,
-                                        dispatch_table_file_root_, has_dispatch_table_file_);
-      }
-    }
-  }
-
-  // save dispatch table file after tuniung
-  if (is_dispatcher_tuning_ && DispatchTable::Size() > 0) DispatchTable::Save(dispatch_table_file_root_);
+  SetDispatchKernel(reshape_model);
 
   if (!is_dispatcher_tuning_) {
     if (reshape_model) {

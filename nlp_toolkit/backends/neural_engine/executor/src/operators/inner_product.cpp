@@ -546,32 +546,14 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
 
 #if __AVX512F__
 void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  // reorder 2d to 3d
-  // 2D dense: [256, 768] x [768 328] -> [256, 328]
-  // 2D sparselib: [328, 768] x [768, 256] -> [328, 256]
-  // dispatch 3D sparselib: [328, 768] x [2, 768, 128] -> [2, 328, 128]
-  // reorder src activation
-  vector<int64_t> src1_3d_shape;
-  if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
-    // reshape to 3d then reorder
-    StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
-    vector<int64_t> src1_3d_shape_origin = {src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]};
-    src1_->reorder(src1_3d_shape_origin);
-  }
-
   void* dst_data = dst_->mutable_data();
   // has op: append_sum
-  // post life count
-  int life_count = 0;
   if (post_ != nullptr && !binary_add_) {
     LOG(INFO) << "inner product has post op " << post_->name();
     // The sum primitive requires all source and destination tensors to have the same shape.
     // Implicit broadcasting is not supported.
-    if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
-      post_->reorder({src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]});
-    }
     void* post_data_ptr = const_cast<void*>(post_->data());
-    life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
+    auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
     if (life_count == 1) {
       post_->unref_data(true);
@@ -587,19 +569,40 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
   std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
                                            rescales_.data()};
   spmm_kern_.execute(runtime_data);
-
-  // reorder dst activation (optional)
-  if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
-    // reorder to 3D then reshape
-    vector<int64_t> dst_3d_shape_origin = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
-    dst_->reorder(dst_3d_shape_origin);
-    // reorder to origin
-    src1_->reorder(src1_3d_shape);
-    if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty()
-        && dispatch_config_[0] == "SparseLib" && life_count > 1) post_->reorder(src1_3d_shape);
-  }
 }
 #endif
+
+void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output,
+                                        const string& stage) {
+  // no use of sparselib
+  if (dispatch_config_.empty()) return;
+  if (stage == "in") {
+    // reorder 2d to 3d in SparseLib
+    // 2D dense: [256, 768] x [768 328] -> [256, 328]
+    // 2D sparselib: [328, 768] x [768, 256] -> [328, 256]
+    // dispatch 3D sparselib: [328, 768] x [2, 768, 128] -> [2, 328, 128]
+    // reorder src and post activation
+    if (dispatch_config_[0] == "SparseLib") {
+      // reshape to 3d then reorder
+      vector<int64_t> src1_3d_shape;
+      StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
+      vector<int64_t> src1_3d_shape_origin = {src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]};
+      input[1]->reorder(src1_3d_shape_origin);
+      if (post_ != nullptr && !binary_add_) post_->reorder(src1_3d_shape_origin);
+    }
+  } else if (stage == "out") {
+    // reorder dst activation (optional)
+    vector<int64_t> src1_3d_shape;
+    StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
+    vector<int64_t> dst_3d_shape_origin = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
+    output[0]->reorder(dst_3d_shape_origin);
+    // reorder src and post back
+    if (input[1]->left_life() > 0) input[1]->reorder(src1_3d_shape);
+    if (post_ != nullptr && !binary_add_ && post_->left_life() > 0) post_->reorder(src1_3d_shape);
+  } else {
+    LOG(WARNING) << "Wrong stage parameter, should be in or out...";
+  }
+}
 
 void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (!is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {

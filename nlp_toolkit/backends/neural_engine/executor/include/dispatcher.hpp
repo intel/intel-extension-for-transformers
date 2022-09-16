@@ -109,7 +109,16 @@ class Dispatcher {
   }
 
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+    AdaptTensors(input, output, "in");
     kernel_handler_[execute_kernel_]->Forward(input, output);
+    AdaptTensors(input, output, "out");
+  }
+
+  // modify tensors when dispatched kernel needs different format, etc.
+  // should call it before (in) or after (out) Forward
+  void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {
+    if (!sparselib_available_[0] || kernel_handler_[execute_kernel_]->dispatch_config().empty()) return;
+    kernel_handler_[execute_kernel_]->AdaptTensors(input, output, stage);
   }
 
   void GetExecuteKernel(const vector<Tensor*>& input, const vector<Tensor*>& output,
@@ -209,7 +218,8 @@ class Dispatcher {
         string kernel_name = (!kernel_config.empty() && kernel_config[0] != "SparseLib") ? kernel_config[0] : type_;
         kernel_handler_[kernel_name]->set_dispatch_config(kernel_config);
         if (reshape_model || !kernel_config.empty()) kernel_handler_[kernel_name]->Reshape(input, output);
-        kernel_handler_[kernel_name]->Forward(input, output);
+        execute_kernel_ = kernel_name;
+        Forward(input, output);
       }
     }
   }

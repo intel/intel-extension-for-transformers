@@ -213,7 +213,9 @@ class OpTuning {
       kernel->Reshape(input, output);
       reshape_time = Time("end") - start_time;
       start_time = Time("start");
+      kernel->AdaptTensors(input, output, "in");
       kernel->Forward(input, output);
+      kernel->AdaptTensors(input, output, "out");
       float execute_time = Time("end") - start_time;
       if (reshape_model) execute_time += reshape_time;
       bs_attr_timer[execute_time] = kernel_config_cpy;

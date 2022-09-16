@@ -62,6 +62,8 @@ class Model {
   void SetOutput(const vector<OperatorConfig*>& conf, const int operator_id, const int tensor_id,
                  map<string, int>* tensor_name_to_idx);
 
+  void SetDispatchKernel(const bool& reshape_model);
+
   inline const string& name() const { return name_; }
   inline const vector<string>& operator_names() const { return operator_names_; }
   inline const vector<string>& tensor_names() const { return tensor_names_; }

@@ -77,7 +77,7 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
   vector<jd::postop_attr> postops = {};
   if (quantize_fuse_) {
     float zp, scale;
-    // TODO: get zp & scale.
+    // TODO(Wang Zhe): get zp & scale.
     jd::postop_attr u8_quantize = {jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, zp, 0, scale};
     postops.push_back(u8_quantize);
     op_attrs_["postop_list"] = "s8quant+" + std::to_string(zp) + "+" + std::to_string(scale);
