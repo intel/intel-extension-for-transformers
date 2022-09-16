@@ -23,7 +23,6 @@ from neural_compressor.utils import logger
 from nlp_toolkit.optimization.utils.utility import LazyImport
 from packaging.version import Version
 from transformers import AutoConfig
-from transformers.file_utils import cached_path, hf_bucket_url
 
 torch = LazyImport("torch")
 
@@ -126,36 +125,71 @@ class OptimizedModel:
             model_class._keys_to_ignore_on_load_missing = keys_to_ignore_on_load_missing
             dataloader = kwargs.get("dataloader", None)
 
-            if not os.path.isdir(model_name_or_path) and not os.path.isfile(model_name_or_path):
-                weights_file = hf_bucket_url(model_name_or_path,
-                                             filename=WEIGHTS_NAME,
-                                             revision=revision)
-                try:
-                    # Load from URL or cache if already cached
-                    resolved_weights_file = cached_path(
-                        weights_file,
-                        cache_dir=cache_dir,
-                        force_download=force_download,
-                        resume_download=resume_download,
-                        use_auth_token=use_auth_token,
-                    )
-                except EnvironmentError as err:  # pragma: no cover
-                    logger.error(err)
-                    msg = (f"Can't load weights for '{model_name_or_path}'. Make sure that:\n\n"
-                           f"- '{model_name_or_path}' is a correct model identifier "
-                           f"listed on 'https://huggingface.co/models'\n  (make sure "
-                           f"'{model_name_or_path}' is not a path to a local directory with "
-                           f"something else, in that case)\n\n- or '{model_name_or_path}' is "
-                           f"the correct path to a directory containing a file "
-                           f"named one of {WEIGHTS_NAME}\n\n")
+            if not os.path.isdir(model_name_or_path) and not os.path.isfile(model_name_or_path):   # pragma: no cover
+                # pylint: disable=E0611
+                if Version(transformers.__version__) < Version('4.22.0'):
+                    from transformers.file_utils import cached_path, hf_bucket_url
+                    weights_file = hf_bucket_url(model_name_or_path,
+                                                filename=WEIGHTS_NAME,
+                                                revision=revision)
+                    try:
+                        # Load from URL or cache if already cached
+                        resolved_weights_file = cached_path(
+                            weights_file,
+                            cache_dir=cache_dir,
+                            force_download=force_download,
+                            resume_download=resume_download,
+                            use_auth_token=use_auth_token,
+                        )
+                    except EnvironmentError as err:   # pragma: no cover
+                        logger.error(err)
+                        msg = (
+                            f"Can't load weights for '{model_name_or_path}'. Make sure that:\n\n"
+                            f"- '{model_name_or_path}' is a correct model identifier "
+                            f"listed on 'https://huggingface.co/models'\n  (make sure "
+                            f"'{model_name_or_path}' is not a path to a local directory with "
+                            f"something else, in that case)\n\n- or '{model_name_or_path}' is "
+                            f"the correct path to a directory containing a file "
+                            f"named one of {WEIGHTS_NAME}\n\n"
+                        )
+                        if revision is not None:
+                            msg += (f"- or '{revision}' is a valid git identifier "
+                                    f"(branch name, a tag name, or a commit id) that "
+                                    f"exists for this model name as listed on its model "
+                                    f"page on 'https://huggingface.co/models'\n\n"
+                                )
+                        raise EnvironmentError(msg)
+                else:
+                    from transformers.utils import cached_file 
+                    try:
+                        # Load from URL or cache if already cached
+                        resolved_weights_file = cached_file(
+                            model_name_or_path,
+                            filename=WEIGHTS_NAME,
+                            cache_dir=cache_dir,
+                            force_download=force_download,
+                            resume_download=resume_download,
+                            use_auth_token=use_auth_token,
+                        )
+                    except EnvironmentError as err:   # pragma: no cover
+                        logger.error(err)
+                        msg = (
+                            f"Can't load weights for '{model_name_or_path}'. Make sure that:\n\n"
+                            f"- '{model_name_or_path}' is a correct model identifier "
+                            f"listed on 'https://huggingface.co/models'\n  (make sure "
+                            f"'{model_name_or_path}' is not a path to a local directory with "
+                            f"something else, in that case)\n\n- or '{model_name_or_path}' is "
+                            f"the correct path to a directory containing a file "
+                            f"named one of {WEIGHTS_NAME}\n\n"
+                        )
+                        if revision is not None:
+                            msg += (f"- or '{revision}' is a valid git identifier "
+                                    f"(branch name, a tag name, or a commit id) that "
+                                    f"exists for this model name as listed on its model "
+                                    f"page on 'https://huggingface.co/models'\n\n"
+                                )
+                        raise EnvironmentError(msg)
 
-                    if revision is not None:
-                        msg += (f"- or '{revision}' is a valid git identifier "
-                                f"(branch name, a tag name, or a commit id) that "
-                                f"exists for this model name as listed on its model "
-                                f"page on 'https://huggingface.co/models'\n\n")
-
-                    raise EnvironmentError(msg)
                 q_model = load(
                     resolved_weights_file, model,
                     dataloader=dataloader) if Version(__version__) > Version("1.13") else load(
