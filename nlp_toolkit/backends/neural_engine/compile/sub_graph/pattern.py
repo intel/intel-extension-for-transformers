@@ -60,6 +60,9 @@ supported_patterns = [
     'OutputData',
 ]
 
+# for superbert, superbert patterns are huge patterns based on supported patterns
+superbert_patterns = []
+
 PATTERNS = {}
 
 

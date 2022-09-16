@@ -21,7 +21,8 @@ from .. import logger
 import numpy as np
 import yaml
 import os
-
+import copy
+import time
 
 class Graph(object):
 
@@ -483,7 +484,94 @@ class Graph(object):
 
         logger.info("Emit done...")
 
-    def get_sparse_nodes_name(self, threshold=0.7):
+    def graph_dispatch(self, tune = True, inputs_shape = []):
+        sparse_nodes_name = self.get_sparse_nodes_name()
+        if tune:
+            logger.info("Tuning graph start ...")
+            self._tune_onednn_graph(inputs_shape)
+            self._tune_sparse_graph(inputs_shape, sparse_nodes_name)
+            logger.info("Tuning graph end ...")
+        else:
+            # if not tune, map to sparse graph directly 
+            self.transpose_mode_int8(sparse_nodes_name)
+    
+    def _tune_onednn_graph(self, inputs_shape = []):
+        onednn_graph_nodes_map = self._get_onednn_graph_nodes()
+        if onednn_graph_nodes_map == {"InnerProduct": [], "Softmax": []}:
+            pass
+        else:
+            onednn_graph_nodes_name_list = self._generate_onednn_graph_nodes_name_list(onednn_graph_nodes_map)
+            golden_onednn_graph_nodes_name = []
+            min_latency = float("inf")
+            for onednn_graph_nodes_name in onednn_graph_nodes_name_list:
+                curr_latency = float("inf")
+                try:
+                    curr_model = copy.deepcopy(self)
+                    curr_model._generate_onednn_graph_nodes(onednn_graph_nodes_name)
+                    curr_result, curr_latency = curr_model._get_latency(inputs_shape)
+                except:
+                    logger.warning("Graph can not be inferenced, please check the graph!")
+                # update min latency and transpose nodes name
+                if curr_latency < min_latency:
+                    min_latency = curr_latency
+                    golden_onednn_graph_nodes_name = onednn_graph_nodes_name
+            self._generate_onednn_graph_nodes(golden_onednn_graph_nodes_name)
+
+    def _get_onednn_graph_nodes(self):
+        # onednn graph only support fp32 inner_product and softmax
+        onednn_graph_nodes_map = {"InnerProduct": [], "Softmax": []}
+        for node in self.nodes:
+            if node.op_type == "InnerProduct":
+                weight = node.input_tensors[1]
+                if type(weight.data) == np.ndarray and \
+                    weight.data.dtype == "float32":
+                    onednn_graph_nodes_map["InnerProduct"].append(node.name)
+            elif node.op_type == "Softmax":
+                if node.attr.get("output_dtype", "float32") == "float32":
+                    onednn_graph_nodes_map["Softmax"].append(node.name)
+        return onednn_graph_nodes_map
+
+    def _generate_onednn_graph_nodes_name_list(self, onednn_graph_nodes_map):
+        # strategy:
+        # 1.softmax: all nodes map to onednn graph or not
+        # 2.innerproduct: tune accorording weight shape
+        ip_nodes_name_list = self._generate_transpose_nodes_name_list(onednn_graph_nodes_map["InnerProduct"])
+        onednn_graph_nodes_name_list = []
+        for ip_nodes_name in ip_nodes_name_list:
+            onednn_graph_nodes_name_list.append(ip_nodes_name)
+            onednn_graph_nodes_name_list.append(ip_nodes_name + onednn_graph_nodes_map["Softmax"])
+        return onednn_graph_nodes_name_list
+
+    def _generate_onednn_graph_nodes(self, onednn_graph_nodes_name):
+        for node in self.nodes:
+            if node.name in onednn_graph_nodes_name:
+                if node.op_type == "InnerProduct":
+                    node.op_type = "InnerProductGraph"
+                elif node.op_type == "Softmax":
+                    node.op_type = "SoftmaxGraph" 
+
+    def _tune_sparse_graph(self, inputs_shape = [], sparse_nodes_name = []):
+        if sparse_nodes_name == []:
+            pass
+        else:
+            trans_nodes_name_list = self._generate_transpose_nodes_name_list(sparse_nodes_name)
+            golden_trans_nodes_name = []
+            min_latency = float("inf")
+            for trans_nodes_name in trans_nodes_name_list:
+                curr_latency = float("inf")
+                try:
+                    curr_model = copy.deepcopy(self)
+                    curr_model.transpose_mode_int8(trans_nodes_name)
+                    curr_result, curr_latency = curr_model._get_latency(inputs_shape)
+                except:
+                    logger.warning("Graph can not be inferenced, please check the graph!")
+                # update min latency and transpose nodes name
+                if curr_latency < min_latency:
+                    min_latency = curr_latency
+                    golden_trans_nodes_name = trans_nodes_name
+            self.transpose_mode_int8(golden_trans_nodes_name)
+    
+    def get_sparse_nodes_name(self, threshold = 0.7):
 
         def get_zero_ratio(matrix, block):
             sparse_ratio = -1
@@ -496,9 +584,9 @@ class Graph(object):
                         is_zero_block = True
                         for br in range(block[0]):
                             for bc in range(block[1]):
-                                if matrix[mr * block[0] + br][mc * block[1] + bc] != 0:
-                                    is_zero_block = False
-                                    break
+                                if matrix[mr*block[0]+br][mc*block[1]+bc] != 0:
+                                   is_zero_block = False
+                                   break
                             if not is_zero_block:
                                 break
                         if is_zero_block == True:
@@ -511,7 +599,7 @@ class Graph(object):
             if node.op_type == "InnerProduct":
                 # sparse kernel limitation:
                 # 1. int8
-                # 2. sparse_ratio > 0.5(1*4)
+                # 2. sparse_ratio > 0.7(1*4)
                 # 3. output channel of weight_shape = 4x
                 # 4. post op != tanh
                 if 'append_op' not in node.attr \
@@ -521,12 +609,84 @@ class Graph(object):
                     if type(weight.data) == np.ndarray and \
                         (weight.data.dtype == 'int8' \
                         or weight.data.dtype == 'uint8') \
-                        and weight.data.shape[1] % 4 == 0:
-
+                        and weight.data.shape[1] % 4 == 0: # 1*4 sparse block
                         zero_ratio = get_zero_ratio(weight.data, [1, 4])
                         if zero_ratio >= threshold:
                             sparse_nodes_name.append(node.name)
-        return sparse_nodes_name
+
+        return sparse_nodes_name 
+    
+    def _generate_transpose_nodes_name_list(self, sparse_nodes_name):
+        transpose_nodes_list = []
+        if sparse_nodes_name == []:
+            return transpose_nodes_list
+        # switch the nodes which has the same weight shape and pose op
+        weight_shape_map = {}
+        for node in self.nodes:
+            if node.name in sparse_nodes_name:
+                weight = node.input_tensors[1]
+                weight_shape = tuple(weight.shape) # list to tuple for dict key
+                if weight_shape in weight_shape_map.keys():
+                    weight_shape_map[weight_shape].append(node.name)
+                else:
+                    weight_shape_map[weight_shape] = [node.name]
+        
+        # binary reflected gray code to generate the all combinations fo the n elements
+        def brgd(n):
+            if n==1:
+                return ["0","1"]
+            L1 = brgd(n-1)
+            L2 = copy.deepcopy(L1)
+            L2.reverse()
+            L1 = ["0" + l for l in L1]
+            L2 = ["1" + l for l in L2]
+            L = L1 + L2
+            return L
+
+        transpose_mask_list = brgd(len(weight_shape_map))
+        for transpose_mask in transpose_mask_list:
+            transpose_nodes = []
+            for idx, weight_shape in enumerate(weight_shape_map):
+                if transpose_mask[idx]=="1":
+                    transpose_nodes += weight_shape_map[weight_shape]
+            transpose_nodes_list.append(transpose_nodes)
+
+        return transpose_nodes_list
+
+
+    def _generate_inputs(self, inputs_shape = []):
+        dtype_map = {"float32": np.float32,
+               "int8": np.int8,
+               "int32": np.int32,
+               "int64": np.int64,
+               "uint8": np.uint8,
+               }
+        inputs = []
+        id = 0
+        for node in self.nodes:
+            if node.op_type == "Input":
+                for tensor in node.output_tensors:
+                    if not isinstance(tensor.data, np.ndarray):
+                        if inputs_shape == []:
+                            shape = [16 for s in tensor.shape if s == -1]
+                        else:
+                            shape = inputs_shape[id]
+                        dtype = dtype_map[tensor.dtype]
+                        input = np.random.uniform(low=0, high=10, size=shape).astype(dtype)
+                        inputs.append(input)     
+                        id += 1
+        return inputs
+    
+    def _get_latency(self, inputs_shape = [], iterations = 10, warm_up = 5):
+        inputs = self._generate_inputs(inputs_shape)
+        iter_latency = []
+        for _ in range(iterations):
+            start_time = time.time()
+            result = self.inference(inputs)
+            end_time = time.time()
+            iter_latency.append(end_time - start_time)
+        latency = np.array(iter_latency[warm_up:]).mean()
+        return result, latency
 
     def transpose_mode_int8(self, node_name_list=None):
         from ..ops import Tensor

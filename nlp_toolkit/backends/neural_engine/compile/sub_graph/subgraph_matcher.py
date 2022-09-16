@@ -15,7 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .pattern import supported_patterns, PATTERNS
+import time
+import copy
+import numpy as np
+from tqdm import tqdm
+from .pattern import supported_patterns, superbert_patterns, PATTERNS
 from .. import logger
 
 EXECUTOR_TYPE = {
@@ -47,25 +51,65 @@ EXECUTOR_TYPE = {
     "_MklLayerNorm": "LayerNorm",
 }
 
-
 class SubGraphMatcher(object):
-    def __call__(self, model):
-        patterns_switch = {
-            'LayerNorm': True,
-            'TransposeBatchMatMul': True,
-            'MatMulWithBiasGelu': True,
-            'MatMulWithBiasAdd': True,
-            'MatMulWithBiasTanh': True,
-        }
-        logger.info('Start to implement Sub-Graph matching and replacing...')
-        for pattern in supported_patterns:
-            if pattern in PATTERNS:
-                if pattern in patterns_switch.keys() and not patterns_switch[pattern]:
-                    continue
-                else:
-                    p_fusion = PATTERNS[pattern]()
-                    model = p_fusion(model)
+    def __call__(self, model, tune = False):
+        logger.info('Start to implement Sub-Graph matching and replacing...') 
+        if tune:
+            self._tune_patterns(model)
+        else:
+            self._fuse_patterns(model)
+        logger.info('Sub-Graph match and replace done...')
+        return model
 
+    def _fuse_patterns(self, model, supported_patterns=supported_patterns, pattern_mask=None):
+        pattern_mask = [True for _ in range(len(supported_patterns))] \
+                        if pattern_mask == None else pattern_mask
+        for pattern_id, pattern in enumerate(supported_patterns):
+            if pattern in PATTERNS and pattern_mask[pattern_id]:
+                p_fusion = PATTERNS[pattern]()
+                model = p_fusion(model)
+        self._remove_identity(model) 
+         
+    def _tune_patterns(self, model, iterations = 10, warm_up = 5):
+        # pattern tuning strategy(for superbert): 
+        #    1. only one pattern off/on each time (pruning)
+        #    2. check accuracy with framework
+        #    3. and only save min latency config
+        logger.info('Start tuning pattern...')
+        all_patterns = supported_patterns + superbert_patterns
+        pattern_mask = [True for i in range(len(all_patterns))]
+        min_latency = float("inf")
+        # skip tuning input node fusion and output node fusion
+        for idx in tqdm(range(len(supported_patterns), len(all_patterns))):
+            # pattern on
+            on_latency = float("inf")
+            try:
+                on_model = copy.deepcopy(model)
+                self._fuse_patterns(on_model, all_patterns, pattern_mask)
+                on_result, on_latency = on_model._get_latency([], iterations, warm_up)
+            except:
+                logger.warning("Graph can not be inferenced, please check the graph!")
+            # pattern off
+            off_latency = float("inf")
+            try:
+                off_pattern_mask = copy.deepcopy(pattern_mask)
+                off_pattern_mask[idx] = False
+                off_model = copy.deepcopy(model)
+                self._fuse_patterns(off_model, all_patterns, off_pattern_mask)
+                off_result, off_latency = off_model._get_latency([], iterations, warm_up)
+            except:
+                logger.warning("Graph can not be inferenced, please check the graph!")
+            # update min latency and pattern mask
+            if off_latency < on_latency and off_latency < min_latency:
+                min_latency = off_latency
+                pattern_mask = off_pattern_mask
+        
+        # generate model according pattern mask 
+        self._fuse_patterns(model, all_patterns, pattern_mask)
+        logger.info('End tuning pattern...')
+        return model
+
+    def _remove_identity(self, model):
         rm_node_names = []
         rm_op_type = ['Identity']
         for i in range(len(model.nodes)):
@@ -77,6 +121,4 @@ class SubGraphMatcher(object):
                     op_type = EXECUTOR_TYPE[node.op_type]
                     model.nodes[i].op_type = op_type
         model.remove_nodes(rm_node_names)
-        logger.info('Sub-Graph match and replace done...')
 
-        return model
