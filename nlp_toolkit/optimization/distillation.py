@@ -40,6 +40,7 @@ class Criterion(object):
 class DistillationCriterionMode(Enum):
     KNOWLEDGELOSS = "KnowledgeDistillationLoss"
     INTERMEDIATELAYERSLOSS = "IntermediateLayersKnowledgeDistillationLoss"
+    
 
 
 SUPPORTED_DISTILLATION_CRITERION_MODE = \

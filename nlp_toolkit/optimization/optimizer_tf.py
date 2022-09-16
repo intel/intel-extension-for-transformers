@@ -22,11 +22,7 @@ import time
 from neural_compressor import __version__
 from neural_compressor.experimental import common
 from neural_compressor.model.model import saved_model_session
-from nlp_toolkit import (
-    DistillationConfig,
-    QuantizationConfig,
-    PruningConfig
-)
+from nlp_toolkit import (DistillationConfig, QuantizationConfig, PruningConfig)
 from nlp_toolkit.optimization.quantization import QuantizationMode
 from nlp_toolkit.optimization.utils.metrics import Metric
 from nlp_toolkit.optimization.utils.utility import LazyImport
@@ -34,25 +30,23 @@ from packaging import version
 from transformers import PreTrainedModel
 from transformers.training_args_tf import TFTrainingArguments
 from typing import Callable, Optional, List
-from .utils.utility_tf import TFDataloader, TMPPATH, get_filepath
+from .utils.utility_tf import TFDataloader, TMPPATH, TEACHERPATH, get_filepath
 
 tf = LazyImport("tensorflow")
 logger = logging.getLogger(__name__)
 
 
 class TFOptimization:
-    def __init__(
-        self,
-        model: PreTrainedModel,
-        args: TFTrainingArguments,
-        train_dataset = None,
-        eval_dataset = None,
-        compute_metrics: Optional[Callable] = None,
-        criterion = None,
-        optimizer = None,
-        task_type = None,
-        task_id = None,
-    ):
+    def __init__(self,
+                 model: PreTrainedModel,
+                 args: TFTrainingArguments,
+                 train_dataset=None,
+                 eval_dataset=None,
+                 compute_metrics: Optional[Callable] = None,
+                 criterion=None,
+                 optimizer=None,
+                 task_type=None,
+                 task_id=None):
         """
         Args:
             model (:obj:`PreTrainedModel`):
@@ -63,6 +57,7 @@ class TFOptimization:
 
         self.model = model
         self.teacher_model = None
+        self.component = None
         self.eval_dataset = eval_dataset
         self.train_dataset = train_dataset
         self._eval_func = None
@@ -160,8 +155,8 @@ class TFOptimization:
         Returns:
             [float]: evaluation result, the larger is better.
         """
-        num_examples = sum(1 for _ in (self._eval_dataset.unbatch()
-                           if hasattr(self._eval_dataset, "unbatch") else self._eval_dataset))
+        num_examples = sum(1 for _ in (self._eval_dataset.unbatch(
+        ) if hasattr(self._eval_dataset, "unbatch") else self._eval_dataset))
 
         logger.info(f"***** Running Evaluation *****")
         logger.info(f"  Num examples in dataset = {num_examples}")
@@ -174,23 +169,27 @@ class TFOptimization:
             model, x) for x in self.output_names]
 
         # pylint: disable=E0401
-        if self.eval_distributed:   # pragma: no cover
+        if self.eval_distributed:  # pragma: no cover
             import horovod.tensorflow as hvd
             hvd.init()
             # If metric.hvd is not None then run distributed inference
             try:
                 len_dataloader = len(self.eval_dataset.cardinality().numpy())
             except:
-                logger.info("The length of the distributed training dataloader is unknown."
-                            "When the iteration of training dataloader in each process is "
-                            "inconsistent, an error may occur.")
+                logger.info(
+                    "The length of the distributed training dataloader is unknown."
+                    "When the iteration of training dataloader in each process is "
+                    "inconsistent, an error may occur.")
             else:
                 list_len_dataloader = hvd.allgather_object(len_dataloader)
                 if hvd.rank() == 0:
-                    for i in range(len(list_len_dataloader)-1):
-                        if list_len_dataloader[i] != list_len_dataloader[i+1]:
-                            raise AttributeError("The evaluation dataloader's iteration is"
-                                                 "different between processes, please reset dataloader's batch_size.")
+                    for i in range(len(list_len_dataloader) - 1):
+                        if list_len_dataloader[i] != list_len_dataloader[i +
+                                                                         1]:
+                            raise AttributeError(
+                                "The evaluation dataloader's iteration is"
+                                "different between processes, please reset dataloader's batch_size."
+                            )
             logger.info("Rank {!s} dataloaders' data distribution balance check for evaluation have been finnished." \
                 .format(hvd.allgather_object(hvd.rank())))
 
@@ -226,7 +225,8 @@ class TFOptimization:
                 if isinstance(labels, tuple):
                     labels = labels[0].numpy()
 
-                if isinstance(logits, list) and len(logits) > 1:   # pragma: no cover
+                if isinstance(logits,
+                              list) and len(logits) > 1:  # pragma: no cover
                     for val in logits:
                         if preds is None:
                             preds = val
@@ -237,29 +237,38 @@ class TFOptimization:
                         if label_ids is None:
                             label_ids = val.numpy()
                         else:
-                            label_ids = np.append(label_ids, val.numpy(), axis=0)
+                            label_ids = np.append(label_ids,
+                                                  val.numpy(),
+                                                  axis=0)
                 else:
                     if preds is None:
-                        preds = logits[0] if isinstance(logits, list) else logits
+                        preds = logits[0] if isinstance(logits,
+                                                        list) else logits
                     else:
                         preds = np.append(
-                            preds, logits[0] if isinstance(logits, list) else logits, axis=0
-                        )
+                            preds,
+                            logits[0] if isinstance(logits, list) else logits,
+                            axis=0)
 
                     if label_ids is None:
-                        label_ids = labels[0].numpy() if isinstance(labels, list) else labels.numpy()
+                        label_ids = labels[0].numpy() if isinstance(
+                            labels, list) else labels.numpy()
                     else:
                         label_ids = np.append(
-                            label_ids, labels[0].numpy() if isinstance(labels, list) else labels.numpy(), axis=0
-                        )
+                            label_ids,
+                            labels[0].numpy()
+                            if isinstance(labels, list) else labels.numpy(),
+                            axis=0)
 
         if self.compute_metrics is not None and preds is not None and label_ids is not None:
             try:
-                loss = self.criterion(label_ids, preds) if self.criterion is not None else None
-            except Exception as e:   # pragma: no cover
+                loss = self.criterion(
+                    label_ids, preds) if self.criterion is not None else None
+            except Exception as e:  # pragma: no cover
                 logger.info(e)
                 logger.info("There is no loss function or loss compute error, \
-                                Please compute loss in compute_metrics function")
+                                Please compute loss in compute_metrics function"
+                            )
                 loss = None
             results = self.compute_metrics({"logits": preds}, label_ids)
             if loss is not None:
@@ -272,7 +281,7 @@ class TFOptimization:
                         "Please set metric from {}".format(results.keys())
                 if nums == 1:
                     result = results.get(self.metrics[0].name)
-                else:   # pragma: no cover
+                else:  # pragma: no cover
                     result = 0
                     for metric in self.metrics:
                         assert metric.weight_ratio is not None, \
@@ -284,7 +293,7 @@ class TFOptimization:
                         "Please set metric from {}".format(results.keys())
                 result = results.get(self.metrics.name)
                 logger.info("metric Accuracy: {}".format(result))
-            else:   # pragma: no cover
+            else:  # pragma: no cover
                 assert False, "Please set the correct metrics format from the README"
         else:
             result = 0
@@ -324,12 +333,14 @@ class TFOptimization:
 
         if self.quant_config.approach == QuantizationMode.POSTTRAININGSTATIC.value:
             if self._train_dataset is not None:
-                self.quantizer.calib_dataloader = TFDataloader(self._train_dataset,
-                                                               batch_size=self.args.per_device_train_batch_size)
+                self.quantizer.calib_dataloader = TFDataloader(
+                    self._train_dataset,
+                    batch_size=self.args.per_device_train_batch_size)
             elif self._eval_dataset is not None:
-                self.quantizer.calib_dataloader = TFDataloader(self._eval_dataset,
-                                                               batch_size=self.args.per_device_eval_batch_size)
-            else:   # pragma: no cover
+                self.quantizer.calib_dataloader = TFDataloader(
+                    self._eval_dataset,
+                    batch_size=self.args.per_device_eval_batch_size)
+            else:  # pragma: no cover
                 assert False, "Please pass calibration dataset to TFNoTrainerOptimizer.calib_dataloader"
         elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:   # pragma: no cover
             assert False, \
@@ -364,9 +375,12 @@ class TFOptimization:
 
     def init_pruner(
         self,
-        pruning_config = None,
+        pruning_config=None,
     ):
         from neural_compressor.experimental import Pruning
+        if pruning_config.framework != 'tensorflow':
+            logger.warning('pruning_config.framework is {}, should be tensorflow'.format(pruning_config.framework))
+            pruning_config.framework = 'tensorflow'
         self.pruning_config = pruning_config
         self.metrics = self.pruning_config.metrics
 
@@ -378,11 +392,12 @@ class TFOptimization:
         pruner.model.model_type = "saved_model"
 
         self.pruner = pruner
+        self.component = pruner
         return pruner
 
     def prune(
         self,
-        pruning_config = None,
+        pruning_config=None,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
         train_dataset=None,
@@ -415,9 +430,9 @@ class TFOptimization:
                 self.pruner.train_func = self._train_func
         else:
             if version.parse(__version__) <= version.parse("1.12"):
-                self.pruner.pruning_func = self.kerase_train_func
+                self.pruner.pruning_func = self.build_train_func
             else:
-                self.pruner.train_func = self.kerase_train_func
+                self.pruner.train_func = self.build_train_func
 
         opt_model = self.pruner.fit()
 
@@ -431,19 +446,60 @@ class TFOptimization:
         self,
         distillation_config,
         teacher_model: PreTrainedModel,
-    ):   # pragma: no cover
+    ):  
         from neural_compressor.experimental import Distillation
         assert isinstance(distillation_config, DistillationConfig), \
-            "please pass a instance of PruningConfig to trainer.prune!"
+            "please pass a instance of DistillationConfig to trainer.distill!"
+
+        def train_step(data):
+            if len(data) == 3:
+                x, y, sample_weight = data  # pragma: no cover
+            else:
+                sample_weight = None
+                x, y = data
+            with tf.GradientTape() as tape:
+                y_pred = self.model(x)
+                teacher_outputs = self.distiller.criterion.teacher_model_forward(
+                    input=x, teacher_model=teacher_model)
+
+                loss = self.model.compute_loss(x, y, y_pred, sample_weight)
+                # _on_after_compute_loss(self, input, student_output, student_loss, teacher_output=None)
+                # TODO: check, combile
+                loss = self.distiller.on_after_compute_loss(
+                    x, y_pred.logits, loss, teacher_outputs.logits)
+            self.model._validate_target_and_loss(y, loss)
+            # Run backwards pass.
+            self.model.optimizer.minimize(loss,
+                                          self.model.trainable_variables,
+                                          tape=tape)
+            return self.model.compute_metrics(x, y, y_pred, sample_weight)
+
+        self.model.train_step = train_step
+        # re-compile
+        self.model.compile(
+            optimizer=self.model.optimizer, 
+            loss=self.model.loss, 
+            metrics=self.model.compiled_metrics._user_metrics
+            )
+
+        if distillation_config.framework != 'tensorflow':
+            logger.warning(
+                'distillation_config.framework is {}, should be tensorflow'.
+                format(distillation_config.framework))
+            distillation_config.framework = 'tensorflow'
         self.distillation_config = distillation_config
         self.metrics = self.distillation_config.metrics
         self.teacher_model = teacher_model
 
         distiller = Distillation(self.distillation_config.inc_config)
-        distiller.model = common.Model(self.model)
-        distiller.teacher_model = common.Model(self.teacher_model)
+        distiller.model = os.path.join(TMPPATH, "saved_model/1")
+        distiller.model.model_type = "saved_model"
+        self.teacher_model.save_pretrained(TEACHERPATH, saved_model=True)
+        distiller.teacher_model = os.path.join(TEACHERPATH, "saved_model/1")
+        distiller.teacher_model.model_type = "saved_model"
 
         self.distiller = distiller
+        self.component = distiller
         return distiller
 
     def distill(
@@ -452,7 +508,7 @@ class TFOptimization:
         teacher_model: PreTrainedModel,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
-    ):   # pragma: no cover
+    ):  
         if self.distiller is None:
             self.init_distiller(
                 distillation_config=distillation_config,
@@ -462,6 +518,8 @@ class TFOptimization:
             self._eval_func = eval_func
         if train_func is not None:
             self._train_func = train_func
+        else:
+            self._train_func = self.build_train_func
 
         self.distiller.eval_func = self._eval_func
         self.distiller.train_func = self._train_func
@@ -471,48 +529,54 @@ class TFOptimization:
 
         return opt_model.model
 
-    def kerase_train_func(self, model):
+    def build_train_func(self, model):
         tf.random.set_seed(1)
-        epochs = self.pruner.cfg.pruning.train.get("epoch", 1) \
-            if self.pruner.cfg.pruning.train is not None else 1
-        callbacks = self.pruner.callbacks
-        input_model = self.model
-        hooks = callbacks['tf_pruning'](self.pruner.model, input_model, self.pruner.hooks)
-        class PruningCb(tf.keras.callbacks.Callback):
+        epochs = 1
+        if 'distillation' in self.component.cfg:
+            epochs = max(epochs, self.component.cfg.distillation.train.get("epoch", 1))
+            hooks = self.component.hooks
+        if 'pruning' in self.component.cfg:
+            epochs = max(epochs, self.component.cfg.pruning.train.get("epoch", 1))
+            callbacks = self.pruner.callbacks
+            hooks = callbacks['tf_pruning'](self.pruner.model, self.model,
+                                            self.pruner.hooks)
+
+        class callback(tf.keras.callbacks.Callback):
             def on_train_begin(self, logs=None):
                 if version.parse(__version__) <= version.parse("1.12"):
-                    hooks['pre_epoch_begin'](logs)
+                    hooks['pre_epoch_begin']()  # pragma: no cover
                 else:
-                    hooks['on_train_begin'](logs)
+                    hooks['on_train_begin']()
 
             def on_train_end(self, logs=None):
                 if version.parse(__version__) <= version.parse("1.12"):
-                    hooks['post_epoch_end'](logs)
+                    hooks['post_epoch_end']()  # pragma: no cover
                 else:
-                    hooks['on_train_end'](logs)
+                    hooks['on_train_end']()
 
             def on_epoch_begin(self, epoch, logs=None):
                 # pylint: disable=E1121
-                hooks['on_epoch_begin'](epoch, logs)
+                hooks['on_epoch_begin'](epoch)
 
             def on_epoch_end(self, epoch, logs=None):
-                hooks['on_epoch_end'](logs)
+                hooks['on_epoch_end']()
 
             # pylint: disable=E1121
             def on_train_batch_begin(self, batch, logs=None):
                 if version.parse(__version__) <= version.parse("1.12"):
-                    hooks['on_batch_begin'](batch, logs)
+                    hooks['on_batch_begin'](batch)  # pragma: no cover
                 else:
-                    hooks['on_step_begin'](batch, logs)
+                    hooks['on_step_begin'](batch)
 
             def on_train_batch_end(self, batch, logs=None):
                 if version.parse(__version__) <= version.parse("1.12"):
-                    hooks['on_batch_end'](logs)
+                    hooks['on_batch_end']()  # pragma: no cover
                 else:
-                    hooks['on_step_end'](logs)
+                    hooks['on_step_end']()
 
-        input_model.fit(self.train_dataset, validation_data=self.eval_dataset, epochs=epochs,
-                        callbacks=[PruningCb()])
-
-        self.pruner.model._sess = None
-        input_model.save_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id), saved_model=True)
+        self.model.fit(self.train_dataset,
+                       validation_data=self.eval_dataset,
+                       epochs=epochs,
+                       callbacks=[callback()])
+        self.component.model._session = None
+        self.model.save_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id), saved_model=True)

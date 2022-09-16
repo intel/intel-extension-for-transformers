@@ -15,11 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict, UserDict
-import json
 import os
+import json
+from collections import OrderedDict, UserDict
 
-TMPPATH = "tmp"
+TMPPATH = os.path.join('tmp', 'model')
+TEACHERPATH = os.path.join('tmp', 'teacher_model')
 class TFDataloader(object):
     """
        Args:

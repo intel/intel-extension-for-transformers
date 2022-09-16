@@ -146,7 +146,7 @@ class QuantizationConfig(object):
 
     @framework.setter
     def framework(self, framework):
-        assert framework in ["pytorch", "pytorch_fx", "pytorch_ipex","tensorflow"], \
+        assert framework in ["pytorch", "pytorch_fx", "pytorch_ipex", "tensorflow"], \
             "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework
 
@@ -399,7 +399,7 @@ class DistillationConfig(object):
 
     @framework.setter
     def framework(self, framework):
-        assert framework in ["pytorch", "pytorch_fx"], \
+        assert framework in ["pytorch", "pytorch_fx", "tensorflow"], \
             "framework: {} is not support!".format(framework)
         self.inc_config.usr_cfg.model.framework = framework
 
