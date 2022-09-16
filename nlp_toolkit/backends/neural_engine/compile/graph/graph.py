@@ -24,6 +24,7 @@ import os
 
 
 class Graph(object):
+
     def __init__(self):
         self._nodes = []
         self._node_id = {}
@@ -483,6 +484,7 @@ class Graph(object):
         logger.info("Emit done...")
 
     def get_sparse_nodes_name(self, threshold=0.7):
+
         def get_zero_ratio(matrix, block):
             sparse_ratio = -1
             if matrix.ndim == 2 and len(block) == 2:
@@ -526,44 +528,43 @@ class Graph(object):
                             sparse_nodes_name.append(node.name)
         return sparse_nodes_name
 
-
-    def innerproduct_type_check(self, node):
-        innerproduct_type = {
-            # general_node
-            "general": "general",
-
-            # InnerProduct Nodes
-            "QKV_innerproduct": 'add_innerproduct_0',
-            'output_dense_bias': 'add_innerproduct_1',
-            'intermediate_dense_mul': 'mul_innerproduct_0',
-
-            # Matmul Nodes
-            'add_matmul': 'add_matmul_0',
-            'transpose_matmul': 'transpose_matmul_0',
-        }
-        if node.name.startswith('Add') and node.op_type == "InnerProduct":
-            if 'append_op' in node.attr:
-                return innerproduct_type['output_dense_bias']
-            else:
-                return innerproduct_type['QKV_innerproduct']
-
-        if node.name.startswith('Mul') and node.op_type == "InnerProduct":
-            return innerproduct_type['intermediate_dense_mul']
-
-        if node.name.startswith('Add') and node.op_type == 'Matmul':
-            return innerproduct_type['add_matmul']
-
-        if node.name.startswith('Transpose') and node.op_type == 'Matmul':
-            return innerproduct_type['transpose_matmul']
-        else:
-            return innerproduct_type['general']
-
     def transpose_mode_int8(self, node_name_list=None):
         from ..ops import Tensor
         from .. import graph_utils as util
         import copy
         logger.info("Start to transpose_mode_int8 ......")
         reorder_dict = {}
+
+        def innerproduct_type_check(node):
+            innerproduct_type = {
+                # general_node
+                "general": "general",
+
+                # InnerProduct Nodes
+                "QKV_innerproduct": 'add_innerproduct_0',
+                'output_dense_bias': 'add_innerproduct_1',
+                'intermediate_dense_mul': 'mul_innerproduct_0',
+
+                # Matmul Nodes
+                'add_matmul': 'add_matmul_0',
+                'transpose_matmul': 'transpose_matmul_0',
+            }
+            if node.name.startswith('Add') and node.op_type == "InnerProduct":
+                if 'append_op' in node.attr:
+                    return innerproduct_type['output_dense_bias']
+                else:
+                    return innerproduct_type['QKV_innerproduct']
+
+            if node.name.startswith('Mul') and node.op_type == "InnerProduct":
+                return innerproduct_type['intermediate_dense_mul']
+
+            if node.name.startswith('Add') and node.op_type == 'Matmul':
+                return innerproduct_type['add_matmul']
+
+            if node.name.startswith('Transpose') and node.op_type == 'Matmul':
+                return innerproduct_type['transpose_matmul']
+            else:
+                return innerproduct_type['general']
 
         def create_new_attr(node):
             if 'output_dtype' in node.attr:
@@ -702,27 +703,39 @@ class Graph(object):
             logger.info("The node_name_list is None. Start to get sparse nodes name...")
             node_name_list = self.get_sparse_nodes_name()
 
-        pattern = '0001'
-        node_name_type_list = ''
+        def node_name_list_convert(node_name_list):
+            node_name_type_list = ''
+            for node_name in node_name_list:
+                node = self.get_node_by_name(node_name)
+                node_type = innerproduct_type_check(node)
+                if node_type == 'add_innerproduct_0':
+                    node_name_type_list += '0'
+                if node_type == 'add_innerproduct_1':
+                    node_name_type_list += '1'
+                if node_type == 'mul_innerproduct_0':
+                    node_name_type_list += '2'
+            return node_name_type_list
+
+        node_name_type_list = node_name_list_convert(node_name_list)
+
+        def patthen_match(node_name_type_list, pattern='0001'):
+            matched_idx = []
+            idx = node_name_type_list.find(pattern)
+            while idx != -1:
+                matched_idx.append(idx)
+                idx = node_name_type_list.find(pattern, idx + 1)
+
+            tmp_node_name_list = []
+            for node_idx in matched_idx:
+                tmp_node_name_list.append(node_name_list[node_idx:node_idx + 4])
+            QKV_node_name_list = [i for item in tmp_node_name_list for i in item]
+            return matched_idx, QKV_node_name_list
+
+        matched_idx, QKV_node_name_list = patthen_match(node_name_type_list)
+
         for node_name in node_name_list:
             node = self.get_node_by_name(node_name)
-            node_type = self.innerproduct_type_check(node)
-            if node_type == 'add_innerproduct_0':
-                node_name_type_list += '0'
-            if node_type == 'add_innerproduct_1':
-                node_name_type_list += '1'
-            if node_type == 'mul_innerproduct_0':
-                node_name_type_list += '2'
-
-        matched_idx = []
-        idx = node_name_type_list.find(pattern)
-        while idx != -1:
-            matched_idx.append(idx)
-            idx = node_name_type_list[idx + 1:].find(pattern, idx)
-
-        for node_name in node_name_list:
-            node = self.get_node_by_name(node_name)
-            node_type = self.innerproduct_type_check(node)
+            node_type = innerproduct_type_check(node)
             if node_type == 'general':
                 continue
 
@@ -784,39 +797,57 @@ class Graph(object):
         for node_name in reorder_dict:
             insert_idx = self.get_node_id(node_name)
             self.insert_nodes(insert_idx, [reorder_dict[node_name]])
-        '''
-            Fusion 1: eliminate the two reorder nodes when a tensor passes through reorder_recover + reorder_post consecutively
-        '''
-        for node in self._nodes:
-            if 'Reorder_Post' in node.name and node.op_type == 'Reorder' and 'recover_reorder' in node.output_tensors[
-                    0].name:
-                pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
-                if 'Reorder_Recover' in pre_node.name and pre_node.op_type == 'Reorder':
-                    post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
-                    idx = 0
-                    for _ in post_node.input_tensors:
-                        if node.output_tensors[0].name == _.name:
-                            break
-                        else:
-                            idx = idx + 1
-                    post_node.input_tensors[idx] = pre_node.input_tensors[0]
-                    self.remove_nodes([pre_node.name, node.name])
+
+        def consecutive_reorder_fusion():
+            '''
+                Fusion 1: 
+                eliminate the two reorder nodes if a tensor passes through reorder_recover + reorder_post consecutively
+            '''
+            for node in self._nodes:
+                if node.op_type == 'Reorder' and 'recover_reorder' in node.output_tensors[0].name:
+                    if 'Reorder_Post' in node.name:
+                        pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
+                        if 'Reorder_Recover' in pre_node.name and pre_node.op_type == 'Reorder':
+                            post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+                            idx = 0
+                            for _ in post_node.input_tensors:
+                                if node.output_tensors[0].name == _.name:
+                                    break
+                                else:
+                                    idx = idx + 1
+                            post_node.input_tensors[idx] = pre_node.input_tensors[0]
+                            self.remove_nodes([pre_node.name, node.name])
+
+        consecutive_reorder_fusion()
 
         if matched_idx == []:
             logger.info("transpose_mode_int8 done. No QKV fusion")
             return
-        else:
-            tmp_node_name_list = []
-            for node_idx in matched_idx:
-                tmp_node_name_list.append(node_name_list[node_idx:node_idx + 4])
-            QKV_node_name_list = [i for item in tmp_node_name_list for i in item]
-            '''
-                Fusion 2: Place reorder_post nodes before the quantize node, especially for QKV and output dense
-            '''
-            reorder_dict = {}
+        '''
+            Fusion 2: 
+            Place reorder_post nodes before the quantize node, especially for QKV and output dense
+        '''
+        reorder_dict = {}
+
+        def reorder_post_fusion():
+
+            def check_QKV_fusion(node):
+                post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+                node_type = innerproduct_type_check(post_node)
+                if node_type == 'mul_innerproduct_0':
+                    return True
+                for post_node_name in node.output_tensors[0].dest_op:
+                    if post_node_name in QKV_node_name_list:
+                        continue
+                    else:
+                        return False
+                return True
+
             for node in self._nodes:
-                if node.op_type == 'Reorder':
+                if node.op_type == 'Reorder' and 'Reorder_Post' in node.name:
                     pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
+                    if check_QKV_fusion(node) == False:
+                        continue
                     if pre_node.op_type == 'Quantize':
                         # swap the pre_node and the current node
                         for post_node_name in node.output_tensors[0].dest_op:
@@ -826,11 +857,9 @@ class Graph(object):
                         self.remove_nodes([node.name])
                         reorder_node = reorder_node_insert(pre_node, 0)
                         layernorm_node = self.get_node_by_name(reorder_node.input_tensors[0].source_op[0])
-
                         # if the following node is reorder_post node, delete the Add_129_Reorder_Post_3
                         if 'Reorder_Post' in layernorm_node.output_tensors[0].dest_op[0]:
                             tmp = self.get_node_by_name(layernorm_node.output_tensors[0].dest_op[0])
-                            # Add_129
                             post_node = self.get_node_by_name(tmp.output_tensors[0].dest_op[0])
                             self.remove_nodes([tmp.name])
                             layernorm_node.output_tensors[0].dest_op.append(post_node.name)
@@ -841,12 +870,18 @@ class Graph(object):
                 insert_idx = self.get_node_id(node_name)
                 self.insert_nodes(insert_idx, [reorder_dict[node_name]])
 
+        reorder_post_fusion()
+
+        def reorder_recover_fusion():
+            '''
+                Fusion 3: place the reorder_recover nodes after reshape and matmul nodes
+            '''
             for node in self._nodes:
-                # Fusion 3: place the reorder_recover after reshape and matmul nodes
                 # step1: delte all recover nodes of innerProduct nodes and modify reshape inputs
-                node_type = self.innerproduct_type_check(node)
-                if node_type == 'add_innerproduct_0' and node in QKV_node_name_list:
+                node_type = innerproduct_type_check(node)
+                if node_type == 'add_innerproduct_0' and node.name in QKV_node_name_list:
                     post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+
                     if 'Reorder_Recover' in post_node.name:
                         reshape_node = self.get_node_by_name(post_node.output_tensors[0].dest_op[0])
                         if reshape_node.op_type == 'Reshape':
@@ -863,7 +898,7 @@ class Graph(object):
 
                         # step2 : modify add_matmul and transpose_matmul nodes
                         post_reshape_node = self.get_node_by_name(reshape_node.output_tensors[0].dest_op[0])
-                        if self.innerproduct_type_check(post_reshape_node) == 'add_matmul_0':
+                        if innerproduct_type_check(post_reshape_node) == 'add_matmul_0':
 
                             def add_matmul_modification(node):
                                 if node.attr.get("src0_perm") == '0,2,1,3' and node.attr.get("src1_perm") == '0,2,3,1':
@@ -875,7 +910,7 @@ class Graph(object):
 
                             add_matmul_modification(post_reshape_node)
 
-                        if self.innerproduct_type_check(post_reshape_node) == 'transpose_matmul_0':
+                        if innerproduct_type_check(post_reshape_node) == 'transpose_matmul_0':
 
                             def transpose_matmul_modification(node):
                                 if node.attr.get("src0_perm") == '0,2,1,3' and node.attr.get("src1_perm") == '0,2,3,1':
@@ -895,5 +930,7 @@ class Graph(object):
                                         self.remove_nodes([reorder_node.name])
 
                             transpose_matmul_modification(post_reshape_node)
+
+        reorder_recover_fusion()
 
         logger.info("transpose_mode_int8 done")

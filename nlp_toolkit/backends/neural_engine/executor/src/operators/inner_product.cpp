@@ -546,7 +546,6 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
 
 #if __AVX512F__
 void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-#if __AVX512VNNI__
   // reorder 2d to 3d
   // 2D dense: [256, 768] x [768 328] -> [256, 328]
   // 2D sparselib: [328, 768] x [768, 256] -> [328, 256]
@@ -588,6 +587,7 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
   std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
                                            rescales_.data()};
   spmm_kern_.execute(runtime_data);
+
   // reorder dst activation (optional)
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
     // reorder to 3D then reshape
@@ -598,7 +598,6 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
     if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty()
         && dispatch_config_[0] == "SparseLib" && life_count > 1) post_->reorder(src1_3d_shape);
   }
-#endif
 }
 #endif
 
