@@ -1,7 +1,6 @@
 # Sparse model Step-by-Step
-Here is an example of blocked sparsity and quantization of Bert Mini, sparse ratio is 90%.
-NLPToolkit provided a high-performance sparse matrix multiplication library – SparseLib and demonstrated the performance improvement of sparse outweigh the accuracy loss.
-This sparse solution is a software-based solution and utilizes the Intel instructions. More sparse examples will be released in the future.
+Here is a example from pruning a distilbert base model using group lasso during a distillation process to get sparse model, and then 
+inference with SparseLib which is a high-performance operator computing library. Overall, get performance improvement.
 # Prerequisite
 
 ### 1\. Installation
@@ -17,9 +16,9 @@ conda activate <env name>
 Check the gcc version using $gcc-v, make sure the gcc version is higher than 7.0.
 If not, you need to update gcc by yourself.
 Make sure the cmake version is 3 rather than 2.
-If not, you need to install cmake.
 Make sure you have the autoconf installed.
 If not, you need to install autoconf by yourself.
+If not, you need to install cmake.
 
 ```shell
 cmake --version
@@ -34,19 +33,19 @@ cd <NLP_Toolkit_folder>
 git submodule update --init --recursive
 python setup.py install
 ```
-Install package for example
+Install package for examples
 ```shell
-cd <NLP_Toolkit_folder>/examples/deployment/neural_engine/sst2/bert_mini
+cd <NLP_Toolkit_folder>/examples/deployment/neural_engine/sparse/distilbert_base_uncased
 pip install -r requirements.txt
 ```
 
-1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instances.
+1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instance.
 
 ```
 export LD_PRELOAD=<NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
 
-Using weight sharing can save memory and improve the performance when multi instances.
+Using weight sharing can save memory and improve the performance when multi instance.
 
 ```
 export WEIGHT_SHARING=1
@@ -64,7 +63,7 @@ python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./da
 ### 2.2 Get sparse model
 
 Neural Engine can parse Sparse ONNX model and Neural Engine IR.
-You can train a Bert mini sst2 sparse model with distillation through Neural Compressor [example](https://github.com/intel-innersource/frameworks.ai.lpot.intel-lpot/blob/28e9b1e66c23f4443a2be8f2926fee1e919f5a14/examples/pytorch/nlp/huggingface_models/text-classification/pruning_while_distillation/group_lasso/eager/README.md). and transpose the weight and activation to get better performance.
+You can train a distilbert_base_uncased SQuAD sparse model with distillation through Neural Compressor [example](https://github.com/intel-innersource/frameworks.ai.lpot.intel-lpot/blob/28e9b1e66c23f4443a2be8f2926fee1e919f5a14/examples/pytorch/nlp/huggingface_models/text-classification/pruning_while_distillation/group_lasso/eager/README.md). and transpose the weight and activation to get better performance.
 Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [SparseLib](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/nlp_toolkit/backends/neural_engine/SparseLib) kernels and high performance layernorm op with transpose mode to improve inference performance.
 
 ### Benchmark
