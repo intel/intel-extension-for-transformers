@@ -39,13 +39,7 @@ bool layernorm_ba_kd_t::init() {
   // TODO(zhe1wang): support col nums can't divded by 16.
   assert(col_num % 16 == 0);
   int max_eff_nthr = col_num / 16;
-  int max_enable_thr = omp_get_max_threads();
-  max_eff_nthr = max_eff_nthr < max_enable_thr ? max_eff_nthr : max_enable_thr;
-  while (col_num % (16 * max_eff_nthr) != 0) max_eff_nthr -= 1;
-  if (get_data_size(output_dt) == 1 && max_eff_nthr > 4) {
-    max_eff_nthr /= 4;
-    while (col_num % (16 * max_eff_nthr != 0)) max_eff_nthr -= 1;
-  }
+  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   params_.resize(max_eff_nthr);
   int col_per_thr = col_num / max_eff_nthr;
   for (int i = 0; i < max_eff_nthr; i++) {
@@ -70,13 +64,7 @@ bool layernorm_ba_k_t::init() {
   auto output_dt = op_desc.tensor_descs()[1].dtype();
   auto col_num = op_desc.tensor_descs()[0].shape().back();
   nthr_ = col_num / 16;
-  int max_enable_thr = omp_get_max_threads();
-  nthr_ = nthr_ < max_enable_thr ? nthr_ : max_enable_thr;
-  while (col_num % (16 * nthr_) != 0) nthr_ -= 1;
-  if (get_data_size(output_dt) == 1 && nthr_ > 4) {
-    nthr_ /= 4;
-    while (col_num % (16 * nthr_) != 0) nthr_ -= 1;
-  }
+  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   jit_kers_.resize(nthr_);
   for (int i = 0; i < nthr_; i++) {
     td.push_back(new ssd::layernorm_ba_data_t());
@@ -90,7 +78,7 @@ bool layernorm_ba_k_t::init() {
 }
 
 bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
-  omp_set_num_threads(nthr_);
+  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize and restore it at end of the function.
 #pragma omp parallel for
   for (int i = 0; i < nthr_; i++) {
     const jit_layernorm_ba_t* jit_impl = jit_kers_[i];
