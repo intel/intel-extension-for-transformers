@@ -168,31 +168,6 @@ class TFOptimization:
         output_tensor = [get_tensor_by_name(\
             model, x) for x in self.output_names]
 
-        # pylint: disable=E0401
-        if self.eval_distributed:  # pragma: no cover
-            import horovod.tensorflow as hvd
-            hvd.init()
-            # If metric.hvd is not None then run distributed inference
-            try:
-                len_dataloader = len(self.eval_dataset.cardinality().numpy())
-            except:
-                logger.info(
-                    "The length of the distributed training dataloader is unknown."
-                    "When the iteration of training dataloader in each process is "
-                    "inconsistent, an error may occur.")
-            else:
-                list_len_dataloader = hvd.allgather_object(len_dataloader)
-                if hvd.rank() == 0:
-                    for i in range(len(list_len_dataloader) - 1):
-                        if list_len_dataloader[i] != list_len_dataloader[i +
-                                                                         1]:
-                            raise AttributeError(
-                                "The evaluation dataloader's iteration is"
-                                "different between processes, please reset dataloader's batch_size."
-                            )
-            logger.info("Rank {!s} dataloaders' data distribution balance check for evaluation have been finnished." \
-                .format(hvd.allgather_object(hvd.rank())))
-
         logger.info("Start to evaluate the TensorFlow model.")
 
         total_time = 0

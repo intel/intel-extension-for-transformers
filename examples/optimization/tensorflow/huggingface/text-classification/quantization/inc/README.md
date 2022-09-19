@@ -76,10 +76,49 @@ python run_glue.py
     bash run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
     ```
 
+### Multi-node usage
 
+We also supported Distributed Data Parallel training on multi nodes settings for quantization.
 
+The default strategy we used is `MultiWorkerMirroredStrategy` in Tensorflow, and with `task_type` set as "worker", we are expected to pass following extra parameters to the script:
 
+* `worker`: a string of your worker ip addresses which is separated by comma and there should not be space between each two of them
 
+* `task_index`: 0 should be set on the chief node (leader) and 1, 2, 3... should be set as the rank of other follower nodes
+
+### Multi-node example
+
+#### To get int8 model
+
+* On leader node
+
+```
+bash run_tuning.sh --topology=bert_base_mrpc_static --output_model=./saved_int8 --worker="localhost:12345,localhost:23456"  --task_index=0
+```
+
+* On follower node
+
+```
+bash run_tuning.sh --topology=bert_base_mrpc_static --output_model=./saved_int8 --worker="localhost:12345,localhost:23456"  --task_index=0
+```
+
+Please replace the worker ip address list with your own.
+
+#### To reload int8 model
+
+* On leader node
+
+```
+bash run_benchmark.sh --topology=bert_base_mrpc_static --config=./saved_int8 --mode=benchmark --int8=true --worker="localhost:12345,localhost:23456"  --task_index=0
+```
+
+* On follower node
+
+```
+bash run_benchmark.sh --topology=bert_base_mrpc_static --config=./saved_int8 --mode=benchmark --int8=true --worker="localhost:12345,localhost:23456"  --task_index=0
+```
+
+Please replace the worker ip address list with your own.
 
 
 

@@ -29,9 +29,15 @@ function init_params {
       --input_model=*)
           input_model=$(echo $var |cut -f2 -d=)
       ;;
-       --output_model=*)
-           tuned_checkpoint=$(echo $var |cut -f2 -d=)
-       ;;
+      --output_model=*)
+          tuned_checkpoint=$(echo $var |cut -f2 -d=)
+      ;;
+      --worker=*)
+          worker=$(echo $var |cut -f2 -d=)
+      ;;
+      --task_index=*)
+          task_index=$(echo $var |cut -f2 -d=)
+      ;;
       *)
           echo "Error: No such parameter: ${var}"
           exit 1
@@ -43,27 +49,49 @@ function init_params {
 
 # run_tuning
 function run_tuning {
+    batch_size=64
     if [ "${topology}" = "bert_base_mrpc_static" ]; then
         TASK_NAME="mrpc"
         model_name_or_path="bert-base-cased-finetuned-mrpc"
         approach="PostTrainingStatic"
     fi
-
-
-    python -u ../run_glue.py \
-        --model_name_or_path ${model_name_or_path} \
-        --task_name ${TASK_NAME} \
-        --do_eval \
-        --max_seq_length ${MAX_SEQ_LENGTH} \
-        --per_device_eval_batch_size ${batch_size} \
-        --output_dir ${tuned_checkpoint} \
-        --no_cuda \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --quantization_approach ${approach} \
-        --do_train \
-        --tune \
-        ${extra_cmd}
+    
+    if [ "${worker}" = "" ]
+    then
+        python -u ../run_glue.py \
+            --model_name_or_path ${model_name_or_path} \
+            --task_name ${TASK_NAME} \
+            --do_eval \
+            --max_seq_length ${MAX_SEQ_LENGTH} \
+            --per_device_train_batch_size ${batch_size} \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --no_cuda \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --quantization_approach ${approach} \
+            --do_train \
+            --tune \
+            ${extra_cmd}
+    else
+        python -u ../run_glue.py \
+            --model_name_or_path ${model_name_or_path} \
+            --task_name ${TASK_NAME} \
+            --do_eval \
+            --max_seq_length ${MAX_SEQ_LENGTH} \
+            --per_device_train_batch_size ${batch_size} \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --no_cuda \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --quantization_approach ${approach} \
+            --do_train \
+            --tune \
+            --worker "${worker}" \
+            --task_index ${task_index} \
+            ${extra_cmd}
+    fi
 }
 
 main "$@"

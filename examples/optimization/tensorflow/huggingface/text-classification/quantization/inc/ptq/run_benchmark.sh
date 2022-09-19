@@ -41,6 +41,12 @@ function init_params {
       --config=*)
           tuned_checkpoint=$(echo $var |cut -f2 -d=)
       ;;
+      --worker=*)
+          worker=$(echo $var |cut -f2 -d=)
+      ;;
+      --task_index=*)
+          task_index=$(echo $var |cut -f2 -d=)
+      ;;
       *)
           echo "Error: No such parameter: ${var}"
           exit 1
@@ -75,18 +81,35 @@ function run_benchmark {
     fi
     echo $extra_cmd
 
-    python -u ../run_glue.py \
-        --model_name_or_path ${model_name_or_path} \
-        --task_name ${TASK_NAME} \
-        --do_eval \
-        --max_seq_length ${MAX_SEQ_LENGTH} \
-        --per_device_eval_batch_size ${batch_size} \
-        --output_dir ${tuned_checkpoint} \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --no_cuda \
-        ${mode_cmd} \
-        ${extra_cmd}
+    if [ "${worker}" = "" ]
+    then
+        python -u ../run_glue.py \
+            --model_name_or_path ${model_name_or_path} \
+            --task_name ${TASK_NAME} \
+            --do_eval \
+            --max_seq_length ${MAX_SEQ_LENGTH} \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --no_cuda \
+            ${mode_cmd} \
+            ${extra_cmd}
+    else
+        python -u ../run_glue.py \
+            --model_name_or_path ${model_name_or_path} \
+            --task_name ${TASK_NAME} \
+            --do_eval \
+            --max_seq_length ${MAX_SEQ_LENGTH} \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --overwrite_output_dir \
+            --no_cuda \
+            --worker "${worker}" \
+            --task_index ${task_index} \
+            ${mode_cmd} \
+            ${extra_cmd}
+    fi
 }
 
 main "$@"
