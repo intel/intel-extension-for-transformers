@@ -171,7 +171,7 @@ def latency_mode_grab_log(input_path, output, config, is_best_write, first_write
         i += 1
         
         try:
-            with open(log_path, 'r') as src_fp:
+            with open(log_path, 'r', errors='ignore') as src_fp:
                 for line in src_fp.readlines():
                     if line.find("Throughput:") >= 0:
                         throughput_str = line
