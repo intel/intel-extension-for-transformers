@@ -24,8 +24,8 @@ import os
 import copy
 import time
 
-class Graph(object):
 
+class Graph(object):
     def __init__(self):
         self._nodes = []
         self._node_id = {}
@@ -484,7 +484,7 @@ class Graph(object):
 
         logger.info("Emit done...")
 
-    def graph_dispatch(self, tune = True, inputs_shape = []):
+    def graph_dispatch(self, tune=True, inputs_shape=[]):
         sparse_nodes_name = self.get_sparse_nodes_name()
         if tune:
             logger.info("Tuning graph start ...")
@@ -492,10 +492,10 @@ class Graph(object):
             self._tune_sparse_graph(inputs_shape, sparse_nodes_name)
             logger.info("Tuning graph end ...")
         else:
-            # if not tune, map to sparse graph directly 
+            # if not tune, map to sparse graph directly
             self.transpose_mode_int8(sparse_nodes_name)
-    
-    def _tune_onednn_graph(self, inputs_shape = []):
+
+    def _tune_onednn_graph(self, inputs_shape=[]):
         onednn_graph_nodes_map = self._get_onednn_graph_nodes()
         if onednn_graph_nodes_map == {"InnerProduct": [], "Softmax": []}:
             pass
@@ -548,9 +548,9 @@ class Graph(object):
                 if node.op_type == "InnerProduct":
                     node.op_type = "InnerProductGraph"
                 elif node.op_type == "Softmax":
-                    node.op_type = "SoftmaxGraph" 
+                    node.op_type = "SoftmaxGraph"
 
-    def _tune_sparse_graph(self, inputs_shape = [], sparse_nodes_name = []):
+    def _tune_sparse_graph(self, inputs_shape=[], sparse_nodes_name=[]):
         if sparse_nodes_name == []:
             pass
         else:
@@ -570,9 +570,8 @@ class Graph(object):
                     min_latency = curr_latency
                     golden_trans_nodes_name = trans_nodes_name
             self.transpose_mode_int8(golden_trans_nodes_name)
-    
-    def get_sparse_nodes_name(self, threshold = 0.7):
 
+    def get_sparse_nodes_name(self, threshold=0.7):
         def get_zero_ratio(matrix, block):
             sparse_ratio = -1
             if matrix.ndim == 2 and len(block) == 2:
@@ -584,9 +583,9 @@ class Graph(object):
                         is_zero_block = True
                         for br in range(block[0]):
                             for bc in range(block[1]):
-                                if matrix[mr*block[0]+br][mc*block[1]+bc] != 0:
-                                   is_zero_block = False
-                                   break
+                                if matrix[mr * block[0] + br][mc * block[1] + bc] != 0:
+                                    is_zero_block = False
+                                    break
                             if not is_zero_block:
                                 break
                         if is_zero_block == True:
@@ -614,8 +613,8 @@ class Graph(object):
                         if zero_ratio >= threshold:
                             sparse_nodes_name.append(node.name)
 
-        return sparse_nodes_name 
-    
+        return sparse_nodes_name
+
     def _generate_transpose_nodes_name_list(self, sparse_nodes_name):
         transpose_nodes_list = []
         if sparse_nodes_name == []:
@@ -625,17 +624,17 @@ class Graph(object):
         for node in self.nodes:
             if node.name in sparse_nodes_name:
                 weight = node.input_tensors[1]
-                weight_shape = tuple(weight.shape) # list to tuple for dict key
+                weight_shape = tuple(weight.shape)  # list to tuple for dict key
                 if weight_shape in weight_shape_map.keys():
                     weight_shape_map[weight_shape].append(node.name)
                 else:
                     weight_shape_map[weight_shape] = [node.name]
-        
+
         # binary reflected gray code to generate the all combinations fo the n elements
         def brgd(n):
-            if n==1:
-                return ["0","1"]
-            L1 = brgd(n-1)
+            if n == 1:
+                return ["0", "1"]
+            L1 = brgd(n - 1)
             L2 = copy.deepcopy(L1)
             L2.reverse()
             L1 = ["0" + l for l in L1]
@@ -647,20 +646,20 @@ class Graph(object):
         for transpose_mask in transpose_mask_list:
             transpose_nodes = []
             for idx, weight_shape in enumerate(weight_shape_map):
-                if transpose_mask[idx]=="1":
+                if transpose_mask[idx] == "1":
                     transpose_nodes += weight_shape_map[weight_shape]
             transpose_nodes_list.append(transpose_nodes)
 
         return transpose_nodes_list
 
-
-    def _generate_inputs(self, inputs_shape = []):
-        dtype_map = {"float32": np.float32,
-               "int8": np.int8,
-               "int32": np.int32,
-               "int64": np.int64,
-               "uint8": np.uint8,
-               }
+    def _generate_inputs(self, inputs_shape=[]):
+        dtype_map = {
+            "float32": np.float32,
+            "int8": np.int8,
+            "int32": np.int32,
+            "int64": np.int64,
+            "uint8": np.uint8,
+        }
         inputs = []
         id = 0
         for node in self.nodes:
@@ -673,11 +672,11 @@ class Graph(object):
                             shape = inputs_shape[id]
                         dtype = dtype_map[tensor.dtype]
                         input = np.random.uniform(low=0, high=10, size=shape).astype(dtype)
-                        inputs.append(input)     
+                        inputs.append(input)
                         id += 1
         return inputs
-    
-    def _get_latency(self, inputs_shape = [], iterations = 10, warm_up = 5):
+
+    def _get_latency(self, inputs_shape=[], iterations=10, warm_up=5):
         inputs = self._generate_inputs(inputs_shape)
         iter_latency = []
         for _ in range(iterations):
@@ -706,23 +705,19 @@ class Graph(object):
                 'intermediate_dense_mul': 'mul_innerproduct_0',
 
                 # Matmul Nodes
-                'add_matmul': 'add_matmul_0',
-                'transpose_matmul': 'transpose_matmul_0',
+                'matmul_type': 'matmul_0',
             }
-            if node.name.startswith('Add') and node.op_type == "InnerProduct":
-                if 'append_op' in node.attr:
+
+            if node.op_type == "InnerProduct":
+                if 'append_op' in node.attr and node.attr['append_op'] == 'sum':
                     return innerproduct_type['output_dense_bias']
+                if 'append_op' in node.attr and node.attr['append_op'] == 'gelu_tanh':
+                    return innerproduct_type['intermediate_dense_mul']
                 else:
                     return innerproduct_type['QKV_innerproduct']
 
-            if node.name.startswith('Mul') and node.op_type == "InnerProduct":
-                return innerproduct_type['intermediate_dense_mul']
-
-            if node.name.startswith('Add') and node.op_type == 'Matmul':
-                return innerproduct_type['add_matmul']
-
-            if node.name.startswith('Transpose') and node.op_type == 'Matmul':
-                return innerproduct_type['transpose_matmul']
+            if node.op_type == 'Matmul':
+                return innerproduct_type['matmul_type']
             else:
                 return innerproduct_type['general']
 
@@ -899,47 +894,10 @@ class Graph(object):
             if node_type == 'general':
                 continue
 
-            if node_type == 'mul_innerproduct_0':
+            if node_type == 'add_innerproduct_0' or node_type == 'mul_innerproduct_0':
                 reorder_node_insert(node, 0)
                 swap_innertproduct_input(node, [0, 1], [3, 5], [4, 6])
-
-                def expand_gelu_tanh(node):
-                    if node.attr.get('append_op') == 'gelu_tanh':
-                        node.attr.pop('append_op')
-                        node.attr.pop('output_dtype')
-                        input_gelu_name = node.output_tensors[0].name
-                        data_type = node.output_tensors[0].dtype
-                        gelu_name = node.name + "_gelu"
-                        quant_name = gelu_name + "_quant"
-                        gelu_tensor = Tensor(name=input_gelu_name + "_gelu",
-                                             source_op=[gelu_name],
-                                             dest_op=[quant_name],
-                                             dtype=data_type)
-                        gelu_op = util.construct_node(node_name=gelu_name,
-                                                      op_type='Gelu',
-                                                      input_tensors=[node.output_tensors[0]],
-                                                      output_tensors=[gelu_tensor],
-                                                      attr=OrderedDict({'algorithm': 'gelu_tanh'}))
-
-                        quant_tensor = Tensor(name=input_gelu_name + "_quant",
-                                              source_op=[quant_name],
-                                              dest_op=node.output_tensors[0].dest_op,
-                                              dtype='u8')
-                        quant_op = util.construct_node(
-                            node_name=quant_name,
-                            op_type='Quantize',
-                            input_tensors=[gelu_tensor, node.input_tensors[-2], node.input_tensors[-1]],
-                            output_tensors=[quant_tensor],
-                            attr=OrderedDict({'output_dtype': 'u8'}))
-
-                        reorder_recover_node = reorder_recover_node_insert(node, quant_op)
-                        reorder_recover_node.attr['output_dtype'] = 'u8'
-                        insert_idx = self.get_node_id(reorder_recover_node.name)
-                        self.insert_nodes(insert_idx, [quant_op])
-                        insert_idx = self.get_node_id(quant_op.name)
-                        self.insert_nodes(insert_idx, [gelu_op])
-
-                expand_gelu_tanh(node)
+                reorder_recover_node_insert(node)
 
             if node_type == 'add_innerproduct_1':
                 reorder_node = reorder_node_insert(node, 0)
@@ -949,14 +907,9 @@ class Graph(object):
                 swap_innertproduct_input(node, [0, 1], [4, 6], [5, 7])
                 reorder_recover_node_insert(node)
 
-            if node_type == 'add_innerproduct_0':
-                reorder_node_insert(node, 0)
-                swap_innertproduct_input(node, [0, 1], [3, 5], [4, 6])
-                reorder_recover_node_insert(node)
-
         for node_name in reorder_dict:
             insert_idx = self.get_node_id(node_name)
-            self.insert_nodes(insert_idx, [reorder_dict[node_name]])
+            self.insert_nodes(insert_idx, [reorder_dict[node_name]])       
 
         def consecutive_reorder_fusion():
             '''
@@ -976,7 +929,8 @@ class Graph(object):
                                 else:
                                     idx = idx + 1
                             post_node.input_tensors[idx] = pre_node.input_tensors[0]
-                            self.remove_nodes([pre_node.name, node.name])
+                            self.remove_nodes([pre_node.name, node.name])    
+                            pre_node.input_tensors[0].dest_op.append(post_node.name)                        
 
         consecutive_reorder_fusion()
 
@@ -990,7 +944,6 @@ class Graph(object):
         reorder_dict = {}
 
         def reorder_post_fusion():
-
             def check_QKV_fusion(node):
                 post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
                 node_type = innerproduct_type_check(post_node)
@@ -1013,19 +966,18 @@ class Graph(object):
                         for post_node_name in node.output_tensors[0].dest_op:
                             post_node = self.get_node_by_name(post_node_name)
                             modify_post_node_input_tensor(post_node, node, 0)
-
                         self.remove_nodes([node.name])
                         reorder_node = reorder_node_insert(pre_node, 0)
                         layernorm_node = self.get_node_by_name(reorder_node.input_tensors[0].source_op[0])
-                        # if the following node is reorder_post node, delete the Add_129_Reorder_Post_3
+                        
                         if 'Reorder_Post' in layernorm_node.output_tensors[0].dest_op[0]:
-                            tmp = self.get_node_by_name(layernorm_node.output_tensors[0].dest_op[0])
-                            post_node = self.get_node_by_name(tmp.output_tensors[0].dest_op[0])
-                            self.remove_nodes([tmp.name])
-                            layernorm_node.output_tensors[0].dest_op.append(post_node.name)
-                        # append the new reorder_node
-                        layernorm_node.output_tensors[0].dest_op.append(reorder_node.name)
-
+                            reorder_post_node = self.get_node_by_name(layernorm_node.output_tensors[0].dest_op[0])
+                            post_node = self.get_node_by_name(reorder_post_node.output_tensors[0].dest_op[0])
+                            self.remove_nodes([reorder_post_node.name])
+                            # append the new reorder_node
+                            layernorm_node.output_tensors[0].dest_op.append(reorder_node.name)
+                            reorder_node.output_tensors[0].dest_op.append(post_node.name)
+                
             for node_name in reorder_dict:
                 insert_idx = self.get_node_id(node_name)
                 self.insert_nodes(insert_idx, [reorder_dict[node_name]])
@@ -1052,25 +1004,14 @@ class Graph(object):
                                 else:
                                     idx = idx + 1
                             reshape_node.input_tensors[idx] = post_node.input_tensors[0]
-                            reshape_node.attr["dst_shape"] = '4,64,-1,-1'  #bert mini
-                            #reshape_node.attr["dst_shape"] = '12,64,-1,-1' #distilbert
+                            value_list = reshape_node.attr["dst_shape"].split(',')
+                            value = value_list[2] + ',' + value_list[3] + ',' + value_list[0] + ', ' + value_list[1]
+                            reshape_node.attr["dst_shape"] = value
                             self.remove_nodes([post_node.name])
 
                         # step2 : modify add_matmul and transpose_matmul nodes
                         post_reshape_node = self.get_node_by_name(reshape_node.output_tensors[0].dest_op[0])
-                        if innerproduct_type_check(post_reshape_node) == 'add_matmul_0':
-
-                            def add_matmul_modification(node):
-                                if node.attr.get("src0_perm") == '0,2,1,3' and node.attr.get("src1_perm") == '0,2,3,1':
-                                    node.attr["src0_perm"] = '2,0,3,1'
-                                    node.attr["src1_perm"] = '2,0,1,3'
-                                if node.attr.get("src1_perm") == '0,2,1,3' and node.attr.get("dst_perm") == '0,2,1,3':
-                                    node.attr["src1_perm"] = '2,0,3,1'
-                                    node.attr["dst_perm"] = '1,3,0,2'
-
-                            add_matmul_modification(post_reshape_node)
-
-                        if innerproduct_type_check(post_reshape_node) == 'transpose_matmul_0':
+                        if innerproduct_type_check(post_reshape_node) == 'matmul_0':
 
                             def transpose_matmul_modification(node):
                                 if node.attr.get("src0_perm") == '0,2,1,3' and node.attr.get("src1_perm") == '0,2,3,1':
@@ -1081,8 +1022,9 @@ class Graph(object):
                                     node.attr["dst_perm"] = '1,3,0,2'
                                 reshape_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
                                 if reshape_node.op_type == "Reshape":
-                                    reshape_node.attr["dst_shape"] = '256,-1'  #bert mini
-                                    #reshape_node.attr["dst_shape"] = '768,-1'
+                                    value_list = reshape_node.attr["dst_shape"].split(',')
+                                    value = value_list[1] + ',' + value_list[0]
+                                    reshape_node.attr["dst_shape"] = value
                                     reorder_node = self.get_node_by_name(reshape_node.output_tensors[0].dest_op[0])
                                     innerproduct_node = self.get_node_by_name(reorder_node.output_tensors[0].dest_op[0])
                                     if innerproduct_node.op_type == "InnerProduct":
@@ -1093,4 +1035,19 @@ class Graph(object):
 
         reorder_recover_fusion()
 
-        logger.info("transpose_mode_int8 done")
+        def layernorm_reorder_fusion():
+            for node in self._nodes:
+                if node.op_type == 'LayerNorm':
+                    reorder_recover_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
+                    reorder_post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+                    if 'Reorder_Recover' in reorder_recover_node.name and 'Reorder_Post' in reorder_post_node.name:
+                        node.input_tensors[0] = reorder_recover_node.input_tensors[0]
+                        node.attr['transpose_mode']='1, 0'
+                        for post_node_name in reorder_post_node.output_tensors[0].dest_op:
+                            post_node = self.get_node_by_name(post_node_name)
+                            modify_post_node_input_tensor(post_node, reorder_post_node, 0)
+                        self.remove_nodes([reorder_recover_node.name, reorder_post_node.name])
+
+        layernorm_reorder_fusion()
+
+        logger.info("Transpose_mode_int8 done")

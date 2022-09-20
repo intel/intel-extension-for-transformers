@@ -147,6 +147,7 @@ class InsertQuantNode(Pattern):
 
         # remove duplicate quant nodes and duplicate tensors
         remove_duplicate_set = set()
+        quant_node_dict = {}
         duplicate_list=[]
         for node in model.nodes:
             sz = len(remove_duplicate_set)
@@ -154,6 +155,11 @@ class InsertQuantNode(Pattern):
             new_sz = len(remove_duplicate_set)
             if new_sz == sz:
                 duplicate_list.append(node.name)
+                remain_node_name = quant_node_dict[node.output_tensors[0].name]
+                dup_node = model.get_node_by_name(node.output_tensors[0].dest_op[0])
+                dup_node.input_tensors[0].source_op = [remain_node_name]
+            else:
+                quant_node_dict[node.output_tensors[0].name] = node.name
         model.remove_nodes(duplicate_list)
 
         for node in model.nodes:
