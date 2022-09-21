@@ -26,6 +26,10 @@ make -j
 ./test_spmm_vnni_kernel
 ```
 
+### Performance
+We provide a benchmark tool to measure the performance out of box, please refer to [benchmark](../test/SparseLib/benchmark/README.md) for more details.
+For advanced users, please refer to [profling section](docs/profiling.md).
+
 ## API reference for users
 ### sparse_matmul kernel:
 ```cpp

@@ -48,7 +48,7 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul avx512f
 
 #### spmm_vnni
 ```shell
-[<environment_variable>...] ./benchmark <mode> sparse_matmul vnni <M> <K> <N> <sparse_ratio> <micro_bs> <is_fp32_out> <has_append_sum> <micro_oc> <sub_func_level>
+[<environment_variable>...] ./benchmark <mode> sparse_matmul vnni <M> <K> <N> <sparse_ratio> <micro_bs> <is_fp32_out> <has_append_sum> <micro_oc> <sub_func_level> [<post-op>...]
 ```
 
 You can use `-1` to use default config for `micro_bs`, `micro_oc`,`sub_func_level`.
@@ -57,7 +57,7 @@ You can use `-1` to use default config for `micro_bs`, `micro_oc`,`sub_func_leve
 
 ##### Examples
 ```shell
-BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul vnni 1024 1024 1024 0.7 -1 0 0 -1 -1
+BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul vnni 1024 1024 1024 0.7 -1 0 0 -1 -1 gelu
 ```
 
 #### spmm_amx_bf16_x16
@@ -71,12 +71,12 @@ make -j
 ```
 
 ```shell
-[<environment_variable>...] ./benchmark <mode> sparse_matmul amx_bf16_x16 <M> <K> <N> <sparse_ratio> <micro_bs> <micro_oc> <is_bf16_out>
+[<environment_variable>...] ./benchmark <mode> sparse_matmul amx_bf16_x16 <M> <K> <N> <sparse_ratio> <micro_bs> <micro_oc> <is_bf16_out> [<post-op>...]
 ```
 
 ##### Examples
 ```shell
-BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul amx_bf16_x16 1024 1024 1024 0.9 64 -1 1
+BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul amx_bf16_x16 1024 1024 1024 0.9 64 -1 1 gelu
 ```
 
 
@@ -111,12 +111,12 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf eltwiseop 1024 1024 d
 
 ### layernorm_ba
 ```shell
-[<environment_variable>...] ./benchmark <mode> layernorm_ba <M> <N>
+[<environment_variable>...] ./benchmark <mode> layernorm_ba <M> <N> <src_dt> <dst_dt>
 ```
-
+Please note that the src_dt only support fp32,dst_dt support fp32 and s8/u8.
 #### Examples
 ```shell
-BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf layernorm_ba 1024 1024
+BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf layernorm_ba 1024 1024 fp32 fp32
 ```
 
 ## For developers
