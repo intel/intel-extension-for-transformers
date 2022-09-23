@@ -850,43 +850,66 @@ class Graph(object):
             post_node.input_tensors[idx] = node.input_tensors[node_input_tensors_idx]
             return
 
-        if node_name_list == []:
-            logger.info("The node_name_list is [].")
-            return
-
         if node_name_list == None:
             logger.info("The node_name_list is None. Start to get sparse nodes name...")
             node_name_list = self.get_sparse_nodes_name()
 
+        if node_name_list == []:
+            logger.info("The node_name_list is [].")
+            return
+
         def node_name_list_convert(node_name_list):
-            node_name_type_list = ''
+            type_list = ''
             for node_name in node_name_list:
                 node = self.get_node_by_name(node_name)
                 node_type = innerproduct_type_check(node)
                 if node_type == 'add_innerproduct_0':
-                    node_name_type_list += '0'
+                    type_list += '0'
                 if node_type == 'add_innerproduct_1':
-                    node_name_type_list += '1'
+                    type_list += '1'
                 if node_type == 'mul_innerproduct_0':
-                    node_name_type_list += '2'
-            return node_name_type_list
+                    type_list += '2'
+            return type_list
 
-        node_name_type_list = node_name_list_convert(node_name_list)
+        type_list = node_name_list_convert(node_name_list)
 
-        def patthen_match(node_name_type_list, pattern='0001'):
+        def patthen_match(type_list, pattern):
             matched_idx = []
-            idx = node_name_type_list.find(pattern)
+            idx = type_list.find(pattern)
             while idx != -1:
                 matched_idx.append(idx)
-                idx = node_name_type_list.find(pattern, idx + 1)
+                idx = type_list.find(pattern, idx + 1)
 
+            return matched_idx
+
+        def matched_node_name_list(node_name_list, matched_idx, range=4):
             tmp_node_name_list = []
             for node_idx in matched_idx:
-                tmp_node_name_list.append(node_name_list[node_idx:node_idx + 4])
-            QKV_node_name_list = [i for item in tmp_node_name_list for i in item]
-            return matched_idx, QKV_node_name_list
+                tmp_node_name_list.append(node_name_list[node_idx:node_idx + range])
+            node_name_list = [i for item in tmp_node_name_list for i in item]
+            return node_name_list
 
-        matched_idx, QKV_node_name_list = patthen_match(node_name_type_list)
+        QKV_and_bias = '0001'
+        matched_idx = patthen_match(type_list, QKV_and_bias)
+        QKV_node_name_list = matched_node_name_list(node_name_list, matched_idx, 4)
+
+        geluTanh_and_sum = '21'
+        matched_idx = patthen_match(type_list, geluTanh_and_sum)
+        post_process_node_name_list = matched_node_name_list(node_name_list, matched_idx, 2)
+
+        def check_layernorm_fusion_node(post_process_node_name_list, start_idx, range):
+            layernorm_node = []
+            for node_name in post_process_node_name_list[start_idx:][::range]:
+                layernorm_node_name = self.get_node_by_name(node_name).input_tensors[3].source_op[0]
+                node = self.get_node_by_name(layernorm_node_name)
+                if node.op_type != 'LayerNorm':
+                    logger.warning('Post Process Pattern matching wrong')
+                else:
+                    layernorm_node.append(node.name)
+            return layernorm_node
+
+        layernorm_fusion_node = check_layernorm_fusion_node(post_process_node_name_list, 1, 2)
+        layernorm_fusion_node += check_layernorm_fusion_node(QKV_node_name_list, 3, 4)
 
         for node_name in node_name_list:
             node = self.get_node_by_name(node_name)
@@ -909,7 +932,7 @@ class Graph(object):
 
         for node_name in reorder_dict:
             insert_idx = self.get_node_id(node_name)
-            self.insert_nodes(insert_idx, [reorder_dict[node_name]])       
+            self.insert_nodes(insert_idx, [reorder_dict[node_name]])
 
         def consecutive_reorder_fusion():
             '''
@@ -929,8 +952,8 @@ class Graph(object):
                                 else:
                                     idx = idx + 1
                             post_node.input_tensors[idx] = pre_node.input_tensors[0]
-                            self.remove_nodes([pre_node.name, node.name])    
-                            pre_node.input_tensors[0].dest_op.append(post_node.name)                        
+                            self.remove_nodes([pre_node.name, node.name])
+                            pre_node.input_tensors[0].dest_op.append(post_node.name)
 
         consecutive_reorder_fusion()
 
@@ -969,7 +992,7 @@ class Graph(object):
                         self.remove_nodes([node.name])
                         reorder_node = reorder_node_insert(pre_node, 0)
                         layernorm_node = self.get_node_by_name(reorder_node.input_tensors[0].source_op[0])
-                        
+
                         if 'Reorder_Post' in layernorm_node.output_tensors[0].dest_op[0]:
                             reorder_post_node = self.get_node_by_name(layernorm_node.output_tensors[0].dest_op[0])
                             post_node = self.get_node_by_name(reorder_post_node.output_tensors[0].dest_op[0])
@@ -977,7 +1000,7 @@ class Graph(object):
                             # append the new reorder_node
                             layernorm_node.output_tensors[0].dest_op.append(reorder_node.name)
                             reorder_node.output_tensors[0].dest_op.append(post_node.name)
-                
+
             for node_name in reorder_dict:
                 insert_idx = self.get_node_id(node_name)
                 self.insert_nodes(insert_idx, [reorder_dict[node_name]])
@@ -1037,12 +1060,12 @@ class Graph(object):
 
         def layernorm_reorder_fusion():
             for node in self._nodes:
-                if node.op_type == 'LayerNorm':
+                if node.op_type == 'LayerNorm' and node.name in layernorm_fusion_node:
                     reorder_recover_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
                     reorder_post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
                     if 'Reorder_Recover' in reorder_recover_node.name and 'Reorder_Post' in reorder_post_node.name:
                         node.input_tensors[0] = reorder_recover_node.input_tensors[0]
-                        node.attr['transpose_mode']='1, 0'
+                        node.attr['transpose_mode'] = '1, 0'
                         for post_node_name in reorder_post_node.output_tensors[0].dest_op:
                             post_node = self.get_node_by_name(post_node_name)
                             modify_post_node_input_tensor(post_node, reorder_post_node, 0)

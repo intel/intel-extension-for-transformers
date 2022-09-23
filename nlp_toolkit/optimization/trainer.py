@@ -1648,6 +1648,8 @@ class BaseTrainer():
         quant_format='QDQ',
         dtype='S8S8',
         opset_version=14,
+        sample_size=100,
+        calibrate_method='minmax',
     ):
         if self.provider != 'inc':  # pragma: no cover
             logger.error("export_to_onnx API only supports INC model right now.")
@@ -1800,6 +1802,14 @@ class BaseTrainer():
         logger.info("Weight type: {}.".format(weight_type))
         logger.info("Activation type: {}.".format(activation_type))
 
+        # Calibrate_method, min/max method as default. 
+        if 'minmax' in calibrate_method:
+            calibrate_method = ortq.CalibrationMethod.MinMax
+        elif 'percentile' in calibrate_method:
+            calibrate_method = ortq.CalibrationMethod.Percentile
+        elif 'entropy' in calibrate_method:
+            calibrate_method = ortq.CalibrationMethod.Entropy
+
         if 'dynamic' in self.opt_model.q_config['approach']:
             ortq.quantize_dynamic(
                 fp32_path,
@@ -1813,7 +1823,7 @@ class BaseTrainer():
         else:
 
             class NLPDataReader(ortq.CalibrationDataReader):
-                def __init__(self, dataloader, sample_size=100):
+                def __init__(self, dataloader, sample_size=sample_size):
                     import math
                     self.dataloader = dataloader
                     self.batch_size = dataloader.batch_size
@@ -1845,6 +1855,7 @@ class BaseTrainer():
                 nodes_to_quantize=quantize_nodes,
                 nodes_to_exclude=[],
                 #op_types_to_quantize=op_types_to_quantize,
+                calibrate_method=calibrate_method,
                 extra_options={})
 
         os.remove(fp32_path)

@@ -57,16 +57,23 @@ export INST_NUM=<inst num>
 ### 2.1 Get dataset
 
 ```shell
-python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./data
+python prepare_dataset.py --dataset_name=squad --output_dir=./data
 ```
 
 ### 2.2 Get sparse model
 
-Neural Engine can parse Sparse ONNX model and Neural Engine IR.
-You can train a distilbert_base_uncased SQuAD sparse model with distillation through Neural Compressor [example](https://github.com/intel-innersource/frameworks.ai.lpot.intel-lpot/blob/28e9b1e66c23f4443a2be8f2926fee1e919f5a14/examples/pytorch/nlp/huggingface_models/text-classification/pruning_while_distillation/group_lasso/eager/README.md). and transpose the weight and activation to get better performance.
-Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [SparseLib](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/nlp_toolkit/backends/neural_engine/SparseLib) kernels and high performance layernorm op with transpose mode to improve inference performance.
+Use the [sparse model](https://huggingface.co/Intel/distilbert-base-uncased-squadv1.1-sparse-80-1x4-block-pruneofa) we publiced on huggingface which is distilbert base on Squad1.1 with sparse ration 80 on 1X4 block.
+You can get INT8 ONNX sparse model from optimization module by setting precision=int8, command as follows:
+```shell
+bash prepare_model.sh --input_model=Intel/distilbert-base-uncased-squadv1.1-sparse-80-1x4-block-pruneofa  --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=int8
+```
+Then you can generate tranposed sparse model to get better performance, command as follows:
+```shell
+python export_tranpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
+```
 
 ### Benchmark
+Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [SparseLib](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/nlp_toolkit/backends/neural_engine/SparseLib) kernels and high performance layernorm op with transpose mode to improve inference performance.
 
   2.1 accuracy
   run python
@@ -91,15 +98,7 @@ Neural Engine will automatically detect weight structured sparse ratio, as long 
   bash run_benchmark.sh --input_model=./sparse_int8_ir  --mode=performance --batch_size=8 --seq_len=128
   ```
   
-  or compile framwork model to IR using python API
-  
-  ```
-  from nlp_toolkit.backends.neural_engine.compile import compile
-  graph = compile('./sparse_int8_ir')
-  graph.save('./ir')
-  ```
-  
-  and run C++
+  Or run C++
   The warmup below is recommended to be 1/10 of iterations and no less than 3.
   
   ```
@@ -109,5 +108,5 @@ Neural Engine will automatically detect weight structured sparse ratio, as long 
   export UNIFIED_BUFFER=1
   numactl -C 0-<cpu_cores-1> <NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/bin/neural_engine
   --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
-  --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
+  --seq_len=128 --config=./sparse_int8_ir/conf.yaml --weight=./sparse_int8_ir/model.bin
   ```

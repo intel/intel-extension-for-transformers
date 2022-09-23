@@ -100,11 +100,9 @@ class DataLoader(object):
         end = start + self.batch_size
         if end > len(self.eval_dataset):
             input_ids_data = self.eval_dataset[start:]['input_ids']
-            segment_ids_data = self.eval_dataset[start:]['token_type_ids']
             input_mask_data = self.eval_dataset[start:]['attention_mask']
         else:
             input_ids_data = self.eval_dataset[start:end]['input_ids']
-            segment_ids_data = self.eval_dataset[start:end]['token_type_ids']
             input_mask_data = self.eval_dataset[start:end]['attention_mask']
 
         sample_size = len(input_ids_data) if isinstance(input_ids_data, list) else 1

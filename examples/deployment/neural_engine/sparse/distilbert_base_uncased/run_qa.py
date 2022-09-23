@@ -224,7 +224,7 @@ class OptimizationArguments:
         metadata={"help": "Metric tolerance mode, True for relative, otherwise for absolute."},
     )
     perf_tol: Optional[float] = field(
-        default=0.01,
+        default=0.5,
         metadata={"help": "Performance tolerance when optimizing the model."},
     )
     benchmark: bool = field(
@@ -696,7 +696,7 @@ def main():
         trainer.enable_bf16 = True
     if optim_args.to_onnx:
         trainer.enable_executor = True
-        trainer.export_to_onnx()
+        trainer.export_to_onnx(sample_size=1, calibrate_method='percentile')
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
