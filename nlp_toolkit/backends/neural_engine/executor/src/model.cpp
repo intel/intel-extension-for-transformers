@@ -249,6 +249,7 @@ void Model::SetDispatchKernel(const bool& reshape_model) {
 }
 
 vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
+  float It_start = Time("start");
   CHECK_EQ(input_data.size(), model_input_tensors_.size())
       << "input data size not equal with model input tensor size....";
   // if we want use dynamic input data shape at run time, we should check the
@@ -275,16 +276,29 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
     }
   }
   for (int i = 0; i < input_data.size(); ++i) {
-    // model_input_tesnor_[i]->free_data();
-    model_input_tensors_[i]->set_data(input_data[i].mutable_data());
-    model_input_tensors_[i]->set_shape(input_data[i].shape());
+  // model_input_tesnor_[i]->free_data();
+  model_input_tensors_[i]->set_data(input_data[i].mutable_data());
+  model_input_tensors_[i]->set_shape(input_data[i].shape());
   }
 
   SetDispatchKernel(reshape_model);
 
   if (!is_dispatcher_tuning_) {
-    if (reshape_model) {
-      for (int i = 0; i < operators_.size(); ++i) {
+    if (reshape_model&&engine_profiling_) {
+        for (int i = 0; i < operators_.size(); ++i) {
+        LOG(INFO) << "operator " << operators_[i]->name() << " gonna reshape with type " << operators_[i]->type();
+        // get reshape time for profiling
+        float start = Time("start");
+        operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
+        float end = Time("end");
+        operators_[i]->set_reshape_time(end - start);
+      }
+    } else if (!reshape_model&&engine_profiling_) {
+        for (int i = 0; i < operators_.size(); ++i) {
+        operators_[i]->set_reshape_time(0);
+      }
+    } else if (reshape_model) {
+        for (int i = 0; i < operators_.size(); ++i) {
         LOG(INFO) << "operator " << operators_[i]->name() << " gonna reshape with type " << operators_[i]->type();
         operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
       }
@@ -298,6 +312,12 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
           tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i], input_vecs_[i], output_vecs_[i]));
           float end = Time("end");
           operators_[i]->set_latency(end - start);
+          for (int j = 0; j < input_vecs_[i].size(); ++j) {
+            operators_[i]->set_it_shape(input_vecs_[i][j]->shape());
+          }
+          if (i != operators_.size() - 1) {
+            operators_[i]->set_ot_shape(output_vecs_[i][0]->shape());  // the last output is not exsit
+          }
           LOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << end - start << " ms";
           if (thread_count >= multi_stream_tasks_[i]) {
             tp.waitAllTaskRunOver();
@@ -308,7 +328,14 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
           float start = Time("start");
           operators_[i]->Forward(input_vecs_[i], output_vecs_[i]);
           float end = Time("end");
+          // for profiling
           operators_[i]->set_latency(end - start);
+          for (int j = 0; j < input_vecs_[i].size(); ++j) {
+            operators_[i]->set_it_shape(input_vecs_[i][j]->shape());
+          }
+          if (i != operators_.size() - 1) {
+            operators_[i]->set_ot_shape(output_vecs_[i][0]->shape());
+          }
           LOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << end - start << " ms";
         }
       }
@@ -328,12 +355,14 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
       }
     }
   }
+  float Iter_end = Time("end");
   return this->output_tensors();
 }
 
 void Model::Profiling(char* space_name, char* count_name, char* mtx_name, int warm_up) {
   // in multi instance case, dump profiling for each instance
   LOG(INFO) << "Neural engine profiling ...";
+  ipc::shared_memory_object::remove(space_name);
   ipc::managed_shared_memory shm(ipc::open_or_create, space_name, 1024);
   int* inst_count = shm.find_or_construct<int>(count_name)(0);
   std::string profiling_dir = "engine_profiling_";
@@ -384,6 +413,12 @@ void Model::Profiling(char* space_name, char* count_name, char* mtx_name, int wa
       // for spase performance estimate
       ProfilingSparseEstimate(fp, op, average_latency);
     }
+    std::string tracer_file = profiling_dir + "/profiling_" + ch_curr_time \
+                               + "_" + std::to_string((*inst_count)++) + ".json";
+    ProfilingTracer Tracer = ProfilingTracer();
+    Tracer.BeginTrace(tracer_file);
+    Tracer.WriteProfile(operators_, input_vecs_, output_vecs_);
+    Tracer.EndTrace();
     // dense total latency
     fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
                 "total latency(ms)", total_latency);
@@ -432,7 +467,6 @@ void Model::Profiling(char* space_name, char* count_name, char* mtx_name, int wa
     ipc::shared_memory_object::remove(space_name);
   }
 }
-
 void Model::ProfilingSparse(FILE* fp) {
   // weight shape, perf ratio, others
   fprintf(fp, "%s,%s,%s,%s,%s\n", "weight shape", "90% 4x1 perf ratio",

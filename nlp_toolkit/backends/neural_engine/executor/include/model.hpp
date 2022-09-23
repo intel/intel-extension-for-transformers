@@ -25,7 +25,6 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
-
 #include "common.hpp"
 #include "glog/logging.h"
 #include "memory_allocator.hpp"
@@ -34,6 +33,7 @@
 #include "operator_registry.hpp"
 #include "tensor.hpp"
 #include "thread_pool.hpp"
+#include "profiling_trace.hpp"
 
 namespace executor {
 
@@ -109,6 +109,8 @@ class Model {
   void ProfilingWeights(FILE* fp, const shared_ptr<Dispatcher>& op);
   void ProfilingSparseEstimate(FILE* fp, const shared_ptr<Dispatcher>& op,
                                const float average_latency = 0.);
+
+
 
  protected:
   string name_;

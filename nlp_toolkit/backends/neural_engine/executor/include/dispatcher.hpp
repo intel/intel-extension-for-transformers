@@ -256,6 +256,18 @@ class Dispatcher {
     kernel_handler_[execute_kernel_]->set_perf_ratio_id(perf_ratio_id);
   }
   inline const string& perf_ratio_id() { return kernel_handler_[execute_kernel_]->perf_ratio_id(); }
+  inline void set_it_shape(const vector<int64_t>input_shape) {
+                           kernel_handler_[execute_kernel_]->set_it_shape(input_shape); }
+  inline void set_ot_shape(const vector<int64_t>output_shape) {
+                           kernel_handler_[execute_kernel_]->set_ot_shape(output_shape); }
+  inline const vector<vector<int64_t>>& get_it_shape() {
+                           return kernel_handler_[execute_kernel_]->get_it_shape(); }
+  inline const vector<vector<int64_t>>& get_ot_shape() {
+                           return kernel_handler_[execute_kernel_]->get_ot_shape(); }
+  inline void set_reshape_time(const float reshape_time_) {
+                           kernel_handler_[execute_kernel_]->set_reshape_time(reshape_time_); }
+  inline const vector<float>& get_reshape_time() {
+                           return kernel_handler_[execute_kernel_]->get_reshape_time(); }
 
  protected:
   // get input_hash
