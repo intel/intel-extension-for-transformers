@@ -501,6 +501,10 @@ class TFOptimization:
         self.distiller.create_criterion()
 
         opt_model = self.distiller.fit()
+        opt_model.save(self.args.output_dir)
+        logger.info(
+            "distilled model have saved to {}".format(self.args.output_dir)
+        )
 
         return opt_model.model
 

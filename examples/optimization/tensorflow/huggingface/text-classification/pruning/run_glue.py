@@ -210,7 +210,10 @@ class OptimizationArguments:
     )
     benchmark: bool = field(
         default=False,
-        metadata={"help": "run benchmark."})
+        metadata={"help": "Run benchmark."})
+    use_pruned_model: bool = field(
+        default=False,
+        metadata={"help":"Whether to use pretrained pruned model."})
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
@@ -503,7 +506,7 @@ def main():
                 drop_remainder=drop_remainder,
                 # `label_cols` is needed for user-defined losses, such as in this example
                 # datasets v2.3.x need "labels", not "label"
-                label_cols=["labels", "label"] if "label" in dataset.column_names else None,
+                label_cols=["labels"] if "label" in dataset.column_names else None,
             )
             tf_data[key] = data
         # endregion
@@ -573,15 +576,49 @@ def main():
             raw_datasets = [datasets["validation"]]
 
         total_time = 0
-        for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
-            num_examples = sum(1 for _ in tf_dataset.unbatch())
-            start = time.time()
-            eval_predictions = model.predict(tf_dataset)
-            total_time += time.time() - start
-            eval_metrics = compute_metrics(eval_predictions, raw_dataset["label"])
-            print(f"Evaluation metrics ({task}) Accuracy: ", eval_metrics)
-        print("Throughput: ", num_examples / total_time)
+        num_examples = 0
+        if optim_args.use_pruned_model:
+            model = tf.saved_model.load(training_args.output_dir)
+        for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets,
+                                                    tasks):
+            num_examples += sum(
+                1 for _ in (tf_dataset.unbatch()
+                            if hasattr(tf_dataset, "unbatch") else tf_dataset
+                            )
+            )
+            if optim_args.use_pruned_model:
+                preds: np.ndarray = None
+                label_ids: np.ndarray = None
+                infer = model.signatures[list(model.signatures.keys())[0]]
+                for i, (inputs, labels) in enumerate(tf_dataset):
+                    for name in inputs:
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
+                    start = time.time()
+                    results = infer(**inputs)
+                    total_time += time.time() - start
+                    for val in results:
+                        if preds is None:
+                            preds = results[val].numpy()
+                        else:
+                            preds = np.append(preds, results[val].numpy(), axis=0)
+                    if label_ids is None:
+                        label_ids = labels.numpy()
+                    else:
+                        label_ids = np.append(label_ids, labels.numpy(), axis=0)
+                eval_metrics = compute_metrics({"logits": preds}, label_ids)
+            else:
+                start = time.time()
+                eval_predictions = model.predict(tf_dataset)
+                total_time += time.time() - start
+                eval_metrics = compute_metrics(eval_predictions, raw_dataset["label"])
+                print(f"Evaluation metrics ({task}):")
+                print(eval_metrics)
 
+            logger.info("metric ({}) Accuracy: {}".format(task, eval_metrics["accuracy"]))
+        logger.info(
+            "Throughput: {} samples/sec".format(
+                num_examples / total_time)
+        )
     # endregion
 
     # region Prediction
@@ -606,8 +643,25 @@ def main():
             tf_datasets.append(tf_data["user_data"])
             raw_datasets.append(datasets["user_data"])
 
+        if optim_args.use_pruned_model:
+            model = tf.saved_model.load(training_args.output_dir)
+
         for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
-            test_predictions = model.predict(tf_dataset)
+            if optim_args.use_pruned_model:
+                preds: np.ndarray = None
+                infer = model.signatures[list(model.signatures.keys())[0]]
+                for i, (inputs, labels) in enumerate(tf_dataset):
+                    for name in inputs:
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
+                    results = infer(**inputs)
+                    for val in results:
+                        if preds is None:
+                            preds = results[val].numpy()
+                        else:
+                            preds = np.append(preds, results[val].numpy(), axis=0)
+                test_predictions = {"logits": preds}
+            else:
+                test_predictions = model.predict(tf_dataset)
             if "label" in raw_dataset:
                 test_metrics = compute_metrics(test_predictions, raw_dataset["label"])
                 print(f"Test metrics ({task}):")
@@ -626,7 +680,7 @@ def main():
                     if is_regression:
                         writer.write(f"{index}\t{item:3.3f}\n")
                     else:
-                        item = model.config.id2label[item]
+                        item = config.id2label[item]
                         writer.write(f"{index}\t{item}\n")
         # endregion
 

@@ -40,7 +40,7 @@ function init_params {
 # run_tuning
 function run_tuning {
     extra_cmd=''
-    batch_size=16
+    batch_size=64
     if [ "${topology}" = "distilbert-base-uncased" ]; then
         TASK_NAME='sst2'
         model_name_or_path=distilbert-base-uncased

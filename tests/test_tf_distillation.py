@@ -20,7 +20,7 @@ class TestDistillation(unittest.TestCase):
             'distilbert-base-uncased-finetuned-sst-2-english')
 
         raw_datasets = load_dataset("glue", "sst2")["validation"]
-        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
         non_label_column_names = [
             name for name in raw_datasets.column_names if name != "label"
         ]
@@ -28,10 +28,10 @@ class TestDistillation(unittest.TestCase):
         def preprocess_function(examples):
             # Tokenize the texts
             args = ((examples['sentence'], ))
-            result = tokenizer(*args,
-                               padding=True,
-                               max_length=64,
-                               truncation=True)
+            result = self.tokenizer(*args,
+                                    padding=True,
+                                    max_length=64,
+                                    truncation=True)
             return result
 
         raw_datasets = raw_datasets.map(preprocess_function,
@@ -55,7 +55,7 @@ class TestDistillation(unittest.TestCase):
         )
         parser = HfArgumentParser(TFTrainingArguments)
         self.args = parser.parse_args_into_dataclasses(args=[
-            "--output_dir", "./quantized_model",
+            "--output_dir", "./distilled_model",
             "--per_device_eval_batch_size", "2"
         ])[0]
         optimizer = tf.keras.optimizers.Adam(

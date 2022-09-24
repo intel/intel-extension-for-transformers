@@ -504,7 +504,7 @@ def main():
                 drop_remainder=drop_remainder,
                 # `label_cols` is needed for user-defined losses, such as in this example
                 # datasets v2.3.x need "labels", not "label"
-                label_cols=["labels", "label"] if "label" in dataset.column_names else None,
+                label_cols=["labels"] if "label" in dataset.column_names else None,
             )
             tf_data[key] = data
         # endregion
@@ -568,6 +568,8 @@ def main():
 
         total_time = 0
         num_examples = 0
+        if optim_args.int8:
+            model = tf.saved_model.load(training_args.output_dir)
         for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
             num_examples += sum(
                 1 for _ in (tf_dataset.unbatch()
@@ -577,7 +579,6 @@ def main():
             if optim_args.int8:
                 preds: np.ndarray = None
                 label_ids: np.ndarray = None
-                model = tf.saved_model.load(training_args.output_dir)
                 infer = model.signatures[list(model.signatures.keys())[0]]
                 for i, (inputs, labels) in enumerate(tf_dataset):
                     for name in inputs:
@@ -632,10 +633,28 @@ def main():
             tf_datasets.append(tf_data["user_data"])
             raw_datasets.append(datasets["user_data"])
 
+        if optim_args.int8:
+            model = tf.saved_model.load(training_args.output_dir)
+
         for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
-            test_predictions = model.predict(tf_dataset)
+            if optim_args.int8:
+                preds: np.ndarray = None
+                infer = model.signatures[list(model.signatures.keys())[0]]
+                for i, (inputs, labels) in enumerate(tf_dataset):
+                    for name in inputs:
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
+                    results = infer(**inputs)
+                    for val in results:
+                        if preds is None:
+                            preds = results[val].numpy()
+                        else:
+                            preds = np.append(preds, results[val].numpy(), axis=0)
+                test_predictions = {"logits": preds}
+            else:
+                test_predictions = model.predict(tf_dataset)
             if "label" in raw_dataset:
-                test_metrics = compute_metrics(test_predictions, raw_dataset["label"])
+                test_metrics = compute_metrics(test_predictions,
+                                                raw_dataset["label"])
                 print(f"Test metrics ({task}):")
                 print(test_metrics)
 
@@ -652,7 +671,7 @@ def main():
                     if is_regression:
                         writer.write(f"{index}\t{item:3.3f}\n")
                     else:
-                        item = model.config.id2label[item]
+                        item = config.id2label[item]
                         writer.write(f"{index}\t{item}\n")
     # endregion
 

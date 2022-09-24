@@ -24,7 +24,7 @@ bash run_tuning.sh  --topology=topology
 ```
 
 ```
-bash run_benchmark.sh --topology=topology --mode=benchmark
+bash run_benchmark.sh --topology=topology --mode=benchmark --use_pruned_model=true
 ```
 topology is "distilbert_base_sst2"
 

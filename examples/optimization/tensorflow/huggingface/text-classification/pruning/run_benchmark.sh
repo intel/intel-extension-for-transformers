@@ -11,9 +11,10 @@ function main {
 # init params
 function init_params {
   iters=100
-  batch_size=16
+  batch_size=64
   tuned_checkpoint=saved_results
   topology="distilbert_base_sst2"
+  mode="benchmark"
   for var in "$@"
   do
     case $var in
@@ -35,8 +36,8 @@ function init_params {
       --iters=*)
           iters=$(echo ${var} |cut -f2 -d=)
       ;;
-      --int8=*)
-          int8=$(echo ${var} |cut -f2 -d=)
+      --use_pruned_model=*)
+          use_pruned_model=$(echo ${var} |cut -f2 -d=)
       ;;
       --config=*)
           tuned_checkpoint=$(echo $var |cut -f2 -d=)
@@ -67,7 +68,11 @@ function run_benchmark {
 
     if [ "${topology}" = "distilbert_base_sst2" ]; then
         TASK_NAME='sst2'
-        model_name_or_path=${tuned_checkpoint}
+        model_name_or_path=distilbert-base-uncased-finetuned-sst-2-english
+    fi
+
+    if [[ ${use_pruned_model} == "true" ]]; then
+        extra_cmd=$extra_cmd" --use_pruned_model"
     fi
 
     python -u ./run_glue.py \
