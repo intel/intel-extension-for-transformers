@@ -1,0 +1,9 @@
+### ncores_per_inst operator output_channel input_channel bsxseq sparsity micro_bs micro_oc is_bf16_out
+
+# bert mini sp90 bs=1 c4
+4 amx_bf16_x16 768 768 256 0.7 64 -1 1
+4 amx_bf16_x16 768 768 256 0.8 64 -1 1
+4 amx_bf16_x16 768 768 256 0.9 64 -1 1
+4 amx_bf16_x16 1024 256 256 0.7 64 -1 1
+4 amx_bf16_x16 1024 256 256 0.8 64 -1 1
+4 amx_bf16_x16 1024 256 256 0.9 64 -1 1

@@ -5,11 +5,14 @@ log_dir=$1
 rm -rf $log_dir
 mkdir -p $log_dir
 
-medium_n=1
+medium_n=5
 
 source $script_dir/benchmark.sh --modes=acc,perf --op=sparse_matmul --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_vnni_input" |
     tee "$log_dir/vnni.log"
+source $script_dir/benchmark.sh --modes=acc,perf --op=sparse_matmul --medium_n=$medium_n --it_per_core=300 \
+    --batch="$script_dir/inputs/ci_amx_bf16_x16_input" |
+    tee "$log_dir/amx_bf16_x16.log"
 source $script_dir/benchmark.sh --modes=acc,perf --op=layernorm_ba --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_layernorm_ba_input" |
     tee "$log_dir/layernorm_ba.log"
