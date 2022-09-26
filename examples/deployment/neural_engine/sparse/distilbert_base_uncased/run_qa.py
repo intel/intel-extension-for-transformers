@@ -696,7 +696,10 @@ def main():
         trainer.enable_bf16 = True
     if optim_args.to_onnx:
         trainer.enable_executor = True
-        trainer.export_to_onnx(sample_size=1, calibrate_method='percentile')
+        if optim_args.enable_bf16 or not optim_args.tune:
+            trainer.export_to_onnx()
+        else: 
+            trainer.export_to_onnx(sample_size=1, calibrate_method='percentile')
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
