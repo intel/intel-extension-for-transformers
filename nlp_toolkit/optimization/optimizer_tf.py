@@ -22,6 +22,9 @@ import time
 from neural_compressor import __version__
 from neural_compressor.experimental import common
 from neural_compressor.model.model import saved_model_session
+from neural_compressor.model.model import get_model_type
+from neural_compressor.experimental.data.transforms.imagenet_transform import LabelShift
+from neural_compressor.experimental.metric.metric import TensorflowTopK
 from nlp_toolkit import (DistillationConfig, QuantizationConfig, PruningConfig)
 from nlp_toolkit.optimization.quantization import QuantizationMode
 from nlp_toolkit.optimization.utils.metrics import Metric
@@ -146,135 +149,161 @@ class TFOptimization:
         self._eval_dataset = eval_dataset
 
     def builtin_eval_func(self, model):
-        """Evaluate the model for specified metric on validation dataset.
+        """
+        Custom Evaluate function to inference the model for specified metric on validation dataset.
 
         Args:
-            model ([Graph, GraphDef or Path String]): The model could be the graph,
-                        graph_def object, the frozen pb or ckpt/savedmodel folder path.
+            model ([tf.saved_model.load]): The model will be the class of tf.saved_model.load(quantized_model_path).
 
         Returns:
             [float]: evaluation result, the larger is better.
         """
-        num_examples = sum(1 for _ in (self._eval_dataset.unbatch(
-        ) if hasattr(self._eval_dataset, "unbatch") else self._eval_dataset))
+        model_type = None
+        try:
+            model_type = get_model_type(model)
+        except ValueError:
+            logger.info("use keras savedModel")
 
+        num_examples = sum(1 for _ in (
+            self._eval_dataset.unbatch() if hasattr(self._eval_dataset, "unbatch") else self._eval_dataset))
         logger.info(f"***** Running Evaluation *****")
         logger.info(f"  Num examples in dataset = {num_examples}")
         logger.info(f"  Batch size = {self.args.per_device_eval_batch_size}")
 
-        from neural_compressor.adaptor.tf_utils.util import get_tensor_by_name
-        input_tensor = [get_tensor_by_name(\
-            model, x) for x in self.input_names]
-        output_tensor = [get_tensor_by_name(\
-            model, x) for x in self.output_names]
+        if model_type is None:
+            infer = model.signatures["serving_default"]
+            output_dict_keys = infer.structured_outputs.keys()
+            output_name = list(output_dict_keys)[0]
 
-        logger.info("Start to evaluate the TensorFlow model.")
+            postprocess = LabelShift(label_shift=1)
+            metric = TensorflowTopK(k=1)
 
-        total_time = 0
-        config = tf.compat.v1.ConfigProto()
-        config.use_per_session_threads = 1
-        config.inter_op_parallelism_threads = 1
-        sess = tf.compat.v1.Session(graph=model, config=config)
-        feed_dict = {}
-        label_ids: np.ndarray = None
-        preds: np.ndarray = None
-        for idx, (inputs, labels) in enumerate(self._eval_dataset):
-            assert len(input_tensor) == len(inputs), \
-                'inputs len must equal with input_tensor'
+            def eval_func(dataloader, metric):
+                for idx, (inputs, labels) in enumerate(dataloader):
+                    for name in inputs:
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
+
+                    predictions = infer(**inputs)[output_name]
+                    predictions = predictions.numpy()
+                    predictions, labels = postprocess((predictions, labels))
+                    metric.update(predictions, labels)
+
+            eval_func(self._eval_dataset, metric)
+            acc = metric.result()
+            return acc
+        else:  # pragma: no cover
+            from neural_compressor.adaptor.tf_utils.util import get_tensor_by_name
+            input_tensor = [get_tensor_by_name(\
+                model, x) for x in self.input_names]
+            output_tensor = [get_tensor_by_name(\
+                model, x) for x in self.output_names]
+
+            logger.info("Start to evaluate the TensorFlow model.")
+
+            total_time = 0
+            config = tf.compat.v1.ConfigProto()
+            config.use_per_session_threads = 1
+            config.inter_op_parallelism_threads = 1
+            sess = tf.compat.v1.Session(graph=model, config=config)
             feed_dict = {}
-            for name in inputs:
-                for tensor in input_tensor:
-                    pos = tensor.name.rfind(":")
-                    t_name = tensor.name if pos < 0 else tensor.name[:pos]
-                    if name == t_name:
-                        feed_dict[tensor] = inputs[name].numpy()
-                        break
+            label_ids: np.ndarray = None
+            preds: np.ndarray = None
+            for idx, (inputs, labels) in enumerate(self._eval_dataset):
+                assert len(input_tensor) == len(inputs), \
+                    'inputs len must equal with input_tensor'
+                feed_dict = {}
+                for name in inputs:
+                    for tensor in input_tensor:
+                        pos = tensor.name.rfind(":")
+                        t_name = tensor.name if pos < 0 else tensor.name[:pos]
+                        if name == t_name:
+                            feed_dict[tensor] = inputs[name].numpy()
+                            break
 
-            start = time.time()
-            logits = sess.run(output_tensor, feed_dict)
-            total_time += time.time() - start
-            if not self.args.prediction_loss_only:
-                if isinstance(logits, tuple):
-                    logits = logits[0]
+                start = time.time()
+                logits = sess.run(output_tensor, feed_dict)
+                total_time += time.time() - start
+                if not self.args.prediction_loss_only:
+                    if isinstance(logits, tuple):
+                        logits = logits[0]
 
-                if isinstance(labels, tuple):
-                    labels = labels[0].numpy()
+                    if isinstance(labels, tuple):
+                        labels = labels[0].numpy()
 
-                if isinstance(logits,
-                              list) and len(logits) > 1:  # pragma: no cover
-                    for val in logits:
+                    if isinstance(logits,
+                                list) and len(logits) > 1:  # pragma: no cover
+                        for val in logits:
+                            if preds is None:
+                                preds = val
+                            else:
+                                preds = np.append(preds, val, axis=0)
+
+                        for val in labels:
+                            if label_ids is None:
+                                label_ids = val.numpy()
+                            else:
+                                label_ids = np.append(label_ids,
+                                                    val.numpy(),
+                                                    axis=0)
+                    else:
                         if preds is None:
-                            preds = val
+                            preds = logits[0] if isinstance(logits,
+                                                            list) else logits
                         else:
-                            preds = np.append(preds, val, axis=0)
+                            preds = np.append(
+                                preds,
+                                logits[0] if isinstance(logits, list) else logits,
+                                axis=0)
 
-                    for val in labels:
                         if label_ids is None:
-                            label_ids = val.numpy()
+                            label_ids = labels[0].numpy() if isinstance(
+                                labels, list) else labels.numpy()
                         else:
-                            label_ids = np.append(label_ids,
-                                                  val.numpy(),
-                                                  axis=0)
-                else:
-                    if preds is None:
-                        preds = logits[0] if isinstance(logits,
-                                                        list) else logits
-                    else:
-                        preds = np.append(
-                            preds,
-                            logits[0] if isinstance(logits, list) else logits,
-                            axis=0)
+                            label_ids = np.append(
+                                label_ids,
+                                labels[0].numpy()
+                                if isinstance(labels, list) else labels.numpy(),
+                                axis=0)
 
-                    if label_ids is None:
-                        label_ids = labels[0].numpy() if isinstance(
-                            labels, list) else labels.numpy()
-                    else:
-                        label_ids = np.append(
-                            label_ids,
-                            labels[0].numpy()
-                            if isinstance(labels, list) else labels.numpy(),
-                            axis=0)
+            if self.compute_metrics is not None and preds is not None and label_ids is not None:
+                try:
+                    loss = self.criterion(
+                        label_ids, preds) if self.criterion is not None else None
+                except Exception as e:  # pragma: no cover
+                    logger.info(e)
+                    logger.info("There is no loss function or loss compute error, \
+                                    Please compute loss in compute_metrics function"
+                                )
+                    loss = None
+                results = self.compute_metrics({"logits": preds}, label_ids)
+                if loss is not None:
+                    results["loss"] = loss.numpy()
 
-        if self.compute_metrics is not None and preds is not None and label_ids is not None:
-            try:
-                loss = self.criterion(
-                    label_ids, preds) if self.criterion is not None else None
-            except Exception as e:  # pragma: no cover
-                logger.info(e)
-                logger.info("There is no loss function or loss compute error, \
-                                Please compute loss in compute_metrics function"
-                            )
-                loss = None
-            results = self.compute_metrics({"logits": preds}, label_ids)
-            if loss is not None:
-                results["loss"] = loss.numpy()
-
-            if isinstance(self.metrics, list):
-                nums = len(self.metrics)
-                for metric in self.metrics:
-                    assert metric.name in results.keys(), \
-                        "Please set metric from {}".format(results.keys())
-                if nums == 1:
-                    result = results.get(self.metrics[0].name)
-                else:  # pragma: no cover
-                    result = 0
+                if isinstance(self.metrics, list):
+                    nums = len(self.metrics)
                     for metric in self.metrics:
-                        assert metric.weight_ratio is not None, \
-                            "Please set weights for metric if you want to use more than one metric"
-                        result += results[metric.name] * metric.weighted
-                logger.info("metric Accuracy: {}".format(result))
-            elif isinstance(self.metrics, Metric):
-                assert self.metrics.name in results.keys(), \
-                        "Please set metric from {}".format(results.keys())
-                result = results.get(self.metrics.name)
-                logger.info("metric Accuracy: {}".format(result))
-            else:  # pragma: no cover
-                assert False, "Please set the correct metrics format from the README"
-        else:
-            result = 0
-
-        logger.info("Throughput: {} samples/sec".format(num_examples / total_time))
-        return result
+                        assert metric.name in results.keys(), \
+                            "Please set metric from {}".format(results.keys())
+                    if nums == 1:
+                        result = results.get(self.metrics[0].name)
+                    else:  # pragma: no cover
+                        result = 0
+                        for metric in self.metrics:
+                            assert metric.weight_ratio is not None, \
+                                "Please set weights for metric if you want to use more than one metric"
+                            result += results[metric.name] * metric.weighted
+                    logger.info("metric Accuracy: {}".format(result))
+                elif isinstance(self.metrics, Metric):
+                    assert self.metrics.name in results.keys(), \
+                            "Please set metric from {}".format(results.keys())
+                    result = results.get(self.metrics.name)
+                    logger.info("metric Accuracy: {}".format(result))
+                else:  # pragma: no cover
+                    assert False, "Please set the correct metrics format from the README"
+            else:
+                result = 0
+            logger.info("Throughput: {} samples/sec".format(num_examples / total_time))
+            return result
 
     def init_quantizer(
         self,
