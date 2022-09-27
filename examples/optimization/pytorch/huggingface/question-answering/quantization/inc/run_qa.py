@@ -662,6 +662,7 @@ def main():
             approach=optim_args.quantization_approach,
             max_trials=200,
             metrics=[tune_metric],
+            sampling_size = len(train_dataset)//20
         )
         model = trainer.quantize(quant_config=quantization_config)
 

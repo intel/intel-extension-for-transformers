@@ -51,6 +51,7 @@ class QuantizationConfig(object):
         metrics: Union[Metric, List] = None,
         objectives: Union[Objective, List] = performance,
         config_file: str = None,
+        sampling_size: int = 100,
     ):
         super().__init__()
         if config_file is None:
@@ -72,6 +73,8 @@ class QuantizationConfig(object):
             self.objectives = objectives
         else:
             self._objectives = None
+        if sampling_size is not None:
+            self.sampling_size = sampling_size
 
     @property
     def approach(self):
@@ -262,9 +265,12 @@ class QuantizationConfig(object):
 
     @sampling_size.setter
     def sampling_size(self, sampling_size):
-        assert type(sampling_size) == list, \
-            "The sampling_size must be a list of int numbers"
-        self.inc_config.usr_cfg.quantization.calibration.sampling_size = sampling_size
+        if isinstance(sampling_size, int):
+            self.inc_config.usr_cfg.quantization.calibration.sampling_size = [sampling_size]
+        elif isinstance(sampling_size, list):
+            self.inc_config.usr_cfg.quantization.calibration.sampling_size = sampling_size
+        else:
+            assert False, "The sampling_size must be a list of int numbers"
 
 
 class PruningConfig(object):

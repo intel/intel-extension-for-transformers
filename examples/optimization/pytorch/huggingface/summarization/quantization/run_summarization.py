@@ -703,6 +703,7 @@ def main():
             approach=optim_args.quantization_approach,
             max_trials=200,
             metrics=[tune_metric],
+            sampling_size = len(train_dataset)//20
         )
         trainer.max_length = max_length
         trainer.num_beams = num_beams
