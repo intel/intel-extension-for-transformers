@@ -85,7 +85,20 @@ class spmm_vnni_k_t : public kernel_t {
         K_(derived_kd()->K()),
         BM_(derived_kd()->BM()),
         BN_(derived_kd()->BN()) {}
-  virtual ~spmm_vnni_k_t() {}
+  virtual ~spmm_vnni_k_t() {
+    for (auto& kernel : jit_kers_) {
+      if (kernel != nullptr) {
+        delete kernel;
+        kernel = nullptr;
+      }
+    }
+  }
+  // Delete move constructor and move operator
+  spmm_vnni_k_t(spmm_vnni_k_t&& other) = delete;
+  spmm_vnni_k_t& operator=(spmm_vnni_k_t&& other) = delete;
+  // Delete copy constructor and copy operator
+  spmm_vnni_k_t(const spmm_vnni_k_t& other) = delete;
+  spmm_vnni_k_t& operator=(const spmm_vnni_k_t& other) = delete;
 
  public:
   bool init() override;

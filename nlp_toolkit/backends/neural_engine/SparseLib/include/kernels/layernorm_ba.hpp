@@ -31,7 +31,7 @@ class layernorm_ba_kd_t : public kernel_desc_t {
   explicit layernorm_ba_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::layernorm_ba), op_desc_(op_desc) {}
 
-  virtual ~layernorm_ba_kd_t() { delete[] one_div_n_; }
+  virtual ~layernorm_ba_kd_t() { free(one_div_n_); }
 
  public:
   bool init() override;
@@ -53,7 +53,26 @@ class layernorm_ba_k_t : public kernel_t {
  public:
   using kd_t = layernorm_ba_kd_t;
   explicit layernorm_ba_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
-  virtual ~layernorm_ba_k_t() {}
+  virtual ~layernorm_ba_k_t() {
+    for (auto& kernel : jit_kers_) {
+      if (kernel != nullptr) {
+        delete kernel;
+        kernel = nullptr;
+      }
+    }
+    for (auto& data : td) {
+      if (data != nullptr) {
+        delete data;
+        data = nullptr;
+      }
+    }
+  }
+  // Delete move constructor and move operator
+  layernorm_ba_k_t(layernorm_ba_k_t&& other) = delete;
+  layernorm_ba_k_t& operator=(layernorm_ba_k_t&& other) = delete;
+  // Delete copy constructor and copy operator
+  layernorm_ba_k_t(const layernorm_ba_k_t& other) = delete;
+  layernorm_ba_k_t& operator=(const layernorm_ba_k_t& other) = delete;
 
  public:
   bool init() override;

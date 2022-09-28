@@ -136,6 +136,14 @@ class SpmmAVX512FKernelTest : public testing::TestWithParam<test_params_t> {
 TEST_P(SpmmAVX512FKernelTest, ) {
   test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
   EXPECT_TRUE(check_result(t));
+  for (auto iter : t.args.first.rt_data) {
+    char* data = reinterpret_cast<char*>(const_cast<void*>(iter));
+    delete[] data;
+  }
+  for (auto iter : t.args.second.rt_data) {
+    char* data = reinterpret_cast<char*>(const_cast<void*>(iter));
+    delete[] data;
+  }
 }
 
 template <typename T>

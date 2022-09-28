@@ -151,17 +151,22 @@ bool check_result(const test_params_t& t) {
       for (int i = 0; i < num; i++) {
         *(reinterpret_cast<float*>(buf1) + i) = bf16_2_fp32(*(reinterpret_cast<bfloat16_t*>(bf16_buf1) + i));
       }
+      free(bf16_buf1);
       err_rate = 5;
     }
 
     EXPECT_NE(buf1, buf2);
     auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
     free(const_cast<void*>(p.data[0]));
-    free(const_cast<void*>(p.data[1]));
+    free(buf1);
     free(const_cast<void*>(q.data[0]));
     free(const_cast<void*>(q.data[1]));
     return ans;
   }
+  free(const_cast<void*>(p.data[0]));
+  free(const_cast<void*>(p.data[1]));
+  free(const_cast<void*>(q.data[0]));
+  free(const_cast<void*>(q.data[1]));
   return false;
 }
 

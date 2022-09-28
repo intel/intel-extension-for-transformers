@@ -68,7 +68,20 @@ class spmm_avx512f_k_t : public kernel_t {
  public:
   using kd_t = spmm_avx512f_kd_t;
   explicit spmm_avx512f_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
-  virtual ~spmm_avx512f_k_t() {}
+  virtual ~spmm_avx512f_k_t() {
+    for (auto& kernel : jit_kers_) {
+      if (kernel != nullptr) {
+        delete kernel;
+        kernel = nullptr;
+      }
+    }
+  }
+  // Delete move constructor and move operator
+  spmm_avx512f_k_t(spmm_avx512f_k_t&& other) = delete;
+  spmm_avx512f_k_t& operator=(spmm_avx512f_k_t&& other) = delete;
+  // Delete copy constructor and copy operator
+  spmm_avx512f_k_t(const spmm_avx512f_k_t& other) = delete;
+  spmm_avx512f_k_t& operator=(const spmm_avx512f_k_t& other) = delete;
 
  public:
   bool init() override;

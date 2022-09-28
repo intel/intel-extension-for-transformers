@@ -187,6 +187,19 @@ class SpmmVNNIKernelTest : public testing::TestWithParam<test_params_t> {
 TEST_P(SpmmVNNIKernelTest, ) {
   test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
   EXPECT_TRUE(check_result(t));
+  for (auto iter : t.args.first.rt_data) {
+    char* data = reinterpret_cast<char*>(const_cast<void*>(iter));
+    delete[] data;
+  }
+  for (auto iter : t.args.second.rt_data) {
+    char* data = reinterpret_cast<char*>(const_cast<void*>(iter));
+    delete[] data;
+  }
+  auto op_desc = t.args.first.op_desc;
+  auto op_attrs = op_desc.attrs();
+  const uint64_t data_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
+  bsr_data_t<int8_t>* bsr_data = reinterpret_cast<bsr_data_t<int8_t>*>(data_addr);
+  delete bsr_data;
 }
 
 template <typename T>

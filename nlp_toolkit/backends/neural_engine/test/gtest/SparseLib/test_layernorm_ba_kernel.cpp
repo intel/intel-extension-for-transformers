@@ -112,15 +112,21 @@ bool check_result(const test_params_t& t) {
         if (dtype == jd::data_type::s8)
           *(reinterpret_cast<float*>(buf1) + i) = *(reinterpret_cast<int8_t*>(int8_buf) + i);
       }
+      free(int8_buf);
     }
     auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
     free(const_cast<void*>(p.data[0]));
-    free(const_cast<void*>(p.data[1]));
+    free(buf1);
     free(const_cast<void*>(q.data[0]));
     free(const_cast<void*>(q.data[1]));
     free(const_cast<void*>(q.data[2]));
     return ans;
   }
+  free(const_cast<void*>(p.data[0]));
+  free(const_cast<void*>(p.data[1]));
+  free(const_cast<void*>(q.data[0]));
+  free(const_cast<void*>(q.data[1]));
+  free(const_cast<void*>(q.data[2]));
   return false;
 }
 

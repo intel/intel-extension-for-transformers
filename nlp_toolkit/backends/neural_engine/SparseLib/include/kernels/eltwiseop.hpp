@@ -57,7 +57,24 @@ class eltwiseop_k_t : public kernel_t {
  public:
   using kd_t = eltwiseop_kd_t;
   explicit eltwiseop_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
-  virtual ~eltwiseop_k_t() {}
+  virtual ~eltwiseop_k_t() {
+    if (jit_kers_ != nullptr) {
+      delete jit_kers_;
+      jit_kers_ = nullptr;
+    }
+    for (auto& data : td) {
+      if (data != nullptr) {
+        delete data;
+        data = nullptr;
+      }
+    }
+  }
+  // Delete move constructor and move operator
+  eltwiseop_k_t(eltwiseop_k_t&& other) = delete;
+  eltwiseop_k_t& operator=(eltwiseop_k_t&& other) = delete;
+  // Delete copy constructor and copy operator
+  eltwiseop_k_t(const eltwiseop_k_t& other) = delete;
+  eltwiseop_k_t& operator=(const eltwiseop_k_t& other) = delete;
 
  public:
   bool init() override;

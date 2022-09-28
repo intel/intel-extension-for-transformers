@@ -74,7 +74,20 @@ class spmm_amx_bf16_x16_k_t : public kernel_t {
  public:
   using kd_t = spmm_amx_bf16_x16_kd_t;
   explicit spmm_amx_bf16_x16_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
-  virtual ~spmm_amx_bf16_x16_k_t() {}
+  virtual ~spmm_amx_bf16_x16_k_t() {
+    for (auto& kernel : jit_kers_) {
+      if (kernel != nullptr) {
+        delete kernel;
+        kernel = nullptr;
+      }
+    }
+  }
+  // Delete move constructor and move operator
+  spmm_amx_bf16_x16_k_t(spmm_amx_bf16_x16_k_t&& other) = delete;
+  spmm_amx_bf16_x16_k_t& operator=(spmm_amx_bf16_x16_k_t&& other) = delete;
+  // Delete copy constructor and copy operator
+  spmm_amx_bf16_x16_k_t(const spmm_amx_bf16_x16_k_t& other) = delete;
+  spmm_amx_bf16_x16_k_t& operator=(const spmm_amx_bf16_x16_k_t& other) = delete;
 
  public:
   bool init() override;

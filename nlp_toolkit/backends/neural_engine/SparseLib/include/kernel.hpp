@@ -27,6 +27,12 @@ class kernel_t {
  public:
   explicit kernel_t(const std::shared_ptr<const kernel_desc_t>& kd);
   virtual ~kernel_t() {}
+  // Delete move constructor and move operator
+  kernel_t(kernel_t&& other) = delete;
+  kernel_t& operator=(kernel_t&& other) = delete;
+  // // Delete copy constructor and copy operator
+  kernel_t(const kernel_t& other) = delete;
+  kernel_t& operator=(const kernel_t& other) = delete;
 
  public:
   // Self-created API, provided for external users to call.

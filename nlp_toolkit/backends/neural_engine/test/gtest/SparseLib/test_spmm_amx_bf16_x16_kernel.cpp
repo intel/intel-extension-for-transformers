@@ -105,9 +105,12 @@ bool check_result(const test_params_t& t) {
   }
   if (spmm_kern != nullptr) {
     auto attrs_map = p.op_desc.attrs();
-    const uint64_t& sparse_addr = str_to_num<uint64_t>(attrs_map["sparse_ptr"]);
-    auto sparse_data_ptr = reinterpret_cast<void*>(sparse_addr);
-    delete sparse_data_ptr;
+    const auto sparse_addr = str_to_num<uint64_t>(attrs_map["sparse_ptr"]);
+    const auto all_bsr_data = reinterpret_cast<std::vector<bsr_data_t<bfloat16_t>*>*>(sparse_addr);
+    for (auto sparse_data : *all_bsr_data) {
+      delete sparse_data;
+    }
+    delete all_bsr_data;
     delete spmm_kern;
   }
   if (!t.expect_to_fail) {
@@ -140,6 +143,14 @@ class SpmmAMXX16KernelTest : public testing::TestWithParam<test_params_t> {
 TEST_P(SpmmAMXX16KernelTest, TestPostfix) {
   test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
   EXPECT_TRUE(check_result(t));
+  for (auto iter : t.args.first.rt_data) {
+    char* data = reinterpret_cast<char*>(const_cast<void*>(iter));
+    delete[] data;
+  }
+  for (auto iter : t.args.second.rt_data) {
+    char* data = reinterpret_cast<char*>(const_cast<void*>(iter));
+    delete[] data;
+  }
 }
 
 template <typename T>

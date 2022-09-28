@@ -78,6 +78,7 @@ bool check_result(const test_params_t& t) {
       for (int i = 0; i < num; i++) {
         *(reinterpret_cast<float*>(buf1) + i) = bf16_2_fp32(*(reinterpret_cast<bfloat16_t*>(bf16_buf1) + i));
       }
+      free(bf16_buf1);
       err_rate = 5;
     } else if (dtype == jd::data_type::s8 || dtype == jd::data_type::u8) {
       err_rate = 1e-1;
@@ -90,15 +91,20 @@ bool check_result(const test_params_t& t) {
         for (int i = 0; i < num; i++)
           *(reinterpret_cast<float*>(buf1) + i) = *(reinterpret_cast<int8_t*>(int8_buf1) + i);
       }
+      free(int8_buf1);
     }
     EXPECT_NE(buf1, buf2);
     auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
     free(const_cast<void*>(p.data[0]));
-    free(const_cast<void*>(p.data[1]));
+    free(buf1);
     free(const_cast<void*>(q.data[0]));
     free(const_cast<void*>(q.data[1]));
     return ans;
   }
+  free(const_cast<void*>(p.data[0]));
+  free(const_cast<void*>(p.data[1]));
+  free(const_cast<void*>(q.data[0]));
+  free(const_cast<void*>(q.data[1]));
   return false;
 }
 
@@ -167,11 +173,11 @@ static auto case_func = []() {
 
   tensor_desc data0_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
-  tensor_desc data2_desc = {{15, 1}, jd::data_type::fp32, jd::format_type::undef};
-  tensor_desc data3_desc = {{15, 1}, jd::data_type::bf16, jd::format_type::undef};
+  tensor_desc data2_desc = {{64, 1}, jd::data_type::fp32, jd::format_type::undef};
+  tensor_desc data3_desc = {{64, 1}, jd::data_type::bf16, jd::format_type::undef};
   tensor_desc data4_desc = {{1024, 1024}, jd::data_type::u8, jd::format_type::undef};
   tensor_desc data5_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
-  tensor_desc data6_desc = {{15, 1}, jd::data_type::u8, jd::format_type::undef};
+  tensor_desc data6_desc = {{64, 1}, jd::data_type::u8, jd::format_type::undef};
 
   postop_attr fp32_exp_attr{data_type::fp32, postop_type::eltwise, postop_alg::exp};
   postop_attr bf16_exp_attr{data_type::bf16, postop_type::eltwise, postop_alg::exp};

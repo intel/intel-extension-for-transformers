@@ -68,7 +68,18 @@ class postop_default_k_t : public kernel_t {
  public:
   using kd_t = postop_default_kd_t;
   explicit postop_default_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
-  virtual ~postop_default_k_t() {}
+  virtual ~postop_default_k_t() {
+    if (jit_kers_ != nullptr) {
+      delete jit_kers_;
+      jit_kers_ = nullptr;
+    }
+  }
+  // Delete move constructor and move operator
+  postop_default_k_t(postop_default_k_t&& other) = delete;
+  postop_default_k_t& operator=(postop_default_k_t&& other) = delete;
+  // Delete copy constructor and copy operator
+  postop_default_k_t(const postop_default_k_t& other) = delete;
+  postop_default_k_t& operator=(const postop_default_k_t& other) = delete;
 
  public:
   bool init() override;
