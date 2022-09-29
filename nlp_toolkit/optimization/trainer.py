@@ -37,6 +37,7 @@ from nlp_toolkit import (
     QuantizationConfig,
     QuantizationMode,
     PruningConfig,
+    DynamicLengthConfig,
 )
 from nlp_toolkit.optimization.utils.metrics import Metric
 from nlp_toolkit.optimization.utils.utility import LazyImport
@@ -45,6 +46,7 @@ from tqdm.auto import tqdm
 from transformers import __version__, Seq2SeqTrainer, Trainer, PreTrainedModel
 from transformers.configuration_utils import PretrainedConfig
 from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
+from neural_compressor.model.torch_model import PyTorchIpexModel
 from transformers.file_utils import (
     CONFIG_NAME,
     WEIGHTS_NAME,
@@ -73,6 +75,16 @@ from transformers.trainer_utils import (
     denumpify_detensorize,
 )
 from typing import Any, Callable, Dict, List, Optional, Union
+from .dynamic.drop_and_restore_utils import (
+    sample_length_configuration,
+    sample_layer_configuration,
+)
+from .dynamic.evolution import (
+    Evolution, approx_ratio, inverse, store2str
+)
+
+from torch.nn import KLDivLoss
+import torch.nn.functional as F
 
 amp = LazyImport('apex.amp')
 datasets = LazyImport('datasets')
@@ -83,7 +95,9 @@ ortq = LazyImport('onnxruntime.quantization')
 # pylint: disable=E1102
 smp_forward_backward = LazyImport('transformers.trainer_pt_utils.smp_forward_backward')
 torch = LazyImport("torch")
+torchprofile = LazyImport("torchprofile")
 xm = LazyImport('torch_xla.core.xla_model')
+timeit = LazyImport('timeit')
 
 
 class BaseTrainer():
@@ -107,6 +121,8 @@ class BaseTrainer():
         self.enable_executor = False
         self.enable_bf16 = False
         self.orchestrate_opt = False
+        self.dynamic_config = None
+        
 
     @property
     def resuming_checkpoint(self):
@@ -793,13 +809,18 @@ class BaseTrainer():
                     if isinstance(component, Component):
                         component.on_batch_begin(step)
 
-                if (((step + 1) % args.gradient_accumulation_steps != 0) and args.local_rank != -1
-                        and args._no_sync_in_gradient_accumulation):
+                training_step = self.training_step_length_adaptive if self.dynamic_config is not None and \
+                                    self.dynamic_config.dynamic_training else self.training_step
+                if (
+                    ((step + 1) % args.gradient_accumulation_steps != 0)
+                    and args.local_rank != -1
+                    and args._no_sync_in_gradient_accumulation
+                ):
                     # Avoid unnecessary DDP synchronization since there will be no backward pass on this example.
                     with model.no_sync():
-                        tr_loss_step = self.training_step(model, inputs)
+                        tr_loss_step = training_step(model, inputs)
                 else:
-                    tr_loss_step = self.training_step(model, inputs)
+                    tr_loss_step = training_step(model, inputs)
 
                 if args.logging_nan_inf_filter and (torch.isnan(tr_loss_step)
                                                     or torch.isinf(tr_loss_step)):
@@ -1066,6 +1087,186 @@ class BaseTrainer():
 
         return loss.detach()
 
+
+    def training_step_length_adaptive(
+        self,
+        model: torch.nn.Module,
+        inputs: Dict[str, Union[torch.Tensor, Any]]
+
+    ) -> torch.Tensor:  # pragma: no cover
+        """
+        Perform a training step on a batch of inputs.
+        Subclass and override to inject custom behavior.
+        Args:
+            model (:obj:`nn.Module`):
+                The model to train.
+            inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`):
+                The inputs and targets of the model.
+                The dictionary will be unpacked before being fed to the model. Most models expect the targets under the
+                argument :obj:`labels`. Check your model's documentation for all accepted arguments.
+        Return:
+            :obj:`torch.Tensor`: The tensor with training loss on this batch.
+        """
+    
+        model.train()
+        inputs = self._prepare_inputs(inputs)
+        tr_loss_sum = 0.0
+
+        # compute loss of full model
+
+        # pylint: disable=E0401
+        if version.parse(__version__) < version.parse("4.20"):
+            if self.use_amp:
+                from torch.cuda.amp import autocast
+                with autocast():
+                    loss, outputs = self.compute_loss(model, inputs, return_outputs=True)
+            else:
+                loss, outputs = self.compute_loss(model, inputs, return_outputs=True)
+        else:
+            # pylint: disable=E0401
+            with self.compute_loss_context_manager():
+                loss, outputs = self.compute_loss(model, inputs, return_outputs=True)
+
+        start_logits = outputs[0].detach()
+        end_logits = outputs[1].detach()
+
+        if self.args.n_gpu > 1:
+            loss = loss.mean()  # mean() to average on multi-gpu parallel training
+
+        if self.args.gradient_accumulation_steps > 1 and not self.deepspeed:
+            # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
+            loss = loss / self.args.gradient_accumulation_steps
+
+        if self.compression_ctrl is not None:  # TODO- should be added here?
+            compression_loss = self.compression_ctrl.loss()
+            loss += compression_loss
+
+ 
+        loss = loss / (self.dynamic_config.num_sandwich + 2)
+        tr_loss_sum += loss
+
+        ## backward
+
+        # pylint: disable=E0401
+        if version.parse(__version__) < version.parse("4.20"):
+            if self.use_amp:
+                self.scaler.scale(loss).backward()
+            elif self.use_apex:
+                with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                    scaled_loss.backward()
+            elif self.deepspeed:
+                # loss gets scaled under gradient_accumulation_steps in deepspeed
+                loss = self.deepspeed.backward(loss)
+            else:
+                loss.backward()
+        else:
+            if self.do_grad_scaling:
+                self.scaler.scale(loss).backward()
+            elif self.use_apex:
+                with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                    scaled_loss.backward()
+            elif self.deepspeed:
+                # loss gets scaled under gradient_accumulation_steps in deepspeed
+                loss = self.deepspeed.backward(loss)
+            else:
+                loss.backward()
+       
+        # inplace distillation
+        for i in range(self.dynamic_config.num_sandwich + 1):
+            ## prepare inputs for sub-models
+            num_h_layers = model.config.num_hidden_layers if hasattr(model, "config") else \
+                                model.module.config.num_hidden_layers
+
+            layer_config = sample_layer_configuration(
+                num_h_layers,
+                layer_dropout_prob=self.dynamic_config.layer_dropout_prob,
+                layer_dropout=(self.dynamic_config.layer_dropout_bound if i == 0 else None),
+                layer_dropout_bound=self.dynamic_config.layer_dropout_bound,
+            )
+            inputs["layer_config"] = layer_config
+
+            length_config = sample_length_configuration(
+                self.dynamic_config.max_length,
+                num_h_layers,
+                layer_config,
+                length_drop_ratio=(self.dynamic_config.length_drop_ratio_bound if i == 0 else None),
+                length_drop_ratio_bound=self.dynamic_config.length_drop_ratio_bound,
+            )
+            inputs["layer_config"] = layer_config
+            inputs["length_config"] = length_config
+            inputs["output_attentions"] = True
+
+
+            # Compute inplace distillation loss
+
+            # pylint: disable=E0401
+            if version.parse(__version__) < version.parse("4.20"):
+                if self.use_amp:
+                    from torch.cuda.amp import autocast
+                    with autocast():
+                        _ , outputs_sub = self.compute_loss(model, inputs, return_outputs=True)
+                else:
+                    _ , outputs_sub = self.compute_loss(model, inputs, return_outputs=True)
+            else:
+                # pylint: disable=E0401
+                with self.compute_loss_context_manager():
+                    _ , outputs_sub = self.compute_loss(model, inputs, return_outputs=True)
+
+            start_logits_sub = outputs_sub[0]
+            end_logits_sub = outputs_sub[1]
+
+            loss_fct = KLDivLoss(reduction="batchmean")
+            start_kl_loss = loss_fct(F.log_softmax(start_logits, -1), F.softmax(start_logits_sub, -1))
+            end_kl_loss = loss_fct(F.log_softmax(end_logits, -1), F.softmax(end_logits_sub, -1))
+            loss = (start_kl_loss + end_kl_loss) / 2
+
+            if self.args.n_gpu > 1:
+                loss = loss.mean()  # mean() to average on multi-gpu parallel training
+
+            if self.args.gradient_accumulation_steps > 1 and not self.deepspeed:
+                # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
+                loss = loss / self.args.gradient_accumulation_steps
+
+            if self.compression_ctrl is not None: # TODO- should be added here?
+                compression_loss = self.compression_ctrl.loss()
+                loss += compression_loss
+
+            loss = loss / (self.dynamic_config.num_sandwich + 2)
+            tr_loss_sum += loss
+
+
+            ## backward
+
+            # pylint: disable=E0401
+            
+            if version.parse(__version__) < version.parse("4.20"):
+                if self.use_amp:
+                    self.scaler.scale(loss).backward()
+                elif self.use_apex:
+                    with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                        scaled_loss.backward()
+                elif self.deepspeed:
+                    # loss gets scaled under gradient_accumulation_steps in deepspeed
+                    loss = self.deepspeed.backward(loss)
+                else:
+                    loss.backward()
+            else:
+                if self.do_grad_scaling:
+                    self.scaler.scale(loss).backward()
+                elif self.use_apex:
+                    with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                        scaled_loss.backward()
+                elif self.deepspeed:
+                    # loss gets scaled under gradient_accumulation_steps in deepspeed
+                    loss = self.deepspeed.backward(loss)
+                else:
+                    loss.backward()
+
+
+        return tr_loss_sum.detach()
+
+
+
     # pylint: disable=E1101
     def compute_loss(self, model, inputs, return_outputs=False):  # pragma: no cover
         """
@@ -1079,6 +1280,7 @@ class BaseTrainer():
         teacher_logits = inputs.pop("teacher_logits") if "teacher_logits" in inputs else None
 
         outputs = model(**inputs)
+    
         if self.in_training and hasattr(self, "component") and \
            hasattr(self.component, "criterion"):
             qa_output_merger = lambda outputs: torch.vstack([
@@ -1575,7 +1777,6 @@ class BaseTrainer():
         # Set variable length axes
         symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
         axes_dict = {k: symbolic_names for k in input.keys()}
-
         import torch
         torch.onnx.export(
             model,
@@ -1887,6 +2088,102 @@ class BaseTrainer():
             input.pop('start_positions')
             input.pop('end_positions')
         return input
+
+
+    def set_dynamic_config(
+        self,
+        dynamic_config: DynamicLengthConfig,
+    ):
+
+        self.dynamic_config = dynamic_config
+        lc = None
+
+        if self.dynamic_config.length_config is not None:
+            lc = eval(self.dynamic_config.length_config)
+        else:
+            assert self.dynamic_config.max_length is not None, \
+            """
+            Please set max_length DynamicLengthConfig
+            """
+            if self.dynamic_config.const_rate is not None:
+                lc = sample_length_configuration(
+                        self.dynamic_config.max_length,
+                        self.model.config.num_hidden_layers,
+                        length_drop_ratio=self.dynamic_config.const_rate,
+                    )
+        
+        if lc is not None:
+            # set the model with length config
+            if self.model.config.model_type == "distilbert":
+                bert = self.model.distilbert
+            elif self.model.config.model_type == "roberta":
+                bert = self.model.roberta
+            else:
+                assert hasattr(self.model, "bert")
+                bert = self.model.bert
+
+            print("setting length config to - " + str(lc))
+            bert.set_length_config(lc)
+            bert.set_output_attentions(True)
+
+           
+    def run_evolutionary_search(self):
+        assert self.dynamic_config is not None, \
+            """
+            Please set a DynamicLengthConfig to run evo-search
+            """
+        evolution = Evolution(self.model, self.dynamic_config.max_length, self.args.device, self.evaluate, \
+                                eval_metric=self.dynamic_config.evo_eval_metric)
+        # evolution.load_store(os.path.join(self.dynamic_config.model_name_or_path, 'store.tsv'))
+
+        lower_gene = sample_length_configuration(
+            self.dynamic_config.max_length,
+            self.model.config.num_hidden_layers,
+            length_drop_ratio=self.dynamic_config.length_drop_ratio_bound,
+        )
+        upper_gene = (self.dynamic_config.max_length,) * self.model.config.num_hidden_layers
+        evolution.add_gene(lower_gene, method=0)
+        evolution.add_gene(upper_gene, method=0)
+        evolution.lower_constraint = evolution.store[lower_gene][0]
+        evolution.upper_constraint = evolution.store[upper_gene][0]
+
+        length_drop_ratios = [inverse(r) for r in \
+                              np.linspace(approx_ratio(self.dynamic_config.length_drop_ratio_bound), \
+                              1, self.dynamic_config.population_size + 2)[1:-1]]
+        for p in length_drop_ratios:
+            gene = sample_length_configuration(
+                self.dynamic_config.max_length,
+                self.model.config.num_hidden_layers,
+                length_drop_ratio=p,
+            )
+            evolution.add_gene(gene, method=0)
+
+        for i in range(self.dynamic_config.evo_iter + 1):
+            logger.info(f"| Start Iteration {i}:")
+            population, area = evolution.pareto_frontier()
+            parents = evolution.convex_hull()
+            results = {"area": area, "population_size": len(population), "num_parents": len(parents)}
+
+            logger.info(f"| >>>>>>>> {' | '.join([f'{k} {v}' for k, v in results.items()])}")
+            for gene in parents:  # population
+                logger.info("| " + store2str(gene, *evolution.store[gene][:3]))
+
+            evolution.save_store(os.path.join(self.args.output_dir, f'store-iter{i}.tsv'))
+            evolution.save_population(os.path.join(self.args.output_dir, f'population-iter{i}.tsv'), population)
+            evolution.save_population(os.path.join(self.args.output_dir, f'parents-iter{i}.tsv'), parents)
+
+            if i == self.dynamic_config.evo_iter:
+                break
+
+            k = 0
+            while k < self.dynamic_config.mutation_size:
+                if evolution.mutate(self.dynamic_config.mutation_prob):
+                    k += 1
+
+            k = 0
+            while k < self.dynamic_config.crossover_size:
+                if evolution.crossover():
+                    k += 1
 
 
 class NLPTrainer(BaseTrainer, Trainer):

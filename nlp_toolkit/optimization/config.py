@@ -41,6 +41,50 @@ class Provider(Enum):
     NNCF = "nncf"
 
 
+class DynamicLengthConfig(object):
+    def __init__(
+        self,
+        max_length: int = None,
+        length_config: bool = None,
+        const_rate: float = None,
+        num_sandwich: int = 2,
+        length_drop_ratio_bound: float = 0.2,
+        layer_dropout_prob: float = None,
+        layer_dropout_bound: int = 0,
+        dynamic_training: bool = False,
+        load_store_file: str = None,
+        evo_iter: int = 30,
+        population_size: int = 20,
+        mutation_size: int = 30,
+        mutation_prob: float = 0.5,
+        crossover_size: int = 30,
+        num_cpus: int = 48,
+        distributed_world_size: int = 5,
+        latency_constraint: bool = True,
+        evo_eval_metric = 'eval_f1'
+    ):
+        super().__init__()
+        
+        self.length_config = length_config
+        self.const_rate = const_rate
+        self.max_length = max_length
+        self.num_sandwich = num_sandwich
+        self.length_drop_ratio_bound = length_drop_ratio_bound
+        self.layer_dropout_prob = layer_dropout_prob
+        self.layer_dropout_bound = layer_dropout_bound
+        self.dynamic_training = dynamic_training
+        self.load_store_file = load_store_file
+        self.evo_iter = evo_iter
+        self.population_size = population_size
+        self.mutation_size = mutation_size
+        self.mutation_prob = mutation_prob
+        self.crossover_size = crossover_size
+        self.num_cpus = num_cpus
+        self.distributed_world_size = distributed_world_size
+        self.latency_constraint = latency_constraint
+        self.evo_eval_metric = evo_eval_metric
+
+
 class QuantizationConfig(object):
     def __init__(
         self,
@@ -652,3 +696,4 @@ class NncfConfig(object):   # pragma: no cover
     @nncf_config.setter
     def nncf_config(self, nncf_config):
         self._nncf_config = nncf_config
+

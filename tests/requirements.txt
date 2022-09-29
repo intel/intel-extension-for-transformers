@@ -10,3 +10,4 @@ onnxruntime-extensions
 torch>=1.10.0
 transformers<=4.19.2
 tensorflow>=2.0.0
+torchprofile
