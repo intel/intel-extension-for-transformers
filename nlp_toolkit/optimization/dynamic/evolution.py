@@ -26,8 +26,8 @@ import random
 import timeit
 import numpy as np
 import torch
-import torchprofile
-
+from nlp_toolkit.optimization.utils.utility import LazyImport
+torchprofile = LazyImport("torchprofile")
 logger = logging.getLogger(__name__)
 
 
