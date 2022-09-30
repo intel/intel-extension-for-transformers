@@ -23,8 +23,6 @@ from neural_compressor import __version__
 from neural_compressor.experimental import common
 from neural_compressor.model.model import saved_model_session
 from neural_compressor.model.model import get_model_type
-from neural_compressor.experimental.data.transforms.imagenet_transform import LabelShift
-from neural_compressor.experimental.metric.metric import TensorflowTopK
 from nlp_toolkit import (DistillationConfig, QuantizationConfig, PruningConfig)
 from nlp_toolkit.optimization.quantization import QuantizationMode
 from nlp_toolkit.optimization.utils.metrics import Metric
@@ -159,6 +157,7 @@ class TFOptimization:
             [float]: evaluation result, the larger is better.
         """
         model_type = None
+        label_ids: np.ndarray = None
         try:
             model_type = get_model_type(model)
         except ValueError:
@@ -171,25 +170,32 @@ class TFOptimization:
         logger.info(f"  Batch size = {self.args.per_device_eval_batch_size}")
 
         if model_type is None:
+            preds: np.ndarray = None
             infer = model.signatures["serving_default"]
-            output_dict_keys = infer.structured_outputs.keys()
-            output_name = list(output_dict_keys)[0]
 
-            postprocess = LabelShift(label_shift=1)
-            metric = TensorflowTopK(k=1)
+            for idx, (inputs, labels) in enumerate(self._eval_dataset):
+                for name in inputs:
+                    inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
 
-            def eval_func(dataloader, metric):
-                for idx, (inputs, labels) in enumerate(dataloader):
-                    for name in inputs:
-                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
+                results = infer(**inputs)
+                for val in results:
+                    if preds is None:
+                        preds = results[val].numpy()
+                    else:
+                        preds = np.append(preds, results[val].numpy(), axis=0)
 
-                    predictions = infer(**inputs)[output_name]
-                    predictions = predictions.numpy()
-                    predictions, labels = postprocess((predictions, labels))
-                    metric.update(predictions, labels)
-
-            eval_func(self._eval_dataset, metric)
-            acc = metric.result()
+                if label_ids is None:
+                    label_ids = labels[0].numpy() if isinstance(
+                        labels, list) else labels.numpy()
+                else:
+                    label_ids = np.append(
+                        label_ids,
+                        labels[0].numpy()
+                        if isinstance(labels, list) else labels.numpy(),
+                        axis=0)
+            test_predictions = {"logits": preds}
+            eval_metrics = self.compute_metrics(test_predictions, label_ids)
+            acc = eval_metrics["accuracy"]
             return acc
         else:  # pragma: no cover
             from neural_compressor.adaptor.tf_utils.util import get_tensor_by_name
