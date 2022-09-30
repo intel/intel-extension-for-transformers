@@ -64,7 +64,7 @@ class DynamicLengthConfig(object):
         evo_eval_metric = 'eval_f1'
     ):
         super().__init__()
-        
+
         self.length_config = length_config
         self.const_rate = const_rate
         self.max_length = max_length
@@ -96,6 +96,7 @@ class QuantizationConfig(object):
         objectives: Union[Objective, List] = performance,
         config_file: str = None,
         sampling_size: int = 100,
+        use_bf16: bool = True,
     ):
         super().__init__()
         if config_file is None:
@@ -119,6 +120,7 @@ class QuantizationConfig(object):
             self._objectives = None
         if sampling_size is not None:
             self.sampling_size = sampling_size
+        self.inc_config.usr_cfg.use_bf16 = use_bf16
 
     @property
     def approach(self):

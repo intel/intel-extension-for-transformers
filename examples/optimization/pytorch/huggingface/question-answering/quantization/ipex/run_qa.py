@@ -653,6 +653,7 @@ def main():
             approach=optim_args.quantization_approach,
             max_trials=200,
             metrics=[tune_metric],
+            use_bf16=False
         )
         quantization_config.framework = "pytorch_ipex"
         model = trainer.quantize(quant_config=quantization_config)
