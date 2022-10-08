@@ -124,14 +124,19 @@ class Dispatcher {
   void GetExecuteKernel(const vector<Tensor*>& input, const vector<Tensor*>& output,
                         const bool& reshape_model, const string& dispatch_table_file_root,
                         const bool& has_dispatch_table_file) {
+    LOG(INFO) << "Operator " << name_ << " with type " << type_ << " is ready to get execute kernel...";
     // reset
     execute_kernel_ = type_;
     if (!do_tuning_) {
       // get input tensor info if is under dynamic model inputs
       if (reshape_model) {
-        if (kernel_handler_.size() > 1) kernel_handler_[type_]->set_do_shape_infer(true);
+        if (kernel_handler_.size() > 1 || (!sparselib_available_.empty() && sparselib_available_[0])) {
+          kernel_handler_[type_]->set_do_shape_infer(true);
+          kernel_handler_[type_]->ShapeInfer(input, output);
+        }
         kernel_handler_[type_]->Reshape(input, output);
       }
+      vector<string> kernel_config;
       if (!no_tuning_space_ && has_dispatch_table_file) {
         // generate hash key and find the best kernel if has dispatch table
         // only load once
@@ -139,7 +144,7 @@ class Dispatcher {
           LOG(INFO) << "Loading diapatch table file...";
           DispatchTable::Load(dispatch_table_file_root);
         }
-        vector<string> kernel_config = DispatchTable::Find(type_, GetHash(input));
+        kernel_config = DispatchTable::Find(type_, GetHash(input));
         if (!kernel_config.empty()) {
           string kernel_name = kernel_config[0];
           // sparselib
@@ -155,8 +160,8 @@ class Dispatcher {
           }
         }
       }
-      LOG(INFO) << "Operator " << name_ << " with type " << type_
-                << " gonna dispatch by kernel " << execute_kernel_;
+      LOG(INFO) << "Operator " << name_ << " with type " << type_ << " gonna dispatch by kernel "
+                << (kernel_config.empty() ? execute_kernel_ : kernel_config[0]);
     } else {
       LOG(INFO) << "Dispatcher tuning mode is ON, operator " << name_ << " gonna tune kernel...";
       // skip Input and Output op

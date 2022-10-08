@@ -44,6 +44,7 @@ class InnerProductOperator : public Operator {
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
+  void ShapeInfer(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
@@ -51,6 +52,7 @@ class InnerProductOperator : public Operator {
   void ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void PrepareDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ShapeInferDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
   void ReshapeSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #if __AVX512F__
@@ -63,6 +65,7 @@ class InnerProductOperator : public Operator {
   void ForwardSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
   void PrepareSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ShapeInferSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
   void DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
   void RuntimeMinmax();

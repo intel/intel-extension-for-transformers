@@ -263,12 +263,14 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
 void InnerProductOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   switch (kernel_type_) {
     case Dense:
+      if (this->do_shape_infer()) break;
       ReshapeDense(input, output);
       break;
     case Sparse:
       ReshapeSparse(input, output);
       break;
     case SparseLib:
+      if (this->do_shape_infer()) break;
       ReshapeSparseLib(input, output);
       break;
   }
@@ -291,6 +293,16 @@ void InnerProductOperator::Forward(const vector<Tensor*>& input, const vector<Te
       break;
   }
   this->unref_tensors(input);
+}
+
+void InnerProductOperator::ShapeInfer(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (kernel_type_ == Unsupported || kernel_type_ == Sparse) {
+    return;
+  } else if (kernel_type_ == Dense) {
+    ShapeInferDense(input, output);
+  } else {
+    ShapeInferSparseLib(input, output);
+  }
 }
 
 void InnerProductOperator::PrepareSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -481,19 +493,31 @@ void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const 
   if (has_bias_) bias_desc_ = {bias_->shape(), jd::data_type::s32, jd::format_type::ab};
 }
 
+void InnerProductOperator::ShapeInferSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  // shape infer for dispatcher
+  // save the SparseLib primitive class creation time
+  vector<int64_t> src1_shape_origin = src1_->shape();
+  vector<int64_t> src1_shape = src1_shape_origin;
+  if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{0, 1}) {
+    src1_shape = {src1_shape[1], src1_shape[0]};
+  }
+  vector<int64_t> dst_shape = {src0_->shape()[0], src1_shape[1]};
+  dst_->set_shape(dst_shape);
+}
+
 void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src1_shape_origin = src1_->shape();
   vector<int64_t> src1_shape = src1_shape_origin;
   // set dispatch config from tuning
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
-    // dispatch_config_ = {"SparseLib", "1,256,128", "1,1,1", "4,4"};
+    // e.g. dispatch_config_ = {"SparseLib", "1,256,128", "1,1,1", "4,4", "1"};
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
             << "InnerProduct to SparseLib has wrong dispatch kernel config...";
     // 3D
     vector<int64_t> src1_3d_shape;
     StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
-    op_attrs_["mkn_blocks"] = dispatch_config_[2];
-    op_attrs_["tile_shape"] = dispatch_config_[3];
+    op_attrs_["micro_oc"] = dispatch_config_[2];
+    op_attrs_["sub_func"] = dispatch_config_[3];
 
     src1_->set_shape(src1_shape);
     src1_desc_ = {src1_3d_shape, jd::data_type::u8, jd::format_type::ab};
@@ -588,17 +612,22 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
       StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
       vector<int64_t> src1_3d_shape_origin = {src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]};
       input[1]->reorder(src1_3d_shape_origin);
-      if (post_ != nullptr && !binary_add_) post_->reorder(src1_3d_shape_origin);
+      if (post_ != nullptr && !binary_add_) {
+        vector<int64_t> post_3d_shape_origin = {src0_->shape()[0], src1_3d_shape[0], src1_3d_shape[2]};
+        post_->reorder(post_3d_shape_origin);
+      }
     }
   } else if (stage == "out") {
-    // reorder dst activation (optional)
-    vector<int64_t> src1_3d_shape;
-    StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
-    vector<int64_t> dst_3d_shape_origin = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
-    output[0]->reorder(dst_3d_shape_origin);
-    // reorder src and post back
-    if (input[1]->left_life() > 0) input[1]->reorder(src1_3d_shape);
-    if (post_ != nullptr && !binary_add_ && post_->left_life() > 0) post_->reorder(src1_3d_shape);
+    if (dispatch_config_[0] == "SparseLib") {
+      // reorder dst activation (optional)
+      vector<int64_t> src1_3d_shape;
+      StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
+      vector<int64_t> dst_3d_shape_origin = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
+      output[0]->reorder(dst_3d_shape_origin);
+      // reorder src and post back
+      if (input[1]->left_life() > 0) input[1]->reorder(src1_3d_shape);
+      if (post_ != nullptr && !binary_add_ && post_->left_life() > 0) post_->reorder(dst_3d_shape_origin);
+    }
   } else {
     LOG(WARNING) << "Wrong stage parameter, should be in or out...";
   }
@@ -663,22 +692,22 @@ void InnerProductOperator::CalculateCompensation(const vector<int64_t>& src1_sha
   }
 }
 
-// 1. Create primitive
-void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void InnerProductOperator::ShapeInferDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // shape infer for dispatcher
   // save the OneDNN primitive forward class creation time
-  if (this->do_shape_infer()) {
-    vector<int64_t> src0_shape_origin = src0_->shape();
-    vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
-    vector<int64_t> dst_shape_origin = {src0_shape[0], src1_->shape()[0]};
-    vector<int64_t> dst_shape = GetShapes(dst_shape_origin, dst_perm_);
-    dst_->set_shape(dst_shape);
-    if (output.size() > 1) {
-      dst_min_->set_shape({1});
-      dst_max_->set_shape({1});
-    }
-    return;
+  vector<int64_t> src0_shape_origin = src0_->shape();
+  vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
+  vector<int64_t> dst_shape_origin = {src0_shape[0], src1_->shape()[0]};
+  vector<int64_t> dst_shape = GetShapes(dst_shape_origin, dst_perm_);
+  dst_->set_shape(dst_shape);
+  if (output.size() > 1) {
+    dst_min_->set_shape({1});
+    dst_max_->set_shape({1});
   }
+}
+
+// 1. Create primitive
+void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   dnnl::post_ops po;
   vector<int64_t> src1_shape = src1_->shape();
   vector<int64_t> src1_stride = GetStrides(src1_shape_origin_, src1_perm_);

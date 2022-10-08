@@ -63,6 +63,11 @@ class Operator {
   // modify tensors before (in) or after (out) Forward
   virtual void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {}
 
+  // infer dst tensor's shape
+  // use the shape to get hash when feed random inputs
+  // shape infer process does not contain jit codegen
+  virtual void ShapeInfer(const vector<Tensor*>& input, const vector<Tensor*>& output) {}
+
   inline void unref_tensors(const vector<Tensor*>& input) {
     static std::mutex unref_lock;
     std::lock_guard<std::mutex> lock(unref_lock);
