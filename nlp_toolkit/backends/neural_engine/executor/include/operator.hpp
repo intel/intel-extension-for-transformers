@@ -15,9 +15,10 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATOR_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATOR_HPP_
 
-#include <algorithm>
-#include <string>
-#include <vector>
+#include <algorithm> //NOLINT
+#include <string> //NOLINT
+#include <vector> //NOLINT
+#include <map> //NOLINT
 #include <mutex>  //NOLINT
 
 #include "common.hpp"
@@ -103,13 +104,15 @@ class Operator {
   inline const string& table_id() const { return table_id_; }
   inline void set_perf_ratio_id(const string& perf_ratio_id) { perf_ratio_id_ = perf_ratio_id; }
   inline const string& perf_ratio_id() const { return perf_ratio_id_; }
-  inline void set_it_shape(const vector<int64_t> input_shape) { input_tensor_shape.emplace_back(input_shape); }
-  inline void set_ot_shape(const vector<int64_t> output_shape) { output_tensor_shape.emplace_back(output_shape); }
-  inline const vector<vector<int64_t>>& get_it_shape() const { return input_tensor_shape; }
-  inline const vector<vector<int64_t>>& get_ot_shape() const { return output_tensor_shape; }
+  inline void set_it_shape(const vector<int64_t> input_shape) { input_tensor_shape_.emplace_back(input_shape); }
+  inline void set_ot_shape(const vector<int64_t> output_shape) { output_tensor_shape_.emplace_back(output_shape); }
+  inline const vector<vector<int64_t>>& get_it_shape() const { return input_tensor_shape_; }
+  inline const vector<vector<int64_t>>& get_ot_shape() const { return output_tensor_shape_; }
   // get executor kernel time add reshape time
-  inline void set_reshape_time(const float reshape_time_) { reshape_time.emplace_back(reshape_time_); }
-  inline const vector<float>& get_reshape_time() const { return reshape_time; }
+  inline void set_reshape_time(const float reshape_time) { reshape_time_.emplace_back(reshape_time); }
+  inline const vector<float>& get_reshape_time() const { return reshape_time_; }
+  inline void set_attrs(const std::map<string, string>& input_attrs) {attrs_ = input_attrs;}
+  inline const std::map<string, string>& get_attrs() const { return attrs_;}
 
  protected:
   /** The conf that stores the operator configurations */
@@ -129,9 +132,10 @@ class Operator {
   vector<int64_t> weight_shape_;
   string table_id_;
   string perf_ratio_id_;
-  vector<vector<int64_t>> input_tensor_shape;
-  vector<vector<int64_t>> output_tensor_shape;
-  vector<float> reshape_time;
+  vector<vector<int64_t>> input_tensor_shape_;
+  vector<vector<int64_t>> output_tensor_shape_;
+  vector<float> reshape_time_;
+  std::map<string, string> attrs_;
 };  // class Operator
 
 }  // namespace executor

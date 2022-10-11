@@ -273,6 +273,9 @@ class Dispatcher {
                            kernel_handler_[execute_kernel_]->set_reshape_time(reshape_time_); }
   inline const vector<float>& get_reshape_time() {
                            return kernel_handler_[execute_kernel_]->get_reshape_time(); }
+  inline void set_attrs(const std::map<string, string>input_attrs) {
+                           kernel_handler_[execute_kernel_]->set_attrs(input_attrs);}
+  inline const std::map<string, string>& get_attrs() { return kernel_handler_[execute_kernel_]->get_attrs();}
 
  protected:
   // get input_hash

@@ -33,7 +33,7 @@
 #include "operator_registry.hpp"
 #include "tensor.hpp"
 #include "thread_pool.hpp"
-#include "profiling_trace.hpp"
+#include "profiling.hpp"
 
 namespace executor {
 
@@ -101,14 +101,6 @@ class Model {
     return output_tensors_;
   }
 
-  void Profiling(char* space_name = "InstCount", char* count_name = "inst_count",
-                 char* mtx_name = "inst_mtx", int warm_up = 1);
-  void ProfilingSparse(FILE* fp);
-  void ProfilingOperator(FILE* fp, const shared_ptr<Dispatcher>& op);
-  void ProfilingTensors(FILE* fp, const vector<Tensor*>& tensors);
-  void ProfilingWeights(FILE* fp, const shared_ptr<Dispatcher>& op);
-  void ProfilingSparseEstimate(FILE* fp, const shared_ptr<Dispatcher>& op,
-                               const float average_latency = 0.);
 
 
 
