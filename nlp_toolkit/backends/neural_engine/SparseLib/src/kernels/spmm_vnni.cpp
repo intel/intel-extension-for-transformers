@@ -24,12 +24,14 @@ namespace jd {
 //// Part1: class spmm_vnni_kd_t
 
 void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  // NOLINT
-  if (BM == 0) {                                                         // try to get optimized block size
+  if (BM > M) {
+    BM = M;
+  } else if (BM <= 0) {  // try to get optimized block size
     int cores = omp_get_num_procs();
     const dim_t blocks_n = N / BN;
 
     BM = ceil_div(M, ceil_div(cores, blocks_n));
-    BM = ceil_div(BM, TILE_SIZE_M) * TILE_SIZE_M;
+    BM = ceil_div(BM, TILE_SIZE_M) * TILE_SIZE_M;  // round to a multiple of 4
     LOG(INFO) << "BM (micro output channel) automatically configured: BM=" << BM;
   }
 }
@@ -37,14 +39,21 @@ void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  // NOLI
 /**
  * Entries of op_desc_.attrs:
  *   sparse_ptr: pointer of the sparse data
- *   post_op: deprecated postop config, can be "append_sum"
+ *   append_sum: if the kenrel add the result to the destination tensor instead of overwriting it. Set to "true"
+ *               to enable.
  *   tile_n: n-size of a tile in terms of #registers; default is 4
- *   sub_func: use 0 / 1 / 2 to specify sub_func folding level
+ *   sub_func: use -1 / 0 / 1 / 2 / 3 / 4 to specify sub_func folding level
+ *    -1. use max available value
  *     0. no subfunction
  *     1. subfunction for tile product
  *     2. subfunction for dense loading & tile product
+ *     3. subfunction for dense loading & sparse loading & tile product
+ *     4. use cmp/jp to replace subfunction calls
  *   micro_oc: m-size of a block; default is the whole M
  */
+
+// Part1: class spmm_vnni_kd_t
+
 bool spmm_vnni_kd_t::init() {
   using dt = jd::data_type;
   const auto& wei_desc = op_desc_.tensor_descs()[ssd::WEI];
@@ -118,7 +127,7 @@ bool spmm_vnni_kd_t::spmm_params_init() {
   return true;
 }
 
-//// Part2: class spmm_vnni_k_t
+// Part2: class spmm_vnni_k_t
 bool spmm_vnni_k_t::init() {
   dim_t num_mblock = ceil_div(M_, BM_);
   jit_kers_.resize(num_mblock);

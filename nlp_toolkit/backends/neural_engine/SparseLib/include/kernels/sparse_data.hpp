@@ -18,7 +18,6 @@
 #include <utility>
 #include <vector>
 
-#include "kernels/spmm_types.hpp"
 #include "param_types.hpp"
 #include "utils.hpp"
 

@@ -16,6 +16,7 @@
 #include "sparse_matmul/sparse_matmul.hpp"
 #include "eltwiseop/eltwiseop.hpp"
 #include "layernorm_ba/layernorm_ba.hpp"
+#include "transpose_matmul/transpose_matmul.hpp"
 
 int main(int argc, char** argv) {
   jd::bench_mode mode;
@@ -47,6 +48,8 @@ int main(int argc, char** argv) {
     kb = std::make_shared<jd::layernorm_ba_bench>();
   } else if (!strcmp(argv[0], "eltwiseop")) {
     kb = std::make_shared<jd::eltwiseop_bench>();
+  } else if (!strcmp(argv[0], "transpose_matmul")) {
+    kb = std::make_shared<jd::transpose_matmul_bench>();
   } else {
     LOG(ERROR) << "unknown kernel type";
     return 1;

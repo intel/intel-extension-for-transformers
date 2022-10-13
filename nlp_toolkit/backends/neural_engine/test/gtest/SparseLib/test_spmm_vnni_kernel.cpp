@@ -22,6 +22,7 @@
 #include "interface.hpp"
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
+#include "kernels/spmm_types.hpp"
 
 #define OMP_NUM_THREADS "OMP_NUM_THREADS"
 

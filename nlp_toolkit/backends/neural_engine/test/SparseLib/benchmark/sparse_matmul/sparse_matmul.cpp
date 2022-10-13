@@ -39,8 +39,6 @@ double sparse_matmul_bench::calc_flop() const {
 }
 
 bench_res_t sparse_matmul_bench::set_config(int argc, char** argv) {
-  bench_res_t res;
-
   if (!strcmp(argv[0], "vnni")) {
     smb = std::make_shared<spmm_vnni_bench>();
   } else if (!strcmp(argv[0], "amx_bf16_x16")) {

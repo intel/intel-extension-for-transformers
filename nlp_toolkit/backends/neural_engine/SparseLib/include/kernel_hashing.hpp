@@ -80,12 +80,16 @@ class hash_t {
         hash_combine(seed, op_attrs["append_sum"]);
         hash_combine(seed, op_attrs["sub_func"]);
         break;
-        // todo:remove it.
       case kernel_kind::postop:
       case kernel_kind::eltwiseop:
       case kernel_kind::layernorm_ba:
         hash_combine(seed, op_attrs["matrix_shape"]);
         break;
+      case kernel_kind::transpose_matmul:
+        hash_combine(seed, op_attrs["alpha"]);
+        hash_combine(seed, op_attrs["beta"]);
+        hash_combine(seed, op_attrs["m_tile"]);
+        hash_combine(seed, op_attrs["n_tile"]);
       default:
         break;
     }

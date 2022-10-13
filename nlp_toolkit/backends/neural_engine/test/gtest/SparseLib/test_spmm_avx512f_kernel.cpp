@@ -25,6 +25,7 @@
 #include "interface.hpp"
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
+#include "kernels/spmm_types.hpp"
 
 namespace jd {
 using dt = jd::data_type;

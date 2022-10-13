@@ -101,6 +101,13 @@ class sparse_matmul_desc : public kernel_desc_proxy {
   virtual ~sparse_matmul_desc() {}
 };
 
+class transpose_matmul_desc : public kernel_desc_proxy {
+ public:
+  transpose_matmul_desc() {}
+  explicit transpose_matmul_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~transpose_matmul_desc() {}
+};
+
 class postop_desc : public kernel_desc_proxy {
  public:
   postop_desc() {}
@@ -131,6 +138,14 @@ class sparse_matmul : public kernel_proxy {
   explicit sparse_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~sparse_matmul() {}
 };
+
+class transpose_matmul : public kernel_proxy {
+ public:
+  transpose_matmul() {}
+  explicit transpose_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~transpose_matmul() {}
+};
+
 class postop : public kernel_proxy {
  public:
   postop() {}

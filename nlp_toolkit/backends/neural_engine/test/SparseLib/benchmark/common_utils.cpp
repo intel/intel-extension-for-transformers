@@ -67,7 +67,7 @@ void* memo_op(void* ptr, int num, jd::data_type dtype, memo_mode mode) {
 
 int get_element_num(const jd::operator_desc& op_desc, int idx) {
   auto ts_descs = op_desc.tensor_descs();
-  if (idx >= ts_descs.size()) {
+  if (static_cast<size_t>(idx) >= ts_descs.size()) {
     LOG(ERROR) << "idx out of range";
     return 0;
   }
@@ -97,10 +97,10 @@ std::vector<postop_attr> get_postop_attr(const char* postop_str, data_type* dt_p
       }
     } else {  // other algorithms
       // get data_type
-      const char* data_type_str = postop_str.substr(0, sep_idx).c_str();
-      if (!strcmp(data_type_str, "fp32")) {
+      const std::string data_type_str = postop_str.substr(0, sep_idx);
+      if (data_type_str == "fp32") {
         *dt_ptr = data_type::fp32;
-      } else if (!strcmp(data_type_str, "bf16")) {
+      } else if (data_type_str == "bf16") {
         *dt_ptr = data_type::bf16;
       } else {
         LOG(ERROR) << "Unsupported data type: " << data_type_str;
@@ -109,14 +109,14 @@ std::vector<postop_attr> get_postop_attr(const char* postop_str, data_type* dt_p
 
       // get algorithm
       postop_alg alg;
-      const char* alg_str = postop_str.substr(sep_idx + 1).c_str();
-      if (!strcmp(alg_str, "exp")) {
+      const std::string alg_str = postop_str.substr(sep_idx + 1);
+      if (alg_str == "exp") {
         alg = postop_alg::exp;
-      } else if (!strcmp(alg_str, "gelu")) {
+      } else if (alg_str == "gelu") {
         alg = postop_alg::gelu;
-      } else if (!strcmp(alg_str, "relu")) {
+      } else if (alg_str == "relu") {
         alg = postop_alg::relu;
-      } else if (!strcmp(alg_str, "tanh")) {
+      } else if (alg_str == "tanh") {
         alg = postop_alg::tanh;
       } else {
         LOG(ERROR) << "Unsupported algorithm: " << alg_str;

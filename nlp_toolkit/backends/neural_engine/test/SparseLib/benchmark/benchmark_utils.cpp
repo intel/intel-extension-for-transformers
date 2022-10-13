@@ -68,7 +68,6 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
 
   // Use op_desc to get kernel kind and tensor shape
   const auto& op_desc = kb->kp->get_sp()->kd()->operator_desc();
-  const auto ker_kind = op_desc.kernel_kind();
   const auto& ts_descs = op_desc.tensor_descs();
 
   // We may need to refresh some parts of runtime data, allocate new memory for them first
@@ -103,7 +102,7 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
 }
 void bench_op::refresh_data(std::vector<void*>* new_data_pointer, const std::vector<int>& idx) {
   auto new_data = *new_data_pointer;
-  for (int i = 0; i < idx.size(); ++i) {
+  for (size_t i = 0; i < idx.size(); ++i) {
     int elem_num = std::accumulate(kb->ts_descs[idx[i]].shape().begin(), kb->ts_descs[idx[i]].shape().end(), 1,
                                    std::multiplies<size_t>());
     switch (kb->ts_descs[idx[i]].dtype()) {
@@ -138,7 +137,7 @@ bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vect
                              std::vector<void*>* new_data_pointer, const std::vector<int>& idx) {
   std::vector<const void*>& rt_data = *rt_data_pointer;
   std::vector<void*>& new_data = *new_data_pointer;
-  for (int i = 0; i < idx.size(); ++i) {
+  for (size_t i = 0; i < idx.size(); ++i) {
     int elem_num =
         std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
     int byte_size = elem_num * type_size[ts_descs[idx[i]].dtype()];
@@ -155,7 +154,7 @@ bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vect
 
 void bench_op::free_new_mem(std::vector<void*>* new_data_pointer) {
   std::vector<void*>& new_data = *new_data_pointer;
-  for (int i = 0; i < new_data.size(); ++i) {
+  for (size_t i = 0; i < new_data.size(); ++i) {
     free(new_data[i]);
   }
 }

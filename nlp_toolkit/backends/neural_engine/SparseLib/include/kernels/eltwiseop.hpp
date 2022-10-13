@@ -88,7 +88,7 @@ class eltwiseop_k_t : public kernel_t {
   bool eltwiseop_kernel_create(jit_eltwiseop_t** ker_pp, const ssd::eltwiseop_param_t& param);
 
  private:
-  jit_eltwiseop_t* jit_kers_;
+  jit_eltwiseop_t* jit_kers_ = nullptr;
   int64_t nthr_;
   std::vector<ssd::eltwiseop_data_t*> td;
 };

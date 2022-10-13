@@ -127,10 +127,6 @@ bool eltwiseop_bench::check_result() {
     }
   }
   auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
-  free(const_cast<void*>(p.rt_data[0]));
-  free(const_cast<void*>(p.rt_data[1]));
-  free(const_cast<void*>(q.rt_data[0]));
-  free(const_cast<void*>(q.rt_data[1]));
   return ans;
 }
 

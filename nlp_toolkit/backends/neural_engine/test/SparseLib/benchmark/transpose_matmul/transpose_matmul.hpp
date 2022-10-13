@@ -12,31 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_SPARSE_MATMUL_HPP_
-#define ENGINE_SPARSELIB_BENCH_INCLUDE_SPARSE_MATMUL_HPP_
+#ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MATMUL_HPP_
+#define ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MATMUL_HPP_
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "benchmark_utils.hpp"
-#include "kernels/spmm_types.hpp"
+#include "kernels/matmul_types.hpp"
 namespace jd {
 
-class sparse_matmul_bench : public kernel_bench {
+class transpose_matmul_bench : public kernel_bench {
  private:
-  std::shared_ptr<sparse_matmul_bench> smb;
+  std::shared_ptr<transpose_matmul_bench> smb;
 
  public:
-  sparse_matmul_bench() {}
-  virtual ~sparse_matmul_bench() {
+  transpose_matmul_bench() {}
+  virtual ~transpose_matmul_bench() {
     if (smb == nullptr) {  // for a finally derived class
-      auto attrs = args.first.op_desc.attrs();
-      const uint64_t& sparse_addr = str_to_num<uint64_t>(attrs["sparse_ptr"]);
-      auto sparse_data_ptr = reinterpret_cast<bsc_data_t<float>*>(sparse_addr);
-      delete sparse_data_ptr;
-
       for (auto op_args : {args.first, args.second})
         for (auto rt_data : op_args.rt_data)
           if (rt_data != nullptr) {
@@ -48,7 +44,9 @@ class sparse_matmul_bench : public kernel_bench {
 
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override;
-  std::vector<int> get_refresh_data_idx() const override { return std::vector<int>{ssd::SRC, ssd::DST}; }
+  std::vector<int> get_refresh_data_idx() const override {
+    return std::vector<int>{ssd::SRC0, ssd::SRC1, ssd::DST0, ssd::SRC2};
+  }
   // Just like that in gtest file
   void get_true_data() override { smb->get_true_data(); }
   // Just like that in gtest file
@@ -58,10 +56,10 @@ class sparse_matmul_bench : public kernel_bench {
   void set_kernel_proxy() override {
     args = smb->args;
     ts_descs = smb->ts_descs;
-    sparse_matmul_desc spmm_desc(args.first.op_desc);
-    kp = std::make_shared<sparse_matmul>(spmm_desc);
+    transpose_matmul_desc spmm_desc(args.first.op_desc);
+    kp = std::make_shared<transpose_matmul>(spmm_desc);
   };
 };
 }  // namespace jd
 
-#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_SPARSE_MATMUL_HPP_
+#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MATMUL_HPP_

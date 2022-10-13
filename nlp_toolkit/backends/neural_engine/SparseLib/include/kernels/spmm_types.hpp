@@ -30,6 +30,7 @@ class bsr_data_t;
 namespace ssd {
 /**
  * @brief tensors index configuration of this kernel.
+ * TODO(Yi): potential confliction with indices of other op types
  */
 static constexpr int WEI = 0;
 static constexpr int SRC = 1;
@@ -52,7 +53,7 @@ enum class subfunc_level : uint8_t {
   prod,            // use sub-function for tile product
   dense_and_prod,  // use fused sub-function for dense loading & tile product
   load_and_prod,   // use fused sub-function for dense loading & sparse loading & tile product
-  k_dims,         // a whole THxKxTW tile generates a constent size of code
+  k_dims,          // a whole THxKxTW tile generates a constent size of code
   subfunc_level_MAX = k_dims
 };
 

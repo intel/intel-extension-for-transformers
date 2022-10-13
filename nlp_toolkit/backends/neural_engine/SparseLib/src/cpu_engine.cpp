@@ -25,6 +25,7 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
   DECLARE_IMPL_LIST(postop);
   DECLARE_IMPL_LIST(eltwiseop);
   DECLARE_IMPL_LIST(layernorm_ba);
+  DECLARE_IMPL_LIST(transpose_matmul);
 
 #undef DECLARE_IMPL_LIST
 
@@ -38,6 +39,7 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
     CASE(postop);
     CASE(eltwiseop);
     CASE(layernorm_ba);
+    CASE(transpose_matmul);
     default:
       return &cpu_engine::empty_list;
   }

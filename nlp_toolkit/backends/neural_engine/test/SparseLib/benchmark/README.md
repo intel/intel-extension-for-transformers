@@ -119,6 +119,15 @@ Please note that the src_dt only support fp32,dst_dt support fp32 and s8/u8.
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf layernorm_ba 1024 1024 fp32 fp32
 ```
 
+#### matmul_avx512f_p2031_p2013
+```shell
+[<environment_variable>...] ./benchmark <mode> transpose_matmul avx512f_p2031_p2013 <M> <K> <N> <bs0> <bs1> <has_binary_add> [alpha] [beta] [tile_m] [tile_n]
+```
+#### Examples
+```shell
+BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf transpose_matmul avx512f_p2031_p2013 32 64 32 8 12 1 1 0.25 8 2
+```
+
 ## For developers
 To add benchmark support for a newly-added kernel, you may need to follow several steps:
 

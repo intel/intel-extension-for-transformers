@@ -41,7 +41,13 @@ class eltwiseop_bench : public kernel_bench {
 
  public:
   eltwiseop_bench() {}
-  virtual ~eltwiseop_bench() {}
+  virtual ~eltwiseop_bench() {
+    for (auto op_args : {args.first, args.second})
+      for (auto rt_data : op_args.rt_data)
+        if (rt_data != nullptr) {
+          free(const_cast<void*>(rt_data));
+        }
+  }
 
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override {
