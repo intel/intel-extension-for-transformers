@@ -175,7 +175,7 @@ class TFOptimization:
 
             for idx, (inputs, labels) in enumerate(self._eval_dataset):
                 for name in inputs:
-                    inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
+                    inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
 
                 results = infer(**inputs)
                 for val in results:
