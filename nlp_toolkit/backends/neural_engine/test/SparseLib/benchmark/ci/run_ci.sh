@@ -22,7 +22,7 @@ mkdir -p $log_dir
 
 medium_n=5
 
-source $script_dir/benchmark.sh --modes=acc,perf --op=sparse_matmul --medium_n=$medium_n --it_per_core=300 \
+source $script_dir/benchmark.sh --modes=acc,perf --op=sparse_matmul --medium_n=$medium_n --it_per_core=200 \
     --batch="$script_dir/inputs/ci_vnni_input" |
     tee "$log_dir/vnni.log"
 source $script_dir/benchmark.sh --modes=acc,perf --op=sparse_matmul --medium_n=$medium_n --it_per_core=300 \
