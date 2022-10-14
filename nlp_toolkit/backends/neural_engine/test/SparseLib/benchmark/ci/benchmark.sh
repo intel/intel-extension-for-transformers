@@ -15,8 +15,10 @@
 # limitations under the License.
 #===============================================================================
 
+ncores_per_socket=$(lscpu | grep "Core(s) per socket:" | sed -r 's/.+?:\s+(.+)/\1/')
+no_numa_support=$(numactl -s | grep "No NUMA support available")
+
 function run_multi_inst {
-    local ncores_per_socket=$(lscpu | grep "Core(s) per socket:" | sed -r 's/.+?:\s+(.+)/\1/')
     local ncores_per_inst=$1
     local cmd=$2
     local unified_log=$3
@@ -25,7 +27,7 @@ function run_multi_inst {
     for ((j = 0; $(($j + $ncores_per_inst)) <= $ncores_per_socket; j = $(($j + ${ncores_per_inst})))); do
         local numa_prefix="numactl -m 0 -C $j-$((j + ncores_per_inst - 1)) "
         # Make it works on machines with no numa support
-        if [[ -n $(numactl -s | grep "No NUMA support available") ]]; then
+        if [[ -n $no_numa_support ]]; then
             local numa_prefix=""
             export OMP_NUM_THREADS=$ncores_per_inst
         fi
@@ -48,7 +50,17 @@ function get_medium_result {
     rm -f tmp_results_file
     for ((j = 0; $j < $medium_n; j = $(($j + 1)))); do
         run_multi_inst "$ncores_per_inst" "$cmd" "$unified_log" |
-            awk '{sum_time+=$1;sum_gflops+=$2} END {printf("%s,%s\n", sum_time, sum_gflops)}' >>tmp_results_file 2>&1
+            awk -v ncores_per_inst=$ncores_per_inst '{
+                    sum_time+=$1;
+                    sum_gflops+=$2;
+                    count+=1;
+                } END {
+                    if (count!=0) {
+                        ave_time=sum_time/count;
+                        ave_gflops=sum_gflops/count/ncores_per_inst;
+                    };
+                    printf("%s,%s\n", ave_time, ave_gflops);
+                }' >>tmp_results_file 2>&1
         wait
     done
     cat tmp_results_file |
@@ -119,7 +131,7 @@ done
 asset_non_empty "batch_path"
 asset_non_empty "modes"
 asset_non_empty "op"
-if [[ !($raw_log) ]] ; then raw_log="${WORKSPACE}/benchmark_raw_$op-$(basename $batch_path).log"; fi
+if [[ !($raw_log) ]]; then raw_log="${WORKSPACE}/benchmark_raw_$op-$(basename $batch_path).log"; fi
 rm -f $raw_log
 dirname $raw_log | xargs mkdir -p
 touch $raw_log
@@ -155,10 +167,10 @@ while read -r config || [[ -n "${config}" ]]; do
             echo ">>> run $cmd" >>$raw_log
             acc_result=$($cmd 2>&1 | tee -a $raw_log)
             echo "<<< end $cmd" >>$raw_log
-            if [[ -n $(echo $acc_result | grep "benchmark failed") ]]; then
-                echo "$acc_result"
-            else
+            if [[ -n $(echo $acc_result | grep "result correct") ]]; then
                 echo "result correct"
+            else
+                echo "benchmark failed"
             fi
         else
             get_medium_result "$medium_n" "$ncores_per_instance" "$cmd" "$raw_log"
