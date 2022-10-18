@@ -79,15 +79,6 @@ static std::string init_info_eltwiseop(std::vector<dim_t> shape) {
   return ss.str();
 }
 
-static std::string init_info_postop(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "postop"
-     << ",";
-  return ss.str();
-}
-
 static std::string init_info_sparse_matmul(std::vector<dim_t> shape) {
   std::stringstream ss;
   ss << "cpu"
@@ -113,7 +104,6 @@ void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
     break
     switch (kind) {
       CASE(sparse_matmul);
-      CASE(postop);
       CASE(eltwiseop);
       CASE(layernorm_ba);
       default:

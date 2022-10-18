@@ -31,7 +31,7 @@
 
 namespace jd {
 
-typedef unsigned short bfloat16_t;  // NOLINT
+typedef uint16_t bfloat16_t;  // NOLINT
 typedef int64_t dim_t;
 
 template <typename T>

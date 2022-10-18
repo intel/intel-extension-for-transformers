@@ -36,19 +36,18 @@ Xbyak::Address jit_eltwise_injector::table_val(key_t key, size_t key_off_val_shi
 
 void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_attrs) {
   bool quant_flag = false;
-  bool int8_lut_flag = false;
+  bool int_lut_flag = false;
   int chain_len = postop_attrs.size();
   for (int i = 0; i < chain_len; i++) {
     auto cur_attr = postop_attrs[i];
     auto cur_alg = cur_attr.op_alg;
     auto cur_dt = cur_attr.dt;
     if (i != chain_len - 1) assert(cur_alg != postop_alg::quantize);
-    if (i != 0) assert(postop_attrs[0].op_alg != postop_alg::int8_lut && cur_alg != postop_alg::dequantize);
-    // int8-lut algo must be the fist op in the postop-chain.
-    if (cur_alg == postop_alg::int8_lut) {
+    if (i != 0) assert(cur_alg != postop_alg::dequantize);
+    // bit8-lut algo must be the fist op in the postop-chain.
+    if (cur_alg == postop_alg::eltop_int_lut) {
       assert(i == 0);
-      assert(cur_dt == data_type::u8 || cur_dt == data_type::s8);
-      int8_lut_flag = true;
+      int_lut_flag = true;
     }
 
     if (cur_alg == postop_alg::quantize || cur_attr.op_alg == postop_alg::dequantize) {
@@ -57,8 +56,8 @@ void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_a
     }
 
     // we do not need to assert other affairs
-    // because it the remain ops's kernel version will not execute..
-    if (int8_lut_flag) return;
+    // because the remain ops's kernel version will not execute..
+    if (int_lut_flag) return;
 
     // normal op only support fp32/bf16,once contain quant related operator,only support fp32.
     if (!quant_flag) {
@@ -103,10 +102,12 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
       case postop_alg::linear:
         linear_compute_vector_fwd(zmm_src);
         break;
-      case postop_alg::int8_lut:
-        int8_lut_compute_vector_fwd(zmm_src);
+      case postop_alg::eltop_int_lut:
+        if (cur_postop_attr_.alpha == 8) bit8_lut_compute_vector_fwd(zmm_src);
+        if (cur_postop_attr_.alpha == 16) bit16_lut_compute_vector_fwd(zmm_src);
         break;
       default:
+        LOG(FATAL) << "unsupported op in eltwise_injector";
         break;
     }
   };
@@ -137,23 +138,39 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
     } else {
       task_dispatch(zmm_src);
     }
-    if (cur_postop_attr_.op_alg == postop_alg::int8_lut) return;
+    if (cur_postop_attr_.op_alg == postop_alg::eltop_int_lut) return;
   }
 }
 
-void jit_eltwise_injector::int8_lut_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::bit8_lut_compute_vector_fwd(const Zmm& zmm_src) {
   // regs renaming.
   Zmm zmm_bk = zmm_aux0;
   h->vmovups(zmm_bk, zmm_src);
-  // zmm can store 64 byte data, the size of our int8-lut is 256 byte, so we need to loop 4 times so that we can search
+  // zmm can store 64 byte data, the size of our bit8-lut is 256 byte, so we need to loop 4 times so that we can search
   // all terms
   for (int i = 0; i < 4; i++) {
     h->vmovups(zmm_tmp, zmm_bk);
-    h->vpcmpub(k_mask, zmm_tmp, table_val(int8_64), _cmp_lt_os);
-    h->vpord(zmm_tmp, zmm_tmp, table_val(select_permt_idx));
-    h->vpermt2b(zmm_src | k_mask, zmm_tmp, table_val(int8_lut_term, i * 16));
-    h->vpsubusb(zmm_bk, zmm_bk, table_val(int8_64));
-    h->vpaddusb(zmm_bk | k_mask, zmm_bk, table_val(int8_255));
+    h->vpcmpub(k_mask, zmm_tmp, table_val(bit8_64), _cmp_lt_os);
+    h->vpermb(zmm_src | k_mask, zmm_tmp, table_val(bit8_lut_term, i * 16));
+    h->vpsubusb(zmm_bk, zmm_bk, table_val(bit8_64));
+    h->vpaddusb(zmm_bk | k_mask, zmm_bk, table_val(bit8_255));
+  }
+}
+
+void jit_eltwise_injector::bit16_lut_compute_vector_fwd(const Zmm& zmm_src) {
+  // regs renaming.
+  Zmm zmm_bk = zmm_aux0;
+  if (cur_postop_attr_.dt == data_type::u8 || cur_postop_attr_.dt == data_type::s8)
+    h->vpmovzxbw(zmm_src, Ymm(zmm_src.getIdx()));  // zeropadding
+  h->vmovups(zmm_bk, zmm_src);
+  // calculate look-up times, each zmm reg can store 32 terms, so we will execute 8 time lookup operate.
+  for (int i = 0; i < 8; i++) {
+    h->vmovups(zmm_tmp, zmm_bk);
+    h->vpcmpuw(k_mask, zmm_tmp, table_val(bit16_32), _cmp_lt_os);
+    // we will process 16 byte per instruction.
+    h->vpermw(zmm_src | k_mask, zmm_tmp, table_val(bit16_lut_term, i * 16));
+    h->vpsubusw(zmm_bk, zmm_bk, table_val(bit16_32));
+    h->vpaddusw(zmm_bk | k_mask, zmm_bk, table_val(bit16_255));
   }
 }
 
@@ -400,11 +417,11 @@ void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& 
       mask_tb_allocate.insert(&k_mask);
     }
 
-    if (i.op_alg == postop_alg::int8_lut) {
+    if (i.op_alg == postop_alg::eltop_int_lut) {
       zmm_tb_allocate.insert(&zmm_aux0);
       zmm_tb_allocate.insert(&zmm_tmp);
       mask_tb_allocate.insert(&k_mask);
-      // return directly,the reason is same as the comment in compute_vector func,int8-lut case
+      // return directly,the reason is same as the comment in compute_vector func,bit8-lut case
       return;
     }
   }
@@ -427,7 +444,7 @@ void jit_eltwise_injector::assign_regs() {
     while (tb_allocate_regs.size() != 0) {
       while (used_reg_idxs.count(allocate_idx) != 0) allocate_idx++;
       if (allocate_idx > max_reg_idx)
-        std::runtime_error("jit_eltwise allocate_regs error:too many registers be used in front op.");
+        LOG(FATAL) << "jit_eltwise allocate_regs error:too many registers be used in front op.";
 
       Xbyak::Reg* reg = tb_allocate_regs.back();
       if (reg_type == reg_type::mask) {
@@ -488,19 +505,33 @@ void jit_eltwise_injector::prepare_table() {
   }
 }
 
-uint32_t jit_eltwise_injector::get_int8_lut_term(int int8, const std::vector<postop_attr>& postop_attrs,
-                                                 data_type input_dt) {
+uint32_t jit_eltwise_injector::get_bit16_lut_term(int integer, const std::vector<postop_attr>& postop_attrs,
+                                                  data_type output_dt) {
+  // TODO(zhe1wang): support fp16 or other 16bit data type in the future.
+  assert(output_dt == data_type::bf16);
+  uint32_t ans = 0;
+  uint16_t* u16 = new uint16_t(0);
+  for (int i = 0; i < 2; i++) {
+    *u16 = make_bf16(apply_postop_list(integer + i, postop_attrs));
+    ans |= *u16 << (i * 16);
+  }
+  delete u16;
+  return ans;
+}
+
+uint32_t jit_eltwise_injector::get_bit8_lut_term(int integer, const std::vector<postop_attr>& postop_attrs,
+                                                 data_type output_dt) {
   uint32_t ans = 0;
   uint8_t* u8 = new uint8_t(0);
   int8_t* s8 = new int8_t(0);
   uint8_t* cvt = nullptr;
   for (int i = 0; i < 4; i++) {
-    if (input_dt == data_type::s8) {
-      *s8 = apply_postop_list(int8 + i, postop_attrs);
+    if (output_dt == data_type::s8) {
+      *s8 = apply_postop_list(integer + i, postop_attrs);
       cvt = reinterpret_cast<uint8_t*>(s8);
       ans |= *cvt << (i * 8);
     } else {
-      *u8 = apply_postop_list(int8 + i, postop_attrs);
+      *u8 = apply_postop_list(integer + i, postop_attrs);
       ans |= *u8 << (i * 8);
     }
   }
@@ -533,19 +564,15 @@ std::string jit_eltwise_injector::get_attr_idx_key(const postop_attr& attr) {
 }
 
 void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>& postop_attrs) {
-  static const table_t common_values{{zero, {0x00000000, true}},
-                                     {half, {0x3f000000, true}},
-                                     {one, {0x3f800000, true}},
-                                     {two, {0x40000000, true}},
-                                     {minus_one, {0xbf800000, true}},
-                                     {minus_two, {0xc0000000, true}},
-                                     {ln2f, {0x3f317218, true}},
-                                     {positive_mask, {0x7fffffff, true}},
-                                     {sign_mask, {0x80000000, true}},
-                                     {exponent_bias, {0x0000007f, true}},
-                                     {int8_64, {0x40404040, true}},
-                                     {int8_255, {0xffffffff, true}},
-                                     {select_permt_idx, {0x40404040, true}}};
+  static const table_t common_values{{zero, {0x00000000, true}},      {half, {0x3f000000, true}},
+                                     {one, {0x3f800000, true}},       {two, {0x40000000, true}},
+                                     {minus_one, {0xbf800000, true}}, {minus_two, {0xc0000000, true}},
+                                     {ln2f, {0x3f317218, true}},      {positive_mask, {0x7fffffff, true}},
+                                     {sign_mask, {0x80000000, true}}, {exponent_bias, {0x0000007f, true}}};
+
+  static const table_t bit8_lut_consts{{bit8_64, {0x40404040, true}}, {bit8_255, {0xffffffff, true}}};
+
+  static const table_t bit16_lut_consts{{bit16_32, {0x00200020, true}}, {bit16_255, {0x00ff00ff, true}}};
 
   static const table_t exchange_zmm_low256_high256_const{
       {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
@@ -863,31 +890,45 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
 
   push_entries_of(common_values);
 
-  if (postop_attrs.size() > 0 && postop_attrs[0].op_alg == postop_alg::int8_lut) {
-    // if first op is int8-lut,the second op and the last op must be dequantize & quantize
-    assert(postop_attrs.size() >= 3);
+  // eltop_int_lut's alpha means the bitwidth
+  if (postop_attrs.size() > 0 && postop_attrs[0].op_alg == postop_alg::eltop_int_lut) {
+    // lut kernel first op must be dequantize
+    assert(postop_attrs.size() >= 2);
     assert(postop_attrs[1].op_alg == postop_alg::dequantize);
-    assert(postop_attrs.back().op_alg == postop_alg::quantize);
-    table_t int8_lut;
     auto input_dt = postop_attrs[0].dt;
+    auto output_dt = postop_attrs.back().dt;
+    int table_bitwidth = postop_attrs[0].alpha;
+    if (table_bitwidth == 8) {
+      assert(postop_attrs.size() >= 3);
+      // if first op is bit8-lut,the last op must be quantize
+      assert(postop_attrs.back().op_alg == postop_alg::quantize);
+      push_entries_of(bit8_lut_consts);
+    } else {
+      push_entries_of(bit16_lut_consts);
+    }
 
-    auto register_int8_lut_entries = [&](int int8) {
-      auto term = get_int8_lut_term(int8, postop_attrs, input_dt);
+    table_t bit_lut;
+    auto register_bit_lut_entries = [&](int integer, int bitwidth) {
+      uint32_t term;
+      if (bitwidth == 8) term = get_bit8_lut_term(integer, postop_attrs, output_dt);
+      if (bitwidth == 16) term = get_bit16_lut_term(integer, postop_attrs, output_dt);
       table_entry_t tmp = {term, false};
-      int8_lut.insert(std::make_pair(int8_lut_term, tmp));
+      if (bitwidth == 8) bit_lut.insert(std::make_pair(bit8_lut_term, tmp));
+      if (bitwidth == 16) bit_lut.insert(std::make_pair(bit16_lut_term, tmp));
     };
 
     if (input_dt == data_type::u8) {
-      for (int i = 0; i < 256; i += 4) register_int8_lut_entries(i);
+      for (int i = 0; i < 256; i += 32 / table_bitwidth) register_bit_lut_entries(i, table_bitwidth);
     } else if (input_dt == data_type::s8) {
-      for (int i = 0; i < 128; i += 4) register_int8_lut_entries(i);
-      for (int i = -128; i < 0; i += 4) register_int8_lut_entries(i);
+      for (int i = 0; i < 128; i += 32 / table_bitwidth) register_bit_lut_entries(i, table_bitwidth);
+      for (int i = -128; i < 0; i += 32 / table_bitwidth) register_bit_lut_entries(i, table_bitwidth);
     } else {
-      std::runtime_error("int8-lut algo only support s8/u8 data_type as input.");
+      LOG(FATAL) << "eltop_int_lut algo only support s8/u8 data_type as input.";
     }
-    push_entries_of(int8_lut);
+    push_entries_of(bit_lut);
+
     set_table_term_offset();
-    // once the head of postop-chain is int8-lut, then the remain ops do not need to compute so we do not need to
+    // once the head of postop-chain is bit8-lut, then the remain ops do not need to compute so we do not need to
     // prepare LUT entries.
     return;
   }

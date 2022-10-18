@@ -158,8 +158,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
 
-  src = sparselib_ut_memo(src, num, in_dt, MALLOC);
-  dst = sparselib_ut_memo(dst, num, out_dt, MALLOC);
+  src = sparselib_ut_memo(src, num, in_dt, MALLOC, true);
+  dst = sparselib_ut_memo(dst, num, out_dt, MALLOC, true);
   float* src_ref = reinterpret_cast<float*>(aligned_alloc(64, num * sizeof(float)));
   float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
   float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));

@@ -63,11 +63,14 @@ void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
   }
 }
 
-void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode) {
+void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode, bool align = false) {
   int data_width = get_data_size(dtype);
   switch (mode) {
     case MALLOC:
-      ptr = aligned_alloc(64, num * data_width); /* code */
+      if (align)
+        ptr = aligned_alloc(64, num * data_width); /* code */
+      else
+        ptr = malloc(num * data_width);
       break;
     case MEMSET:
       std::memset(ptr, 0, num * data_width);
@@ -76,6 +79,13 @@ void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode)
       break;
   }
   return ptr;
+}
+
+int get_element_num(const jd::operator_desc& op_desc) {
+  auto ts_descs = op_desc.tensor_descs();
+  int num = 1;
+  for (auto&& i : ts_descs[0].shape()) num *= i;
+  return num;
 }
 
 class n_thread_t {

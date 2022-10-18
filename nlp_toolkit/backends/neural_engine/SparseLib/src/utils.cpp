@@ -121,7 +121,20 @@ std::vector<T> split_str(const std::string& s, const char& delim) {
   }
   return ans;
 }
+
+template <>
+std::vector<std::string> split_str<std::string>(const std::string& s, const char& delim) {
+  std::stringstream ss(s);
+  std::string temp;
+  std::vector<std::string> ans;
+  while (std::getline(ss, temp, delim))
+    if (!temp.empty()) ans.push_back(temp);
+  return ans;
+}
+
 template std::vector<int64_t> split_str<int64_t>(const std::string&, const char&);
+template std::vector<int> split_str<int>(const std::string&, const char&);
+template std::vector<std::string> split_str<std::string>(const std::string&, const char&);
 
 std::string join_str(const std::vector<std::string>& ss, const std::string& delim) {
   std::string ans;
@@ -219,15 +232,18 @@ float get_relu(float x, float alpha) { return x > 0 ? x : alpha * x; }
 int get_quantize(float x, float alpha, float scale, data_type dt) {
   x /= scale;
   x += alpha;
-  if (dt == data_type::u8) {
-    x = x < 0 ? 0 : x;
-    x = x > 255 ? 255 : x;
-  }
-  if (dt == data_type::s8) {
-    x = x < -128 ? -128 : x;
-    x = x > 127 ? 127 : x;
-  }
   int ans = std::nearbyint(x);
+
+  if (dt == data_type::s8) {
+    ans = ans > 127 ? 127 : ans;
+    ans = ans < -128 ? -128 : ans;
+  }
+
+  if (dt == data_type::u8) {
+    ans = ans > 255 ? 255 : ans;
+    ans = ans < 0 ? 0 : ans;
+  }
+
   return ans;
 }
 
@@ -235,11 +251,6 @@ float get_dequantize(float x, float alpha, float scale) {
   x -= alpha;
   x *= scale;
   return x;
-}
-
-float get_softmax(float x) {
-  auto tmp = get_exp(-1.f * x);
-  return 1 / (1 + tmp);
 }
 
 float get_linear(float x, float aplha, float beta) { return x * aplha + beta; }
@@ -254,7 +265,7 @@ float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) 
       if (i.op_alg == jd::postop_alg::dequantize) value = get_dequantize(value, i.alpha, i.scale);
       if (i.op_alg == jd::postop_alg::tanh) value = tanh(value);
       if (i.op_alg == jd::postop_alg::linear) value = get_linear(value, i.alpha, i.beta);
-      if (i.op_alg == jd::postop_alg::int8_lut) continue;
+      if (i.op_alg == jd::postop_alg::eltop_int_lut) continue;
     } else {
       std::runtime_error("do not support postop type.");
     }

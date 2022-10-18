@@ -12,20 +12,34 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <map>
-#include <tuple>
-#include "cpu_engine.hpp"
+#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_:
+#define ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_
+
+#include <vector>
 #include "param_types.hpp"
-#include "impl_list_item.hpp"
-#include "kernels/postop_default.hpp"
 
 namespace jd {
-static const std::map<kernel_prop, std::vector<impl_list_item_t>> postop_impl_list_map = {
-    {kernel_prop::forward_inference, {CPU_INSTANCE(postop_default_k_t), NULL_INSTANCE()}},
+namespace ssd {
+
+enum spec_softmax_type { lut };
+
+struct softmax_param_t {
+  spec_softmax_type sepc_type;
+  data_type input_dt;
+  data_type output_dt;
+  size_t vec_align_len;
+  size_t vec_tail_len;
+  size_t vec_num_per_thr;
+  size_t vec_num_tail_thr;
+  std::vector<postop_attr> postop_attrs;
 };
 
-const std::vector<impl_list_item_t>* get_postop_impl_list(const operator_desc& op_desc) {
-  const auto impl_list_it = postop_impl_list_map.find(op_desc.kernel_prop());
-  return (impl_list_it != postop_impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine::empty_list;
-}
+struct softmax_data_t {
+  void* src;
+  void* dst;
+  size_t process_vec_num;
+};
+
+}  // namespace ssd
 }  // namespace jd
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_

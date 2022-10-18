@@ -16,13 +16,6 @@
 #include "unit_test_utils.hpp"
 
 namespace jd {
-int get_element_num(const operator_desc& op_desc) {
-  auto ts_descs = op_desc.tensor_descs();
-  int num = 1;
-  for (auto&& i : ts_descs[0].shape()) num *= i;
-  return num;
-}
-
 struct op_args_t {
   operator_desc op_desc;
   std::vector<const void*> data;
@@ -105,7 +98,7 @@ bool check_result(const test_params_t& t) {
   free(const_cast<void*>(p.data[1]));
   free(const_cast<void*>(q.data[0]));
   free(const_cast<void*>(q.data[1]));
-  return false;
+  return true;
 }
 
 class EltwiseopKernelTest : public testing::TestWithParam<test_params_t> {
@@ -184,22 +177,29 @@ static auto case_func = []() {
   postop_attr fp32_gelu_attr{data_type::fp32, postop_type::eltwise, postop_alg::gelu};
   postop_attr bf16_gelu_attr{data_type::bf16, postop_type::eltwise, postop_alg::gelu};
   postop_attr fp32_relu_attr{data_type::fp32, postop_type::eltwise, postop_alg::relu, 2.0};
-  postop_attr quantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::quantize, -10, 0, 2);
-  postop_attr quantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::quantize, -10, 0, 2);
-  postop_attr dequantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::dequantize, -10, 0, 2);
-  postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, -10, 0, 2);
+  postop_attr quantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.04);
+  postop_attr quantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.04);
+  postop_attr dequantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::dequantize, 0, 0, 0.04);
+  postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, 0, 0, 0.04);
   postop_attr fp32_tanh_attr{data_type::fp32, postop_type::eltwise, postop_alg::tanh};
-  // u8 as input dt
-  postop_attr int8_lut_u8_attr{data_type::u8, postop_type::eltwise, postop_alg::int8_lut};
-  // s8 as input dt
-  postop_attr int8_lut_s8_attr{data_type::s8, postop_type::eltwise, postop_alg::int8_lut};
+  postop_attr bit8_lut_u8_attr{data_type::u8, postop_type::eltwise, postop_alg::eltop_int_lut, 8};  // u8 as input dt
+  postop_attr bit8_lut_s8_attr{data_type::s8, postop_type::eltwise, postop_alg::eltop_int_lut, 8};  // s8 as input dt
+  postop_attr bit16_lut_u8_attr{data_type::u8, postop_type::eltwise, postop_alg::eltop_int_lut, 16, 256};
 
-  cases.push_back({gen_case({data4_desc, data4_desc}, {{"postop_list", "int8_lut_u8+dequantize+fp32_gelu+quantize"}},
-                            {int8_lut_u8_attr, dequantize_u8_attr, fp32_gelu_attr, quantize_u8_attr}),
+  cases.push_back({gen_case({data4_desc, data1_desc}, {{"postop_list", "bit16_lut_u8+dequantize+bf16_exp"}},
+                            {bit16_lut_u8_attr, dequantize_u8_attr, bf16_exp_attr}),
                    false});
 
-  cases.push_back({gen_case({data5_desc, data5_desc}, {{"postop_list", "int8_lut_s8+dequantize+fp32_gelu+quantize"}},
-                            {int8_lut_s8_attr, dequantize_s8_attr, fp32_gelu_attr, quantize_s8_attr}),
+  cases.push_back({gen_case({data6_desc, data3_desc}, {{"postop_list", "bit16_lut_u8+dequantize+bf16_exp"}},
+                            {bit16_lut_u8_attr, dequantize_u8_attr, bf16_exp_attr}),
+                   false});
+
+  cases.push_back({gen_case({data4_desc, data4_desc}, {{"postop_list", "bit8_lut_u8+dequantize+fp32_gelu+quantize"}},
+                            {bit8_lut_u8_attr, dequantize_u8_attr, fp32_gelu_attr, quantize_u8_attr}),
+                   false});
+
+  cases.push_back({gen_case({data5_desc, data5_desc}, {{"postop_list", "bit8_lut_s8+dequantize+fp32_gelu+quantize"}},
+                            {bit8_lut_s8_attr, dequantize_s8_attr, fp32_gelu_attr, quantize_s8_attr}),
                    false});
 
   cases.push_back({gen_case({data0_desc, data0_desc}, {{"postop_list", "fp32_tanh"}}, {fp32_tanh_attr}), false});

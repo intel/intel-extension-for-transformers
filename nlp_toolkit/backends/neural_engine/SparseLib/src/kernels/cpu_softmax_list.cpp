@@ -12,28 +12,20 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_POSTOP_TYPES_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_KERNELS_POSTOP_TYPES_HPP_
+#include <map>
+#include <tuple>
+#include "cpu_engine.hpp"
+#include "param_types.hpp"
+#include "impl_list_item.hpp"
+#include "kernels/softmax.hpp"
 
 namespace jd {
-namespace ssd {
-enum class post_op_scheme : uint8_t { exp, gelu };
-enum class data_type : uint8_t {
-  bf16,
-  fp32,
-};
-struct postop_param_t {
-  post_op_scheme scheme;
-  size_t element_num;
-  data_type dt;
+static const std::map<kernel_prop, std::vector<impl_list_item_t>> softmax_impl_list_map = {
+    {kernel_prop::forward_inference, {CPU_INSTANCE(softmax_k_t), NULL_INSTANCE()}},
 };
 
-struct postop_data_t {
-  void* src;
-  void* dst;
-  size_t element_num;
-};
-
-}  // namespace ssd
+const std::vector<impl_list_item_t>* get_softmax_impl_list(const operator_desc& op_desc) {
+  const auto impl_list_it = softmax_impl_list_map.find(op_desc.kernel_prop());
+  return (impl_list_it != softmax_impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine::empty_list;
+}
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_POSTOP_TYPES_HPP_

@@ -60,6 +60,11 @@ const size_t xmm_to_preserve = 0;
 namespace jd {
 class jit_generator : public Xbyak::CodeGenerator {
  public:
+  using Zmm = Xbyak::Zmm;
+  using Ymm = Xbyak::Ymm;
+  using Xmm = Xbyak::Xmm;
+  using Reg64 = Xbyak::Reg64;
+  using Opmask = Xbyak::Opmask;
   explicit jit_generator(size_t code_size = MAX_CODE_SIZE, void* code_ptr = nullptr)
       : Xbyak::CodeGenerator(code_size, (code_ptr == nullptr) ? Xbyak::AutoGrow : code_ptr) {}
   virtual ~jit_generator() {}

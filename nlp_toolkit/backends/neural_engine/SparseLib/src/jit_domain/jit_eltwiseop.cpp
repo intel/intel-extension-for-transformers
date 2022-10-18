@@ -41,8 +41,8 @@ void jit_eltwiseop_t::generate() {
   eltwise_injector.vector_compute(reg_src, param_.postop_attrs);
   store_tail(reg_src, addr_dst);
 
-  add(addr_src, dtype_size(param_.postop_attrs.front()));
-  add(addr_dst, dtype_size(param_.postop_attrs.back()));
+  add(addr_src, get_data_size(param_.in_dt));
+  add(addr_dst, get_data_size(param_.out_dt));
   dec(remain_element_num);
   jmp(reminder_loop_start, T_NEAR);
 
@@ -71,11 +71,12 @@ void jit_eltwiseop_t::prepare_mask() {
 void jit_eltwiseop_t::store_dst(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst) {
   auto last_attr = param_.postop_attrs.back();
   auto first_attr = param_.postop_attrs.front();
-  if (last_attr.op_alg == postop_alg::quantize && first_attr.op_alg != postop_alg::int8_lut) {
-    if (last_attr.dt == data_type::u8)
-      vpmovusdb(ptr[addr_dst], reg_src);  // u32->u8
+  if (last_attr.op_alg == postop_alg::quantize &&
+      !(first_attr.op_alg == postop_alg::eltop_int_lut && first_attr.alpha == 8)) {
+    if (last_attr.dt == data_type::s8)
+      vpmovsdb(ptr[addr_dst], reg_src);
     else
-      vpmovsdb(ptr[addr_dst], reg_src);  // s32->s8
+      vpmovusdb(ptr[addr_dst], reg_src);
   } else {
     vmovups(ptr[addr_dst], reg_src);
   }
@@ -85,35 +86,37 @@ void jit_eltwiseop_t::load_src(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_src) {
   auto first_attr = param_.postop_attrs.front();
   if (first_attr.op_alg == postop_alg::dequantize) {
     vmovups(Xmm(reg_src.getIdx()), ptr[addr_src]);
+  } else if (first_attr.op_alg == postop_alg::eltop_int_lut && first_attr.alpha == 16) {
+    vmovups(Ymm(reg_src.getIdx()), ptr[addr_src]);  // we will process 32 element in int16_lut ker.
   } else {
     vmovups(reg_src, ptr[addr_src]);
   }
 }
 
 void jit_eltwiseop_t::load_tail(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_src) {
-  auto first_attr = param_.postop_attrs.front();
-  if (first_attr.op_alg == postop_alg::dequantize || first_attr.op_alg == postop_alg::int8_lut) {
+  if (param_.in_dt == data_type::u8 || param_.in_dt == data_type::s8) {
     vmovdqu8(Xmm(reg_src.getIdx()), ptr[addr_src]);
-  } else if (first_attr.dt == data_type::fp32) {
+  } else if (param_.in_dt == data_type::fp32) {
     vmovss(Xmm(reg_src.getIdx()), ptr[addr_src]);
-  } else if (first_attr.dt == data_type::bf16) {
+  } else if (param_.in_dt == data_type::bf16) {
     vmovups(reg_src, ptr[addr_src]);
   }
 }
 
 void jit_eltwiseop_t::store_tail(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst) {
   auto last_attr = param_.postop_attrs.back();
-  if (last_attr.op_alg == postop_alg::quantize) {
-    if (param_.postop_attrs[0].op_alg != postop_alg::int8_lut) {
-      if (last_attr.dt == data_type::u8)
-        vpmovusdb(Xmm(reg_src.getIdx()), reg_src);
-      else
+  auto first_attr = param_.postop_attrs.front();
+  if (param_.out_dt == data_type::u8 || param_.out_dt == data_type::s8) {
+    if (last_attr.op_alg == postop_alg::quantize && !(first_attr.op_alg == postop_alg::eltop_int_lut)) {
+      if (last_attr.dt == data_type::s8)
         vpmovsdb(Xmm(reg_src.getIdx()), reg_src);
+      else
+        vpmovusdb(Xmm(reg_src.getIdx()), reg_src);
     }
     vmovdqu8(ptr[addr_dst] | remain_task_mask, Xmm(reg_src.getIdx()));
-  } else if (last_attr.dt == data_type::fp32) {
+  } else if (param_.out_dt == data_type::fp32) {
     vmovss(ptr[addr_dst] | remain_task_mask, Xmm(reg_src.getIdx()));
-  } else if (last_attr.dt == data_type::bf16) {
+  } else if (param_.out_dt == data_type::bf16) {
     Ymm ymm_bf16 = Ymm(reg_src.getIdx());
     vmovdqu16(ptr[addr_dst] | remain_task_mask, ymm_bf16);
   }

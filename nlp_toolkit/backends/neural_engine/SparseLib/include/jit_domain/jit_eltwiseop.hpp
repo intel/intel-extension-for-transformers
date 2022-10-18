@@ -66,23 +66,13 @@ class jit_eltwiseop_t : public jit_generator {
   Xbyak::Opmask remain_task_mask;
   Xbyak::Reg64 scratch_;
 
-  size_t dtype_size(postop_attr attr) {
-    // quantize only happend on first postop,we load the data from memory to zmm,in tail case,the offset is one byte;
-    // dequantize only happend on last postop,we store the data from zmm to memory,in taill case,the offset is also one
-    // byte.
-    if (attr.op_alg == postop_alg::int8_lut || attr.op_alg == postop_alg::quantize ||
-        attr.op_alg == postop_alg::dequantize)
-      return 1u;
-    switch (attr.dt) {
-      case data_type::fp32:
-        return 4u;
-      case data_type::bf16:
-        return 2u;
-    }
-  }
-
   size_t load_offset() {
-    if (param_.postop_attrs[0].op_alg == postop_alg::int8_lut) return 64u;  // special case:int8_lut
+    if (param_.postop_attrs[0].op_alg == postop_alg::eltop_int_lut && param_.postop_attrs[0].alpha == 8) {
+      return 64u;  // special case:bit8_lut
+    }
+    if (param_.postop_attrs[0].op_alg == postop_alg::eltop_int_lut && param_.postop_attrs[0].alpha == 16) {
+      return 32u;  // special case:bit16_lut
+    }
     auto head_dt = param_.postop_attrs.front().dt;
     switch (head_dt) {
       case data_type::fp32:
@@ -94,12 +84,11 @@ class jit_eltwiseop_t : public jit_generator {
   }
 
   size_t store_offset() {
-    // todo:the logic is little confuse,we need to optimize.
-    if (param_.postop_attrs.front().op_alg == postop_alg::int8_lut) return 64u;   // int8_lut case;
-    if (param_.postop_attrs.back().op_alg == postop_alg::quantize) return 16u;    // quantize case.
-    if (param_.postop_attrs.back().op_alg == postop_alg::dequantize) return 64u;  // dequantize case.
-    auto tail_dt = param_.postop_attrs.back().dt;
-    switch (tail_dt) {
+    // todo:except dequantize case, our zmm always full of result data and needs to be stored.
+    if (param_.postop_attrs.front().op_alg == postop_alg::eltop_int_lut) return 64u;  // lut case;
+    if (param_.postop_attrs.back().op_alg == postop_alg::quantize) return 16u;        // quantize case.
+    if (param_.postop_attrs.back().op_alg == postop_alg::dequantize) return 64u;      // dequantize case.
+    switch (param_.out_dt) {
       case data_type::fp32:
       case data_type::bf16:
         return 64u;
@@ -108,8 +97,9 @@ class jit_eltwiseop_t : public jit_generator {
 
   size_t process_element_num() {
     auto front_attr = param_.postop_attrs.front();
-    if (front_attr.op_alg == postop_alg::int8_lut) return 64;  // special case:int8_lut
-    switch (front_attr.dt) {
+    if (front_attr.op_alg == postop_alg::eltop_int_lut && front_attr.alpha == 8) return 64;   // special case:bit8_lut
+    if (front_attr.op_alg == postop_alg::eltop_int_lut && front_attr.alpha == 16) return 32;  // sepcial case:bit16_lut
+    switch (param_.in_dt) {
       case data_type::fp32:
         return 16;
       case data_type::bf16:

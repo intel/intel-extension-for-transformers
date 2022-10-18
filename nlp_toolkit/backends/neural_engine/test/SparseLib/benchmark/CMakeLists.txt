@@ -52,6 +52,7 @@ add_subdirectory(sparse_matmul)
 add_subdirectory(eltwiseop)
 add_subdirectory(layernorm_ba)
 add_subdirectory(transpose_matmul)
+add_subdirectory(softmax)
 
 add_executable(${BENCHMARK_EXE} ${SRCS})
 

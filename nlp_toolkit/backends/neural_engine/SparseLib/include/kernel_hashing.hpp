@@ -80,8 +80,6 @@ class hash_t {
         hash_combine(seed, op_attrs["append_sum"]);
         hash_combine(seed, op_attrs["sub_func"]);
         break;
-      case kernel_kind::postop:
-      case kernel_kind::eltwiseop:
       case kernel_kind::layernorm_ba:
         hash_combine(seed, op_attrs["matrix_shape"]);
         break;
@@ -90,6 +88,12 @@ class hash_t {
         hash_combine(seed, op_attrs["beta"]);
         hash_combine(seed, op_attrs["m_tile"]);
         hash_combine(seed, op_attrs["n_tile"]);
+        break;
+      case kernel_kind::softmax:
+        hash_combine(seed, op_attrs["spec_type"]);
+        hash_combine(seed, op_attrs["vec_len"]);
+        break;
+      case kernel_kind::eltwiseop:
       default:
         break;
     }

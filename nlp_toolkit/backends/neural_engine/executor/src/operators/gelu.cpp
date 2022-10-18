@@ -85,7 +85,7 @@ void GeluOperator::ReshapeWithSparselib(const vector<Tensor*>& input, const vect
   jd::postop_attr dequantize_attr{attr_dtype, jd::postop_type::eltwise, jd::postop_alg::dequantize, zp, 0, scale};
   jd::postop_attr quantize_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::quantize, zp, 0, scale};
 
-  jd::postop_attr int8_lut_attr{attr_dtype, jd::postop_type::eltwise, jd::postop_alg::int8_lut};
+  jd::postop_attr int8_lut_attr{attr_dtype, jd::postop_type::eltwise, jd::postop_alg::eltop_int_lut, 8};
 
   dst_desc_ = {output[0]->shape(), jd::data_type::u8, jd::format_type::undef};
 

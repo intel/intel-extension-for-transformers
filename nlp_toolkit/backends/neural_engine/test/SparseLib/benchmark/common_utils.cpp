@@ -45,6 +45,9 @@ void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
     case jd::data_type::u8:
       *(reinterpret_cast<uint8_t*>(ptr) + idx) = static_cast<uint8_t>(val);
       break;
+    case jd::data_type::s8:
+      *(reinterpret_cast<int8_t*>(ptr) + idx) = static_cast<int8_t>(val);
+      break;
     default:
       throw std::runtime_error(std::string("assign_val:unsupport this dtype."));
   }

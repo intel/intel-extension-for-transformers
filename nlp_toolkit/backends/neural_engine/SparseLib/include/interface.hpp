@@ -108,13 +108,6 @@ class transpose_matmul_desc : public kernel_desc_proxy {
   virtual ~transpose_matmul_desc() {}
 };
 
-class postop_desc : public kernel_desc_proxy {
- public:
-  postop_desc() {}
-  explicit postop_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
-  virtual ~postop_desc() {}
-};
-
 class eltwiseop_desc : public kernel_desc_proxy {
  public:
   eltwiseop_desc() {}
@@ -127,6 +120,13 @@ class layernorm_ba_desc : public kernel_desc_proxy {
   layernorm_ba_desc() {}
   explicit layernorm_ba_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~layernorm_ba_desc() {}
+};
+
+class softmax_desc : public kernel_desc_proxy {
+ public:
+  softmax_desc() {}
+  explicit softmax_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~softmax_desc() {}
 };
 
 /**
@@ -146,13 +146,6 @@ class transpose_matmul : public kernel_proxy {
   virtual ~transpose_matmul() {}
 };
 
-class postop : public kernel_proxy {
- public:
-  postop() {}
-  explicit postop(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
-  virtual ~postop() {}
-};
-
 class eltwiseop : public kernel_proxy {
  public:
   eltwiseop() {}
@@ -165,6 +158,13 @@ class layernorm_ba : public kernel_proxy {
   layernorm_ba() {}
   explicit layernorm_ba(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~layernorm_ba() {}
+};
+
+class softmax : public kernel_proxy {
+ public:
+  softmax() {}
+  explicit softmax(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~softmax() {}
 };
 
 }  // namespace jd

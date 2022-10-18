@@ -15,6 +15,7 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
 
+#include <glog/logging.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -54,10 +55,12 @@ class jit_eltwise_injector {
   void quantize_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void dequantize_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void linear_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
-  void int8_lut_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void bit8_lut_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void bit16_lut_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void register_table_entries(const std::vector<postop_attr>& postop_attrs);
   void assert_check(const std::vector<postop_attr>& postop_attrs);
-  uint32_t get_int8_lut_term(int int8, const std::vector<postop_attr>& postop_attrs, data_type input_dt);
+  uint32_t get_bit8_lut_term(int integer, const std::vector<postop_attr>& postop_attrs, data_type output_dt);
+  uint32_t get_bit16_lut_term(int integer, const std::vector<postop_attr>& postop_attrs, data_type output_dt);
   std::string get_attr_idx_key(const postop_attr& attr);  // for get the key of alpha_idx,beta_idx,scale_idx map.
 
   void load_table_addr() { h->mov(p_table, l_table); }
@@ -133,10 +136,12 @@ class jit_eltwise_injector {
     tanh_saturation_lbound,
     tanh_pol_table,
     exchange_zmm_low256_high256,
-    int8_lut_term,
-    int8_64,
-    int8_255,
-    select_permt_idx,
+    bit8_lut_term,
+    bit8_64,
+    bit8_255,
+    bit16_lut_term,
+    bit16_32,
+    bit16_255,
     undef_key,
   };
 
