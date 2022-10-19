@@ -772,6 +772,9 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   // this is to sub zero point in fp32 to make the output u8/s8
   if (!is_dynamic_ && append_eltwise_ && (dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
     float zero_point = -1 * static_cast<const float*>(dst_min_->data())[0];
+    if (dst_->dtype() == "s8") {
+      zero_point = 0;
+    }
     po.append_eltwise(dst_scales_[0], algorithm::eltwise_linear, 1., zero_point);
   }
 
