@@ -38,7 +38,9 @@ supported_patterns = [
     'TokenTypeEmbeddingsV1',
     'PositionEmbeddings',
     'PositionEmbeddingsV1',
+    'GenerateSequence',
     'PaddingSequence',
+    'AttentionMaskLengthAdaptiveExpandIndices',
     'MatMulWithBias',
     'LastLayerShape',
     'InteractFeatures',
@@ -52,6 +54,11 @@ supported_patterns = [
     'MatMulWithBiasTanh',
     'MatMulWithBiasRelu',
     'MatMulWithBiasSigmoid',
+    "RestoreHiddenStatesInLengthAdaptiveUpdateIndices",
+    "AttentionOutputLayerNormLengthAdaptiveExpandIndices",
+    "ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements",
+    "ReshapeBeforeRestoreHiddenStates",
+    "ReshapeAfterRestoreHiddenStates",
     'LayerNormWithReduceMean',
     'StartEndLogits',
     'InsertQuantNode',
@@ -76,6 +83,7 @@ def pattern_registry(pattern_type):
     Returns:
         cls: The class of register.
     """
+
     def decorator_pattern(cls):
         if pattern_type in PATTERNS:
             raise ValueError('Cannot have two patterns with the same name')
@@ -86,6 +94,7 @@ def pattern_registry(pattern_type):
 
 
 class Pattern(object):
+
     @abstractmethod
     def __call__(self, model, *args, **kwargs):
         raise NotImplementedError

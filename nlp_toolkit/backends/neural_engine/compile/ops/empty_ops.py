@@ -402,3 +402,13 @@ class MergedEmbeddingbag(Operator):
 class Convolution(Operator):
     def __init__(self):
         super().__init__()
+
+@operator_registry(operator_type='ExpandIndices')
+class ExpandIndices(Operator):
+    def __init__(self):
+        super().__init__()
+
+@operator_registry(operator_type='Tile')
+class Tile(Operator):
+    def __init__(self):
+        super().__init__()

@@ -149,6 +149,30 @@ class InputData(Pattern):
                     },
                     'returns': []
                 },
+                
+                # minilmv2-lat-roberta
+                {
+                    'patterns': {
+                        'in': [[(0, 'input_ids'), (1, 'input_mask') ]],
+                        'out': [[(0, 'Input')]]
+                    },
+                    'search_mode': 'node_name',
+                    'node_names': {
+                        0: 'input_data'
+                    },
+                    'input_tensors': {
+                        0: [[], [[], 0]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            0: [0]
+                        }, {
+                            1: [0]
+                        }
+                        ], [[0, 1], 2]]
+                    },
+                    'returns': []
+                },
 
             ]
         }

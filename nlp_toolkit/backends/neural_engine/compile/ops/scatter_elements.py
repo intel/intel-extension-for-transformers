@@ -17,26 +17,18 @@
 
 from .op import Operator, operator_registry
 from .tensor import Tensor
-from ..graph_utils import list2str
 
 
-# This operation creates a tensor of shape dims and fills it with value.
-# tf.fill(dims, value, name=None)
-@operator_registry(operator_type='Unsqueeze')
-class Unsqueeze(Operator):
+@operator_registry(operator_type='ScatterElements')
+class ScatterElements(Operator):
     def __init__(self):
         super().__init__()
 
     def set_attr(self, framework, node):
         if framework == 'onnxruntime':
-            # ai.onnx v11
-            if len(node.attribute):
-                self._attr['axis'] = list2str(node.attribute[0].ints)
-            # ai.onnx v14
-            else:
-                if len(self._input_tensors[1].data) == 1:
-                   self._attr['axis'] = int(self._input_tensors[1].data)
-                else:
-                   self._attr['axis'] = list2str(self._input_tensors[1].data)
-                self._input_tensors.pop()
+            for attribute in node.attribute:
+                if attribute.name == 'axis':
+                    self._attr['axis'] = attribute.i
+            
+
 

@@ -390,6 +390,7 @@ T StringToNum(const string& str) {
 
 template float StringToNum<float>(const string& str);
 template int64_t StringToNum<int64_t>(const string& str);
+template int StringToNum<int>(const string& str);
 
 template <typename T>
 void PrintToFile(const T* data, const std::string& name, size_t size) {

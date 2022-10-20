@@ -235,7 +235,6 @@ class TestPaddingSequence(unittest.TestCase):
         graph = PaddingSequence()(graph)
         self.assertEqual(7, len(graph.nodes))
         self.assertEqual('-1,12,0,-1', graph.nodes[1].attr['dst_shape'])
-        self.assertEqual('AddV2', graph.nodes[2].op_type)
     
 
     def test_padding_sequence_3(self):

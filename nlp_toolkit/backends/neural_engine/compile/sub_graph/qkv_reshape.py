@@ -112,6 +112,43 @@ class QKVReshape(Pattern):
                     'returns': [7, 0]
                 },
 
+                # shira new model
+                {
+                    'patterns': {
+                        'in': [[(0, 'MatMulWithBias'), (1, 'Shape'), (2, 'Gather'),
+                                (3, 'Unsqueeze'), (4, 'Concat'), (5, 'Reshape')]],
+                        'out': [[(0, 'MatMulWithBias'), (1, 'Reshape')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 0,
+                        1: 5
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            0: [0]
+                        }, {
+                            0: [1]
+                        }, {
+                            0: [2]
+                        }], [[0, 1, 2], 3]],
+                        1: [[{
+                            'input_data': [0]
+                            #0:[0]
+                        }], [[1], 2]],
+                    },
+                    'output_tensors': {
+                        0: [[],[[],1]],
+
+                        1: [[{
+                            5: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [4, 0]
+                },
+
+
+
                 # distil_bert_base
                 {
                     'patterns': {
@@ -137,6 +174,7 @@ class QKVReshape(Pattern):
                     },
                     'returns': [3]
                 },
+
 
                 # geminet
                 {
@@ -187,10 +225,12 @@ class QKVReshape(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping(
                 "QKVReshape", pattern_dict, model)
             if len(new_node_names) != 0:
+
                 for j in range(len(new_node_names)):
+
                     pack_node = ret_old_nodes[j][0]
-                    head_size = int(pack_node.input_tensors[-1].data)
-                    head_num = int(pack_node.input_tensors[-2].data)
+                    head_size = int(pack_node.input_tensors[-1].data) # 32
+                    head_num = int(pack_node.input_tensors[-2].data)  # 12
                     _set_attr(head_num, head_size, new_node_names[j], model)
                     if len(ret_old_nodes[j]) == 2:
                         assert ret_old_nodes[j][1].op_type == 'MatMulWithBias'
@@ -210,10 +250,7 @@ class QKVReshape(Pattern):
         if len(new_node_names) != 0:
             for j in range(len(new_node_names)):
                 reshape_node = ret_old_nodes[j][1]
-                try:
-                    dst_shape = reshape_node.attr['dst_shape']
-                except:
-                    dst_shape = None
+                dst_shape = reshape_node.attr.get('dst_shape', None)
                 if dst_shape != None and dst_shape.split(',')[0] == '0':
                     head_num = int(dst_shape.split(',')[-2])
                     reshape_node_idx = model.get_node_id(new_node_names[j][1])
@@ -224,6 +261,5 @@ class QKVReshape(Pattern):
                 mat_node_idx = model.get_node_id(new_node_names[j][0])
                 model.nodes[mat_node_idx].attr = ret_old_nodes[j][0].attr
 
-            return model
 
         return model

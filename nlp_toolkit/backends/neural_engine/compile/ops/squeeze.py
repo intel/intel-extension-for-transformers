@@ -31,9 +31,18 @@ class Squeeze(Operator):
         if framework == 'tensorflow':
             self._attr['squeeze_dims'] = node.attr['squeeze_dims'].list.i
         if framework == 'onnxruntime':
+            # ai.onnx v11
             if len(node.attribute):
                 axis = node.attribute[0].ints
                 if len(axis) == 1:
                     self._attr['axis'] = axis[0]
                 else:
                     self._attr['axis'] = list2str(axis)
+            # ai.onnx v14
+            else:
+                if len(self._input_tensors[1].data) == 1:
+                   self._attr['axis'] = int(self._input_tensors[1].data)
+                else:
+                   self._attr['axis'] = list2str(self._input_tensors[1].data)
+                self._input_tensors.pop()
+

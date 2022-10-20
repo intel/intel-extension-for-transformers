@@ -84,33 +84,29 @@ class PaddingSequence(Pattern):
                     },
                     'returns': []
                 },
-
                 # geminet, bert_related in huggingface
                 {
                     'patterns': {
                         'in': [[(0, 'Unsqueeze'), (1, 'Unsqueeze'), (2, 'Cast'), (3, 'Sub'),
-                                (4, 'Mul'), (5, 'Add')]],
-                        'out': [[(0, 'AddV2')]]
+                                (4, 'Mul')]],
+                        'out': [[(0, 'PaddingSequence')]]
                     },
                     'search_mode': 'op_type',
                     'node_names': {
-                        0: 5
+                        0: 4
                     },
                     'input_tensors': {
                         0: [[{
-                            5: [0]
-                        }, {
-                            'padding_sequence': [0]
-                        }], [[0, 1], 2]]
+                            'input_data': [-1]
+                        }], [[0], 1]]
                     },
                     'output_tensors': {
                         0: [[{
-                            5: [0]
+                            4: [0]
                         }], [[0], 1]]
                     },
                     'returns': []
                 },
-
                 # distil_bert_base
                 {
                     'patterns': {
@@ -185,7 +181,11 @@ class PaddingSequence(Pattern):
                 input_tensors = [Tensor()]
             output_tensors = [Tensor(name=node_name + ':0', source_op=[node_name], dest_op=[])]
             attr = OrderedDict()
-            attr['dst_shape'] = '-1,' + str(heads_num) + ',0,-1'
+            if not is_lat_model(model):
+                attr['dst_shape'] = '-1,' + str(heads_num) + ',0,-1'
+            else:
+                attr['dst_shape'] = '-1,' + str(1) + ',1,-1'
+
             attr['dims'] = 1
             padding_sequence_node = util.construct_node(node_name,
                                                         'PaddingSequence',
@@ -208,6 +208,13 @@ class PaddingSequence(Pattern):
             else:
                 hidden_size = -1
             return hidden_size
+
+        def is_lat_model(model, p=None):
+            if p == None:
+                p = [[(0, 'TopK'),(1, 'Unsqueeze'),(2, 'Unsqueeze'),(3, 'Expand'),
+                    (4, 'GatherElements')]]
+            match_result = util.search_pattern(p, model)
+            return len(match_result) != 0
 
         pattern_dict = pattern_mapping_config['PaddingSequence'][0]
         model = _make_padding_sequence_node(2, 1024, model)
@@ -237,7 +244,13 @@ class PaddingSequence(Pattern):
                                                                     pattern_dict, model)
 
         if len(new_node_names) != 0:
-            assert hidden_size != -1, "Wrong hidden size in padding_sequence!"
+            assert hidden_size!=-1, "Wrong hidden size in padding_sequence!"
+            ps_attr = model.get_node_by_name('padding_sequence').attr
+            for j in range(len(new_node_names)):
+                ps_node_id = model.get_node_id(new_node_names[j][0])
+                model.nodes[ps_node_id].attr = ps_attr
+            # remove fake node
+            model.remove_nodes(['padding_sequence'])
             return model
         else:
             model.remove_nodes(['padding_sequence'])

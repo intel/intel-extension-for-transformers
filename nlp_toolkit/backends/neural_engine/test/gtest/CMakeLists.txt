@@ -42,6 +42,7 @@ add_library(host_operators SHARED
     ${HOST_SRC_DIR}/src/operators/padding_sequence.cpp
     ${HOST_SRC_DIR}/src/operators/one_hot.cpp
     ${HOST_SRC_DIR}/src/operators/gather.cpp
+    ${HOST_SRC_DIR}/src/operators/gather_elements.cpp
     ${HOST_SRC_DIR}/src/operators/strided_slice.cpp
     ${HOST_SRC_DIR}/src/operators/matmul.cpp
     ${HOST_SRC_DIR}/src/operators/inner_product.cpp
@@ -56,6 +57,8 @@ add_library(host_operators SHARED
     ${HOST_SRC_DIR}/src/operators/convolution.cpp
     ${HOST_SRC_DIR}/src/operators/slice.cpp
     ${HOST_SRC_DIR}/src/operators/group_norm.cpp
+    ${HOST_SRC_DIR}/src/operators/range.cpp
+    ${HOST_SRC_DIR}/src/operators/expand_indices.cpp
     ${HOST_SRC_DIR}/src/sparse_operators/sparse_inner_product.cpp
 )
 
@@ -115,6 +118,9 @@ file(GLOB OPS_TEST_CASES_SRC
     test_convolution_op.cpp
     test_group_norm_op.cpp
     test_sparse_inner_product.cpp
+    test_range_op.cpp
+    test_expand_indices_op.cpp
+    test_gather_element_op.cpp
 )
 
 function(register_gtest_func exe src)
