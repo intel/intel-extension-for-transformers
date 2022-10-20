@@ -122,13 +122,11 @@ bool check_result(const test_params_t& t) {
     auto size2 = q.op_desc.tensor_descs()[3].size();
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
-    float eps = 5e-3;
     const auto& dst_type = p.op_desc.tensor_descs()[3].dtype();
     if (dst_type == dt::bf16) {
-      eps = 1.0;
-      return compare_data<bfloat16_t>(buf1, size1, buf2, size2, eps);
+      return compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-2);
     }
-    return compare_data<float>(buf1, size1, buf2, size2, eps);
+    return compare_data<float>(buf1, size1, buf2, size2, 1e-2);
   }
   return false;
 }

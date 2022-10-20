@@ -17,6 +17,7 @@
 namespace jd {
 
 bool layernorm_ba_kd_t::init() {
+  if (!isa_available(avx512_core)) return false;
   auto tensor_desc = op_desc_.tensor_descs();
   assert(tensor_desc.size() == 3);
   // TODO(zhe1wang): support more data_type.

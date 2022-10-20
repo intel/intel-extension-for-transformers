@@ -26,55 +26,53 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-int gert_reduce_row_num(const std::vector<tensor_desc>& ts_descs) {
-  int row = 1;
-  for (int i = 0; i < ts_descs[0].shape().size() - 1; i++) row *= ts_descs[0].shape()[i];
-  return row;
-}
-
-int get_element_num(const operator_desc& op_desc) {
+void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   auto tensor_desc = op_desc.tensor_descs();
-  int row = gert_reduce_row_num(tensor_desc);
+  int row = tensor_desc[0].reduce_rows();
   int col = tensor_desc[0].shape().back();
-  return row * col;
-}
+  auto src_dt = tensor_desc[0].dtype();
+  LOG_IF(FATAL, src_dt != data_type::fp32);
+  auto dst_dt = tensor_desc[1].dtype();
 
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rf_data) {
-  auto tensor_desc = op_desc.tensor_descs();
-  int row = gert_reduce_row_num(tensor_desc);
-  int col = tensor_desc[0].shape().back();
-  float* dst = nullptr;
-  float* alpha = nullptr;
-  float* beta = nullptr;
+  float* src = reinterpret_cast<float*>(const_cast<void*>(rt_data[0]));
+  float* alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
+  float* beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
 
-  dst = reinterpret_cast<float*>(const_cast<void*>(rf_data[0]));
-  alpha = reinterpret_cast<float*>(const_cast<void*>(rf_data[1]));
-  beta = reinterpret_cast<float*>(const_cast<void*>(rf_data[2]));
+  void* dst_data = const_cast<void*>(rt_data[1]);
+  auto dst_fp32 = static_cast<float*>(dst_data);
+  auto dst_u8 = static_cast<uint8_t*>(dst_data);
+  auto dst_s8 = static_cast<int8_t*>(dst_data);
+
   std::vector<float> v_mean, v_var;
   for (int i = 0; i < col; i++) {
     // calculate mean.
     float mean = 0;
-    for (int j = 0; j < row; j++) mean += dst[j * col + i];
+    for (int j = 0; j < row; j++) mean += src[j * col + i];
     mean /= row;
     v_mean.push_back(mean);
     // calculate var
     float var = 0;
-    for (int j = 0; j < row; j++) var += (dst[j * col + i] - mean) * (dst[j * col + i] - mean);
+    for (int j = 0; j < row; j++) var += (src[j * col + i] - mean) * (src[j * col + i] - mean);
     var /= row;
     v_var.push_back(var);
     var += 1e-5;
     var = sqrt(var);
     var = 1 / var;
     // calculate layernorm.
-    for (int j = 0; j < row; j++) dst[j * col + i] = (dst[j * col + i] - mean) * var;
-
-    // affine.
-    for (int j = 0; j < row; j++) dst[j * col + i] = dst[j * col + i] * alpha[j] + beta[j];
+    for (int j = 0; j < row; j++) {
+      int dst_idx = j * col + i;
+      float value = (src[dst_idx] - mean) * var;
+      value = alpha[j] * value + beta[j];
+      value = apply_postop_list(value, op_desc.apply_postops_list());
+      if (dst_dt == data_type::fp32) {
+        dst_fp32[dst_idx] = static_cast<float>(value);
+      } else if (dst_dt == data_type::s8) {
+        dst_s8[dst_idx] = static_cast<int8_t>(value);
+      } else if (dst_dt == data_type::u8) {
+        dst_u8[dst_idx] = static_cast<uint8_t>(value);
+      }
+    }
   }
-
-  // apply postop.
-  for (int i = 0; i < row; i++)
-    for (int j = 0; j < col; j++) dst[i * col + j] = apply_postop_list(dst[i * col + j], op_desc.apply_postops_list());
 }
 
 bool check_result(const test_params_t& t) {
@@ -96,30 +94,26 @@ bool check_result(const test_params_t& t) {
 
   if (!t.expect_to_fail) {
     get_true_data(q.op_desc, q.data);
-    int num = get_element_num(q.op_desc);
-    float err_rate = 1e-3;
-    auto buf2 = q.data[0];
-    void* buf1;
-    auto dtype = p.op_desc.tensor_descs()[1].dtype();
+    auto buf1 = p.data[1];
+    auto size1 = p.op_desc.tensor_descs()[1].size();
+    auto buf2 = q.data[1];
+    auto size2 = p.op_desc.tensor_descs()[1].size();
+    auto dst_type = p.op_desc.tensor_descs()[1].dtype();
     EXPECT_NE(buf1, buf2);
-    if (dtype == jd::data_type::fp32) buf1 = const_cast<void*>(p.data[1]);
-    if (dtype == jd::data_type::u8 || dtype == jd::data_type::s8) {
-      buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
-      auto int8_buf = const_cast<void*>(p.data[1]);
-      for (int i = 0; i < num; i++) {
-        if (dtype == jd::data_type::u8)
-          *(reinterpret_cast<float*>(buf1) + i) = uint8_2_int32(*(reinterpret_cast<uint8_t*>(int8_buf) + i));
-        if (dtype == jd::data_type::s8)
-          *(reinterpret_cast<float*>(buf1) + i) = *(reinterpret_cast<int8_t*>(int8_buf) + i);
-      }
-      free(int8_buf);
+    bool ans = false;
+    if (dst_type == data_type::fp32) {
+      ans = compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+    } else if (dst_type == data_type::u8) {
+      ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-2);
+    } else if (dst_type == data_type::s8) {
+      ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1e-2);
     }
-    auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
     free(const_cast<void*>(p.data[0]));
-    free(buf1);
+    free(const_cast<void*>(p.data[1]));
     free(const_cast<void*>(q.data[0]));
     free(const_cast<void*>(q.data[1]));
     free(const_cast<void*>(q.data[2]));
+    free(const_cast<void*>(q.data[3]));
     return ans;
   }
   free(const_cast<void*>(p.data[0]));
@@ -127,6 +121,7 @@ bool check_result(const test_params_t& t) {
   free(const_cast<void*>(q.data[0]));
   free(const_cast<void*>(q.data[1]));
   free(const_cast<void*>(q.data[2]));
+  free(const_cast<void*>(q.data[3]));
   return false;
 }
 
@@ -147,11 +142,13 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
                                          std::unordered_map<std::string, std::string> op_attrs,
                                          const std::vector<postop_attr>& postop_attr = {}) {
   // malloc memory
-  int row = gert_reduce_row_num(ts_descs);
+  int row = ts_descs[0].reduce_rows();
   int col = ts_descs[0].shape().back();
   int num = row * col;
   void* src = nullptr;
   void* dst = nullptr;
+  void* src_ref = nullptr;
+  void* dst_ref = nullptr;
   memo_mode MALLOC = memo_mode::MALLOC;
   memo_mode MEMSET = memo_mode::MEMSET;
 
@@ -160,7 +157,10 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
   src = sparselib_ut_memo(src, num, in_dt, MALLOC, true);
   dst = sparselib_ut_memo(dst, num, out_dt, MALLOC, true);
-  float* src_ref = reinterpret_cast<float*>(aligned_alloc(64, num * sizeof(float)));
+  dst = sparselib_ut_memo(dst, num, out_dt, MEMSET);
+  src_ref = sparselib_ut_memo(src_ref, num, in_dt, MALLOC, true);
+  dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MALLOC, true);
+  dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MEMSET);
   float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
   float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
 
@@ -175,26 +175,27 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
       unsigned int seed_tmp = seed + i;
       float rand_val = rand_r(&seed_tmp) % 256 - 128 + rand_float_postfix();
       assign_val(src, in_dt, rand_val, i * col + j);
-      src_ref[i * col + j] = rand_val;
+      assign_val(src_ref, in_dt, rand_val, i * col + j);
     }
   }
 
-  std::vector<const void*> rf_data1;
-  std::vector<const void*> rf_data2;
+  std::vector<const void*> rt_data1;
+  std::vector<const void*> rt_data2;
 
-  rf_data1.emplace_back(src);
-  rf_data1.emplace_back(dst);
-  rf_data1.emplace_back(alpha);
-  rf_data1.emplace_back(beta);
-  rf_data2.emplace_back(src_ref);
-  rf_data2.push_back(alpha);
-  rf_data2.push_back(beta);
+  rt_data1.emplace_back(src);
+  rt_data1.emplace_back(dst);
+  rt_data1.emplace_back(alpha);
+  rt_data1.emplace_back(beta);
+  rt_data2.emplace_back(src_ref);
+  rt_data2.emplace_back(dst_ref);
+  rt_data2.push_back(alpha);
+  rt_data2.push_back(beta);
 
   operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                                   op_attrs, postop_attr);
 
-  op_args_t p = {layernorm_ba_desc, rf_data1};
-  op_args_t q = {layernorm_ba_desc, rf_data2};
+  op_args_t p = {layernorm_ba_desc, rt_data1};
+  op_args_t q = {layernorm_ba_desc, rt_data2};
   return {p, q};
 }
 
@@ -208,7 +209,6 @@ static auto case_func = []() {
   tensor_desc data_desc4 = {{768, 256}, jd::data_type::s8, jd::format_type::ba};
   tensor_desc affine_data_attr = {{}, jd::data_type::fp32, jd::format_type::ba};
 
-  postop_attr fp32_gelu_attr = {data_type::fp32, postop_type::eltwise, postop_alg::gelu};
   postop_attr s8_quantize = {data_type::s8,       postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0,
                              rand_float_postfix()};
   postop_attr u8_quantize = {data_type::u8,       postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0,

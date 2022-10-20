@@ -18,10 +18,11 @@
 #include "param_types.hpp"
 #include "impl_list_item.hpp"
 #include "kernels/softmax.hpp"
+#include "kernels/softmax_ref.hpp"
 
 namespace jd {
 static const std::map<kernel_prop, std::vector<impl_list_item_t>> softmax_impl_list_map = {
-    {kernel_prop::forward_inference, {CPU_INSTANCE(softmax_k_t), NULL_INSTANCE()}},
+    {kernel_prop::forward_inference, {CPU_INSTANCE(softmax_k_t), CPU_INSTANCE(softmax_ref_k_t), NULL_INSTANCE()}},
 };
 
 const std::vector<impl_list_item_t>* get_softmax_impl_list(const operator_desc& op_desc) {

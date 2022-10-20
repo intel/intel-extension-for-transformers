@@ -55,6 +55,7 @@ void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  // NOLI
 // Part1: class spmm_vnni_kd_t
 
 bool spmm_vnni_kd_t::init() {
+  if (!isa_available(avx512_core_vnni)) return false;
   using dt = jd::data_type;
   const auto& wei_desc = op_desc_.tensor_descs()[ssd::WEI];
   const auto& src_desc = op_desc_.tensor_descs()[ssd::SRC];

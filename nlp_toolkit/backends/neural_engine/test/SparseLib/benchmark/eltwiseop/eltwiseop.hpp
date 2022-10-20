@@ -64,6 +64,10 @@ class eltwiseop_bench : public kernel_bench {
     eltwiseop_desc eltwiseop_desc(args.first.op_desc);
     kp = std::make_shared<eltwiseop>(eltwiseop_desc);
   }
+  template <typename T>
+  void cast_to_float_array(const void* src, float* dst, int size);
+  template <typename T>
+  void cast_from_float_array(float* src, void* dst, int size);
 };
 }  // namespace jd
 

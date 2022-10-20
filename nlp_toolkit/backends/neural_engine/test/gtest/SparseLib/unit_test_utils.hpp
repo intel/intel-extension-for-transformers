@@ -33,7 +33,8 @@ using bfloat16_t = jd::bfloat16_t;
 bfloat16_t fp32_2_bf16(float float_val) { return (*reinterpret_cast<unsigned int*>(&float_val)) >> 16; }
 
 float bf16_2_fp32(bfloat16_t bf16_val) {
-  unsigned int ans = bf16_val << 16;
+  unsigned int ans = bf16_val;
+  ans = ans << 16;
   return *reinterpret_cast<float*>(&ans);
 }
 

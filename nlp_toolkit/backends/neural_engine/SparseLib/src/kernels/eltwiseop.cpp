@@ -17,6 +17,7 @@
 namespace jd {
 
 bool eltwiseop_kd_t::init() {
+  if (!isa_available(avx512_core)) return false;
   params_.postop_attrs = op_desc_.apply_postops_list();
 
   int nthr = op_desc_.impl_nthr();
@@ -74,4 +75,3 @@ bool eltwiseop_k_t::execute(const std::vector<const void*>& rt_data) const {
 }
 
 }  // namespace jd
-

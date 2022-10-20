@@ -16,6 +16,7 @@
 #define ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_
 #include <stdlib.h>
 
+#include <atomic>
 #include <algorithm>
 #include <chrono>  // NOLINT
 #include <limits>
@@ -34,11 +35,8 @@ namespace jd {
 typedef uint16_t bfloat16_t;  // NOLINT
 typedef int64_t dim_t;
 
-template <typename T>
-T cast_to(float x);
-
-template <>
-bfloat16_t cast_to(float x);
+template <typename src_t, typename dst_t>
+dst_t cast_to(src_t x);
 
 float make_fp32(bfloat16_t x);
 
@@ -48,7 +46,7 @@ template <typename T>
 void init_vector(T* v, int num_size, float bound1 = -10, float bound2 = 10, int seed = 5489u);
 
 template <typename T>
-bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, T eps = static_cast<T>(1e-6));
+bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, float eps = 1e-6);
 
 float time(const std::string& state);
 
@@ -68,8 +66,6 @@ template <typename T>
 std::vector<T> split_str(const std::string& s, const char& delim = ',');
 
 std::string join_str(const std::vector<std::string>& ss, const std::string& delim = ",");
-
-bool init_amx();
 
 /**
  * @brief Check if every element in a sub matrix is zero
@@ -92,6 +88,42 @@ float get_relu(float x, float alpha);
 int get_quantize(float x, float alpha, float scale, data_type dt);
 float get_dequantize(float x, float alpha, float scale);
 float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs);
+
+// A setting (basically a value) that can be set() multiple times until the
+// time first time the get() method is called. The set() method is expected to
+// be as expensive as a busy-waiting spinlock. The get() method is expected to
+// be asymptotically as expensive as a single lock-prefixed memory read. The
+// get() method also has a 'soft' mode when the setting is not locked for
+// re-setting. This is used for testing purposes.
+template <typename T>
+struct set_once_before_first_get_setting_t {
+ private:
+  T value_;
+  std::atomic<unsigned> state_;
+  enum : unsigned { idle = 0, busy_setting = 1, locked = 2 };
+
+ public:
+  explicit set_once_before_first_get_setting_t(T init) : value_{init}, state_{idle} {}
+
+  bool set(T new_value);
+
+  T get(bool soft = false) {
+    if (!soft && state_.load() != locked) {
+      while (true) {
+        unsigned expected = idle;
+        if (state_.compare_exchange_weak(expected, locked)) break;
+        if (expected == locked) break;
+      }
+    }
+    return value_;
+  }
+};
+
+template <typename T>
+void cast_to_float_array(const void* src, std::vector<float>* dst, int size);
+
+template <typename T>
+void cast_from_float_array(std::vector<float> src, void* dst, int size);
 
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_

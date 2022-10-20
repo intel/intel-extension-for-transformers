@@ -59,35 +59,47 @@ bench_res_t softmax_bench::set_config(int argc, char** argv) {
 void softmax_bench::get_true_data() {
   auto op_desc = args.second.op_desc;
   auto rf_data = args.second.rt_data;
-  auto tensor_desc = op_desc.tensor_descs();
-  float* src = reinterpret_cast<float*>(const_cast<void*>(rf_data[0]));
-  float* dst = reinterpret_cast<float*>(const_cast<void*>(rf_data[1]));
-  auto append_op_attr = op_desc.apply_postops_list();
-  auto tensor_shape = op_desc.tensor_descs()[0].shape();
-  int row = 1, col = tensor_shape.back();
-  int dim = tensor_shape.size();
-  if (dim > 1) {
-    for (int i = 0; i < dim - 1; i++) row *= tensor_shape[i];
-  }
+  auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rf_data[0]));
+  auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rf_data[0]));
+  auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rf_data[1]));
+  auto postop_lists = op_desc.apply_postops_list();
+  auto src_tensor = op_desc.tensor_descs()[0];
+  auto src_dt = src_tensor.dtype();
+  auto tensor_shape = src_tensor.shape();
+  int row = src_tensor.reduce_rows();
+  int col = tensor_shape.back();
+  std::vector<float> float_dst_data(row * col, 0);
   for (int i = 0; i < row; i++) {
     // step1. find max
-    float max = -1;
-    for (int j = 0; j < col; j++) max = src[i * col + j] > max ? src[i * col + j] : max;
+    float max = static_cast<float>(src_u8[0]);
+    for (int j = 0; j < col; j++) {
+      int src_idx = i * col + j;
+      if (src_dt == jd::data_type::s8) {
+        max = static_cast<float>(src_s8[src_idx]) > max ? static_cast<float>(src_s8[src_idx]) : max;
+      } else {
+        max = static_cast<float>(src_u8[src_idx]) > max ? static_cast<float>(src_u8[src_idx]) : max;
+      }
+    }
     // get e^M
-    float one_div_exp_M = 1.0 / get_exp(apply_postop_list(max, append_op_attr));
+    float one_div_exp_M = 1.0 / get_exp(apply_postop_list(max, postop_lists));
     // step2. compute sum of exp
     float exp_sum = 0;
     for (int j = 0; j < col; j++) {
-      auto dq = apply_postop_list(src[i * col + j] - max, append_op_attr);
-      dq = get_exp(dq) * one_div_exp_M;
-      dst[i * col + j] = dq;
-      exp_sum += dq;
+      float value = 0;
+      if (src_dt == jd::data_type::s8) {
+        value = apply_postop_list(static_cast<float>(src_s8[i * col + j] - max), postop_lists);
+      } else {
+        value = apply_postop_list(static_cast<float>(src_u8[i * col + j] - max), postop_lists);
+      }
+      value = get_exp(value) * one_div_exp_M;
+      float_dst_data[i * col + j] = value;
+      exp_sum += value;
     }
 
-    auto scale = 1 / exp_sum;
+    float scale = 1 / exp_sum;
 
     // step3. compute softmax
-    for (int j = 0; j < col; j++) dst[i * col + j] = dst[i * col + j] * scale;
+    for (int j = 0; j < col; j++) dst[i * col + j] = make_bf16(float_dst_data[i * col + j] * scale);
   }
 }
 
@@ -95,34 +107,17 @@ bool softmax_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
   get_true_data();
-
-  int num = get_element_num(q.op_desc);
-  void* buf1;
+  auto buf1 = p.rt_data[1];
+  auto size1 = p.op_desc.tensor_descs()[1].size();
   auto buf2 = q.rt_data[1];
-  auto dtype = q.op_desc.tensor_descs()[1].dtype();
-  float err_rate = 1e-1;
-  if (dtype == jd::data_type::bf16) {
-    buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
-    auto bf16_buf1 = const_cast<void*>(p.rt_data[1]);
-    for (int i = 0; i < num; i++) {
-      *(reinterpret_cast<float*>(buf1) + i) = bf16_2_fp32(*(reinterpret_cast<bfloat16_t*>(bf16_buf1) + i));
-    }
-  } else if (dtype == jd::data_type::s8 || dtype == jd::data_type::u8) {
-    buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
-    auto int8_buf1 = const_cast<void*>(p.rt_data[1]);
-    if (dtype == jd::data_type::u8) {
-      for (int i = 0; i < num; i++)
-        *(reinterpret_cast<float*>(buf1) + i) = uint8_2_int32(*(reinterpret_cast<uint8_t*>(int8_buf1) + i));
-    } else {
-      for (int i = 0; i < num; i++) *(reinterpret_cast<float*>(buf1) + i) = *(reinterpret_cast<int8_t*>(int8_buf1) + i);
-    }
-  }
-  auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
+  auto size2 = q.op_desc.tensor_descs()[1].size();
+  bool ans = false;
+  auto err_rate = make_bf16(0.1);
+  ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, err_rate);
   free(const_cast<void*>(p.rt_data[0]));
   free(const_cast<void*>(p.rt_data[1]));
   free(const_cast<void*>(q.rt_data[0]));
   free(const_cast<void*>(q.rt_data[1]));
-  free(buf1);
   return ans;
 }
 
@@ -130,36 +125,33 @@ void softmax_bench::gen_case() {
   operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs,
                              postop_attrs);
 
-  void* src = nullptr;
-  void* dst = nullptr;
-  memo_mode MALLOC = memo_mode::MALLOC;
-  memo_mode MEMSET = memo_mode::MEMSET;
 
   int num = get_element_num(softmax_desc);
+  void* src = nullptr;
+  void* dst = nullptr;
+  void* src_ref = nullptr;
+  void* dst_ref = nullptr;
+  memo_mode MALLOC = memo_mode::MALLOC;
+  memo_mode MEMSET = memo_mode::MEMSET;
 
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
 
   src = memo_op(src, num, in_dt, MALLOC);
   dst = memo_op(dst, num, out_dt, MALLOC);
-  memo_op(dst, num, out_dt, MEMSET);
-
-  float* src_ref = reinterpret_cast<float*>(malloc(num * sizeof(float)));
-  float* dst_ref = reinterpret_cast<float*>(malloc(num * sizeof(float)));
+  dst = memo_op(dst, num, out_dt, MEMSET);
+  src_ref = memo_op(src_ref, num, in_dt, MALLOC);
+  dst_ref = memo_op(dst_ref, num, out_dt, MALLOC);
+  dst_ref = memo_op(dst_ref, num, out_dt, MEMSET);
 
   const unsigned int seed = 667095;
-  memset(dst_ref, 0, num * sizeof(float));
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
     float rand_val = rand_r(&seed_tmp) % 256 - 128;
     assign_val(src, in_dt, rand_val, i);
-    if (in_dt == data_type::u8)
-      src_ref[i] = *(reinterpret_cast<uint8_t*>(src) + i);
-    else if (in_dt == data_type::s8)
-      src_ref[i] = *(reinterpret_cast<int8_t*>(src) + i);
-    else
-      src_ref[i] = rand_val;
+    assign_val(src_ref, in_dt, rand_val, i);
   }
+
   std::vector<const void*> rf_data1;
   std::vector<const void*> rf_data2;
 

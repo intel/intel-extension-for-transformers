@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_:
+#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_
 
 #include <vector>

@@ -22,14 +22,19 @@
 #include <iostream>
 
 namespace jd {
-template <typename T>
-T cast_to(float x) {
-  return static_cast<T>(x);
+template <typename src_t, typename dst_t>
+dst_t cast_to(src_t x) {
+  return static_cast<dst_t>(x);
 }
 
 template <>
-bfloat16_t cast_to(float x) {
+bfloat16_t cast_to<float, bfloat16_t>(float x) {
   return make_bf16(x);
+}
+
+template <>
+float cast_to<bfloat16_t, float>(bfloat16_t x) {
+  return make_fp32(x);
 }
 
 float make_fp32(bfloat16_t x) {
@@ -51,7 +56,7 @@ void init_vector(T* v, int num_size, float range1, float range2, int seed) {
   std::mt19937 gen(seed);
   std::uniform_real_distribution<float> u(low_value, range2);
   for (int i = 0; i < num_size; ++i) {
-    v[i] = cast_to<T>(u(gen));
+    v[i] = cast_to<T, float>(u(gen));
   }
 }
 template void init_vector<float>(float*, int, float, float, int);
@@ -61,7 +66,7 @@ template void init_vector<int8_t>(int8_t*, int, float, float, int);
 template void init_vector<bfloat16_t>(bfloat16_t*, int, float, float, int);
 
 template <typename T>
-bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, T eps) {
+bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, float eps) {
   if (buf1 == buf2) {
     return false;
   }
@@ -71,20 +76,22 @@ bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t siz
   const auto& buf1_data = static_cast<const T*>(buf1);
   const auto& buf2_data = static_cast<const T*>(buf2);
   for (int64_t i = 0; i < size1; ++i) {
-    auto err = fabs(cast_to<float>(buf1_data[i]) - cast_to<float>(buf2_data[i])) /
-               std::max(fabs(cast_to<float>(buf2_data[i])), 1.0);
+    // we compare float relative error ratio here
+    auto err = fabs(cast_to<T, float>(buf1_data[i]) - cast_to<T, float>(buf2_data[i])) /
+               std::max(fabs(cast_to<T, float>(buf2_data[i])), 1.0);
     if (err > eps) {
-      LOG(ERROR) << cast_to<float>(buf1_data[i]) << "vs" << cast_to<float>(buf2_data[i]) << " idx=" << i << std::endl;
+      LOG(ERROR) << cast_to<T, float>(buf1_data[i]) << "vs" << cast_to<T, float>(buf2_data[i]) << " idx=" << i
+                 << std::endl;
       return false;
     }
   }
   return true;
 }
 template bool compare_data<float>(const void*, int64_t, const void*, int64_t, float);
-template bool compare_data<int32_t>(const void*, int64_t, const void*, int64_t, int32_t);
-template bool compare_data<uint8_t>(const void*, int64_t, const void*, int64_t, uint8_t);
-template bool compare_data<int8_t>(const void*, int64_t, const void*, int64_t, int8_t);
-template bool compare_data<bfloat16_t>(const void*, int64_t, const void*, int64_t, bfloat16_t);
+template bool compare_data<int32_t>(const void*, int64_t, const void*, int64_t, float);
+template bool compare_data<uint8_t>(const void*, int64_t, const void*, int64_t, float);
+template bool compare_data<int8_t>(const void*, int64_t, const void*, int64_t, float);
+template bool compare_data<bfloat16_t>(const void*, int64_t, const void*, int64_t, float);
 
 float time(const std::string& state) {
   static auto time_axis = std::chrono::microseconds();
@@ -143,39 +150,6 @@ std::string join_str(const std::vector<std::string>& ss, const std::string& deli
     ans += ss[i];
   }
   return ans;
-}
-
-bool init_amx() {
-#ifdef SPARSE_LIB_USE_AMX
-
-#define XFEATURE_XTILECFG 17
-#define XFEATURE_XTILEDATA 18
-#define XFEATURE_MASK_XTILECFG (1 << XFEATURE_XTILECFG)
-#define XFEATURE_MASK_XTILEDATA (1 << XFEATURE_XTILEDATA)
-#define XFEATURE_MASK_XTILE (XFEATURE_MASK_XTILECFG | XFEATURE_MASK_XTILEDATA)
-#define ARCH_GET_XCOMP_PERM 0x1022
-#define ARCH_REQ_XCOMP_PERM 0x1023
-
-  unsigned long bitmask = 0;                                             // NOLINT
-  long status = syscall(SYS_arch_prctl, ARCH_GET_XCOMP_PERM, &bitmask);  // NOLINT
-  if (0 != status) return false;
-  if (bitmask & XFEATURE_MASK_XTILEDATA) return true;
-
-  status = syscall(SYS_arch_prctl, ARCH_REQ_XCOMP_PERM, XFEATURE_XTILEDATA);
-  if (0 != status)
-    return false;  // XFEATURE_XTILEDATA setup is failed, TMUL usage is not
-                   // allowed
-  status = syscall(SYS_arch_prctl, ARCH_GET_XCOMP_PERM, &bitmask);
-
-  // XFEATURE_XTILEDATA setup is failed, can't use TMUL
-  if (0 != status || !(bitmask & XFEATURE_MASK_XTILEDATA)) return false;
-
-  // XFEATURE_XTILEDATA set successfully, TMUL usage is allowed
-
-  return true;
-#else
-  return false;
-#endif
 }
 
 template <typename T>
@@ -272,5 +246,46 @@ float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) 
   }
   return value;
 }
+
+template <typename T>
+bool set_once_before_first_get_setting_t<T>::set(T new_value) {
+  if (state_.load() == locked) return false;
+
+  while (true) {
+    unsigned expected = idle;
+    if (state_.compare_exchange_weak(expected, busy_setting)) break;
+    if (expected == locked) return false;
+  }
+
+  value_ = new_value;
+  state_.store(locked);
+  return true;
+}
+
+template <typename T>
+void cast_to_float_array(const void* src, std::vector<float>* dst, int size) {
+  T* src_typed = reinterpret_cast<T*>(const_cast<void*>(src));
+  for (int i = 0; i < size; ++i) {
+    (*dst)[i] = cast_to<T, float>(src_typed[i]);
+  }
+}
+template void cast_to_float_array<float>(const void*, std::vector<float>*, int);
+template void cast_to_float_array<int>(const void*, std::vector<float>*, int);
+template void cast_to_float_array<int8_t>(const void*, std::vector<float>*, int);
+template void cast_to_float_array<uint8_t>(const void*, std::vector<float>*, int);
+template void cast_to_float_array<bfloat16_t>(const void*, std::vector<float>*, int);
+
+template <typename T>
+void cast_from_float_array(std::vector<float> src, void* dst, int size) {
+  T* dst_typed = reinterpret_cast<T*>(dst);
+  for (int i = 0; i < size; ++i) {
+    dst_typed[i] = cast_to<float, T>(src[i]);
+  }
+}
+template void cast_from_float_array<float>(std::vector<float>, void*, int);
+template void cast_from_float_array<int>(std::vector<float>, void*, int);
+template void cast_from_float_array<int8_t>(std::vector<float>, void*, int);
+template void cast_from_float_array<uint8_t>(std::vector<float>, void*, int);
+template void cast_from_float_array<bfloat16_t>(std::vector<float>, void*, int);
 
 }  // namespace jd

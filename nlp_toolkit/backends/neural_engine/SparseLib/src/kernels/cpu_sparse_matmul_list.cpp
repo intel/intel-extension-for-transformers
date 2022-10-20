@@ -20,6 +20,7 @@
 #include "kernels/spmm_amx_bf16_x16.hpp"
 #include "kernels/spmm_vnni.hpp"
 #include "kernels/spmm_avx512f.hpp"
+#include "kernels/spmm_ref.hpp"
 #include "param_types.hpp"
 
 namespace jd {
@@ -37,13 +38,17 @@ using map_key_t = std::tuple<kernel_prop, dt, dt, dt>;
  */
 static const std::map<map_key_t, std::vector<impl_list_item_t>> impl_list_map = {
     {{kernel_prop::forward_inference, dt::bf16, dt::bf16, dt::fp32},
-     {CPU_INSTANCE(spmm_amx_bf16_x16_k_t), NULL_INSTANCE()}},
+     {CPU_INSTANCE(spmm_amx_bf16_x16_k_t), CPU_INSTANCE(spmm_ref_k_t), NULL_INSTANCE()}},
     {{kernel_prop::forward_inference, dt::bf16, dt::bf16, dt::bf16},
-     {CPU_INSTANCE(spmm_amx_bf16_x16_k_t), NULL_INSTANCE()}},
-    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::s8}, {CPU_INSTANCE(spmm_vnni_k_t), NULL_INSTANCE()}},
-    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::fp32}, {CPU_INSTANCE(spmm_vnni_k_t), NULL_INSTANCE()}},
-    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::u8}, {CPU_INSTANCE(spmm_vnni_k_t), NULL_INSTANCE()}},
-    {{kernel_prop::forward_inference, dt::fp32, dt::fp32, dt::fp32}, {CPU_INSTANCE(spmm_avx512f_k_t), NULL_INSTANCE()}},
+     {CPU_INSTANCE(spmm_amx_bf16_x16_k_t), CPU_INSTANCE(spmm_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::s8},
+     {CPU_INSTANCE(spmm_vnni_k_t), CPU_INSTANCE(spmm_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::fp32},
+     {CPU_INSTANCE(spmm_vnni_k_t), CPU_INSTANCE(spmm_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::s8, dt::u8, dt::u8},
+     {CPU_INSTANCE(spmm_vnni_k_t), CPU_INSTANCE(spmm_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::fp32, dt::fp32, dt::fp32},
+     {CPU_INSTANCE(spmm_avx512f_k_t), CPU_INSTANCE(spmm_ref_k_t), NULL_INSTANCE()}},
 };
 
 const std::vector<impl_list_item_t>* get_sparse_matmul_impl_list(const operator_desc& op_desc) {

@@ -25,6 +25,7 @@
 #include "kernels/spmm_types.hpp"
 #include "operator_desc.hpp"
 #include "amx_utils.hpp"
+#include "cpu_isa.hpp"
 
 namespace jd {
 // By convention,

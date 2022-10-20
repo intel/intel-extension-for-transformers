@@ -26,16 +26,75 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rf_data) {
-  float* src = reinterpret_cast<float*>(const_cast<void*>(rf_data[0]));
-  float* dst = reinterpret_cast<float*>(const_cast<void*>(rf_data[1]));
-
-  int num = get_element_num(op_desc);
-  auto attr = op_desc.apply_postops_list();
-  for (int i = 0; i < num; i++) {
-    dst[i] = src[i];
-    dst[i] = apply_postop_list(dst[i], attr);
+template <typename T>
+void cast_to_float_array(const void* src, float* dst, int size) {
+  T* src_typed = reinterpret_cast<T*>(const_cast<void*>(src));
+  for (int i = 0; i < size; ++i) {
+    dst[i] = static_cast<float>(src_typed[i]);
   }
+}
+
+template <>
+void cast_to_float_array<bfloat16_t>(const void* src, float* dst, int size) {
+  bfloat16_t* src_typed = reinterpret_cast<bfloat16_t*>(const_cast<void*>(src));
+  for (int i = 0; i < size; ++i) {
+    dst[i] = make_fp32(src_typed[i]);
+  }
+}
+
+template <typename T>
+void cast_from_float_array(float* src, void* dst, int size) {
+  T* dst_typed = reinterpret_cast<T*>(dst);
+  for (int i = 0; i < size; ++i) {
+    dst_typed[i] = static_cast<T>(src[i]);
+  }
+}
+
+template <>
+void cast_from_float_array<bfloat16_t>(float* src, void* dst, int size) {
+  bfloat16_t* dst_typed = reinterpret_cast<bfloat16_t*>(dst);
+  for (int i = 0; i < size; ++i) {
+    dst_typed[i] = make_bf16(src[i]);
+  }
+}
+
+void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+  auto src_tensor = op_desc.tensor_descs()[0];
+  auto dst_tensor = op_desc.tensor_descs()[1];
+  int size = src_tensor.size();
+  auto src_dt = src_tensor.dtype();
+  auto dst_dt = dst_tensor.dtype();
+
+  const void* src = rt_data[0];
+  void* dst = const_cast<void*>(rt_data[1]);
+  float* src_fp32 = static_cast<float*>(malloc(size * sizeof(float)));
+  if (src_dt == jd::data_type::s8) {
+    cast_to_float_array<int8_t>(src, src_fp32, size);
+  } else if (src_dt == jd::data_type::u8) {
+    cast_to_float_array<uint8_t>(src, src_fp32, size);
+  } else if (src_dt == jd::data_type::bf16) {
+    cast_to_float_array<bfloat16_t>(src, src_fp32, size);
+  } else if (src_dt == jd::data_type::s32) {
+    cast_to_float_array<int>(src, src_fp32, size);
+  } else if (src_dt == jd::data_type::fp32) {
+    cast_to_float_array<float>(src, src_fp32, size);
+  }
+  auto attr = op_desc.apply_postops_list();
+  for (int i = 0; i < size; i++) {
+    src_fp32[i] = apply_postop_list(src_fp32[i], attr);
+  }
+  if (dst_dt == jd::data_type::s8) {
+    cast_from_float_array<int8_t>(src_fp32, dst, size);
+  } else if (dst_dt == jd::data_type::u8) {
+    cast_from_float_array<uint8_t>(src_fp32, dst, size);
+  } else if (dst_dt == jd::data_type::bf16) {
+    cast_from_float_array<bfloat16_t>(src_fp32, dst, size);
+  } else if (dst_dt == jd::data_type::s32) {
+    cast_from_float_array<int>(src_fp32, dst, size);
+  } else if (dst_dt == jd::data_type::fp32) {
+    cast_from_float_array<float>(src_fp32, dst, size);
+  }
+  free(src_fp32);
 }
 
 bool check_result(const test_params_t& t) {
@@ -57,39 +116,26 @@ bool check_result(const test_params_t& t) {
 
   if (!t.expect_to_fail) {
     get_true_data(q.op_desc, q.data);
-    int num = get_element_num(q.op_desc);
-    void* buf1;
+    auto buf1 = p.data[1];
+    auto size1 = p.op_desc.tensor_descs()[1].size();
     auto buf2 = q.data[1];
-    auto dtype = q.op_desc.tensor_descs()[1].dtype();
-    float err_rate;
-    if (dtype == jd::data_type::fp32) {
-      buf1 = const_cast<void*>(p.data[1]);
-      err_rate = 1e-1;
-    } else if (dtype == jd::data_type::bf16) {
-      buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
-      auto bf16_buf1 = const_cast<void*>(p.data[1]);
-      for (int i = 0; i < num; i++) {
-        *(reinterpret_cast<float*>(buf1) + i) = bf16_2_fp32(*(reinterpret_cast<bfloat16_t*>(bf16_buf1) + i));
-      }
-      free(bf16_buf1);
-      err_rate = 5;
-    } else if (dtype == jd::data_type::s8 || dtype == jd::data_type::u8) {
-      err_rate = 1e-1;
-      buf1 = reinterpret_cast<float*>(malloc(num * sizeof(float)));
-      auto int8_buf1 = const_cast<void*>(p.data[1]);
-      if (dtype == jd::data_type::u8) {
-        for (int i = 0; i < num; i++)
-          *(reinterpret_cast<float*>(buf1) + i) = uint8_2_int32(*(reinterpret_cast<uint8_t*>(int8_buf1) + i));
-      } else {
-        for (int i = 0; i < num; i++)
-          *(reinterpret_cast<float*>(buf1) + i) = *(reinterpret_cast<int8_t*>(int8_buf1) + i);
-      }
-      free(int8_buf1);
-    }
+    auto size2 = q.op_desc.tensor_descs()[1].size();
+    auto dst_type = p.op_desc.tensor_descs()[1].dtype();
     EXPECT_NE(buf1, buf2);
-    auto ans = compare_data<float>(buf1, num, buf2, num, err_rate);
+    bool ans = false;
+    if (dst_type == data_type::fp32) {
+      ans = compare_data<float>(buf1, size1, buf2, size2, 1e-1);
+    } else if (dst_type == data_type::u8) {
+      ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-2);
+    } else if (dst_type == data_type::s8) {
+      ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1e-2);
+    } else if (dst_type == data_type::bf16) {
+      ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-2);
+    } else if (dst_type == data_type::s32) {
+      ans = compare_data<int>(buf1, size1, buf2, size2, 1e-2);
+    }
     free(const_cast<void*>(p.data[0]));
-    free(buf1);
+    free(const_cast<void*>(p.data[1]));
     free(const_cast<void*>(q.data[0]));
     free(const_cast<void*>(q.data[1]));
     return ans;
@@ -123,6 +169,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   int num = get_element_num(eltwiseop_desc);
   void* src = nullptr;
   void* dst = nullptr;
+  void* src_ref = nullptr;
+  void* dst_ref = nullptr;
   memo_mode MALLOC = memo_mode::MALLOC;
   memo_mode MEMSET = memo_mode::MEMSET;
 
@@ -131,33 +179,29 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
   src = sparselib_ut_memo(src, num, in_dt, MALLOC);
   dst = sparselib_ut_memo(dst, num, out_dt, MALLOC);
-  sparselib_ut_memo(dst, num, out_dt, MEMSET);
-
-  float* src_ref = reinterpret_cast<float*>(malloc(num * sizeof(float)));
-  float* dst_ref = reinterpret_cast<float*>(malloc(num * sizeof(float)));
+  dst = sparselib_ut_memo(dst, num, out_dt, MEMSET);
+  src_ref = sparselib_ut_memo(src_ref, num, in_dt, MALLOC);
+  dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MALLOC);
+  dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MEMSET);
 
   const unsigned int seed = 667095;
-  memset(dst_ref, 0, num * sizeof(float));
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
     float rand_val = rand_r(&seed_tmp) % 256 - 128;
     assign_val(src, in_dt, rand_val, i);
-    if (in_dt == data_type::u8)
-      src_ref[i] = *(reinterpret_cast<uint8_t*>(src) + i);
-    else
-      src_ref[i] = rand_val;
+    assign_val(src_ref, in_dt, rand_val, i);
   }
 
-  std::vector<const void*> rf_data1;
-  std::vector<const void*> rf_data2;
+  std::vector<const void*> rt_data1;
+  std::vector<const void*> rt_data2;
 
-  rf_data1.emplace_back(reinterpret_cast<void*>(src));
-  rf_data1.emplace_back(reinterpret_cast<void*>(dst));
-  rf_data2.emplace_back(reinterpret_cast<void*>(src_ref));
-  rf_data2.emplace_back(reinterpret_cast<void*>(dst_ref));
+  rt_data1.emplace_back(reinterpret_cast<void*>(src));
+  rt_data1.emplace_back(reinterpret_cast<void*>(dst));
+  rt_data2.emplace_back(reinterpret_cast<void*>(src_ref));
+  rt_data2.emplace_back(reinterpret_cast<void*>(dst_ref));
 
-  op_args_t p = {eltwiseop_desc, rf_data1};
-  op_args_t q = {eltwiseop_desc, rf_data2};
+  op_args_t p = {eltwiseop_desc, rt_data1};
+  op_args_t q = {eltwiseop_desc, rt_data2};
   return {p, q};
 }
 

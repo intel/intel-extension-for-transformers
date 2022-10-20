@@ -17,7 +17,7 @@
 #include <omp.h>
 #include <sys/time.h>
 
-#include <mutex>      // NOLINT
+#include <mutex>  // NOLINT
 #include <string>
 #include <cstring>
 #include <cassert>
@@ -36,48 +36,48 @@ double get_msec();
 template <typename T>
 struct setting_t {
  private:
-    T value_;
-    bool initialized_;
+  T value_;
+  bool initialized_;
 
  public:
-    constexpr setting_t():value_(), initialized_(false) {}
-    constexpr explicit setting_t(const T init):value_(init), initialized_(false) {}
-    bool initialized() { return initialized_; }
-    T get() { return value_; }
-    void set(T new_value) {
-        value_ = new_value;
-        initialized_ = true;
-    }
-    setting_t(const setting_t &) = delete;
-    setting_t &operator=(const setting_t &) = delete;
+  constexpr setting_t() : value_(), initialized_(false) {}
+  constexpr explicit setting_t(const T init) : value_(init), initialized_(false) {}
+  bool initialized() { return initialized_; }
+  T get() { return value_; }
+  void set(T new_value) {
+    value_ = new_value;
+    initialized_ = true;
+  }
+  setting_t(const setting_t&) = delete;
+  setting_t& operator=(const setting_t&) = delete;
 };
 
 //  A container for primitive desc verbose string.
 class kd_info_t {
  public:
-    kd_info_t() = default;
-    kd_info_t(const kd_info_t &rhs):str_(rhs.str_), is_initialized_(rhs.is_initialized_) {}
-    kd_info_t &operator=(const kd_info_t &rhs) {
-        is_initialized_ = rhs.is_initialized_;
-        str_ = rhs.str_;
-        return *this;
-    }
+  kd_info_t() = default;
+  kd_info_t(const kd_info_t& rhs) : str_(rhs.str_), is_initialized_(rhs.is_initialized_) {}
+  kd_info_t& operator=(const kd_info_t& rhs) {
+    is_initialized_ = rhs.is_initialized_;
+    str_ = rhs.str_;
+    return *this;
+  }
 
-    const char *c_str() const { return str_.c_str(); }
-    bool is_initialized() const { return is_initialized_; }
+  const char* c_str() const { return str_.c_str(); }
+  bool is_initialized() const { return is_initialized_; }
 
-    void init(jd::kernel_kind kind, std::vector<dim_t> shape);
+  void init(jd::kernel_kind kind, std::vector<dim_t> shape);
 
  private:
-    std::string str_;
+  std::string str_;
 
-    bool is_initialized_ = false;
+  bool is_initialized_ = false;
 
-    // Alas, `std::once_flag` cannot be manually set and/or copied (in terms of
-    // its state). Hence, when `kd_info_t` is copied the `initialization_flag_`
-    // is always reset. To avoid re-initialization we use an extra
-    // `is_initialized_` flag, that should be checked before calling `init()`.
-    std::once_flag initialization_flag_;
+  // Alas, `std::once_flag` cannot be manually set and/or copied (in terms of
+  // its state). Hence, when `kd_info_t` is copied the `initialization_flag_`
+  // is always reset. To avoid re-initialization we use an extra
+  // `is_initialized_` flag, that should be checked before calling `init()`.
+  std::once_flag initialization_flag_;
 };
 
 }  // namespace jd

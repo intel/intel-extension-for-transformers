@@ -21,7 +21,6 @@ cd test/gtest/SparseLib/
 mkdir build
 cd build
 cmake ..
-# cmake .. -DSPARSE_LIB_USE_AMX=True // if enabling AMX support
 make -j
 ./test_spmm_vnni_kernel
 ```

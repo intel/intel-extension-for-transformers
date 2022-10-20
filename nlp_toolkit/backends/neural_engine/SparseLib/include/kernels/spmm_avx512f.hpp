@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "cpu_isa.hpp"
 #include "jit_domain/jit_spmm_avx512f.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"

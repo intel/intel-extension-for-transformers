@@ -17,6 +17,7 @@
 namespace jd {
 
 bool softmax_kd_t::init() {
+  if (!isa_available(avx512_core)) return false;
   auto op_attrs = op_desc_.attrs();
   if (op_attrs["spec_type"] == "lut") {
     // assert int8 dt as input.

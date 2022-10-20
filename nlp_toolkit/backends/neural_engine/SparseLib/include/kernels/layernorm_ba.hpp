@@ -17,12 +17,14 @@
 
 #include <memory>
 #include <vector>
+#include "cpu_isa.hpp"
 #include "operator_desc.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "utils.hpp"
 #include "layernorm_ba_types.hpp"
 #include "jit_domain/jit_layernorm_ba.hpp"
+
 namespace jd {
 class layernorm_ba_k_t;
 
@@ -31,7 +33,9 @@ class layernorm_ba_kd_t : public kernel_desc_t {
   explicit layernorm_ba_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::layernorm_ba), op_desc_(op_desc) {}
 
-  virtual ~layernorm_ba_kd_t() { free(one_div_n_); }
+  virtual ~layernorm_ba_kd_t() {
+    if (one_div_n_ != nullptr) free(one_div_n_);
+  }
 
  public:
   bool init() override;
@@ -46,7 +50,7 @@ class layernorm_ba_kd_t : public kernel_desc_t {
  private:
   jd::operator_desc op_desc_;
   std::vector<ssd::layernorm_ba_param_t> params_;
-  float* one_div_n_;
+  float* one_div_n_ = nullptr;
 };
 
 class layernorm_ba_k_t : public kernel_t {

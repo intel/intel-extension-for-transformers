@@ -18,6 +18,7 @@
 namespace jd {
 //// Part1: class spmm_amx_bf16_x16_kd_t
 bool spmm_amx_bf16_x16_kd_t::init() {
+  if (!isa_available(avx512_core_bf16_amx_bf16)) return false;
   using dt = jd::data_type;
   const auto& wei_desc = op_desc_.tensor_descs()[ssd::WEI];
   const auto& src_desc = op_desc_.tensor_descs()[ssd::SRC];
@@ -74,7 +75,6 @@ bool spmm_amx_bf16_x16_kd_t::spmm_params_init(std::vector<ssd::amx_bf16_params_t
 
 //// Part2: class spmm_amx_bf16_x16_k_t
 bool spmm_amx_bf16_x16_k_t::init() {
-  if (!init_amx()) return false;
   dim_t num_kernels = derived_kd()->num_kernels();
   auto param = derived_kd()->params()[0];
   IC = param.shape[1];

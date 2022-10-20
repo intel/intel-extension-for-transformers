@@ -17,6 +17,7 @@ namespace jd {
 
 // Part1: class spmm_avx512f_kd_t
 bool spmm_avx512f_kd_t::init() {
+  if (!isa_available(avx512_core)) return false;
   using dt = jd::data_type;
   const auto& wei_desc = op_desc_.tensor_descs()[ssd::WEI];
   const auto& src_desc = op_desc_.tensor_descs()[ssd::SRC];
@@ -99,4 +100,3 @@ bool spmm_avx512f_k_t::execute(const std::vector<const void*>& rt_data) const {
   return true;
 }
 }  // namespace jd
-

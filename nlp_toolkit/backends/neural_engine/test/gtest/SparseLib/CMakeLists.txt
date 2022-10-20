@@ -2,20 +2,16 @@ cmake_minimum_required(VERSION 3.11)
 
 project(sparselib_ut)
 
-option(SPARSE_LIB_USE_AMX OFF)
 option(SPARSE_LIB_USE_VTUNE OFF)
 option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -march=native -fsanitize=address -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -fsanitize=address -fno-omit-frame-pointer")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS}")
 else()
     set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 endif()
 
-if (SPARSE_LIB_USE_AMX)
-    set(CMAKE_CXX_FLAGS "-DSPARSE_LIB_USE_AMX ${CMAKE_CXX_FLAGS}")
-endif()
 set(MAIN_SRC_GTEST "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 # -lpthread
@@ -48,12 +44,8 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_layernorm_ba_kernel.cpp
     test_matmul_avx512f_p2031_p2013.cpp
     test_softmax_kernel.cpp
+    test_spmm_amx_bf16_x16_kernel.cpp
 )
-
-if (SPARSE_LIB_USE_AMX) 
-    list(APPEND KERNEL_TEST_CASES_SRC
-        test_spmm_amx_bf16_x16_kernel.cpp)
-endif()
 
 function(register_gtest_func exe src)
     add_executable(${exe} ${MAIN_SRC_GTEST} ${src})

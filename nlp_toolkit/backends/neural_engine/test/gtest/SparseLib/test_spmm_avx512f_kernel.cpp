@@ -120,7 +120,6 @@ bool check_result(const test_params_t& t) {
     auto size2 = q.op_desc.tensor_descs()[ssd::DST].size();
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
-    const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST].dtype();
     return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
   }
   return false;

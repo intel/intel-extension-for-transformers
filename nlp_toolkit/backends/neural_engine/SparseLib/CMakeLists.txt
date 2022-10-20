@@ -2,21 +2,16 @@ cmake_minimum_required(VERSION 3.11)
 project(kernellibs)
 set(HOST_LIBRARY_NAME "kernellibs")
 
-option(SPARSE_LIB_USE_AMX OFF)
 option(SPARSE_LIB_USE_VTUNE OFF)
 option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
 
 set(EXTERNAL_INCLUDE_PATH "")
 set(EXTERNAL_LIBRARY_PAYH "")
-set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -march=native")
+set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS}")
 else()
     set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
-endif()
-
-if (SPARSE_LIB_USE_AMX)
-    set(CMAKE_CXX_FLAGS "-DSPARSE_LIB_USE_AMX ${CMAKE_CXX_FLAGS}")
 endif()
 
 # include external cmake
