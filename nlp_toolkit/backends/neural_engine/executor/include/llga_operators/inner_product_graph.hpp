@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef  ENGINE_EXECUTOR_INCLUDE_ONEDNN_GRAPH_OPERATORS_INNER_PRODUCT_GRAPH_HPP_
-#define  ENGINE_EXECUTOR_INCLUDE_ONEDNN_GRAPH_OPERATORS_INNER_PRODUCT_GRAPH_HPP_
+#ifndef  ENGINE_EXECUTOR_INCLUDE_LLGA_OPERATORS_INNER_PRODUCT_GRAPH_HPP_
+#define  ENGINE_EXECUTOR_INCLUDE_LLGA_OPERATORS_INNER_PRODUCT_GRAPH_HPP_
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -78,5 +78,5 @@ class InnerProductGraphOperator : public Operator {
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
 };
 }  // namespace executor
-#endif  //  ENGINE_EXECUTOR_INCLUDE_ONEDNN_GRAPH_OPERATORS_INNER_PRODUCT_GRAPH_HPP_
+#endif  //  ENGINE_EXECUTOR_INCLUDE_LLGA_OPERATORS_INNER_PRODUCT_GRAPH_HPP_
 

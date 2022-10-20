@@ -6,7 +6,6 @@ elseif(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.2.1)
 else()
 cmake_minimum_required(VERSION 3.12)
 
-
 set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -ffast-math -lm -ftree-loop-vectorize -fpic -Wall -fopenmp -march=native -Wl,-rpath,'$ORIGIN'")
 set(THIRD_PARTY_DIR "${PROJECT_SOURCE_DIR}/third_party")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -Wall -s")
@@ -55,47 +54,16 @@ add_subdirectory(${THIRD_PARTY_DIR}/pybind11)
 add_subdirectory(${THIRD_PARTY_DIR}/yaml-cpp)
 add_subdirectory(../SparseLib/ ./hostlibs)
 
-add_library(neural_engine SHARED
-    src/model.cpp
-    src/common.cpp
-    src/i_malloc.cpp
-    src/operators/input.cpp
-    src/operators/output.cpp
-    src/operators/binary_add.cpp
-    src/operators/inner_product.cpp
-    src/onednn_graph_operators/inner_product_graph.cpp
-    src/operators/layer_norm.cpp
-    src/operators/matmul.cpp
-    src/operators/one_hot.cpp
-    src/operators/padding_sequence.cpp
-    src/operators/reorder.cpp
-    src/operators/softmax.cpp
-    src/onednn_graph_operators/softmax_graph.cpp
-    src/operators/reshape.cpp
-    src/operators/gather.cpp
-    src/operators/strided_slice.cpp
-    src/operators/quantize.cpp
-    src/operators/reduce_mean.cpp
-    # src/operators/transpose.cpp
-    src/operators/gelu.cpp
-    src/operators/position_ids.cpp
-    src/operators/token_type_ids.cpp
-    src/operators/concat.cpp
-    src/operators/embeddingbag.cpp
-    src/operators/split.cpp
-    src/operators/convolution.cpp
-    src/operators/merged_embeddingbag.cpp
-    src/operators/slice.cpp
-    src/operators/group_norm.cpp
-    src/sparse_operators/sparse_inner_product.cpp
-)
+file(GLOB_RECURSE SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+list(REMOVE_ITEM SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/operators/transpose.cpp")
+add_library(neural_engine SHARED ${SRC_FILES})
 
 # Header file include path
 target_include_directories(neural_engine
     PUBLIC
         ../
         ./include/sparse_operators
-        ./include/onednn_graph_operators
+        ./include/llga_operators
         ./include/operators
         ./include
         ./third_party/boost/libs/assert/include

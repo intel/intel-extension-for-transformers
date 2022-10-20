@@ -266,11 +266,6 @@ class OpTuning {
   static std::unordered_map<string, TuneFunc> tune_func_map_;
 };
 
-std::unordered_map<string, OpTuning::TuneFunc> OpTuning::tune_func_map_ = {
-    {"Base", &OpTuning::BaseTune},
-    {"InnerProduct_to_Convolution", &OpTuning::IpToConvTune},
-    {"InnerProduct_to_SparseLib", &OpTuning::IpToSparseLibTune}
-};
 }  // namespace executor
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_OP_TUNING_HPP_

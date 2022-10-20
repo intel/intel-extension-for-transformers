@@ -70,6 +70,15 @@ class Dispatcher {
     do_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
   }
 
+  explicit Dispatcher(const shared_ptr<Operator>& op) : operator_conf_(op->operator_conf()) {
+    name_ = operator_conf_.name();
+    type_ = operator_conf_.type();
+    cpu_isa_ = get_max_isa();
+    kernel_handler_[name_] = op;
+    execute_kernel_ = type_;
+    do_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
+  }
+
   ~Dispatcher() {}
 
   // prepare all kernel when model init

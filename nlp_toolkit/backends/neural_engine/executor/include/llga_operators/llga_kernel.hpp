@@ -12,54 +12,48 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_EXECUTOR_INCLUDE_ONEDNN_GRAPH_OPERATORS_SOFTMAX_GRAPH_HPP_
-#define ENGINE_EXECUTOR_INCLUDE_ONEDNN_GRAPH_OPERATORS_SOFTMAX_GRAPH_HPP_
+#ifndef ENGINE_EXECUTOR_INCLUDE_LLGA_OPERATORS_LLGA_KERNEL_HPP_
+#define ENGINE_EXECUTOR_INCLUDE_LLGA_OPERATORS_LLGA_KERNEL_HPP_
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <utility>
 
 #include "../operator.hpp"
+#include "model.hpp"
 #include "oneapi/dnnl/dnnl_graph.hpp"
 
 namespace executor {
 
-using logical_tensor = dnnl::graph::logical_tensor;
-using data_type = dnnl::graph::logical_tensor::data_type;
-using layout_type = dnnl::graph::logical_tensor::layout_type;
-using property_type = dnnl::graph::logical_tensor::property_type;
-
 /**
- * @brief A Softmax operator.
+ * @brief LLGA kernel for partition to compile and execute.
  *
  */
 
-class SoftmaxGraphOperator : public Operator {
+using logical_tensor = dnnl::graph::logical_tensor;
+class Model;  // forward declaration
+
+class LLGAKernel : public Operator {
  public:
-  explicit SoftmaxGraphOperator(const OperatorConfig& conf);
-  virtual ~SoftmaxGraphOperator() {}
+  LLGAKernel(const OperatorConfig& conf,
+                     Model* model,
+                     const dnnl::graph::partition& partition)
+                     : Operator(conf), model_(model), partition_(partition) {}
+
+  virtual ~LLGAKernel() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
-  dnnl::graph::graph g_;
-  dnnl::graph::engine eng_ {dnnl::graph::engine::kind::cpu, 0};
-  dnnl::graph::stream strm_ {eng_};
-  vector<logical_tensor> logical_inputs_;
-  vector<logical_tensor> logical_outputs_;
   dnnl::graph::partition partition_;
   dnnl::graph::compiled_partition cp_;
-
-  int axis_;
-  string output_dtype_ = "fp32";
-  Tensor* dst_min_ = nullptr;
-  Tensor* dst_max_ = nullptr;
-  Tensor* src_ = nullptr;
-  Tensor* dst_ = nullptr;
-
-  void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  Model *model_;
+  bool inplace_ = false;
+  std::pair<int, int> inplace_index_;
+  vector<logical_tensor> inputs_lt, outputs_lt;
+  vector<dnnl::graph::tensor> inputs_ts, outputs_ts;
 };
 }  // namespace executor
-#endif  // ENGINE_EXECUTOR_INCLUDE_ONEDNN_GRAPH_OPERATORS_SOFTMAX_GRAPH_HPP_
-
+#endif  // ENGINE_EXECUTOR_INCLUDE_LLGA_OPERATORS_LLGA_KERNEL_HPP_
