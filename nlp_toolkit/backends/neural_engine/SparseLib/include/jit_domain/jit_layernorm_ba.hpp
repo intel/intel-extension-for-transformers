@@ -23,6 +23,7 @@
 #include "utils.hpp"
 #include "kernels/layernorm_ba_types.hpp"
 #include "jit_domain/jit_eltwise_injector.hpp"
+#include "jit_domain/jit_binary_injector.hpp"
 
 #define LNBA_GET_OFF(field) offsetof(ssd::layernorm_ba_data_t, field)
 

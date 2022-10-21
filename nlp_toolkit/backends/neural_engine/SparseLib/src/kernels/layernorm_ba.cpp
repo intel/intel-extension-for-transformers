@@ -54,7 +54,6 @@ bool layernorm_ba_kd_t::init() {
     param.process_col = col_per_thr;
     param.thread_elt_offset = thread_elt_offset;
     param.postop_attrs = op_desc_.apply_postops_list();
-    auto op_attr = op_desc_.attrs();
     params_[i] = param;
   }
   return true;

@@ -64,6 +64,14 @@ InnerProductOperator::InnerProductOperator(const OperatorConfig& conf)
   if (iter != attrs_map.end()) {
     gelu_split_ = attrs_map["gelu_split"] == "true";
   }
+  iter = attrs_map.find("reshape");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_, attrs_map["reshape"], ",");
+  }
+  iter = attrs_map.find("reshape_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_dims_, attrs_map["reshape_dims"], ",");
+  }
   iter = attrs_map.find("append_op");
   binary_add_ = (iter != attrs_map.end() && iter->second == "binary_add") ? true : false;
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
@@ -81,6 +89,9 @@ InnerProductOperator::~InnerProductOperator() {}
 
 void InnerProductOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int input_size = input.size();
+  if (!reshape_dims_.empty()) {
+    input_size -= 1;
+  }
   dst_ = output[0];
   if (output.size() > 1) {
     dst_min_ = output[1];
@@ -196,13 +207,13 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
   if (src0_->dtype() == "fp32" && src1_->dtype() == "fp32") {
     kernel_type_ = Dense;
     weight_zero_ratio_ = GetSparseRatio<float>(static_cast<const float*>(src1_->data()), src1_->shape(), blocksize_);
-    if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = Sparse;
+    if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = Dense;
     LOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
   } else if (src0_->dtype() == "u8" && src1_->dtype() == "s8") {
     kernel_type_ = Dense;
     blocksize_ = {4, 16};
     weight_zero_ratio_ = GetSparseRatio<int8_t>(static_cast<const int8_t*>(src1_->data()), src1_->shape(), blocksize_);
-    if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = Sparse;
+    if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = Dense;
     LOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
   } else if (src0_->dtype() == "s8" && src1_->dtype() == "u8") {
     blocksize_ = {4, 1};
@@ -503,12 +514,21 @@ void InnerProductOperator::ShapeInferSparseLib(const vector<Tensor*>& input, con
   }
   vector<int64_t> dst_shape = {src0_->shape()[0], src1_shape[1]};
   dst_->set_shape(dst_shape);
+  if (!reshape_.empty()) {
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+    }
+    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
+    output[0]->set_shape(dst_shape);
+  }
 }
 
 void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src1_shape_origin = src1_->shape();
   vector<int64_t> src1_shape = src1_shape_origin;
   // set dispatch config from tuning
+
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
     // e.g. dispatch_config_ = {"SparseLib", "1,256,128", "1,1,1", "4,4", "1"};
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
@@ -566,6 +586,15 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
                             ts_descs, op_attrs_, postop_chain);
   jd::sparse_matmul_desc spmm_desc(op_desc);
   spmm_kern_ = jd::sparse_matmul(spmm_desc);
+
+  if (!reshape_.empty()) {
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+    }
+    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
+    output[0]->set_shape(dst_shape);
+  }
 }
 
 #if __AVX512F__
@@ -703,6 +732,14 @@ void InnerProductOperator::ShapeInferDense(const vector<Tensor*>& input, const v
   if (output.size() > 1) {
     dst_min_->set_shape({1});
     dst_max_->set_shape({1});
+  }
+  if (!reshape_.empty()) {
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+    }
+    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
+    output[0]->set_shape(dst_shape);
   }
 }
 
@@ -901,6 +938,15 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     // 2.5 Prepare primitive objects (cached)
     inner_product_p_ = dnnl::inner_product_forward(inner_product_pd_);
     InnerProductPrimitiveFwdFactory::Set(key, inner_product_p_);
+  }
+
+  if (!reshape_.empty()) {
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+    }
+    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
+    output[0]->set_shape(dst_shape);
   }
 }
 

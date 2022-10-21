@@ -104,6 +104,8 @@ class InnerProductOperator : public Operator {
   vector<int64_t> src1_perm_;
   vector<int64_t> dst_perm_;
   vector<int64_t> compensation_;
+  vector<int64_t> reshape_;
+  vector<int64_t> reshape_dims_;
   memory::desc scale_md_;
   memory::desc compensation_md_;
 

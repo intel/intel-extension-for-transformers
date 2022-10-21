@@ -214,6 +214,39 @@ vector<float> GetRescales(const vector<float>& src0_scales, const vector<float>&
   return rescales;
 }
 
+vector<int64_t> GetDstShape(const vector<int64_t>& dst_shape, size_t dst_size,
+                            const vector<int64_t>& ref_shape,
+                            const vector<int64_t>& reshape_dims) {
+  vector<int64_t> pre_dst_shape(dst_shape);
+  if (!ref_shape.empty()) {
+    auto shape_vec = ref_shape;
+    int j = 0;
+    for (int i = 0; i < pre_dst_shape.size(); i++) {
+      if (pre_dst_shape[i] == -1) {
+        pre_dst_shape[i] = shape_vec[reshape_dims[j++]];
+      }
+      if (j >= reshape_dims.size()) {
+        break;
+      }
+    }
+  }
+
+  int64_t src_size = dst_size;
+  int idx = -1;
+  int64_t shape_acc = 1;
+  for (int i = 0; i < pre_dst_shape.size(); i++) {
+    if (pre_dst_shape[i] != -1) {
+      shape_acc *= pre_dst_shape[i];
+    } else {
+      idx = i;
+    }
+  }
+  if (idx != -1) {
+    pre_dst_shape[idx] = src_size / shape_acc;
+  }
+  return pre_dst_shape;
+}
+
 vector<int> GetZeroPoints(const void* mins, const vector<float>& scales, const string& dtype) {
   const float* mins_p = static_cast<const float*>(mins);
   vector<int> zerops;

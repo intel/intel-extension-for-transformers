@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNO_BA_HPP_
+#define ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_HPP_
 
 #include <memory>
 #include <vector>
@@ -93,4 +93,4 @@ class layernorm_ba_k_t : public kernel_t {
 };
 
 }  // namespace jd
-#endif
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_HPP_

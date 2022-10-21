@@ -27,10 +27,6 @@
 
 namespace jd {
 class jit_eltwise_injector {
-  using Zmm = Xbyak::Zmm;
-  using Ymm = Xbyak::Ymm;
-  using Xmm = Xbyak::Xmm;
-
  public:
   jit_eltwise_injector() {}
   virtual ~jit_eltwise_injector() {}

@@ -15,8 +15,10 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_HPP_
 #include <vector>
+#include <string>
 
 #include "../operator.hpp"
+#include "SparseLib/include/interface.hpp"
 
 namespace executor {
 
@@ -30,15 +32,26 @@ class GatherOperator : public Operator {
   explicit GatherOperator(const OperatorConfig& conf);
   virtual ~GatherOperator() {}
 
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
+  void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
  private:
-  int64_t axis_ = -1;
-  int64_t batch_dims_ = -1;
-  vector<int64_t> flat_params_stride_;
-  vector<int64_t> flat_dst_shape_;
-  vector<int64_t> flat_dst_stride_;
+  Tensor* idx_ = nullptr;
+  Tensor* src_ = nullptr;
+  Tensor* dst_ = nullptr;
+  Tensor* append_ = nullptr;
+  std::string idx_axis_;
+  std::string src_axis_;
+  bool binary_add_ = false;
+  jd::gather gather_;
+  vector<int64_t> reshape_;
+  vector<int64_t> reshape_dims_;
+  vector<int64_t> mul_;
+
+  std::vector<const void*> rt_data_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_HPP_

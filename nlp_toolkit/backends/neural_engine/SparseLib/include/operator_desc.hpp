@@ -55,6 +55,8 @@ class operator_desc {
            (impl_nthr_ == rhs.impl_nthr_) && (ts_descs_ == rhs.ts_descs_) && (attrs_ == rhs.attrs_);
   }
 
+  void set_binaryop_list(const std::vector<binaryop_attr>& binaryop_list) { this->binaryop_list_ = binaryop_list; }
+
  public:
   inline const jd::kernel_kind& kernel_kind() const { return ker_kind_; }
   inline const jd::kernel_prop& kernel_prop() const { return ker_prop_; }
@@ -63,6 +65,7 @@ class operator_desc {
   inline const std::vector<tensor_desc>& tensor_descs() const { return ts_descs_; }
   inline const std::unordered_map<std::string, std::string>& attrs() const { return attrs_; }
   inline const std::vector<postop_attr>& apply_postops_list() const { return apply_postops_list_; }
+  inline const std::vector<binaryop_attr>& get_binaryop_list() const { return binaryop_list_; }
 
  private:
   jd::kernel_kind ker_kind_;
@@ -72,6 +75,7 @@ class operator_desc {
   std::vector<tensor_desc> ts_descs_;
   std::unordered_map<std::string, std::string> attrs_;
   std::vector<postop_attr> apply_postops_list_;
+  std::vector<binaryop_attr> binaryop_list_;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_OPERATOR_DESC_HPP_

@@ -284,11 +284,12 @@ static auto CasesFp32 = []() {
   post_shape = {32, 1024};
   cases.push_back({GenerateFp32Case({src_shape, weight_shape, bias_shape, post_shape}, "0,1", "sum", true), false});
   // case: sparse with sum, with perm, with tail
-  src_shape = {33, 512};
-  weight_shape = {1024, 512};
-  bias_shape = {1024};
-  post_shape = {33, 1024};
-  cases.push_back({GenerateFp32Case({src_shape, weight_shape, bias_shape, post_shape}, "0,1", "sum", true), false});
+  // intrin sparse inner product has been replace
+  // src_shape = {33, 512};
+  // weight_shape = {1024, 512};
+  // bias_shape = {1024};
+  // post_shape = {33, 1024};
+  // cases.push_back({GenerateFp32Case({src_shape, weight_shape, bias_shape, post_shape}, "0,1", "sum", true), false});
   // case: sparse with tanh
   src_shape = {32, 512};
   weight_shape = {512, 1024};

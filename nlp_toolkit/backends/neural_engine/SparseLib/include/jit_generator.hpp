@@ -22,6 +22,13 @@
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
 
+using Zmm = Xbyak::Zmm;
+using Ymm = Xbyak::Ymm;
+using Xmm = Xbyak::Xmm;
+using Reg64 = Xbyak::Reg64;
+using Opmask = Xbyak::Opmask;
+using RegExp = Xbyak::RegExp;
+
 constexpr Xbyak::Operand::Code abi_save_gpr_regs[] = {
     // https://stackoverflow.com/questions/18024672/what-registers-are-preserved-through-a-linux-x86-64-function-call
     // r12, r13, r14, r15, rbx, rsp, rbp are the callee-saved registers - they

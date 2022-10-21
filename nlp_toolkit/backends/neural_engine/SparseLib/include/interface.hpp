@@ -122,6 +122,13 @@ class layernorm_ba_desc : public kernel_desc_proxy {
   virtual ~layernorm_ba_desc() {}
 };
 
+class gather_desc : public kernel_desc_proxy {
+ public:
+  gather_desc() {}
+  explicit gather_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~gather_desc() {}
+};
+
 class softmax_desc : public kernel_desc_proxy {
  public:
   softmax_desc() {}
@@ -158,6 +165,13 @@ class layernorm_ba : public kernel_proxy {
   layernorm_ba() {}
   explicit layernorm_ba(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~layernorm_ba() {}
+};
+
+class gather : public kernel_proxy {
+ public:
+  gather() {}
+  explicit gather(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~gather() {}
 };
 
 class softmax : public kernel_proxy {

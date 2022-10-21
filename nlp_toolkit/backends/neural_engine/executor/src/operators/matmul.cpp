@@ -61,6 +61,10 @@ MatmulOperator::MatmulOperator(const OperatorConfig& conf)
   if (iter != attrs_map.end()) {
     cache_weight_ = attrs_map["cache_weight"] == "true";
   }
+  iter = attrs_map.find("reshape");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_, attrs_map["reshape"], ",");
+  }
   iter = attrs_map.find("append_op");
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
   binary_add_ = (iter != attrs_map.end() && iter->second == "binary_add") ? true : false;
@@ -398,6 +402,11 @@ void MatmulOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
     // 2.5 Prepare primitive objects (cached)
     matmul_p_ = dnnl::matmul(matmul_pd_);
     MatMulPrimitiveFwdFactory::Set(key, matmul_p_);
+  }
+  if (!reshape_.empty()) {
+    vector<int64_t> pre_dst_shape;
+    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), pre_dst_shape, pre_dst_shape);
+    output[0]->set_shape(dst_shape);
   }
 }
 

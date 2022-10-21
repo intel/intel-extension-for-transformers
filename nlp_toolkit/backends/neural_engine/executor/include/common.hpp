@@ -76,6 +76,10 @@ vector<int64_t> GetShapes(const vector<int64_t>& origin_shape, const vector<int6
 // e.g.: axis = (0, 1, 2, 3), shape = (64, 16, 384, 64), return stride = (16*384*64, 384*64, 64, 1)
 vector<int64_t> GetStrides(const vector<int64_t>& origin_shape, const vector<int64_t>& absolute_perm = {});
 
+vector<int64_t> GetDstShape(const vector<int64_t>& dst_shape, size_t dst_size,
+                            const vector<int64_t>& ref_shape,
+                            const vector<int64_t>& reshape_dims);
+
 template <typename T>
 T StringToNum(const string& str);
 

@@ -41,6 +41,7 @@ bool CheckResult(const TestParams& t) {
   const auto& q = t.args.second;
 
   executor::GatherOperator gather_op(p.conf);
+  gather_op.Prepare(p.input, p.output);
   gather_op.Reshape(p.input, p.output);
   gather_op.Forward(p.input, p.output);
 
@@ -63,7 +64,7 @@ TEST_P(GatherOpTest, TestPostfix) {
   EXPECT_TRUE(CheckResult(t));
 }
 
-std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t> >& input_shape,
+std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape,
                                            std::string append_op = "") {
   // Step 1: Construct Tensor config ptr
   const auto& src0_shape = input_shape[0];
@@ -79,6 +80,11 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   std::map<std::string, std::string> attr_map;
   attr_map["axis"] = "0";
   attr_map["batch_dims"] = "0";
+  if (append_op == "binary_add") {
+    attr_map["append_op"] = "binary_add";
+    TensorConfig* append_config = new TensorConfig("appned", input_shape[2]);
+    input_config_vec.push_back(append_config);
+  }
   AttrConfig* op_attr = new AttrConfig(attr_map);
   OperatorConfig op_config = OperatorConfig("gather", "fp32", input_config_vec, output_config_vec, op_attr);
 
@@ -106,18 +112,21 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     memcpy(tensor_data_copy, tensor_data, a_tensor_copy->size() * sizeof(float));
     return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
   };
-
-  auto src0_tensors = make_tensor_obj(src0_config);
-  auto src1_tensors = make_tensor_obj(src1_config);
+  std::vector<Tensor*> inputs, inputs_copy;
+  for (auto tensor_config : input_config_vec) {
+    auto tmp = make_tensor_obj(tensor_config);
+    inputs.push_back(tmp.first);
+    inputs_copy.push_back(tmp.second);
+  }
   Tensor* dst_tensor = new Tensor(*dst_config);
   dst_tensor->add_tensor_life(1);
   Tensor* dst_tensor_copy = new Tensor(*dst_config);
   dst_tensor_copy->add_tensor_life(1);
   auto dst_data_copy = static_cast<float*>(dst_tensor_copy->mutable_data());
-  auto src0_data_copy = (const int32_t*)src0_tensors.second->data();
-  auto src1_data_copy = (const float*)src1_tensors.second->data();
-  auto src0_shape_copy = src0_tensors.second->shape();
-  auto src1_shape_copy = src1_tensors.second->shape();
+  auto src0_data_copy = (const int32_t*)inputs_copy[0]->data();
+  auto src1_data_copy = (const float*)inputs_copy[1]->data();
+  auto src0_shape_copy = inputs_copy[0]->shape();
+  auto src1_shape_copy = inputs_copy[1]->shape();
 #pragma omp parallel for
   for (int i = 0; i < src0_shape_copy[0]; ++i) {
     int indices_val = src0_data_copy[i];
@@ -125,11 +134,15 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
 #pragma omp simd
     for (int j = 0; j < src1_shape_copy[1]; ++j) {
       dst_data_copy[i * src1_shape_copy[1] + j] = src1_data_copy[indices_val * src1_shape_copy[1] + j];
+      if (append_op == "binary_add") {
+        auto append_data_copy = (const float*)inputs_copy[2]->data();
+        dst_data_copy[i * src1_shape_copy[1] + j] += append_data_copy[i * src1_shape_copy[1] + j];
+      }
     }
   }
 
-  OpArgs op_args = {{src0_tensors.first, src1_tensors.first}, {dst_tensor}, op_config};
-  OpArgs op_args_copy = {{src0_tensors.second, src1_tensors.second}, {dst_tensor_copy}, op_config};
+  OpArgs op_args = {inputs, {dst_tensor}, op_config};
+  OpArgs op_args_copy = {inputs_copy, {dst_tensor_copy}, op_config};
 
   return {op_args, op_args_copy};
 }
@@ -142,11 +155,17 @@ static auto CasesFp32 = []() {
   // Config
   std::vector<int64_t> src0_shape;
   std::vector<int64_t> src1_shape;
+  std::vector<int64_t> append_shape;
 
   // case: simple
   src0_shape = {24576};
   src1_shape = {30522, 1024, 1, 1};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape}), false});
+
+  src0_shape = {256};
+  src1_shape = {30522, 1024, 1, 1};
+  append_shape = {256, 1024};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape, append_shape}, "binary_add"), false});
 
   return ::testing::ValuesIn(cases);
 };

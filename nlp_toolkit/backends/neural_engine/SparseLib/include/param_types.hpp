@@ -20,9 +20,11 @@
 #include <map>
 namespace jd {
 // The main kinds of kernel.
-enum class kernel_kind : uint8_t { undef, sparse_matmul, eltwiseop, layernorm_ba, transpose_matmul, softmax };
+enum class kernel_kind : uint8_t { undef, sparse_matmul, eltwiseop, layernorm_ba, transpose_matmul, softmax, gather };
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };
+
+enum class binaryop_alg : uint8_t { undef, add };
 
 enum class postop_type : uint8_t { eltwise };
 
@@ -92,6 +94,12 @@ class postop_attr {
   postop_attr(const data_type& dt, const postop_type& op_type, const postop_alg& op_alg, float alpha = 0.0,
               float beta = 0.0, float scale = 0.0)
       : dt(dt), op_type(op_type), op_alg(op_alg), alpha(alpha), beta(beta), scale(scale) {}
+};
+
+class binaryop_attr {
+ public:
+  void* src_addr;
+  binaryop_alg op_alg;
 };
 
 static std::unordered_map<data_type, int> type_size = {
