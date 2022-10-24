@@ -114,10 +114,6 @@ bool softmax_bench::check_result() {
   bool ans = false;
   auto err_rate = make_bf16(0.1);
   ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, err_rate);
-  free(const_cast<void*>(p.rt_data[0]));
-  free(const_cast<void*>(p.rt_data[1]));
-  free(const_cast<void*>(q.rt_data[0]));
-  free(const_cast<void*>(q.rt_data[1]));
   return ans;
 }
 

@@ -128,6 +128,15 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf layernorm_ba 1024 102
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf transpose_matmul avx512f_p2031_p2013 32 64 32 8 12 1 1 0.25 8 2
 ```
 
+#### matmul_vnni_noperm_p2031_p1302
+```shell
+[<environment_variable>...] ./benchmark <mode> transpose_matmul vnni_noperm_p2031_p1302 <M> <K> <N> <bs0> <bs1>
+```
+#### Examples
+```shell
+BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf transpose_matmul vnni_noperm_p2031_p1302 32 32 64 8 12
+```
+
 ## For developers
 To add benchmark support for a newly-added kernel, you may need to follow several steps:
 

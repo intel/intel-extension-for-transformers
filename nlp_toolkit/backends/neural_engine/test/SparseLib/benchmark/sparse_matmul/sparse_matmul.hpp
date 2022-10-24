@@ -22,6 +22,7 @@
 
 #include "benchmark_utils.hpp"
 #include "kernels/spmm_types.hpp"
+#include "cpu_isa.hpp"
 namespace jd {
 
 class sparse_matmul_bench : public kernel_bench {
@@ -34,8 +35,10 @@ class sparse_matmul_bench : public kernel_bench {
     if (smb == nullptr) {  // for a finally derived class
       auto attrs = args.first.op_desc.attrs();
       const uint64_t& sparse_addr = str_to_num<uint64_t>(attrs["sparse_ptr"]);
-      auto sparse_data_ptr = reinterpret_cast<bsc_data_t<float>*>(sparse_addr);
-      delete sparse_data_ptr;
+      if (sparse_addr != 0) {
+        auto sparse_data_ptr = reinterpret_cast<bsc_data_t<float>*>(sparse_addr);
+        delete sparse_data_ptr;
+      }
 
       for (auto op_args : {args.first, args.second})
         for (auto rt_data : op_args.rt_data)

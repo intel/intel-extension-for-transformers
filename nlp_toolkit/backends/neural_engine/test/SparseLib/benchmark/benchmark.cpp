@@ -64,13 +64,13 @@ int main(int argc, char** argv) {
   jd::bench_op bench(kb);
 
   try {
-    res = bench.run_bench(mode);
+    if (res.stat == jd::bench_status::success) res = bench.run_bench(mode);
   } catch (const std::exception& e) {
     LOG(ERROR) << "kernel exception occurred";
     res.stat = jd::bench_status::fail;
   }
   // Print result
-  if (res.stat == jd::bench_status::fail) {
+  if (res.stat != jd::bench_status::success) {
     LOG(INFO) << "benchmark failed\n";
     return 1;
   }

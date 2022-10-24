@@ -12,8 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifdef SPARSE_LIB_USE_AMX
-
 #include "utils.hpp"
 #include "benchmark_utils.hpp"
 #include "sparse_matmul/spmm_amx_bf16_x16.hpp"
@@ -217,5 +215,3 @@ void spmm_amx_bf16_x16_bench::gen_case() {
 }
 
 }  // namespace jd
-
-#endif  // SPARSE_LIB_USE_AMX

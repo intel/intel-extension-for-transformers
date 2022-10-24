@@ -170,10 +170,6 @@ bool eltwiseop_bench::check_result() {
   } else if (dst_type == data_type::s32) {
     ans = compare_data<int>(buf1, size1, buf2, size2, 1);
   }
-  free(const_cast<void*>(args.first.rt_data[0]));
-  free(const_cast<void*>(args.first.rt_data[1]));
-  free(const_cast<void*>(args.second.rt_data[0]));
-  free(const_cast<void*>(args.second.rt_data[1]));
   return ans;
 }
 

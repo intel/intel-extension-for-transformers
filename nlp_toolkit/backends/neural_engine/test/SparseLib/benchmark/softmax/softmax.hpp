@@ -41,7 +41,13 @@ class softmax_bench : public kernel_bench {
 
  public:
   softmax_bench() {}
-  virtual ~softmax_bench() {}
+  virtual ~softmax_bench() {
+    for (auto op_args : {args.first, args.second})
+      for (auto rt_data : op_args.rt_data)
+        if (rt_data != nullptr) {
+          free(const_cast<void*>(rt_data));
+        }
+  }
 
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override {

@@ -140,9 +140,9 @@ bool spmm_vnni_bench::check_result() {
   } else if (dst_type == dt::s32) {
     return compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
   } else if (dst_type == dt::u8) {
-    return compare_data<uint8_t>(buf1, size1, buf2, size2, 5e-3);
+    return compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
   } else if (dst_type == dt::s8) {
-    return compare_data<int8_t>(buf1, size1, buf2, size2, 5e-3);
+    return compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
   }
   return false;
 }

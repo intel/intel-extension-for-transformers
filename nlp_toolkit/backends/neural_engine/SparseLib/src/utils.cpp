@@ -66,20 +66,26 @@ template void init_vector<int8_t>(int8_t*, int, float, float, int);
 template void init_vector<bfloat16_t>(bfloat16_t*, int, float, float, int);
 
 template <typename T>
+using is_u8s8 = std::__or_<std::is_same<T, uint8_t>, std::is_same<T, int8_t>>;
+
+template <typename T>
+inline typename std::enable_if<!is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
+  // we compare float relative error ratio here
+  return fabs(cast_to<T, float>(a) - cast_to<T, float>(b)) / std::max(fabs(cast_to<T, float>(b)), 1.0);
+}
+template <typename T>
+inline typename std::enable_if<is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
+  // for quantized value, error ratio was calcualted with its data range
+  return fabs(cast_to<T, float>(a) - cast_to<T, float>(b)) / UINT8_MAX;
+}
+
+template <typename T>
 bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, float eps) {
-  if (buf1 == buf2) {
-    return false;
-  }
-  if (size1 != size2) {
-    return false;
-  }
+  if (buf1 == buf2 || size1 != size2) return false;
   const auto& buf1_data = static_cast<const T*>(buf1);
   const auto& buf2_data = static_cast<const T*>(buf2);
   for (int64_t i = 0; i < size1; ++i) {
-    // we compare float relative error ratio here
-    auto err = fabs(cast_to<T, float>(buf1_data[i]) - cast_to<T, float>(buf2_data[i])) /
-               std::max(fabs(cast_to<T, float>(buf2_data[i])), 1.0);
-    if (err > eps) {
+    if (get_err(buf1_data[i], buf2_data[i]) > eps) {
       LOG(ERROR) << cast_to<T, float>(buf1_data[i]) << "vs" << cast_to<T, float>(buf2_data[i]) << " idx=" << i
                  << std::endl;
       return false;
@@ -175,7 +181,7 @@ int get_data_size(jd::data_type dt) {
     case data_type::u8:
       return 1;
     default:
-      std::runtime_error("unsupported data type.");
+      throw std::runtime_error("unsupported data type.");
   }
 }
 

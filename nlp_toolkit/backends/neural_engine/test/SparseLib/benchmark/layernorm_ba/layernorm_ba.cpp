@@ -112,12 +112,6 @@ bool layernorm_ba_bench::check_result() {
   } else if (dst_type == data_type::s8) {
     ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1);
   }
-  free(const_cast<void*>(p.rt_data[0]));
-  free(const_cast<void*>(p.rt_data[1]));
-  free(const_cast<void*>(q.rt_data[0]));
-  free(const_cast<void*>(q.rt_data[1]));
-  free(const_cast<void*>(q.rt_data[2]));
-  free(const_cast<void*>(q.rt_data[3]));
   return ans;
 }
 

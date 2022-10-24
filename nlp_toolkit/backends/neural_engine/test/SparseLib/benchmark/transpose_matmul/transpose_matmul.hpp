@@ -43,7 +43,7 @@ class transpose_matmul_bench : public kernel_bench {
   }
 
   bench_res_t set_config(int argc, char** argv) override;
-  double calc_flop() const override;
+  double calc_flop() const override { return smb->calc_flop(); };
   std::vector<int> get_refresh_data_idx() const override {
     return std::vector<int>{ssd::SRC0, ssd::SRC1, ssd::DST0, ssd::SRC2};
   }

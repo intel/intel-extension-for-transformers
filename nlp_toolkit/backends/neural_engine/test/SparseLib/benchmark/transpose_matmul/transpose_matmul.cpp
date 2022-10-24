@@ -14,23 +14,14 @@
 
 #include "transpose_matmul/transpose_matmul.hpp"
 #include "transpose_matmul/matmul_avx512f_p2031_p2013.hpp"
+#include "transpose_matmul/matmul_vnni_noperm_p2031_p1302.hpp"
 namespace jd {
-
-double transpose_matmul_bench::calc_flop() const {
-  std::vector<std::vector<dim_t>> shapes(ts_descs.size());
-  std::transform(ts_descs.begin(), ts_descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
-  const dim_t M = shapes[ssd::SRC0][3];  // aka src0_perm_shape[2]
-  const dim_t K = shapes[ssd::SRC0][1];  // aka src0_perm_shape[3]
-  const dim_t N = shapes[ssd::SRC1][3];  // aka src1_perm_shape[3]
-  const dim_t bs0 = shapes[ssd::DST0][0];
-  const dim_t bs1 = shapes[ssd::DST0][1];
-
-  return static_cast<double>(M) * N * K * bs0 * bs1 * 2;
-}
 
 bench_res_t transpose_matmul_bench::set_config(int argc, char** argv) {
   if (!strcmp(argv[0], "avx512f_p2031_p2013")) {
     smb = std::make_shared<matmul_avx512f_p2031_p2013_bench>();
+  } else if (!strcmp(argv[0], "vnni_noperm_p2031_p1302")) {
+    smb = std::make_shared<matmul_vnni_noperm_p2031_p1302_bench>();
   } else {
     LOG(ERROR) << "unknown kernel specification";
     return {bench_status::wrong_input};

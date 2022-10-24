@@ -39,13 +39,13 @@ inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tenso
 
 bool matmul_avx512f_p2031_p2013_kd_t::init() {
   using dt = jd::data_type;
+  if (!isa_available(avx512_core)) return false;
   auto& descs = op_desc_.tensor_descs();
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
+  auto shapes = get_tensor_shapes(descs);
 
   for (auto mat : {ssd::SRC0, ssd::SRC1, ssd::SRC2, ssd::DST0})
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
-      LOG(WARNING) << "All operand be 4D matrix";
+      LOG(WARNING) << "All operand should be 4D matrix";
       return false;
     }
 
@@ -170,8 +170,8 @@ bool matmul_avx512f_p2031_p2013_k_t::execute(const std::vector<const void*>& rt_
   auto base_src2 = static_cast<const float*>(rt_data[ssd::SRC2]);
 
 #pragma omp parallel for collapse(2)
-  for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0)
-    for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1) {
+  for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
+    for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0) {
       ssd::matmul_data_t rt_param;
       dim_t dst_offset = (ibs0 * bs1_ + ibs1) * M_ * N_;
       rt_param.dst = base_dst + dst_offset;

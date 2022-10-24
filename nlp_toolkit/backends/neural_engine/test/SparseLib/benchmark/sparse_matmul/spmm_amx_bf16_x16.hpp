@@ -15,8 +15,6 @@
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_SPMM_AMX_BF16_X16_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_SPMM_AMX_BF16_X16_HPP_
 
-#ifdef SPARSE_LIB_USE_AMX
-
 #include <omp.h>
 
 #include <exception>
@@ -43,7 +41,16 @@ class spmm_amx_bf16_x16_bench : public sparse_matmul_bench {
 
  public:
   spmm_amx_bf16_x16_bench() {}
-  virtual ~spmm_amx_bf16_x16_bench() {}
+  virtual ~spmm_amx_bf16_x16_bench() {
+    auto mutable_attrs_ptr = const_cast<std::unordered_map<std::string, std::string>*>(&args.first.op_desc.attrs());
+    const auto sparse_addr = str_to_num<uint64_t>((*mutable_attrs_ptr)["sparse_ptr"]);
+    const auto all_bsr_data = reinterpret_cast<std::vector<bsr_data_t<bfloat16_t>*>*>(sparse_addr);
+    for (auto sparse_data : *all_bsr_data) {
+      delete sparse_data;
+    }
+    delete all_bsr_data;
+    (*mutable_attrs_ptr)["sparse_ptr"] = "";  // clear it so that parent class won't double free
+  }
 
   bench_res_t set_config(int argc, char** argv) override;
   // Just like that in gtest file
@@ -64,5 +71,3 @@ std::pair<const void*, const void*> make_data_obj_spmm_amx_bf16_x16(const data_t
 }  // namespace jd
 
 #endif  // SPARSE_LIB_USE_AMX
-
-#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_SPMM_AMX_BF16_X16_HPP_

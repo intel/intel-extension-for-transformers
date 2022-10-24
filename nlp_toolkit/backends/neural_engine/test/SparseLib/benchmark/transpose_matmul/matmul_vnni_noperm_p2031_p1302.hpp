@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_MATMUL_AVX512F_P2031_P2013_HPP_
-#define ENGINE_SPARSELIB_BENCH_INCLUDE_MATMUL_AVX512F_P2031_P2013_HPP_
+#ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_MATMUL_VNNI_NOPERM_P2031_P1302_HPP_
+#define ENGINE_SPARSELIB_BENCH_INCLUDE_MATMUL_VNNI_NOPERM_P2031_P1302_HPP_
 
 #include <omp.h>
 
@@ -32,10 +32,10 @@
 #include "interface.hpp"
 #include "transpose_matmul/transpose_matmul.hpp"
 
-#define MATMUL_AVX512F_P2031_P2013_ARG_NUM 6
+#define MATMUL_VNNI_NOPERM_P2031_P1302_ARG_NUM 5
 
 namespace jd {
-class matmul_avx512f_p2031_p2013_bench : public transpose_matmul_bench {
+class matmul_vnni_noperm_p2031_p1302_bench : public transpose_matmul_bench {
  private:
   int64_t M;
   int64_t K;
@@ -43,14 +43,14 @@ class matmul_avx512f_p2031_p2013_bench : public transpose_matmul_bench {
   int64_t bs0;
   int64_t bs1;
   std::unordered_map<std::string, std::string> op_attrs = {};
-  bool has_binary_add = true;
 
  public:
-  matmul_avx512f_p2031_p2013_bench() {}
-  virtual ~matmul_avx512f_p2031_p2013_bench() {}
+  matmul_vnni_noperm_p2031_p1302_bench() {}
+  virtual ~matmul_vnni_noperm_p2031_p1302_bench() {}
 
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return static_cast<double>(M) * N * K * bs0 * bs1 * 2; };
+
   // Just like that in gtest file
   void get_true_data() override;
   // Just like that in gtest file
@@ -60,4 +60,4 @@ class matmul_avx512f_p2031_p2013_bench : public transpose_matmul_bench {
 };
 }  // namespace jd
 
-#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_MATMUL_AVX512F_P2031_P2013_HPP_
+#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_MATMUL_VNNI_NOPERM_P2031_P1302_HPP_
