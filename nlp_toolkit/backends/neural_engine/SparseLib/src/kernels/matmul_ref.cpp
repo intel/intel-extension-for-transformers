@@ -30,7 +30,7 @@ bool matmul_ref_kd_t::init() {
 
   for (auto mat : {ssd::SRC0, ssd::SRC1, ssd::SRC2, ssd::DST0})
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
-      LOG(WARNING) << "All operand of transpose matmul op should be 4D matrix";
+      SPARSE_LOG(WARNING) << "All operand of transpose matmul op should be 4D matrix";
       return false;
     }
 
@@ -61,7 +61,7 @@ bool matmul_ref_kd_t::init() {
   for (auto idx : {0, 1}) {  // for bs0 and bs1
     for (auto shape_perm : {src0_perm_shape, src1_perm_shape}) {
       if (shape_perm[idx] != dst0_perm_shape[idx]) {
-        LOG(WARNING) << "First 2 dimensions of all tensors after permutation should be the same";
+        SPARSE_LOG(WARNING) << "First 2 dimensions of all tensors after permutation should be the same";
         return false;
       }
     }
@@ -70,7 +70,7 @@ bool matmul_ref_kd_t::init() {
                      src0_perm_shape[3] == src1_perm_shape[2] &&  // K
                      src1_perm_shape[3] == dst0_perm_shape[3];    // N
   if (!mkn_matches) {
-    LOG(WARNING) << "M / K / N from src0 / src1 dst0 should match";
+    SPARSE_LOG(WARNING) << "M / K / N from src0 / src1 dst0 should match";
     return false;
   }
 
@@ -171,7 +171,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
             float quantized_value = apply_postop_list(value, {quantize});
             dst_u8[dst_idx] = static_cast<uint8_t>(quantized_value);
           } else {
-            LOG(FATAL) << "unsupported dst type";
+            SPARSE_LOG(FATAL) << "unsupported dst type";
           }
         }
   return true;

@@ -44,7 +44,7 @@ Xbyak::Address jit_generator::EVEX_compress_addr(Xbyak::Reg64 base, T raw_offt, 
   using Xbyak::RegExp;
   using Xbyak::Zmm;
 
-  assert(raw_offt <= INT_MAX);
+  SPARSE_LOG_IF(FATAL, raw_offt > INT_MAX) << "raw_offt should be int";
   auto offt = static_cast<int>(raw_offt);
 
   int scale = 0;

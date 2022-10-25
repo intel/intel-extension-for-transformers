@@ -97,7 +97,8 @@ void jit_spmm_vnni_t::load_dense(const std::vector<int64_t>& k_indices) {
     int vreg_temp_idx = vreg_temp.getIdx();
     Xbyak::Xmm temp_xmm(vreg_temp_idx);
     Xbyak::Ymm temp_ymm = Xbyak::Ymm(vreg_temp_idx) | reg_k1;
-    assert(k_indices.size() > 0 && k_indices.size() <= spns::ADJ);
+    SPARSE_LOG_IF(FATAL, !(k_indices.size() > 0 && k_indices.size() <= spns::ADJ))
+        << "k_indices.size() > 0 && k_indices.size() <= spns::ADJ";
     if (k_indices.size() == spns::ADJ) {
       vmovdqu8(TW_xmm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[0] * ld_dst() + j * VEC]);
       vbroadcasti32x4(TW_ymm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[1] * ld_dst() + j * VEC]);
@@ -130,13 +131,13 @@ void jit_spmm_vnni_t::load_sparse(const Xbyak::Reg64& reg_addr, uint64_t offset)
 
 void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
   int need_regs = TH() + TW() + TH() * TW() + USED_VREGS;
-  LOG_IF(FATAL, need_regs >= VREG_NUMS) << "loading weight's REGs (TH=" << TH()
-                                        << "), loading "
-                                           "activation's REGs (TW="
-                                        << TW() << "), dst tile's REGs (TH*TW=" << (TH() * TW())
-                                        << "). "
-                                           "Their sum "
-                                        << need_regs << " mustn't exceed 32zmm.";
+  SPARSE_LOG_IF(FATAL, need_regs >= VREG_NUMS) << "loading weight's REGs (TH=" << TH()
+                                               << "), loading "
+                                                  "activation's REGs (TW="
+                                               << TW() << "), dst tile's REGs (TH*TW=" << (TH() * TW())
+                                               << "). "
+                                                  "Their sum "
+                                               << need_regs << " mustn't exceed 32zmm.";
   const dim_t imb = (param_.im_start + m_start) / TH();  // global index of m-block
 
   // ADJ=4 means 4 S8 combine a DST_S32. As ADJ repeats in K-dim, a DST_S32 also accumulates.
@@ -241,7 +242,7 @@ void jit_spmm_vnni_t::handle_postop_escape_regs() {
 }
 
 void jit_spmm_vnni_t::store_intermediate_dst(dim_t m_start) {
-  LOG(FATAL) << "K-blocking is not implemented.";
+  SPARSE_LOG(FATAL) << "K-blocking is not implemented.";
   for (int i = 0; i < TH(); ++i) {
     for (int j = 0; j < TW(); ++j) {
       int sliced_dst_idx = (m_start + i) * ld_dst() + j * VEC;
@@ -413,7 +414,7 @@ void jit_spmm_vnni_t::generate() {
       gen_subfunc_load_and_prod();
       break;
     default:
-      LOG(FATAL) << "Unexpected subfunc_level: " << static_cast<uint8_t>(param_.sub_func);
+      SPARSE_LOG(FATAL) << "Unexpected subfunc_level: " << static_cast<uint8_t>(param_.sub_func);
       break;
   }
   callee_functions_code_size_ = getSize();

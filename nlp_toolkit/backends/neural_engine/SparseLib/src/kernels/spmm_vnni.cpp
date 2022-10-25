@@ -32,7 +32,7 @@ void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  // NOLI
 
     BM = ceil_div(M, ceil_div(cores, blocks_n));
     BM = ceil_div(BM, TILE_SIZE_M) * TILE_SIZE_M;  // round to a multiple of 4
-    LOG(INFO) << "BM (micro output channel) automatically configured: BM=" << BM;
+    SPARSE_LOG(INFO) << "BM (micro output channel) automatically configured: BM=" << BM;
   }
 }
 
@@ -82,7 +82,7 @@ bool spmm_vnni_kd_t::init() {
   auto op_attrs = op_desc_.attrs();
   BM_ = str_to_num<dim_t>(op_attrs["micro_oc"]);  // block m
   auto_blocking(BM_, BN(), M(), N());
-  LOG_IF(FATAL, BM_ % TILE_SIZE_M != 0) << "BM must be a multiple of TILE_SIZE_M\n";
+  SPARSE_LOG_IF(FATAL, BM_ % TILE_SIZE_M != 0) << "BM must be a multiple of TILE_SIZE_M";
 
   spmm_params_init();
   return true;
@@ -100,11 +100,12 @@ bool spmm_vnni_kd_t::spmm_params_init() {
 
   dim_t num_mblock = ceil_div(M(), BM());
   params_.resize(num_mblock);
-  LOG_IF(FATAL, bsr_data->block_size().size() != 2 || bsr_data->block_size()[0] != params_[0].blocksize[0] ||
-                    bsr_data->block_size()[1] != params_[0].blocksize[1])
-      << "different block sizes between sparse encoding and param\n";
-  LOG_IF(FATAL, op_attrs["append_sum"] != "true" && op_attrs["append_sum"] != "false" && op_attrs["append_sum"] != "")
-      << "append_sum must only be true/false\n";
+  SPARSE_LOG_IF(FATAL, bsr_data->block_size().size() != 2 || bsr_data->block_size()[0] != params_[0].blocksize[0] ||
+                           bsr_data->block_size()[1] != params_[0].blocksize[1])
+      << "different block sizes between sparse encoding and param";
+  SPARSE_LOG_IF(FATAL,
+                op_attrs["append_sum"] != "true" && op_attrs["append_sum"] != "false" && op_attrs["append_sum"] != "")
+      << "append_sum must only be true/false";
   int tile_w = atoi(op_attrs["tile_n"].c_str());
   if (tile_w == 0) {
     tile_w = 4;
@@ -167,7 +168,7 @@ bool spmm_vnni_k_t::execute(const std::vector<const void*>& rt_data) const {
     case jd::data_type::u8:
       return execute_<uint8_t>(rt_data);
     default:
-      LOG(ERROR) << "Unexpected dst_type: " << static_cast<uint8_t>(dst_type());
+      SPARSE_LOG(ERROR) << "Unexpected dst_type: " << static_cast<uint8_t>(dst_type());
       break;
   }
   return false;

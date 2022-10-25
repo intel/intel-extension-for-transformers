@@ -33,8 +33,8 @@ bool spmm_avx512f_kd_t::init() {
   if (!is_supported) return false;
 
   if (wei_desc.shape().front() != src_desc.shape().back()) {
-    LOG(WARNING) << "Skip as weight shape (" << wei_desc.shape().front() << ") and source shape ("
-                 << wei_desc.shape().back() << ") don't match!";
+    SPARSE_LOG(WARNING) << "Skip as weight shape (" << wei_desc.shape().front() << ") and source shape ("
+                        << wei_desc.shape().back() << ") don't match!";
     return false;
   }
 

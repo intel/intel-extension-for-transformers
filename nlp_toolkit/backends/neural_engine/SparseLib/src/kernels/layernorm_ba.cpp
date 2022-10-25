@@ -19,13 +19,13 @@ namespace jd {
 bool layernorm_ba_kd_t::init() {
   if (!isa_available(avx512_core)) return false;
   auto tensor_desc = op_desc_.tensor_descs();
-  assert(tensor_desc.size() == 3);
+  SPARSE_LOG_IF(FATAL, tensor_desc.size() != 3) << "only support 3 rt_data";
   // TODO(zhe1wang): support more data_type.
   auto input_dt = tensor_desc[0].dtype();
   auto output_dt = tensor_desc[1].dtype();
   auto affine_dt = tensor_desc[2].dtype();
-  assert(input_dt == data_type::fp32);
-  assert(tensor_desc[0].ftype() == format_type::ba);
+  SPARSE_LOG_IF(FATAL, input_dt != data_type::fp32) << "only support fp32";
+  SPARSE_LOG_IF(FATAL, tensor_desc[0].ftype() != format_type::ba) << "only support transpose";
   auto tensor_shape = tensor_desc[0].shape();
 
   int row_num = 1;
@@ -38,7 +38,7 @@ bool layernorm_ba_kd_t::init() {
 
   // init params
   // TODO(zhe1wang): support col nums can't divded by 16.
-  assert(col_num % 16 == 0);
+  SPARSE_LOG_IF(FATAL, col_num % 16 != 0) << "col nums should divded by 16 now";
   int max_eff_nthr = col_num / 16;
   // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   params_.resize(max_eff_nthr);

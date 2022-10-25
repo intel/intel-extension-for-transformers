@@ -18,16 +18,16 @@ namespace jd {
 
 bool layernorm_ba_ref_kd_t::init() {
   auto tensor_desc = op_desc_.tensor_descs();
-  LOG_IF(FATAL, tensor_desc.size() != 3);
+  SPARSE_LOG_IF(FATAL, tensor_desc.size() != 3);
   // TODO(zhe1wang): support more data_type.
   auto input_dt = tensor_desc[0].dtype();
-  LOG_IF(FATAL, input_dt != data_type::fp32);
-  LOG_IF(FATAL, tensor_desc[0].ftype() != format_type::ba);
+  SPARSE_LOG_IF(FATAL, input_dt != data_type::fp32);
+  SPARSE_LOG_IF(FATAL, tensor_desc[0].ftype() != format_type::ba);
 
   auto tensor_shape = tensor_desc[0].shape();
   int col_num = tensor_shape.back();
   // TODO(zhe1wang): support col nums can't divded by 16.
-  LOG_IF(FATAL, col_num % 16 != 0)
+  SPARSE_LOG_IF(FATAL, col_num % 16 != 0)
       << "Transposed LayerNorm currently only supports column number be able to be devided by 16";
   return true;
 }

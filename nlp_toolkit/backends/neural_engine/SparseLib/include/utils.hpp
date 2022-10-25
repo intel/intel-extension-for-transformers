@@ -14,6 +14,7 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_
+#include <glog/logging.h>
 #include <stdlib.h>
 
 #include <atomic>
@@ -24,12 +25,15 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
 #include "param_types.hpp"
 
 #ifdef SPARSE_LIB_USE_VTUNE
 #include <ittnotify.h>
 #endif
 
+#define SPARSE_LOG(level) LOG(level) << "Log from Sparselib \n"
+#define SPARSE_LOG_IF(level, f) LOG_IF(level, f) << "Log from Sparselib\n"
 namespace jd {
 
 typedef uint16_t bfloat16_t;  // NOLINT

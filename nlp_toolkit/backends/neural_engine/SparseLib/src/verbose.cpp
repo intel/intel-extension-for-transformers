@@ -107,7 +107,7 @@ void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
       CASE(eltwiseop);
       CASE(layernorm_ba);
       default:
-        assert(!"unknown primitive kind");
+        SPARSE_LOG(FATAL) << "unknown primitive kind";
     }
 #undef CASE
 

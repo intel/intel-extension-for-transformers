@@ -45,7 +45,7 @@ bool matmul_avx512f_p2031_p2013_kd_t::init() {
 
   for (auto mat : {ssd::SRC0, ssd::SRC1, ssd::SRC2, ssd::DST0})
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
-      LOG(WARNING) << "All operand should be 4D matrix";
+      SPARSE_LOG(WARNING) << "All operand should be 4D matrix";
       return false;
     }
 
@@ -75,8 +75,8 @@ bool matmul_avx512f_p2031_p2013_kd_t::init() {
   if (!is_supported) return false;
 
   if (src0_perm_shape[3] != src1_perm_shape[2]) {
-    LOG(WARNING) << "Skip as src0 k-dim (" << src0_perm_shape[3] << ") and src1 k-dim (" << src1_perm_shape[2]
-                 << ") don't match!";
+    SPARSE_LOG(WARNING) << "Skip as src0 k-dim (" << src0_perm_shape[3] << ") and src1 k-dim (" << src1_perm_shape[2]
+                        << ") don't match!";
     return false;
   }
 
@@ -84,7 +84,7 @@ bool matmul_avx512f_p2031_p2013_kd_t::init() {
     for (auto shape_perm : {src0_perm_shape, src1_perm_shape, shapes[ssd::SRC2]}) {
       if (shape_perm.empty()) continue;
       if (shape_perm[idx] != shapes[ssd::DST0][idx]) {
-        LOG(WARNING) << "First 2 dimensions of all tensors after permutation should be the same";
+        SPARSE_LOG(WARNING) << "First 2 dimensions of all tensors after permutation should be the same";
         return false;
       }
     }
@@ -112,12 +112,12 @@ bool matmul_avx512f_p2031_p2013_kd_t::matmul_params_init(const jd::operator_desc
   bool has_binary_add = !shapes[ssd::SRC2].empty();
 
   if (attrs["alpha"] != "") jit_param_.alpha = str_to_num<float>(attrs["alpha"]);
-  LOG_IF(WARNING, jit_param_.alpha == 0.f)
+  SPARSE_LOG_IF(WARNING, jit_param_.alpha == 0.f)
       << "Alpha for matmul is set to 0 meaning that the base result will be discarded";
 
   if (has_binary_add) {
     if (attrs["beta"] != "") jit_param_.beta = str_to_num<float>(attrs["beta"]);
-    LOG_IF(WARNING, has_binary_add && jit_param_.beta == 0.f)
+    SPARSE_LOG_IF(WARNING, has_binary_add && jit_param_.beta == 0.f)
         << "Beta for matmul is set to 0 meaning the binary-add does nothing";
   } else {
     jit_param_.beta = 0;  // set beta to 0 to avoid generate unnecessary asm ascode

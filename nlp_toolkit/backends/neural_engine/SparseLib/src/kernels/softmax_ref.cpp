@@ -21,15 +21,17 @@ bool softmax_ref_kd_t::init() {
   if (op_attrs["spec_type"] == "lut") {
     // assert int8 dt as input.
     auto tensor_desc = op_desc_.tensor_descs();
-    if (tensor_desc.size() != 2) LOG(ERROR) << "softmax lut kernel need 2 tensor descriptor:src & dst." << std::endl;
+    if (tensor_desc.size() != 2)
+      SPARSE_LOG(ERROR) << "softmax lut kernel need 2 tensor descriptor:src & dst." << std::endl;
     auto input_dt = tensor_desc[0].dtype();
     auto output_dt = tensor_desc[1].dtype();
-    LOG_IF(FATAL,
-           output_dt != data_type::bf16);  // TODO(zhe1wang): support more dt,current impl is for experiment only.
+    SPARSE_LOG_IF(
+        FATAL,
+        output_dt != data_type::bf16);  // TODO(zhe1wang): support more dt,current impl is for experiment only.
     if (get_data_size(input_dt) != 1)
-      LOG(ERROR) << "softmax lut kernel only support int8 dtype as input currently." << std::endl;
+      SPARSE_LOG(ERROR) << "softmax lut kernel only support int8 dtype as input currently." << std::endl;
   } else {
-    LOG(ERROR) << "do not supported specialization softmax type" << std::endl;
+    SPARSE_LOG(ERROR) << "do not supported specialization softmax type" << std::endl;
   }
   return true;
 }

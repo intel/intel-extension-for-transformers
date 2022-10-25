@@ -42,7 +42,7 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
 
   for (auto mat : {ssd::SRC0, ssd::SRC1, ssd::SRC2, ssd::DST0})
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
-      LOG(WARNING) << "All operand should be 4D matrix";
+      SPARSE_LOG(WARNING) << "All operand should be 4D matrix";
       return false;
     }
 
@@ -73,8 +73,8 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
   if (!is_supported) return false;
 
   if (src0_perm_shape[3] != src1_perm_shape[2]) {
-    LOG(WARNING) << "Skip as src0 k-dim (" << src0_perm_shape[3] << ") doesn't match src1 k-dim (" << src1_perm_shape[2]
-                 << ").";
+    SPARSE_LOG(WARNING) << "Skip as src0 k-dim (" << src0_perm_shape[3] << ") doesn't match src1 k-dim ("
+                        << src1_perm_shape[2] << ").";
     return false;
   }
 
@@ -82,7 +82,7 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
     for (auto shape_perm : {src0_perm_shape, src1_perm_shape}) {
       if (shape_perm.empty()) continue;
       if (shape_perm[idx] != dst0_perm_shape[idx]) {
-        LOG(WARNING) << "First 2 dimensions of all tensors after permutation should be the same";
+        SPARSE_LOG(WARNING) << "First 2 dimensions of all tensors after permutation should be the same";
         return false;
       }
     }

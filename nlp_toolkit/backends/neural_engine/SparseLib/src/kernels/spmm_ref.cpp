@@ -51,9 +51,9 @@ bool spmm_ref_kd_t::init() {
 
     BM_ = ceil_div(M(), ceil_div(cores, blocks_n));
     BM_ = ceil_div(BM_, TILE_SIZE_M) * TILE_SIZE_M;
-    LOG(INFO) << "BM (micro output channel) automatically configured: BM=" << BM_;
+    SPARSE_LOG(INFO) << "BM (micro output channel) automatically configured: BM=" << BM_;
   }
-  LOG_IF(FATAL, BM_ % TILE_SIZE_M != 0) << "BM must be a multiple of TILE_SIZE_M\n";
+  SPARSE_LOG_IF(FATAL, BM_ % TILE_SIZE_M != 0) << "BM must be a multiple of TILE_SIZE_M\n";
   return true;
 }
 
@@ -204,7 +204,7 @@ bool spmm_ref_k_t::execute_f32_(const std::vector<const void*>& rt_data) const {
   auto dst_fp32 = static_cast<float*>(const_cast<void*>(rt_data[ssd::DST]));
 
   // Computing the kernel
-  assert(dims == 2);
+  SPARSE_LOG_IF(FATAL, dims != 2) << "dim should be 2";
   for (int i = 0; i < M; ++i) {
 #pragma omp parallel for
     for (int j = 0; j < N; ++j) {
@@ -238,7 +238,7 @@ bool spmm_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
     case jd::data_type::bf16:
       return execute_bf16_(rt_data);
     default:
-      LOG(ERROR) << "Unexpected dst_type: " << static_cast<uint8_t>(dst_type());
+      SPARSE_LOG(ERROR) << "Unexpected dst_type: " << static_cast<uint8_t>(dst_type());
       break;
   }
   return false;

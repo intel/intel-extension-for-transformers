@@ -21,6 +21,7 @@
 
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
+#include "utils.hpp"
 
 using Zmm = Xbyak::Zmm;
 using Ymm = Xbyak::Ymm;

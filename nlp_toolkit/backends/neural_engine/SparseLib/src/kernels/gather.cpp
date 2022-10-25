@@ -27,11 +27,11 @@ bool gather_kd_t::init() {
   int idx_axis = str_to_num<dim_t>(op_attrs["idx_axis"]);
   param_.dst_axis_size = idx_shape[idx_axis];
   param_.outer_size = 1;
-  assert(idx_axis == idx_shape.size() - 1);
+  SPARSE_LOG_IF(FATAL, idx_axis != idx_shape.size() - 1) << "idx_axis should be the last dim of idx";
   if (idx_axis != 0) {
-    assert(src_axis == idx_axis);
+    SPARSE_LOG_IF(FATAL, src_axis != idx_axis) << "idx_axis should equal to src_idx when idx_axis!=0";
     for (int i = 0; i < src_axis; i++) {
-      assert(src_shape[i] >= idx_shape[i]);
+      SPARSE_LOG_IF(FATAL, src_shape[i] < idx_shape[i]) << "src shape less than idx on dim:" << i;
       param_.outer_size *= idx_shape[i];
       dst_shape.push_back(idx_shape[i]);
     }
@@ -44,7 +44,8 @@ bool gather_kd_t::init() {
   }
   int dst_size = 1;
   for (auto& i : shape()) dst_size *= i;
-  assert(dst_size == param_.outer_size * param_.dst_axis_size * param_.inner_size);
+  SPARSE_LOG_IF(FATAL, dst_size != param_.outer_size * param_.dst_axis_size * param_.inner_size)
+      << "cannot reshape to dst shape";
   param_.dt = tensor_desc[0].dtype();
   param_.dt_size = get_data_size(tensor_desc[0].dtype());
   param_.loops = param_.inner_size / (512 / 8 / param_.dt_size);
@@ -53,7 +54,7 @@ bool gather_kd_t::init() {
   param_.extend_mask = (1LL << (param_.remain * param_.dt_size)) - 1;
   param_.binaryop_attrs = op_desc_.get_binaryop_list();
   for (int i = 0; i < param_.binaryop_attrs.size(); i++) {
-    assert(tensor_desc[3 + i].size() % param_.inner_size == 0);
+    SPARSE_LOG_IF(FATAL, tensor_desc[3 + i].size() % param_.inner_size != 0) << "cannot boardcast in append op:" << i;
     param_.binary_ts_sizes.push_back(tensor_desc[3 + i].size());
   }
   return true;

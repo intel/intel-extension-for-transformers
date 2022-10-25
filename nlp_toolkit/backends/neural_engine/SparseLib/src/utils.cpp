@@ -86,8 +86,7 @@ bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t siz
   const auto& buf2_data = static_cast<const T*>(buf2);
   for (int64_t i = 0; i < size1; ++i) {
     if (get_err(buf1_data[i], buf2_data[i]) > eps) {
-      LOG(ERROR) << cast_to<T, float>(buf1_data[i]) << "vs" << cast_to<T, float>(buf2_data[i]) << " idx=" << i
-                 << std::endl;
+      SPARSE_LOG(ERROR) << cast_to<T, float>(buf1_data[i]) << "vs" << cast_to<T, float>(buf2_data[i]) << " idx=" << i;
       return false;
     }
   }

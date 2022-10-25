@@ -23,7 +23,7 @@ void jit_eltwise_injector::eltwise_injector_init(jit_generator* ptr, const std::
 
 size_t jit_eltwise_injector::table_off(key_t key, size_t key_off_val_shift) {
   const auto it = entry_map.find(key);
-  assert(it != entry_map.end());
+  SPARSE_LOG_IF(FATAL, it == entry_map.end()) << "key is not in entry_map";
   const auto& te = (*it).second;
   const auto scale = te.bcast ? 64u : sizeof(table_entry_val_t);
   return te.off + key_off_val_shift * scale;
@@ -42,17 +42,17 @@ void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_a
     auto cur_attr = postop_attrs[i];
     auto cur_alg = cur_attr.op_alg;
     auto cur_dt = cur_attr.dt;
-    if (i != chain_len - 1) assert(cur_alg != postop_alg::quantize);
-    if (i != 0) assert(cur_alg != postop_alg::dequantize);
+    if (i != chain_len - 1) SPARSE_LOG_IF(FATAL, cur_alg == postop_alg::quantize) << "quantize should be last op";
+    if (i != 0) SPARSE_LOG_IF(FATAL, cur_alg == postop_alg::dequantize) << "Dequantize should be first op";
     // bit8-lut algo must be the fist op in the postop-chain.
     if (cur_alg == postop_alg::eltop_int_lut) {
-      assert(i == 0);
+      SPARSE_LOG_IF(FATAL, i != 0) << "eltop_int_lut should be first op";
       int_lut_flag = true;
     }
 
     if (cur_alg == postop_alg::quantize || cur_attr.op_alg == postop_alg::dequantize) {
       quant_flag = true;
-      assert(cur_dt == data_type::s8 || cur_dt == data_type::u8);
+      SPARSE_LOG_IF(FATAL, !(cur_dt == data_type::s8 || cur_dt == data_type::u8)) << "should quantize to s8/u8";
     }
 
     // we do not need to assert other affairs
@@ -61,9 +61,11 @@ void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_a
 
     // normal op only support fp32/bf16,once contain quant related operator,only support fp32.
     if (!quant_flag) {
-      assert(cur_dt == data_type::fp32 || cur_dt == data_type::bf16);
+      SPARSE_LOG_IF(FATAL, !(cur_dt == data_type::fp32 || cur_dt == data_type::bf16))
+          << "normal op only support fp32/bf16";
     } else {
-      if (cur_alg != postop_alg::dequantize && cur_alg != postop_alg::quantize) assert(cur_dt == data_type::fp32);
+      if (cur_alg != postop_alg::dequantize && cur_alg != postop_alg::quantize)
+        SPARSE_LOG_IF(FATAL, cur_dt != data_type::fp32) << "once contain quant related operator,only support fp32.";
     }
   }
 }
@@ -107,7 +109,7 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
         if (cur_postop_attr_.alpha == 16) bit16_lut_compute_vector_fwd(zmm_src);
         break;
       default:
-        LOG(FATAL) << "unsupported op in eltwise_injector";
+        SPARSE_LOG(FATAL) << "unsupported op in eltwise_injector";
         break;
     }
   };
@@ -444,7 +446,7 @@ void jit_eltwise_injector::assign_regs() {
     while (tb_allocate_regs.size() != 0) {
       while (used_reg_idxs.count(allocate_idx) != 0) allocate_idx++;
       if (allocate_idx > max_reg_idx)
-        LOG(FATAL) << "jit_eltwise allocate_regs error:too many registers be used in front op.";
+        SPARSE_LOG(FATAL) << "jit_eltwise allocate_regs error:too many registers be used in front op.";
 
       Xbyak::Reg* reg = tb_allocate_regs.back();
       if (reg_type == reg_type::mask) {
@@ -496,7 +498,7 @@ inline T bit_cast(const U& u) {
 void jit_eltwise_injector::prepare_table() {
   h->align(64);
   h->L(l_table);
-  assert(sizeof(table_entry_val_t) == 4);
+  SPARSE_LOG_IF(FATAL, sizeof(table_entry_val_t) != 4) << "sizeof(table_entry_val_t) should be 4";
 
   for (auto it = entry_map.begin(); it != entry_map.end(); it++) {
     const auto& te = (*it).second;
@@ -508,7 +510,7 @@ void jit_eltwise_injector::prepare_table() {
 uint32_t jit_eltwise_injector::get_bit16_lut_term(int integer, const std::vector<postop_attr>& postop_attrs,
                                                   data_type output_dt) {
   // TODO(zhe1wang): support fp16 or other 16bit data type in the future.
-  assert(output_dt == data_type::bf16);
+  SPARSE_LOG_IF(FATAL, output_dt != data_type::bf16) << "only support bf16 now";
   uint32_t ans = 0;
   uint16_t* u16 = new uint16_t(0);
   for (int i = 0; i < 2; i++) {
@@ -893,15 +895,16 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
   // eltop_int_lut's alpha means the bitwidth
   if (postop_attrs.size() > 0 && postop_attrs[0].op_alg == postop_alg::eltop_int_lut) {
     // lut kernel first op must be dequantize
-    assert(postop_attrs.size() >= 2);
-    assert(postop_attrs[1].op_alg == postop_alg::dequantize);
+    SPARSE_LOG_IF(FATAL, postop_attrs.size() < 2) << "postop_attrs.size() < 2";
+    SPARSE_LOG_IF(FATAL, postop_attrs[1].op_alg != postop_alg::dequantize) << "First op should not be dequantize";
     auto input_dt = postop_attrs[0].dt;
     auto output_dt = postop_attrs.back().dt;
     int table_bitwidth = postop_attrs[0].alpha;
     if (table_bitwidth == 8) {
-      assert(postop_attrs.size() >= 3);
+      SPARSE_LOG_IF(FATAL, postop_attrs.size() < 3) << "postop_attrs.size() < 3";
       // if first op is bit8-lut,the last op must be quantize
-      assert(postop_attrs.back().op_alg == postop_alg::quantize);
+      SPARSE_LOG_IF(FATAL, postop_attrs.back().op_alg != postop_alg::quantize)
+          << "if first op is bit8-lut,the last op must be quantize";
       push_entries_of(bit8_lut_consts);
     } else {
       push_entries_of(bit16_lut_consts);
@@ -923,7 +926,7 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
       for (int i = 0; i < 128; i += 32 / table_bitwidth) register_bit_lut_entries(i, table_bitwidth);
       for (int i = -128; i < 0; i += 32 / table_bitwidth) register_bit_lut_entries(i, table_bitwidth);
     } else {
-      LOG(FATAL) << "eltop_int_lut algo only support s8/u8 data_type as input.";
+      SPARSE_LOG(FATAL) << "eltop_int_lut algo only support s8/u8 data_type as input.";
     }
     push_entries_of(bit_lut);
 
