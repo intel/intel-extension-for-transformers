@@ -748,7 +748,7 @@ def main():
                 infer = model.signatures[list(model.signatures.keys())[0]]
                 for i, (inputs, labels) in enumerate(tf_dataset):
                     for name in inputs:
-                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
                     start = time.time()
                     results = infer(**inputs)
                     total_time += time.time() - start
@@ -811,7 +811,7 @@ def main():
                 infer = model.signatures[list(model.signatures.keys())[0]]
                 for i, (inputs, labels) in enumerate(tf_dataset):
                     for name in inputs:
-                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=tf.int32)
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
                     results = infer(**inputs)
                     for val in results:
                         if preds is None:
