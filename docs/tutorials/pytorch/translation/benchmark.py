@@ -33,8 +33,8 @@ training_args = Seq2SeqTrainingArguments(
     per_device_eval_batch_size=8,
     predict_with_generate=True
 )
-config = AutoConfig.from_pretrained("t5-small", revision="main")
-tokenizer = AutoTokenizer.from_pretrained("t5-small", revision="main", use_fast=True)
+config = AutoConfig.from_pretrained(args.model_name_or_path, revision="main")
+tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, revision="main", use_fast=True)
 prefix = ""
 
 ## start with int8 benchmarking
