@@ -2,7 +2,6 @@ import os
 import shutil
 import unittest
 import neural_compressor.adaptor.pytorch as nc_torch
-from distutils.version import LooseVersion
 from nlp_toolkit import (
     metrics,
     objectives,
@@ -14,6 +13,7 @@ from nlp_toolkit.optimization.benchmark import (
     ExecutorBenchmark,
     ExecutorBenchmarkArguments,
 )
+from packaging.version import Version
 from transformers import (
     AutoConfig,
 )
@@ -74,7 +74,7 @@ class TestBenchmark(unittest.TestCase):
         TestBenchmark.check_results_dict_not_empty(results.time_inference_result)
 
 
-@unittest.skipIf(PT_VERSION >= LooseVersion("1.12.0"),
+@unittest.skipIf(PT_VERSION >= Version("1.12.0"),
     "Please use PyTroch 1.11 or lower version for executor backend")
 class TestExecutorBenchmark(unittest.TestCase):
     @classmethod
