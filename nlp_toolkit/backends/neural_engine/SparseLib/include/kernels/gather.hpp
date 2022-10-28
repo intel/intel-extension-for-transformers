@@ -50,12 +50,7 @@ class gather_k_t : public kernel_t {
  public:
   using kd_t = gather_kd_t;
   explicit gather_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
-  virtual ~gather_k_t() {
-    if (jit_kers_ != nullptr) {
-      delete jit_kers_;
-      jit_kers_ = nullptr;
-    }
-  }
+  virtual ~gather_k_t() { safe_delete(jit_kers_); }
 
  public:
   bool init() override;

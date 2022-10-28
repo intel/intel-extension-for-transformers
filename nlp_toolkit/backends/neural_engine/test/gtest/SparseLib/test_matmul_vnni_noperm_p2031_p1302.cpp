@@ -258,6 +258,10 @@ static auto case_func = []() {
     cases.push_back({gen_case(32, 32, 64, 1, 12, nthr, {})});
     cases.push_back({gen_case(32, 32, 64, 6, 12, nthr, {})});
     cases.push_back({gen_case(32, 32, 64, 8, 12, nthr, {})});
+    // seq = 32 unified kernel
+    cases.push_back({gen_case(32, 32, 64, 1, 12, nthr, {{"unified", "1"}})});
+    cases.push_back({gen_case(32, 32, 64, 6, 12, nthr, {{"unified", "1"}})});
+    cases.push_back({gen_case(32, 32, 64, 8, 12, nthr, {{"unified", "1"}})});
 
     // seq = 384
     cases.push_back({gen_case(384, 384, 64, 1, 12, nthr, {})});
@@ -285,6 +289,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back(std::to_string(M));
   params.push_back(std::to_string(K));
   params.push_back(std::to_string(N));
+  if (attrs["unified"] == "1") params.push_back("unified");
   return join_str(params, "_");
 }
 

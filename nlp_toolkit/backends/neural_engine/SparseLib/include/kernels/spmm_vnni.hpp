@@ -87,12 +87,7 @@ class spmm_vnni_k_t : public kernel_t {
         BM_(derived_kd()->BM()),
         BN_(derived_kd()->BN()) {}
   virtual ~spmm_vnni_k_t() {
-    for (auto& kernel : jit_kers_) {
-      if (kernel != nullptr) {
-        delete kernel;
-        kernel = nullptr;
-      }
-    }
+    for (auto& kernel : jit_kers_) safe_delete(kernel);
   }
   // Delete move constructor and move operator
   spmm_vnni_k_t(spmm_vnni_k_t&& other) = delete;

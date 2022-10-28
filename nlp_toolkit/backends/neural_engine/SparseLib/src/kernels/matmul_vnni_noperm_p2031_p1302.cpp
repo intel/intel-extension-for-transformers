@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 #include "kernels/matmul_vnni_noperm_p2031_p1302.hpp"
-
 namespace jd {
 
 /**
@@ -23,7 +22,7 @@ namespace jd {
  *   dst:  bs1 n   bs0 m <=perm1302== bs0 bs1 m n
  *
  * Entries of op_desc_.attrs:
- *   No attrs supported yet!
+ *   unified: transpose input while doing gemm. This optimization usually benefits small input.
  */
 
 inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
@@ -98,14 +97,16 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::matmul_params_init(const jd::operator_
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
   auto attrs = op_desc_.attrs();
 
-  jit_param_.M = shapes[ssd::SRC0][2];  // aka src0_perm_shape[2]
-  jit_param_.K = shapes[ssd::SRC0][3];  // aka src0_perm_shape[3]
-  jit_param_.N = shapes[ssd::SRC1][1];  // aka src1_perm_shape[3]
-  jit_param_.batch = shapes[ssd::SRC0][0];
+  jit_param_.M = shapes[ssd::SRC0][2];      // aka src0_perm_shape[2]
+  jit_param_.K = shapes[ssd::SRC0][3];      // aka src0_perm_shape[3]
+  jit_param_.N = shapes[ssd::SRC1][1];      // aka src1_perm_shape[3]
+  jit_param_.batch = shapes[ssd::SRC0][0];  // bs0
 
   // note that this kernel writes dst in col-major
   jit_param_.m_tile = 1;
   jit_param_.n_tile = 16;
+
+  if (attrs["unified"] == "1") using_unified_kernel_ = true;
   return true;
 }
 
@@ -132,38 +133,110 @@ matmul_vnni_noperm_p2031_p1302_k_t::matmul_vnni_noperm_p2031_p1302_k_t(const std
       K_(src0_perm_shape_[3]),
       N_(src1_perm_shape_[3]),
       bs0_(dst1_perm_shape_[0]),
-      bs1_(dst1_perm_shape_[1]) {}
+      bs1_(dst1_perm_shape_[1]),
+      using_unified_kernel_(derived_kd()->using_unified_kernel()) {}
 
 bool matmul_vnni_noperm_p2031_p1302_k_t::init() {
   auto& ker_param = derived_kd()->jit_param();
-  auto ker = new jit_matmul_vnni_noperm_p2031_p1302_t(ker_param);
-  if (ker == nullptr) return false;
-  if (!ker->create_kernel()) return false;
-  jit_ker_ = ker;
+  if (using_unified_kernel_) {
+    auto ker = new jit_matmul_vnni_noperm_p2031_p1302_t(ker_param);
+    if (ker == nullptr) return false;
+    if (!ker->create_kernel()) return false;
+    jit_ker_noperm_p2031_p1302_ = ker;
+  } else {
+    auto K = static_cast<int>(K_), bs0 = static_cast<int>(bs0_);
+    auto ker_tr_src0 = new jit_transpose_nx8_4b<32>({K, K});
+    if (ker_tr_src0 == nullptr) return false;
+    if (!ker_tr_src0->create_kernel()) return false;
+    jit_trans_src0_ = ker_tr_src0;
+
+    auto ker_tr_src1 = new jit_transpose_nx8_4b<8>({K, K * bs0});
+    if (ker_tr_src1 == nullptr) return false;
+    if (!ker_tr_src1->create_kernel()) return false;
+    jit_trans_src1_ = ker_tr_src1;
+
+    auto ker = new jit_matmul_vnni_Ba4b_Ab4a_ba_t(ker_param);
+    if (ker == nullptr) return false;
+    if (!ker->create_kernel()) return false;
+    jit_ker_Ba4b_Ab4a_ba_ = ker;
+  }
   return true;
 }
 
-bool matmul_vnni_noperm_p2031_p1302_k_t::execute(const std::vector<const void*>& rt_data) const {
+void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const void*>& rt_data, const dim_t ibs0,
+                                                     const dim_t ibs1) const {
+  constexpr int n_tile = 8;
+  constexpr int m_tile = 32;
+  constexpr int mb_size = 4 * m_tile;
   auto base_src0 = static_cast<const uint8_t*>(rt_data[ssd::SRC0]);
   auto base_src1 = static_cast<const int8_t*>(rt_data[ssd::SRC1]);
   auto base_dst = const_cast<uint8_t*>(static_cast<const uint8_t*>(rt_data[ssd::DST0]));
   auto base_scale = static_cast<const float*>(rt_data[ssd::SCALE0]);
+  size_t tmp_total_len = (M_ + N_) * K_ + 64 + 4;  // 64 for alignment; 4 for extra access due to ping-pong loading
+  void* mem_tmp = alloca(tmp_total_len);
+  char* mem_tmp_aligned = static_cast<char*>(std::align(64, (M_ + N_) * K_, mem_tmp, tmp_total_len));
+  auto src0_tmp = reinterpret_cast<uint8_t*>(mem_tmp_aligned);
+  auto src1_tmp = reinterpret_cast<int8_t*>(mem_tmp_aligned + M_ * K_);
 
+  for (dim_t i = 0; i < M_; i += m_tile) {
+    // src0: bs0_ bs1_ M_ K_
+    jit_transpose_nx8_4b<32>::rt_data_t rt_param;
+    rt_param.src = base_src0 + ibs0 * bs1_ * M_ * K_ + ibs1 * M_ * K_ + i * K_;
+    rt_param.dst = src0_tmp + i * K_;
+    (*jit_trans_src0_)(&rt_param);
+  }
+  for (dim_t j = 0; j < N_; j += n_tile) {
+    // src1: bs1_ N_ bs0 K_
+    jit_transpose_nx8_4b<8>::rt_data_t rt_param;
+    rt_param.src = base_src1 + ibs0 * K_ + ibs1 * N_ * bs0_ * K_ + j * bs0_ * K_;
+    rt_param.dst = src1_tmp + j * K_;
+    (*jit_trans_src1_)(&rt_param);
+  }
+
+  for (dim_t i = 0; i < M_; i += mb_size)
+    for (dim_t j = 0; j < N_; j += n_tile) {
+      const dim_t max_ii = std::min(M_, i + mb_size);
+      for (dim_t ii = i; ii < max_ii; ii += m_tile) {
+        ssd::matmul_u8_data_t rt_param;
+        // dst: bs1_ N bs0 M
+        rt_param.src0 = src0_tmp + ii * K_;
+        rt_param.src1 = src1_tmp + j * K_;
+        rt_param.dst = base_dst + ibs1 * bs0_ * N_ * M_ + j * bs0_ * M_ + ibs0 * M_ + ii;
+        rt_param.scale = base_scale;
+
+        // each jit kernel calculates 32xKx8, where K should be multiple of 32 (VNNI_R * dim_transpose)
+        (*jit_ker_Ba4b_Ab4a_ba_)(&rt_param);
+      }
+    }
+}
+
+bool matmul_vnni_noperm_p2031_p1302_k_t::execute(const std::vector<const void*>& rt_data) const {
+  auto base_src0 = reinterpret_cast<const uint8_t*>(rt_data[ssd::SRC0]);
+  auto base_src1 = reinterpret_cast<const int8_t*>(rt_data[ssd::SRC1]);
+  auto base_dst = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(rt_data[ssd::DST0]));
+  auto base_scale = reinterpret_cast<const float*>(rt_data[ssd::SCALE0]);
+  if (using_unified_kernel_) {
 #pragma omp parallel for collapse(2)
-  for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
-    for (dim_t j = 0; j < N_; j += 16)
-      for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0)
-        for (dim_t i = 0; i < M_; i += 16) {  // call the kernel
-          ssd::matmul_u8_data_t rt_param;
-          rt_param.src0 = base_src0 + ibs0 * bs1_ * M_ * K_ + ibs1 * M_ * K_ + i * K_;
-          rt_param.src1 = base_src1 + ibs1 * bs0_ * N_ * K_ + j * bs0_ * K_ + ibs0 * K_;
-          rt_param.dst = base_dst + ibs1 * bs0_ * N_ * M_ + j * bs0_ * M_ + ibs0 * M_ + i;
-          rt_param.scale = base_scale;
+    for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
+      for (dim_t j = 0; j < N_; j += 16)
+        for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0)
+          for (dim_t i = 0; i < M_; i += 16) {  // call the kernel
+            ssd::matmul_u8_data_t rt_param;
+            rt_param.src0 = base_src0 + ibs0 * bs1_ * M_ * K_ + ibs1 * M_ * K_ + i * K_;
+            rt_param.src1 = base_src1 + ibs1 * bs0_ * N_ * K_ + j * bs0_ * K_ + ibs0 * K_;
+            rt_param.dst = base_dst + ibs1 * bs0_ * N_ * M_ + j * bs0_ * M_ + ibs0 * M_ + i;
+            rt_param.scale = base_scale;
 
-          // each jit kernel calculates 16xKx16, where K should be multiple of 32 (VNNI_R * dim_transpose)
-          (*jit_ker_)(rt_param);
-        }
-
+            // each jit kernel calculates 16xKx16, where K should be multiple of 32 (VNNI_R * dim_transpose)
+            (*jit_ker_noperm_p2031_p1302_)(&rt_param);
+          }
+  } else {
+#pragma omp parallel for collapse(2)
+    for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
+      for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0) {
+        thread_exec(rt_data, ibs0, ibs1);
+      }
+  }
   return true;
 }
 }  // namespace jd

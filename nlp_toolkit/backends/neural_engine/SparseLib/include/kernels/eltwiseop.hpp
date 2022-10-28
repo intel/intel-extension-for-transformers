@@ -59,16 +59,8 @@ class eltwiseop_k_t : public kernel_t {
   using kd_t = eltwiseop_kd_t;
   explicit eltwiseop_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
   virtual ~eltwiseop_k_t() {
-    if (jit_kers_ != nullptr) {
-      delete jit_kers_;
-      jit_kers_ = nullptr;
-    }
-    for (auto& data : td) {
-      if (data != nullptr) {
-        delete data;
-        data = nullptr;
-      }
-    }
+    safe_delete(jit_kers_);
+    for (auto& data : td) safe_delete(data);
   }
   // Delete move constructor and move operator
   eltwiseop_k_t(eltwiseop_k_t&& other) = delete;

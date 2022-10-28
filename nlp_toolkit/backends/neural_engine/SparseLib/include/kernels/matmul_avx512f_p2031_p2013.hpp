@@ -71,12 +71,7 @@ class matmul_avx512f_p2031_p2013_k_t : public kernel_t {
  public:
   using kd_t = matmul_avx512f_p2031_p2013_kd_t;
   explicit matmul_avx512f_p2031_p2013_k_t(const std::shared_ptr<const kd_t>& kd);
-  virtual ~matmul_avx512f_p2031_p2013_k_t() {
-    if (jit_ker_ != nullptr) {
-      delete jit_ker_;
-      jit_ker_ = nullptr;
-    }
-  }
+  virtual ~matmul_avx512f_p2031_p2013_k_t() { safe_delete(jit_ker_); }
 
   // Delete move constructor and move operator
   matmul_avx512f_p2031_p2013_k_t(matmul_avx512f_p2031_p2013_k_t&& other) = delete;

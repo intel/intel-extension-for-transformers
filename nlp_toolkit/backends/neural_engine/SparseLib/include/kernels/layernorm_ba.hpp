@@ -58,18 +58,8 @@ class layernorm_ba_k_t : public kernel_t {
   using kd_t = layernorm_ba_kd_t;
   explicit layernorm_ba_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
   virtual ~layernorm_ba_k_t() {
-    for (auto& kernel : jit_kers_) {
-      if (kernel != nullptr) {
-        delete kernel;
-        kernel = nullptr;
-      }
-    }
-    for (auto& data : td) {
-      if (data != nullptr) {
-        delete data;
-        data = nullptr;
-      }
-    }
+    for (auto& kernel : jit_kers_) safe_delete(kernel);
+    for (auto& data : td) safe_delete(data);
   }
   // Delete move constructor and move operator
   layernorm_ba_k_t(layernorm_ba_k_t&& other) = delete;

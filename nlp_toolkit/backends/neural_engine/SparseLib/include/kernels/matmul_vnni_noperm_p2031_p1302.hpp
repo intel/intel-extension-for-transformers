@@ -22,6 +22,8 @@
 
 #include "cpu_isa.hpp"
 #include "jit_domain/jit_matmul_vnni_noperm_p2031_p1302.hpp"
+#include "jit_domain/jit_matmul_vnni_Ba4b_Ab4a_ba.hpp"
+#include "jit_domain/jit_trans_cpy_nx8_4b.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 
@@ -50,6 +52,7 @@ class matmul_vnni_noperm_p2031_p1302_kd_t : public kernel_desc_t {
 
   const jd::operator_desc& operator_desc() const override { return op_desc_; }
   const ssd::matmul_param_t& jit_param() const { return jit_param_; }
+  const bool using_unified_kernel() const { return using_unified_kernel_; }
 
   inline std::vector<dim_t> shape() const {
     std::vector<dim_t> result(op_desc_.tensor_descs()[ssd::SRC0].shape());  // bs0 bs1 M K
@@ -62,6 +65,7 @@ class matmul_vnni_noperm_p2031_p1302_kd_t : public kernel_desc_t {
 
   jd::operator_desc op_desc_;
   ssd::matmul_param_t jit_param_;
+  bool using_unified_kernel_ = false;
 };
 
 /**
@@ -72,10 +76,12 @@ class matmul_vnni_noperm_p2031_p1302_k_t : public kernel_t {
   using kd_t = matmul_vnni_noperm_p2031_p1302_kd_t;
   explicit matmul_vnni_noperm_p2031_p1302_k_t(const std::shared_ptr<const kd_t>& kd);
   virtual ~matmul_vnni_noperm_p2031_p1302_k_t() {
-    if (jit_ker_ != nullptr) {
-      delete jit_ker_;
-      jit_ker_ = nullptr;
-    }
+    safe_delete(jit_ker_noperm_p2031_p1302_);
+    safe_delete(jit_ker_Ba4b_Ab4a_ba_);
+    safe_delete(jit_trans_src0_);
+    safe_delete(jit_trans_src1_);
+    if (src0_tmp != 0) free(src0_tmp);
+    if (src1_tmp != 0) free(src1_tmp);
   }
 
   // Delete move constructor and move operator
@@ -90,10 +96,21 @@ class matmul_vnni_noperm_p2031_p1302_k_t : public kernel_t {
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 
  private:
+  void thread_exec(const std::vector<const void*>& rt_data, const dim_t ibs0, const dim_t ibs1) const;
   bool matmul_kernel_create(jit_matmul_vnni_noperm_p2031_p1302_t** ker_pp, const ssd::matmul_param_t& param);
 
- private:
-  jit_matmul_vnni_noperm_p2031_p1302_t* jit_ker_ = nullptr;
+  uint8_t* src0_tmp = nullptr;
+  int8_t* src1_tmp = nullptr;
+
+  // A all-in-one kernel
+  jit_matmul_vnni_noperm_p2031_p1302_t* jit_ker_noperm_p2031_p1302_ = nullptr;
+  // transpose 32xK
+  jit_transpose_nx8_4b<32>* jit_trans_src0_ = nullptr;
+  // transpose Kx8
+  jit_transpose_nx8_4b<8>* jit_trans_src1_ = nullptr;
+  // a gemm kernel generates transposed output; used with the transpose kernels
+  jit_matmul_vnni_Ba4b_Ab4a_ba_t* jit_ker_Ba4b_Ab4a_ba_ = nullptr;
+
   const std::vector<std::vector<dim_t>> t_shapes_;
   const std::vector<dim_t>& src0_perm_shape_;  // src0 perm none
   const std::vector<dim_t> src1_perm_shape_;   // src1 shape after perm2031
@@ -101,6 +118,7 @@ class matmul_vnni_noperm_p2031_p1302_k_t : public kernel_t {
   const dim_t M_, K_, N_;                      // dim of matrix multiplication
   const dim_t bs0_;                            // outer batch size dim
   const dim_t bs1_;                            // innter batch size dim
+  const bool using_unified_kernel_;
 };
 
 }  // namespace jd

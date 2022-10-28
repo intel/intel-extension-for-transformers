@@ -76,12 +76,7 @@ class spmm_amx_bf16_x16_k_t : public kernel_t {
   using kd_t = spmm_amx_bf16_x16_kd_t;
   explicit spmm_amx_bf16_x16_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
   virtual ~spmm_amx_bf16_x16_k_t() {
-    for (auto& kernel : jit_kers_) {
-      if (kernel != nullptr) {
-        delete kernel;
-        kernel = nullptr;
-      }
-    }
+    for (auto& kernel : jit_kers_) safe_delete(kernel);
   }
   // Delete move constructor and move operator
   spmm_amx_bf16_x16_k_t(spmm_amx_bf16_x16_k_t&& other) = delete;

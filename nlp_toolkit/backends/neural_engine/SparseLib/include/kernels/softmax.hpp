@@ -58,10 +58,7 @@ class softmax_k_t : public kernel_t {
     jit_ker_ = nullptr;
     for (auto& data : td) {
       free(data->tmp);
-      if (data != nullptr) {
-        delete data;
-        data = nullptr;
-      }
+      safe_delete(data);
     }
   }
   // Delete move constructor and move operator
