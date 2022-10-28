@@ -81,6 +81,16 @@ class MatmulOperator : public Operator {
   memory dst_m_;
   memory binary_m_;
 
+  memory any_src0_m_;
+  memory any_src1_m_;
+  memory any_dst_m_;
+  dnnl::reorder reorder_prim_src_;
+  dnnl::reorder reorder_prim_weight_;
+  dnnl::reorder reorder_prim_dst_;
+  bool src_reorder_ = false;
+  bool weight_reorder_ = false;
+  bool dst_reorder_ = false;
+
   Tensor* src0_ = nullptr;
   Tensor* src1_ = nullptr;
   Tensor* bias_ = nullptr;
