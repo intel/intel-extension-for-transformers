@@ -61,11 +61,12 @@ void run_net() {
     // LOG(INFO) << "src 0 value is: " << *src_0;
     // LOG(INFO) << "src 1 value is: " << *src_1;
 
-    float start_time = executor::Time("start");
+    int64_t start_time = executor::Time();
     vector<executor::Tensor>& output_data = bert_model.Forward(input_tensors);
     // warmup time not considered
     if (i < FLAGS_w) continue;
-    duration += executor::Time("end") - start_time;
+    int64_t end_time = executor::Time();
+    duration += executor::Duration(start_time, end_time);
 
     // if (output_data[0].dtype() == "fp32") {
     //   float* data = static_cast<float*>(output_data[0].mutable_data());

@@ -293,10 +293,11 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
         for (int i = 0; i < operators_.size(); ++i) {
         LOG(INFO) << "operator " << operators_[i]->name() << " gonna reshape with type " << operators_[i]->type();
         // get reshape time for profiling
-        float start = Time("start");
+        int64_t start = Time();
         operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
-        float end = Time("end");
-        operators_[i]->set_reshape_time(end - start);
+        int64_t end = Time();
+        float reshape_time = Duration(start, end);
+        operators_[i]->set_reshape_time(reshape_time);
       }
     } else if (!reshape_model&&engine_profiling_) {
         for (int i = 0; i < operators_.size(); ++i) {
@@ -313,35 +314,37 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
       for (int i = 0; i < operators_.size(); ++i) {
         LOG(INFO) << "operator " << operators_[i]->name() << " gonna forward with type " << operators_[i]->type();
         if (multi_stream_flag && multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
-          float start = Time("start");
+          int64_t start = Time();
           tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i], input_vecs_[i], output_vecs_[i]));
-          float end = Time("end");
-          operators_[i]->set_latency(end - start);
+          int64_t end = Time();
+          float forward_time = Duration(start, end);
+          operators_[i]->set_latency(forward_time);
           for (int j = 0; j < input_vecs_[i].size(); ++j) {
             operators_[i]->set_it_shape(input_vecs_[i][j]->shape());
           }
           if (i != operators_.size() - 1) {
             operators_[i]->set_ot_shape(output_vecs_[i][0]->shape());  // the last output is not exsit
           }
-          LOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << end - start << " ms";
+          LOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << forward_time << " ms";
           if (thread_count >= multi_stream_tasks_[i]) {
             tp.waitAllTaskRunOver();
             thread_count = 0;
           }
           thread_count++;
         } else {
-          float start = Time("start");
+          int64_t start = Time();
           operators_[i]->Forward(input_vecs_[i], output_vecs_[i]);
-          float end = Time("end");
+          int64_t end = Time();
+          float forward_time = Duration(start, end);
           // for profiling
-          operators_[i]->set_latency(end - start);
+          operators_[i]->set_latency(forward_time);
           for (int j = 0; j < input_vecs_[i].size(); ++j) {
             operators_[i]->set_it_shape(input_vecs_[i][j]->shape());
           }
           if (i != operators_.size() - 1) {
             operators_[i]->set_ot_shape(output_vecs_[i][0]->shape());
           }
-          LOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << end - start << " ms";
+          LOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << forward_time  << " ms";
         }
       }
     } else {

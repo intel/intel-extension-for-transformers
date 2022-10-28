@@ -203,40 +203,45 @@ class Profiling_ {
  public:
   void WriteProfiling(const vector<shared_ptr<Dispatcher>>& operators_,
     const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
+    // setting permission for shared memory created by boost
+    ipc::permissions  unrestricted_permissions;
+    unrestricted_permissions.set_unrestricted();
     // in multi instance case, dump profiling for each instance
-    ipc::managed_shared_memory shm(ipc::open_or_create, space_name, 1024);
+    ipc::managed_shared_memory shm(ipc::open_or_create, space_name, 1024, 0, unrestricted_permissions);
     int* inst_count = shm.find_or_construct<int>(count_name)(0);
     std::string profiling_dir = "engine_profiling";
     std::string profiling_csv_dir = profiling_dir + "/profiling_csv";
     std::string profiling_trace_dir = profiling_dir + "/profiling_trace";
-    char ch_curr_time[256];
     if (*inst_count == 0) {
+      char ch_curr_time[256];
       time_t curr_time = time(NULL);
       strftime(ch_curr_time, sizeof(ch_curr_time), "%Y-%m-%d_%H-%M-%S", localtime(&curr_time));
       profiling_dir = profiling_dir + "_" + ch_curr_time;
-      profiling_csv_dir = profiling_dir + "/profiling_csv_" + ch_curr_time;
-      profiling_trace_dir = profiling_dir + "/profiling_trace_" + ch_curr_time;
+      profiling_csv_dir = profiling_dir + "/profiling_csv";
+      profiling_trace_dir = profiling_dir + "/profiling_trace";
       mkdir(profiling_dir.c_str(), S_IRWXU);  // 00070, read/write/execute for user group
       mkdir(profiling_csv_dir.c_str(), S_IRWXU);
       mkdir(profiling_trace_dir.c_str(), S_IRWXU);
     }
     ipc::interprocess_mutex* mtx = shm.find_or_construct<ipc::interprocess_mutex>(mtx_name)();
     mtx->lock();
-    std::string profiling_file = profiling_csv_dir + "/profiling_" + ch_curr_time \
-                                 + "_" + std::to_string((*inst_count)) + ".csv";
-    std::string tracer_file = profiling_trace_dir + "/profiling_" + ch_curr_time \
-                                 + "_" + std::to_string((*inst_count)) + ".json";
-    FILE* fp = fopen(profiling_file.c_str(), "w");
-    WriteCSV(fp, operators_, input_vecs_, output_vecs_);
+    std::string csv_file = profiling_csv_dir + "/profiling_" \
+                                 + std::to_string((*inst_count)) + ".csv";
+    std::string tracer_file = profiling_trace_dir + "/profiling_" \
+                                 + std::to_string((*inst_count)) + ".json";
+    WriteCSV(csv_file, operators_, input_vecs_, output_vecs_);
     WriteJSON(tracer_file, operators_, input_vecs_, output_vecs_);
     (*inst_count)++;
+    // Debug for inst count
+    LOG(INFO) << "inst count: " << *inst_count << ", INST NUM: "<< MemoryAllocator::InstNum();
     mtx->unlock();
     if (*inst_count == MemoryAllocator::InstNum()) {
       ipc::shared_memory_object::remove(space_name);
     }
   }
-  void WriteCSV(FILE* fp, const vector<shared_ptr<Dispatcher>>& operators_,
+  void WriteCSV(const std::string& csv_file, const vector<shared_ptr<Dispatcher>>& operators_,
                 const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
+    FILE* fp = fopen(csv_file.c_str(), "w");
     if (fp) {
       ProfilingSparse(fp, operators_, input_vecs_, output_vecs_);  // for sparse performance estimation
       fprintf(fp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "operator type", "post op",
@@ -277,7 +282,7 @@ class Profiling_ {
       LOG(ERROR) << "Open profiling.csv failed!";
     }
   }
-  void WriteJSON(std::string tracer_file, const vector<shared_ptr<Dispatcher>>& operators_,
+  void WriteJSON(const std::string& tracer_file, const vector<shared_ptr<Dispatcher>>& operators_,
                 const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
     ProfilingTracer Tracer = ProfilingTracer();
     Tracer.BeginTrace(tracer_file);

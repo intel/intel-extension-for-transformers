@@ -68,18 +68,22 @@ class OpTuning {
       extra_tensor_life_ += 1;
       return;
     }
-    float start_time = 0;
+    int64_t start_time = 0;
+    int64_t end_time = 0;
     // consider kernel forward class creation time in Reshape
     // it may be time-consuming under dynamic shape
     float reshape_time = 0;
     if (reshape_model) {
-      start_time = Time("start");
+      start_time = Time();
       kernel->Reshape(input, output);
-      reshape_time = Time("end") - start_time;
+      end_time = Time();
+      reshape_time = Duration(start_time, end_time);
     }
-    start_time = Time("start");
+    start_time = Time();
     kernel->Forward(input, output);
-    best_execute_time_ = Time("end") - start_time + reshape_time;
+    end_time = Time();
+    float forward_time = Duration(start_time, end_time);
+    best_execute_time_ = forward_time + reshape_time;
     LOG(INFO) << "BaseTune forward time is " << best_execute_time_ << "ms";
   }
 
@@ -131,14 +135,17 @@ class OpTuning {
     for (const auto& comb : nw_comb) {
       kernel_config_cpy[1] = comb;
       kernel->set_dispatch_config(kernel_config_cpy);
-      float start_time = 0;
+      int64_t start_time = 0;
+      int64_t end_time = 0;
       float reshape_time = 0;
-      start_time = Time("start");
+      start_time = Time();
       kernel->Reshape(input, output);
-      reshape_time = Time("end") - start_time;
-      start_time = Time("start");
+      end_time = Time();
+      reshape_time = Duration(start_time, end_time);
+      start_time = Time();
       kernel->Forward(input, output);
-      float execute_time = Time("end") - start_time;
+      end_time = Time();
+      float execute_time = Duration(start_time, end_time);
       if (reshape_model) execute_time += reshape_time;
       input_shape_timer[execute_time] = comb;
       LOG(INFO) << "IpToConvTune forward time is " << execute_time << "ms with src0 shape " << comb;
@@ -219,16 +226,19 @@ class OpTuning {
     for (const auto& comb : bs_attr_comb) {
       for (int i = 0; i < comb.size(); ++i) kernel_config_cpy[i + 1] = comb[i];
       kernel->set_dispatch_config(kernel_config_cpy);
-      float start_time = 0;
+      int64_t start_time = 0;
+      int64_t end_time = 0;
       float reshape_time = 0;
-      start_time = Time("start");
+      start_time = Time();
       kernel->Reshape(input, output);
-      reshape_time = Time("end") - start_time;
-      start_time = Time("start");
+      end_time = Time();
+      reshape_time = Duration(start_time, end_time);
+      start_time = Time();
       kernel->AdaptTensors(input, output, "in");
       kernel->Forward(input, output);
       kernel->AdaptTensors(input, output, "out");
-      float execute_time = Time("end") - start_time;
+      end_time = Time();
+      float execute_time = Duration(start_time, end_time);
       if (reshape_model) execute_time += reshape_time;
       bs_attr_timer[execute_time] = kernel_config_cpy;
       LOG(INFO) << "IpToSparseLibTune forward time is " << execute_time << "ms, activation shape: " << comb[0]

@@ -108,7 +108,9 @@ void Quantize(const int size, const string& dtype, const void* src_data, const f
 
 vector<int64_t> ReversePerm(const vector<int64_t>& perm_to);
 
-float Time(string state);
+int64_t Time();
+
+float Duration(int64_t start, int64_t end);
 
 template <typename T>
 void PrintToFile(const T* data, const std::string& name, size_t size = 1000);

@@ -87,20 +87,16 @@ void InitVector(float* v, int buffer_size) {
 }
 
 // Displayed in milliseconds.
-float Time(string state) {
-  static std::chrono::microseconds time_axis = std::chrono::microseconds();
+int64_t Time() {
   std::chrono::system_clock::time_point now_time = std::chrono::system_clock::now();
   std::chrono::system_clock::duration dur = now_time.time_since_epoch();
   std::chrono::microseconds micros = std::chrono::duration_cast<std::chrono::microseconds>(dur);
-  if (state == "start") {
-    time_axis = micros;
-    return 0;
-  } else if (state == "end") {
-    return (micros.count() - time_axis.count()) / 1e3;
-  } else {
-    LOG(FATAL) << "not supported state for time, only start and end...";
-    return 0;
-  }
+  return micros.count();
+}
+
+float Duration(int64_t start, int64_t end) {
+  float duration = (end - start) / 1e3;
+  return duration;
 }
 
 int64_t Product(const vector<int64_t>& shape) {
