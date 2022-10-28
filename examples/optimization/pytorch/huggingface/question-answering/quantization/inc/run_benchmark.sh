@@ -11,7 +11,7 @@ function main {
 # init params
 function init_params {
   iters=100
-  batch_size=16
+  batch_size=16 
   tuned_checkpoint=saved_results
   for var in "$@"
   do
@@ -52,16 +52,24 @@ function init_params {
 
 # run_benchmark
 function run_benchmark {
-    extra_cmd=''
+    extra_cmd=""
     MAX_SEQ_LENGTH=384
+    max_eval_samples=`expr ${iters} \* ${batch_size}`
+    echo ${max_eval_samples}
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy_only"
     elif [[ ${mode} == "benchmark" ]]; then
-        mode_cmd=" --benchmark "
+        mode_cmd=" --benchmark"
+        extra_cmd=$extra_cmd" --max_eval_samples ${max_eval_samples}"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
+    fi
+
+    framework=$(echo $topology | grep "ipex")
+    if [[ "$framework" != "" ]];then
+        extra_cmd=$extra_cmd" --framework ipex"
     fi
 
     if [ "${topology}" = "distilbert_base_squad_static" ]; then
@@ -76,6 +84,14 @@ function run_benchmark {
     elif [ "${topology}" = "roberta_base_SQuAD2_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="deepset/roberta-base-squad2"
+    elif [ "${topology}" = "distilbert_base_squad_ipex" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="distilbert-base-uncased-distilled-squad"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "bert_large_squad_ipex" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="bert-large-uncased-whole-word-masking-finetuned-squad"
+        approach="PostTrainingStatic"
     fi
 
     if [[ ${int8} == "true" ]]; then
@@ -90,7 +106,7 @@ function run_benchmark {
         --do_eval \
         --max_seq_length ${MAX_SEQ_LENGTH} \
         --per_device_eval_batch_size ${batch_size} \
-        --output_dir ./tmp/benchmark_output \
+        --output_dir ${tuned_checkpoint} \
         --overwrite_output_dir \
         --overwrite_cache \
         --no_cuda \

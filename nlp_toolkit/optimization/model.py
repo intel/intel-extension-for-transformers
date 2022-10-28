@@ -77,6 +77,12 @@ class OptimizedModel:
             )
 
         model_class = eval(f'transformers.{config.architectures[0]}')
+        if os.path.exists(os.path.join(model_name_or_path, "best_model.pt")):
+            logger.info("the INC IPEX quantization optimized model is loading.")
+            weight_file = os.path.join(model_name_or_path, "best_model.pt")
+            q_model = torch.jit.load(weight_file)
+            q_model = torch.jit.freeze(q_model.eval())
+            return q_model
         if config.torch_dtype is not torch.int8:
             model = model_class.from_pretrained(
                 model_name_or_path,

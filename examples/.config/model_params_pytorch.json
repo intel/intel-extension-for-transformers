@@ -90,8 +90,8 @@
           "batch_size": 64,
           "new_benchmark": false
         },
-        "bert_base_squad_ipex": {
-          "model_src_dir": "optimization/pytorch/huggingface/question-answering/quantization/ipex",
+        "bert_large_squad_ipex": {
+          "model_src_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",
@@ -100,7 +100,7 @@
           "new_benchmark": false
         },
         "distilbert_base_squad_ipex": {
-          "model_src_dir": "optimization/pytorch/huggingface/question-answering/quantization/ipex",
+          "model_src_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
           "dataset_location": "",
           "input_model": "",
           "yaml": "conf.yaml",

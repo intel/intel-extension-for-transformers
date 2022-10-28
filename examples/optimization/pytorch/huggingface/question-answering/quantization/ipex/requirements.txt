@@ -1,4 +1,0 @@
-datasets >= 1.8.0
-torch >= 1.10.0
-transformers==4.19.0
-wandb

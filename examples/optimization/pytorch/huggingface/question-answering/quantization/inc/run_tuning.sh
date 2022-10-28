@@ -44,6 +44,11 @@ function init_params {
 
 # run_tuning
 function run_tuning {
+
+    framework=$(echo $topology | grep "ipex")
+    if [[ "$framework" != "" ]];then
+        extra_cmd=$extra_cmd" --framework ipex"
+    fi
     if [ "${topology}" = "distilbert_base_squad_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
@@ -61,6 +66,16 @@ function run_tuning {
         model_name_or_path="deepset/roberta-base-squad2"
         approach="PostTrainingStatic"
         # extra_cmd=$extra_cmd" --version_2_with_negative"
+    elif [ "${topology}" = "distilbert_base_squad_ipex" ]; then
+        pip install transformers==4.19.0
+        DATASET_NAME="squad"
+        model_name_or_path="distilbert-base-uncased-distilled-squad"
+        extra_cmd=$extra_cmd" --perf_tol 0.02"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "bert_large_squad_ipex" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="bert-large-uncased-whole-word-masking-finetuned-squad"
+        approach="PostTrainingStatic"
     fi
 
     python -u ./run_qa.py \
@@ -70,7 +85,6 @@ function run_tuning {
         --do_train \
         --max_seq_length ${MAX_SEQ_LENGTH} \
         --per_device_eval_batch_size ${batch_size} \
-        --max_eval_samples 5000 \
         --output_dir ${tuned_checkpoint} \
         --no_cuda \
         --tune \

@@ -215,6 +215,10 @@ class OptimizationArguments:
         metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
                   "PostTrainingDynamic and QuantizationAwareTraining."},
     )
+    framework: Optional[str] = field(
+        default="pytorch",
+        metadata={"help": "Deep learning framework. Supported framework are pytorch, ipex"},
+    )
     metric_name: Optional[str] = field(
         default="eval_f1",
         metadata={"help": "Metric used for the tuning strategy."},
@@ -338,25 +342,15 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    if optim_args.int8:
-        # Load the model obtained after Intel Neural Compressor (INC) quantization
-        model = OptimizedModel.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
-    else:
-        model = AutoModelForQuestionAnswering.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
+
+    model = AutoModelForQuestionAnswering.from_pretrained(
+        model_args.model_name_or_path,
+        from_tf=bool(".ckpt" in model_args.model_name_or_path),
+        config=config,
+        cache_dir=model_args.cache_dir,
+        revision=model_args.model_revision,
+        use_auth_token=True if model_args.use_auth_token else None,
+    )
 
     # Tokenizer check: this script requires a fast tokenizer.
     if not isinstance(tokenizer, PreTrainedTokenizerFast):
@@ -635,6 +629,7 @@ def main():
     )
 
     metric_name = optim_args.metric_name
+    calib_dataloader = trainer.get_eval_dataloader()
 
     if optim_args.tune:
 
@@ -664,9 +659,23 @@ def main():
             metrics=[tune_metric],
             sampling_size = len(train_dataset)//20
         )
+        if optim_args.framework == "ipex":
+            quantization_config.framework = "pytorch_ipex" 
+            trainer.calib_dataloader = calib_dataloader
         model = trainer.quantize(quant_config=quantization_config)
 
     if optim_args.benchmark or optim_args.accuracy_only:
+        if optim_args.int8:
+            # Load the model obtained after Intel Neural Compressor (INC) quantization
+            model = OptimizedModel.from_pretrained(
+                training_args.output_dir,
+                from_tf=bool(".ckpt" in training_args.output_dir),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+            )
+            trainer.model = model
         start_time = timeit.default_timer()
         results = trainer.evaluate()
         evalTime = timeit.default_timer() - start_time
