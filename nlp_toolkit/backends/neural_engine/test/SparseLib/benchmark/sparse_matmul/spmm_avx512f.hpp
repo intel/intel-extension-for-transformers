@@ -57,11 +57,11 @@ void prepare_blocked_sparse_data_spmm_avx512f(T* data, const std::vector<dim_t>&
                                               const std::vector<dim_t>& block_shape, float sparsity,
                                               unsigned int* seed);
 
-std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector<dim_t>& a_shape, const data_type& a_dt,
-                                                               bool is_clear = false,
-                                                               float sparsity = 0.f,  // 0 for dense
-                                                               format_type a_ft = format_type::uncoded,
-                                                               const std::vector<float>& ranges = {-10, 10});
+std::pair<void*, void*> make_data_obj_spmm_avx512f(const std::vector<dim_t>& a_shape, const data_type& a_dt,
+                                                   bool is_clear = false,
+                                                   float sparsity = 0.f,  // 0 for dense
+                                                   format_type a_ft = format_type::uncoded,
+                                                   const std::vector<float>& ranges = {-10, 10});
 
 }  // namespace jd
 

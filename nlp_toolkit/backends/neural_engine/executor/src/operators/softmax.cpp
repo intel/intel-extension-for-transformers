@@ -451,8 +451,7 @@ void SoftmaxOperator::Forward_u8(const vector<Tensor*>& input, const vector<Tens
 void SoftmaxOperator::Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   Tensor* dst_ptr = output[0];
   if (lut_optimization_) {
-    std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data()};
-    softmax_ker_.execute(runtime_data);
+    softmax_ker_.execute({input[0]->mutable_data(), dst_ptr->mutable_data()});
   }
   this->unref_tensors(input);
 }

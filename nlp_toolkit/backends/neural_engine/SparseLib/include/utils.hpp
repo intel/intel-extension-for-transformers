@@ -124,7 +124,7 @@ struct set_once_before_first_get_setting_t {
 };
 
 template <typename T>
-void cast_to_float_array(const void* src, std::vector<float>* dst, int size);
+void cast_to_float_array(void* src, std::vector<float>* dst, int size);
 
 template <typename T>
 void cast_from_float_array(std::vector<float> src, void* dst, int size);

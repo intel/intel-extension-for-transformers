@@ -16,7 +16,7 @@
 
 namespace jd {
 
-bool eltwiseop_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool eltwiseop_ref_k_t::execute(const std::vector<void*>& rt_data) const {
   auto op_desc = derived_kd()->operator_desc();
   auto src_tensor = op_desc.tensor_descs()[0];
   auto dst_tensor = op_desc.tensor_descs()[1];
@@ -24,8 +24,8 @@ bool eltwiseop_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto src_dt = src_tensor.dtype();
   auto dst_dt = dst_tensor.dtype();
 
-  const void* src = rt_data[0];
-  void* dst = const_cast<void*>(rt_data[1]);
+  void* src = rt_data[0];
+  void* dst = rt_data[1];
   std::vector<float> src_fp32(size, 0);
   if (src_dt == jd::data_type::s8) {
     cast_to_float_array<int8_t>(src, &src_fp32, size);

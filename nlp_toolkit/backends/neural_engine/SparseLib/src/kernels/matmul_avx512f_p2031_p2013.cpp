@@ -163,10 +163,10 @@ bool matmul_avx512f_p2031_p2013_k_t::init() {
   return true;
 }
 
-bool matmul_avx512f_p2031_p2013_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool matmul_avx512f_p2031_p2013_k_t::execute(const std::vector<void*>& rt_data) const {
   auto base_src0 = static_cast<const float*>(rt_data[ssd::SRC0]);
   auto base_src1 = static_cast<const float*>(rt_data[ssd::SRC1]);
-  auto base_dst = const_cast<float*>(static_cast<const float*>(rt_data[ssd::DST0]));
+  auto base_dst = reinterpret_cast<float*>(rt_data[ssd::DST0]);
   auto base_src2 = static_cast<const float*>(rt_data[ssd::SRC2]);
 
 #pragma omp parallel for collapse(2)

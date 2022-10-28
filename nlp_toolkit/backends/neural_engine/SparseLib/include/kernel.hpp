@@ -54,7 +54,7 @@ class kernel_t {
   }
   // init kernel_t
   virtual bool init() = 0;
-  virtual bool execute(const std::vector<const void*>& rt_data) const = 0;
+  virtual bool execute(const std::vector<void*>& rt_data) const = 0;
 
  public:
   const std::shared_ptr<const kernel_desc_t>& kd() const { return kd_; }

@@ -143,10 +143,10 @@ bool matmul_vnni_noperm_p2031_p1302_k_t::init() {
   return true;
 }
 
-bool matmul_vnni_noperm_p2031_p1302_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool matmul_vnni_noperm_p2031_p1302_k_t::execute(const std::vector<void*>& rt_data) const {
   auto base_src0 = static_cast<const uint8_t*>(rt_data[ssd::SRC0]);
   auto base_src1 = static_cast<const int8_t*>(rt_data[ssd::SRC1]);
-  auto base_dst = const_cast<uint8_t*>(static_cast<const uint8_t*>(rt_data[ssd::DST0]));
+  auto base_dst = reinterpret_cast<uint8_t*>(rt_data[ssd::DST0]);
   auto base_scale = static_cast<const float*>(rt_data[ssd::SCALE0]);
 
 #pragma omp parallel for collapse(2)

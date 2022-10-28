@@ -71,7 +71,7 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
   const auto& ts_descs = op_desc.tensor_descs();
 
   // We may need to refresh some parts of runtime data, allocate new memory for them first
-  std::vector<const void*> tmp_data(p.rt_data);
+  std::vector<void*> tmp_data(p.rt_data);
   std::vector<void*> new_data;
   std::vector<int> idx = kb->get_refresh_data_idx();
   if (!alloc_new_mem(ts_descs, &tmp_data, &new_data, idx)) {
@@ -126,16 +126,16 @@ void bench_op::refresh_data(std::vector<void*>* new_data_pointer, const std::vec
     }
   }
 }
-double bench_op::exec_time(std::shared_ptr<kernel_proxy> kp, const std::vector<const void*>& rt_data) {
+double bench_op::exec_time(std::shared_ptr<kernel_proxy> kp, const std::vector<void*>& rt_data) {
   auto begin = std::chrono::high_resolution_clock::now();
   kp->execute(rt_data);
   auto end = std::chrono::high_resolution_clock::now();
   return std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
 }
 
-bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>* rt_data_pointer,
+bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<void*>* rt_data_pointer,
                              std::vector<void*>* new_data_pointer, const std::vector<int>& idx) {
-  std::vector<const void*>& rt_data = *rt_data_pointer;
+  std::vector<void*>& rt_data = *rt_data_pointer;
   std::vector<void*>& new_data = *new_data_pointer;
   for (size_t i = 0; i < idx.size(); ++i) {
     int elem_num =

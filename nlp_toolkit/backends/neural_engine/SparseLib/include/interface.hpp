@@ -87,7 +87,7 @@ class kernel_proxy : public proxy_base<kernel_t, std::shared_ptr<const kernel_de
 
  public:
   inline const jd::kernel_kind& kernel_kind() const { return get_sp()->kd()->kernel_kind(); }
-  void execute(const std::vector<const void*>& rt_data);
+  void execute(const std::vector<void*>& rt_data);
 };
 
 //// The following paragraphs are the various derived kernels and its descriptors.

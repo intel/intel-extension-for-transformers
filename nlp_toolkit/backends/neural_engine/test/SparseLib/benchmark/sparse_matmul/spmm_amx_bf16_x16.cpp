@@ -129,9 +129,8 @@ void prepare_sparse_data_spmm_amx_bf16_x16(T* weight, dim_t N, dim_t K, dim_t n_
 
 template void prepare_sparse_data_spmm_amx_bf16_x16<bfloat16_t>(bfloat16_t*, dim_t, dim_t, dim_t, dim_t, float);
 
-std::pair<const void*, const void*> make_data_obj_spmm_amx_bf16_x16(const dt& tensor_dt, dim_t rows, dim_t cols,
-                                                                    dim_t index, float ratio,
-                                                                    const std::vector<float>& ranges) {
+std::pair<void*, void*> make_data_obj_spmm_amx_bf16_x16(const dt& tensor_dt, dim_t rows, dim_t cols, dim_t index,
+                                                        float ratio, const std::vector<float>& ranges) {
   dim_t elem_num = rows * cols;
   dim_t bytes_size = elem_num * type_size[tensor_dt];
   void* data_ptr = nullptr;
@@ -168,14 +167,14 @@ std::pair<const void*, const void*> make_data_obj_spmm_amx_bf16_x16(const dt& te
 
   void* data_ptr_copy = new uint8_t[bytes_size];
   memcpy(data_ptr_copy, data_ptr, bytes_size);
-  return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
+  return std::pair<void*, void*>{data_ptr, data_ptr_copy};
 }
 
 void spmm_amx_bf16_x16_bench::gen_case() {
   std::unordered_map<std::string, std::string> op_attrs;
   // Step 1: Construct runtime data
-  std::vector<const void*> rt_data1;
-  std::vector<const void*> rt_data2;
+  std::vector<void*> rt_data1;
+  std::vector<void*> rt_data2;
   tensor_desc wei_desc = {{N, K}, dt::bf16, ft::bsr};
   tensor_desc src_desc = {{M / micro_bs, K, micro_bs}, dt::bf16, ft::abc};
   tensor_desc bia_desc = {{N, 1}, dt::fp32, ft::ab};

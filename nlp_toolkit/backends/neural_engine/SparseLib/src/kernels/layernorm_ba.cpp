@@ -77,16 +77,16 @@ bool layernorm_ba_k_t::init() {
   return true;
 }
 
-bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool layernorm_ba_k_t::execute(const std::vector<void*>& rt_data) const {
   // TODO(zhe1wang): set most appreciate thread num when fuse with quantize and restore it at end of the function.
 #pragma omp parallel for
   for (int i = 0; i < nthr_; i++) {
     const jit_layernorm_ba_t* jit_impl = jit_kers_[i];
     auto data_param = td[i];
-    data_param->src = const_cast<void*>(rt_data[0]);
-    data_param->dst = const_cast<void*>(rt_data[1]);
-    data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
-    data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
+    data_param->src = rt_data[0];
+    data_param->dst = rt_data[1];
+    data_param->alpha = reinterpret_cast<float*>(rt_data[2]);
+    data_param->beta = reinterpret_cast<float*>(rt_data[3]);
     data_param->one_div_n = derived_kd()->one_div_n_ptr();
     (*jit_impl)(td[i]);
   }

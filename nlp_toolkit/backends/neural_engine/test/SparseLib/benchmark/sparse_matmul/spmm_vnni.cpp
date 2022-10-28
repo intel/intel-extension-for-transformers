@@ -166,9 +166,8 @@ void prepare_sparse_data_spmm_vnni(T* vector_data, dim_t rows, dim_t cols, dim_t
   }
 }
 
-std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<int64_t>& a_shape, const dt& a_dt,
-                                                            bool is_clear, float sparse_ratio,
-                                                            const std::vector<float>& ranges) {
+std::pair<void*, void*> make_data_obj_spmm_vnni(const std::vector<int64_t>& a_shape, const dt& a_dt, bool is_clear,
+                                                float sparse_ratio, const std::vector<float>& ranges) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
@@ -197,7 +196,7 @@ std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<in
 
   void* data_ptr_copy = new uint8_t[bytes_size];
   memcpy(data_ptr_copy, data_ptr, bytes_size);
-  return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
+  return std::pair<void*, void*>{data_ptr, data_ptr_copy};
 }
 
 std::vector<float> make_output_scale(dim_t size, const std::vector<float>& ranges = {-10, 10}) {
@@ -221,8 +220,8 @@ void spmm_vnni_bench::gen_case() {
   tensor_desc scales_desc = {{M, 1}, dt::fp32, ft::ab};
   ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
 
-  std::vector<const void*> rt_data1;
-  std::vector<const void*> rt_data2;
+  std::vector<void*> rt_data1;
+  std::vector<void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
     auto& tsd = ts_descs[index];

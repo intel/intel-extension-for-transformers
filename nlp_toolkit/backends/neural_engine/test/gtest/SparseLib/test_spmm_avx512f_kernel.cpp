@@ -33,7 +33,7 @@ using ft = jd::format_type;
 
 struct op_args_t {
   operator_desc op_desc;
-  std::vector<const void*> rt_data;
+  std::vector<void*> rt_data;
   float sparsity;  // sparsity of weight matrix; for testcase labeling
 };
 
@@ -42,7 +42,7 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+void get_true_data(const operator_desc& op_desc, const std::vector<void*>& rt_data) {
   // shape configure alias
   const auto& ts_descs = op_desc.tensor_descs();
   const auto& wei_desc = ts_descs[ssd::WEI];
@@ -171,9 +171,9 @@ void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, con
   }
 }
 
-std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_shape, const dt& a_dt,
-                                                  bool is_clear = false, float sparsity = 0.f,  // 0 for dense
-                                                  ft a_ft = ft::uncoded, const std::vector<float>& ranges = {-10, 10}) {
+std::pair<void*, void*> make_data_obj(const std::vector<dim_t>& a_shape, const dt& a_dt, bool is_clear = false,
+                                      float sparsity = 0.f,  // 0 for dense
+                                      ft a_ft = ft::uncoded, const std::vector<float>& ranges = {-10, 10}) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
@@ -206,7 +206,7 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_sh
 
   void* data_ptr_copy = new uint8_t[bytes_size];
   memcpy(data_ptr_copy, data_ptr, bytes_size);
-  return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
+  return std::pair<void*, void*>{data_ptr, data_ptr_copy};
 }
 
 std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity,
@@ -221,8 +221,8 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   tensor_desc dst_desc = {{M, N}, dt::fp32, ft::abc};
   std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
 
-  std::vector<const void*> rt_data1;
-  std::vector<const void*> rt_data2;
+  std::vector<void*> rt_data1;
+  std::vector<void*> rt_data2;
   for (size_t i = 0; i < ts_descs.size(); ++i) {
     bool is_clear = i == ssd::DST || i == ssd::BIAS;
     std::vector<float> ranges = (i == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};

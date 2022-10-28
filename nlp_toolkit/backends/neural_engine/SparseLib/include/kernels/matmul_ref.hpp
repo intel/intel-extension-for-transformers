@@ -85,7 +85,7 @@ class matmul_ref_k_t : public kernel_t {
 
  public:
   bool init() override;
-  bool execute(const std::vector<const void*>& rt_data) const override;
+  bool execute(const std::vector<void*>& rt_data) const override;
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 
  private:

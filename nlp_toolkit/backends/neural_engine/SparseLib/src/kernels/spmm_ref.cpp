@@ -60,7 +60,7 @@ bool spmm_ref_kd_t::init() {
 //// Part2: class spmm_ref_k_t
 bool spmm_ref_k_t::init() { return true; }
 
-bool spmm_ref_k_t::execute_s8_(const std::vector<const void*>& rt_data) const {
+bool spmm_ref_k_t::execute_s8_(const std::vector<void*>& rt_data) const {
   const auto& dst_dt = dst_type();
   bool has_bias = derived_kd()->has_bias();
   auto attrs_map = derived_kd()->operator_desc().attrs();
@@ -74,7 +74,7 @@ bool spmm_ref_k_t::execute_s8_(const std::vector<const void*>& rt_data) const {
   const auto left_data = rt_data[ssd::WEI];
   const auto right_data = rt_data[ssd::SRC];
   const auto bias_data = static_cast<const int32_t*>(rt_data[ssd::BIAS]);
-  auto dst_data = const_cast<void*>(rt_data[ssd::DST]);
+  auto dst_data = rt_data[ssd::DST];
   const auto scales_data = static_cast<const float*>(rt_data[ssd::SCALES]);
 
   // weight data
@@ -136,7 +136,7 @@ bool spmm_ref_k_t::execute_s8_(const std::vector<const void*>& rt_data) const {
   return true;
 }
 
-bool spmm_ref_k_t::execute_bf16_(const std::vector<const void*>& rt_data) const {
+bool spmm_ref_k_t::execute_bf16_(const std::vector<void*>& rt_data) const {
   const auto& dst_dt = dst_type();
   auto num_BN = N_ / BN_;
   std::vector<dim_t> wei_stride = {K_, 1};
@@ -151,7 +151,7 @@ bool spmm_ref_k_t::execute_bf16_(const std::vector<const void*>& rt_data) const 
   const auto wei_data = static_cast<const bfloat16_t*>(rt_data[0]);
   const auto src_data = static_cast<const bfloat16_t*>(rt_data[1]);
   const auto bia_data = static_cast<const float*>(rt_data[2]);
-  void* dst_data = const_cast<void*>(rt_data[3]);
+  void* dst_data = rt_data[3];
 
   std::vector<float> float_dst_data(M_ * N_, 0);
   bfloat16_t* bf_dst_data = static_cast<bfloat16_t*>(dst_data);
@@ -182,7 +182,7 @@ bool spmm_ref_k_t::execute_bf16_(const std::vector<const void*>& rt_data) const 
   return true;
 }
 
-bool spmm_ref_k_t::execute_f32_(const std::vector<const void*>& rt_data) const {
+bool spmm_ref_k_t::execute_f32_(const std::vector<void*>& rt_data) const {
   const auto& ts_descs = derived_kd()->operator_desc().tensor_descs();
   const auto& postops_list = derived_kd()->operator_desc().apply_postops_list();
   const auto& wei_desc = ts_descs[ssd::WEI];
@@ -198,10 +198,10 @@ bool spmm_ref_k_t::execute_f32_(const std::vector<const void*>& rt_data) const {
   std::vector<int64_t> dst_stride = {N, 1};
 
   // runtime data alias
-  const auto left_fp32 = static_cast<const float*>(rt_data[ssd::SRC]);
-  const auto right_fp32 = static_cast<const float*>(rt_data[ssd::WEI]);
-  const auto bias_fp32 = static_cast<const float*>(rt_data[ssd::BIAS]);
-  auto dst_fp32 = static_cast<float*>(const_cast<void*>(rt_data[ssd::DST]));
+  const auto left_fp32 = static_cast<float*>(rt_data[ssd::SRC]);
+  const auto right_fp32 = static_cast<float*>(rt_data[ssd::WEI]);
+  const auto bias_fp32 = static_cast<float*>(rt_data[ssd::BIAS]);
+  auto dst_fp32 = reinterpret_cast<float*>(rt_data[ssd::DST]);
 
   // Computing the kernel
   SPARSE_LOG_IF(FATAL, dims != 2) << "dim should be 2";
@@ -229,7 +229,7 @@ bool spmm_ref_k_t::execute_f32_(const std::vector<const void*>& rt_data) const {
   return true;
 }
 
-bool spmm_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool spmm_ref_k_t::execute(const std::vector<void*>& rt_data) const {
   switch (wei_type()) {
     case jd::data_type::fp32:
       return execute_f32_(rt_data);

@@ -36,11 +36,11 @@ bool softmax_ref_kd_t::init() {
   return true;
 }
 
-bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool softmax_ref_k_t::execute(const std::vector<void*>& rt_data) const {
   auto op_desc = derived_kd()->operator_desc();
-  auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[0]));
-  auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rt_data[0]));
-  auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rt_data[1]));
+  auto src_s8 = reinterpret_cast<int8_t*>(rt_data[0]);
+  auto src_u8 = reinterpret_cast<uint8_t*>(rt_data[0]);
+  auto dst = reinterpret_cast<bfloat16_t*>(rt_data[1]);
   auto postop_lists = op_desc.apply_postops_list();
   auto src_tensor = op_desc.tensor_descs()[0];
   auto src_dt = src_tensor.dtype();

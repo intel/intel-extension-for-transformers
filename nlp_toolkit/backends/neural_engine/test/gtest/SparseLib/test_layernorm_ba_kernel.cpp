@@ -18,7 +18,7 @@
 namespace jd {
 struct op_args_t {
   operator_desc op_desc;
-  std::vector<const void*> data;
+  std::vector<void*> data;
 };
 
 struct test_params_t {
@@ -26,7 +26,7 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+void get_true_data(const operator_desc& op_desc, const std::vector<void*>& rt_data) {
   auto tensor_desc = op_desc.tensor_descs();
   int row = tensor_desc[0].reduce_rows();
   int col = tensor_desc[0].shape().back();
@@ -179,8 +179,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
     }
   }
 
-  std::vector<const void*> rt_data1;
-  std::vector<const void*> rt_data2;
+  std::vector<void*> rt_data1;
+  std::vector<void*> rt_data2;
 
   rt_data1.emplace_back(src);
   rt_data1.emplace_back(dst);
