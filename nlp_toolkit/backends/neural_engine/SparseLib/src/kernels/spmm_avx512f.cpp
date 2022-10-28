@@ -86,7 +86,7 @@ bool spmm_avx512f_k_t::init() {
   return true;
 }
 
-bool spmm_avx512f_k_t::execute(const std::vector<void*>& rt_data) const {
+bool spmm_avx512f_k_t::execute(const std::vector<const void*>& rt_data) const {
 #pragma omp parallel for
   for (size_t i = 0; i < jit_kers_.size(); ++i) {
     auto& jit_impl = jit_kers_[i];
@@ -94,7 +94,7 @@ bool spmm_avx512f_k_t::execute(const std::vector<void*>& rt_data) const {
     rt_param.sparse = jit_impl->bsc_data()->data().data();
     rt_param.dense = reinterpret_cast<const float*>(rt_data[ssd::SRC]);
     rt_param.bias = reinterpret_cast<const float*>(rt_data[ssd::BIAS]);
-    rt_param.dst = reinterpret_cast<float*>(rt_data[ssd::DST]);
+    rt_param.dst = const_cast<float*>(reinterpret_cast<const float*>(rt_data[ssd::DST]));
     (*jit_impl)(&(rt_param));
   }
   return true;

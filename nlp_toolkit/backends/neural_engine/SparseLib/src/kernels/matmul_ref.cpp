@@ -80,7 +80,7 @@ bool matmul_ref_kd_t::init() {
 //// Part2: class matmul_ref_k_t
 bool matmul_ref_k_t::init() { return true; }
 
-bool matmul_ref_k_t::execute(const std::vector<void*>& rt_data) const {
+bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   using dt = jd::data_type;
   // configure alias
   const matmul_ref_kd_t& ref_kd = *derived_kd();
@@ -123,7 +123,7 @@ bool matmul_ref_k_t::execute(const std::vector<void*>& rt_data) const {
   // runtime data alias
   const auto left_data = rt_data[ssd::SRC0];
   const auto right_data = rt_data[ssd::SRC1];
-  auto dst_data = rt_data[ssd::DST0];
+  auto dst_data = const_cast<void*>(rt_data[ssd::DST0]);
   const auto badd_data = ref_kd.is_f32() ? rt_data[ssd::SRC2] : nullptr;
 
   // ptr alias

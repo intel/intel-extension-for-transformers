@@ -18,7 +18,7 @@
 namespace jd {
 struct op_args_t {
   operator_desc op_desc;
-  std::vector<void*> data;
+  std::vector<const void*> data;
 };
 
 struct test_params_t {
@@ -26,7 +26,7 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-void get_true_data(const operator_desc& op_desc, const std::vector<void*>& rt_data) {
+void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[0]));
   auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rt_data[0]));
   auto dst_dt = op_desc.tensor_descs()[1].dtype();
@@ -181,13 +181,13 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
     assign_val(src_ref, in_dt, rand_val, i);
   }
 
-  std::vector<void*> rt_data1;
-  std::vector<void*> rt_data2;
+  std::vector<const void*> rt_data1;
+  std::vector<const void*> rt_data2;
 
-  rt_data1.emplace_back(src);
-  rt_data1.emplace_back(dst);
-  rt_data2.emplace_back(src_ref);
-  rt_data2.emplace_back(dst_ref);
+  rt_data1.emplace_back(reinterpret_cast<void*>(src));
+  rt_data1.emplace_back(reinterpret_cast<void*>(dst));
+  rt_data2.emplace_back(reinterpret_cast<void*>(src_ref));
+  rt_data2.emplace_back(reinterpret_cast<void*>(dst_ref));
 
   op_args_t p = {softmax_desc, rt_data1};
   op_args_t q = {softmax_desc, rt_data2};

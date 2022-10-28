@@ -92,8 +92,8 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
 void LayerNormOperator::ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // Inplace op.
   Tensor* dst_ptr = output[0];
-  std::vector<void*> runtime_data = {input[0]->mutable_data(), dst_ptr->mutable_data(), input[1]->mutable_data(),
-                                     input[2]->mutable_data()};
+  dst_ptr->mutable_data();
+  std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data(), input[1]->data(), input[2]->data()};
   layernorm_ba_ker.execute(runtime_data);
   // unref tensors
   this->unref_tensors(input);

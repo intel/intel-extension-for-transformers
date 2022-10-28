@@ -70,7 +70,7 @@ bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_r
   return true;
 }
 
-void kernel_proxy::execute(const std::vector<void*>& rt_data) {
+void kernel_proxy::execute(const std::vector<const void*>& rt_data) {
   bool status = false;
 #ifdef SPARSE_LIB_USE_VTUNE
   auto vtune_wrapper = vtune_wrapper_t();

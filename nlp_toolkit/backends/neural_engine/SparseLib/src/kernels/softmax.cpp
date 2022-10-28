@@ -84,17 +84,19 @@ void softmax_kd_t::prepare_lut_softmax_params() {
   param_.sepc_type = ssd::spec_softmax_type::lut;
 }
 
-bool softmax_k_t::execute(const std::vector<void*>& rt_data) const {
+bool softmax_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto param = derived_kd()->param();
   const jit_softmax_t* jit_impl = jit_ker_;
 
 #pragma omp parallel for
   for (int i = 0; i < nthr_; i++) {
     auto data_param = td[i];
-    data_param->src = rt_data[0] + i * param.vec_num_per_thr * (param.vec_align_len + param.vec_tail_len) *
-                                       get_data_size(param.input_dt);
-    data_param->dst = rt_data[1] + i * param.vec_num_per_thr * (param.vec_align_len + param.vec_tail_len) *
-                                       get_data_size(param.output_dt);
+    data_param->src = const_cast<void*>(rt_data[0]) + i * param.vec_num_per_thr *
+                                                          (param.vec_align_len + param.vec_tail_len) *
+                                                          get_data_size(param.input_dt);
+    data_param->dst = const_cast<void*>(rt_data[1]) + i * param.vec_num_per_thr *
+                                                          (param.vec_align_len + param.vec_tail_len) *
+                                                          get_data_size(param.output_dt);
     if (i != nthr_ - 1)
       data_param->process_vec_num = param.vec_num_per_thr;
     else

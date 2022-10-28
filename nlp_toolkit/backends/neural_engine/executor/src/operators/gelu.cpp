@@ -173,7 +173,7 @@ void GeluOperator::ForwardWithOnednn(const vector<Tensor*>& input, const vector<
 void GeluOperator::ForwardWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   Tensor* dst_ptr = output[0];
   dst_ptr->mutable_data();
-  std::vector<void*> runtime_data = {input[0]->mutable_data(), dst_ptr->mutable_data()};
+  std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data()};
   eltwiseop_ker.execute(runtime_data);
   // unref tensors
   this->unref_tensors(input);

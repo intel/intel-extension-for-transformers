@@ -64,7 +64,7 @@ class spmm_amx_bf16_x16_bench : public sparse_matmul_bench {
 template <typename T>
 void prepare_sparse_data_spmm_amx_bf16_x16(T* weight, dim_t N, dim_t K, dim_t n_blksize, dim_t k_blksize, float ratio);
 
-std::pair<void*, void*> make_data_obj_spmm_amx_bf16_x16(const data_type& tensor_dt, dim_t rows, dim_t cols,
+std::pair<const void*, const void*> make_data_obj_spmm_amx_bf16_x16(const data_type& tensor_dt, dim_t rows, dim_t cols,
                                                                     dim_t index, float ratio = 0.9,
                                                                     const std::vector<float>& ranges = {-1, 1});
 

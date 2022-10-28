@@ -57,9 +57,9 @@ class spmm_vnni_bench : public sparse_matmul_bench {
 template <typename T>
 void prepare_sparse_data_spmm_vnni(T* vector_data, std::vector<int64_t> a_shape, float sparse_ratio);
 
-std::pair<void*, void*> make_data_obj_spmm_vnni(const std::vector<int64_t>& a_shape, const data_type& a_dt,
-                                                bool is_clear = false, float sparse_ratio = 0.7,
-                                                const std::vector<float>& ranges = {-10, 10});
+std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<int64_t>& a_shape, const data_type& a_dt,
+                                                            bool is_clear = false, float sparse_ratio = 0.7,
+                                                            const std::vector<float>& ranges = {-10, 10});
 
 }  // namespace jd
 

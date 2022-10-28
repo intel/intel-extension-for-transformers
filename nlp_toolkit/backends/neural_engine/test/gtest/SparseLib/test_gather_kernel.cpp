@@ -20,7 +20,7 @@
 
 namespace jd {
 struct OpArgs {
-  std::vector<void*> data;
+  std::vector<const void*> data;
   operator_desc conf;
 };
 
@@ -112,8 +112,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
   auto src1_tensors = make_tensor_obj(ts_descs[1]);
   void* dst_data = sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC);
   void* dst_data_copy = sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC);
-  std::vector<void*> rt_data = {src0_tensors.first, src1_tensors.first, dst_data};
-  std::vector<void*> rt_data_copy = {src0_tensors.second, src1_tensors.second, dst_data_copy};
+  std::vector<const void*> rt_data = {src0_tensors.first, src1_tensors.first, dst_data};
+  std::vector<const void*> rt_data_copy = {src0_tensors.second, src1_tensors.second, dst_data_copy};
   std::vector<void*> append_vec_copys = {};
 
   std::vector<binaryop_attr> binaryops;

@@ -615,8 +615,8 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
       LOG(WARNING) << "post tensor will be used by multi node...";
     }
   }
-  std::vector<void*> runtime_data = {src0_->mutable_data(), src1_->mutable_data(),
-                                     has_bias_ ? bias_->mutable_data() : nullptr, dst_data, rescales_.data()};
+  std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
+                                           rescales_.data()};
   spmm_kern_.execute(runtime_data);
 }
 #endif

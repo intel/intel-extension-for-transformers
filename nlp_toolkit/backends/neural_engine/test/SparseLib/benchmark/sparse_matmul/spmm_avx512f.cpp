@@ -152,8 +152,9 @@ void prepare_blocked_sparse_data_spmm_avx512f(T* data, const std::vector<dim_t>&
 template void prepare_blocked_sparse_data_spmm_avx512f<float>(float*, const std::vector<dim_t>&,
                                                               const std::vector<dim_t>&, float, unsigned int*);
 
-std::pair<void*, void*> make_data_obj_spmm_avx512f(const std::vector<dim_t>& a_shape, const dt& a_dt, bool is_clear,
-                                                   float sparsity, ft a_ft, const std::vector<float>& ranges) {
+std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector<dim_t>& a_shape, const dt& a_dt,
+                                                               bool is_clear, float sparsity, ft a_ft,
+                                                               const std::vector<float>& ranges) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
@@ -187,7 +188,7 @@ std::pair<void*, void*> make_data_obj_spmm_avx512f(const std::vector<dim_t>& a_s
 
   void* data_ptr_copy = new uint8_t[bytes_size];
   memcpy(data_ptr_copy, data_ptr, bytes_size);
-  return std::pair<void*, void*>{data_ptr, data_ptr_copy};
+  return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
 void spmm_avx512f_bench::gen_case() {
@@ -201,8 +202,8 @@ void spmm_avx512f_bench::gen_case() {
   tensor_desc dst_desc = {{M, N}, dt::fp32, ft::abc};
   ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
 
-  std::vector<void*> rt_data1;
-  std::vector<void*> rt_data2;
+  std::vector<const void*> rt_data1;
+  std::vector<const void*> rt_data2;
   for (size_t i = 0; i < ts_descs.size(); ++i) {
     bool is_clear = i == ssd::DST || i == ssd::BIAS;
     std::vector<float> ranges = (i == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};

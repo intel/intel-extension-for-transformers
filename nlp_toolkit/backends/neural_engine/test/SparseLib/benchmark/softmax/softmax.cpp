@@ -58,10 +58,10 @@ bench_res_t softmax_bench::set_config(int argc, char** argv) {
 
 void softmax_bench::get_true_data() {
   auto op_desc = args.second.op_desc;
-  auto rt_data = args.second.rt_data;
-  auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[0]));
-  auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rt_data[0]));
-  auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rt_data[1]));
+  auto rf_data = args.second.rt_data;
+  auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rf_data[0]));
+  auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rf_data[0]));
+  auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rf_data[1]));
   auto postop_lists = op_desc.apply_postops_list();
   auto src_tensor = op_desc.tensor_descs()[0];
   auto src_dt = src_tensor.dtype();
@@ -121,6 +121,7 @@ void softmax_bench::gen_case() {
   operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs,
                              postop_attrs);
 
+
   int num = get_element_num(softmax_desc);
   void* src = nullptr;
   void* dst = nullptr;
@@ -147,16 +148,16 @@ void softmax_bench::gen_case() {
     assign_val(src_ref, in_dt, rand_val, i);
   }
 
-  std::vector<void*> rt_data1;
-  std::vector<void*> rt_data2;
+  std::vector<const void*> rf_data1;
+  std::vector<const void*> rf_data2;
 
-  rt_data1.emplace_back(reinterpret_cast<void*>(src));
-  rt_data1.emplace_back(reinterpret_cast<void*>(dst));
-  rt_data2.emplace_back(reinterpret_cast<void*>(src_ref));
-  rt_data2.emplace_back(reinterpret_cast<void*>(dst_ref));
+  rf_data1.emplace_back(reinterpret_cast<void*>(src));
+  rf_data1.emplace_back(reinterpret_cast<void*>(dst));
+  rf_data2.emplace_back(reinterpret_cast<void*>(src_ref));
+  rf_data2.emplace_back(reinterpret_cast<void*>(dst_ref));
 
-  op_args_t p = {softmax_desc, rt_data1};
-  op_args_t q = {softmax_desc, rt_data2};
+  op_args_t p = {softmax_desc, rf_data1};
+  op_args_t q = {softmax_desc, rf_data2};
   args = {p, q};
 }
 

@@ -121,7 +121,7 @@ bool matmul_avx512f_p2031_p2013_bench::check_result() {
   return false;
 }
 
-std::pair<void*, void*> make_data_obj_matmul_avx512f_p2031_p2013(  //
+std::pair<const void*, const void*> make_data_obj_matmul_avx512f_p2031_p2013(  //
     const std::vector<int64_t>& a_shape, const dt& a_dt, bool is_clear = false,
     const std::vector<float>& ranges = {-10, 10}) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<dim_t>());
@@ -148,7 +148,7 @@ std::pair<void*, void*> make_data_obj_matmul_avx512f_p2031_p2013(  //
 
   void* data_ptr_copy = new uint8_t[bytes_size];
   memcpy(data_ptr_copy, data_ptr, bytes_size);
-  return std::pair<void*, void*>{data_ptr, data_ptr_copy};
+  return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
 void matmul_avx512f_p2031_p2013_bench::gen_case() {
@@ -161,8 +161,8 @@ void matmul_avx512f_p2031_p2013_bench::gen_case() {
   ts_descs = {src0_desc, src1_desc, dst_desc, src2_desc};
 
   // Step 2: Construct runtime data
-  std::vector<void*> rt_data1;
-  std::vector<void*> rt_data2;
+  std::vector<const void*> rt_data1;
+  std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
     if (index == ssd::SRC2 && !has_binary_add) {

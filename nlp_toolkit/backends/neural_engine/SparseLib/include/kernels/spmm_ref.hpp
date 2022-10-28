@@ -94,15 +94,15 @@ class spmm_ref_k_t : public kernel_t {
 
  public:
   bool init() override;
-  bool execute(const std::vector<void*>& rt_data) const override;
+  bool execute(const std::vector<const void*>& rt_data) const override;
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 
  private:
   inline jd::data_type wei_type() const { return derived_kd()->wei_type(); }
   inline jd::data_type dst_type() const { return derived_kd()->dst_type(); }
-  bool execute_s8_(const std::vector<void*>& rt_data) const;
-  bool execute_bf16_(const std::vector<void*>& rt_data) const;
-  bool execute_f32_(const std::vector<void*>& rt_data) const;
+  bool execute_s8_(const std::vector<const void*>& rt_data) const;
+  bool execute_bf16_(const std::vector<const void*>& rt_data) const;
+  bool execute_f32_(const std::vector<const void*>& rt_data) const;
 
  private:
   const dim_t M_;

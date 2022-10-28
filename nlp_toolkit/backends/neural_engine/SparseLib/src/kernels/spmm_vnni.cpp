@@ -143,7 +143,7 @@ bool spmm_vnni_k_t::init() {
 }
 
 template <typename dst_t>
-bool spmm_vnni_k_t::execute_(const std::vector<void*>& rt_data) const {
+bool spmm_vnni_k_t::execute_(const std::vector<const void*>& rt_data) const {
 #pragma omp parallel for collapse(2)
   for (dim_t im = 0; im < M_; im += BM_) {
     for (dim_t in = 0; in < N_; in += BN_) {
@@ -152,14 +152,14 @@ bool spmm_vnni_k_t::execute_(const std::vector<void*>& rt_data) const {
       data.ptr_dense = static_cast<const uint8_t*>(rt_data[ssd::SRC]) + in * K_;
       data.ptr_bias = static_cast<const int32_t*>(rt_data[ssd::BIAS]) + im;
       data.ptr_scales = static_cast<const float*>(rt_data[ssd::SCALES]) + im;
-      data.ptr_dst = reinterpret_cast<dst_t*>(rt_data[ssd::DST]) + in * M_ + im * BN_;
+      data.ptr_dst = const_cast<dst_t*>(static_cast<const dst_t*>(rt_data[ssd::DST])) + in * M_ + im * BN_;
       (*jit_impl)(&data);
     }
   }
   return true;
 }
 
-bool spmm_vnni_k_t::execute(const std::vector<void*>& rt_data) const {
+bool spmm_vnni_k_t::execute(const std::vector<const void*>& rt_data) const {
   switch (dst_type()) {
     case jd::data_type::fp32:
       return execute_<float>(rt_data);

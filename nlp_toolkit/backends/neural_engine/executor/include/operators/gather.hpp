@@ -51,7 +51,7 @@ class GatherOperator : public Operator {
   vector<int64_t> reshape_dims_;
   vector<int64_t> mul_;
 
-  std::vector<void*> rt_data_;
+  std::vector<const void*> rt_data_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_HPP_

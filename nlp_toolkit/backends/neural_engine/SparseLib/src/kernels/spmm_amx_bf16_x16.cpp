@@ -107,7 +107,7 @@ bool spmm_amx_bf16_x16_k_t::spmm_kernel_create(jit_spmm_amx_bf16_x16_t** ker_pp,
   return status;
 }
 
-bool spmm_amx_bf16_x16_k_t::execute(const std::vector<void*>& rt_data) const {
+bool spmm_amx_bf16_x16_k_t::execute(const std::vector<const void*>& rt_data) const {
   bool bf16_out = derived_kd()->params()[0].same_src_dtype;
   if (!bf16_out) {
 #pragma omp parallel for collapse(2)
@@ -117,9 +117,10 @@ bool spmm_amx_bf16_x16_k_t::execute(const std::vector<void*>& rt_data) const {
         amx_config_->amx_tile_configure(thread_idx, tile_param_);
         jd::ssd::amx_bf16f32_inputs_t inputs;
         inputs.weight = weights_[micro_oc];
-        inputs.src = reinterpret_cast<bfloat16_t*>(rt_data[1]) + micro_bs * tileBS * IC;
-        inputs.bias = reinterpret_cast<float*>(rt_data[2]) + micro_oc * tileOC;
-        inputs.dst = reinterpret_cast<float*>(rt_data[3]) + micro_bs * tileBS * OC + micro_oc * tileOC * tileBS;
+        inputs.src = static_cast<bfloat16_t*>(const_cast<void*>(rt_data[1])) + micro_bs * tileBS * IC;
+        inputs.bias = static_cast<float*>(const_cast<void*>(rt_data[2])) + micro_oc * tileOC;
+        inputs.dst =
+            static_cast<float*>(const_cast<void*>(rt_data[3])) + micro_bs * tileBS * OC + micro_oc * tileOC * tileBS;
         (*jit_kers_[micro_oc])(inputs);
       }
     }
@@ -131,9 +132,10 @@ bool spmm_amx_bf16_x16_k_t::execute(const std::vector<void*>& rt_data) const {
         amx_config_->amx_tile_configure(thread_idx, tile_param_);
         jd::ssd::amx_bf16bf16_inputs_t inputs;
         inputs.weight = weights_[micro_oc];
-        inputs.src = reinterpret_cast<bfloat16_t*>(rt_data[1]) + micro_bs * tileBS * IC;
-        inputs.bias = reinterpret_cast<float*>(rt_data[2]) + micro_oc * tileOC;
-        inputs.dst = reinterpret_cast<bfloat16_t*>(rt_data[3]) + micro_bs * tileBS * OC + micro_oc * tileOC * tileBS;
+        inputs.src = static_cast<bfloat16_t*>(const_cast<void*>(rt_data[1])) + micro_bs * tileBS * IC;
+        inputs.bias = static_cast<float*>(const_cast<void*>(rt_data[2])) + micro_oc * tileOC;
+        inputs.dst = static_cast<bfloat16_t*>(const_cast<void*>(rt_data[3])) + micro_bs * tileBS * OC +
+                     micro_oc * tileOC * tileBS;
         (*jit_kers_[micro_oc])(inputs);
       }
     }

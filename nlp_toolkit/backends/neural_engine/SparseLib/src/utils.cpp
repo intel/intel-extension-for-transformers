@@ -267,17 +267,17 @@ bool set_once_before_first_get_setting_t<T>::set(T new_value) {
 }
 
 template <typename T>
-void cast_to_float_array(void* src, std::vector<float>* dst, int size) {
-  T* src_typed = reinterpret_cast<T*>(src);
+void cast_to_float_array(const void* src, std::vector<float>* dst, int size) {
+  T* src_typed = reinterpret_cast<T*>(const_cast<void*>(src));
   for (int i = 0; i < size; ++i) {
     (*dst)[i] = cast_to<T, float>(src_typed[i]);
   }
 }
-template void cast_to_float_array<float>(void*, std::vector<float>*, int);
-template void cast_to_float_array<int>(void*, std::vector<float>*, int);
-template void cast_to_float_array<int8_t>(void*, std::vector<float>*, int);
-template void cast_to_float_array<uint8_t>(void*, std::vector<float>*, int);
-template void cast_to_float_array<bfloat16_t>(void*, std::vector<float>*, int);
+template void cast_to_float_array<float>(const void*, std::vector<float>*, int);
+template void cast_to_float_array<int>(const void*, std::vector<float>*, int);
+template void cast_to_float_array<int8_t>(const void*, std::vector<float>*, int);
+template void cast_to_float_array<uint8_t>(const void*, std::vector<float>*, int);
+template void cast_to_float_array<bfloat16_t>(const void*, std::vector<float>*, int);
 
 template <typename T>
 void cast_from_float_array(std::vector<float> src, void* dst, int size) {

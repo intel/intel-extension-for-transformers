@@ -61,7 +61,7 @@ enum class bench_mode : uint8_t {
 
 struct op_args_t {
   operator_desc op_desc;
-  std::vector<void*> rt_data;
+  std::vector<const void*> rt_data;
 };
 
 // Kernel developers will implement utility functions by themselves
@@ -117,7 +117,7 @@ class bench_op {
   /*
    * @brief Get execution time of kernel.
    */
-  double exec_time(std::shared_ptr<kernel_proxy> kp, const std::vector<void*>& rt_data);
+  double exec_time(std::shared_ptr<kernel_proxy> kp, const std::vector<const void*>& rt_data);
   /*
    * @brief Refresh some parts of runtime data for kernel.
    */
@@ -135,7 +135,7 @@ class bench_op {
   /*
    * @brief Allocate new memory for some parts of runtime data for kernel.
    */
-  bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<void*>* rt_data_pointer,
+  bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>* rt_data_pointer,
                      std::vector<void*>* new_data_pointer, const std::vector<int>& idx);
 
   /*

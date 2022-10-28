@@ -101,8 +101,8 @@ void eltwiseop_bench::gen_case() {
     assign_val(src_ref, in_dt, rand_val, i);
   }
 
-  std::vector<void*> rt_data1;
-  std::vector<void*> rt_data2;
+  std::vector<const void*> rt_data1;
+  std::vector<const void*> rt_data2;
 
   rt_data1.emplace_back(reinterpret_cast<void*>(src));
   rt_data1.emplace_back(reinterpret_cast<void*>(dst));

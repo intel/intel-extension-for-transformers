@@ -154,8 +154,8 @@ void layernorm_ba_bench::gen_case() {
     }
   }
 
-  std::vector<void*> rt_data1;
-  std::vector<void*> rt_data2;
+  std::vector<const void*> rt_data1;
+  std::vector<const void*> rt_data2;
 
   rt_data1.emplace_back(src);
   rt_data1.emplace_back(dst);

@@ -126,11 +126,11 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
 
 void GatherOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
-  rt_data_[0] = src_->mutable_data();
-  rt_data_[1] = idx_->mutable_data();
-  rt_data_[2] = dst_->mutable_data();
+  rt_data_[0] = src_->data();
+  rt_data_[1] = idx_->data();
+  rt_data_[2] = dst_->data();
   if (binary_add_) {
-    rt_data_[3] = append_->mutable_data();
+    rt_data_[3] = append_->data();
   }
   gather_.execute(rt_data_);
   // 2. unref tensors

@@ -32,18 +32,18 @@ bool layernorm_ba_ref_kd_t::init() {
   return true;
 }
 
-bool layernorm_ba_ref_k_t::execute(const std::vector<void*>& rt_data) const {
+bool layernorm_ba_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto op_desc = derived_kd()->operator_desc();
   auto tensor_desc = op_desc.tensor_descs();
   int row = tensor_desc[0].reduce_rows();
   int col = tensor_desc[0].shape().back();
   auto dst_dt = tensor_desc[1].dtype();
 
-  float* src = reinterpret_cast<float*>(rt_data[0]);
-  float* alpha = reinterpret_cast<float*>(rt_data[2]);
-  float* beta = reinterpret_cast<float*>(rt_data[3]);
+  float* src = reinterpret_cast<float*>(const_cast<void*>(rt_data[0]));
+  float* alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
+  float* beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
 
-  void* dst_data = rt_data[1];
+  void* dst_data = const_cast<void*>(rt_data[1]);
   auto dst_fp32 = static_cast<float*>(dst_data);
   auto dst_u8 = static_cast<uint8_t*>(dst_data);
   auto dst_s8 = static_cast<int8_t*>(dst_data);
