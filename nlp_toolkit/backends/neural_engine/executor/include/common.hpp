@@ -39,6 +39,7 @@
 
 #include "memory_allocator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#include "interface.hpp"
 
 #if __AVX512F__
 #include <immintrin.h>
@@ -151,7 +152,7 @@ void block_minmax(float* Input, size_t N, float* Min, float* Max);
 
 /************ hash funtion for primitive cache ************/
 template <typename T>
-inline size_t hash_combine(size_t seed, const T &v) {
+inline size_t hash_combine(size_t seed, const T& v) {
   return seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
@@ -201,9 +202,7 @@ class PrimitiveCachePool {
   }
 
   // call in_cache function first
-  T& GetContext(const size_t& key) noexcept {
-    return cache_map_[key].primitive;
-  }
+  T& GetContext(const size_t& key) noexcept { return cache_map_[key].primitive; }
 
   void SetContext(const size_t& key, T primitive) {
     Entry entry(primitive);
@@ -276,9 +275,8 @@ class InnerProductPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::inner_
  public:
   static size_t Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                     const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
-                    const vector<int64_t>& dst_perm, const string& append_op,
-                    const vector<int64_t>& post_op_shape, const float& output_scale,
-                    const dnnl::engine* eng);
+                    const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
+                    const float& output_scale, const dnnl::engine* eng);
   static bool IsInFactory(const size_t& key);
   // call IsInFactory function first
   static dnnl::inner_product_forward& Get(const size_t& key);
@@ -292,9 +290,8 @@ class InnerProductPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::inner_
   static InnerProductPrimitiveFwdFactory& GetInstance();
   static size_t GenKey(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                        const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
-                       const vector<int64_t>& dst_perm, const string& append_op,
-                       const vector<int64_t>& post_op_shape, const float& output_scale,
-                       const dnnl::engine* eng);
+                       const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
+                       const float& output_scale, const dnnl::engine* eng);
 };
 
 // Singleton, cache matmul forward class
@@ -302,9 +299,8 @@ class MatMulPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::matmul> {
  public:
   static size_t Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                     const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
-                    const vector<int64_t>& dst_perm, const string& append_op,
-                    const vector<int64_t>& post_op_shape, const float& output_scale,
-                    const dnnl::engine* eng);
+                    const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
+                    const float& output_scale, const dnnl::engine* eng);
   static bool IsInFactory(const size_t& key);
   // call IsInFactory function first
   static dnnl::matmul& Get(const size_t& key);
@@ -318,9 +314,8 @@ class MatMulPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::matmul> {
   static MatMulPrimitiveFwdFactory& GetInstance();
   static size_t GenKey(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                        const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
-                       const vector<int64_t>& dst_perm, const string& append_op,
-                       const vector<int64_t>& post_op_shape, const float& output_scale,
-                       const dnnl::engine* eng);
+                       const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
+                       const float& output_scale, const dnnl::engine* eng);
 };
 
 // Singleton, cache inner product forward class
@@ -328,10 +323,9 @@ class ConvolutionPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::convolu
  public:
   static size_t Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                     const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
-                    const vector<int64_t>& dst_perm, const string& append_op,
-                    const vector<int64_t>& post_op_shape, const float& output_scale,
-                    const int64_t& group, const vector<int64_t>& pads, const vector<int64_t>& strides,
-                    const dnnl::engine* eng);
+                    const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
+                    const float& output_scale, const int64_t& group, const vector<int64_t>& pads,
+                    const vector<int64_t>& strides, const dnnl::engine* eng);
   static bool IsInFactory(const size_t& key);
   // call IsInFactory function first
   static dnnl::convolution_forward& Get(const size_t& key);
@@ -345,10 +339,9 @@ class ConvolutionPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::convolu
   static ConvolutionPrimitiveFwdFactory& GetInstance();
   static size_t GenKey(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                        const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
-                       const vector<int64_t>& dst_perm, const string& append_op,
-                       const vector<int64_t>& post_op_shape, const float& output_scale,
-                       const int64_t& group, const vector<int64_t>& pads, const vector<int64_t>& strides,
-                       const dnnl::engine* eng);
+                       const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
+                       const float& output_scale, const int64_t& group, const vector<int64_t>& pads,
+                       const vector<int64_t>& strides, const dnnl::engine* eng);
 };
 }  // namespace executor
 

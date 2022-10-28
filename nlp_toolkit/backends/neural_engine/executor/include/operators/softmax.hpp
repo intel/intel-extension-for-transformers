@@ -20,6 +20,7 @@
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#include "SparseLib/include/interface.hpp"
 
 namespace executor {
 using dnnl::algorithm;
@@ -45,10 +46,14 @@ class SoftmaxOperator : public Operator {
   int axis_;
   string output_dtype_ = "fp32";
   bool is_dynamic_ = false;
+  bool lut_optimization_ = false;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::softmax_forward softmax_p_;
   memory src_m_;
   memory dst_m_;
+  jd::tensor_desc src_desc_;
+  jd::tensor_desc dst_desc_;
+  jd::softmax softmax_ker_;
   unordered_map<int, memory> memory_args_;
 
   Tensor* src_ = nullptr;
@@ -66,6 +71,8 @@ class SoftmaxOperator : public Operator {
 #endif
   void Reshape_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void Forward_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void Reshape_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void RuntimeMinmax(dnnl::stream& s);
 };
 }  // namespace executor

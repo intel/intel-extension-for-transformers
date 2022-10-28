@@ -84,6 +84,7 @@ bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t siz
   if (buf1 == buf2 || size1 != size2) return false;
   const auto& buf1_data = static_cast<const T*>(buf1);
   const auto& buf2_data = static_cast<const T*>(buf2);
+
   for (int64_t i = 0; i < size1; ++i) {
     if (get_err(buf1_data[i], buf2_data[i]) > eps) {
       SPARSE_LOG(ERROR) << cast_to<T, float>(buf1_data[i]) << "vs" << cast_to<T, float>(buf2_data[i]) << " idx=" << i;
@@ -189,10 +190,9 @@ float get_exp(float x) {
   unsigned int min = 0xc2aeac50;
   float fmax = *reinterpret_cast<float*>(&max);
   float fmin = *reinterpret_cast<float*>(&min);
+  if (x < fmin) x = fmin;
   if (x > fmax) {
     return INFINITY;
-  } else if (x < fmin) {
-    return 0;
   } else {
     return expf(x);
   }
@@ -222,7 +222,6 @@ int get_quantize(float x, float alpha, float scale, data_type dt) {
     ans = ans > 255 ? 255 : ans;
     ans = ans < 0 ? 0 : ans;
   }
-
   return ans;
 }
 

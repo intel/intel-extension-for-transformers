@@ -171,8 +171,10 @@ void jit_eltwise_injector::bit16_lut_compute_vector_fwd(const Zmm& zmm_src) {
     h->vpcmpuw(k_mask, zmm_tmp, table_val(bit16_32), _cmp_lt_os);
     // we will process 16 byte per instruction.
     h->vpermw(zmm_src | k_mask, zmm_tmp, table_val(bit16_lut_term, i * 16));
-    h->vpsubusw(zmm_bk, zmm_bk, table_val(bit16_32));
-    h->vpaddusw(zmm_bk | k_mask, zmm_bk, table_val(bit16_255));
+    if (i != 7) {
+      h->vpsubusw(zmm_bk, zmm_bk, table_val(bit16_32));
+      h->vpaddusw(zmm_bk | k_mask, zmm_bk, table_val(bit16_255));
+    }
   }
 }
 

@@ -29,8 +29,13 @@ struct test_params_t {
 void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[0]));
   auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rt_data[0]));
-  auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rt_data[1]));
-  auto postop_lists = op_desc.apply_postops_list();
+  auto dst_dt = op_desc.tensor_descs()[1].dtype();
+  void* dst = const_cast<void*>(rt_data[1]);
+
+  std::vector<postop_attr> dequant_list = {op_desc.apply_postops_list().front()};
+  std::vector<postop_attr> quant_list;
+  if (op_desc.apply_postops_list().back().op_alg == postop_alg::quantize)
+    quant_list.push_back(op_desc.apply_postops_list().back());
   auto src_tensor = op_desc.tensor_descs()[0];
   auto src_dt = src_tensor.dtype();
   auto tensor_shape = src_tensor.shape();
@@ -39,7 +44,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   std::vector<float> float_dst_data(row * col, 0);
   for (int i = 0; i < row; i++) {
     // step1. find max
-    float max = static_cast<float>(src_u8[0]);
+    float max = -256;
     for (int j = 0; j < col; j++) {
       int src_idx = i * col + j;
       if (src_dt == jd::data_type::s8) {
@@ -49,25 +54,36 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
       }
     }
     // get e^M
-    float one_div_exp_M = 1.0 / get_exp(apply_postop_list(max, postop_lists));
+    max = apply_postop_list(max, dequant_list);
     // step2. compute sum of exp
     float exp_sum = 0;
     for (int j = 0; j < col; j++) {
       float value = 0;
       if (src_dt == jd::data_type::s8) {
-        value = apply_postop_list(static_cast<float>(src_s8[i * col + j] - max), postop_lists);
+        value = apply_postop_list(static_cast<float>(src_s8[i * col + j]), dequant_list);
       } else {
-        value = apply_postop_list(static_cast<float>(src_u8[i * col + j] - max), postop_lists);
+        value = apply_postop_list(static_cast<float>(src_u8[i * col + j]), dequant_list);
       }
-      value = get_exp(value) * one_div_exp_M;
+      value = get_exp(value - max);
       float_dst_data[i * col + j] = value;
       exp_sum += value;
     }
 
     float scale = 1 / exp_sum;
-
     // step3. compute softmax
-    for (int j = 0; j < col; j++) dst[i * col + j] = make_bf16(float_dst_data[i * col + j] * scale);
+    if (dst_dt == data_type::bf16) {
+      for (int j = 0; j < col; j++)
+        reinterpret_cast<bfloat16_t*>(dst)[i * col + j] = make_bf16(float_dst_data[i * col + j] * scale);
+    } else if (dst_dt == data_type::u8) {
+      for (int j = 0; j < col; j++) {
+        reinterpret_cast<uint8_t*>(dst)[i * col + j] =
+            (uint8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
+      }
+    } else if (dst_dt == data_type::s8) {
+      for (int j = 0; j < col; j++)
+        reinterpret_cast<int8_t*>(dst)[i * col + j] =
+            (int8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
+    }
   }
 }
 
@@ -79,6 +95,7 @@ bool check_result(const test_params_t& t) {
     const auto& op_desc = p.op_desc;
     softmax_desc softmax_desc(op_desc);
     softmax softmax_ker(softmax_desc);
+    softmax_ker.execute(p.data);
     softmax_ker.execute(p.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
@@ -94,9 +111,17 @@ bool check_result(const test_params_t& t) {
     auto size1 = p.op_desc.tensor_descs()[1].size();
     auto buf2 = q.data[1];
     auto size2 = q.op_desc.tensor_descs()[1].size();
+    auto dst_dt = q.op_desc.tensor_descs()[1].dtype();
     EXPECT_NE(buf1, buf2);
     bool ans = false;
-    ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-1);
+    if (dst_dt == data_type::s8)
+      ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1e-1);
+    else if (dst_dt == data_type::u8)
+      ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-1);
+    else if (dst_dt == data_type::bf16)
+      ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-1);
+    else
+      return ans = false;
     free(const_cast<void*>(p.data[0]));
     free(const_cast<void*>(p.data[1]));
     free(const_cast<void*>(q.data[0]));
@@ -151,6 +176,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
     float rand_val = rand_r(&seed_tmp) % 256 - 128;
+    std::string val;
     assign_val(src, in_dt, rand_val, i);
     assign_val(src_ref, in_dt, rand_val, i);
   }
@@ -171,20 +197,24 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
-  tensor_desc data0_desc = {{1, 1000}, jd::data_type::bf16, jd::format_type::undef};
-  tensor_desc data1_desc = {{1, 1000}, jd::data_type::u8, jd::format_type::undef};
-  tensor_desc data2_desc = {{1024, 512}, jd::data_type::bf16, jd::format_type::undef};
-  tensor_desc data3_desc = {{1024, 512}, jd::data_type::u8, jd::format_type::undef};
+  tensor_desc data0_desc = {{8, 4, 128, 128}, jd::data_type::u8, jd::format_type::undef};
+  tensor_desc data1_desc = {{8, 4, 128, 128}, jd::data_type::s8, jd::format_type::undef};
+  tensor_desc data2_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
+  tensor_desc data3_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
 
-  postop_attr dequantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::dequantize, 0, 0, 0.04);
+  postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, 140, 0, 0.643695);
+  postop_attr quant_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.00324144);
 
   cases.push_back({gen_case({data1_desc, data0_desc},
-                            {{"postop_list", "dequantize+scale0.04"}, {"vec_len", "1000"}, {"spec_type", "lut"}},
-                            {dequantize_u8_attr}),
+                            {{"postop_list", "dequantize+scale0.653695"}, {"vec_len", "128"}, {"spec_type", "lut"}},
+                            {dequantize_s8_attr, quant_u8_attr}),
                    false});
+
   cases.push_back({gen_case({data3_desc, data2_desc},
-                            {{"postop_list", "dequantize+scale0.04"}, {"vec_len", "512"}, {"spec_type", "lut"}},
-                            {dequantize_u8_attr}),
+                            {{"postop_list", "dequantize+scale0.04+quantiuze+scale0.00324144"},
+                             {"vec_len", "1024"},
+                             {"spec_type", "lut"}},
+                            {dequantize_s8_attr}),
                    false});
   return ::testing::ValuesIn(cases);
 };

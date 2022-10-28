@@ -18,6 +18,10 @@
 
 namespace executor {
 
+std::unordered_map<string, jd::data_type> Operator::type2sparsemem_ = {
+    {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
+    {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
+
 static unordered_map<string, dnnl::memory::data_type> type2mem{
     {"fp32", dnnl::memory::data_type::f32}, {"s32", dnnl::memory::data_type::s32},
     {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
@@ -201,6 +205,9 @@ SoftmaxOperator::SoftmaxOperator(const OperatorConfig& conf) : Operator(conf) {
   if (iter != attrs_map.end()) {
     output_dtype_ = attrs_map["output_dtype"];
   }
+  if (attrs_map.find("lut_softmax") != attrs_map.end()) {
+    lut_optimization_ = true;
+  }
 }
 
 void SoftmaxOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -222,7 +229,10 @@ void SoftmaxOperator::MapTensors(const vector<Tensor*>& input, const vector<Tens
       break;
     }
     default: {
-      LOG(ERROR) << "Input size in Softmax is: " << input_size << ", not supported!";
+      // LOG(ERROR) << "Input size in Softmax is: " << input_size << ", not supported!";
+      src_ = input[0];
+      dst_min_ = input[1];
+      dst_max_ = input[2];
     }
   }
 }
@@ -247,6 +257,9 @@ void SoftmaxOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
   if (output_dtype_ == "fp32" || output_dtype_ == "bf16" || is_dynamic_) {
     // dynamic quantization will calculate the softmax result with fp32 and then quantization in runtime.
     Reshape_dnnl(input, output);
+  } else if (lut_optimization_) {
+    if (input[0]->dtype() != "u8" && input[0]->dtype() != "s8") LOG(ERROR) << "LUT softmax only support int8 input dt.";
+    Reshape_Sparselib(input, output);
   } else if (output_dtype_ == "u8") {
     Reshape_u8(input, output);
   } else {
@@ -257,6 +270,8 @@ void SoftmaxOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
 void SoftmaxOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (output_dtype_ == "fp32" || output_dtype_ == "bf16" || is_dynamic_) {
     Forward_dnnl(input, output);
+  } else if (lut_optimization_) {
+    Forward_Sparselib(input, output);
   } else if (output_dtype_ == "u8") {
 #if __AVX512F__
     Forward_u8(input, output);
@@ -312,6 +327,41 @@ void SoftmaxOperator::Reshape_dnnl(const vector<Tensor*>& input, const vector<Te
 void SoftmaxOperator::Reshape_u8(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> input_shape = src_->shape();
   dst_->set_shape(input_shape);
+}
+
+void SoftmaxOperator::Reshape_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<int64_t> input_shape = src_->shape();
+  dst_->set_shape(input_shape);
+
+  src_desc_ = {input[0]->shape(), type2sparsemem_[input[0]->dtype()], jd::format_type::undef};
+  dst_desc_ = {output[0]->shape(), type2sparsemem_[output[0]->dtype()], jd::format_type::undef};
+  vector<jd::tensor_desc> ts_descs = {src_desc_, dst_desc_};
+  std::unordered_map<std::string, std::string> op_attrs;
+  float input_zp, input_scale, output_zp, output_scale;
+  const float* min_p = static_cast<const float*>(input[1]->data());
+  const float* max_p = static_cast<const float*>(input[2]->data());
+  input_scale = (max_p[0] - min_p[0]) / 255;
+  input_zp = -min_p[0] / input_scale;
+
+  min_p = static_cast<const float*>(input[3]->data());
+  max_p = static_cast<const float*>(input[4]->data());
+  output_scale = (max_p[0] - min_p[0]) / 255;
+  output_zp = -min_p[0] / output_scale;
+  output_zp = 0;
+
+  jd::postop_attr dequantize_attr(jd::data_type::s8, jd::postop_type::eltwise, jd::postop_alg::dequantize, input_zp, 0,
+                                  input_scale);
+  jd::postop_attr quantize_attr(jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, output_zp, 0,
+                                output_scale);
+  if (lut_optimization_) {
+    op_attrs["spec_type"] = "lut";
+    op_attrs["vec_len"] = std::to_string(input[0]->shape().back());
+    // TODO(zhe1wang): add quant factor attr.
+    jd::operator_desc op_desc(jd::kernel_kind::softmax, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                              ts_descs, op_attrs, {dequantize_attr, quantize_attr});
+    jd::softmax_desc softmax_desc(op_desc);
+    softmax_ker_ = jd::softmax(softmax_desc);
+  }
 }
 
 void SoftmaxOperator::Forward_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -397,6 +447,16 @@ void SoftmaxOperator::Forward_u8(const vector<Tensor*>& input, const vector<Tens
   this->unref_tensors(input);
 }
 #endif
+
+void SoftmaxOperator::Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  Tensor* dst_ptr = output[0];
+  if (lut_optimization_) {
+    std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data()};
+    softmax_ker_.execute(runtime_data);
+  }
+  this->unref_tensors(input);
+}
+
 void SoftmaxOperator::RuntimeMinmax(dnnl::stream& s) {
   // use onednn reduction calculate min/max
   vector<int64_t> reduce_shape(dst_->shape().size(), 1);

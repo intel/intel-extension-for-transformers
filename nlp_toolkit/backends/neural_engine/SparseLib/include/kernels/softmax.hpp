@@ -45,6 +45,8 @@ class softmax_kd_t : public kernel_desc_t {
  private:
   jd::operator_desc op_desc_;
   ssd::softmax_param_t param_;
+
+  void prepare_lut_softmax_params();
 };
 
 class softmax_k_t : public kernel_t {
@@ -55,6 +57,7 @@ class softmax_k_t : public kernel_t {
     delete jit_ker_;
     jit_ker_ = nullptr;
     for (auto& data : td) {
+      free(data->tmp);
       if (data != nullptr) {
         delete data;
         data = nullptr;

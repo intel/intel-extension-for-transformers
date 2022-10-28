@@ -32,6 +32,8 @@ class jit_softmax_t : public jit_generator {
   explicit jit_softmax_t(const ssd::softmax_param_t& param) : jit_generator(), param_(param) {
     assign_regs();
     eltwise_injector.eltwise_injector_init(this, param_.postop_attrs);
+    if (param_.sepc_type == ssd::spec_softmax_type::lut)
+      get_lut_exp_injector.eltwise_injector_init(this, param_.get_lut_exp_attrs);
   }
   virtual ~jit_softmax_t() {}
 
@@ -44,11 +46,15 @@ class jit_softmax_t : public jit_generator {
   void perform_op(Zmm v, Zmm vtmp, op_t op);
   void get_unroll();
   void lut_softmax_kernel_gen();
+  void lut_int8_cvt_int16(Zmm dst, Reg64 src);
+  void lut_store_data(int simd_idx, Reg64 dst, int offset = 0, bool mask = false);
 
  private:
   ssd::softmax_param_t param_;
   jit_eltwise_injector eltwise_injector;
+  jit_eltwise_injector get_lut_exp_injector;
   std::map<reg_type, std::set<int>> reg_map;
+  const size_t xmm_byte_size = 16;
   const size_t ymm_byte_size = 32;
   const size_t zmm_byte_size = 64;
   const size_t process_element_16bit = 32;
@@ -64,14 +70,16 @@ class jit_softmax_t : public jit_generator {
   Reg64 vec_offset;  // load/sotre offset
   Reg64 reg_tmp;     // store max/sum
   Opmask tail_mask;
+  Opmask bf16_mask;
   Zmm zmm_vec;
   Ymm ymm_vec;
   Zmm zmm_tmp;
   Zmm zmm_exp_neg_max;
-  Zmm zmm_exp_neg_max_fp32;
+  Zmm zmm_one_bf16;
+  Zmm zmm_one_fp32;
   Ymm ymm_exp_neg_max;
   Xmm xmm_exp_neg_max;
-  Zmm zmm_scale;  // broadcast sum to this zmm reg and then mul e^-M.
+  Zmm zmm_denominator;  // broadcast sum to this zmm reg and then mul e^-M.
 
   Xbyak::Label process_vec_loop;
   Xbyak::Label max_reduction_loop;

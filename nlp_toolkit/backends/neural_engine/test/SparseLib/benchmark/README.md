@@ -137,6 +137,16 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf transpose_matmul avx5
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf transpose_matmul vnni_noperm_p2031_p1302 32 32 64 8 12
 ```
 
+#### softmax
+```shell
+[<environment_variable>...] ./benchmark <mode> softmax <spec_type> <input_shape> <input_dt> <output_dt>
+```
+please note that we only support lut spec_type now, and it only support int8 input and bf16 output.
+#### Examples
+```shell
+BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf softmax spec_type:lut shape:256x256 in_dt:u8 out_dt:bf16
+```
+
 ## For developers
 To add benchmark support for a newly-added kernel, you may need to follow several steps:
 

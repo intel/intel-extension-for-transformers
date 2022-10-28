@@ -21,10 +21,6 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{
     {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
     {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
 
-static unordered_map<string, jd::data_type> type2sparsemem{
-    {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
-    {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
-
 InnerProductOperator::InnerProductOperator(const OperatorConfig& conf)
     : Operator(conf),
       src0_perm_({}),
@@ -532,7 +528,7 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
     // e.g. dispatch_config_ = {"SparseLib", "1,256,128", "1,1,1", "4,4", "1"};
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
-            << "InnerProduct to SparseLib has wrong dispatch kernel config...";
+        << "InnerProduct to SparseLib has wrong dispatch kernel config...";
     // 3D
     vector<int64_t> src1_3d_shape;
     StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
@@ -545,7 +541,7 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
     vector<int64_t> dst_3d_shape = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
     vector<int64_t> dst_2d_shape = {src0_->shape()[0], src1_3d_shape[0] * src1_3d_shape[2]};
     dst_->set_shape(dst_2d_shape);
-    dst_desc_ = {dst_3d_shape, type2sparsemem[dst_->dtype()], jd::format_type::ab};
+    dst_desc_ = {dst_3d_shape, type2sparsemem_[dst_->dtype()], jd::format_type::ab};
   } else {
     // 2D
     if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{0, 1}) {
@@ -556,7 +552,7 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
 
     vector<int64_t> dst_shape = {src0_->shape()[0], src1_shape[1]};
     dst_->set_shape(dst_shape);
-    dst_desc_ = {dst_shape, type2sparsemem[dst_->dtype()], jd::format_type::ab};
+    dst_desc_ = {dst_shape, type2sparsemem_[dst_->dtype()], jd::format_type::ab};
   }
 
   vector<jd::postop_attr> postop_chain;
@@ -574,8 +570,8 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
     scale = (max_p[0] - min_p[0]) / 255;
     zp = -min_p[0] / scale;
     assert(dst_->dtype() == "s8" || dst_->dtype() == "u8");
-    jd::postop_attr quantize_attr(type2sparsemem[dst_->dtype()], jd::postop_type::eltwise, jd::postop_alg::quantize, zp,
-                                  0, scale);
+    jd::postop_attr quantize_attr(type2sparsemem_[dst_->dtype()], jd::postop_type::eltwise, jd::postop_alg::quantize,
+                                  zp, 0, scale);
     op_attrs_["postop_list"] +=
         "+" + dst_->dtype() + "quantize" + "scale" + std::to_string(scale) + "zp" + std::to_string(zp);
     postop_chain.push_back(quantize_attr);

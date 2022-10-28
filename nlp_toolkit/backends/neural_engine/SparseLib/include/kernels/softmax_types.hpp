@@ -27,17 +27,21 @@ struct softmax_param_t {
   spec_softmax_type sepc_type;
   data_type input_dt;
   data_type output_dt;
+  size_t scalar_num;
   size_t vec_align_len;
   size_t vec_tail_len;
   size_t vec_num_per_thr;
   size_t vec_num_tail_thr;
   std::vector<postop_attr> postop_attrs;
+  std::vector<postop_attr> get_lut_exp_attrs;
 };
 
 struct softmax_data_t {
   void* src;
   void* dst;
+  void* tmp;
   size_t process_vec_num;
+  bfloat16_t one;
 };
 
 }  // namespace ssd
