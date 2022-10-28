@@ -20,8 +20,7 @@
 #include <utility>
 
 #include "../operator.hpp"
-#include "model.hpp"
-#include "oneapi/dnnl/dnnl_graph.hpp"
+#include "llga_op_creator.hpp"
 
 namespace executor {
 
@@ -30,15 +29,21 @@ namespace executor {
  *
  */
 
-using logical_tensor = dnnl::graph::logical_tensor;
-class Model;  // forward declaration
-
 class LLGAKernel : public Operator {
  public:
+  LLGAKernel(const OperatorConfig& conf, LLGAINFO* llga_info) : Operator(conf), llga_info_(llga_info) {
+    // create llgakernel from conf, just for gtest.
+    // one config maps only one llga kernel.
+    LLGAOPCreator::GetInstance().CreateOP(llga_info, conf);
+    auto partitions = llga_info->GetPartitions();
+    assert(partitions.size() == 1);
+    partition_ = partitions[0];
+  }
+
   LLGAKernel(const OperatorConfig& conf,
-                     Model* model,
+                     LLGAINFO* llga_info,
                      const dnnl::graph::partition& partition)
-                     : Operator(conf), model_(model), partition_(partition) {}
+                     : Operator(conf), llga_info_(llga_info), partition_(partition) {}
 
   virtual ~LLGAKernel() {}
 
@@ -49,9 +54,8 @@ class LLGAKernel : public Operator {
  private:
   dnnl::graph::partition partition_;
   dnnl::graph::compiled_partition cp_;
-  Model *model_;
-  bool inplace_ = false;
-  std::pair<int, int> inplace_index_;
+  LLGAINFO* llga_info_ = nullptr;
+  std::pair<int, int> inplace_index_{-1, -1};
   vector<logical_tensor> inputs_lt, outputs_lt;
   vector<dnnl::graph::tensor> inputs_ts, outputs_ts;
 };

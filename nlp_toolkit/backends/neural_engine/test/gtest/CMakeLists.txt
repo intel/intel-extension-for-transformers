@@ -27,7 +27,8 @@ endif()
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/gflags ./gflags)
 set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/oneDNN ./oneDNN)
+# add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/oneDNN ./oneDNN)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/oneDNNGraph ./oneDNNGraph)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/yaml-cpp ./yaml)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/googletest ./googletest)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../SparseLib/ ./hostlibs)
@@ -60,12 +61,15 @@ add_library(host_operators SHARED
     ${HOST_SRC_DIR}/src/operators/range.cpp
     ${HOST_SRC_DIR}/src/operators/expand_indices.cpp
     ${HOST_SRC_DIR}/src/sparse_operators/sparse_inner_product.cpp
+    ${HOST_SRC_DIR}/src/llga_operators/llga_kernel.cpp
+    ${HOST_SRC_DIR}/src/llga_operators/llga_op_creator.cpp
 )
 
 # Header file include path
 target_include_directories(host_operators
     PUBLIC
         ${HOST_SRC_DIR}/..
+        ${HOST_SRC_DIR}/include/llga_operators
         ${HOST_SRC_DIR}/include/sparse_operators
         ${HOST_SRC_DIR}/include/operators
         ${HOST_SRC_DIR}/include
@@ -79,6 +83,7 @@ target_include_directories(host_operators
         ${HOST_SRC_DIR}/third_party/boost/libs/static_assert/include
         ${HOST_SRC_DIR}/third_party/boost/libs/type_traits/include
         ${HOST_SRC_DIR}/third_party/boost/libs/interprocess/include
+        ${HOST_SRC_DIR}/third_party/oneDNNGraph/include
 )
 
 # link against the third party libraries
@@ -86,6 +91,7 @@ target_link_libraries(host_operators
     PUBLIC
         ${CMAKE_THREAD_LIBS_INIT}
         dnnl
+        dnnl_graph
         yaml-cpp
         gflags
         glog

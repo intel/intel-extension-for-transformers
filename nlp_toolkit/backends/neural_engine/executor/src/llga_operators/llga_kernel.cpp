@@ -47,31 +47,30 @@ void LLGAKernel::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& ou
   outputs_lt = partition_.get_out_ports();
   for (size_t idx = 0; idx < inputs_lt.size(); ++idx) {
     size_t id = inputs_lt[idx].get_id();
-    logical_tensor temp_lt = model_->name2lts_[model_->id2names_[id]];
+    logical_tensor temp_lt = llga_info_->GetLogicalTensor(id);
     try {
       temp_lt.get_dims();
       inputs_lt[idx] = temp_lt;
     } catch (...) {
+      // query input shape from input tensor, if input logical tensor fails to get_dims.
       inputs_lt[idx] = logical_tensor {temp_lt.get_id(), temp_lt.get_data_type(),
                                     input[idx]->shape(), layout_type::strided};
-      model_->name2lts_[model_->id2names_[id]] = inputs_lt[idx];
+      llga_info_->AddLogicalTensor(inputs_lt[idx], id);
     }
-    inputs_ts.push_back(dnnl::graph::tensor {inputs_lt[idx], model_->eng_, nullptr});
+    inputs_ts.push_back(dnnl::graph::tensor {inputs_lt[idx], llga_info_->GetEngine(), nullptr});
   }
-  cp_ = partition_.compile(inputs_lt, outputs_lt, model_->eng_);
+  cp_ = partition_.compile(inputs_lt, outputs_lt, llga_info_->GetEngine());
   for (size_t idx = 0; idx < outputs_lt.size(); ++idx) {
     size_t id = outputs_lt[idx].get_id();
     auto query_lt = cp_.query_logical_tensor(id);
-    model_->name2lts_[model_->id2names_[id]] = logical_tensor {id, outputs_lt[idx].get_data_type(),
-                                                               query_lt.get_dims(), layout_type::strided};
+    llga_info_->AddLogicalTensor(query_lt, id);
     output[idx]->set_shape(query_lt.get_dims());
-    outputs_ts.push_back(dnnl::graph::tensor {query_lt, model_->eng_, nullptr});
+    outputs_ts.push_back(dnnl::graph::tensor {query_lt, llga_info_->GetEngine(), nullptr});
   }
 
   // check whether there is an inplace operator.
   auto inplace_ports = cp_.get_inplace_ports();
   if (!inplace_ports.empty()) {
-    inplace_ = true;
     auto src_id = inplace_ports[0].first;
     auto dst_id = inplace_ports[0].second;
     int src_idx = GetTensorIndexFromID(inputs_lt, src_id);
@@ -83,14 +82,16 @@ void LLGAKernel::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& ou
 }
 
 void LLGAKernel::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  if (inplace_ && input[inplace_index_.first]->left_life() == 1) {
+  bool do_inplace = false;
+  if (inplace_index_.first != -1 && input[inplace_index_.first]->left_life() == 1) {
     auto data = input[inplace_index_.first]->mutable_data();
     input[inplace_index_.first]->unref_data(true);
     output[inplace_index_.second]->set_data(data);
+    do_inplace = true;
   }
 
   for (int idx = 0; idx < inputs_lt.size(); idx++) {
-    if (inplace_ && idx == inplace_index_.first) {
+    if (do_inplace && idx == inplace_index_.first) {
       inputs_ts[idx].set_data_handle(output[inplace_index_.second]->mutable_data());
     } else {
       inputs_ts[idx].set_data_handle(input[idx]->mutable_data());
@@ -99,10 +100,10 @@ void LLGAKernel::Forward(const vector<Tensor*>& input, const vector<Tensor*>& ou
   for (int idx = 0; idx < outputs_lt.size(); idx++) {
     outputs_ts[idx].set_data_handle(output[idx]->mutable_data());
   }
-  cp_.execute(model_->strm_, inputs_ts, outputs_ts);
-  model_->strm_.wait();
+  cp_.execute(llga_info_->GetStream(), inputs_ts, outputs_ts);
+  llga_info_->GetStream().wait();
 
-  if (inplace_) {
+  if (do_inplace) {
     for (int i = 0; i < input.size(); i++) {
       if (i = inplace_index_.first)
         continue;

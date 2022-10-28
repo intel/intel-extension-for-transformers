@@ -35,15 +35,7 @@
 #include "thread_pool.hpp"
 #include "profiling.hpp"
 #include "llga_kernel.hpp"
-#include "llga_op_creator.hpp"
 namespace executor {
-
-using logical_tensor = dnnl::graph::logical_tensor;
-using property_type = dnnl::graph::logical_tensor::property_type;
-using llga_op = dnnl::graph::op;
-using data_type = dnnl::graph::logical_tensor::data_type;
-using layout_type = dnnl::graph::logical_tensor::layout_type;
-using compiled_partition = dnnl::graph::compiled_partition;
 
 /**
  * @brief Connects Operator%s together into a directed acyclic graph (DAG)
@@ -51,9 +43,6 @@ using compiled_partition = dnnl::graph::compiled_partition;
  *
  */
 class Model {
-  friend class LLGAKernel;
-  friend class LLGAOPCreator;
-
  public:
   explicit Model(const ModelConfig& conf, const string& weight_root);
   explicit Model(const string& conf_file, const string& weight_root);
@@ -112,38 +101,6 @@ class Model {
     return output_tensors_;
   }
 
-  inline void AddLogicalTensor(string tensor_name, logical_tensor dst_desc) {
-    name2lts_[tensor_name] = dst_desc;
-    id2names_[desc_idx] = tensor_name;
-    desc_idx++;
-  }
-
-  inline void AddLogicalTensor(logical_tensor dst_desc) {
-    // 1 operator maps to multi partitions.
-    auto tensor_name = "hardcode_" + std::to_string(dst_desc.get_id());  // TODO(lzw): hardcode
-    name2lts_[tensor_name] = dst_desc;
-    id2names_[desc_idx] = tensor_name;
-    desc_idx++;
-  }
-
-  inline void AddLogicalTensor(string tensor_name, logical_tensor dst_desc, int id) {
-    name2lts_[tensor_name] = dst_desc;
-    id2names_[id] = tensor_name;
-  }
-
-  inline logical_tensor GetLogicalTensor(int id) { return name2lts_[id2names_[id]]; }
-  inline logical_tensor GetLogicalTensor(string tensor_name) { return name2lts_[tensor_name]; }
-
-  inline void AddLLGAOP(llga_op op, int op_conf_index) {
-    g_.add_op(op);
-    opid2index_[op_idx++] = op_conf_index;
-  }
-
-  void ProcessInput(OperatorConfig* op_conf);
-  llga_op CreateOperator(OperatorConfig* op_conf, int index);
-  void ConstructLLGA(const vector<OperatorConfig*>& op_configs);
-
-
  protected:
   string name_;
   string weight_root_;
@@ -173,19 +130,9 @@ class Model {
   bool is_dispatcher_tuning_ = false;
   // for profiling
   bool engine_profiling_ = false;
-
-  // for llga
-  dnnl::graph::graph g_;
-  dnnl::graph::engine eng_ {dnnl::graph::engine::kind::cpu, 0};
-  dnnl::graph::stream strm_ {eng_};
-  vector<dnnl::graph::partition> partitions_;
-
-  int desc_idx = 0;
-  int op_idx = 0;
-
-  unordered_map<string, logical_tensor> name2lts_;
-  unordered_map<int, string> id2names_;
-  unordered_map<int, int> opid2index_;  // <operator_id, index of operator configs>
+  // for onednn graph
+  LLGAINFO llga_info_;
+  void ConstructLLGA(const vector<OperatorConfig*>& op_configs);
 };
 
 }  // namespace executor

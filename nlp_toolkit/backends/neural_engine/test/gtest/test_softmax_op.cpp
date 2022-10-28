@@ -18,6 +18,7 @@
 #include "../../include/common.hpp"
 #include "../../include/conf.hpp"
 #include "../../include/operators/softmax.hpp"
+#include "../../include/llga_operators/llga_kernel.hpp"
 #include "gtest/gtest.h"
 
 using executor::AttrConfig;
@@ -127,6 +128,34 @@ bool CheckResult(const TestParams& t) {
   return false;
 }
 
+bool CheckLLGAResult(const TestParams& t) {
+  const auto& p = t.args.first;
+  const auto& q = t.args.second;
+  try {
+    executor::LLGAINFO llga_info;
+    llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAKernel smax_op(p.conf, &llga_info);
+    smax_op.Prepare(p.input, p.output);
+    smax_op.Reshape(p.input, p.output);
+    smax_op.Forward(p.input, p.output);
+  } catch (const dnnl::error& e) {
+    if (e.status != dnnl_status_t::dnnl_success && t.expect_to_fail) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  if (!t.expect_to_fail) {
+    GetTrueData(q.input, q.output, q.conf);
+    // Should compare buffer with different addresses
+    EXPECT_NE(p.output[0]->data(), q.output[0]->data());
+    return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
+                                        q.output[0]->size());
+  }
+  return false;
+}
+
+
 class SoftmaxOpTest : public testing::TestWithParam<TestParams> {
  protected:
   SoftmaxOpTest() {}
@@ -138,6 +167,11 @@ class SoftmaxOpTest : public testing::TestWithParam<TestParams> {
 TEST_P(SoftmaxOpTest, TestPostfix) {
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckResult(t));
+}
+
+TEST_P(SoftmaxOpTest, TestPostfixLLGA) {
+  TestParams t = testing::TestWithParam<TestParams>::GetParam();
+  EXPECT_TRUE(CheckLLGAResult(t));
 }
 
 std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t> >& input_shape,
@@ -153,7 +187,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("softmax", "fp32", input_config_vec, output_config_vec, op_attr);
+  OperatorConfig op_config = OperatorConfig("softmax", "Softmax", input_config_vec, output_config_vec, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto make_tensor_obj = [&](const TensorConfig* a_tensor_config, int life_num = 1) {

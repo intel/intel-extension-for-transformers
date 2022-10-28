@@ -17,10 +17,10 @@
 namespace executor {
 
 Model::Model(const ModelConfig& conf, const string& weight_root) :
-              weight_root_(weight_root), g_(dnnl::graph::engine::kind::cpu) { Init(conf); }
+              weight_root_(weight_root) { Init(conf); }
 
 Model::Model(const string& conf_file, const string& weight_root) :
-              weight_root_(weight_root), g_(dnnl::graph::engine::kind::cpu) {
+              weight_root_(weight_root) {
   ModelConfig conf = ModelConfig(conf_file);
   CHECK_EQ(conf.CheckConfig(), true) << "model config not right....";
   Init(conf);
@@ -38,6 +38,8 @@ Model::~Model() {
 }
 
 void Model::Init(const ModelConfig& conf) {
+  llga_info_.SetTensors(&tensors_);
+  llga_info_.SetTensorNameIndex(&tensor_name_index_);
   // Clear the whole dnnl primitive cache map when init engine
   InnerProductPrimitiveFwdFactory::ClearFactory();
   MatMulPrimitiveFwdFactory::ClearFactory();
@@ -366,29 +368,6 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
   return this->output_tensors();
 }
 
-void Model::ProcessInput(OperatorConfig* op_conf) {
-  LOG(INFO) << "Creating logical tensors of weights and inputs...";
-  int output_size = op_conf->output_tensor_size();
-  for (int output_id = 0; output_id < output_size; ++output_id) {
-    auto tensor_config = op_conf->output_tensors(output_id);
-    const string& tensor_name = tensor_config->name();
-    data_type dtype = data_type::f32;
-    if (tensor_config->dtype() == "u8") {
-      dtype = data_type::u8;
-    } else if (tensor_config->dtype() == "s8") {
-      dtype = data_type::s8;
-    }
-    if (tensor_config->location().size() != 0) {
-      logical_tensor dst_desc {desc_idx, dtype, tensor_config->shape(), layout_type::strided, property_type::constant};
-      AddLogicalTensor(tensor_name, dst_desc);
-    } else {
-      logical_tensor dst_desc {desc_idx, dtype, layout_type::strided};
-      AddLogicalTensor(tensor_name, dst_desc);
-    }
-  }
-}
-
-
 TensorConfig* findTensorConfig(const vector<OperatorConfig*>& op_configs, string tensor_name) {
   // travel op_configs to find tensorconfig with specificed tensor name
   for (int i = 0; i < op_configs.size() - 1; ++i) {
@@ -413,25 +392,38 @@ TensorConfig* findTensorConfig(const vector<OperatorConfig*>& op_configs, string
 }
 
 void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
+  bool llga_enable = (getenv("LLGA_ENABLE") != NULL);
+  LOG(INFO) << "LLGA_ENABLE: " << llga_enable;
+  if (!llga_enable) {
+    LOG(INFO) << "Constructing original graph...";
+    for (int i = 0; i < op_configs.size(); i++) {
+      operators_.push_back(std::make_shared<Dispatcher>(*op_configs[i]));
+    }
+    return;
+  }
+
   LOG(INFO) << "Constructing LLGA graph...";
   for (int i = 0; i < op_configs.size() - 1; ++i) {
     if (op_configs[i]->type() == "Input") {
-      ProcessInput(op_configs[i]);
+      llga_info_.InitLTFromTensorConf(*op_configs[i]);
       continue;
     }
     // TODO(lzw): check if sparse kernel,
     bool is_wildcard = false;
+    if (!llga_enable) {
+      is_wildcard = false;
+    }
     // create llga op according to operator config, which will be added into llga graph g_.
-    LLGAOPCreator::GetInstance().CreateOP(this, op_configs[i], i, is_wildcard);
+    LLGAOPCreator::GetInstance().CreateOP(&llga_info_, *op_configs[i], i, is_wildcard);
   }
 
-  partitions_ = g_.get_partitions();
+  auto partitions = llga_info_.GetPartitions();
 
   // add Input layer into operators_
   operators_.push_back(std::make_shared<Dispatcher>(*op_configs[0]));
 
-  for (int i = 0; i < partitions_.size(); i++) {
-    auto partition = partitions_[i];
+  for (int i = 0; i < partitions.size(); i++) {
+    auto partition = partitions[i];
     if (partition.is_supported()) {
       // create llga kernel and add it into operators_
       vector<TensorConfig*> partition_inputs, partition_outputs;
@@ -439,7 +431,7 @@ void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
       auto lt_outputs = partition.get_out_ports();
       for (auto lt : lt_inputs) {
         size_t id = lt.get_id();
-        auto tensor_name = id2names_[id];
+        auto tensor_name = llga_info_.GetTensorName(id);
         auto tensor_config = findTensorConfig(op_configs, tensor_name);
         if (tensor_config) {
           partition_inputs.push_back(tensor_config);
@@ -449,7 +441,7 @@ void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
       }
       for (auto lt : lt_outputs) {
         size_t id = lt.get_id();
-        auto tensor_name = id2names_[id];
+        auto tensor_name = llga_info_.GetTensorName(id);
         auto tensor_config = findTensorConfig(op_configs, tensor_name);
         if (tensor_config) {
           partition_outputs.push_back(tensor_config);
@@ -459,12 +451,12 @@ void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
       }
       // create dummy config mainly for delivering tensor names of inputs/outputs.
       OperatorConfig dummy_op_conf("LLGAKernel", "LLGAKernel", partition_inputs, partition_outputs, nullptr);;
-      auto llgakernel = shared_ptr<Operator>(new LLGAKernel(dummy_op_conf, this, partition));
+      auto llgakernel = shared_ptr<Operator>(new LLGAKernel(dummy_op_conf, &llga_info_, partition));
       operators_.push_back(std::make_shared<Dispatcher>(llgakernel));
     } else {
       // create original kernel and add it into operators_
       for (auto id : partition.get_ops()) {
-        int idx = opid2index_[id];
+        int idx = llga_info_.GetIndexFromOPID(id);
         operators_.push_back(std::make_shared<Dispatcher>(*op_configs[idx]));
       }
     }
