@@ -1,5 +1,5 @@
 # Deployment
-NLP Toolkit provides multiple reference deployments: 1) [**Neural Engine**](neural_engine); 2) [IPEX (Coming Soon)](ipex/).
+NLP Toolkit provides multiple reference deployments: 1) [**Neural Engine**](neural_engine); 2) [**IPEX**](ipex/).
 
 ## Neural Engine
 Neural Engine can provide the optimal performance of extremely compressed NLP models, the optimization is both from HW and SW.It's a reference deployment for NLPToolkit, we will enable other backends.
@@ -87,5 +87,14 @@ If you want to analyze performance of each operator, just export ENGINE_PROFILIN
 It will dump latency of each operator to <curr_path>/engine_profiling/profiling_<inst_id>.csv.
 
 ## IPEX
-Intel® Extension for PyTorch* extends PyTorch with optimizations for extra performance boost on Intel hardware. Sample deployment is coming soon.
+Intel® Extension for PyTorch* extends PyTorch with optimizations for extra performance boost on Intel hardware.
+
+### Validated  Question-Answering model list
+
+|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
+|---|------------------------------------|---|---|---
+|squad|distilbert-base-uncased-distilled-squad| N/A| ✅| N/A
+|squad|bert-large-uncased-whole-word-masking-finetuned-squad| N/A| ✅| N/A
+
+
 

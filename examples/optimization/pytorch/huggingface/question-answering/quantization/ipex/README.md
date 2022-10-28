@@ -5,7 +5,7 @@ Here is how to run the script:
 
 ```
 python run_qa.py \
-    --model_name_or_path bert-large-uncased-whole-word-maskinuned-squad \
+    --model_name_or_path bert-large-uncased-whole-word-masking-finetuned-squad \
     --dataset_name squad \
     --tune \
     --quantization_approach PostTrainingStatic \
