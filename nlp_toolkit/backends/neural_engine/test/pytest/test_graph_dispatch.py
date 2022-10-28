@@ -63,6 +63,8 @@ class TestGraphDispatch(unittest.TestCase):
         fp32_dispatch_output = list(fp32_dispatch_output_dict.values())[0]
         # compare outputs
         self.assertTrue((fp32_output == fp32_dispatch_output).all())
+        fp32model._get_latency()
+        fp32model.dump_tensor()
 
 if __name__ == "__main__":
     unittest.main()

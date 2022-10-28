@@ -108,6 +108,7 @@ class AddEmbeddings(Pattern):
 
 
                 # distil_bert_base
+                # vit: only need 1 reshape node in 'out'
                 {
                     'patterns': {
                         'in': [[(0, ['AddV2', 'Add']), (1, 'LayerNorm')]],
@@ -136,7 +137,7 @@ class AddEmbeddings(Pattern):
                             [[1, 2], 3]]
                     },
                     'output_tensors': {
-                        0: [[], [[], 1]],
+                        0: [[ {0: [0]}], [[0], 1]],
                         1: [[], [[], 1]],
                         2: [[], [[], 1]],
                         3: [[{
@@ -148,7 +149,7 @@ class AddEmbeddings(Pattern):
             ]
         }
 
-        def _set_attr(hidden_size, epsilon, node_names, model):
+        def _set_attr(hidden_size, epsilon, node_names, model, is_vit = False):
             attr1 = OrderedDict()
             attr1['append_op'] = 'sum'
             attr2 = OrderedDict()
@@ -167,6 +168,10 @@ class AddEmbeddings(Pattern):
 
             reshape_2_node_idx = model.get_node_id(node_names[2])
             model.nodes[reshape_2_node_idx].attr = attr3
+            # In vit we need to remove the first reshape node
+            if is_vit:
+                model.nodes[reshape_2_node_idx].input_tensors = model.nodes[binary_add_node_idx].output_tensors
+                model.remove_nodes([node_names[1]])
 
             ln_node_idx = model.get_node_id(node_names[3])
             model.nodes[ln_node_idx].attr = attr4
@@ -178,9 +183,13 @@ class AddEmbeddings(Pattern):
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):
                     ln_node = ret_old_nodes[j][1]
+                    add_node = ret_old_nodes[j][0]
+                    is_vit = False
+                    if add_node.input_tensors[-1].data is not None:
+                        is_vit = True
                     hidden_size = int(ln_node.input_tensors[-1].shape[-1])
                     epsilon = ln_node.attr['epsilon']
-                    _set_attr(hidden_size, epsilon, new_node_names[j], model)
+                    _set_attr(hidden_size, epsilon, new_node_names[j], model, is_vit)
                     if len(pattern_dict['patterns']['in'][0]) == 2:
                         binary_add_node_idx = model.get_node_id(new_node_names[j][0])
                         model.nodes[binary_add_node_idx].attr = OrderedDict()

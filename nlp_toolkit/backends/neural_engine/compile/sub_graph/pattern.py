@@ -46,6 +46,8 @@ supported_patterns = [
     'InteractFeatures',
     'AttentionReshape',
     'QKVReshape',
+    'ConvReshape',
+    'AddClsToken',
     'TransposeBatchMatMul',
     'Gelu',
     'MatMulWithBiasGelu',

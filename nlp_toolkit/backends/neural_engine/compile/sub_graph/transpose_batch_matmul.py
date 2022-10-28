@@ -112,6 +112,37 @@ class TransposeBatchMatMul(Pattern):
                 'returns': [0, 1, 2, 3]
             },
 
+            # vit
+            {
+                'patterns': {
+                    'in': [[(0, 'Transpose'), (2, 'MatMul'), (3, 'Div'), (4, 'Softmax')],
+                           [(), (1, 'Transpose'), (2, 'MatMul')]],
+                    'out': [[(0, 'TransposeBatchMatMul'), (1, 'Softmax')]]
+                },
+                'search_mode': 'op_type',
+                'node_names': {
+                    0: 2,
+                    1: 4
+                },
+                'input_tensors': {
+                    0: [[{
+                        0: [0]
+                    }, {
+                        1: [0]
+                    }], [[0, 1], 2]],
+                    1: [[], [[], 1]]
+                },
+                'output_tensors': {
+                    0: [[{
+                        3: [0]
+                    }], [[0], 1]],
+                    1: [[{
+                        4: [0]
+                    }], [[0], 1]]
+                },
+                'returns': [0, 1, 2, 3, 4]
+            },
+
             # geminet
             {
                 'patterns': {
@@ -203,7 +234,12 @@ class TransposeBatchMatMul(Pattern):
                             output_scale = ret_old_nodes[j][3].input_tensors[1].data
                     attr['output_scale'] = float(output_scale)
                     attr['format_any'] = False
-                    attr['append_op'] = 'binary_add'
+                    if len(ret_old_nodes[j]) == 5 \
+                        and ret_old_nodes[j][4].op_type == 'Softmax':
+                        softmax_node_idx = model.get_node_id(new_node_names[j][1])
+                        model.nodes[softmax_node_idx].attr = ret_old_nodes[j][4].attr
+                    else:
+                        attr['append_op'] = 'binary_add'
                     tb_node_idx = model.get_node_id(new_node_names[j][0])
                     model.nodes[tb_node_idx].attr = attr
 

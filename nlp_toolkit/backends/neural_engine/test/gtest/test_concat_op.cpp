@@ -46,42 +46,37 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
   }
   const int num_src = input.size();
   auto src_tensor_shape = input[0]->shape();
-  vector<int64_t> src_stride = executor::GetStrides(src_tensor_shape);
   vector<int64_t> dst_shape;
-  for (int n = 0; n < src_stride.size(); ++n) {
+  for (int n = 0; n < src_tensor_shape.size(); ++n) {
     if (n != axis) {
       dst_shape.emplace_back(src_tensor_shape[n]);
     } else {
-      dst_shape.emplace_back(num_src * src_tensor_shape[n]);
+      int concat_dim_sum = 0;
+      for (int i = 0; i < num_src; ++i) {
+        concat_dim_sum += input[i]->shape()[axis];
+      }
+      dst_shape.emplace_back(concat_dim_sum);
     }
   }
 
   // dst shape
   output[0]->set_shape(dst_shape);
   float* dst_data = static_cast<float*>(output[0]->mutable_data());
-  const auto src_tensor_data = static_cast<const float*>(input[0]->data());
-  const auto src_tensor_data_1 = static_cast<const float*>(input[1]->data());
-  int h = dst_shape[0];
-  int w = dst_shape[1];
-  if (axis == 1) {
-    for (int i = 0; i < h; ++i) {
-      for (int j = 0; j < w; ++j) {
-        if (j < src_tensor_shape[1]) {
-          dst_data[i * w + j] = src_tensor_data[i * src_tensor_shape[1] + j];
-        } else {
-          dst_data[i * w + j] = src_tensor_data_1[i * src_tensor_shape[1] + (j - src_tensor_shape[1])];
-        }
-      }
-    }
-  } else {
-    for (int i = 0; i < h; ++i) {
-      for (int j = 0; j < w; ++j) {
-        if (i < src_tensor_shape[0]) {
-          dst_data[i * w + j] = src_tensor_data[i * w + j];
-        } else {
-          dst_data[i * w + j] = src_tensor_data_1[(i - src_tensor_shape[0]) * w + j];
-        }
-      }
+  std::vector<const float*> src_data;
+  for (const auto& pTensor : input) {
+    src_data.emplace_back(static_cast<const float*>(pTensor->data()));
+  }
+  int size_before_concat_dim =
+      std::accumulate(src_tensor_shape.begin(), src_tensor_shape.begin() + axis, 1, std::multiplies<int>());
+  int size_after_concat_dim =
+      std::accumulate(src_tensor_shape.begin() + axis + 1, src_tensor_shape.end(), 1, std::multiplies<int>());
+  for (int i = 0; i < size_before_concat_dim; ++i) {
+    float* dst_addr = dst_data + i * dst_shape[axis] * size_after_concat_dim;
+    for (int n = 0; n < num_src; ++n) {
+      int concat_data_size = input[n]->shape()[axis] * size_after_concat_dim;
+      const float* src_addr = src_data[n] + i * concat_data_size;
+      memcpy(dst_addr, src_addr, concat_data_size * sizeof(float));
+      dst_addr += concat_data_size;
     }
   }
 }
@@ -125,13 +120,23 @@ TEST_P(ConcatTest, TestPostfix) {
 }
 
 std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape, std::string axis) {
+  // Step 0: Make sure input tensors have the same shape except for size of concat_dim
+  int axis_ = stoi(axis);
+  for (int i = 1; i < input_shape.size(); ++i) {
+    EXPECT_TRUE(input_shape[i].size() == input_shape[0].size()) << "input tensors have different ndims";
+    for (int j = 0; j < input_shape[0].size(); ++j) {
+      if (j == axis_) continue;
+      EXPECT_TRUE(input_shape[i][j] == input_shape[0][j]) << "input tensors have different shapes at non concat_dim";
+    }
+  }
+
   // Step 1: Construct Tensor config ptr
-  const auto& src_shape = input_shape[0];
-  TensorConfig* src_config = new TensorConfig("src", src_shape);
-  std::vector<TensorConfig*> input_config = {src_config};
-  std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config = {dst_config};
+  std::vector<TensorConfig*> input_config(0);
+  for (const auto& src_shape : input_shape) {
+    input_config.emplace_back(new TensorConfig("src", src_shape));
+  }
+  TensorConfig* dst_config = new TensorConfig("dst", std::vector<int64_t>(0));
+  std::vector<TensorConfig*> output_config{dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
@@ -141,30 +146,36 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   OperatorConfig op_config = OperatorConfig("concat", "fp32", input_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
-    // step1: set shape
-    Tensor* a_tensor = new Tensor(*a_tensor_config);
-    // step2: set tensor life
-    a_tensor->add_tensor_life(1);
-    // step3: library buffer can only be obtained afterwards
-    auto tensor_data = a_tensor->mutable_data();
-    executor::InitVector(static_cast<float*>(tensor_data), a_tensor->size());
+  auto make_tensor_obj = [&](const std::vector<TensorConfig*>& tensor_config) {
+    std::pair<std::vector<Tensor*>, std::vector<Tensor*>> res;
+    for (const auto a_tensor_config : tensor_config) {
+      // step1: set shape
+      Tensor* a_tensor = new Tensor(*a_tensor_config);
+      // step2: set tensor life
+      a_tensor->add_tensor_life(1);
+      // step3: library buffer can only be obtained afterwards
+      auto tensor_data = a_tensor->mutable_data();
+      executor::InitVector(static_cast<float*>(tensor_data), a_tensor->size());
 
-    Tensor* a_tensor_copy = new Tensor(*a_tensor_config);
-    a_tensor_copy->add_tensor_life(1);
-    auto tensor_data_copy = a_tensor_copy->mutable_data();
-    memcpy(reinterpret_cast<void*>(tensor_data_copy), tensor_data, a_tensor_copy->size() * sizeof(float));
-    return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
+      Tensor* a_tensor_copy = new Tensor(*a_tensor_config);
+      a_tensor_copy->add_tensor_life(1);
+      auto tensor_data_copy = a_tensor_copy->mutable_data();
+      memcpy(reinterpret_cast<void*>(tensor_data_copy), tensor_data, a_tensor_copy->size() * sizeof(float));
+
+      res.first.emplace_back(a_tensor);
+      res.second.emplace_back(a_tensor_copy);
+    }
+    return res;
   };
 
-  auto src_tensors = make_tensor_obj(src_config);
+  auto src_tensors = make_tensor_obj(input_config);
   Tensor* dst_tensor = new Tensor(*dst_config);
   dst_tensor->add_tensor_life(1);
   Tensor* dst_tensor_copy = new Tensor(*dst_config);
   dst_tensor_copy->add_tensor_life(1);
 
-  OpArgs op_args = {{src_tensors.first, src_tensors.first}, {dst_tensor}, op_config};
-  OpArgs op_args_copy = {{src_tensors.second, src_tensors.second}, {dst_tensor_copy}, op_config};
+  OpArgs op_args = {src_tensors.first, {dst_tensor}, op_config};
+  OpArgs op_args_copy = {src_tensors.second, {dst_tensor_copy}, op_config};
 
   return {op_args, op_args_copy};
 }
@@ -176,17 +187,24 @@ static auto CasesFp32 = []() {
 
   // Config
   std::vector<int64_t> src_shape;
+  std::vector<int64_t> src1_shape;
 
   // case: simple for 0 axis
   src_shape = {1, 1};
-  cases.push_back({GenerateFp32Case({src_shape}, "0"), false});
-  cases.push_back({GenerateFp32Case({src_shape}, "1"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), false});
   src_shape = {2, 3};
-  cases.push_back({GenerateFp32Case({src_shape}, "0"), false});
-  cases.push_back({GenerateFp32Case({src_shape}, "1"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), false});
   src_shape = {100, 30};
-  cases.push_back({GenerateFp32Case({src_shape}, "0"), false});
-  cases.push_back({GenerateFp32Case({src_shape}, "1"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), false});
+
+  // Current 3d concat may have some problems, still needs further investigation
+  // src_shape = {64, 1, 768};
+  // src1_shape = {64, 196, 768};
+  // cases.push_back({GenerateFp32Case({src_shape, src1_shape}, "1"), false});
+
   return ::testing::ValuesIn(cases);
 };
 
