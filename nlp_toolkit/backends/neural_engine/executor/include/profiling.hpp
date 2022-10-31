@@ -33,7 +33,7 @@ class ProfilingTracer {
   void BeginTrace(const std::string& filepath = "result.json") {
     OutputStream.open(filepath);
     if (!OutputStream) {
-      LOG(ERROR) << "Open profiling.json failed!";
+      LOG(ERROR) << "Open " << filepath << " failed!";
     }
     TracerHeader();
   }
@@ -212,30 +212,23 @@ class Profiling_ {
     std::string profiling_dir = "engine_profiling";
     std::string profiling_csv_dir = profiling_dir + "/profiling_csv";
     std::string profiling_trace_dir = profiling_dir + "/profiling_trace";
-    if (*inst_count == 0) {
-      char ch_curr_time[256];
-      time_t curr_time = time(NULL);
-      strftime(ch_curr_time, sizeof(ch_curr_time), "%Y-%m-%d_%H-%M-%S", localtime(&curr_time));
-      profiling_dir = profiling_dir + "_" + ch_curr_time;
-      profiling_csv_dir = profiling_dir + "/profiling_csv";
-      profiling_trace_dir = profiling_dir + "/profiling_trace";
-      mkdir(profiling_dir.c_str(), S_IRWXU);  // 00070, read/write/execute for user group
-      mkdir(profiling_csv_dir.c_str(), S_IRWXU);
-      mkdir(profiling_trace_dir.c_str(), S_IRWXU);
-    }
+    mkdir(profiling_dir.c_str(), S_IRWXU);  // 00070, read/write/execute for user group
+    mkdir(profiling_csv_dir.c_str(), S_IRWXU);
+    mkdir(profiling_trace_dir.c_str(), S_IRWXU);
     ipc::interprocess_mutex* mtx = shm.find_or_construct<ipc::interprocess_mutex>(mtx_name)();
     mtx->lock();
-    std::string csv_file = profiling_csv_dir + "/profiling_" \
+    char ch_curr_time[256];
+    time_t curr_time = time(NULL);
+    strftime(ch_curr_time, sizeof(ch_curr_time), "%Y-%m-%d_%H-%M-%S", localtime(&curr_time));
+    std::string csv_file = profiling_csv_dir + "/profiling_" + ch_curr_time + "_" \
                                  + std::to_string((*inst_count)) + ".csv";
-    std::string tracer_file = profiling_trace_dir + "/profiling_" \
+    std::string tracer_file = profiling_trace_dir + "/profiling_" + ch_curr_time + "_" \
                                  + std::to_string((*inst_count)) + ".json";
     WriteCSV(csv_file, operators_, input_vecs_, output_vecs_);
     WriteJSON(tracer_file, operators_, input_vecs_, output_vecs_);
     (*inst_count)++;
-    // Debug for inst count
-    LOG(INFO) << "inst count: " << *inst_count << ", INST NUM: "<< MemoryAllocator::InstNum();
     mtx->unlock();
-    if (*inst_count == MemoryAllocator::InstNum()) {
+    if (*inst_count >= MemoryAllocator::InstNum()) {
       ipc::shared_memory_object::remove(space_name);
     }
   }
@@ -278,8 +271,9 @@ class Profiling_ {
         ProfilingSparseEstimate(fp, op, average_latency);
       }
       ProfilingLatency(fp, operators_, enable_sparse_latency, total_latency);
+      fclose(fp);
     } else {
-      LOG(ERROR) << "Open profiling.csv failed!";
+      LOG(ERROR) << "Open " << csv_file << " failed!";
     }
   }
   void WriteJSON(const std::string& tracer_file, const vector<shared_ptr<Dispatcher>>& operators_,
@@ -291,45 +285,44 @@ class Profiling_ {
   }
   void ProfilingLatency(FILE* fp, const vector<shared_ptr<Dispatcher>>& operators_,
                           float enable_sparse_latency, float total_latency) {
-  fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
-                  "total latency(ms)", total_latency);
-  // sparse total latency
-  string aim_to_sparse_latency_id_begin = "P" + (*(operators_.begin()+1))->table_id();
-  string aim_to_sparse_latency_id_end = \
-                          "P" + (*(operators_.end()-2))->table_id();
-  fprintf(fp, ",%s,=SUM(%s:%s),", "total aim to sparse latency(ms)",
-                  aim_to_sparse_latency_id_begin.c_str(), aim_to_sparse_latency_id_end.c_str());
-  // sparse improve
-  string dense_total_id = "M" + \
-          std::to_string(std::atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
-  string sparse_total_id = "P" + \
-          std::to_string(std::atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
-  fprintf(fp, "%s,=%s/%s\n", "sparse improve",
-                  dense_total_id.c_str(), sparse_total_id.c_str());
-  // dense matmul/ip latency
-  fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
-                  "sparse support latency(ms)", enable_sparse_latency);
-  // sparse matmul/ip latency
-  string aim_sparse_latency = "=";
-  for (auto op : operators_) {
-    if (op->enable_sparse()) {
-      string sparse_tmp = "P" + op->table_id() + "+";
-      aim_sparse_latency += sparse_tmp;
+    fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
+                    "total latency(ms)", total_latency);
+    // sparse total latency
+    string aim_to_sparse_latency_id_begin = "P" + (*(operators_.begin()+1))->table_id();
+    string aim_to_sparse_latency_id_end = \
+                            "P" + (*(operators_.end()-2))->table_id();
+    fprintf(fp, ",%s,=SUM(%s:%s),", "total aim to sparse latency(ms)",
+                    aim_to_sparse_latency_id_begin.c_str(), aim_to_sparse_latency_id_end.c_str());
+    // sparse improve
+    string dense_total_id = "M" + \
+            std::to_string(std::atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
+    string sparse_total_id = "P" + \
+            std::to_string(std::atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
+    fprintf(fp, "%s,=%s/%s\n", "sparse improve",
+                    dense_total_id.c_str(), sparse_total_id.c_str());
+    // dense matmul/ip latency
+    fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
+                    "sparse support latency(ms)", enable_sparse_latency);
+    // sparse matmul/ip latency
+    string aim_sparse_latency = "=";
+    for (auto op : operators_) {
+      if (op->enable_sparse()) {
+        string sparse_tmp = "P" + op->table_id() + "+";
+        aim_sparse_latency += sparse_tmp;
+      }
     }
-  }
-  aim_sparse_latency = aim_sparse_latency.substr(0, aim_sparse_latency.length()-1) + ",";
-  fprintf(fp, ",%s,%s\n", "aim to sparse support latency(ms)", aim_sparse_latency.c_str());
-  // dense matmul/ip latency / totoal latency
-  fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
-                  "sparse support latency ratio", enable_sparse_latency / total_latency);
-  // sparse matmul/ip latency / totoal latency
-  string totol_aim_latency_id = "P" \
-                  + std::to_string(atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
-  string aim_sparse_support_latency_id = "P" \
-                  + std::to_string(atoi((*(operators_.end()-2))->table_id().c_str()) + 2);
-  fprintf(fp, ",%s,=%s/%s\n", "aim to sparse support latency ratio",
-              aim_sparse_support_latency_id.c_str(), totol_aim_latency_id.c_str());
-  fclose(fp);
+    aim_sparse_latency = aim_sparse_latency.substr(0, aim_sparse_latency.length()-1) + ",";
+    fprintf(fp, ",%s,%s\n", "aim to sparse support latency(ms)", aim_sparse_latency.c_str());
+    // dense matmul/ip latency / totoal latency
+    fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
+                    "sparse support latency ratio", enable_sparse_latency / total_latency);
+    // sparse matmul/ip latency / totoal latency
+    string totol_aim_latency_id = "P" \
+                    + std::to_string(atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
+    string aim_sparse_support_latency_id = "P" \
+                    + std::to_string(atoi((*(operators_.end()-2))->table_id().c_str()) + 2);
+    fprintf(fp, ",%s,=%s/%s\n", "aim to sparse support latency ratio",
+                aim_sparse_support_latency_id.c_str(), totol_aim_latency_id.c_str());
   }
   void ProfilingSparse(FILE* fp, const vector<shared_ptr<Dispatcher>>& operators_,
                  const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
