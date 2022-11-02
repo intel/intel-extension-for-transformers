@@ -62,7 +62,7 @@ class IPEX(object):
         for idx in tqdm(range(len(dataset))):
             inputs = {
                 'input_ids': torch.from_numpy(dataset[idx][0]),
-                'attention_mask': torch.from_numpy(dataset[idx][1])
+                'attention_mask': torch.from_numpy(dataset[idx][2])
             }
             predictions = model(**inputs)
             start_logits_list.append(predictions[0].detach().numpy())

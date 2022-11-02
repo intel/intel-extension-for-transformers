@@ -86,7 +86,7 @@ def compute_performance(dataset, graph, log, log_file, warm_up, batch_size, seq_
     for idx in tqdm(range(len(dataset))):
         inputs = {
             'input_ids': torch.from_numpy(dataset[idx][0]),
-            'attention_mask': torch.from_numpy(dataset[idx][1])
+            'attention_mask': torch.from_numpy(dataset[idx][2])
         }
         start_time = time.time()
         predictions = model(**inputs)
