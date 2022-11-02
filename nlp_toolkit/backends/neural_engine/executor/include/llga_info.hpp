@@ -141,8 +141,11 @@ class LLGAINFO {
         dtype = ConvertDataType(output_dtype_);
       } else {
         // delivery dtype if output dtype not specifced.
-        if (op_conf.type() == "Gather" && inputs->size() == 2) {
+        if (op_conf.type() == "Gather" && inputs->size() >= 2) {
           dtype = inputs->at(1).get_data_type();
+        } else if ((op_conf.type() == "Matmul" || op_conf.type() == "InnerProduct") &&
+                  (inputs->at(0).get_data_type() == data_type::u8 || inputs->at(0).get_data_type() == data_type::s8)) {
+          dtype = data_type::f32;
         } else {
           dtype = inputs->at(0).get_data_type();
         }

@@ -29,9 +29,6 @@ namespace executor {
 template <typename T>
 void TransposeMatrix(const T* input, const vector<int64_t>& shape, T* output);
 
-template <typename T>
-float GetSparseRatio(const T* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize);
-
 // BSR definition follows scipy
 // https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.bsr_matrix.html
 // "data" is in (nnz, blocksize[0], blocksize[1])

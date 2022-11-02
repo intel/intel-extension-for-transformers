@@ -105,7 +105,7 @@ void LLGAKernel::Forward(const vector<Tensor*>& input, const vector<Tensor*>& ou
 
   if (do_inplace) {
     for (int i = 0; i < input.size(); i++) {
-      if (i = inplace_index_.first)
+      if (i == inplace_index_.first)
         continue;
       input[i]->unref_data();
     }

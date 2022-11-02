@@ -132,6 +132,8 @@ class Model {
   bool engine_profiling_ = false;
   // for onednn graph
   LLGAINFO llga_info_;
+  shared_ptr<Operator> CreateLLGAKernel(const vector<OperatorConfig*>& op_configs,
+                                        const dnnl::graph::partition& partition);
   void ConstructLLGA(const vector<OperatorConfig*>& op_configs);
 };
 

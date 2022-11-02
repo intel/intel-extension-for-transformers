@@ -140,9 +140,10 @@ std::pair<OpArgs, OpArgs> GenerateCase(const std::vector<std::vector<int64_t> >&
   for (int i = 0; i < axis; i++) outer *= src_shape[i];
   for (int i = axis + 1; i < src_shape.size(); i++) inner *= src_shape[i];
   int idx = 0;
+  uint32_t seed = 123;
   for (int i = 0; i < outer; i++) {
     for (int j = 0; j < idx_shape[axis]; j++) {
-      int random_idx = rand_r() % src_shape[axis];
+      int random_idx = rand_r(&seed) % src_shape[axis];
       for (int k = 0; k < inner; k++) idx_data[idx++] = random_idx;
     }
   }

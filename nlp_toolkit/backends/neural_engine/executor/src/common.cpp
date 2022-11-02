@@ -422,6 +422,36 @@ template int64_t StringToNum<int64_t>(const string& str);
 template int StringToNum<int>(const string& str);
 
 template <typename T>
+float GetSparseRatio(const T* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize) {
+  const int64_t blocknum = (shape[0] / blocksize[0]) * (shape[1] / blocksize[1]);
+  int64_t zero_count = blocknum;
+  for (int64_t b_row = 0; b_row < shape[0] / blocksize[0]; b_row++) {
+    for (int64_t b_col = 0; b_col < shape[1] / blocksize[1]; b_col++) {
+      const T* dense_start = data + b_row * blocksize[0] * shape[1] + b_col * blocksize[1];
+      bool not_zero = false;
+      for (int64_t i = 0; i < blocksize[0]; i++) {
+        for (int64_t j = 0; j < blocksize[1]; j++) {
+          if (dense_start[i * shape[1] + j] != 0) {
+            zero_count--;
+            not_zero = true;
+            break;
+          }
+        }
+        if (not_zero) {
+          break;
+        }
+      }
+    }
+  }
+  float zero_ratio = blocknum == 0 ? 0 : static_cast<float>(zero_count) / blocknum;
+  return zero_ratio;
+}
+template float GetSparseRatio<float>(const float* data, const vector<int64_t>& shape,
+                                     const vector<int64_t>& blocksize);
+template float GetSparseRatio<int8_t>(const int8_t* data, const vector<int64_t>& shape,
+                                      const vector<int64_t>& blocksize);
+
+template <typename T>
 void PrintToFile(const T* data, const std::string& name, size_t size) {
   // print output file
   auto pos = name.rfind("/");

@@ -355,13 +355,21 @@ bool LLGAOPCreator::CreateQuantizeOp(LLGAINFO* llga_info, const OperatorConfig& 
 
   auto src0_min_ = llga_info->GetTensorByID(inputs[1].get_id());
   auto src0_max_ = llga_info->GetTensorByID(inputs[2].get_id());
-  vector<float> src0_scales = LLGAGetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), "u8");
 
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  string output_dtype = attrs_map["output_dtype"];
+
+  vector<float> src0_scales = LLGAGetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), output_dtype);
   float* min_data = reinterpret_cast<float*>(src0_min_->mutable_data());
   llga_op quantize_op(llga_info->GetOPIndex(), llga_op::kind::Quantize, {inputs[0]}, outputs,
                       "quantize" + to_string(llga_info->GetOPIndex()));
   quantize_op.set_attr<vector<float>>("scales", {1/src0_scales[0]});
-  quantize_op.set_attr<vector<int64_t>>("zps", {nearbyint(- (*min_data) * src0_scales[0])});
+  if (output_dtype == "u8") {
+    quantize_op.set_attr<vector<int64_t>>("zps", {nearbyint(- (*min_data) * src0_scales[0])});
+  } else if (output_dtype == "s8") {
+    quantize_op.set_attr<vector<int64_t>>("zps", {0});
+  }
   quantize_op.set_attr<string>("qtype", "per_tensor");
   llga_info->AddLLGAOP(quantize_op, index);
 
@@ -400,6 +408,11 @@ bool LLGAOPCreator::CreateLayerNormOp(LLGAINFO* llga_info, const OperatorConfig&
 
   auto attrs_map = op_conf.attributes();
   float epsilon_ = StringToNum<float>(attrs_map["epsilon"]);
+  auto iter = attrs_map.find("transpose_mode");
+  if (iter != attrs_map.end()) {
+    LOG(INFO) << "transpose_mode attribute of LayerNorm is not supported by llga";
+    return false;
+  }
 
   llga_op layernorm_op(llga_info->GetOPIndex(), llga_op::kind::LayerNorm, inputs, outputs,
                        "layernorm" + to_string(llga_info->GetOPIndex()));

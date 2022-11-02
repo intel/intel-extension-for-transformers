@@ -17,6 +17,7 @@
 
 #include "../../include/common.hpp"
 #include "../../include/conf.hpp"
+#include "../../include/llga_operators/llga_kernel.hpp"
 #include "../../include/operators/inner_product.hpp"
 #include "gtest/gtest.h"
 using executor::AttrConfig;
@@ -120,6 +121,33 @@ bool CheckResult(const TestParams& t) {
   return false;
 }
 
+bool CheckLLGAResult(const TestParams& t) {
+  const auto& p = t.args.first;
+  const auto& q = t.args.second;
+  try {
+    executor::LLGAINFO llga_info;
+    llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAKernel inner_product(p.conf, &llga_info);
+    inner_product.Prepare(p.input, p.output);
+    inner_product.Reshape(p.input, p.output);
+    inner_product.Forward(p.input, p.output);
+  } catch (const dnnl::error& e) {
+    if (e.status != dnnl_status_t::dnnl_success && t.expect_to_fail) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  if (!t.expect_to_fail) {
+    GetTrueData(q.input, q.output, q.conf);
+    // Should compare buffer with different addresses
+    EXPECT_NE(p.output[0]->data(), q.output[0]->data());
+    return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
+                                        q.output[0]->size(), 5e-3);
+  }
+  return false;
+}
+
 class InnerProductTest : public testing::TestWithParam<TestParams> {
  protected:
   InnerProductTest() {}
@@ -131,6 +159,11 @@ class InnerProductTest : public testing::TestWithParam<TestParams> {
 TEST_P(InnerProductTest, TestPostfix) {
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckResult(t));
+}
+
+TEST_P(InnerProductTest, TestPostfixLLGA) {
+  TestParams t = testing::TestWithParam<TestParams>::GetParam();
+  EXPECT_TRUE(CheckLLGAResult(t));
 }
 
 std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t> >& input_shape, std::string src1_perm,
@@ -154,7 +187,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   attr_map = {{"src0_perm", ""}, {"src1_perm", src1_perm}, {"output_dtype", "fp32"}, {"append_op", append_op}};
 
   AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("inner_product", "fp32", inputs_config, {dst_config}, op_attr);
+  OperatorConfig op_config = OperatorConfig("inner_product_fp32", "InnerProduct", inputs_config, {dst_config}, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {

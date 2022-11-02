@@ -391,6 +391,36 @@ TensorConfig* findTensorConfig(const vector<OperatorConfig*>& op_configs, string
   return nullptr;
 }
 
+shared_ptr<Operator> Model::CreateLLGAKernel(const vector<OperatorConfig*>& op_configs,
+                                             const dnnl::graph::partition& partition) {
+  vector<TensorConfig*> partition_inputs, partition_outputs;
+  auto lt_inputs = partition.get_in_ports();
+  auto lt_outputs = partition.get_out_ports();
+  for (auto lt : lt_inputs) {
+    size_t id = lt.get_id();
+    auto tensor_name = llga_info_.GetTensorName(id);
+    auto tensor_config = findTensorConfig(op_configs, tensor_name);
+    if (tensor_config) {
+      partition_inputs.push_back(tensor_config);
+    } else {
+      partition_inputs.push_back(new TensorConfig("hardcode_" + std::to_string(id)));
+    }
+  }
+  for (auto lt : lt_outputs) {
+    size_t id = lt.get_id();
+    auto tensor_name = llga_info_.GetTensorName(id);
+    auto tensor_config = findTensorConfig(op_configs, tensor_name);
+    if (tensor_config) {
+      partition_outputs.push_back(tensor_config);
+    } else {
+      partition_outputs.push_back(new TensorConfig("hardcode_" + std::to_string(id)));
+    }
+  }
+  // create dummy config mainly for delivering tensor names of inputs/outputs.
+  OperatorConfig dummy_op_conf("LLGAKernel", "LLGAKernel", partition_inputs, partition_outputs, nullptr);
+  return shared_ptr<Operator>(new LLGAKernel(dummy_op_conf, &llga_info_, partition));
+}
+
 void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
   bool llga_enable = (getenv("LLGA_ENABLE") != NULL);
   LOG(INFO) << "LLGA_ENABLE: " << llga_enable;
@@ -408,13 +438,20 @@ void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
       llga_info_.InitLTFromTensorConf(*op_configs[i]);
       continue;
     }
-    // TODO(lzw): check if sparse kernel,
-    bool is_wildcard = false;
-    if (!llga_enable) {
-      is_wildcard = false;
+    // determine whether to fallback to the original innerproduct.
+    bool fallback = false;
+    auto op_conf = op_configs[i];
+    if (op_conf->type() == "InnerProduct") {
+      auto tensor_name = op_conf->input_tensors(0)->name();
+      if (tensor_name_index_.count(tensor_name)) {
+        auto src0_tensor = tensors_[tensor_name_index_[tensor_name]];
+        if (!src0_tensor->location().empty() && src0_tensor->dtype() == "s8") {
+          fallback = true;
+        }
+      }
     }
     // create llga op according to operator config, which will be added into llga graph g_.
-    LLGAOPCreator::GetInstance().CreateOP(&llga_info_, *op_configs[i], i, is_wildcard);
+    LLGAOPCreator::GetInstance().CreateOP(&llga_info_, *op_configs[i], i, fallback);
   }
 
   auto partitions = llga_info_.GetPartitions();
@@ -422,42 +459,23 @@ void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
   // add Input layer into operators_
   operators_.push_back(std::make_shared<Dispatcher>(*op_configs[0]));
 
+  std::set<int> unique_index;
   for (int i = 0; i < partitions.size(); i++) {
     auto partition = partitions[i];
     if (partition.is_supported()) {
       // create llga kernel and add it into operators_
-      vector<TensorConfig*> partition_inputs, partition_outputs;
-      auto lt_inputs = partition.get_in_ports();
-      auto lt_outputs = partition.get_out_ports();
-      for (auto lt : lt_inputs) {
-        size_t id = lt.get_id();
-        auto tensor_name = llga_info_.GetTensorName(id);
-        auto tensor_config = findTensorConfig(op_configs, tensor_name);
-        if (tensor_config) {
-          partition_inputs.push_back(tensor_config);
-        } else {
-          partition_inputs.push_back(new TensorConfig("hardcode_" + std::to_string(id)));
-        }
-      }
-      for (auto lt : lt_outputs) {
-        size_t id = lt.get_id();
-        auto tensor_name = llga_info_.GetTensorName(id);
-        auto tensor_config = findTensorConfig(op_configs, tensor_name);
-        if (tensor_config) {
-          partition_outputs.push_back(tensor_config);
-        } else {
-          partition_outputs.push_back(new TensorConfig("hardcode_" + std::to_string(id)));
-        }
-      }
-      // create dummy config mainly for delivering tensor names of inputs/outputs.
-      OperatorConfig dummy_op_conf("LLGAKernel", "LLGAKernel", partition_inputs, partition_outputs, nullptr);;
-      auto llgakernel = shared_ptr<Operator>(new LLGAKernel(dummy_op_conf, &llga_info_, partition));
+      auto llgakernel = CreateLLGAKernel(op_configs, partition);
       operators_.push_back(std::make_shared<Dispatcher>(llgakernel));
     } else {
       // create original kernel and add it into operators_
       for (auto id : partition.get_ops()) {
         int idx = llga_info_.GetIndexFromOPID(id);
-        operators_.push_back(std::make_shared<Dispatcher>(*op_configs[idx]));
+        if (unique_index.count(idx)) {
+          continue;
+        } else {
+          unique_index.insert(idx);
+          operators_.push_back(std::make_shared<Dispatcher>(*op_configs[idx]));
+        }
       }
     }
   }

@@ -33,18 +33,21 @@ class LLGAOPCreator {
     return ins;
   }
 
-  void CreateOP(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index = 0, bool is_wildcard = false) {
+  void CreateOP(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index = 0, bool fallback = false) {
     auto operator_name = op_conf.name();
     auto op_type = op_conf.type();
     LOG(INFO) << "creating operator " << operator_name << ", " << op_type;
 
-    if (is_wildcard || !creator_list.count(op_conf.type())) {
+    if (fallback || !creator_list.count(op_conf.type())) {
+      if (!fallback)
+        LOG(WARNING) << "Failed to create " << op_conf.name() << " by llga, " << op_conf.type() << " is not supported"
+                     << ", fallback will be executed";
       CreateWildcardOP(llga_info, op_conf, index);
     } else {
       Creator f = creator_list[op_conf.type()];
       // create llga op, and if it fails, create wildcard op.
       if (!(this->*f)(llga_info, op_conf, index)) {
-        LOG(WARNING) << "Failed to create " << op_conf.name() << " by llga, fallback will be executed.";
+        LOG(WARNING) << "Failed to create " << op_conf.name() << " by llga, fallback will be executed";
         CreateWildcardOP(llga_info, op_conf, index);
       }
     }
@@ -68,9 +71,8 @@ class LLGAOPCreator {
     creator_list["InnerProduct"] = &LLGAOPCreator::CreateInnerProductOp;
     creator_list["Quantize"] = &LLGAOPCreator::CreateQuantizeOp;
     creator_list["Softmax"] = &LLGAOPCreator::CreateSoftmaxOp;
-    // TODO(lzw): following operators have bugs.
-    // creator_list["BinaryAdd"] = &LLGAOPCreator::CreateBinaryAddOp;
-    // creator_list["LayerNorm"] = &LLGAOPCreator::CreateLayerNormOp;
+    creator_list["BinaryAdd"] = &LLGAOPCreator::CreateBinaryAddOp;
+    creator_list["LayerNorm"] = &LLGAOPCreator::CreateLayerNormOp;  // can not inplace, affecting performance
   //   creator_list["Reshape"] = &LLGAOPCreator::CreateReshapeOp;
     // creator_list["Matmul"] = &LLGAOPCreator::CreateMatmulOp;
   }

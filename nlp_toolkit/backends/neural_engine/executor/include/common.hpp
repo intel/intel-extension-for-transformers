@@ -106,6 +106,9 @@ void Quantize(const int size, const string& dtype, const void* src_data, const f
               const vector<float>& scales, void* dst_data);
 #endif
 
+template <typename T>
+float GetSparseRatio(const T* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize);
+
 vector<int64_t> ReversePerm(const vector<int64_t>& perm_to);
 
 int64_t Time();
