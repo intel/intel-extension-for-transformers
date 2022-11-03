@@ -43,7 +43,7 @@ class TFDataloader(object):
                 inputs = inputs.numpy()
 
             if isinstance(labels, dict) or isinstance(labels, OrderedDict) \
-                  or isinstance(labels, UserDict):
+                  or isinstance(labels, UserDict):   # pragma: no cover
                 for name in labels.keys():
                     labels[name] = labels[name].numpy()
             elif isinstance(labels, list) or isinstance(labels, tuple):
@@ -51,6 +51,9 @@ class TFDataloader(object):
             else:
                 labels = labels.numpy()
             yield inputs, labels
+
+    def __len__(self):
+        return len(self.dataset)
 
 
 def distributed_init(worker_addresses, type='worker', index=0):
