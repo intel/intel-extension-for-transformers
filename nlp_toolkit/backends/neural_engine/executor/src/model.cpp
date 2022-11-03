@@ -127,26 +127,28 @@ void Model::Init(const ModelConfig& conf) {
                                   "Ignore above info if you are doing tuning...";
 }
 
-void Model::RemoveSharedWeight(bool is_begin, char* count_space_name, char* count_name, char* space_name) {
+void Model::RemoveSharedWeight(bool is_begin, char* count_space_name, char* count_name,
+                               char* count_mtx_name, char* space_name) {
   LOG(INFO) << "Shared instance number: " << MemoryAllocator::InstNum();
   ipc::managed_shared_memory count_shm(ipc::open_or_create, count_space_name, 512);
   int* removed_count = count_shm.find_or_construct<int>(count_name)[sizeof(int)](0);
-  rmutex_.lock();
+  ipc::interprocess_mutex* mtx = count_shm.find_or_construct<ipc::interprocess_mutex>(count_mtx_name)();
+  mtx->lock();
   (*removed_count)++;
+  mtx->unlock();
   if (is_begin) {  // In model init, remove shared space at the first thread
     if (*removed_count == 1) {
       ipc::shared_memory_object::remove(space_name);
     }
-    if (*removed_count == MemoryAllocator::InstNum()) {
+    if (*removed_count >= MemoryAllocator::InstNum()) {
       ipc::shared_memory_object::remove(count_space_name);
     }
   } else {  // In model release, remove shared space at the last thread
-    if (*removed_count == MemoryAllocator::InstNum()) {
+    if (*removed_count >= MemoryAllocator::InstNum()) {
       ipc::shared_memory_object::remove(space_name);
       ipc::shared_memory_object::remove(count_space_name);
     }
   }
-  rmutex_.unlock();
 }
 
 void Model::InitSharedWeight(char* space_name) {

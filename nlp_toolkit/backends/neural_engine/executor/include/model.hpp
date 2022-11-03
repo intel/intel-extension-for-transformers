@@ -49,8 +49,11 @@ class Model {
   virtual ~Model();
 
   void Init(const ModelConfig& conf);
-  void RemoveSharedWeight(bool is_begin = false, char* count_space_name = "RemovedCount",
-                          char* count_name = "removed_count", char* space_name = "SharedWeight");
+  void RemoveSharedWeight(bool is_begin = false,
+                          char* count_space_name = "RemovedCount",
+                          char* count_name = "removed_count",
+                          char* count_mtx_name = "removed_count_mtx",
+                          char* space_name = "SharedWeight");
   void InitSharedWeight(char* space_name = "SharedWeight");
   ipc::managed_shared_memory::handle_t LoadSharedWeight(const string& root, const string& type,
                                                         const vector<int64_t>& shape, const vector<int64_t>& location);
@@ -123,7 +126,6 @@ class Model {
   // collect the op index with parallel thread
   unordered_map<int, int64_t> multi_stream_tasks_;
   ThreadPool tp;
-  std::mutex rmutex_;
   // for dispatcher
   bool has_dispatch_table_file_ = false;
   string dispatch_table_file_root_;
