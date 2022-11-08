@@ -195,7 +195,7 @@ class LastLayerShape(Pattern):
                 model.nodes[ln_node_idx].attr = ln_node.attr
                 reshape_0_node_idx = model.get_node_id(new_node_names[i][1])
                 model.nodes[reshape_0_node_idx].attr = OrderedDict({
-                    'dst_shape': '-1,-1,' + str(hidden_size), 'dims': '0,1'})
+                    'dst_shape': '-1,-1,' + str(hidden_size), 'dims': '0'})
                 strided_slice_node_idx = model.get_node_id(new_node_names[i][2])
                 model.nodes[strided_slice_node_idx].attr = OrderedDict({
                     'begin_mask': 5, 'ellipsis_mask': 0, 'end_mask': 5, 'new_axis_mask': 0,

@@ -16,6 +16,8 @@
 
 #include "common.hpp"
 
+#define AVX512_BYTES 64
+
 namespace executor {
 
 static unordered_map<string, dnnl::memory::data_type> type2mem{{"fp32", dnnl::memory::data_type::f32},
@@ -33,6 +35,84 @@ ConcatOperator::ConcatOperator(const OperatorConfig& conf) : Operator(conf) {
 }
 
 void ConcatOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  //// Part0: Make sure all input tensors have the same shape, except for the dimension size of the axis
+  ////        to concatenate on. If there are input tensors with different shapes, we will do broadcasting,
+  ////        if it's possible, to make them have the same shape indicated by the largest values of each
+  ////        dimension size among all input tensors, except for the one of the axis to concatenate on.
+  ////        Please note this will only work for weight tensors, which are known ahead of runtime.
+  // 0.1 Get the largest values of each dimension size except for the axis to concatenate on.
+  vector<int64_t> max_dim_sizes(input[0]->shape());
+  size_t dim_num = max_dim_sizes.size();
+  for (size_t i = 1; i < input.size(); ++i) {
+    const auto& tmp_shape = input[i]->shape();
+    assert(tmp_shape.size() == dim_num);
+    for (size_t j = 0; j < dim_num; ++j) {
+      max_dim_sizes[j] = max(tmp_shape[j], max_dim_sizes[j]);
+    }
+  }
+  max_dim_sizes[axis_] = 1;
+
+  // 0.2 If there is an input tensor with a different shape, do broadcasting if each dimension size of it
+  //     is a factor of the corresponding value in max_dim_sizes. Otherwise, the assertion will fail since
+  //     it's not a valid input for concat op.
+  for (size_t i = 0; i < input.size(); ++i) {
+    bool need_broadcast = false;
+    vector<int64_t> times(dim_num, 1);
+    const auto& tmp_shape = input[i]->shape();
+    for (size_t j = 0; j < dim_num; ++j) {
+      if (j == axis_) continue;
+      assert(max_dim_sizes[j] % tmp_shape[j] == 0);
+      times[j] = max_dim_sizes[j] / tmp_shape[j];
+      if (times[j] > 1) {
+        need_broadcast = true;
+      }
+    }
+    if (!need_broadcast) continue;
+    vector<int64_t> new_shape(max_dim_sizes);
+    new_shape[axis_] = tmp_shape[axis_];
+    size_t type_bytes = type2bytes[input[i]->dtype()];
+    // Calculate memory size before and after broadcasting
+    size_t old_mem_size =
+        std::accumulate(tmp_shape.begin(), tmp_shape.end(), size_t(1), std::multiplies<size_t>()) * type_bytes;
+    size_t new_mem_size =
+        std::accumulate(new_shape.begin(), new_shape.end(), size_t(1), std::multiplies<size_t>()) * type_bytes;
+    // To make sure memory address is aligned to 64 bytes, and buffer size needs to be a multiple of 64.
+    void* new_data = aligned_alloc(ALIGNMENT, (new_mem_size + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1));
+    void* data_buf[2];  // For temporary data copy during broadcasting
+    data_buf[0] = malloc(new_mem_size);
+    data_buf[1] = malloc(new_mem_size);
+    size_t buf_idx = 0;
+    memcpy(data_buf[0], input[i]->data(), old_mem_size);
+
+    // Get strides of new_shape and front_strides of tmp_shape. For an array {a0, a1, a2, ..., an},
+    // strides[i] = a(i+1) * a(i+2) * ... * an, front_strides[i] = a0 * a1 * ... * a(i-1)
+    vector<int64_t> new_shape_strides = GetStrides(new_shape);
+    vector<int64_t> tmp_shape_front_strides(dim_num, 1);
+    for (size_t j = 1; j < dim_num; ++j) {
+      tmp_shape_front_strides[j] = tmp_shape_front_strides[j - 1] * tmp_shape[j - 1];
+    }
+
+    // Do broadcasting
+    for (int64_t j = dim_num - 1; j >= 0; --j) {
+      if (times[j] == 1) continue;
+      size_t broadcast_size = new_shape_strides[j] * tmp_shape[j] * type_bytes;
+      for (size_t k = 0; k < tmp_shape_front_strides[j]; ++k) {
+        void* src_addr = data_buf[buf_idx] + k * broadcast_size;
+        void* dst_addr = data_buf[(buf_idx + 1) & 1] + k * broadcast_size * times[j];
+        for (size_t l = 0; l < times[j]; ++l) {
+          memcpy(dst_addr + l * broadcast_size, src_addr, broadcast_size);
+        }
+      }
+      buf_idx = (buf_idx + 1) & 1;
+    }
+    memcpy(new_data, data_buf[buf_idx], new_mem_size);
+    free(data_buf[0]);
+    free(data_buf[1]);
+
+    input[i]->set_shape(new_shape);
+    input[i]->set_data(new_data);
+  }
+
   //// Part1: Derive operator's user proper shape and strides
   // 1.1: Prepare Tensor origin shape
   const memory::dims& src_shape_origin = input[0]->shape();
@@ -78,6 +158,29 @@ void ConcatOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   // 2.3 Prepare memory objects (cached)
   src_m_ = src_mems;
   dst_m_ = memory(concat_pd.dst_desc(), eng_);
+
+  //// Part3: Prepare data for our own implementation of concat op
+  size_before_concat_dim_ =
+      std::accumulate(src_shape_origin.begin(), src_shape_origin.begin() + axis_, 1, std::multiplies<int64_t>());
+  int64_t size_after_concat_dim =
+      std::accumulate(src_shape_origin.begin() + axis_ + 1, src_shape_origin.end(), 1, std::multiplies<int64_t>());
+  for (int i = 0; i < num_src; ++i) {
+    src_concat_bytes_.emplace_back(input[i]->shape()[axis_] * size_after_concat_dim * type2bytes[input[i]->dtype()]);
+  }
+  src_concat_bytes_accum_.emplace_back(0);
+  for (int i = 1; i < num_src; ++i) {
+    src_concat_bytes_accum_.emplace_back(src_concat_bytes_accum_[i - 1] + src_concat_bytes_[i - 1]);
+  }
+  dst_concat_bytes_ = dst_shape[axis_] * size_after_concat_dim * type2bytes[output[0]->dtype()];
+
+  // To check whether input tensors have different sizes of concat_dim
+  same_shape_ = true;
+  for (int i = 1; i < num_src; ++i) {
+    if (input[i]->shape()[axis_] != input[0]->shape()[axis_]) {
+      same_shape_ = false;
+      break;
+    }
+  }
 }
 
 void ConcatOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -86,24 +189,51 @@ void ConcatOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
 
   void* dst_data = output[0]->mutable_data();
 
-  // 1. Prepare memory objects with data_ptr
-  dnnl::stream s(eng_);
-  for (int n = 0; n < num_src; ++n) {
-    const auto& src_data = input[n]->data();
-    src_m_[n].set_data_handle(const_cast<void*>(src_data), s);
-  }
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  // If input tensors have a same size of concat_dim, we will use oneDNN's implementation.
+  // Otherwise, we will use our own implementation to avoid incorrect results.
+  if (same_shape_) {
+    // 1. Prepare memory objects with data_ptr
+    dnnl::stream s(eng_);
+    for (int n = 0; n < num_src; ++n) {
+      const auto& src_data = input[n]->data();
+      src_m_[n].set_data_handle(const_cast<void*>(src_data), s);
+    }
+    dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
 
-  // 2. Reorder the data when the primitive memory and user memory are different
-  // 3. Insert memory args
-  std::unordered_map<int, memory> concat_args;
-  for (int n = 0; n < num_src; ++n) {
-    concat_args.insert({DNNL_ARG_MULTIPLE_SRC + n, src_m_[n]});
-  }
-  concat_args.insert({DNNL_ARG_DST, dst_m_});
+    // 2. Reorder the data when the primitive memory and user memory are different
+    // 3. Insert memory args
+    std::unordered_map<int, memory> concat_args;
+    for (int n = 0; n < num_src; ++n) {
+      concat_args.insert({DNNL_ARG_MULTIPLE_SRC + n, src_m_[n]});
+    }
+    concat_args.insert({DNNL_ARG_DST, dst_m_});
 
-  // 4. Execute the primitive
-  concat_p_.execute(s, concat_args);
+    // 4. Execute the primitive
+    concat_p_.execute(s, concat_args);
+  } else {
+#if __AVX512F__
+#pragma omp parallel for collapse(2)
+    for (int64_t i = 0; i < size_before_concat_dim_; ++i) {
+      for (int n = 0; n < num_src; ++n) {
+        void* dst_addr = dst_data + i * dst_concat_bytes_ + src_concat_bytes_accum_[n];
+        int64_t concat_bytes = src_concat_bytes_[n];
+        const void* src_addr = input[n]->data() + i * concat_bytes;
+        // codes written below implements memcpy(dst_addr, src_addr, concat_bytes);
+        // loop_size = (concat_bytes / 64) * 64
+        int64_t loop_size = concat_bytes & ~(AVX512_BYTES - 1);
+        // Tail part size = concat_bytes - loop_size
+        // To process tail part, we need a tail_mask, whose number of bit 1 equals to tail part size.
+        __mmask64 tail_mask = (1UL << (concat_bytes - loop_size)) - 1;
+        for (int64_t j = 0; j < loop_size; j += AVX512_BYTES) {
+          __m512 reg = _mm512_loadu_ps(src_addr + j);
+          _mm512_storeu_ps(dst_addr + j, reg);
+        }
+        __m512i reg = _mm512_maskz_loadu_epi8(tail_mask, src_addr + loop_size);
+        _mm512_mask_storeu_epi8(dst_addr + loop_size, tail_mask, reg);
+      }
+    }
+#endif
+  }
 
   // 5. unref tensors
   this->unref_tensors(input);

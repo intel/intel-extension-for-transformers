@@ -48,6 +48,11 @@ class ConcatOperator : public Operator {
   std::vector<memory> src_m_;
   memory dst_m_;
   unordered_map<int, memory> memory_args_;
+  bool same_shape_;
+  int64_t size_before_concat_dim_;
+  int64_t dst_concat_bytes_;
+  vector<int64_t> src_concat_bytes_;
+  vector<int64_t> src_concat_bytes_accum_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_CONCAT_HPP_

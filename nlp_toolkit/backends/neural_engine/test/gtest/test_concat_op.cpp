@@ -200,10 +200,9 @@ static auto CasesFp32 = []() {
   cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), false});
   cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), false});
 
-  // Current 3d concat may have some problems, still needs further investigation
-  // src_shape = {64, 1, 768};
-  // src1_shape = {64, 196, 768};
-  // cases.push_back({GenerateFp32Case({src_shape, src1_shape}, "1"), false});
+  src_shape = {64, 1, 768};
+  src1_shape = {64, 196, 768};
+  cases.push_back({GenerateFp32Case({src_shape, src1_shape}, "1"), false});
 
   return ::testing::ValuesIn(cases);
 };
