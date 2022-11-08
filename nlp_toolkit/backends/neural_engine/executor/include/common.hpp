@@ -88,6 +88,8 @@ T StringToNum(const string& str);
 template <typename T>
 bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps = 1e-6);
 
+bool CompareShape(const vector<int64_t>& shape1, const vector<int64_t>& shape2);
+
 vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, const string& dtype);
 
 vector<float> GetRescales(const vector<float>& src0_scales, const vector<float>& src1_scales,

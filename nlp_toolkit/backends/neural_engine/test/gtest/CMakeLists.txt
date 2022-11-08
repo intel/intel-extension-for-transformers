@@ -60,6 +60,10 @@ add_library(host_operators SHARED
     ${HOST_SRC_DIR}/src/operators/group_norm.cpp
     ${HOST_SRC_DIR}/src/operators/range.cpp
     ${HOST_SRC_DIR}/src/operators/expand_indices.cpp
+    ${HOST_SRC_DIR}/src/operators/erf.cpp
+    ${HOST_SRC_DIR}/src/operators/unsqueeze.cpp
+    ${HOST_SRC_DIR}/src/operators/pow.cpp
+    ${HOST_SRC_DIR}/src/operators/shape.cpp
     ${HOST_SRC_DIR}/src/sparse_operators/sparse_inner_product.cpp
     ${HOST_SRC_DIR}/src/llga_operators/llga_kernel.cpp
     ${HOST_SRC_DIR}/src/llga_operators/llga_op_creator.cpp
@@ -127,6 +131,10 @@ file(GLOB OPS_TEST_CASES_SRC
     test_range_op.cpp
     test_expand_indices_op.cpp
     test_gather_element_op.cpp
+    test_erf_op.cpp
+    test_unsqueeze_op.cpp
+    test_pow_op.cpp
+    test_shape_op.cpp
 )
 
 function(register_gtest_func exe src)

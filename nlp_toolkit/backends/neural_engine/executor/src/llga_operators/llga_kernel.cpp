@@ -22,14 +22,8 @@ void LLGAKernel::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& ou
   // set dtype of output according to partition's logical tensors
   vector<logical_tensor> outputs = partition_.get_out_ports();
   for (size_t idx = 0; idx < outputs.size(); ++idx) {
-    string output_dtype = "fp32";
-    if (outputs[idx].get_data_type() == data_type::u8)
-      output_dtype = "u8";
-    else if (outputs[idx].get_data_type() == data_type::s8)
-      output_dtype = "s8";
-    output[idx]->set_dtype(output_dtype);
+    output[idx]->set_dtype(llga_info_->ConvertType(outputs[idx].get_data_type()));
   }
-  return;
 }
 
 int GetTensorIndexFromID(const vector<logical_tensor>& lts, int id) {

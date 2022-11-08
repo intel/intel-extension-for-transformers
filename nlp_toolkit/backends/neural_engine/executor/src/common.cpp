@@ -19,7 +19,7 @@ namespace executor {
 
 unordered_map<string, int> type2bytes = {{"fp32", sizeof(float)},       {"int8", sizeof(char)}, {"int32", sizeof(int)},
                                          {"u8", sizeof(unsigned char)}, {"s8", sizeof(char)},   {"s32", sizeof(int)},
-                                         {"bf16", sizeof(uint16_t)}};
+                                         {"bf16", sizeof(uint16_t)}, {"int64", sizeof(int64_t)}};
 unordered_map<string, vector<string>> dispatch_kernel_config = {{"InnerProduct_to_Convolution", {"input_shape"}},
                                                                 {"InnerProduct_to_SparseLib", {"input_shape",
                                                                                                "micro_oc",
@@ -157,6 +157,16 @@ bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2, int64_t 
 template bool CompareData<float>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
 template bool CompareData<int8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
 template bool CompareData<uint8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
+
+bool CompareShape(const vector<int64_t>& shape1, const vector<int64_t>& shape2) {
+  if (shape1.size() != shape2.size())
+    return false;
+  for (int i = 0; i < shape1.size(); i++) {
+    if (shape1[i] != shape2[i])
+      return false;
+  }
+  return true;
+}
 
 vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, const string& dtype) {
   const float* mins_p = static_cast<const float*>(mins);
