@@ -17,7 +17,8 @@
 
 #include "../../include/common.hpp"
 #include "../../include/conf.hpp"
-#include "../../include/operators/split.hpp"
+#include "llga_kernel.hpp"
+#include "llga_op_creator.hpp"
 #include "gtest/gtest.h"
 
 using executor::AttrConfig;
@@ -38,89 +39,74 @@ struct TestParams {
 };
 
 void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
-  auto attrs_map = conf.attributes();
-  int axis = 0;
-  auto iter = attrs_map.find("axis");
-  if (iter != attrs_map.end() && iter->second != "") {
-    axis = stoi(iter->second);
-  }
+  // set output shape
+  const vector<int64_t>& shape = input[0]->shape();
+  output[0]->set_shape(shape);
 
-  auto src_tensor_shape = input[0]->shape();
-  vector<int64_t> src_stride = executor::GetStrides(src_tensor_shape);
-  vector<int64_t> dst_shape;
-  for (int n = 0; n < src_stride.size(); ++n) {
-    if (n != axis) {
-      dst_shape.emplace_back(src_tensor_shape[n]);
-    } else {
-      dst_shape.emplace_back(1);
-    }
-  }
-
-  // dst shape
-  output[0]->set_shape(dst_shape);
-  output[1]->set_shape(dst_shape);
+  // get dst data
+  const float* src_data = static_cast<const float*>(input[0]->data());
   float* dst_data = static_cast<float*>(output[0]->mutable_data());
-  float* dst_data1 = static_cast<float*>(output[1]->mutable_data());
-
-  const auto src_tensor_data = static_cast<const float*>(input[0]->data());
-  int h = dst_shape[0];
-  int w = dst_shape[1];
-  if (axis == 0) {
-    for (int i = 0; i < h; ++i) {
-      for (int j = 0; j < w; ++j) {
-        dst_data[i * w + j] = src_tensor_data[i * src_tensor_shape[1] + j];
-        dst_data1[i * w + j] = src_tensor_data[(i + 1) * src_tensor_shape[1] + j];
-      }
-    }
+  auto size = input[0]->size();
+#pragma omp parallel for
+  for (int i = 0; i < size; ++i) {
+    dst_data[i] = tanh(src_data[i]);
   }
 }
 
 bool CheckResult(const TestParams& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
-  executor::SplitOperator split(p.conf);
-  split.Reshape(p.input, p.output);
-  split.Forward(p.input, p.output);
-
+  try {
+    executor::LLGAINFO llga_info;
+    llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAKernel tanh(p.conf, &llga_info);
+    tanh.Prepare(p.input, p.output);
+    tanh.Reshape(p.input, p.output);
+    tanh.Forward(p.input, p.output);
+  } catch (const dnnl::error& e) {
+    if (e.status != dnnl_status_t::dnnl_success && t.expect_to_fail) {
+      return true;
+    } else {
+      return false;
+    }
+  }
   if (!t.expect_to_fail) {
     GetTrueData(q.input, q.output, q.conf);
     // Should compare buffer with different addresses
     EXPECT_NE(p.output[0]->data(), q.output[0]->data());
+    float eps = 1e-4;
     return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
-                                        q.output[0]->size());
+                                        q.output[0]->size(), eps);
   }
   return false;
 }
 
-class ConcatTest : public testing::TestWithParam<TestParams> {
+class TanhTest : public testing::TestWithParam<TestParams> {
  protected:
-  ConcatTest() {}
-  ~ConcatTest() {}
+  TanhTest() {}
+  ~TanhTest() {}
   void SetUp() override {}
   void TearDown() override {}
 };
 
-TEST_P(ConcatTest, TestPostfix) {
+TEST_P(TanhTest, TestPostfix) {
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckResult(t));
 }
 
-std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape, std::string axis,
-                                           std::string split) {
+std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape) {
   // Step 1: Construct Tensor config ptr
   const auto& src_shape = input_shape[0];
   TensorConfig* src_config = new TensorConfig("src", src_shape);
   std::vector<TensorConfig*> input_config = {src_config};
   std::vector<int64_t> dst_shape = {};
   TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config = {dst_config, dst_config};
+  std::vector<TensorConfig*> output_config = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
-  attr_map = {{"axis", axis}, {"split", split}};
-
   AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("split", "fp32", input_config, output_config, op_attr);
+  OperatorConfig op_config = OperatorConfig("tanh", "Tanh", input_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
@@ -142,15 +128,11 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   auto src_tensors = make_tensor_obj(src_config);
   Tensor* dst_tensor = new Tensor(*dst_config);
   dst_tensor->add_tensor_life(1);
-  Tensor* dst_tensor1 = new Tensor(*dst_config);
-  dst_tensor1->add_tensor_life(1);
   Tensor* dst_tensor_copy = new Tensor(*dst_config);
   dst_tensor_copy->add_tensor_life(1);
-  Tensor* dst_tensor_copy1 = new Tensor(*dst_config);
-  dst_tensor_copy1->add_tensor_life(1);
 
-  OpArgs op_args = {{src_tensors.first, src_tensors.first}, {dst_tensor, dst_tensor1}, op_config};
-  OpArgs op_args_copy = {{src_tensors.second, src_tensors.second}, {dst_tensor_copy, dst_tensor_copy1}, op_config};
+  OpArgs op_args = {{src_tensors.first}, {dst_tensor}, op_config};
+  OpArgs op_args_copy = {{src_tensors.second}, {dst_tensor_copy}, op_config};
 
   return {op_args, op_args_copy};
 }
@@ -160,13 +142,20 @@ static auto CasesFp32 = []() {
   MemoryAllocator::SetStrategy(memory_strategy);
   std::vector<TestParams> cases;
 
-  // Config
   std::vector<int64_t> src_shape;
+  // case: 1D
+  src_shape = {16, 1024};
+  cases.push_back({GenerateFp32Case({src_shape})});
 
-  // case: simple for 0 axis
-  src_shape = {2, 32};
-  cases.push_back({GenerateFp32Case({src_shape}, "0", "1, 1"), false});
+  // case: 2D
+  src_shape = {16, 1024};
+  cases.push_back({GenerateFp32Case({src_shape})});
+
+  // case: 3D
+  src_shape = {16, 256, 4};
+  cases.push_back({GenerateFp32Case({src_shape})});
+
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, ConcatTest, CasesFp32());
+INSTANTIATE_TEST_SUITE_P(Prefix, TanhTest, CasesFp32());

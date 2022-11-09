@@ -27,7 +27,7 @@ endif()
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/gflags ./gflags)
 set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
-# add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/oneDNN ./oneDNN)
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/oneDNNGraph ./oneDNNGraph)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/yaml-cpp ./yaml)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/googletest ./googletest)
@@ -131,6 +131,13 @@ file(GLOB OPS_TEST_CASES_SRC
     test_range_op.cpp
     test_expand_indices_op.cpp
     test_gather_element_op.cpp
+    test_mul_op.cpp
+    test_div_op.cpp
+    test_sqrt_op.cpp
+    test_tanh_op.cpp
+    test_sub_op.cpp
+    test_dequantize_op.cpp
+    test_cast_op.cpp
     test_erf_op.cpp
     test_unsqueeze_op.cpp
     test_pow_op.cpp

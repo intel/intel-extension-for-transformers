@@ -126,7 +126,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     a_tensor->add_tensor_life(1);
     // step3: library buffer can only be obtained afterwards
     auto tensor_data = a_tensor->mutable_data();
-    executor::InitVector(static_cast<float*>(tensor_data), a_tensor->size());
+    executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
 
     Tensor* a_tensor_copy = new Tensor(*a_tensor_config);
     a_tensor_copy->add_tensor_life(1);

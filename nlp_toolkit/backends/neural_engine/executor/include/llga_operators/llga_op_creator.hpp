@@ -65,6 +65,14 @@ class LLGAOPCreator {
   bool CreateLayerNormOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
   bool CreateReshapeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
   bool CreateMatmulOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateErfOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateDivideOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateMultiplyOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateSqrtOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateTanhOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateSubtractOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateTypeCastOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateDequantizeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
 
  private:
   LLGAOPCreator() {
@@ -75,6 +83,14 @@ class LLGAOPCreator {
     creator_list["LayerNorm"] = &LLGAOPCreator::CreateLayerNormOp;  // can not inplace, affecting performance
   //   creator_list["Reshape"] = &LLGAOPCreator::CreateReshapeOp;
     // creator_list["Matmul"] = &LLGAOPCreator::CreateMatmulOp;
+      creator_list["Erf"] = &LLGAOPCreator::CreateErfOp;
+      creator_list["Div"] = &LLGAOPCreator::CreateDivideOp;
+      creator_list["Mul"] = &LLGAOPCreator::CreateMultiplyOp;
+      creator_list["Sqrt"] = &LLGAOPCreator::CreateSqrtOp;
+      creator_list["Tanh"] = &LLGAOPCreator::CreateTanhOp;
+      creator_list["Sub"] = &LLGAOPCreator::CreateSubtractOp;
+      creator_list["Cast"] = &LLGAOPCreator::CreateTypeCastOp;
+      creator_list["DequantizeLinear"] = &LLGAOPCreator::CreateDequantizeOp;
   }
   LLGAOPCreator(const LLGAOPCreator&) {}
 

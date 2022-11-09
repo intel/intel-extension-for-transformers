@@ -64,7 +64,8 @@ extern unordered_map<string, vector<string>> dispatch_kernel_config;
 void* read_file_to_type(const string& root, const string& type, const vector<int64_t>& shape,
                         const vector<int64_t>& location);
 
-void InitVector(float* v, int buffer_size);
+template <typename T>
+void InitVector(T* v, int buffer_size);
 
 int64_t Product(const vector<int64_t>& shape);
 

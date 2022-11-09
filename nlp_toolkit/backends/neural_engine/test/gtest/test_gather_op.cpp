@@ -97,7 +97,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     // step3: library buffer can only be obtained afterwards
     auto tensor_data = static_cast<float*>(a_tensor->mutable_data());
     if (a_tensor->shape().size() == 2) {
-      executor::InitVector(static_cast<float*>(tensor_data), a_tensor->size());
+      executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
     } else if (a_tensor->shape().size() == 1) {
       uint32_t seed = 123;
       for (int i = 0; i < a_tensor->size(); ++i) {

@@ -75,16 +75,22 @@ void* read_file_to_type(const string& root, const string& type, const vector<int
   return p;
 }
 
-void InitVector(float* v, int buffer_size) {
+
+template <typename T>
+void InitVector(T* v, int buffer_size) {
   std::mt19937 gen;
   static int seed = 0;
   gen.seed(seed);
   std::uniform_real_distribution<float> u(-10, 10);
   for (int i = 0; i < buffer_size; ++i) {
-    v[i] = u(gen);
+    v[i] = static_cast<T>(u(gen));
   }
   seed++;
 }
+template void InitVector<float>(float* v, int buffer_size);
+template void InitVector<uint16_t>(uint16_t* v, int buffer_size);  // bf16
+template void InitVector<int8_t>(int8_t* v, int buffer_size);
+template void InitVector<uint8_t>(uint8_t* v, int buffer_size);
 
 // Displayed in milliseconds.
 int64_t Time() {
@@ -154,9 +160,14 @@ bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2, int64_t 
   }
   return true;
 }
-template bool CompareData<float>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
-template bool CompareData<int8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
-template bool CompareData<uint8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<float>(const void* buf1, int64_t elem_num1,
+                const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<uint16_t>(const void* buf1, int64_t elem_num1,
+                const void* buf2, int64_t elem_num2, float eps);  // bf16
+template bool CompareData<int8_t>(const void* buf1, int64_t elem_num1,
+                const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<uint8_t>(const void* buf1, int64_t elem_num1,
+                const void* buf2, int64_t elem_num2, float eps);
 
 bool CompareShape(const vector<int64_t>& shape1, const vector<int64_t>& shape2) {
   if (shape1.size() != shape2.size())

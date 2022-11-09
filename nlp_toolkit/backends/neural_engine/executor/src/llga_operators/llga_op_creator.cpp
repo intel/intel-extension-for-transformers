@@ -504,4 +504,197 @@ bool LLGAOPCreator::CreateMatmulOp(LLGAINFO* llga_info, const OperatorConfig& op
   return true;
 }
 
+// Note: oneDNN Graph only supports gelu fusion: Divide+ Erf +Add + Multiply + Multiply
+bool LLGAOPCreator::CreateErfOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32" && output_dtype_ != "bf16") {
+      return false;
+    }
+  }
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op erf_op(llga_info->GetOPIndex(), llga_op::kind::Erf, inputs, outputs,
+                     "erf" + to_string(llga_info->GetOPIndex()));
+  llga_info->AddLLGAOP(erf_op, index);
+  return true;
+}
+
+bool LLGAOPCreator::CreateDivideOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32" && output_dtype_ != "bf16") {
+      return false;
+    }
+  }
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op divide_op(llga_info->GetOPIndex(), llga_op::kind::Divide, inputs, outputs,
+                     "div" + to_string(llga_info->GetOPIndex()));
+  llga_info->AddLLGAOP(divide_op, index);
+  return true;
+}
+
+bool LLGAOPCreator::CreateMultiplyOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32" && output_dtype_ != "bf16") {
+      return false;
+    }
+  }
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op multiply_op(llga_info->GetOPIndex(), llga_op::kind::Multiply, inputs, outputs,
+                     "mul" + to_string(llga_info->GetOPIndex()));
+  llga_info->AddLLGAOP(multiply_op, index);
+  return true;
+}
+
+bool LLGAOPCreator::CreateSqrtOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32" && output_dtype_ != "bf16") {
+      return false;
+    }
+  }
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op sqrt_op(llga_info->GetOPIndex(), llga_op::kind::Sqrt, inputs, outputs,
+                     "sqrt" + to_string(llga_info->GetOPIndex()));
+  llga_info->AddLLGAOP(sqrt_op, index);
+  return true;
+}
+
+bool LLGAOPCreator::CreateTanhOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32" && output_dtype_ != "bf16") {
+      return false;
+    }
+  }
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op tanh_op(llga_info->GetOPIndex(), llga_op::kind::Tanh, inputs, outputs,
+                     "tanh" + to_string(llga_info->GetOPIndex()));
+  llga_info->AddLLGAOP(tanh_op, index);
+  return true;
+}
+
+bool LLGAOPCreator::CreateSubtractOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32" && output_dtype_ != "bf16") {
+      return false;
+    }
+  }
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op subtract_op(llga_info->GetOPIndex(), llga_op::kind::Subtract, inputs, outputs,
+                     "sub" + to_string(llga_info->GetOPIndex()));
+  llga_info->AddLLGAOP(subtract_op, index);
+  return true;
+}
+
+bool LLGAOPCreator::CreateTypeCastOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32" && output_dtype_ != "bf16") {
+      return false;
+    }
+  }
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op typecast_op(llga_info->GetOPIndex(), llga_op::kind::TypeCast, inputs, outputs,
+                     "cast" + to_string(llga_info->GetOPIndex()));
+  llga_info->AddLLGAOP(typecast_op, index);
+  return true;
+}
+
+bool LLGAOPCreator::CreateDequantizeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+  auto attrs_map = op_conf.attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32") {
+      return false;
+    }
+  }
+  iter = attrs_map.find("axis");
+  int64_t axis = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : 1;
+
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op dequantize_op(llga_info->GetOPIndex(), llga_op::kind::Dequantize, {inputs[0]}, outputs,
+                     "dequantize_linear" + to_string(llga_info->GetOPIndex()));
+
+  // per channel only supports one axis
+  assert(inputs[1].get_dims().size() == 1);
+  int64_t scales_size = inputs[1].get_dims()[0];
+  string qtype = scales_size == 1 ? "per_tensor" : "per_channel";
+  if (qtype == "per_channel") {
+    int64_t input_axis = inputs[0].get_dims()[axis];
+    assert(input_axis == scales_size);
+  }
+
+  // set scales
+  Tensor* scales = llga_info->GetTensorByID(inputs[1].get_id());
+  float* scales_data = static_cast<float*>(scales->mutable_data());
+  vector<float> scales_vec(scales_data, scales_data + scales_size);
+  dequantize_op.set_attr<vector<float>>("scales", scales_vec);
+
+  // set zps
+  vector<int64_t> zps_vec;
+  if (inputs.size() > 2) {
+    // per channel only supports one axis
+    assert(inputs[2].get_dims().size() == 1);
+    int64_t zps_size = inputs[2].get_dims()[0];
+    if (zps_size == 1) {  // llga only supports one element zp
+      Tensor* zps = llga_info->GetTensorByID(inputs[2].get_id());
+      if (zps->dtype() == "s8") {
+        int8_t* zps_data = static_cast<int8_t*>(zps->mutable_data());
+        for (int i = 0; i < zps_size; ++i) {
+          zps_vec.emplace_back(static_cast<int64_t>(zps_data[i]));
+        }
+      } else if (zps->dtype() == "u8") {
+        uint8_t* zps_data = static_cast<uint8_t*>(zps->mutable_data());
+        for (int i = 0; i < zps_size; ++i) {
+          zps_vec.emplace_back(static_cast<int64_t>(zps_data[i]));
+        }
+      } else {
+        LOG(ERROR) << "zps dtype: " << zps->dtype() \
+                   << ", dequantize only supports u8/s8 dtype!";
+      }
+    } else {
+      if (scales_size == zps_size) {  // engine supports this case
+        return false;
+      } else {
+        LOG(ERROR) << "illegal scales/zps size, scales size: " << scales_size \
+                   << ", zps size: " << zps_size;
+      }
+    }
+  } else {  // zps is not optional
+    zps_vec.push_back(0);
+  }
+  dequantize_op.set_attr<vector<int64_t>>("zps", zps_vec);
+
+  dequantize_op.set_attr<string>("qtype", qtype);
+  dequantize_op.set_attr<int64_t>("axis", axis);
+
+  llga_info->AddLLGAOP(dequantize_op, index);
+  return true;
+}
 }  // namespace executor
