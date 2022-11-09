@@ -114,6 +114,15 @@ def graph_node_names_details(model):
 
     return node_names_details
 
+def is_supported_onnx_node(node_name):
+    supported_ops_type = ["Add", "Softmax", "Slice", "ReduceMean", "Reshape",
+                        "Concat", "Gather", "QuantizeLinear", "Transpose", "MatMul",
+                        "Sqrt", "Unsqueeze", "Shape", "Erf", "Pow", "DequantizeLinear",
+                        "Cast", "Tanh", "Div", "Mul", "Sub"]
+    if node_name in supported_ops_type:
+        return True
+    else:
+        return False
 
 def change_num_name(tensor_name):
     # for number string

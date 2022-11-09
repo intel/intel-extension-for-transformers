@@ -24,14 +24,16 @@ import copy
 @pattern_registry(pattern_type='OutputData')
 class OutputData(Pattern):
     def __call__(self, model):
-
         # make the output_data node in graph
-        last_node = model.nodes[-1]
-        input_tensors = copy.deepcopy(last_node.output_tensors)
+        model_output_tensors = []
+        for node in model.nodes:
+            for output_tensor in node.output_tensors:
+                if not output_tensor.dest_op:
+                    model_output_tensors.append(copy.deepcopy(output_tensor))
         output_data_node = util.construct_node('output_data',
                                                'Output',
-                                               input_tensors=input_tensors)
+                                               input_tensors=model_output_tensors)
         model.insert_nodes(len(model.nodes), [output_data_node])
         model.nodes[-1].attr = None
-        
+
         return model

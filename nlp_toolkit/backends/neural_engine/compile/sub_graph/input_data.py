@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
@@ -208,4 +209,20 @@ class InputData(Pattern):
 
                 return model
 
+        # if no input_data, insert input node for subgraph
+        if model.nodes[0].op_type != "Input":
+            onnx_input_nodes_list = []
+            model_input_tensors = []
+            for node in model.nodes:
+                if node.op_type == "ONNXINPUT":
+                    onnx_input_nodes_list.append(node.name)
+                    for input_tensor in node.output_tensors:
+                         model_input_tensors.append(copy.deepcopy(input_tensor))
+            input_data_node = util.construct_node('input_data',
+                                                   'Input',
+                                                   output_tensors=model_input_tensors)
+            model.insert_nodes(0, [input_data_node])
+            model.nodes[0].attr = None
+            model.remove_nodes(onnx_input_nodes_list)
+        
         return model
