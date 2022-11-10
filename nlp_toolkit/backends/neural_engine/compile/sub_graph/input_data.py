@@ -178,7 +178,7 @@ class InputData(Pattern):
                 # vit
                 {
                     'patterns': {
-                        'in': [[(0, 'input')]],
+                        'in': [[(0, ['input', 'pixel_values'])]],
                         'out': [[(0, 'Input')]]
                     },
                     'search_mode': 'node_name',
