@@ -122,7 +122,6 @@ class BaseTrainer():
         self.enable_bf16 = False
         self.orchestrate_opt = False
         self.dynamic_config = None
-        
 
     @property
     def resuming_checkpoint(self):
@@ -1107,7 +1106,7 @@ class BaseTrainer():
         Return:
             :obj:`torch.Tensor`: The tensor with training loss on this batch.
         """
-    
+
         model.train()
         inputs = self._prepare_inputs(inputs)
         tr_loss_sum = 0.0
@@ -1141,7 +1140,6 @@ class BaseTrainer():
             compression_loss = self.compression_ctrl.loss()
             loss += compression_loss
 
- 
         loss = loss / (self.dynamic_config.num_sandwich + 2)
         tr_loss_sum += loss
 
@@ -1170,7 +1168,7 @@ class BaseTrainer():
                 loss = self.deepspeed.backward(loss)
             else:
                 loss.backward()
-       
+
         # inplace distillation
         for i in range(self.dynamic_config.num_sandwich + 1):
             ## prepare inputs for sub-models
@@ -1238,7 +1236,7 @@ class BaseTrainer():
             ## backward
 
             # pylint: disable=E0401
-            
+
             if version.parse(__version__) < version.parse("4.20"):
                 if self.use_amp:
                     self.scaler.scale(loss).backward()
@@ -1265,8 +1263,6 @@ class BaseTrainer():
 
         return tr_loss_sum.detach()
 
-
-
     # pylint: disable=E1101
     def compute_loss(self, model, inputs, return_outputs=False):  # pragma: no cover
         """
@@ -1280,7 +1276,7 @@ class BaseTrainer():
         teacher_logits = inputs.pop("teacher_logits") if "teacher_logits" in inputs else None
 
         outputs = model(**inputs)
-    
+
         if self.in_training and hasattr(self, "component") and \
            hasattr(self.component, "criterion"):
             qa_output_merger = lambda outputs: torch.vstack([
@@ -1835,7 +1831,8 @@ class BaseTrainer():
                 tensor.raw_data = fp16_data.tobytes()
                 tensor.data_type = TensorProto.BFLOAT16
         onnx.save(model, onnx_save_path)
-        os.remove(fp32_path)
+        if os.path.isfile(fp32_path):
+            os.remove(fp32_path)
 
         if verbose:
             info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
@@ -2003,7 +2000,7 @@ class BaseTrainer():
         logger.info("Weight type: {}.".format(weight_type))
         logger.info("Activation type: {}.".format(activation_type))
 
-        # Calibrate_method, min/max method as default. 
+        # Calibrate_method, min/max method as default.
         if 'minmax' in calibrate_method:
             calibrate_method = ortq.CalibrationMethod.MinMax
         elif 'percentile' in calibrate_method:
@@ -2059,7 +2056,9 @@ class BaseTrainer():
                 calibrate_method=calibrate_method,
                 extra_options={})
 
-        os.remove(fp32_path)
+        if os.path.isfile(fp32_path):
+            os.remove(fp32_path)
+
         info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
         logger.info("*" * len(info))
         logger.info(info)
@@ -2111,7 +2110,7 @@ class BaseTrainer():
                         self.model.config.num_hidden_layers,
                         length_drop_ratio=self.dynamic_config.const_rate,
                     )
-        
+
         if lc is not None:
             # set the model with length config
             if self.model.config.model_type == "distilbert":
@@ -2126,7 +2125,6 @@ class BaseTrainer():
             bert.set_length_config(lc)
             bert.set_output_attentions(True)
 
-           
     def run_evolutionary_search(self):
         assert self.dynamic_config is not None, \
             """
