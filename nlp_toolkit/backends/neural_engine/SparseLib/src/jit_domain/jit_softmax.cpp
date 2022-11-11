@@ -67,14 +67,16 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
   L(max_reduction_end);
   if (param_.vec_tail_len != 0) {
     lut_int8_cvt_int16(zmm_vec, src_addr_volatile);
-    vpmaxsw(zmm_exp_neg_max | tail_mask, zmm_exp_neg_max, zmm_vec);
+    vpmaxsw(zmm_exp_neg_max | bit16_mask, zmm_exp_neg_max, zmm_vec);
   }
   vshuff32x4(zmm_tmp, zmm_exp_neg_max, zmm_exp_neg_max, 0x4E);  //  horizontal max
   vpmaxsw(zmm_exp_neg_max, zmm_exp_neg_max, zmm_tmp);           // ymm_exp_neg_max contain the max value(s16)
   vpmovsxwd(zmm_exp_neg_max, ymm_exp_neg_max);                  // s16 cvt s32 and store into the zmm_exp_neg_max
   get_horizontal_op(zmm_exp_neg_max, zmm_tmp, op_t::max);
-  // TODO(zhe1wang): add u8 broadcast case
-  vpmovdb(xmm_exp_neg_max, zmm_exp_neg_max);
+  if (param_.input_dt == data_type::s8)
+    vpmovdb(xmm_exp_neg_max, zmm_exp_neg_max);
+  else
+    vpmovusdb(xmm_exp_neg_max, zmm_exp_neg_max);
   vpbroadcastb(zmm_exp_neg_max, xmm_exp_neg_max);  // zmm_exp_neg_max contain all max int8 value
 
   // loop two:sum reduction & stroe exp value.
@@ -84,24 +86,15 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
   cmp(vec_offset, param_.vec_align_len);
   je(sum_reduction_end, T_NEAR);
   L(sum_reduction_loop);
-  vmovups(ymm_vec, ptr[src_addr_volatile]);
-  vpsubsb(ymm_vec, ymm_vec, ymm_exp_neg_max);                              // x-max
-  get_lut_exp_injector.vector_compute(zmm_vec, param_.get_lut_exp_attrs);  // e^(x-max)
-  vmovups(ptr[dst_addr_volatile], zmm_vec);                                // now tmp store the bf16 exp value
-  vdpbf16ps(zmm_denominator, zmm_one_bf16, zmm_vec);
+  lut_handle_exp();
   add(src_addr_volatile, ymm_byte_size);
   add(dst_addr_volatile, zmm_byte_size);
   add(vec_offset, process_element_16bit);
   cmp(vec_offset, param_.vec_align_len);
   jl(sum_reduction_loop);
   L(sum_reduction_end);
-  if (param_.vec_tail_len != 0) {
-    vmovups(ymm_vec, ptr[src_addr_volatile]);
-    vpsubsb(ymm_vec, ymm_vec, ymm_exp_neg_max);
-    get_lut_exp_injector.vector_compute(zmm_vec, param_.get_lut_exp_attrs);
-    vdpbf16ps(zmm_denominator | bf16_mask, zmm_one_bf16, zmm_vec);
-    vmovdqu16(ptr[dst_addr_volatile] | tail_mask, zmm_vec);
-  }
+  if (param_.vec_tail_len != 0) lut_handle_exp(true);
+
   get_horizontal_op(zmm_denominator, zmm_tmp, op_t::sum);  // horizontal sum
   vdivps(zmm_denominator, zmm_one_fp32, zmm_denominator);  // calculate denominator
 
@@ -114,8 +107,7 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
   L(softmax_loop);
   get_unroll();
   for (int i = 0; i < unroll; i++) vmovups(Ymm(10 + i), ptr[src_addr_volatile + i * ymm_byte_size]);  // exp value(bf16)
-  for (int i = 0; i < unroll; i++) vpmovzxwd(Zmm(10 + i), Ymm(10 + i));
-  for (int i = 0; i < unroll; i++) vpslld(Zmm(10 + i), Zmm(10 + i), 16);  // bf16->fp32
+  for (int i = 0; i < unroll; i++) bf16_cvt_fp32(Zmm(10 + i));
   for (int i = 0; i < unroll; i++) vmulps(Zmm(10 + i), Zmm(10 + i), zmm_denominator);
 
   // apply postops
@@ -126,18 +118,17 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
   // store data.
   for (int i = 0; i < unroll; i++) lut_store_data(10 + i, dst_addr_volatile, i);
   add(src_addr_volatile, unroll * ymm_byte_size);
-  add(dst_addr_volatile, unroll * ymm_byte_size);
+  add(dst_addr_volatile, unroll * 16 * get_data_size(param_.output_dt));
   add(vec_offset, process_element_32bit * unroll);
   cmp(vec_offset, param_.vec_align_len);
   jl(softmax_loop);
   L(softmax_end);
   if (param_.vec_tail_len != 0) {
     vmovups(ymm_vec, ptr[src_addr_volatile]);  // exp value(bf16)
-    vpmovzxwd(zmm_vec, ymm_vec);
-    vpslld(zmm_vec, zmm_vec, 16);  // bf16->fp32
+    bf16_cvt_fp32(zmm_vec);
     vmulps(zmm_vec, zmm_vec, zmm_denominator);
     if (param_.postop_attrs.size() != 0) eltwise_injector.vector_compute(zmm_vec, param_.postop_attrs);
-    lut_store_data(zmm_vec.getIdx(), dst_addr_volatile);
+    lut_store_data(zmm_vec.getIdx(), dst_addr_volatile, 0, true);
   }
 
   add(src_addr, param_.vec_align_len + param_.vec_tail_len);
@@ -155,32 +146,54 @@ void jit_softmax_t::lut_int8_cvt_int16(Zmm dst, Reg64 src) {
     vpmovzxbw(dst, ptr[src]);  // u8->s16
 }
 
+void jit_softmax_t::lut_handle_exp(bool tail) {
+  vmovups(ymm_vec, ptr[src_addr_volatile]);
+  vpsubsb(ymm_vec, ymm_vec, ymm_exp_neg_max);                              // x-max
+  get_lut_exp_injector.vector_compute(zmm_vec, param_.get_lut_exp_attrs);  // e^(x-max)
+  if (!tail) {
+    vdpbf16ps(zmm_denominator, zmm_one_bf16, zmm_vec);
+    vmovups(ptr[dst_addr_volatile], zmm_vec);  // now tmp store the bf16 exp value
+  } else {
+    vmovdqu16(ptr[dst_addr_volatile] | bit16_mask, zmm_vec);
+    if (param_.vec_tail_len < 16) {
+      bf16_cvt_fp32(zmm_vec);
+      vaddps(zmm_denominator | bit32_mask, zmm_denominator, zmm_vec);
+    } else {
+      vextractf32x8(Ymm(zmm_tmp.getIdx()), zmm_vec, 1);
+      bf16_cvt_fp32(zmm_vec);
+      vaddps(zmm_denominator, zmm_denominator, zmm_vec);
+      bf16_cvt_fp32(zmm_tmp);
+      vaddps(zmm_denominator | bit32_mask, zmm_denominator, zmm_tmp);
+    }
+  }
+}
+
 void jit_softmax_t::lut_store_data(int simd_idx, Reg64 dst, int offset, bool mask) {
-  // TODO(zhe1wang): confrim xbyak mask bug on vpmovusdb/vpmovsdb instructions.
   if (param_.output_dt == data_type::u8) {
-    vpmovusdb(ptr[dst + offset * xmm_byte_size], Zmm(simd_idx));
+    vpmovusdb(mask ? ptr[dst + offset * xmm_byte_size] | bit32_mask : ptr[dst + offset * xmm_byte_size], Zmm(simd_idx));
   } else if (param_.output_dt == data_type::s8) {
-    vpmovsdb(ptr[dst + offset * xmm_byte_size], Zmm(simd_idx));
+    vpmovsdb(mask ? ptr[dst + offset * xmm_byte_size] | bit32_mask : ptr[dst + offset * xmm_byte_size], Zmm(simd_idx));
   } else {
     vcvtneps2bf16(Ymm(simd_idx), Zmm(simd_idx));
-    vmovdqu16(mask ? ptr[dst + offset * ymm_byte_size] | tail_mask : ptr[dst + offset * ymm_byte_size], Ymm(simd_idx));
+    vmovdqu16(mask ? ptr[dst + offset * ymm_byte_size] | bit32_mask : ptr[dst + offset * ymm_byte_size], Ymm(simd_idx));
   }
 }
 
 void jit_softmax_t::get_unroll() {
   unroll = 8;
   while (param_.vec_align_len % (unroll * process_element_32bit) != 0) unroll--;
+  if (param_.vec_tail_len >= 16) unroll += 1;
 }
 
 void jit_softmax_t::prepare_mask() {
   int mask = 0x0;
   for (int i = 0; i < param_.vec_tail_len; i++) mask = (mask << 1) + 1;
   mov(reg_tmp.cvt32(), mask);
-  kmovd(tail_mask, reg_tmp.cvt32());
+  kmovd(bit16_mask, reg_tmp.cvt32());
   mask = 0x0;
-  for (int i = 0; i < param_.vec_tail_len / 2; i++) mask = (mask << 1) + 1;
+  for (int i = 0; i < param_.vec_tail_len % 16; i++) mask = (mask << 1) + 1;
   mov(reg_tmp.cvt32(), mask);
-  kmovd(bf16_mask, reg_tmp.cvt32());
+  kmovd(bit32_mask, reg_tmp.cvt32());
 }
 
 void jit_softmax_t::get_horizontal_op(const Zmm& v, const Zmm& vtmp, op_t op) {
@@ -214,9 +227,9 @@ void jit_softmax_t::assign_regs() {
       reg_type::reg64, {src_addr.getIdx(), dst_addr.getIdx(), vec_num.getIdx(), vec_offset.getIdx(), reg_tmp.getIdx(),
                         src_addr_volatile.getIdx(), dst_addr_volatile.getIdx()}));
 
-  tail_mask = Opmask(6);
-  bf16_mask = Opmask(7);
-  reg_map.insert(std::pair<reg_type, std::set<int>>(reg_type::mask, {tail_mask.getIdx(), tail_mask.getIdx()}));
+  bit16_mask = Opmask(6);
+  bit32_mask = Opmask(7);
+  reg_map.insert(std::pair<reg_type, std::set<int>>(reg_type::mask, {bit16_mask.getIdx(), bit16_mask.getIdx()}));
 
   zmm_vec = Zmm(0);
   ymm_vec = ymm0;

@@ -96,7 +96,6 @@ bool check_result(const test_params_t& t) {
     softmax_desc softmax_desc(op_desc);
     softmax softmax_ker(softmax_desc);
     softmax_ker.execute(p.data);
-    softmax_ker.execute(p.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;
@@ -176,11 +175,9 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
     float rand_val = rand_r(&seed_tmp) % 256 - 128;
-    std::string val;
     assign_val(src, in_dt, rand_val, i);
     assign_val(src_ref, in_dt, rand_val, i);
   }
-
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
 
@@ -201,6 +198,10 @@ static auto case_func = []() {
   tensor_desc data1_desc = {{8, 4, 128, 128}, jd::data_type::s8, jd::format_type::undef};
   tensor_desc data2_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
   tensor_desc data3_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
+  tensor_desc data4_desc = {{4096, 384}, jd::data_type::u8, jd::format_type::undef};
+  tensor_desc data5_desc = {{4096, 384}, jd::data_type::s8, jd::format_type::undef};
+  tensor_desc data6_desc = {{8, 4, 128, 126}, jd::data_type::bf16, jd::format_type::undef};
+  tensor_desc data7_desc = {{8, 4, 128, 126}, jd::data_type::s8, jd::format_type::undef};
 
   postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, 140, 0, 0.643695);
   postop_attr quant_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.00324144);
@@ -211,6 +212,17 @@ static auto case_func = []() {
                    false});
 
   cases.push_back({gen_case({data3_desc, data2_desc},
+                            {{"postop_list", "dequantize+scale0.04+quantiuze+scale0.00324144"},
+                             {"vec_len", "1024"},
+                             {"spec_type", "lut"}},
+                            {dequantize_s8_attr}),
+                   false});
+  cases.push_back({gen_case({data5_desc, data4_desc},
+                            {{"postop_list", "dequantize+scale0.653695"}, {"vec_len", "128"}, {"spec_type", "lut"}},
+                            {dequantize_s8_attr, quant_u8_attr}),
+                   false});
+
+  cases.push_back({gen_case({data7_desc, data6_desc},
                             {{"postop_list", "dequantize+scale0.04+quantiuze+scale0.00324144"},
                              {"vec_len", "1024"},
                              {"spec_type", "lut"}},

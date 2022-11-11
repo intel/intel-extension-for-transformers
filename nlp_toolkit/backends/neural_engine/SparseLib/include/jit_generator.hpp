@@ -124,6 +124,11 @@ class jit_generator : public Xbyak::CodeGenerator {
     vzeroupper();
   }
 
+  void bf16_cvt_fp32(Zmm zmm) {
+    vpmovzxwd(zmm, Ymm(zmm.getIdx()));
+    vpslld(zmm, zmm, 0x10);
+  }
+
   void preamble() {
     if (xmm_to_preserve) {
       sub(rsp, xmm_to_preserve * VEC);

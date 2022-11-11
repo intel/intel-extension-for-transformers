@@ -55,6 +55,7 @@ class jit_eltwise_injector {
   void bit16_lut_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void register_table_entries(const std::vector<postop_attr>& postop_attrs);
   void assert_check(const std::vector<postop_attr>& postop_attrs);
+
   uint32_t get_bit8_lut_term(int integer, const std::vector<postop_attr>& postop_attrs, data_type output_dt);
   uint32_t get_bit16_lut_term(int integer, const std::vector<postop_attr>& postop_attrs, data_type output_dt);
   std::string get_attr_idx_key(const postop_attr& attr);  // for get the key of alpha_idx,beta_idx,scale_idx map.

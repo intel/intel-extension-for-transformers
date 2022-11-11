@@ -48,6 +48,7 @@ class jit_softmax_t : public jit_generator {
   void lut_softmax_kernel_gen();
   void lut_int8_cvt_int16(Zmm dst, Reg64 src);
   void lut_store_data(int simd_idx, Reg64 dst, int offset = 0, bool mask = false);
+  void lut_handle_exp(bool tail = false);
 
  private:
   ssd::softmax_param_t param_;
@@ -69,8 +70,8 @@ class jit_softmax_t : public jit_generator {
   Reg64 vec_num;
   Reg64 vec_offset;  // load/sotre offset
   Reg64 reg_tmp;     // store max/sum
-  Opmask tail_mask;
-  Opmask bf16_mask;
+  Opmask bit16_mask;
+  Opmask bit32_mask;
   Zmm zmm_vec;
   Ymm ymm_vec;
   Zmm zmm_tmp;

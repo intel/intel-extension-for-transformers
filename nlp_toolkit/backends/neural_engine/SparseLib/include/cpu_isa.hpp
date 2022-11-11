@@ -30,6 +30,9 @@ static constexpr int cpu_isa_total_bits = sizeof(unsigned) * 8;
 enum cpu_isa_bit_t : unsigned {
   // Fill in features from least significant bit to most significant bit
   // begin from avx512, isa < avx512 will be dsiptached to reference
+  // for more details abount AVX512-ISA supported status in different architectures, pls refer to this
+  // page:https://en.wikipedia.org/wiki/AVX-512#CPUs_with_AVX-512
+  avx512_vbmi = 1u << 5,
   avx512_core_bit = 1u << 6,
   avx512_core_vnni_bit = 1u << 7,
   avx512_core_bf16_bit = 1u << 8,
@@ -45,6 +48,7 @@ enum cpu_isa_t : unsigned {
   avx512_core = avx512_core_bit,
   avx512_core_vnni = avx512_core_vnni_bit | avx512_core,
   avx512_core_bf16 = avx512_core_bf16_bit | avx512_core_vnni,
+  avx512_core_vbmi = avx512_vbmi,
   amx_tile = amx_tile_bit,
   amx_int8 = amx_int8_bit | amx_tile,
   amx_bf16 = amx_bf16_bit | amx_tile,
@@ -69,6 +73,8 @@ static inline bool isa_available(const cpu_isa_t cpu_isa) {
     case avx512_core:
       return cpu().has(Cpu::tAVX512F) && cpu().has(Cpu::tAVX512BW) && cpu().has(Cpu::tAVX512VL) &&
              cpu().has(Cpu::tAVX512DQ);
+    case avx512_vbmi:
+      return cpu().has(Cpu::tAVX512_VBMI);
     case avx512_core_vnni:
       return cpu().has(Cpu::tAVX512F) && cpu().has(Cpu::tAVX512BW) && cpu().has(Cpu::tAVX512VL) &&
              cpu().has(Cpu::tAVX512DQ) && cpu().has(Cpu::tAVX512_VNNI);

@@ -25,9 +25,8 @@ bool softmax_ref_kd_t::init() {
       SPARSE_LOG(ERROR) << "softmax lut kernel need 2 tensor descriptor:src & dst." << std::endl;
     auto input_dt = tensor_desc[0].dtype();
     auto output_dt = tensor_desc[1].dtype();
-    SPARSE_LOG_IF(
-        FATAL,
-        output_dt != data_type::bf16);  // TODO(zhe1wang): support more dt,current impl is for experiment only.
+    SPARSE_LOG_IF(FATAL,
+                  output_dt == data_type::fp32);  // TODO(zhe1wang): support fp32 dt.
     if (get_data_size(input_dt) != 1)
       SPARSE_LOG(ERROR) << "softmax lut kernel only support int8 dtype as input currently." << std::endl;
   } else {
@@ -40,8 +39,13 @@ bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto op_desc = derived_kd()->operator_desc();
   auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[0]));
   auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rt_data[0]));
-  auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rt_data[1]));
-  auto postop_lists = op_desc.apply_postops_list();
+  auto dst_dt = op_desc.tensor_descs()[1].dtype();
+  void* dst = const_cast<void*>(rt_data[1]);
+
+  std::vector<postop_attr> dequant_list = {op_desc.apply_postops_list().front()};
+  std::vector<postop_attr> quant_list;
+  if (op_desc.apply_postops_list().back().op_alg == postop_alg::quantize)
+    quant_list.push_back(op_desc.apply_postops_list().back());
   auto src_tensor = op_desc.tensor_descs()[0];
   auto src_dt = src_tensor.dtype();
   auto tensor_shape = src_tensor.shape();
@@ -50,7 +54,7 @@ bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   std::vector<float> float_dst_data(row * col, 0);
   for (int i = 0; i < row; i++) {
     // step1. find max
-    float max = static_cast<float>(src_u8[0]);
+    float max = -256;
     for (int j = 0; j < col; j++) {
       int src_idx = i * col + j;
       if (src_dt == jd::data_type::s8) {
@@ -60,27 +64,37 @@ bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
       }
     }
     // get e^M
-    float one_div_exp_M = 1.0 / get_exp(apply_postop_list(max, postop_lists));
+    max = apply_postop_list(max, dequant_list);
     // step2. compute sum of exp
     float exp_sum = 0;
     for (int j = 0; j < col; j++) {
       float value = 0;
       if (src_dt == jd::data_type::s8) {
-        value = apply_postop_list(static_cast<float>(src_s8[i * col + j] - max), postop_lists);
+        value = apply_postop_list(static_cast<float>(src_s8[i * col + j]), dequant_list);
       } else {
-        value = apply_postop_list(static_cast<float>(src_u8[i * col + j] - max), postop_lists);
+        value = apply_postop_list(static_cast<float>(src_u8[i * col + j]), dequant_list);
       }
-      value = get_exp(value) * one_div_exp_M;
-      float_dst_data[i * col + j] = (value);
+      value = get_exp(value - max);
+      float_dst_data[i * col + j] = value;
       exp_sum += value;
     }
 
     float scale = 1 / exp_sum;
-
     // step3. compute softmax
-    for (int j = 0; j < col; j++) dst[i * col + j] = make_bf16(float_dst_data[i * col + j] * scale);
+    if (dst_dt == data_type::bf16) {
+      for (int j = 0; j < col; j++)
+        reinterpret_cast<bfloat16_t*>(dst)[i * col + j] = make_bf16(float_dst_data[i * col + j] * scale);
+    } else if (dst_dt == data_type::u8) {
+      for (int j = 0; j < col; j++) {
+        reinterpret_cast<uint8_t*>(dst)[i * col + j] =
+            (uint8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
+      }
+    } else if (dst_dt == data_type::s8) {
+      for (int j = 0; j < col; j++)
+        reinterpret_cast<int8_t*>(dst)[i * col + j] =
+            (int8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
+    }
   }
   return true;
 }
-
 }  // namespace jd

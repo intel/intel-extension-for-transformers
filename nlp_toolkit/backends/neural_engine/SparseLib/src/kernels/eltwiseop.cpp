@@ -19,9 +19,10 @@ namespace jd {
 bool eltwiseop_kd_t::init() {
   if (!isa_available(avx512_core)) return false;
   params_.postop_attrs = op_desc_.apply_postops_list();
-  for (auto& postpo_attr : params_.postop_attrs)
-    if (postpo_attr.dt == data_type::bf16 && !isa_available(avx512_core_bf16)) return false;
-
+  for (auto& postop_attr : params_.postop_attrs) {
+    if (postop_attr.op_alg == postop_alg::eltop_int_lut && !isa_available(avx512_core_vbmi)) return false;
+    if (postop_attr.dt == data_type::bf16 && !isa_available(avx512_core_bf16)) return false;
+  }
   int nthr = op_desc_.impl_nthr();
   params_.element_num_each_th = params_.element_num / nthr;
   params_.remain_element = params_.element_num - (nthr - 1) * params_.element_num_each_th;

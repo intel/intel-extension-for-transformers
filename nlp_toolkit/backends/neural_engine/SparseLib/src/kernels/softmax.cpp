@@ -17,9 +17,12 @@
 namespace jd {
 
 bool softmax_kd_t::init() {
-  if (!isa_available(avx512_core)) return false;
   auto op_attrs = op_desc_.attrs();
   if (op_attrs["spec_type"] == "lut") {
+    if (!isa_available(avx512_core_bf16) || !isa_available(avx512_core_vbmi)) {
+      SPARSE_LOG(WARNING) << "bf16 or vbmi ISA not available, dispatch to ref_impl.";
+      return false;
+    }
     prepare_lut_softmax_params();
   } else {
     SPARSE_LOG(ERROR) << "do not supported specialization softmax type";

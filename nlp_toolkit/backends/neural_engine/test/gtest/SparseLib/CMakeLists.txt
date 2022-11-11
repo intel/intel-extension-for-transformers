@@ -5,7 +5,7 @@ project(sparselib_ut)
 option(SPARSE_LIB_USE_VTUNE OFF)
 option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -fsanitize=address -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -fno-omit-frame-pointer")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS}")
 else()
