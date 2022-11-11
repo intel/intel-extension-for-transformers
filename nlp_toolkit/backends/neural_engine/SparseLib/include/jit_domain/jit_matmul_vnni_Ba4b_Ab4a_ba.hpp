@@ -23,8 +23,8 @@
 
 namespace jd {
 /**
- * @brief jit_matmul_vnni_Ba4b_Ab4a_ba_t calculates this kind matmul: scale * src0 x src1 = dst.
- *        scale * src0(M, K) x src1(K, N) = dst^T(N, M) where M=TH_x16 N=TW_x1
+ * @brief jit_matmul_vnni_Ba4b_Ab4a_ba_t calculates this kind matmul: scale * src0 x src1 + zp = dst.
+ *        scale(1) * src0(M, K) x src1(K, N) + zp(1) = dst^T(N, M) where M=TH_x16 N=TW_x1
  */
 class jit_matmul_vnni_Ba4b_Ab4a_ba_t : public jit_generator {
  public:

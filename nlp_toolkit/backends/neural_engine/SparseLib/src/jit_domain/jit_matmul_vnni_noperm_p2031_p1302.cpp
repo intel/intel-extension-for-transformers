@@ -147,17 +147,21 @@ void jit_matmul_vnni_noperm_p2031_p1302_t::generate() {
 
   // postop & store results
   const Xbyak::Zmm& vreg_scale = zmm0;
-  const Xbyak::Zmm& vreg_zero = zmm1;
+  const Xbyak::Zmm& vreg_zp = zmm1;
+  const Xbyak::Zmm& vreg_zero = zmm2;
   mov(reg_tmp, qword[parambase + GET_OFF(scale)]);
   vbroadcastss(vreg_scale, dword[reg_tmp]);  // move in scale.
-  vpxord(vreg_zero, vreg_zero, vreg_zero);   // 0 in fp32 is 0x0
+  mov(reg_tmp, qword[parambase + GET_OFF(zp)]);
+  vbroadcastss(vreg_zp, dword[reg_tmp]);    // move in zp.
+  vpxord(vreg_zero, vreg_zero, vreg_zero);  // 0 in fp32 is 0x0
   auto& reg_ld_dst = reg_tmp;
   mov(reg_dst, ptr[parambase + GET_OFF(dst)]);
   mov(reg_ld_dst, ld_dst);
 
   for (int j = 0; j < TW_; ++j) {
+    // TODO(zhe1wang): replace with eltwise injector supporting runtime args
     vcvtdq2ps(dst_tile_Vmm(j) | T_rn_sae, dst_tile_Vmm(j));       // s32->fp32
-    vmulps(dst_tile_Vmm(j), vreg_scale, dst_tile_Vmm(j));         // multiplies scaler
+    vfmadd132ps(dst_tile_Vmm(j), vreg_zp, vreg_scale);            // multiplies scaler and add zp
     vcmpleps(reg_k1, vreg_zero, dst_tile_Vmm(j));                 // mask of everything greater than 0
     vcvtps2udq(dst_tile_Vmm(j) | T_z | reg_k1, dst_tile_Vmm(j));  // fp32->u32
     vpmovusdb(ptr[reg_dst + ld_dst * j], dst_tile_Vmm(j));        // store result

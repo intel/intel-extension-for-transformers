@@ -76,13 +76,16 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   const auto right_data = rt_data[ssd::SRC1];
   auto dst_data = const_cast<void*>(rt_data[ssd::DST0]);
   const auto scale_data = rt_data[ssd::SCALE0];
+  const auto zp_data = rt_data[ssd::ZP0];
 
   // ptr alias
   auto left_u8 = static_cast<const uint8_t*>(left_data);
   auto right_s8 = static_cast<const int8_t*>(right_data);
   auto dst_u8 = static_cast<uint8_t*>(dst_data);
   auto scale_f32 = static_cast<const float*>(scale_data);
-  auto scale_value = scale_f32[0];
+  auto zp_f32 = static_cast<const float*>(zp_data);
+  const auto scale_value = scale_f32[0];
+  const auto zp_value = zp_f32[0];
 
   // Computing the kernel
 #pragma omp parallel for collapse(4)
@@ -107,7 +110,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
                 data_type::u8,
                 postop_type::eltwise,
                 postop_alg::quantize,
-                0,                // alpha
+                zp_value,         // zp
                 0,                // beta
                 1 / scale_value,  // scale
             };
@@ -215,7 +218,8 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, dim_t bs0, d
   tensor_desc dst_desc = {{bs1, N, bs0, M}, dt::u8, ft::ab};
   tensor_desc src2_desc = {{}, dt::fp32, ft::ab};  // binary postop not supported
   tensor_desc scale_desc = {{1}, dt::fp32, ft::a};
-  std::vector<tensor_desc> ts_descs = {src0_desc, src1_desc, dst_desc, src2_desc, scale_desc};
+  tensor_desc zp_desc = {{1}, dt::fp32, ft::a};
+  std::vector<tensor_desc> ts_descs = {src0_desc, src1_desc, dst_desc, src2_desc, scale_desc, zp_desc};
 
   // Step 2: Construct runtime data
   std::vector<const void*> rt_data1;

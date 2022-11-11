@@ -59,17 +59,21 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
       shapes[ssd::DST0][3],  // M
       shapes[ssd::DST0][1],  // N
   };
-
-  bool has_binary_add = !shapes[ssd::SRC2].empty();
-  bool scaler_scale = shapes[ssd::SCALE0] == std::vector<dim_t>({1});
-
+  if (!shapes[ssd::SRC2].empty()) {
+    SPARSE_LOG(WARNING) << "Does not support binary add";
+    return false;
+  }
+  bool scaler_scale = shapes[ssd::SCALE0] == std::vector<dim_t>({1}) && shapes[ssd::ZP0] == std::vector<dim_t>({1});
   bool is_supported = (op_desc_.kernel_prop() == kernel_prop::forward_inference) &&
                       is_any_of({dt::u8}, [&](const dt& a) { return descs[ssd::SRC0].dtype() == a; }) &&
                       is_any_of({dt::s8}, [&](const dt& a) { return descs[ssd::SRC1].dtype() == a; }) &&
-                      is_any_of({dt::u8}, [&](const dt& a) { return descs[ssd::DST0].dtype() == a; }) &&
-                      !has_binary_add && scaler_scale;
+                      is_any_of({dt::u8}, [&](const dt& a) { return descs[ssd::DST0].dtype() == a; }) &&  //
+                      scaler_scale && descs[ssd::SCALE0].dtype() == dt::fp32 && descs[ssd::ZP0].dtype() == dt::fp32;
 
-  if (!is_supported) return false;
+  if (!is_supported) {
+    SPARSE_LOG(WARNING) << "Skip as dtype not matched";
+    return false;
+  }
 
   if (src0_perm_shape[3] != src1_perm_shape[2]) {
     SPARSE_LOG(WARNING) << "Skip as src0 k-dim (" << src0_perm_shape[3] << ") doesn't match src1 k-dim ("
@@ -172,6 +176,7 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
   auto base_src1 = static_cast<const int8_t*>(rt_data[ssd::SRC1]);
   auto base_dst = const_cast<uint8_t*>(static_cast<const uint8_t*>(rt_data[ssd::DST0]));
   auto base_scale = static_cast<const float*>(rt_data[ssd::SCALE0]);
+  auto base_zp = reinterpret_cast<const float*>(rt_data[ssd::ZP0]);
   size_t tmp_total_len = (M_ + N_) * K_ + 64 + 4;  // 64 for alignment; 4 for extra access due to ping-pong loading
   void* mem_tmp = alloca(tmp_total_len);
   char* mem_tmp_aligned = static_cast<char*>(std::align(64, (M_ + N_) * K_, mem_tmp, tmp_total_len));
@@ -203,6 +208,7 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
         rt_param.src1 = src1_tmp + j * K_;
         rt_param.dst = base_dst + ibs1 * bs0_ * N_ * M_ + j * bs0_ * M_ + ibs0 * M_ + ii;
         rt_param.scale = base_scale;
+        rt_param.zp = base_zp;
 
         // each jit kernel calculates 32xKx8, where K should be multiple of 32 (VNNI_R * dim_transpose)
         (*jit_ker_Ba4b_Ab4a_ba_)(&rt_param);
@@ -215,6 +221,7 @@ bool matmul_vnni_noperm_p2031_p1302_k_t::execute(const std::vector<const void*>&
   auto base_src1 = reinterpret_cast<const int8_t*>(rt_data[ssd::SRC1]);
   auto base_dst = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(rt_data[ssd::DST0]));
   auto base_scale = reinterpret_cast<const float*>(rt_data[ssd::SCALE0]);
+  auto base_zp = reinterpret_cast<const float*>(rt_data[ssd::ZP0]);
   if (using_unified_kernel_) {
 #pragma omp parallel for collapse(2)
     for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
@@ -226,6 +233,7 @@ bool matmul_vnni_noperm_p2031_p1302_k_t::execute(const std::vector<const void*>&
             rt_param.src1 = base_src1 + ibs1 * bs0_ * N_ * K_ + j * bs0_ * K_ + ibs0 * K_;
             rt_param.dst = base_dst + ibs1 * bs0_ * N_ * M_ + j * bs0_ * M_ + ibs0 * M_ + i;
             rt_param.scale = base_scale;
+            rt_param.zp = base_zp;
 
             // each jit kernel calculates 16xKx16, where K should be multiple of 32 (VNNI_R * dim_transpose)
             (*jit_ker_noperm_p2031_p1302_)(&rt_param);

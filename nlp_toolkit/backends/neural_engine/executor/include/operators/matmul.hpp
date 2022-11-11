@@ -21,6 +21,7 @@
 #include "../common.hpp"
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#include "SparseLib/include/interface.hpp"
 
 namespace executor {
 
@@ -41,6 +42,15 @@ class MatmulOperator : public Operator {
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
+  void ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
+  void ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
+#if __AVX512F__
+  void ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
+#endif
+
+
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
@@ -59,13 +69,16 @@ class MatmulOperator : public Operator {
   bool cache_weight_;
   bool binary_add_;
   bool is_dynamic_ = false;
+  bool transpose_mode_ = false;
   float output_scale_ = 1.f;
+  float ouput_zp_ = 0.f;
   string output_dtype_ = "fp32";
   vector<float> dst_scales_;
   vector<int64_t> src0_perm_;
   vector<int64_t> src1_perm_;
   vector<int64_t> dst_perm_;
   vector<int64_t> reshape_;
+  vector<float> rescales_;
   dnnl::primitive_attr attr_;
   memory::desc scale_md_;
 
@@ -106,6 +119,13 @@ class MatmulOperator : public Operator {
   Tensor* dst_min_ = nullptr;
   Tensor* dst_max_ = nullptr;
   string append_op_;
+  jd::tensor_desc src0_desc_;
+  jd::tensor_desc src1_desc_;
+  jd::tensor_desc binary_desc_;
+  jd::tensor_desc dst_desc_;
+  jd::tensor_desc scale_desc_;
+  jd::tensor_desc zp_desc_;
+  jd::transpose_matmul transpose_matmul_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_MATMUL_HPP_

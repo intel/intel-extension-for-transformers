@@ -27,6 +27,7 @@ bool gather_kd_t::init() {
   int idx_axis = str_to_num<dim_t>(op_attrs["idx_axis"]);
   param_.dst_axis_size = idx_shape[idx_axis];
   param_.outer_size = 1;
+
   SPARSE_LOG_IF(FATAL, idx_axis != idx_shape.size() - 1) << "idx_axis should be the last dim of idx";
   if (idx_axis != 0) {
     SPARSE_LOG_IF(FATAL, src_axis != idx_axis) << "idx_axis should equal to src_idx when idx_axis!=0";

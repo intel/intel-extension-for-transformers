@@ -31,6 +31,7 @@ static constexpr int SRC1 = 1;
 static constexpr int DST0 = 2;
 static constexpr int SRC2 = 3;  // for binary add
 static constexpr int SCALE0 = 4;
+static constexpr int ZP0 = 5;
 
 struct matmul_param_t {
   dim_t M;
@@ -53,6 +54,7 @@ struct matmul_u8_data_t {
   const int8_t* src1;
   uint8_t* dst;
   const float* scale;
+  const float* zp;
 };
 
 }  // namespace ssd
