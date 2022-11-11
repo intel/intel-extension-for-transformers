@@ -1753,10 +1753,10 @@ class BaseTrainer():
         verbose=True,
     ):
         if self.fp32_model is None:
-            model = self.model.eval()
+            model = self.model.ast.literal_eval()
         else:
             # Quantized model cannot be converted into onnx
-            model = self.fp32_model.eval()
+            model = self.fp32_model.ast.literal_eval()
         # pylint: disable=E1101
         onnx_save_path = save_path if save_path \
           else os.path.join(self.args.output_dir, 'fp32-model.onnx')
@@ -2098,7 +2098,7 @@ class BaseTrainer():
         lc = None
 
         if self.dynamic_config.length_config is not None:
-            lc = eval(self.dynamic_config.length_config)
+            lc = ast.literal_eval(self.dynamic_config.length_config)
         else:
             assert self.dynamic_config.max_length is not None, \
             """

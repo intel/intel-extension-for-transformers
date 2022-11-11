@@ -222,7 +222,7 @@ def eval_func(args, model, accelerator, eval_dataloader, metric):
     # Evaluation
     batch_time = AverageMeter('Time', ':6.3f')
     is_regression = args.task_name == "stsb"
-    model.eval()
+    model.ast.literal_eval()
     for step, batch in enumerate(eval_dataloader):
         if step >= args.warmup_iter:
             start = time.time()

@@ -259,7 +259,7 @@ def main():
         eval_sampler = DistributedSampler(eval_data)
     eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.batch_size)
 
-    model.eval()
+    model.ast.literal_eval()
     with open(args.output_file, "w", encoding='utf-8') as writer:
         for input_ids, input_mask, example_indices in eval_dataloader:
             input_ids = input_ids.to(device)

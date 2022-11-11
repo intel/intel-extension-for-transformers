@@ -621,7 +621,7 @@ def main():
             model = OptimizedModel.from_pretrained(
                 training_args.output_dir,
             )
-        model.eval()
+        model.ast.literal_eval()
         trainer.model = model
         metrics = trainer.evaluate()
         logger.info("metrics keys: {}".format(metrics.keys()))
