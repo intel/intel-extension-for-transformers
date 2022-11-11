@@ -693,7 +693,7 @@ def main():
             def get_logits(teacher_model, train_dataset, teacher_train_dataset):
                 logger.info("***** Getting logits of teacher model *****")
                 logger.info(f"  Num examples = {len(train_dataset) }")
-                teacher_model.ast.literal_eval()
+                teacher_model.eval()
                 npy_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     '{}.{}.npy'.format(data_args.dataset_name, 
                                     optim_args.teacher_model_name_or_path.replace('/', '.')))
@@ -776,7 +776,7 @@ def main():
         model = OptimizedModel.from_pretrained(
             training_args.output_dir,
         )
-        model.ast.literal_eval()
+        model.eval()
         trainer.model = model
         start_time = timeit.default_timer()
         results = trainer.evaluate()

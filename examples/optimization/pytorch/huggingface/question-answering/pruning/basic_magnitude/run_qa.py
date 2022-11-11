@@ -645,7 +645,7 @@ def main():
         model = OptimizedModel.from_pretrained(
             training_args.output_dir,
         )
-        model.ast.literal_eval()
+        model.eval()
         trainer.model = model
         start_time = timeit.default_timer()
         results = trainer.evaluate()

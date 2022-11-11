@@ -158,7 +158,7 @@ class Evolution(object):
 
     def add_gene(self, gene, macs=None, score=None, method=0, parents=None):
         if gene not in self.store:
-            self.model.ast.literal_eval()
+            self.model.eval()
             if self.model.config.model_type == "distilbert":
                 bert = self.model.distilbert
             elif self.model.config.model_type == "roberta":
