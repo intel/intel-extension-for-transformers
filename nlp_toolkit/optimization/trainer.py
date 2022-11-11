@@ -1851,6 +1851,7 @@ class BaseTrainer():
         opset_version=14,
         sample_size=100,
         calibrate_method='minmax',
+        scale_mapping=False,
     ):
         if self.provider != 'inc':  # pragma: no cover
             logger.error("export_to_onnx API only supports INC model right now.")
@@ -1897,10 +1898,10 @@ class BaseTrainer():
                                  verbose=False)
         model = onnx.load(fp32_path)
 
-        if self.opt_model.q_config['approach'] is 'quant_aware_training':
+        int8_model_dict = {}
+        if self.opt_model.q_config['approach'] == 'quant_aware_training':
             # collect weights, bias from int8 QAT PT model
             model_dict = self.opt_model.model.state_dict()
-            int8_model_dict = {}
             for name, param in model_dict.items():
                 # '_packed_params._packed_weight' is specific for quantized Embedding
                 if '_packed_params._packed_weight' in name:
@@ -1935,6 +1936,37 @@ class BaseTrainer():
                     model.graph.initializer.append(new_tensor)
             onnx.save(model, fp32_path)
 
+        if scale_mapping and \
+          self.opt_model.q_config['approach'] != 'post_training_dynamic_quant':  # pragma: no cover
+            # get output scale and zp from module
+            import torch.nn.quantized.modules as q_modules
+            for name, module in self.opt_model.model.named_modules():
+                if isinstance(module, q_modules.Conv1d) or \
+                  isinstance(module, q_modules.Conv2d) or \
+                  isinstance(module, q_modules.Linear):
+                    int8_model_dict[name] = {
+                        'output_scale': module.scale,
+                        'output_zeropoint': module.zero_point,
+                    }
+
+            # a name mapping to avoid '_' and '.' mismatch, we only use '.'.
+            new_name_mapping = {}
+            for name in int8_model_dict.keys():
+                new_name = name.replace("_", '.')
+                new_name_mapping.update({new_name: name})
+
+            # get input scale and zp from q_config
+            for name, value in self.opt_model.q_config['get_attr'].items():
+                node_name, node_target = name.split('--')
+                if 'scale' in name:
+                    value_dict = {'input_scale': value}
+                if 'zero_point' in name:
+                    value_dict = {'input_zeropoint': value}
+                tmp_name = node_name + '.' + node_target.split('_input_')[0]
+                tmp_name = tmp_name.replace("_", '.')
+                node_name = new_name_mapping[tmp_name]
+                int8_model_dict[node_name].update(value_dict)
+
         from neural_compressor.adaptor.onnxrt import ONNXRTAdaptor
         # pylint: disable=E1120
         inc_model = ONNXRTAdaptor._replace_gemm_with_matmul(model)
@@ -1946,7 +1978,7 @@ class BaseTrainer():
         for tensor in model.graph.initializer:
             weight_name_list.append(tensor.name)
 
-        # Match weight name with onnx node name
+        # Match weight name with onnx node name with fp32 model
         quantize_nodes = []
         tmp_node_mapping = {}
         module_node_mapping = {}
@@ -2058,6 +2090,47 @@ class BaseTrainer():
                 #op_types_to_quantize=op_types_to_quantize,
                 calibrate_method=calibrate_method,
                 extra_options={})
+
+            if scale_mapping:  # pragma: no cover
+                node_module_mapping = {}
+                for module_name, node_name in module_node_mapping.items():
+                    node_module_mapping[node_name] = module_name
+                # match scale and zeropoint from PyTorch to ONNX node
+                scale_zp_dict = {}
+                for node in model.graph.node:
+                    if node.name in node_module_mapping:
+                        module_name = node_module_mapping[node.name]
+                        if module_name not in int8_model_dict:
+                            module_name = module_name + '.module'
+                        if module_name in int8_model_dict:
+                            recoder = int8_model_dict[module_name]
+                            input_scale_args = node.input[0] + '_scale'
+                            input_zp_args = node.input[0] + '_zero_point'
+                            scale_zp_dict[input_scale_args] = recoder['input_scale']
+                            scale_zp_dict[input_zp_args] = recoder['input_zeropoint']
+                            # We need Matmul+Add to match Linear for output scale and zero-point
+                            # output_scale_args = node.output[0] + '_scale'
+                            # output_zp_args = node.output[0] + '_zero_point'
+                            # scale_zp_dict[output_scale_args] = recoder['output_scale']
+                            # scale_zp_dict[output_zp_args] = recoder['output_zeropoint']
+                # set scale and zeropoint from PyTorch int8 model to ONNX int8 model
+                from onnx import helper
+                int8_model = onnx.load(onnx_save_path)
+                tensor_list = [tensor for tensor in int8_model.graph.initializer]
+                for tensor in tensor_list:
+                    if tensor.name in scale_zp_dict:
+                        value = scale_zp_dict[tensor.name]
+                        if 'zero_point' in tensor.name and activation_type == ortq.QuantType.QInt8:
+                            value -= 128
+                        new_tensor = helper.make_tensor(
+                            name=tensor.name,
+                            data_type=tensor.data_type,
+                            dims=tensor.dims,
+                            vals=[value],
+                        )
+                        int8_model.graph.initializer.remove(tensor)
+                        int8_model.graph.initializer.append(new_tensor)
+                onnx.save(int8_model, onnx_save_path)
 
         os.remove(fp32_path)
         info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
