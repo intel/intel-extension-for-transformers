@@ -233,7 +233,9 @@ class PrimitiveCachePool {
 template <typename T>
 class DnnlPrimitiveFactory {
  public:
-  DnnlPrimitiveFactory() {}
+  DnnlPrimitiveFactory() {
+    do_not_cache_ = (getenv("ENGINE_PRIMITIVE_CACHE_OFF") != NULL);
+  }
   ~DnnlPrimitiveFactory() {}
 
   bool IsInCache(const size_t& key) {
@@ -258,7 +260,7 @@ class DnnlPrimitiveFactory {
   }
 
   // If set this env var, all dnnl primitive cache will be disabled
-  bool do_not_cache_ = (getenv("ENGINE_PRIMITIVE_CACHE_OFF") != NULL);
+  bool do_not_cache_ = false;
 
  private:
   static inline PrimitiveCachePool<dnnl::primitive>& GetCachePool() {

@@ -107,9 +107,13 @@ void Model::Init(const ModelConfig& conf) {
 
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
   is_dispatcher_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
-  dispatch_table_file_root_ = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT") == NULL ? \
+  char* env_root = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
+  if (env_root == NULL && getenv("HOME") == NULL) {
+    LOG(ERROR) << "Please export ENGINE_DISPATCH_TABLE_FILE_ROOT or HOME";
+  }
+  dispatch_table_file_root_ = env_root == NULL ? \
       string(getenv("HOME")) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt" : \
-      getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
+      env_root;
   has_dispatch_table_file_ = (access(dispatch_table_file_root_.c_str(), F_OK) != -1);
   if (!has_dispatch_table_file_) LOG(INFO) << "Missing dispatch table file, " \
                                   "all operators will use their own default kernels." \
@@ -169,10 +173,10 @@ ipc::managed_shared_memory::handle_t Model::LoadSharedWeight(const string& root,
   return handle;
 }
 
-void Model::SetInput(const vector<OperatorConfig*>& conf, const int operator_id, const int tensor_id,
+void Model::SetInput(const vector<shared_ptr<OperatorConfig>>& conf, const int operator_id, const int tensor_id,
                      map<string, int>* tensor_name_index_) {
   // model input tensor not in output tensors
-  const OperatorConfig* op_conf = conf[operator_id];
+  auto op_conf = conf[operator_id];
   const string& tensor_name = op_conf->input_tensors(tensor_id)->name();
   if (!tensor_name_index_->count(tensor_name)) {
     LOG(FATAL) << "Unknown input tensor " << tensor_name << ", operator " << op_conf->name() << ", input index "
@@ -191,9 +195,9 @@ void Model::SetInput(const vector<OperatorConfig*>& conf, const int operator_id,
   }
 }
 
-void Model::SetOutput(const vector<OperatorConfig*>& conf, const int operator_id, const int tensor_id,
+void Model::SetOutput(const vector<shared_ptr<OperatorConfig>>& conf, const int operator_id, const int tensor_id,
                       map<string, int>* tensor_name_index_) {
-  const OperatorConfig* op_conf = conf[operator_id];
+  auto op_conf = conf[operator_id];
   const string& tensor_name = op_conf->output_tensors(tensor_id)->name();
   if (tensor_name_index_->count(tensor_name)) {
     LOG(FATAL) << "duplicate output tensor name..." << tensor_name;
@@ -366,11 +370,11 @@ void Model::Profiling(char* space_name, char* count_name, char* mtx_name, int wa
   ipc::managed_shared_memory shm(ipc::open_or_create, space_name, 1024);
   int* inst_count = shm.find_or_construct<int>(count_name)(0);
   std::string profiling_dir = "engine_profiling_";
-  char ch_curr_time[256];
+  char ch_curr_time[256] = {0};
   if (*inst_count == 0) {
     time_t curr_time = time(NULL);
     strftime(ch_curr_time, sizeof(ch_curr_time), "%Y-%m-%d_%H-%M-%S", localtime(&curr_time));
-    profiling_dir += ch_curr_time;
+    profiling_dir += ch_curr_time + '\0';
     mkdir(profiling_dir.c_str(), S_IRWXU);  // 00070, read/write/execute for user group
   }
   ipc::interprocess_mutex* mtx = shm.find_or_construct<ipc::interprocess_mutex>(mtx_name)();
@@ -450,7 +454,7 @@ void Model::Profiling(char* space_name, char* count_name, char* mtx_name, int wa
     fprintf(fp, ",%s,%s\n", "aim to sparse support latency(ms)", aim_sparse_latency.c_str());
     // dense matmul/ip latency / totoal latency
     fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
-                "sparse support latency ratio", enable_sparse_latency / total_latency);
+                "sparse support latency ratio", enable_sparse_latency / (total_latency + 1e-6));
     // sparse matmul/ip latency / totoal latency
     string totol_aim_latency_id = "P" \
                 + std::to_string(atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
@@ -589,7 +593,7 @@ void Model::ProfilingWeights(FILE* fp, const shared_ptr<Dispatcher>& op) {
       }
     }
     // weight sparse ratio
-    fprintf(fp, "%.2f%,", op->weight_zero_ratio() * 100);
+    fprintf(fp, "%.2f%%,", op->weight_zero_ratio() * 100);
     // whether could be sparse
     if (op->enable_sparse()) {
       fprintf(fp, "true,");
@@ -607,8 +611,8 @@ void Model::ProfilingSparseEstimate(FILE* fp, const shared_ptr<Dispatcher>& op,
                                     const float average_latency) {
   if (op->enable_sparse()) {
     const string aim2sparse_id = "N" + op->table_id();
-    fprintf(fp, "90%,");
-    fprintf(fp, "\"=IF(%s=90%,%s,IF(%s=80%,%s,IF(%s=70%,%s,%s)))\",",
+    fprintf(fp, "90%%,");
+    fprintf(fp, "\"=IF(%s=90%%,%s,IF(%s=80%%,%s,IF(%s=70%%,%s,%s)))\",",
             aim2sparse_id.c_str(), ("B" + op->perf_ratio_id()).c_str(),
             aim2sparse_id.c_str(), ("C" + op->perf_ratio_id()).c_str(),
             aim2sparse_id.c_str(), ("D" + op->perf_ratio_id()).c_str(),

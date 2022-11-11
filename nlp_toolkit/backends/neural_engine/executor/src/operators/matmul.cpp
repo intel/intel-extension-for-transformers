@@ -569,15 +569,18 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
   // The bias loaded from file is not scaled. So need rescaled runtime.
   if (has_bias_) {
     dynamic_bias.resize(bias_->size());
-    float* bias_data = reinterpret_cast<float*>(bias_m_.get_data_handle());
-    if (channel_size == 1) {
+    void* bias_m_data = bias_m_.get_data_handle();
+    if (bias_m_data != nullptr) {
+      float* bias_data = reinterpret_cast<float*>(bias_m_data);
+      if (channel_size == 1) {
 #pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[0];
-    } else {
+        for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[0];
+      } else {
 #pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[i];
+        for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[i];
+      }
+      bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
     }
-    bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
   }
 
   if (src0_->dtype() == "u8") {
