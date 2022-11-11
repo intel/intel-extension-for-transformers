@@ -457,8 +457,8 @@ class OneInstanceLauncher(Launcher):
                     memory_allocator = get_memory_allocator(cmd_prefix)
                     memory_planning = get_memory_planning(cmd_prefix)
 
-
-                    cmd.append(args.program)
+                    import shlex
+                    cmd.append(shlex.quote(args.program))
                     cmd_for_print.append(args.program) 
                     batch_size = replace_batch(cmd, args, batch_size)
                     replace_batch(cmd_for_print, args, batch_size)
@@ -539,8 +539,8 @@ class OneInstanceLauncher(Launcher):
                         memory_allocator = get_memory_allocator(cmd_prefix)
                         memory_planning = get_memory_planning(cmd_prefix)
 
-
-                        cmd.append(args.program)
+                        import shlex
+                        cmd.append(shlex.quote(args.program))
                         cmd_for_print.append(args.program)
                         batch_size = replace_batch(cmd, args, batch_size)
                         replace_batch(cmd_for_print, args, batch_size)
