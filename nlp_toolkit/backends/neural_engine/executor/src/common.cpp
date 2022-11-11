@@ -22,9 +22,9 @@ unordered_map<string, int> type2bytes = {{"fp32", sizeof(float)},       {"int8",
                                          {"bf16", sizeof(uint16_t)}};
 unordered_map<string, vector<string>> dispatch_kernel_config = {{"InnerProduct_to_Convolution", {"input_shape"}},
                                                                 {"InnerProduct_to_SparseLib", {"input_shape",
-                                                                                              "mkn_blocks",
-                                                                                              "tile_shape"}},
-                                                                };
+                                                                                               "micro_oc",
+                                                                                               "sub_func"}},
+                                                               };
 const int CPU_COUNT = omp_get_max_threads();
 #if __AVX512F__
 const int ALIGN_NUM = 64;

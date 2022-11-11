@@ -162,10 +162,15 @@ class OpTuning {
       return;
     }
     // sparselib search space
-    vector<int64_t> bs_space = {64, 128, 196, 256};
-    vector<string> mkn_blocks_space = {"1,1,1"};
-    vector<string> tile_shape_space = {"4,4"};
-    // sparselib dispatch kernel config is {"input_shape", "mkn_blocks", "tile_shape"}
+    vector<int64_t> bs_space = {64, 128, 192, 256};
+    // micro_oc is positive integer fulfilling micro_oc <= OC && micro_oc % 4 == 0 determined the
+    // size along the output dimension is processed in each OMP iteration. If it is set to 0, the
+    // kernel will choose a value so that number of OMP iterations is equal to omp_get_max_threads().
+    // That is : micro_oc = ceil(OC / (num_threads / num_microbs)) && (micro_oc % 4) == 0
+    vector<string> micro_oc_space = {"0", "64", "128", "256"};
+    // higher sub_func value means more operations are done in sub-function (i.e. less unrolling).
+    vector<string> sub_func_space = {"0", "1", "2", "3", "4"};
+    // sparselib dispatch kernel config is {"input_shape", "micro_oc", "sub_func"}
     std::map<float, vector<string>, std::less<float>> bs_attr_timer;
     // M x k -> mic_bs x K x bs
     vector<string> micbs_bs_comb;
@@ -187,14 +192,21 @@ class OpTuning {
         if (m_dim / bs == 1) oneKM_shape_filling = true;
       }
     }
-    vector<vector<string>> bs_attr_comb(micbs_bs_comb.size() * mkn_blocks_space.size() * tile_shape_space.size());
+    // select the micro_os which is <= oc
+    vector<string> micro_oc_space_filtered;
+    for (const auto& mc : micro_oc_space) {
+      int64_t mc_int = std::atoi(mc.c_str());
+      if (mc_int > m_dim) break;
+      micro_oc_space_filtered.push_back(mc);
+    }
+    vector<vector<string>> bs_attr_comb(micbs_bs_comb.size() * micro_oc_space_filtered.size() * sub_func_space.size());
 #pragma omp parallel for
     for (int i = 0; i < micbs_bs_comb.size(); ++i) {
-      for (int j = 0; j < mkn_blocks_space.size(); ++j) {
+      for (int j = 0; j < micro_oc_space_filtered.size(); ++j) {
 #pragma omp simd
-        for (int k = 0; k < tile_shape_space.size(); ++k) {
-          bs_attr_comb[i * mkn_blocks_space.size() * tile_shape_space.size() + j * tile_shape_space.size() + k] = \
-            {micbs_bs_comb[i], mkn_blocks_space[j], tile_shape_space[k]};
+        for (int k = 0; k < sub_func_space.size(); ++k) {
+          bs_attr_comb[i * micro_oc_space_filtered.size() * sub_func_space.size() + j * sub_func_space.size() + k ] = \
+            {micbs_bs_comb[i], micro_oc_space_filtered[j], sub_func_space[k]};
         }
       }
     }
@@ -220,7 +232,7 @@ class OpTuning {
       if (reshape_model) execute_time += reshape_time;
       bs_attr_timer[execute_time] = kernel_config_cpy;
       LOG(INFO) << "IpToSparseLibTune forward time is " << execute_time << "ms, activation shape: " << comb[0]
-                << ", mkn_blocks: " << comb[1] << ", tile_shape: " << comb[2];
+                << ", micro_oc: " << comb[1] << ", sub_func: " << comb[2];
     }
     if (bs_attr_timer.size() > 0) {
       best_execute_time_ = bs_attr_timer.begin()->first;

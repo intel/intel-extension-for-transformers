@@ -136,7 +136,7 @@ class Tensor {
     LOG(WARNING) << "please set tensor data to make adding extra tensor life work...";
   }
 
-  // reorder tensor
+  // reorder activation tensor
   // for example, use reorder in sparselib, 2D for transpose mode, 3D for tuning and dispatch
   // [a, b] -> [b, a], dst_perm: [1, 0]
   // [a, b, c] -> [b, a, c], dst_perm: [1, 0 ,2]
@@ -151,18 +151,24 @@ class Tensor {
     vector<int64_t> dst_stride = GetStrides(dst_shape, ReversePerm(dst_perm));
     dnnl::memory::desc src_md(src_shape, type2mem[this->dtype()], src_stride);
     dnnl::memory::desc dst_md(src_shape, type2mem[this->dtype()], dst_stride);
-    dnnl::engine reorder_eng(dnnl::engine::kind::cpu, 0);
-    dnnl::stream reorder_eng_stream(reorder_eng);
-    dnnl::reorder::primitive_desc reorder_src_pd(reorder_eng, src_md, reorder_eng, dst_md);
-    dnnl::memory src_m(src_md, reorder_eng);
-    dnnl::memory dst_m(dst_md, reorder_eng);
-    src_m.set_data_handle(const_cast<void*>(this->data()), reorder_eng_stream);
+    static dnnl::engine reorder_eng(dnnl::engine::kind::cpu, 0);
+    static dnnl::stream reorder_eng_stream(reorder_eng);
+    size_t data_size = this->size() * type2bytes[this->dtype()];
+    void* src_ptr = data_;
+    void* dst_ptr = MemoryAllocator::get().GetMemory(data_size, this->left_life());
+    dnnl::memory src_m(src_md, reorder_eng, src_ptr);
+    dnnl::memory dst_m(dst_md, reorder_eng, dst_ptr);
     dnnl::reorder(src_m, dst_m).execute(reorder_eng_stream, src_m, dst_m);
     reorder_eng_stream.wait();
-    // inplace dst
-    void* p = dst_m.get_data_handle();
-    size_t data_size = this->size() * type2bytes[this->dtype()];
-    memcpy(this->mutable_data(), p, data_size);
+    // inplace
+    MemoryAllocator::get().ResetMemory(src_ptr, 0);
+    auto status = MemoryAllocator::get().UnrefMemory(src_ptr);
+    data_ = dst_ptr;
+    if (status == 0) {
+      src_ptr = nullptr;
+    } else {
+      LOG(WARNING) << "Fail to free src data ptr after reorder...";
+    }
   }
 
   inline size_t size() { return std::accumulate(shape_.begin(), shape_.end(), size_t(1), std::multiplies<size_t>()); }

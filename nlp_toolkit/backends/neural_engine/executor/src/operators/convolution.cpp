@@ -171,6 +171,8 @@ void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<
 }
 
 void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  // only for dense gemm dispatcher now
+  if (dispatch_from_ == "InnerProduct" && (input[1]->location().empty() || input[1]->shape().empty())) return;
   MapTensors(input, output);
   if (has_bias_) {
     LOG(INFO) << "Convolution has bias";

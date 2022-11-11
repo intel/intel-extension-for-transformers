@@ -33,7 +33,7 @@
 #include "operator_registry.hpp"
 #include "tensor.hpp"
 #include "thread_pool.hpp"
-#include "profiling_trace.hpp"
+#include "profiling.hpp"
 
 namespace executor {
 
@@ -56,10 +56,10 @@ class Model {
                                                         const vector<int64_t>& shape, const vector<int64_t>& location);
   vector<Tensor>& Forward(vector<Tensor>& input_data);  // NOLINT
 
-  void SetInput(const vector<shared_ptr<OperatorConfig>>& conf, const int operator_id, const int tensor_id,
+  void SetInput(const vector<OperatorConfig*>& conf, const int operator_id, const int tensor_id,
                 map<string, int>* tensor_name_to_idx);
 
-  void SetOutput(const vector<shared_ptr<OperatorConfig>>& conf, const int operator_id, const int tensor_id,
+  void SetOutput(const vector<OperatorConfig*>& conf, const int operator_id, const int tensor_id,
                  map<string, int>* tensor_name_to_idx);
 
   void SetDispatchKernel(const bool& reshape_model);
@@ -73,7 +73,7 @@ class Model {
   inline int num_inputs() const { return model_input_tensors_.size(); }
   inline int num_outputs() const { return model_output_tensors_.size(); }
 
-  inline const vector<shared_ptr<TensorConfig>>& input_configs() const { return model_input_configs_; }
+  inline const vector<TensorConfig*>& input_configs() const { return model_input_configs_; }
 
   inline vector<Tensor>& output_tensors() {
     LOG(INFO) << "Output tensor size is " << model_output_tensors_.size();
@@ -101,14 +101,6 @@ class Model {
     return output_tensors_;
   }
 
-  void Profiling(char* space_name = "InstCount", char* count_name = "inst_count",
-                 char* mtx_name = "inst_mtx", int warm_up = 1);
-  void ProfilingSparse(FILE* fp);
-  void ProfilingOperator(FILE* fp, const shared_ptr<Dispatcher>& op);
-  void ProfilingTensors(FILE* fp, const vector<Tensor*>& tensors);
-  void ProfilingWeights(FILE* fp, const shared_ptr<Dispatcher>& op);
-  void ProfilingSparseEstimate(FILE* fp, const shared_ptr<Dispatcher>& op,
-                               const float average_latency = 0.);
 
 
 
@@ -127,7 +119,7 @@ class Model {
   vector<vector<Tensor*> > output_vecs_;
 
   vector<Tensor*> model_input_tensors_;
-  vector<shared_ptr<TensorConfig>> model_input_configs_;
+  vector<TensorConfig*> model_input_configs_;
   vector<Tensor*> model_output_tensors_;
   vector<Tensor> output_tensors_;
   bool multi_stream_flag = (getenv("MULTI_STREAM") != NULL);

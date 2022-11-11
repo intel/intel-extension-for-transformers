@@ -30,18 +30,17 @@ PYBIND11_MODULE(neural_engine_py, m) {
       .def(py::init<executor::ModelConfig, std::string>())
       .def("forward", &executor::Model::Forward, py::arg("input"));
 
-  py::class_<executor::TensorConfig, std::shared_ptr<executor::TensorConfig>>(m, "tensor_config")
+  py::class_<executor::TensorConfig>(m, "tensor_config")
       .def(py::init<std::string, const std::vector<int64_t>&, std::string, const std::vector<int64_t>&,
                     const std::vector<int64_t>&>());
 
-  py::class_<executor::AttrConfig, std::shared_ptr<executor::AttrConfig>>(m, "attrs_config")
-      .def(py::init<const std::map<std::string, std::string>&>());
+  py::class_<executor::AttrConfig>(m, "attrs_config").def(py::init<const std::map<std::string, std::string>&>());
 
-  py::class_<executor::OperatorConfig, std::shared_ptr<executor::OperatorConfig>>(m, "op_config")
-      .def(py::init<std::string, std::string, const std::vector<std::shared_ptr<executor::TensorConfig>>&,
-        const std::vector<std::shared_ptr<executor::TensorConfig>>&, const std::shared_ptr<executor::AttrConfig>&>());
+  py::class_<executor::OperatorConfig>(m, "op_config")
+      .def(py::init<std::string, std::string, const std::vector<executor::TensorConfig*>&,
+                    const std::vector<executor::TensorConfig*>&, executor::AttrConfig*>());
 
   py::class_<executor::ModelConfig>(m, "model_config")
-      .def(py::init<std::string, const std::vector<std::shared_ptr<executor::OperatorConfig>>&>())
+      .def(py::init<std::string, const std::vector<executor::OperatorConfig*>&>())
       .def(py::init<YAML::Node>());
 }
