@@ -1836,7 +1836,8 @@ class BaseTrainer():
                 tensor.raw_data = fp16_data.tobytes()
                 tensor.data_type = TensorProto.BFLOAT16
         onnx.save(model, onnx_save_path)
-        os.remove(fp32_path)
+        if os.path.isfile(fp32_path):
+            os.remove(fp32_path)
 
         if verbose:
             info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
@@ -2060,7 +2061,9 @@ class BaseTrainer():
                 calibrate_method=calibrate_method,
                 extra_options={})
 
-        os.remove(fp32_path)
+        if os.path.isfile(fp32_path):
+            os.remove(fp32_path)
+
         info = "The ONNX Model is exported to path: {0}".format(onnx_save_path)
         logger.info("*" * len(info))
         logger.info(info)
