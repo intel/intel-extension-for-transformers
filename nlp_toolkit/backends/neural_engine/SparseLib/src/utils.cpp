@@ -190,6 +190,7 @@ int get_data_size(jd::data_type dt) {
     default:
       std::runtime_error("unsupported data type.");
   }
+  return 1;
 }
 
 float get_exp(float x) {

@@ -78,9 +78,9 @@ enum class engine_kind : uint8_t {
 // postop attribute for op-fusion
 class postop_attr {
  public:
-  data_type dt;
-  postop_type op_type;
-  postop_alg op_alg;
+  data_type dt = data_type::undef;
+  postop_type op_type = postop_type::eltwise;
+  postop_alg op_alg = postop_alg::undef;
   float alpha = 0;
   float beta = 0;
   float scale = 0;

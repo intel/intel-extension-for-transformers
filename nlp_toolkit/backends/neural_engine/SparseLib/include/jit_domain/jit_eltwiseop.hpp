@@ -79,6 +79,7 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::bf16:
         return 2u;
     }
+    return 0u;
   }
 
   size_t load_offset() {
@@ -91,6 +92,7 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::u8:  // dequantize case
         return 16u;
     }
+    return 0u;
   }
 
   size_t store_offset() {
@@ -104,6 +106,7 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::bf16:
         return 64u;
     }
+    return 0u;
   }
 
   size_t process_element_num() {
@@ -117,6 +120,7 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::u8:  // dequantize case
         return 16;
     }
+    return 0u;
   }
 
   void load_params() {

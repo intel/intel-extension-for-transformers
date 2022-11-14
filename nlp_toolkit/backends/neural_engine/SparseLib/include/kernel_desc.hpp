@@ -31,7 +31,6 @@ class kernel_t;
  */
 class kernel_desc_t {
  public:
-  kernel_desc_t() {}
   explicit kernel_desc_t(const jd::kernel_kind& ker_kind);
   virtual ~kernel_desc_t() {}
 
@@ -66,7 +65,7 @@ class kernel_desc_t {
   }
 
  protected:
-  jd::kernel_kind ker_kind_;
+  jd::kernel_kind ker_kind_ = {};
   mutable jd::kd_info_t info_;
 };
 

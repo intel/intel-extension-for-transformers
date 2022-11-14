@@ -120,12 +120,10 @@ struct amx_inputs_t {
   wgt_t* src;
   bia_t* bias;
   dst_t* dst;
-  float* scales = nullptr;
 };
 
 typedef amx_inputs_t<bfloat16_t, bfloat16_t, float, float> amx_bf16f32_inputs_t;
 typedef amx_inputs_t<bfloat16_t, bfloat16_t, bfloat16_t, float> amx_bf16bf16_inputs_t;
-typedef amx_inputs_t<uint8_t, int8_t, uint8_t, int> amx_u8u8_inputs_t;
 
 struct avx512_fp32_params_t {
   int64_t M;
