@@ -449,7 +449,7 @@ class Profiling_ {
         }
       }
       // weight sparse ratio
-      fprintf(fp, "%.2f%,", op->weight_zero_ratio() * 100);
+      fprintf(fp, "%.2f%%,", op->weight_zero_ratio() * 100);
       // whether could be sparse
       if (op->enable_sparse()) {
         fprintf(fp, "true,");
@@ -467,8 +467,8 @@ class Profiling_ {
                                       const float average_latency) {
     if (op->enable_sparse() && op->weight_zero_ratio() < 0.5) {
       const string aim2sparse_id = "N" + op->table_id();
-      fprintf(fp, "90%,");
-      fprintf(fp, "\"=IF(%s=90%,%s,IF(%s=80%,%s,IF(%s=70%,%s,%s)))\",",
+      fprintf(fp, "90%%,");
+      fprintf(fp, "\"=IF(%s=90%%,%s,IF(%s=80%%,%s,IF(%s=70%%,%s,%s)))\",",
               aim2sparse_id.c_str(), ("B" + op->perf_ratio_id()).c_str(),
               aim2sparse_id.c_str(), ("C" + op->perf_ratio_id()).c_str(),
               aim2sparse_id.c_str(), ("D" + op->perf_ratio_id()).c_str(),

@@ -20,12 +20,14 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "glog/logging.h"
 #include "yaml-cpp/yaml.h"
 using std::map;
 using std::string;
 using std::vector;
+using std::shared_ptr;
 
 namespace executor {
 
@@ -96,7 +98,7 @@ class TensorConfig {
 class OperatorConfig {
  public:
   OperatorConfig(const string name, const YAML::Node& node)
-      : name_(name), attrs_(new AttrConfig(std::map<string, string>({}))) {
+      : name_(name) {
     for (auto v = node.begin(); v != node.end(); ++v) {
       YAML::Node key = v->first;
       YAML::Node value = v->second;
@@ -111,18 +113,20 @@ class OperatorConfig {
         ParseTensor(value, &outputs_);
       }
       if (key.as<std::string>() == "attr") {
-        attrs_ = new AttrConfig(value);
+        attrs_ = std::make_shared<AttrConfig>(value);
+      } else {
+        attrs_ = std::make_shared<AttrConfig>(std::map<string, string>({}));
       }
     }
   }
-  OperatorConfig(const string& name, const string& type, const vector<TensorConfig*>& inputs,
-                 const vector<TensorConfig*>& outputs, AttrConfig* attrs)
+  OperatorConfig(const string& name, const string& type, const vector<shared_ptr<TensorConfig>>& inputs,
+                 const vector<shared_ptr<TensorConfig>>& outputs, const shared_ptr<AttrConfig>& attrs)
       : name_(name), type_(type), inputs_(inputs), outputs_(outputs), attrs_(attrs) {}
 
-  void ParseTensor(const YAML::Node& node, vector<TensorConfig*>* tensors) {
+  void ParseTensor(const YAML::Node& node, vector<shared_ptr<TensorConfig>>* tensors) {
     for (auto it = node.begin(); it != node.end(); ++it) {
       auto name = it->first.as<std::string>();
-      tensors->push_back(new TensorConfig(name, it->second));
+      tensors->push_back(std::make_shared<TensorConfig>(name, it->second));
     }
   }
 
@@ -131,16 +135,16 @@ class OperatorConfig {
   inline const string& type() const { return type_; }
   inline int input_tensor_size() const { return inputs_.size(); }
   inline int output_tensor_size() const { return outputs_.size(); }
-  inline TensorConfig* input_tensors(int i = 0) const { return inputs_[i]; }
-  inline TensorConfig* output_tensors(int i = 0) const { return outputs_[i]; }
+  inline shared_ptr<TensorConfig> input_tensors(int i = 0) const { return inputs_[i]; }
+  inline shared_ptr<TensorConfig> output_tensors(int i = 0) const { return outputs_[i]; }
   inline const map<string, string>& attributes() const { return attrs_->attributes(); }
 
  protected:
   string name_;
   string type_;
-  vector<TensorConfig*> inputs_;
-  vector<TensorConfig*> outputs_;
-  AttrConfig* attrs_;
+  vector<shared_ptr<TensorConfig>> inputs_;
+  vector<shared_ptr<TensorConfig>> outputs_;
+  shared_ptr<AttrConfig> attrs_;
 };
 
 class ModelConfig {
@@ -162,12 +166,13 @@ class ModelConfig {
   }
   explicit ModelConfig(const string& conf_file) : ModelConfig(ParseConfig(conf_file)) {}
 
-  ModelConfig(const string& name, const vector<OperatorConfig*>& operators) : name_(name), operators_(operators) {}
+  ModelConfig(const string& name, const vector<shared_ptr<OperatorConfig>>& operators)
+              : name_(name), operators_(operators) {}
 
-  void ParseOperator(const YAML::Node& node, vector<OperatorConfig*>& operators) {
+  void ParseOperator(const YAML::Node& node, vector<shared_ptr<OperatorConfig>>& operators) {
     for (auto it = node.begin(); it != node.end(); ++it) {
       auto name = it->first.as<std::string>();
-      operators.push_back(new OperatorConfig(name, it->second));
+      operators.push_back(std::make_shared<OperatorConfig>(name, it->second));
     }
   }
 
@@ -175,11 +180,11 @@ class ModelConfig {
   bool CheckConfig() { return true; }
 
   inline const string& name() const { return name_; }
-  inline const vector<OperatorConfig*>& operators() const { return operators_; }
+  inline const vector<shared_ptr<OperatorConfig>>& operators() const { return operators_; }
 
  protected:
   string name_;
-  vector<OperatorConfig*> operators_;
+  vector<shared_ptr<OperatorConfig>> operators_;
 };
 
 }  // namespace executor

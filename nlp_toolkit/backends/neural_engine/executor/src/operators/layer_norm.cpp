@@ -74,9 +74,9 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
     src_shape_str += "x";
   }
   op_attrs_["matrix_shape"] = src_shape_str;
-  vector<jd::postop_attr> postops = {};
+  vector<jd::postop_attr> postops;
   if (quantize_fuse_) {
-    float zp, scale;
+    float zp = 0, scale = 1;
     // TODO(Wang Zhe): get zp & scale.
     jd::postop_attr u8_quantize = {jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, zp, 0, scale};
     postops.push_back(u8_quantize);
