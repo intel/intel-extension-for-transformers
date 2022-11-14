@@ -72,12 +72,16 @@ class jit_spmm_amx_bf16_x16_t : public jit_generator {
   void generate() override;
 
   const Xbyak::uint8* jit_ker_ = nullptr;
-
+#ifdef _WIN32
+  const Xbyak::Reg64& reg_param = rcx;
+  const Xbyak::Reg64& reg_dst = rdi;
+#else
   const Xbyak::Reg64& reg_param = rdi;
+  const Xbyak::Reg64& reg_dst = rcx;
+#endif
   const Xbyak::Reg64& reg_weight = r15;
   const Xbyak::Reg64& reg_src = rdx;
   const Xbyak::Reg64& reg_bia = rbx;
-  const Xbyak::Reg64& reg_dst = rcx;
   const Xbyak::Reg64& reg_m = rbp;
   const Xbyak::Reg64& reg_mstart = r9;
   const Xbyak::Reg64& reg_tileM = r10;

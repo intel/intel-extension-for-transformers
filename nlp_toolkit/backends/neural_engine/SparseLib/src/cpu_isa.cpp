@@ -12,11 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <sys/mman.h>
-#include <sys/signal.h>
-#include <sys/syscall.h>
 
 #include "cpu_isa.hpp"
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif  //__linux__
 
 namespace jd {
 bool init_amx() {

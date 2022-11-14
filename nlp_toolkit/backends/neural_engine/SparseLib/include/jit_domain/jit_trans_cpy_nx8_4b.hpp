@@ -58,11 +58,15 @@ class jit_transpose_nx8_4b : public jit_generator {
 
   jit_transpose_nx8_4b::params param_;
   Xbyak::Label k_loop;
-
+#ifdef _WIN32
+  const Xbyak::Reg64& parambase = rcx;
+  const Xbyak::Reg64& reg_srcstep = rdi;
+#else
   const Xbyak::Reg64& parambase = rdi;
+  const Xbyak::Reg64& reg_srcstep = rcx;
+#endif
   const Xbyak::Reg64& reg_src = rsi;
   const Xbyak::Reg64& reg_dst = rdx;
-  const Xbyak::Reg64& reg_srcstep = rcx;
   const Xbyak::Reg64& reg_ksize = r8;
   const Xbyak::Reg64& reg_iterk = r9;
   const Xbyak::Reg64& reg_tmp = r10;

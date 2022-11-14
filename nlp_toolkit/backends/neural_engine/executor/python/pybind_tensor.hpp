@@ -58,13 +58,13 @@ struct type_caster<executor::Tensor> {
     if (py::isinstance<py::array_t<unsigned char>>(buf)) dtype = "u8";
     if (py::isinstance<py::array_t<uint16_t>>(buf)) dtype = "bf16";
     if (py::isinstance<py::array_t<int64_t>>(buf)) {
-      int32_t *buf_cast = new int32_t[buf.size()];
+      int32_t* buf_cast = new int32_t[buf.size()];
       int item_size = buf.itemsize();
 #pragma omp parallel for
       for (int i = 0; i < buf.size(); i++) {
-        int64_t buf_data = *reinterpret_cast<const int64_t*>(buf.data() + i * item_size);
+        int64_t buf_data = *reinterpret_cast<const int64_t*>(reinterpret_cast<const char*>(buf.data()) + i * item_size);
         if (buf_data <= INT_MAX && buf_data >= INT_MIN) {
-          buf_cast[i] = *reinterpret_cast<const int32_t*>(buf.data() + i * item_size);
+          buf_cast[i] = *reinterpret_cast<const int32_t*>(reinterpret_cast<const char*>(buf.data()) + i * item_size);
         } else {
           LOG(FATAL) << "The Input dtype is int64 and Beyond int32_t range, Please change to int32";
         }

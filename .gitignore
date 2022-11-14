@@ -15,3 +15,14 @@ build/
 _build
 dist/
 nlp_toolkit.egg-info/
+
+/.vs
+
+/nlp_toolkit/backends/neural_engine/.vs
+/nlp_toolkit/backends/neural_engine/out
+/examples/**/*.npy
+/examples/**/*.bin
+/examples/**/*.yaml
+/examples/**/data/
+/examples/**/model_and_tokenizer/
+/examples/**/*ir*/

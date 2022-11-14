@@ -23,7 +23,9 @@
 #include "../operator.hpp"
 #include "../sparse_operators/sparse_inner_product.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#ifdef WITH_SPARSELIB
 #include "SparseLib/include/interface.hpp"
+#endif
 
 namespace executor {
 
@@ -60,13 +62,14 @@ class InnerProductOperator : public Operator {
 #endif
   void PrepareSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
+#ifdef WITH_SPARSELIB
   void ReshapeSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #if __AVX512F__
   void ForwardSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
   void PrepareSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ShapeInferSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
-
+#endif
   void DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
   void RuntimeMinmax();
   void CalculateCompensation(const vector<int64_t>& src1_shape, const vector<int64_t>& src1_stride,
@@ -109,6 +112,7 @@ class InnerProductOperator : public Operator {
   memory::desc scale_md_;
   memory::desc compensation_md_;
 
+#ifdef WITH_SPARSELIB
   jd::tensor_desc src0_desc_;
   jd::tensor_desc src1_desc_;
   jd::tensor_desc bias_desc_ = {};
@@ -116,7 +120,7 @@ class InnerProductOperator : public Operator {
   jd::tensor_desc scales_desc_;
   std::unordered_map<std::string, std::string> op_attrs_;
   jd::sparse_matmul spmm_kern_;
-
+#endif
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream eng_stream_ = dnnl::stream(eng_);
   dnnl::inner_product_forward::primitive_desc inner_product_pd_;

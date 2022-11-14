@@ -74,14 +74,14 @@ bool gather_k_t::execute(const std::vector<const void*>& rt_data) const {
   for (int i = 0; i < params.outer_size; i++) {
     for (int j = 0; j < params.dst_axis_size; j++) {
       ssd::gather_data_t data_param = {
-          const_cast<void*>(rt_data[0] + i * params.src_axis_size * params.inner_size * params.dt_size),
-          const_cast<void*>(rt_data[1] + j * 4),  // idx is int32
-          const_cast<void*>(rt_data[2] + (i * params.dst_axis_size + j) * params.inner_size * params.dt_size)};
+          const_cast<char*>((const char*)rt_data[0] + i * params.src_axis_size * params.inner_size * params.dt_size),
+          const_cast<char*>((const char*)rt_data[1] + j * 4),  // idx is int32
+          const_cast<char*>((const char*)rt_data[2] + (i * params.dst_axis_size + j) * params.inner_size * params.dt_size)};
       for (int k = 0; k < params.binaryop_attrs.size(); k++)
         data_param.binaryop_addrs[k] =
-            const_cast<void*>(rt_data[3 + k]) +
+            (char*)const_cast<void*>(rt_data[3 + k]) +
             (((i * params.dst_axis_size + j) * params.inner_size) % params.binary_ts_sizes[i]) * params.dt_size;
-      (*jit_impl)(data_param);
+      (*jit_impl)(&data_param);
     }
   }
 

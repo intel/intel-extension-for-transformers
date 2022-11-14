@@ -14,10 +14,6 @@
 
 #include "utils.hpp"
 
-#include <sys/mman.h>
-#include <sys/signal.h>
-#include <sys/syscall.h>
-#include <unistd.h>
 #include <glog/logging.h>
 #include <iostream>
 
@@ -65,16 +61,30 @@ template void init_vector<uint8_t>(uint8_t*, int, float, float, int);
 template void init_vector<int8_t>(int8_t*, int, float, float, int);
 template void init_vector<bfloat16_t>(bfloat16_t*, int, float, float, int);
 
-template <typename T>
-using is_u8s8 = std::__or_<std::is_same<T, uint8_t>, std::is_same<T, int8_t>>;
+
+template<typename T>
+struct s_is_u8s8{
+  enum {value=false};
+};
+
+template<>
+struct s_is_u8s8<int8_t>{
+  enum { value = true };
+};
+
+template <>
+struct s_is_u8s8<uint8_t> {
+  enum { value = true };
+};
 
 template <typename T>
-inline typename std::enable_if<!is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
+inline typename std::enable_if<!s_is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
   // we compare float relative error ratio here
-  return fabs(cast_to<T, float>(a) - cast_to<T, float>(b)) / std::max(fabs(cast_to<T, float>(b)), 1.0);
+  return fabs(cast_to<T, float>(a) - cast_to<T, float>(b)) /
+         std::max(static_cast<float>(fabs(cast_to<T, float>(b))), 1.0f);
 }
 template <typename T>
-inline typename std::enable_if<is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
+inline typename std::enable_if<s_is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
   // for quantized value, error ratio was calcualted with its data range
   return fabs(cast_to<T, float>(a) - cast_to<T, float>(b)) / UINT8_MAX;
 }
@@ -93,11 +103,15 @@ bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t siz
   }
   return true;
 }
-template bool compare_data<float>(const void*, int64_t, const void*, int64_t, float);
-template bool compare_data<int32_t>(const void*, int64_t, const void*, int64_t, float);
-template bool compare_data<uint8_t>(const void*, int64_t, const void*, int64_t, float);
-template bool compare_data<int8_t>(const void*, int64_t, const void*, int64_t, float);
-template bool compare_data<bfloat16_t>(const void*, int64_t, const void*, int64_t, float);
+
+#define DECLARE_COMPARE_DATA(type) template bool compare_data<type>(const void*, int64_t, const void*, int64_t, float);
+
+DECLARE_COMPARE_DATA(float)
+DECLARE_COMPARE_DATA(int32_t)
+DECLARE_COMPARE_DATA(uint8_t)
+DECLARE_COMPARE_DATA(uint16_t)
+DECLARE_COMPARE_DATA(int8_t)
+
 
 float time(const std::string& state) {
   static auto time_axis = std::chrono::microseconds();
@@ -123,7 +137,7 @@ template int64_t str_to_num<int64_t>(const std::string&);
 template uint64_t str_to_num<uint64_t>(const std::string&);
 
 template <typename T>
-std::vector<T> split_str(const std::string& s, const char& delim) {
+SPARSE_API_ std::vector<T> split_str(const std::string& s, const char& delim) {
   std::stringstream ss(s);
   std::string temp;
   std::vector<T> ans;
@@ -136,7 +150,7 @@ std::vector<T> split_str(const std::string& s, const char& delim) {
 }
 
 template <>
-std::vector<std::string> split_str<std::string>(const std::string& s, const char& delim) {
+SPARSE_API_ std::vector<std::string> split_str<std::string>(const std::string& s, const char& delim) {
   std::stringstream ss(s);
   std::string temp;
   std::vector<std::string> ans;
@@ -145,9 +159,8 @@ std::vector<std::string> split_str<std::string>(const std::string& s, const char
   return ans;
 }
 
-template std::vector<int64_t> split_str<int64_t>(const std::string&, const char&);
-template std::vector<int> split_str<int>(const std::string&, const char&);
-template std::vector<std::string> split_str<std::string>(const std::string&, const char&);
+template SPARSE_API_ std::vector<int64_t> split_str<int64_t>(const std::string&, const char&);
+template SPARSE_API_ std::vector<int> split_str<int>(const std::string&, const char&);
 
 std::string join_str(const std::vector<std::string>& ss, const std::string& delim) {
   std::string ans;
@@ -183,6 +196,7 @@ int get_data_size(jd::data_type dt) {
     default:
       throw std::runtime_error("unsupported data type.");
   }
+  return -1;
 }
 
 float get_exp(float x) {

@@ -7,12 +7,6 @@ option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
 
 set(EXTERNAL_INCLUDE_PATH "")
 set(EXTERNAL_LIBRARY_PAYH "")
-set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp")
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS}")
-else()
-    set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
-endif()
 
 # include external cmake
 if (SPARSE_LIB_USE_VTUNE)
@@ -20,30 +14,60 @@ if (SPARSE_LIB_USE_VTUNE)
     message( STATUS "VTune enbled" )
 endif()
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads)
-if(Threads_FOUND)
-    message("Threads found: ${CMAKE_THREAD_LIBS_INIT}")
-else()
-    message(STATUS "Cannot find Threads")
-endif()
 
-# -fopenmp
-find_package(OpenMP)
+
 if(OpenMP_FOUND)
-    message("OpenMP found: ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    message(${CMAKE_CXX_FLAGS})
+    #message(${CMAKE_CXX_FLAGS})
 else()
-    message(STATUS "Cannot find OpenMP")
+    find_package(OpenMP REQUIRED)
+    if(WIN32)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:experimental")
+    else()
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
 endif()
 
-set(THIRD_PARTY_DIR "${PROJECT_SOURCE_DIR}/third_party/")
 
-set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
-set(WITH_GTEST OFF CACHE BOOL "disable gtest for glog")
-add_subdirectory(${THIRD_PARTY_DIR}/glog)
-add_subdirectory(${THIRD_PARTY_DIR}/xbyak)
+file(GLOB SOURCES
+  ${PROJECT_SOURCE_DIR}/src/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/kernels/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/jit_domain/*.cpp
+)
+file(GLOB HEADERS
+  ${PROJECT_SOURCE_DIR}/include/*.hpp
+  ${PROJECT_SOURCE_DIR}/include/kernels/*.hpp
+  ${PROJECT_SOURCE_DIR}/include/jit_domain/*.hpp
+)
 
-add_subdirectory(src)
+
+add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
+
+install(TARGETS ${HOST_LIBRARY_NAME})
+
+target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_KERNEL_BUILD)
+
+set_target_properties(${HOST_LIBRARY_NAME}
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+
+# Header file include path
+message( STATUS "EXTERNAL_INCLUDE_PAYH ${EXTERNAL_INCLUDE_PAYH}" )
+target_include_directories(${HOST_LIBRARY_NAME}
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+
+## link against the third party libraries
+target_link_libraries(${HOST_LIBRARY_NAME}
+    PUBLIC
+        ${CMAKE_THREAD_LIBS_INIT}
+        glog
+        xbyak
+)
+
 

@@ -14,8 +14,9 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_VERBOSE_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_VERBOSE_HPP_
 
+#ifdef _OPENMP
 #include <omp.h>
-#include <sys/time.h>
+#endif
 
 #include <mutex>  // NOLINT
 #include <string>

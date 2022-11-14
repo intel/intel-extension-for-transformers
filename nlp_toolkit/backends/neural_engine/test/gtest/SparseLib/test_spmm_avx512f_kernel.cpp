@@ -67,7 +67,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   // Computing the kernel
   assert(dims == 2);
   for (int i = 0; i < M; ++i) {
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int j = 0; j < N; ++j) {
       float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
 #pragma omp simd
@@ -151,13 +151,13 @@ void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, con
                                  float sparsity, unsigned int* seed) {
   dim_t K = a_shape[0], N = a_shape[1], BK = block_shape[0], BN = block_shape[1];
   LOG_IF(FATAL, (K % BK | N % BN) != 0) << "Matrix dim must be a multiple of block dim.";
-  LOG_IF(FATAL, sparsity < 0 && sparsity > 1) << "Sparsity should be a value between 0 and 1.";
+  LOG_IF(FATAL, sparsity < 0 || sparsity > 1) << "Sparsity should be a value between 0 and 1.";
   dim_t nb_k = K / BK;
   dim_t nb_n = N / BN;
-
+  std::srand(*seed);
   for (int ibk = 0; ibk < nb_k; ++ibk) {
     for (int ibn = 0; ibn < nb_n; ++ibn) {
-      bool fill_zero = rand_r(seed) % 100 <= (sparsity * 100);
+      bool fill_zero = std::rand() % 100 <= (sparsity * 100);
       if (fill_zero) {
         dim_t i_start = ibk * BK;
         dim_t j_start = ibn * BN;

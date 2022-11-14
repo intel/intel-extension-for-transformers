@@ -18,8 +18,9 @@
 #include <string>
 
 #include "../operator.hpp"
+#ifdef WITH_SPARSELIB
 #include "SparseLib/include/interface.hpp"
-
+#endif
 namespace executor {
 
 /**
@@ -46,7 +47,9 @@ class GatherOperator : public Operator {
   std::string idx_axis_;
   std::string src_axis_;
   bool binary_add_ = false;
+#ifdef WITH_SPARSELIB
   jd::gather gather_;
+#endif
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
   vector<int64_t> mul_;

@@ -121,7 +121,7 @@ bool spmm_amx_bf16_x16_k_t::execute(const std::vector<const void*>& rt_data) con
         inputs.bias = static_cast<float*>(const_cast<void*>(rt_data[2])) + micro_oc * tileOC;
         inputs.dst =
             static_cast<float*>(const_cast<void*>(rt_data[3])) + micro_bs * tileBS * OC + micro_oc * tileOC * tileBS;
-        (*jit_kers_[micro_oc])(inputs);
+        (*jit_kers_[micro_oc])(&inputs);
       }
     }
   } else {
@@ -136,7 +136,7 @@ bool spmm_amx_bf16_x16_k_t::execute(const std::vector<const void*>& rt_data) con
         inputs.bias = static_cast<float*>(const_cast<void*>(rt_data[2])) + micro_oc * tileOC;
         inputs.dst = static_cast<bfloat16_t*>(const_cast<void*>(rt_data[3])) + micro_bs * tileBS * OC +
                      micro_oc * tileOC * tileBS;
-        (*jit_kers_[micro_oc])(inputs);
+        (*jit_kers_[micro_oc])(&inputs);
       }
     }
   }

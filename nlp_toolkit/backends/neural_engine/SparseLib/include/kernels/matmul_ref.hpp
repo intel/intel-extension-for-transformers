@@ -47,7 +47,7 @@ class matmul_ref_kd_t : public kernel_desc_t {
   DECLARE_COMMON_PD_T(matmul_ref_k_t, matmul_ref_kd_t);
 
  public:
-  const jd::operator_desc& operator_desc() const override { return op_desc_; }
+  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   inline std::vector<dim_t> shape() const { return {bs0(), bs1(), M(), K(), N()}; }
   inline bool is_f32() const { return op_desc_.tensor_descs()[ssd::SRC0].dtype() == data_type::fp32; }
   inline dim_t bs0() const { return op_desc_.tensor_descs()[is_f32() ? ssd::DST0 : ssd::SRC0].shape()[0]; }

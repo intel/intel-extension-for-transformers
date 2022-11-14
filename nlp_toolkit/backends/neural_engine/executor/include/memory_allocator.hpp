@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_MEMORY_ALLOCATOR_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_MEMORY_ALLOCATOR_HPP_
 
+#include <stdlib.h>
 #include <cstdlib>
 #include <map>
 #include <memory>
@@ -26,6 +27,14 @@
 #include <boost/interprocess/managed_shared_memory.hpp>
 
 #include "i_malloc.hpp"
+
+#ifdef _WIN32
+#include <malloc.h>
+#define aligned_alloc(alignment, size) _aligned_malloc(size, alignment)
+#define aligned_free(ptr) _aligned_free(ptr)
+#else
+#define aligned_free free
+#endif
 
 namespace executor {
 using std::map;
@@ -48,8 +57,7 @@ class MemoryAllocator {
   }
 
   static const int InstNum() {
-    static const int inst_num =
-        (getenv("INST_NUM") != nullptr) ? std::atoi(getenv("INST_NUM")) : 1;
+    static const int inst_num = (getenv("INST_NUM") != nullptr) ? std::atoi(getenv("INST_NUM")) : 1;
     return inst_num;
   }
 
@@ -57,7 +65,8 @@ class MemoryAllocator {
     static TreadMemory t_memory;
     // (TODO) it's not good for each thread to obtain a MemoryBuffer
     std::thread::id id = std::this_thread::get_id();
-    if (t_memory.count(id) == 0) {
+    auto count = t_memory.count(id);
+    if (count == 0) {
       t_memory[id] = new MemoryBuffer();
     }
     return *(t_memory[id]);
@@ -177,7 +186,7 @@ class MemoryAllocator {
       if (status == 0 && inplace == false) {
         if (strategy_list["direct_buffer"]) {
           auto free_ptr = iter->first;
-          free(free_ptr);
+          aligned_free(free_ptr);
           memory_buffer.erase(free_ptr);
         } else if (strategy_list["unified_buffer"]) {
           auto free_ptr = iter->first;
@@ -225,7 +234,7 @@ class MemoryAllocator {
       if (buffer_count == 0) {
         if (size > buffer_size) {
           auto free_ptr = iter->first;
-          free(free_ptr);
+          aligned_free(free_ptr);
           memory_buffer.erase(free_ptr);
           // allocate new buffer
           void* buf = reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (size / ALIGNMENT + 1) * ALIGNMENT));
@@ -273,4 +282,5 @@ class MemoryAllocator {
 };
 
 }  // namespace executor
+
 #endif  // ENGINE_EXECUTOR_INCLUDE_MEMORY_ALLOCATOR_HPP_

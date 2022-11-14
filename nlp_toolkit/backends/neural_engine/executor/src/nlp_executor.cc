@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include "executor.hpp"
+#include "gflags/gflags.h"
 
 DEFINE_int32(batch_size, 1, "image batch sizes");
 DEFINE_int32(seq_len, 384, "default seq len");
@@ -35,7 +36,7 @@ void run_net() {
   for (int i = 0; i < bert_model.num_inputs(); ++i) {
     input_tensors.push_back(executor::Tensor(*(input_configs[i])));
     input_dtype.push_back(input_tensors[i].dtype());
-    input_range.push_back(vector<float>({1, 100}));
+    input_range.push_back(vector<float>({0, 2}));
     input_shape.push_back(input_tensors[i].shape());
     if (input_shape[i][0] == -1 && input_shape[i][1] == -1) {
       input_shape[i][0] = FLAGS_batch_size;
@@ -91,7 +92,8 @@ void run_net() {
 }
 
 int main(int argc, char** argv) {
-  executor::GlobalInit(&argc, &argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  executor::GlobalInit(argv[0]);
   run_net();
 
   return 0;

@@ -46,7 +46,7 @@ class spmm_avx512f_kd_t : public kernel_desc_t {
   // kernel_desc_t::create_primitive() override.
   DECLARE_COMMON_PD_T(spmm_avx512f_k_t, spmm_avx512f_kd_t);
 
-  const jd::operator_desc& operator_desc() const override { return op_desc_; }
+  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const std::vector<ssd::avx512_fp32_params_t>& params() const { return params_; }
   const dim_t block_m() const { return block_m_; }
   inline std::vector<dim_t> shape() const {

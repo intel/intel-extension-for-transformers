@@ -97,8 +97,8 @@ void ConcatOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
       if (times[j] == 1) continue;
       size_t broadcast_size = new_shape_strides[j] * tmp_shape[j] * type_bytes;
       for (size_t k = 0; k < tmp_shape_front_strides[j]; ++k) {
-        void* src_addr = data_buf[buf_idx] + k * broadcast_size;
-        void* dst_addr = data_buf[(buf_idx + 1) & 1] + k * broadcast_size * times[j];
+        auto src_addr = reinterpret_cast<char*>(data_buf[buf_idx]) + k * broadcast_size;
+        auto dst_addr = reinterpret_cast<char*>(data_buf[(buf_idx + 1) & 1]) + k * broadcast_size * times[j];
         for (size_t l = 0; l < times[j]; ++l) {
           memcpy(dst_addr + l * broadcast_size, src_addr, broadcast_size);
         }
@@ -215,9 +215,9 @@ void ConcatOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
 #pragma omp parallel for collapse(2)
     for (int64_t i = 0; i < size_before_concat_dim_; ++i) {
       for (int n = 0; n < num_src; ++n) {
-        void* dst_addr = dst_data + i * dst_concat_bytes_ + src_concat_bytes_accum_[n];
+        auto dst_addr = reinterpret_cast<char*>(dst_data) + i * dst_concat_bytes_ + src_concat_bytes_accum_[n];
         int64_t concat_bytes = src_concat_bytes_[n];
-        const void* src_addr = input[n]->data() + i * concat_bytes;
+        const char* src_addr = reinterpret_cast<const char*>(input[n]->data()) + i * concat_bytes;
         // codes written below implements memcpy(dst_addr, src_addr, concat_bytes);
         // loop_size = (concat_bytes / 64) * 64
         int64_t loop_size = concat_bytes & ~(AVX512_BYTES - 1);

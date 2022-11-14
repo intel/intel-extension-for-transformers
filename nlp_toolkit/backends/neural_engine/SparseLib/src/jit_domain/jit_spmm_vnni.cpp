@@ -395,7 +395,11 @@ void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
 }
 
 void jit_spmm_vnni_t::generate() {
+#ifdef _WIN32
+  const int nonvolatile_reg_size = 8 * 8;
+#else
   const int nonvolatile_reg_size = 8 * 6;
+#endif
   handle_postop_escape_vmms();
   handle_postop_escape_regs();
   inLocalLabel();  // use local label for multiple instance
@@ -429,6 +433,10 @@ void jit_spmm_vnni_t::generate() {
     mov(ptr[rsp + 0x18], r13);
     mov(ptr[rsp + 0x20], r14);
     mov(ptr[rsp + 0x28], r15);
+#ifdef _WIN32
+    mov(ptr[rsp + 0x30], rdi);
+    mov(ptr[rsp + 0x38], rsi);
+#endif
 
     read_params();
 
@@ -477,6 +485,10 @@ void jit_spmm_vnni_t::generate() {
     mov(r13, ptr[rsp + 0x18]);
     mov(r14, ptr[rsp + 0x20]);
     mov(r15, ptr[rsp + 0x28]);
+#ifdef _WIN32
+    mov(rdi, ptr[rsp + 0x30]);
+    mov(rsi, ptr[rsp + 0x38]);
+#endif
     add(rsp, nonvolatile_reg_size);
     ret();
   }

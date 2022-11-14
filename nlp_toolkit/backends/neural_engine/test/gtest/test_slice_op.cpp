@@ -53,7 +53,7 @@ void SliceDataGT(const T* src_data, T* dst_data, const vector<int64_t>& src_shap
   vector<int64_t> dst_shape_tmp = src_shape;
   for (int64_t i = 0; i < axes.size(); ++i) {
     dst_shape_tmp[axes[i]] = static_cast<int64_t>((ends[i] - starts[i]) / steps[i]) + 1;
-    int64_t IN = 1;
+    int64_t _IN = 1;
     int64_t IC = 1;
     int64_t IH = 1;
     int64_t ON = 1;
@@ -61,7 +61,7 @@ void SliceDataGT(const T* src_data, T* dst_data, const vector<int64_t>& src_shap
     int64_t OH = 1;
     int64_t step = steps[i];
     for (int64_t j = 0; j < axes[i]; ++j) {
-      IN *= src_shape_tmp[j];
+      _IN *= src_shape_tmp[j];
       ON *= dst_shape_tmp[j];
     }
     IC = src_shape_tmp[axes[i]];

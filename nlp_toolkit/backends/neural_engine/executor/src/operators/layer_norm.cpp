@@ -45,12 +45,14 @@ void LayerNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
 
 void LayerNormOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (transpose_mode_) {
+#ifdef __AVX512F__
     ForwardwithTransMode(input, output);
+#endif
   } else {
     ForwardwithOnednn(input, output);
   }
 }
-
+#ifdef WITH_SPARSELIB
 void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src_shape = input[0]->shape();
   // TODO(zhe1wang): support more input data type.
@@ -88,7 +90,7 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
   jd::layernorm_ba_desc layernorm_ba_desc(op_desc);
   layernorm_ba_ker = jd::layernorm_ba(layernorm_ba_desc);
 }
-
+#if __AVX512F__
 void LayerNormOperator::ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // Inplace op.
   Tensor* dst_ptr = output[0];
@@ -98,7 +100,16 @@ void LayerNormOperator::ForwardwithTransMode(const vector<Tensor*>& input, const
   // unref tensors
   this->unref_tensors(input);
 }
+#endif
 
+#else
+void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  LOG(ERROR) << "Sparse lib is not loaded!\n";
+}
+void LayerNormOperator::ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  LOG(ERROR) << "Sparse lib is not loaded!\n";
+}
+#endif
 void LayerNormOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
   // 1.1: Prepare Tensor origin shape

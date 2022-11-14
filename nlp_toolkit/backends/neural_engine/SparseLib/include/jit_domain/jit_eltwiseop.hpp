@@ -56,7 +56,11 @@ class jit_eltwiseop_t : public jit_generator {
   Xbyak::Label reminder_loop_end;
 
   /* registers for fwd*/
+#ifdef _WIN32
+  Xbyak::Reg64 reg_param = rcx;
+#else
   Xbyak::Reg64 reg_param = rdi;
+#endif
   Zmm reg_src;
   Xbyak::Reg64 addr_src = r15;
   Xbyak::Reg64 addr_dst = r14;

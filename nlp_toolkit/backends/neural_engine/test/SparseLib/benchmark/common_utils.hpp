@@ -51,6 +51,7 @@ inline jd::data_type str_2_dt(std::string str) {
   if (str == "s8") return jd::data_type::s8;
   if (str == "u8") return jd::data_type::u8;
   LOG(ERROR) << "sparselib do not support " + str + " dt now." << std::endl;
+  return jd::data_type::undef;
 }
 
 int get_data_width(jd::data_type dtype);

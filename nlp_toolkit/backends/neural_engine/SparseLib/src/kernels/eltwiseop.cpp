@@ -34,7 +34,7 @@ bool eltwiseop_k_t::init() {
   jit_eltwiseop_t* ker = nullptr;
   auto status = eltwiseop_kernel_create(&ker, derived_kd()->params());
 
-  int nthr = derived_kd()->operator_desc().impl_nthr();
+  int nthr = derived_kd()->get_operator_desc().impl_nthr();
   for (int i = 0; i < nthr; i++) td.push_back(new ssd::eltwiseop_data_t());
 
   if (!status) {
@@ -54,7 +54,7 @@ bool eltwiseop_k_t::eltwiseop_kernel_create(jit_eltwiseop_t** ker_pp, const ssd:
 }
 
 bool eltwiseop_k_t::execute(const std::vector<const void*>& rt_data) const {
-  int nthr = kd()->operator_desc().impl_nthr();
+  int nthr = kd()->get_operator_desc().impl_nthr();
   auto eltwise_params = derived_kd()->params();
   const auto& jit_impl = jit_kers_;
 
@@ -64,8 +64,8 @@ bool eltwiseop_k_t::execute(const std::vector<const void*>& rt_data) const {
 #pragma omp parallel for
   for (int idx = 0; idx < nthr; idx++) {
     auto data_param = td[idx];
-    data_param->src = const_cast<void*>(rt_data[0]) + idx * src_offset() * eltwise_params.element_num_each_th;
-    data_param->dst = const_cast<void*>(rt_data[1]) + idx * dst_offset() * eltwise_params.element_num_each_th;
+    data_param->src = (char*)const_cast<void*>(rt_data[0]) + idx * src_offset() * eltwise_params.element_num_each_th;
+    data_param->dst = (char*)const_cast<void*>(rt_data[1]) + idx * dst_offset() * eltwise_params.element_num_each_th;
     if (idx != nthr - 1) {
       data_param->element_num = eltwise_params.element_num_each_th;
     } else {

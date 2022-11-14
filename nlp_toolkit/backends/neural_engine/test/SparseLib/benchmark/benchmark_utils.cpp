@@ -67,7 +67,7 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
   read_benchmark_env();
 
   // Use op_desc to get kernel kind and tensor shape
-  const auto& op_desc = kb->kp->get_sp()->kd()->operator_desc();
+  const auto& op_desc = kb->kp->get_sp()->kd()->get_operator_desc();
   const auto& ts_descs = op_desc.tensor_descs();
 
   // We may need to refresh some parts of runtime data, allocate new memory for them first

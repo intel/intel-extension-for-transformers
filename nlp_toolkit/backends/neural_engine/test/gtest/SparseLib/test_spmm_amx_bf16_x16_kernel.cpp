@@ -66,9 +66,8 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
 
   // Computing the kernel
   for (int num_m = 0; num_m < NUM_M; ++num_m) {
-#pragma omp parallel for
+#pragma omp parallel for collapse(2)
     for (int n = 0; n < N; ++n) {
-#pragma omp parallel for
       for (int m = 0; m < M_MICRO; ++m) {
         for (int k = 0; k < K; ++k) {
           float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] +=
@@ -155,15 +154,16 @@ TEST_P(SpmmAMXX16KernelTest, TestPostfix) {
 template <typename T>
 void prepare_sparse_data(T* weight, dim_t N, dim_t K, dim_t n_blksize, dim_t k_blksize, float ratio) {
   uint32_t seed = 9527;
+  std::srand(seed);
   for (int n = 0; n < N; ++n) {
     for (int k = 0; k < K; ++k) {
-      weight[n * K + k] = make_bf16(rand_r(&seed) % 10 + 1);
+      weight[n * K + k] = make_bf16(std::rand() % 10 + 1);
     }
   }
   // sparsify a_mat
   for (int nb = 0; nb < N / n_blksize; ++nb) {
     for (int kb = 0; kb < K / k_blksize; ++kb) {
-      bool fill_zero = rand_r(&seed) % 100 <= (dim_t)(ratio * 100);
+      bool fill_zero = std::rand() % 100 <= (dim_t)(ratio * 100);
       if (fill_zero) {
         for (int n = 0; n < n_blksize; ++n) {
           for (int k = 0; k < k_blksize; ++k) {
@@ -296,12 +296,12 @@ static auto case_func = []() {
   }
 
   /* DLRM case */
-  cases.push_back({gen_case(32768, 1024, 1024, .9f, 64, -1, true)});
-  cases.push_back({gen_case(32768, 1024, 1024, .9f, 128, -1, true)});
-  cases.push_back({gen_case(32768, 1024, 1024, .9f, 64, 512, true)});
-  cases.push_back({gen_case(32768, 1024, 1024, .9f, 64, 256, true)});
+  cases.push_back({gen_case(4096, 1024, 1024, .9f, 64, -1, true)});
+  cases.push_back({gen_case(4096, 1024, 1024, .9f, 128, -1, true)});
+  cases.push_back({gen_case(4096, 1024, 1024, .9f, 64, 512, true)});
+  cases.push_back({gen_case(4096, 1024, 1024, .9f, 64, 256, true)});
 
-  cases.push_back({gen_case(32768, 512, 512, .9f, 64, -1, true)});
+  cases.push_back({gen_case(4096, 512, 512, .9f, 64, -1, true)});
   return ::testing::ValuesIn(cases);
 };
 

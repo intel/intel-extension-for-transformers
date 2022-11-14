@@ -12,10 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#include <stdint.h>
 #include "slice.hpp"
-
 #include "common.hpp"
-
+#ifdef _MSC_VER
+#undef IN
+#endif
 namespace executor {
 
 template <typename T>

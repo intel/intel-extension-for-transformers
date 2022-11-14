@@ -33,7 +33,8 @@ static inline __m512 i_poly(__m512 z, __m512 src_f32, const float c[]) {
   const auto c1 = _mm512_set1_ps(c[1]);
   const auto c2 = _mm512_set1_ps(c[2]);
 
-  auto y = (src_f32 * c0 + c1) * src_f32 + c2;
+  auto y = _mm512_fmadd_ps(src_f32, c0, c1);
+  y = _mm512_fmadd_ps(src_f32, y, c2);
   auto exp = _mm512_scalef_ps(y, z);
 
   return exp;
@@ -44,17 +45,19 @@ static inline __m512 i_exp(__m512 x) {
   const auto ln2 = _mm512_set1_ps(0.693147180f);
   const float _c[] = {0.35815147f, 0.96963238f, 1.0f};
 
-  auto z = _mm512_ceil_ps(x * _log2e);
-  auto q = x - z * ln2;
+  auto z = _mm512_ceil_ps(_mm512_mul_ps(x, _log2e));
+  auto q = _mm512_sub_ps(x, _mm512_mul_ps(z, ln2));
 
   return i_poly(z, q, _c);
 }
 
-void softmax_u8(void* out, void* in, const float oscale, const int64_t ld, const int N) {
-  auto pin = reinterpret_cast<float(*)[ld]>(in);
+template <int N>
+void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
+  auto pin = reinterpret_cast<float*>(in);
   auto ld_16 = (ld + 15) / 16 * 16;
 
-  alignas(64) float dout[N][ld_16];
+  // Actually, no need for alignment
+  float* dout = reinterpret_cast<float*>(aligned_alloc(64, N * ld_16 * sizeof(float)));
   __m512 vmax[N];
 #pragma unroll N
   for (int i = 0; i < N; ++i) {
@@ -66,9 +69,9 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld, const
   for (d = 0; d < ld / 16 * 16; d += 16) {
 #pragma unroll N
     for (int i = 0; i < N; ++i) {
-      auto src_f32 = _mm512_loadu_ps(&pin[i][d]);
+      auto src_f32 = _mm512_loadu_ps(pin + i * ld_16 + d);
       vmax[i] = _mm512_max_ps(src_f32, vmax[i]);
-      _mm512_storeu_ps(&dout[i][d], src_f32);
+      _mm512_storeu_ps(dout + i * ld_16 + d, src_f32);
     }
   }
 
@@ -80,9 +83,9 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld, const
     auto min_ps = _mm512_set1_ps(-100000.f);
 #pragma unroll N
     for (int i = 0; i < N; ++i) {
-      auto src_f32 = _mm512_mask_loadu_ps(min_ps, res_mask, &pin[i][d]);
+      auto src_f32 = _mm512_mask_loadu_ps(min_ps, res_mask, pin + i * ld_16 + d);
       vmax[i] = _mm512_max_ps(src_f32, vmax[i]);
-      _mm512_storeu_ps(&dout[i][d], src_f32);
+      _mm512_storeu_ps(dout + i * ld_16 + d, src_f32);
     }
   }
 
@@ -94,15 +97,16 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld, const
     vsum[i] = _mm512_setzero_ps();
   }
 
-  alignas(64) float exp_out[N][ld_16];
+  float* exp_out = reinterpret_cast<float*>(aligned_alloc(64, N * ld_16 * sizeof(float)));
   for (d = 0; d < ld_16; d += 16) {
 #pragma unroll N
     for (int i = 0; i < N; ++i) {
-      auto src_f32 = _mm512_loadu_ps(&dout[i][d]);
-      auto src_sub_max_f32 = src_f32 - vmax[i];
+      auto src_f32 = _mm512_loadu_ps(dout + i * ld_16 + d);
+      auto src_sub_max_f32 = _mm512_sub_ps(src_f32, vmax[i]);
+
       auto exp_src_sub_max_f32 = i_exp(src_sub_max_f32);
-      _mm512_storeu_ps(&exp_out[i][d], exp_src_sub_max_f32);
-      vsum[i] += exp_src_sub_max_f32;
+      _mm512_storeu_ps(exp_out + i * ld_16 + d, exp_src_sub_max_f32);
+      vsum[i] = _mm512_add_ps(vsum[i], exp_src_sub_max_f32);
     }
   }
 
@@ -110,17 +114,17 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld, const
   auto voscale = _mm512_set1_ps(oscale);
 #pragma unroll N
   for (int i = 0; i < N; ++i) {
-    vsum[i] = voscale / _mm512_reduce_add_ps(vsum[i]);
+    vsum[i] = _mm512_div_ps(voscale, _mm512_set1_ps(_mm512_reduce_add_ps(vsum[i])));
   }
 
   auto __0 = _mm512_set1_ps(0.);
   auto __255 = _mm512_set1_ps(255.);
 
-  auto pout = reinterpret_cast<uint8_t(*)[ld]>(out);
+  auto pout = reinterpret_cast<uint8_t*>(out);
   for (d = 0; d < ld / 16 * 16; d += 16) {
 #pragma unroll N
     for (int i = 0; i < N; ++i) {
-      auto exp_src_sub_max_f32 = _mm512_loadu_ps(&exp_out[i][d]);
+      auto exp_src_sub_max_f32 = _mm512_loadu_ps(exp_out + i * ld_16 + d);
       auto softmax_f32 =
           _mm512_mul_round_ps(exp_src_sub_max_f32, vsum[i], _MM_FROUND_NO_EXC | _MM_FROUND_TO_NEAREST_INT);
 
@@ -128,7 +132,7 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld, const
       auto softmax_f32_clip_255 = _mm512_min_ps(softmax_f32, __255);
       auto softmax_f32_clip_0 = _mm512_max_ps(softmax_f32_clip_255, __0);
       auto softmax_s32 = _mm512_cvtps_epi32(softmax_f32_clip_0);
-      _mm512_mask_cvtusepi32_storeu_epi8(&pout[i][d], 0xffff, softmax_s32);
+      _mm512_mask_cvtusepi32_storeu_epi8(pout + i * ld_16 + d, 0xffff, softmax_s32);
     }
   }
 
@@ -137,62 +141,65 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld, const
     __mmask16 res_mask = (1 << res) - 1;
 #pragma unroll N
     for (int i = 0; i < N; ++i) {
-      auto exp_src_sub_max_f32 = _mm512_loadu_ps(&exp_out[i][d]);
+      auto exp_src_sub_max_f32 = _mm512_loadu_ps(exp_out + i * ld_16 + d);
       auto softmax_f32 =
           _mm512_mul_round_ps(exp_src_sub_max_f32, vsum[i], _MM_FROUND_NO_EXC | _MM_FROUND_TO_NEAREST_INT);
       // clip
       auto softmax_f32_clip_255 = _mm512_min_ps(softmax_f32, __255);
       auto softmax_f32_clip_0 = _mm512_max_ps(softmax_f32_clip_255, __0);
       auto softmax_s32 = _mm512_cvtps_epi32(softmax_f32_clip_0);
-      _mm512_mask_cvtusepi32_storeu_epi8(&pout[i][d], res_mask, softmax_s32);
+      _mm512_mask_cvtusepi32_storeu_epi8(pout + i * ld_16 + d, res_mask, softmax_s32);
     }
   }
+
+  aligned_free(exp_out);
+  aligned_free(dout);
 }
 
 static inline void softmax_int_kernel(uint8_t* out, float* in, float oscale, int64_t ld, int l) {
   switch (l) {
     case 1:
-      return softmax_u8(out, in, oscale, ld, 1);
+      return softmax_u8<1>(out, in, oscale, ld);
     case 2:
-      return softmax_u8(out, in, oscale, ld, 2);
+      return softmax_u8<2>(out, in, oscale, ld);
     case 3:
-      return softmax_u8(out, in, oscale, ld, 3);
+      return softmax_u8<3>(out, in, oscale, ld);
     case 4:
-      return softmax_u8(out, in, oscale, ld, 4);
+      return softmax_u8<4>(out, in, oscale, ld);
     case 5:
-      return softmax_u8(out, in, oscale, ld, 5);
+      return softmax_u8<5>(out, in, oscale, ld);
     case 6:
-      return softmax_u8(out, in, oscale, ld, 6);
+      return softmax_u8<6>(out, in, oscale, ld);
     case 7:
-      return softmax_u8(out, in, oscale, ld, 7);
+      return softmax_u8<7>(out, in, oscale, ld);
     case 8:
-      return softmax_u8(out, in, oscale, ld, 8);
+      return softmax_u8<8>(out, in, oscale, ld);
     case 9:
-      return softmax_u8(out, in, oscale, ld, 9);
+      return softmax_u8<9>(out, in, oscale, ld);
     case 10:
-      return softmax_u8(out, in, oscale, ld, 10);
+      return softmax_u8<10>(out, in, oscale, ld);
     case 11:
-      return softmax_u8(out, in, oscale, ld, 11);
+      return softmax_u8<11>(out, in, oscale, ld);
     case 12:
-      return softmax_u8(out, in, oscale, ld, 12);
+      return softmax_u8<12>(out, in, oscale, ld);
     case 13:
-      return softmax_u8(out, in, oscale, ld, 13);
+      return softmax_u8<13>(out, in, oscale, ld);
     case 14:
-      return softmax_u8(out, in, oscale, ld, 14);
+      return softmax_u8<14>(out, in, oscale, ld);
     case 15:
-      return softmax_u8(out, in, oscale, ld, 15);
+      return softmax_u8<15>(out, in, oscale, ld);
     case 16:
-      return softmax_u8(out, in, oscale, ld, 16);
+      return softmax_u8<16>(out, in, oscale, ld);
   }
 
   auto l1 = l / 2;
   auto l2 = l - l1;
 
-  auto pin = reinterpret_cast<float(*)[ld]>(in);
-  auto pout = reinterpret_cast<uint8_t(*)[ld]>(out);
+  auto pin = reinterpret_cast<float*>(in);
+  auto pout = reinterpret_cast<uint8_t*>(out);
 
-  softmax_int_kernel(pout[0], pin[0], oscale, ld, l1);
-  softmax_int_kernel(pout[l1], pin[l1], oscale, ld, l2);
+  softmax_int_kernel(pout, pin, oscale, ld, l1);
+  softmax_int_kernel(pout + l1 * ld, pin + l1 * ld, oscale, ld, l2);
 }
 #endif
 

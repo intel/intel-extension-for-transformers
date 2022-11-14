@@ -62,7 +62,7 @@ bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_r
   auto& global_primitive_cache = kernel_cache::instance();
   const auto& callback = std::bind(&kernel_desc_t::create_primitive, kd, std::placeholders::_1,
                                    kd);  // k_t->create() + k_t->init()
-  std::shared_ptr<const kernel_t> value = global_primitive_cache.find_or_construct(kd->operator_desc(), callback);
+  std::shared_ptr<const kernel_t> value = global_primitive_cache.find_or_construct(kd->get_operator_desc(), callback);
   if (value == nullptr) {
     return false;
   }

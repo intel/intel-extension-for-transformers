@@ -60,11 +60,15 @@ class jit_matmul_vnni_Ba4b_Ab4a_ba_t : public jit_generator {
   static constexpr int BYTES_ZMM = 64;
   static constexpr int VNNI_ADJ = 4;                        // reduction dim of VPDPBUSD
   static constexpr int VNNI_GROUPS = BYTES_ZMM / VNNI_ADJ;  // spacial dim of VPDPBUSD
-
+#ifdef _WIN32
+  const Xbyak::Reg64& parambase = rcx;
+  const Xbyak::Reg64& reg_dst = rdi;
+#else
   const Xbyak::Reg64& parambase = rdi;
+  const Xbyak::Reg64& reg_dst = rcx;
+#endif
   const Xbyak::Reg64& reg_src0 = rsi;
   const Xbyak::Reg64& reg_src1 = rdx;
-  const Xbyak::Reg64& reg_dst = rcx;
   const Xbyak::Reg64& reg_ksize = r8;
   const Xbyak::Reg64& reg_iterk = r9;
   const Xbyak::Reg64& reg_tmp = r10;

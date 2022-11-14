@@ -16,10 +16,11 @@
 #include "common.hpp"
 
 namespace executor {
+#ifdef WITH_SPARSELIB
 static unordered_map<string, jd::data_type> type2sparsemem{
     {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
     {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
-
+#endif
 GatherOperator::GatherOperator(const OperatorConfig& conf) : Operator(conf) {
   auto attrs_map = operator_conf_.attributes();
   auto iter = attrs_map.find("axis");
@@ -56,6 +57,7 @@ void GatherOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
 
 void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // todo: add Reshape
+#ifdef WITH_SPARSELIB
   vector<int64_t> pre_dst_shape;
   if (!reshape_.empty()) {
     vector<int64_t> ref_shape;
@@ -122,6 +124,7 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
     }
     output[0]->set_shape(dst_shape);
   }
+#endif
 }
 
 void GatherOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -132,7 +135,9 @@ void GatherOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
   if (binary_add_) {
     rt_data_[3] = append_->data();
   }
+#ifdef WITH_SPARSELIB
   gather_.execute(rt_data_);
+#endif
   // 2. unref tensors
   this->unref_tensors(input);
 }

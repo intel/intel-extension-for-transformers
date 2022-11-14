@@ -47,7 +47,11 @@ class Neural_Engine(object):
         # load metric
         log.info("Load metric ......")
         if dataset_name and task_name is not None:
-            metric = load_metric(dataset_name, task_name)
+            if os.path.exists(os.path.join(data_dir,'metrics',dataset_name+'.py')):
+                #add load from local python file
+                metric = load_metric(os.path.join(data_dir,'metrics',dataset_name+'.py'),task_name)
+            else:
+                metric = load_metric(dataset_name, task_name)
         else:
             metric = load_metric("accuracy")
         # execute

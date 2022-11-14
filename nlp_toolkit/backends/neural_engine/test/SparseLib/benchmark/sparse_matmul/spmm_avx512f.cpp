@@ -133,10 +133,10 @@ void prepare_blocked_sparse_data_spmm_avx512f(T* data, const std::vector<dim_t>&
   LOG_IF(FATAL, sparsity < 0 && sparsity > 1) << "Sparsity should be a value between 0 and 1.";
   dim_t nb_k = K / BK;
   dim_t nb_n = N / BN;
-
+  std::srand(*seed);
   for (int ibk = 0; ibk < nb_k; ++ibk) {
     for (int ibn = 0; ibn < nb_n; ++ibn) {
-      bool fill_zero = rand_r(seed) % 100 <= (sparsity * 100);
+      bool fill_zero = std::rand() % 100 <= (sparsity * 100);
       if (fill_zero) {
         dim_t i_start = ibk * BK;
         dim_t j_start = ibn * BN;

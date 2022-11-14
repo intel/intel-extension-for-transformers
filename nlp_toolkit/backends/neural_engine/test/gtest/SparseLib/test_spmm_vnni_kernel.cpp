@@ -208,9 +208,10 @@ void prepare_sparse_data(T* vector_data, dim_t rows, dim_t cols, dim_t blk_row, 
                          uint32_t* seed = nullptr) {
   uint32_t default_seed = 123;
   if (seed == nullptr) seed = &default_seed;
+  std::srand(default_seed);
   for (int i = 0; i < rows; i += blk_row) {
     for (int j = 0; j < cols; j += blk_col) {
-      bool fill_zero = rand_r(seed) % 100 <= (sparsity * 100);
+      bool fill_zero = std::rand() % 100 <= (sparsity * 100);
       if (fill_zero) {
         for (int bi = i; bi < i + blk_row; ++bi) {
           for (int bj = j; bj < j + blk_col; ++bj) {
@@ -258,13 +259,13 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
 
 std::vector<float> make_output_scale(dim_t size, const std::vector<float>& ranges = {0, 10}) {
   std::vector<float> output_scale(size, 0);
-  init_vector(output_scale.data(), size * sizeof(float), ranges[0], ranges[1]);
+  init_vector(output_scale.data(), size, ranges[0], ranges[1]);
   return output_scale;
 }
 
 std::vector<float> make_output_zo(dim_t size, const std::vector<float>& ranges = {-100, -1}) {
   std::vector<float> output_zo(size, 0);
-  init_vector(output_zo.data(), size * sizeof(float), ranges[0], ranges[1]);
+  init_vector(output_zo.data(), size, ranges[0], ranges[1]);
   return output_zo;
 }
 

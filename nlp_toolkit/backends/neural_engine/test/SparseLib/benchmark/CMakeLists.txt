@@ -16,30 +16,20 @@ cmake_minimum_required(VERSION 3.11)
 
 project(sparselib_benchmark)
 
-set (BENCHMARK_EXE "benchmark")
+set(BENCHMARK_EXE "benchmark")
 
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -fpic -Wall -fopenmp")
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
-endif()
-
-# -lpthread
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads)
-if(Threads_FOUND)
-    message("Threads found: ${CMAKE_THREAD_LIBS_INIT}")
+if(OpenMP_FOUND)
+    #message(${CMAKE_CXX_FLAGS})
 else()
-    message(STATUS "Cannot find Threads")
+    find_package(OpenMP REQUIRED)
+    if(WIN32)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:experimental")
+    else()
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
 endif()
 
-# -fopenmp
-find_package(OpenMP REQUIRED)
-message("OpenMP found: ${OpenMP_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-message(${CMAKE_CXX_FLAGS})
-
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../../SparseLib/ ./hostlibs)
 
 file(GLOB SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
@@ -62,3 +52,4 @@ target_link_libraries(${BENCHMARK_EXE}
         kernellibs			
 )
 
+file(COPY ci DESTINATION "${CMAKE_BINARY_DIR}/bin")

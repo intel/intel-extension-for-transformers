@@ -15,13 +15,11 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_THREAD_POOL_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_THREAD_POOL_HPP_
 
-#include <pthread.h>
-
 #include <atomic>
 #include <condition_variable>  //NOLINT
 #include <functional>
 #include <future>  //NOLINT
-#include <mutex>  //NOLINT
+#include <mutex>   //NOLINT
 #include <queue>
 #include <string>
 #include <thread>  //NOLINT
@@ -67,7 +65,8 @@ class ThreadPool {
             idle_thread_num--;
             return;
           }
-          idle_thread_num--; work_thread_num++;
+          idle_thread_num--;
+          work_thread_num++;
           task = std::move(this->tasks.front());
           this->tasks.pop();
         }
@@ -75,7 +74,8 @@ class ThreadPool {
         {
           task();  // run the task
           std::unique_lock<std::mutex> lock(this->tasks_lock);
-          idle_thread_num++; work_thread_num--;
+          idle_thread_num++;
+          work_thread_num--;
           cond_finish_.notify_one();
         }
       }
@@ -110,8 +110,7 @@ class ThreadPool {
    * execution.
    */
   template <typename FUNC, typename... Args>
-  auto commitTask(FUNC&& func, Args&&... args)
-      -> std::future<decltype(func(args...))> {
+  auto commitTask(FUNC&& func, Args&&... args) -> std::future<decltype(func(args...))> {
     if (hasStopedPool()) throw std::runtime_error("the threadPool is stopped.");
     using ReturnType = decltype(func(args...));
     auto task = std::make_shared<std::packaged_task<ReturnType()> >(
@@ -143,7 +142,11 @@ class ThreadPool {
     }
     if (sz < as) {
       for (auto s : stoped) {
-        if (!s) { s = true; task_cond_var.notify_all(); rs++; }
+        if (!s) {
+          s = true;
+          task_cond_var.notify_all();
+          rs++;
+        }
         if (rs == as - sz) break;
       }
     }
@@ -167,7 +170,7 @@ class ThreadPool {
   // wait for all tasks to be completed
   void waitAllTaskRunOver() {
     std::unique_lock<std::mutex> lock(tasks_lock);
-    cond_finish_.wait(lock, [this]{ return tasks.empty() && (work_thread_num == 0); });
+    cond_finish_.wait(lock, [this] { return tasks.empty() && (work_thread_num == 0); });
   }
 };
 

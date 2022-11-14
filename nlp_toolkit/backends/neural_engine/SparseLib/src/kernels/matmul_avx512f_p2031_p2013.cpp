@@ -135,7 +135,7 @@ bool matmul_avx512f_p2031_p2013_kd_t::matmul_params_init(const jd::operator_desc
 
 matmul_avx512f_p2031_p2013_k_t::matmul_avx512f_p2031_p2013_k_t(const std::shared_ptr<const kd_t>& kd)
     : kernel_t(kd),
-      t_shapes_(get_tensor_shapes(kd->operator_desc().tensor_descs())),
+      t_shapes_(get_tensor_shapes(kd->get_operator_desc().tensor_descs())),
       src0_perm_shape_({
           t_shapes_[ssd::SRC0][2],
           t_shapes_[ssd::SRC0][0],
@@ -179,7 +179,7 @@ bool matmul_avx512f_p2031_p2013_k_t::execute(const std::vector<const void*>& rt_
       rt_param.src0 = base_src0 + ibs0 * M_ + bs0_ * ibs1 * M_ * K_;
       rt_param.src1 = base_src1 + ibs0 * N_ + bs0_ * ibs1 * N_ * K_;
 
-      (*jit_ker_)(rt_param);
+      (*jit_ker_)(&rt_param);
     }
 
   return true;

@@ -66,7 +66,11 @@ void jit_gather_t::assign_regs() {
   }
   tail_mask = Xbyak::Opmask(2);
   extend_tail_mask = Xbyak::Opmask(3);
+#ifdef _WIN32
+  reg_param = rcx;
+#else
   reg_param = rdi;
+#endif
 }
 
 }  // namespace jd

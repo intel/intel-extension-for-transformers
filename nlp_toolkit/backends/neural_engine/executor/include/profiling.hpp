@@ -212,9 +212,15 @@ class Profiling_ {
     std::string profiling_dir = "engine_profiling";
     std::string profiling_csv_dir = profiling_dir + "/profiling_csv";
     std::string profiling_trace_dir = profiling_dir + "/profiling_trace";
+#ifdef _WIN32
+    mkdir(profiling_dir.c_str());  // 00070, read/write/execute for user group
+    mkdir(profiling_csv_dir.c_str());
+    mkdir(profiling_trace_dir.c_str());
+#else
     mkdir(profiling_dir.c_str(), S_IRWXU);  // 00070, read/write/execute for user group
     mkdir(profiling_csv_dir.c_str(), S_IRWXU);
     mkdir(profiling_trace_dir.c_str(), S_IRWXU);
+#endif
     ipc::interprocess_mutex* mtx = shm.find_or_construct<ipc::interprocess_mutex>(mtx_name)();
     mtx->lock();
     char ch_curr_time[256];

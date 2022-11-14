@@ -15,20 +15,22 @@
 #include "i_malloc.hpp"
 
 #include <fcntl.h>
-#include <nmmintrin.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <tmmintrin.h>
-#include <unistd.h>
-#include <xmmintrin.h>
-
 #include <unordered_map>
+#include "glog/logging.h"
 
+#ifdef _WIN32
+#define unlikely
+#define likely
+#else
+#include <sys/mman.h>
+#include <unistd.h>
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
+#endif
 
 // Global memory pool instance
 static struct malloc_mempool g_mempool;
@@ -54,7 +56,12 @@ static void mempool_init(struct malloc_mempool* pool, size_t pool_size) {
 #ifdef DEBUG
   printf("before mmap, size=%lu\n", pool_size);
 #endif
+#ifdef _WIN32
+  void* ptr = _aligned_malloc(memsize, 4096);
+  LOG(WARNING) << "use malloc on Windows";
+#else
   void* ptr = mmap(0, memsize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#endif
 #ifdef DEBUG
   printf("after mmap, ptr=%p, errno=%d\n", ptr, errno);
 #endif
@@ -90,7 +97,12 @@ static void mempool_init(struct malloc_mempool* pool, size_t pool_size) {
 
 static void mempool_enlarge(struct malloc_mempool* pool, size_t increase_size) {
   if (pool->start_addr != NULL) {
+#ifdef _WIN32
+    free(pool->start_addr);
+    int ret = 0;
+#else
     int ret = munmap(pool->start_addr, pool->total_size);
+#endif
     if (ret != 0) {
       printf("Failed to unmap the memory.\n");
     }
@@ -169,7 +181,7 @@ static struct malloc_elem* mempool_do_alloc(struct malloc_elem* elem, size_t siz
 
 // Return 1 if it is inside our memory pool, otherwise -1
 static int check_addr(void* addr) {
-  if (addr > g_mempool.start_addr && addr < g_mempool.start_addr + g_mempool.total_size) {
+  if (addr > g_mempool.start_addr && addr < reinterpret_cast<char*>(g_mempool.start_addr) + g_mempool.total_size) {
     return 1;
   }
   return -1;

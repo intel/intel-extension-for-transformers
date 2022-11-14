@@ -117,10 +117,27 @@ void Model::Init(const ModelConfig& conf) {
 
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
   is_dispatcher_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
-  dispatch_table_file_root_ = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT") == NULL ? \
-      string(getenv("HOME")) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt" : \
-      getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
+  if (getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT")) {
+    dispatch_table_file_root_ = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
+  } else {
+    if (getenv("HOME")) {
+      dispatch_table_file_root_ = string(getenv("HOME")) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt";
+    } else {
+      dispatch_table_file_root_ = "./ engine_dispatch_table.txt ";
+    }
+  }
+
+#ifdef WIN32
+  {
+    FILE* fp = fopen(dispatch_table_file_root_.c_str(), "r");
+    has_dispatch_table_file_ = fp != NULL;
+    if (fp) {
+      fclose(fp);
+    }
+  }
+#else
   has_dispatch_table_file_ = (access(dispatch_table_file_root_.c_str(), F_OK) != -1);
+#endif
   if (!has_dispatch_table_file_) LOG(INFO) << "Missing dispatch table file, " \
                                   "all operators will use their own default kernels." \
                                   "Recommend to turn on the tuning mode for better performance." \

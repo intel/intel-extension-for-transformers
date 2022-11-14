@@ -42,7 +42,7 @@ namespace executor {
  *        specified by a ModelConfig.
  *
  */
-class Model {
+class NEURALENGINE_API_ Model {
  public:
   explicit Model(const ModelConfig& conf, const string& weight_root);
   explicit Model(const string& conf_file, const string& weight_root);

@@ -46,11 +46,15 @@ class jit_spmm_avx512f_t : public jit_generator {
 
   int64_t TW_ = 1;
   int64_t TH_ = 4;
-
+#ifdef _WIN32
+  const Xbyak::Reg64& reg_param = rcx;
+  const Xbyak::Reg64& reg_sparse = rdi;  // the first argument which is packed nonzero values pointer
+#else
   const Xbyak::Reg64& reg_param = rdi;
+  const Xbyak::Reg64& reg_sparse = rcx;  // the first argument which is packed nonzero values pointer
+#endif
   const Xbyak::Reg64& reg_dense = rsi;
   const Xbyak::Reg64& reg_dense_end = rdx;
-  const Xbyak::Reg64& reg_sparse = rcx;
   const Xbyak::Reg64& reg_bias = r8;
   const Xbyak::Reg64& reg_dst = r9;
   const Xbyak::Reg64& reg_n = r10;      // current n index

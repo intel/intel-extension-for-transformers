@@ -47,8 +47,9 @@ void prepare_sparse_data(T* vector_data, std::vector<int64_t> a_shape) {
   float sparse_ratio = 0.7;
   std::unordered_set<int64_t> zero_block_index;
   uint32_t seed = 123;
+  std::srand(seed);
   while (zero_block_index.size() < block_nums * sparse_ratio) {
-    zero_block_index.insert((rand_r(&seed) % (block_nums - 1)));
+    zero_block_index.insert((std::rand() % (block_nums - 1)));
   }
   for (const auto& i : zero_block_index) {
     for (int j = 0; j < BLOCK; ++j) {
@@ -226,7 +227,7 @@ vector<Tensor*> make_transposed_int8_tensor_obj(vector<const TensorConfig*> tens
 #if __AVX512F__
         executor::Quantize_avx512(tensors[0]->shape()[1], tensors[0]->dtype(),
                                   &transposed_data[y * tensors[0]->shape()[1]], min_data + y, scales,
-                                  dst_data + y * tensors[0]->shape()[1]);
+                                  (char*)dst_data + y * tensors[0]->shape()[1]);
 #else
         executor::Quantize(tensors[0]->shape()[1], tensors[0]->dtype(), &transposed_data[y * tensors[0]->shape()[1]],
                            min_data + y, scales, dst_data + y * tensors[0]->shape()[1]);

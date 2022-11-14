@@ -63,7 +63,7 @@ bool spmm_ref_k_t::init() { return true; }
 bool spmm_ref_k_t::execute_s8_(const std::vector<const void*>& rt_data) const {
   const auto& dst_dt = dst_type();
   bool has_bias = derived_kd()->has_bias();
-  auto attrs_map = derived_kd()->operator_desc().attrs();
+  auto attrs_map = derived_kd()->get_operator_desc().attrs();
   bool append_sum = (attrs_map["append_sum"] == "true");
   auto num_BN = N_ / BN_;
   std::vector<dim_t> left_stride = {K_, 1};
@@ -90,7 +90,7 @@ bool spmm_ref_k_t::execute_s8_(const std::vector<const void*>& rt_data) const {
   auto dst_u8 = static_cast<uint8_t*>(dst_data);
 
   // TODO(zhe1wang): add per channel support for post-op;
-  auto postop_list = derived_kd()->operator_desc().apply_postops_list();
+  auto postop_list = derived_kd()->get_operator_desc().apply_postops_list();
 
 // Computing the kernel
 #pragma omp parallel for collapse(3)
@@ -144,8 +144,8 @@ bool spmm_ref_k_t::execute_bf16_(const std::vector<const void*>& rt_data) const 
   std::vector<dim_t> dst_stride = {BN_ * M_, BN_, 1};
 
   bool has_bias = derived_kd()->has_bias();
-  auto attrs_map = derived_kd()->operator_desc().attrs();
-  auto postop_list = derived_kd()->operator_desc().apply_postops_list();
+  auto attrs_map = derived_kd()->get_operator_desc().attrs();
+  auto postop_list = derived_kd()->get_operator_desc().apply_postops_list();
 
   // runtime data alias
   const auto wei_data = static_cast<const bfloat16_t*>(rt_data[0]);
@@ -183,8 +183,8 @@ bool spmm_ref_k_t::execute_bf16_(const std::vector<const void*>& rt_data) const 
 }
 
 bool spmm_ref_k_t::execute_f32_(const std::vector<const void*>& rt_data) const {
-  const auto& ts_descs = derived_kd()->operator_desc().tensor_descs();
-  const auto& postops_list = derived_kd()->operator_desc().apply_postops_list();
+  const auto& ts_descs = derived_kd()->get_operator_desc().tensor_descs();
+  const auto& postops_list = derived_kd()->get_operator_desc().apply_postops_list();
   const auto& wei_desc = ts_descs[ssd::WEI];
   const auto& src_desc = ts_descs[ssd::SRC];
   const auto& bias_desc = ts_descs[ssd::BIAS];

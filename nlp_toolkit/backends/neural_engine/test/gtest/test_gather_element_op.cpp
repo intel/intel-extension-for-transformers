@@ -51,9 +51,9 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
   vector<int64_t> dst_stride = executor::GetStrides(dst_shape, {});
   vector<int64_t> src_stride = executor::GetStrides(src_shape, {});
 
-  void* src_data = input[0]->mutable_data();
+  char* src_data = (char*)input[0]->mutable_data();
   int32_t* idx_data = static_cast<int32_t*>(input[1]->mutable_data());
-  void* dst_data = output[0]->mutable_data();
+  char* dst_data = (char*)output[0]->mutable_data();
 #pragma omp parallel for
   for (int i = 0; i < output[0]->size(); i++) {
     int target = idx_data[i];
@@ -141,9 +141,10 @@ std::pair<OpArgs, OpArgs> GenerateCase(const std::vector<std::vector<int64_t> >&
   for (int i = axis + 1; i < src_shape.size(); i++) inner *= src_shape[i];
   int idx = 0;
   uint32_t seed = 123;
+  std::srand(seed);
   for (int i = 0; i < outer; i++) {
     for (int j = 0; j < idx_shape[axis]; j++) {
-      int random_idx = rand_r(&seed) % src_shape[axis];
+      int random_idx = std::rand() % src_shape[axis];
       for (int k = 0; k < inner; k++) idx_data[idx++] = random_idx;
     }
   }

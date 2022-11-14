@@ -5,36 +5,20 @@ project(sparselib_ut)
 option(SPARSE_LIB_USE_VTUNE OFF)
 option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -fpic -Wall -fopenmp -fno-omit-frame-pointer")
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS}")
-else()
-    set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
-endif()
 
 set(MAIN_SRC_GTEST "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
-# -lpthread
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads)
-if(Threads_FOUND)
-    message("Threads found: ${CMAKE_THREAD_LIBS_INIT}")
-else()
-    message(STATUS "Cannot find Threads")
-endif()
 
-# -fopenmp
-find_package(OpenMP)
 if(OpenMP_FOUND)
-    message("OpenMP found: ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    message(${CMAKE_CXX_FLAGS})
+    #message(${CMAKE_CXX_FLAGS})
 else()
-    message(STATUS "Cannot find OpenMP")
+    find_package(OpenMP REQUIRED)
+    if(WIN32)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:experimental")
+    else()
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
 endif()
-
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../../SparseLib/third_party/googletest ./googletest)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../../SparseLib/ ./hostlibs)
 
 #### PART2: build gtest cases ####
 file(GLOB KERNEL_TEST_CASES_SRC
@@ -46,8 +30,10 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_matmul_avx512f_p2031_p2013.cpp
     test_matmul_vnni_noperm_p2031_p1302.cpp
     test_softmax_kernel.cpp
-    test_spmm_amx_bf16_x16_kernel.cpp
 )
+if(UNIX)
+list(APPEND KERNEL_TEST_CASES_SRC test_spmm_amx_bf16_x16_kernel.cpp)
+endif()
 
 function(register_gtest_func exe src)
     add_executable(${exe} ${MAIN_SRC_GTEST} ${src})
@@ -56,6 +42,16 @@ function(register_gtest_func exe src)
             ${CMAKE_THREAD_LIBS_INIT}
             GTest::gtest
             kernellibs)
+    add_dependencies(${exe} kernellibs GTest::gtest)
+    add_test(NAME ${exe_name} COMMAND ${exe_name})
+    set_tests_properties(${exe_name} PROPERTIES LABELS "kernel_test")
+    set_target_properties(${exe}
+      PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+      ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+      PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+      COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 endfunction()
 
 foreach(TEST_FILE ${KERNEL_TEST_CASES_SRC})

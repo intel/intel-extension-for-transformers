@@ -91,15 +91,15 @@ class jit_generator : public Xbyak::CodeGenerator {
 
 // Set to O0 to avoid undefined behavour of reinterpret_cast
 // Ref: https://stackoverflow.com/questions/25131019/reinterpret-cast-to-function-pointer
-#pragma GCC push_options
-#pragma GCC optimize("O0")
+//#pragma GCC push_options
+//#pragma GCC optimize("O0")
   template <typename... T>
   inline void operator()(T... args) const {
     using func_ptr = void (*)(const T... args);
     auto fptr = reinterpret_cast<func_ptr>(jit_ker_);
     (*fptr)(std::forward<T>(args)...);
   }
-#pragma GCC pop_options
+//#pragma GCC pop_options
 
   virtual bool create_kernel();
 
@@ -155,7 +155,7 @@ class jit_generator : public Xbyak::CodeGenerator {
 
  protected:
   const uint8_t* jit_ker_ = nullptr;
-  static constexpr uint64_t MAX_CODE_SIZE = 256 * 1024 * 1024;
+  static constexpr uint64_t MAX_CODE_SIZE = 128 * 1024;
   static constexpr int VEC = 16;  // 512 bits of ZMM register divided by S32 bits.
   int callee_functions_code_size_ = 0;
   const size_t num_abi_save_gpr_regs = sizeof(abi_save_gpr_regs) / sizeof(abi_save_gpr_regs[0]);

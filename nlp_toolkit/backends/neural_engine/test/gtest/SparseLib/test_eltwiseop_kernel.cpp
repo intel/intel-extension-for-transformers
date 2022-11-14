@@ -185,9 +185,10 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MEMSET);
 
   const unsigned int seed = 667095;
+  std::srand(seed);
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
-    float rand_val = rand_r(&seed_tmp) % 256 - 128;
+    float rand_val = std::rand() % 256 - 128;
     assign_val(src, in_dt, rand_val, i);
     assign_val(src_ref, in_dt, rand_val, i);
   }
@@ -208,6 +209,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
+  // TODO bf16 flag check? cooper lake and sapphire rapids only
   tensor_desc data0_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
   tensor_desc data2_desc = {{64, 1}, jd::data_type::fp32, jd::format_type::undef};

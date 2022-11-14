@@ -84,7 +84,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   using dt = jd::data_type;
   // configure alias
   const matmul_ref_kd_t& ref_kd = *derived_kd();
-  auto& op_desc = ref_kd.operator_desc();
+  auto& op_desc = ref_kd.get_operator_desc();
   auto& descs = op_desc.tensor_descs();
   auto attrs = op_desc.attrs();
   std::vector<std::vector<dim_t>> shapes(descs.size());

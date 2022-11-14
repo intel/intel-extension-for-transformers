@@ -61,7 +61,7 @@ const std::shared_ptr<const kernel_t>& kernel_cache::find_or_construct(
 }
 
 void kernel_cache::set(const std::shared_ptr<const kernel_t>& kernel) {
-  const auto& key = kernel->kd()->operator_desc();
+  const auto& key = kernel->kd()->get_operator_desc();
   cache_[key] = kernel;
 }
 }  // namespace jd

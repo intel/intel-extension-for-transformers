@@ -50,7 +50,7 @@ class spmm_amx_bf16_x16_kd_t : public kernel_desc_t {
   DECLARE_COMMON_PD_T(spmm_amx_bf16_x16_k_t, spmm_amx_bf16_x16_kd_t);
 
  public:
-  const jd::operator_desc& operator_desc() const override { return op_desc_; }
+  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const std::vector<ssd::amx_bf16_params_t>& params() const { return params_; }
   inline const dim_t& num_kernels() const { return num_kernels_; }
   inline std::vector<dim_t> shape() const {

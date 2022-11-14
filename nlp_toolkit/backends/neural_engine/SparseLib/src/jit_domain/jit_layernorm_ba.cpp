@@ -132,10 +132,15 @@ void jit_layernorm_ba_t::assign_regs() {
   // when apply postop,all zmm can be free except zmm_one & zmm_eps.
   reg_map.insert(std::pair<reg_type, std::set<int>>(reg_type::zmm, {zmm_one.getIdx(), zmm_eps.getIdx()}));
 
+#ifdef _WIN32
+  reg_param = rcx;
+  reg_affine_offset = rdi;
+#else
   reg_param = rdi;
+  reg_affine_offset = rcx;
+#endif
   reg_alpha = rax;
   reg_beta = rbx;
-  reg_affine_offset = rcx;
   reg_col = r8;
   reg_src_offset = r9;
   reg_dst_offset = r14;
@@ -169,6 +174,7 @@ std::pair<int, int> jit_layernorm_ba_t::get_unroll_add_idx(int begin) {
   int first_idx = -1, second_idx = -1;
   int iter = begin;
   while (first_idx == -1 || second_idx == -1) {
+    //TODO memory access violation
     if (unroll_reg_idxs[iter] == true && first_idx == -1) {
       first_idx = iter;
     } else if (unroll_reg_idxs[iter] == true && first_idx != -1 && second_idx == -1) {

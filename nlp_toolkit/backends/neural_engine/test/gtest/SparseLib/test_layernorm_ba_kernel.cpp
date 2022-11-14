@@ -91,7 +91,7 @@ bool check_result(const test_params_t& t) {
       return false;
     }
   }
-
+  auto ans = false;
   if (!t.expect_to_fail) {
     get_true_data(q.op_desc, q.data);
     auto buf1 = p.data[1];
@@ -108,20 +108,20 @@ bool check_result(const test_params_t& t) {
     } else if (dst_type == data_type::s8) {
       ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1e-2);
     }
-    free(const_cast<void*>(p.data[0]));
-    free(const_cast<void*>(p.data[1]));
-    free(const_cast<void*>(q.data[0]));
-    free(const_cast<void*>(q.data[1]));
-    free(const_cast<void*>(q.data[2]));
-    free(const_cast<void*>(q.data[3]));
+    aligned_free(const_cast<void*>(p.data[0]));
+    aligned_free(const_cast<void*>(p.data[1]));
+    aligned_free(const_cast<void*>(q.data[0]));
+    aligned_free(const_cast<void*>(q.data[1]));
+    aligned_free(const_cast<void*>(q.data[2]));
+    aligned_free(const_cast<void*>(q.data[3]));
     return ans;
   }
-  free(const_cast<void*>(p.data[0]));
-  free(const_cast<void*>(p.data[1]));
-  free(const_cast<void*>(q.data[0]));
-  free(const_cast<void*>(q.data[1]));
-  free(const_cast<void*>(q.data[2]));
-  free(const_cast<void*>(q.data[3]));
+  aligned_free(const_cast<void*>(p.data[0]));
+  aligned_free(const_cast<void*>(p.data[1]));
+  aligned_free(const_cast<void*>(q.data[0]));
+  aligned_free(const_cast<void*>(q.data[1]));
+  aligned_free(const_cast<void*>(q.data[2]));
+  aligned_free(const_cast<void*>(q.data[3]));
   return false;
 }
 
@@ -161,8 +161,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   src_ref = sparselib_ut_memo(src_ref, num, in_dt, MALLOC, true);
   dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MALLOC, true);
   dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MEMSET);
-  float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
-  float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
+  float* alpha = reinterpret_cast<float*>(aligned_alloc(64,row * sizeof(float)));
+  float* beta = reinterpret_cast<float*>(aligned_alloc(64,row * sizeof(float)));
 
   // init alpha&beta
   for (int i = 0; i < row; i++) alpha[i] = 1 + rand_float_postfix();
@@ -170,10 +170,11 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
   // init matrix.
   const unsigned int seed = 667095;
+  std::srand(seed);
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j++) {
       unsigned int seed_tmp = seed + i;
-      float rand_val = rand_r(&seed_tmp) % 256 - 128 + rand_float_postfix();
+      float rand_val = std::rand() % 256 - 128 + rand_float_postfix();
       assign_val(src, in_dt, rand_val, i * col + j);
       assign_val(src_ref, in_dt, rand_val, i * col + j);
     }

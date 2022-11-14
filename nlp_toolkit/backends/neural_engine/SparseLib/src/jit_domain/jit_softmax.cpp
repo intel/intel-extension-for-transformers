@@ -215,7 +215,11 @@ void jit_softmax_t::perform_op(Zmm v, Zmm vtmp, op_t op) {
 }
 
 void jit_softmax_t::assign_regs() {
+  #ifdef _WIN32
+  reg_param = rcx;
+  #else
   reg_param = rdi;
+#endif
   src_addr = r8;
   dst_addr = r9;
   vec_num = r10;

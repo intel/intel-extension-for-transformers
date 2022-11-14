@@ -110,9 +110,13 @@ class jit_spmm_vnni_t : public jit_generator {
   static constexpr int PTR_SIZE = 4;
 #endif
   // Register decomposition
+#ifdef _WIN32
+  const Xbyak::Reg64& param1 = rcx;
+  const Xbyak::Reg64& reg_wei = rdi;  // the first argument which is packed nonzero values pointer
+#else
   const Xbyak::Reg64& param1 = rdi;
-
-  const Xbyak::Reg64& reg_wei = rcx;
+  const Xbyak::Reg64& reg_wei = rcx;  // the first argument which is packed nonzero values pointer
+#endif
   const Xbyak::Reg64& reg_dense = rdx;  // the second argument which is input matrix pointer
   const Xbyak::Reg64& reg_bias = rsi;   // the third argument which is bias values pointer
   const Xbyak::Reg64& reg_dst = rax;    // the fourth argument which is output matrix pointer

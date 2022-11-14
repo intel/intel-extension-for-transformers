@@ -118,7 +118,7 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::matmul_params_init(const jd::operator_
 
 matmul_vnni_noperm_p2031_p1302_k_t::matmul_vnni_noperm_p2031_p1302_k_t(const std::shared_ptr<const kd_t>& kd)
     : kernel_t(kd),
-      t_shapes_(get_tensor_shapes(kd->operator_desc().tensor_descs())),
+      t_shapes_(get_tensor_shapes(kd->get_operator_desc().tensor_descs())),
       src0_perm_shape_(t_shapes_[ssd::SRC0]),  // src0 perm none
       src1_perm_shape_({
           t_shapes_[ssd::SRC1][2],

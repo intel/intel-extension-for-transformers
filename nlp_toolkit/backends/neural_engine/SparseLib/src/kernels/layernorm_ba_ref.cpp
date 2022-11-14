@@ -33,7 +33,7 @@ bool layernorm_ba_ref_kd_t::init() {
 }
 
 bool layernorm_ba_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
-  auto op_desc = derived_kd()->operator_desc();
+  auto op_desc = derived_kd()->get_operator_desc();
   auto tensor_desc = op_desc.tensor_descs();
   int row = tensor_desc[0].reduce_rows();
   int col = tensor_desc[0].shape().back();

@@ -58,7 +58,7 @@ class kernel_desc_t {
                                 const std::shared_ptr<const kernel_desc_t>& kd) const = 0;
 
  public:
-  virtual const jd::operator_desc& operator_desc() const = 0;
+  virtual const jd::operator_desc& get_operator_desc() const = 0;
   inline const jd::kernel_kind& kernel_kind() const { return ker_kind_; }
   const char* info() const {
     if (!info_.is_initialized()) info_.init(ker_kind_, shape());

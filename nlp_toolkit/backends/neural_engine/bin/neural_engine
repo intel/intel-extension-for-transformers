@@ -20,6 +20,6 @@ import nlp_toolkit
 
 if __name__ == '__main__':
     path = nlp_toolkit.__path__[0]
-    command = [path + '/../neural_engine']
+    command = [path + '/../neural_engine_bin']
     command.extend(sys.argv)
     subprocess.call(command)

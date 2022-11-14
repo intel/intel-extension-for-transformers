@@ -32,7 +32,7 @@ bool softmax_kd_t::init() {
 
 bool softmax_k_t::init() {
   nthr_ = omp_get_max_threads();
-  auto op_attrs = derived_kd()->operator_desc().attrs();
+  auto op_attrs = derived_kd()->get_operator_desc().attrs();
   auto param = derived_kd()->param();
   for (int i = 0; i < nthr_; i++) {
     td.push_back(new ssd::softmax_data_t());
@@ -94,12 +94,12 @@ bool softmax_k_t::execute(const std::vector<const void*>& rt_data) const {
 #pragma omp parallel for
   for (int i = 0; i < nthr_; i++) {
     auto data_param = td[i];
-    data_param->src = const_cast<void*>(rt_data[0]) + i * param.vec_num_per_thr *
-                                                          (param.vec_align_len + param.vec_tail_len) *
-                                                          get_data_size(param.input_dt);
-    data_param->dst = const_cast<void*>(rt_data[1]) + i * param.vec_num_per_thr *
-                                                          (param.vec_align_len + param.vec_tail_len) *
-                                                          get_data_size(param.output_dt);
+    data_param->src = const_cast<char*>(reinterpret_cast<const char*>(rt_data[0]) +
+                                        i * param.vec_num_per_thr * (param.vec_align_len + param.vec_tail_len) *
+                                            get_data_size(param.input_dt));
+    data_param->dst = const_cast<char*>(reinterpret_cast<const char*>(rt_data[1]) +
+                                        i * param.vec_num_per_thr * (param.vec_align_len + param.vec_tail_len) *
+                                            get_data_size(param.output_dt));
     if (i != nthr_ - 1)
       data_param->process_vec_num = param.vec_num_per_thr;
     else

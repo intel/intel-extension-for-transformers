@@ -34,6 +34,7 @@ bool layernorm_ba_kd_t::init() {
 
   // init ptr
   one_div_n_ = reinterpret_cast<float*>(aligned_alloc(64, col_num * sizeof(float)));
+
   for (int i = 0; i < col_num; i++) one_div_n_[i] = 1.0 / row_num;
 
   // init params
@@ -60,7 +61,7 @@ bool layernorm_ba_kd_t::init() {
 }
 
 bool layernorm_ba_k_t::init() {
-  auto op_desc = kd()->operator_desc();
+  auto op_desc = kd()->get_operator_desc();
   auto output_dt = op_desc.tensor_descs()[1].dtype();
   auto col_num = op_desc.tensor_descs()[0].shape().back();
   nthr_ = col_num / 16;

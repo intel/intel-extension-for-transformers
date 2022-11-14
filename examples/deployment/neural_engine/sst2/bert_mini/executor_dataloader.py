@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import math
 import numpy as np
 from transformers import AutoTokenizer
@@ -23,7 +24,13 @@ from datasets import load_dataset
 class DataLoader(object):
     def __init__(self, batch_size, seq_len, dataset_name, task_name, data_dir, tokenizer_dir):
         self.batch_size = batch_size
-        dataset = load_dataset(dataset_name, task_name, cache_dir=data_dir, split='validation')
+
+        if os.path.exists(os.path.join(data_dir,'datasets',dataset_name+'.py')):
+            #load cached glue.py, sometimes can't reach through network
+            dataset = load_dataset(os.path.join(data_dir,'datasets',dataset_name+'.py')
+                                   ,task_name,cache_dir=data_dir,split='validation')
+        else:
+            dataset = load_dataset(dataset_name, task_name, cache_dir=data_dir, split='validation')
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_dir)
         self.dataset = dataset.map(lambda e: tokenizer(e['sentence'],
                     truncation=True, padding='max_length', max_length=seq_len), batched=True)

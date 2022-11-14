@@ -21,7 +21,10 @@
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+
+#ifdef WITH_SPARSELIB
 #include "SparseLib/include/interface.hpp"
+#endif
 
 namespace executor {
 using dnnl::algorithm;
@@ -46,9 +49,7 @@ class LayerNormOperator : public Operator {
   void ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
   void ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
-#if __AVX512F__
   void ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
-#endif
 
  private:
   bool weight_cached_;
@@ -62,9 +63,11 @@ class LayerNormOperator : public Operator {
 
   bool transpose_mode_ = false;
   bool quantize_fuse_ = false;
+#ifdef WITH_SPARSELIB
   jd::tensor_desc src_desc_;
   jd::tensor_desc dst_desc_;
   jd::layernorm_ba layernorm_ba_ker;
+#endif
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_LAYER_NORM_HPP_

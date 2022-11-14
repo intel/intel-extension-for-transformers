@@ -1,40 +1,13 @@
-cmake_minimum_required(VERSION 3.11)
-
 project(gtest_ut)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -O0 -fpic -Wall -g -ggdb -march=native")
-set(HOST_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../executor/")
+
+set(HOST_SRC_DIR "${NE_ROOT}/executor/")
 set(MAIN_SRC_GTEST "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
-# -lpthread
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads)
-if(Threads_FOUND)
-    message("Threads found: ${CMAKE_THREAD_LIBS_INIT}")
-else()
-    message(STATUS "Cannot find Threads")
-endif()
 
-# -fopenmp
-find_package(OpenMP)
-if(OpenMP_FOUND)
-    message("OpenMP found: ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    message(${CMAKE_CXX_FLAGS})
-else()
-    message(STATUS "Cannot find OpenMP")
-endif()
 
-set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/gflags ./gflags)
-set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
-
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/oneDNNGraph ./oneDNNGraph)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/yaml-cpp ./yaml)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/googletest ./googletest)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../SparseLib/ ./hostlibs)
-
+include_directories(${NE_ROOT}/executor/include)
 #### PART1: build host_operators.so shared library ####
-add_library(host_operators SHARED
+add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/common.cpp
     ${HOST_SRC_DIR}/src/i_malloc.cpp
     ${HOST_SRC_DIR}/src/operators/binary_add.cpp
@@ -69,6 +42,12 @@ add_library(host_operators SHARED
     ${HOST_SRC_DIR}/src/llga_operators/llga_op_creator.cpp
 )
 
+if(WIN32)
+  target_compile_options(host_operators PRIVATE /arch:AVX512)
+else()
+  target_compile_options(host_operators PRIVATE -march=skylake-avx512)
+endif()
+
 # Header file include path
 target_include_directories(host_operators
     PUBLIC
@@ -77,17 +56,8 @@ target_include_directories(host_operators
         ${HOST_SRC_DIR}/include/sparse_operators
         ${HOST_SRC_DIR}/include/operators
         ${HOST_SRC_DIR}/include
-        ${HOST_SRC_DIR}/third_party/googletest/googletest/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/assert/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/core/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/move/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/config/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/container/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/intrusive/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/static_assert/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/type_traits/include
-        ${HOST_SRC_DIR}/third_party/boost/libs/interprocess/include
-        ${HOST_SRC_DIR}/third_party/oneDNNGraph/include
+        ${BOOST_INC_DIRS}
+
 )
 
 # link against the third party libraries
@@ -97,64 +67,61 @@ target_link_libraries(host_operators
         dnnl
         dnnl_graph
         yaml-cpp
-        gflags
         glog
-        rt
+        xbyak::xbyak
+)
+if(NE_WITH_SPARSELIB)
+target_link_libraries(host_operators
+    PUBLIC
+        ${CMAKE_THREAD_LIBS_INIT}
         kernellibs
 )
+endif()
 
 
 #### PART2: build gtest cases ####
-file(GLOB OPS_TEST_CASES_SRC
-    test_i_malloc.cpp
-    test_binary_add_op.cpp
-    test_layer_norm_op.cpp
-    test_softmax_op.cpp
-    test_padding_sequence_op.cpp
-    test_one_hot_op.cpp
-    test_gather_op.cpp
-    test_strided_slice_op.cpp
-    test_matmul_op.cpp
-    test_inner_product_op.cpp
-    test_reorder_op.cpp
-    test_reduce_mean_op.cpp
-    test_gelu_op.cpp
-    test_position_ids_op.cpp
-    test_token_type_ids_op.cpp
-    test_concat_op.cpp
-    test_split_op.cpp
-    test_slice_op.cpp
-    test_embeddingbag_op.cpp
-    test_convolution_op.cpp
-    test_group_norm_op.cpp
-    test_sparse_inner_product.cpp
-    test_range_op.cpp
-    test_expand_indices_op.cpp
-    test_gather_element_op.cpp
-    test_mul_op.cpp
-    test_div_op.cpp
-    test_sqrt_op.cpp
-    test_tanh_op.cpp
-    test_sub_op.cpp
-    test_dequantize_op.cpp
-    test_cast_op.cpp
-    test_erf_op.cpp
-    test_unsqueeze_op.cpp
-    test_pow_op.cpp
-    test_shape_op.cpp
-)
+file(GLOB OPS_TEST_CASES_SRC "*.cpp")
 
-function(register_gtest_func exe src)
+list(REMOVE_ITEM OPS_TEST_CASES_SRC ${PROJECT_SOURCE_DIR}/main.cpp)
+if(NOT NE_WITH_SPARSELIB)
+list(REMOVE_ITEM OPS_TEST_CASES_SRC ${PROJECT_SOURCE_DIR}/test_sparse_inner_product.cpp)
+endif()
+
+function(register_gtest_func)
+    list(POP_FRONT ARGV exe)
+    list(POP_FRONT ARGV src)
+    set(libs ${ARGV})
     add_executable(${exe} ${MAIN_SRC_GTEST} ${src})
     target_link_libraries(${exe}
         PRIVATE
-            ${CMAKE_THREAD_LIBS_INIT}
-            GTest::gtest
-            host_operators
-            kernellibs)
+            ${libs}
+    )
+    if(WIN32)
+      target_compile_options(${exe} PRIVATE /arch:AVX512)
+    else()
+      target_compile_options(${exe} PRIVATE -march=skylake-avx512)
+    endif()
+    set_target_properties(${exe}
+      PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+      ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+      PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+      COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 endfunction()
 
+
+list(APPEND LINK_LIBS ${CMAKE_THREAD_LIBS_INIT} GTest::gtest host_operators)
+if(UNIX)
+list(APPEND LINK_LIBS rt)
+endif()
 foreach(TEST_FILE ${OPS_TEST_CASES_SRC})
     get_filename_component(exe_name ${TEST_FILE} NAME_WE)
-    register_gtest_func(${exe_name} ${TEST_FILE})
+    register_gtest_func(${exe_name} ${TEST_FILE} ${LINK_LIBS})
+    add_test(NAME ${exe_name} COMMAND ${exe_name})
+    set_tests_properties(${exe_name} PROPERTIES LABELS "engine_test")
 endforeach()
+
+if(NE_WITH_SPARSELIB)
+add_subdirectory(SparseLib)
+endif()

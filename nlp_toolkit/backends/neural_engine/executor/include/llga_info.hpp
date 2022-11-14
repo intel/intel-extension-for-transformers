@@ -81,8 +81,8 @@ class LLGAINFO {
   inline vector<dnnl::graph::partition> GetPartitions() { return g_.get_partitions(); }
   inline dnnl::graph::engine& GetEngine() { return eng_; }
   inline dnnl::graph::stream& GetStream() { return strm_; }
-  inline int GetOPIndex() { return llga_op_idx; }
-  inline int GetLTIndex() { return logical_tensor_idx; }
+  inline size_t GetOPIndex() { return static_cast<size_t>(llga_op_idx); }
+  inline size_t GetLTIndex() { return static_cast<size_t>(logical_tensor_idx); }
   inline const string& GetTensorName(int id) { return id2names_[id]; }
   inline int GetIndexFromOPID(int id) { return opid2index_[id]; }
 

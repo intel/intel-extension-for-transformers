@@ -271,6 +271,9 @@ static auto CasesFp32 = []() {
   src1_shape = {2, 128, 12, 64};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape}, "", "0,2,1,3", "0,2,1,3"), false});
 
+  src0_shape = {12, 64, 2, 32};
+  src1_shape = {12, 64, 2, 32};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape}, "2,0,3,1", "2,0,1,3", ""), false});
   return ::testing::ValuesIn(cases);
 };
 

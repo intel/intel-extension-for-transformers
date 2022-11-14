@@ -261,7 +261,11 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
       break;
     case SparseLib:
       if (is_dynamic_) LOG(ERROR) << "Sparse kernel not support dynamic quantization yet!\n";
+#ifdef WITH_SPARSELIB
       PrepareSparseLib(input, output);
+#else
+      LOG(ERROR) << "Sparse lib is not loaded!\n";
+#endif
       break;
   }
   if (kernel_type_ != Dense) monopolize_dispatcher_ = true;
@@ -277,8 +281,12 @@ void InnerProductOperator::Reshape(const vector<Tensor*>& input, const vector<Te
       ReshapeSparse(input, output);
       break;
     case SparseLib:
+#ifdef WITH_SPARSELIB
       if (this->do_shape_infer()) break;
       ReshapeSparseLib(input, output);
+#else
+      LOG(ERROR) << "Sparse lib is not loaded!\n";
+#endif
       break;
   }
 }
@@ -294,8 +302,12 @@ void InnerProductOperator::Forward(const vector<Tensor*>& input, const vector<Te
 #endif
       break;
     case SparseLib:
+#ifdef WITH_SPARSELIB
 #if __AVX512F__
       ForwardSparseLib(input, output);
+#endif
+#else
+      LOG(ERROR) << "Sparse lib is not loaded!\n";
 #endif
       break;
   }
@@ -308,7 +320,9 @@ void InnerProductOperator::ShapeInfer(const vector<Tensor*>& input, const vector
   } else if (kernel_type_ == Dense) {
     ShapeInferDense(input, output);
   } else {
+#ifdef WITH_SPARSELIB
     ShapeInferSparseLib(input, output);
+#endif
   }
 }
 
@@ -462,6 +476,7 @@ void InnerProductOperator::ForwardSparse(const vector<Tensor*>& input, const vec
 }
 #endif
 
+#ifdef WITH_SPARSELIB
 void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // Step 1: Construct operator config
   op_attrs_ = {{"mkn_blocks", "1,1,1"}, {"tile_shape", "4,4"}, {"append_sum", append_sum_ ? "true" : ""}};
@@ -619,6 +634,8 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
                                            rescales_.data()};
   spmm_kern_.execute(runtime_data);
 }
+#endif
+
 #endif
 
 void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output,

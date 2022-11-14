@@ -75,15 +75,14 @@ bool LLGAOPCreator::CreateSoftmaxOp(LLGAINFO* llga_info, const OperatorConfig& o
   return true;
 }
 
-int LLGAOPCreator::CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
+int LLGAOPCreator::CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<logical_tensor>& inputs, int index,
                                             bool has_bias, bool transpose_a_, bool transpose_b_) {
-  logical_tensor dst_desc {llga_info->GetLTIndex(), data_type::f32, layout_type::any};
+  logical_tensor dst_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
   llga_info->AddLogicalTensor(dst_desc);
   vector<logical_tensor> ip_inputs;
   ip_inputs.push_back(inputs[0]);
   ip_inputs.push_back(inputs[1]);
-  if (has_bias)
-    ip_inputs.push_back(inputs[2]);
+  if (has_bias) ip_inputs.push_back(inputs[2]);
   llga_op ip_op(llga_info->GetOPIndex(), llga_op::kind::MatMul, ip_inputs, {dst_desc},
                 "matmul" + to_string(llga_info->GetOPIndex()));
   ip_op.set_attr<bool>("transpose_a", transpose_a_);
@@ -92,12 +91,12 @@ int LLGAOPCreator::CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<lo
   return dst_desc.get_id();
 }
 
-int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
+int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<logical_tensor>& inputs, int index,
                                             bool has_bias, bool transpose_a_, bool transpose_b_, bool append_sum) {
-  auto src0_min_ = llga_info->GetTensorByID(inputs[has_bias+append_sum+2].get_id());
-  auto src0_max_ = llga_info->GetTensorByID(inputs[has_bias+append_sum+3].get_id());
-  auto src1_min_ = llga_info->GetTensorByID(inputs[has_bias+append_sum+4].get_id());
-  auto src1_max_ = llga_info->GetTensorByID(inputs[has_bias+append_sum+5].get_id());
+  auto src0_min_ = llga_info->GetTensorByID(inputs[has_bias + append_sum + 2].get_id());
+  auto src0_max_ = llga_info->GetTensorByID(inputs[has_bias + append_sum + 3].get_id());
+  auto src1_min_ = llga_info->GetTensorByID(inputs[has_bias + append_sum + 4].get_id());
+  auto src1_max_ = llga_info->GetTensorByID(inputs[has_bias + append_sum + 5].get_id());
   vector<float> src0_scales = LLGAGetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), "u8");
   vector<float> src1_scales = LLGAGetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), "s8");
 
@@ -138,25 +137,28 @@ int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<lo
     }
     llga_info->SetTensorByID(bias_id, new_tensor);
     auto old_lt = inputs[2];
-    logical_tensor new_lt {old_lt.get_id(), data_type::f32, old_lt.get_dims(),
-                           old_lt.get_layout_type(), old_lt.get_property_type()};
+    logical_tensor new_lt{old_lt.get_id(), data_type::f32, old_lt.get_dims(), old_lt.get_layout_type(),
+                          old_lt.get_property_type()};
     llga_info->AddLogicalTensor(new_lt, bias_id);
   }
   // dequantize
-  logical_tensor in_desc {llga_info->GetLTIndex(), data_type::f32, layout_type::any};
+  logical_tensor in_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
   llga_info->AddLogicalTensor(in_desc);
-  logical_tensor w_desc {llga_info->GetLTIndex(), data_type::f32, layout_type::any};
+  logical_tensor w_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
   // logical_tensor w_desc {llga_info->GetLTIndex(), data_type::f32, inputs[1].get_dims(), layout_type::any,
-                            // property_type::constant};
+  // property_type::constant};
   llga_info->AddLogicalTensor(w_desc);
-  logical_tensor ip_out_desc {llga_info->GetLTIndex(), data_type::f32, layout_type::any};
+  logical_tensor ip_out_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
   llga_info->AddLogicalTensor(ip_out_desc);
 
-  llga_op dequant_in{llga_info->GetOPIndex(), llga_op::kind::Dequantize, {inputs[0]}, {in_desc},
+  llga_op dequant_in{llga_info->GetOPIndex(),
+                     llga_op::kind::Dequantize,
+                     {inputs[0]},
+                     {in_desc},
                      "dequant_in" + to_string(llga_info->GetOPIndex())};
-  dequant_in.set_attr<vector<float>>("scales", {1/src0_scales[0]});
+  dequant_in.set_attr<vector<float>>("scales", {1 / src0_scales[0]});
   // float* min_data = (float*)src0_min_->mutable_data();
-  dequant_in.set_attr<vector<int64_t>>("zps", {nearbyint(-(*min_data) * src0_scales[0])});
+  dequant_in.set_attr<vector<int64_t>>("zps", {static_cast<int64_t>(nearbyint(-(*min_data) * src0_scales[0]))});
   // dequant_in.set_attr<vector<int64_t>>("zps", {0});
   dequant_in.set_attr<string>("qtype", "per_tensor");
   llga_info->AddLLGAOP(dequant_in, index);
@@ -178,7 +180,10 @@ int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<lo
     src1_scales[i] = 1 / src1_scales[i];
     src1_zps.push_back(0);
   }
-  llga_op dequant_w{llga_info->GetOPIndex(), llga_op::kind::Dequantize, {inputs[1]}, {w_desc},
+  llga_op dequant_w{llga_info->GetOPIndex(),
+                    llga_op::kind::Dequantize,
+                    {inputs[1]},
+                    {w_desc},
                     "dequant_w" + to_string(llga_info->GetOPIndex())};
   dequant_w.set_attr<vector<float>>("scales", src1_scales);
   dequant_w.set_attr<vector<int64_t>>("zps", src1_zps);
@@ -193,10 +198,12 @@ int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<lo
   vector<logical_tensor> ip_inputs;
   ip_inputs.push_back(in_desc);
   ip_inputs.push_back(w_desc);
-  if (has_bias)
-    ip_inputs.push_back(llga_info->GetLogicalTensor(inputs[2].get_id()));
+  if (has_bias) ip_inputs.push_back(llga_info->GetLogicalTensor(inputs[2].get_id()));
 
-  llga_op ip_op{llga_info->GetOPIndex(), llga_op::kind::MatMul, ip_inputs, {ip_out_desc},
+  llga_op ip_op{llga_info->GetOPIndex(),
+                llga_op::kind::MatMul,
+                ip_inputs,
+                {ip_out_desc},
                 "matmul" + to_string(llga_info->GetOPIndex())};
   ip_op.set_attr<bool>("transpose_a", transpose_a_);
   ip_op.set_attr<bool>("transpose_b", transpose_b_);
@@ -222,14 +229,12 @@ bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const OperatorConf
   auto iter = attrs_map.find("src0_perm");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&src0_perm_, attrs_map["src0_perm"], ",");
-    if (src0_perm_ == vector<int64_t>{1, 0})
-      transpose_a_ = true;
+    if (src0_perm_ == vector<int64_t>{1, 0}) transpose_a_ = true;
   }
   iter = attrs_map.find("src1_perm");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&src1_perm_, attrs_map["src1_perm"], ",");
-    if (src1_perm_ == vector<int64_t>{1, 0})
-      transpose_b_ = false;
+    if (src1_perm_ == vector<int64_t>{1, 0}) transpose_b_ = false;
   }
 
   iter = attrs_map.find("output_dtype");
@@ -261,62 +266,63 @@ bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const OperatorConf
     has_bias = input_size - 2 - (binary_add_ || append_sum_);  // TODO(lzw) check this
     last_lt_id = CreateInnerProductOpFp32(llga_info, inputs, index, has_bias, transpose_a_, transpose_b_);
   } else {
-    if (input_size <=7)
+    if (input_size <= 7)
       has_bias = input_size - 6 - (binary_add_ || append_sum_);  // TODO(lzw) check this
     else
       has_bias = input_size - 8 - (binary_add_ || append_sum_);  // TODO(lzw) check this
-    last_lt_id = CreateInnerProductOpInt8(llga_info, inputs, index,
-                                          has_bias, transpose_a_, transpose_b_, binary_add_ || append_sum_);
+    last_lt_id = CreateInnerProductOpInt8(llga_info, inputs, index, has_bias, transpose_a_, transpose_b_,
+                                          binary_add_ || append_sum_);
   }
 
-  logical_tensor append_desc {llga_info->GetLTIndex(), data_type::f32, layout_type::any};
+  logical_tensor append_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
   llga_info->AddLogicalTensor(append_desc);
 
   if (append_eltwise_) {
     if (tanh_) {
       llga_op tanh_op(llga_info->GetOPIndex(), llga_op::kind::Tanh, {llga_info->GetLogicalTensor(last_lt_id)},
-                     {append_desc}, "tanh" + to_string(llga_info->GetOPIndex()));
+                      {append_desc}, "tanh" + to_string(llga_info->GetOPIndex()));
       llga_info->AddLLGAOP(tanh_op, index);
     }
 
     if (gelu_erf_ && !gelu_split_) {
       llga_op gelu_op(llga_info->GetOPIndex(), llga_op::kind::GELU, {llga_info->GetLogicalTensor(last_lt_id)},
-                     {append_desc}, "gelu" + to_string(llga_info->GetOPIndex()));
+                      {append_desc}, "gelu" + to_string(llga_info->GetOPIndex()));
       llga_info->AddLLGAOP(gelu_op, index);
     }
 
     if (gelu_tanh_ && !gelu_split_) {
-      LOG(WARNING) << "gelu_tanh_ is not supported by in onednn graph," <<
-                  " and it is temporarily replaced by GELU.";
+      LOG(WARNING) << "gelu_tanh_ is not supported by in onednn graph,"
+                   << " and it is temporarily replaced by GELU.";
       llga_op gelu_op(llga_info->GetOPIndex(), llga_op::kind::GELU, {llga_info->GetLogicalTensor(last_lt_id)},
-                     {append_desc}, "gelu" + to_string(llga_info->GetOPIndex()));
+                      {append_desc}, "gelu" + to_string(llga_info->GetOPIndex()));
       llga_info->AddLLGAOP(gelu_op, index);
     }
 
     if (sigmoid_) {
       llga_op sigmoid_op(llga_info->GetOPIndex(), llga_op::kind::Sigmoid, {llga_info->GetLogicalTensor(last_lt_id)},
-                        {append_desc}, "sigmoid" + to_string(llga_info->GetOPIndex()));
+                         {append_desc}, "sigmoid" + to_string(llga_info->GetOPIndex()));
       llga_info->AddLLGAOP(sigmoid_op, index);
     }
 
     if (relu_) {
       llga_op relu_op(llga_info->GetOPIndex(), llga_op::kind::ReLU, {llga_info->GetLogicalTensor(last_lt_id)},
-                     {append_desc}, "relu" + to_string(llga_info->GetOPIndex()));
+                      {append_desc}, "relu" + to_string(llga_info->GetOPIndex()));
       llga_info->AddLLGAOP(relu_op, index);
     }
     last_lt_id = append_desc.get_id();
 
   } else if (binary_add_ || append_sum_) {
-    llga_op sum_op(llga_info->GetOPIndex(), llga_op::kind::Add, {llga_info->GetLogicalTensor(last_lt_id),
-                   inputs[has_bias+2]}, {append_desc}, "sum" + to_string(llga_info->GetOPIndex()));
+    llga_op sum_op(llga_info->GetOPIndex(), llga_op::kind::Add,
+                   {llga_info->GetLogicalTensor(last_lt_id), inputs[has_bias + 2]}, {append_desc},
+                   "sum" + to_string(llga_info->GetOPIndex()));
     llga_info->AddLLGAOP(sum_op, index);
     last_lt_id = append_desc.get_id();
   }
   if (output_dtype_ != "fp32") {
-  // if (input_size > 4 && !append_sum_) {
+    // if (input_size > 4 && !append_sum_) {
     // add quantize op.
-    auto dst_min_ = llga_info->GetTensorByID(inputs[has_bias+append_sum_+6].get_id());
-    auto dst_max_ = llga_info->GetTensorByID(inputs[has_bias+append_sum_+7].get_id());
+    auto dst_min_ = llga_info->GetTensorByID(inputs[has_bias + append_sum_ + 6].get_id());
+    auto dst_max_ = llga_info->GetTensorByID(inputs[has_bias + append_sum_ + 7].get_id());
     vector<float> dst_scales;
     vector<int64_t> dst_zps;
 
@@ -332,10 +338,13 @@ bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const OperatorConf
       dtype = data_type::s8;
       dst_zps.push_back(0);
     }
-    logical_tensor out_desc {llga_info->GetLTIndex(), dtype, layout_type::any};
+    logical_tensor out_desc{llga_info->GetLTIndex(), dtype, layout_type::any};
     llga_info->AddLogicalTensor(out_desc);
-    llga_op quant_out{llga_info->GetOPIndex(), llga_op::kind::Quantize,
-             {llga_info->GetLogicalTensor(last_lt_id)}, {out_desc}, "quant_out" + to_string(llga_info->GetOPIndex())};
+    llga_op quant_out{llga_info->GetOPIndex(),
+                      llga_op::kind::Quantize,
+                      {llga_info->GetLogicalTensor(last_lt_id)},
+                      {out_desc},
+                      "quant_out" + to_string(llga_info->GetOPIndex())};
     quant_out.set_attr<vector<float>>("scales", {1 / dst_scales[0]});
     quant_out.set_attr<vector<int64_t>>("zps", dst_zps);
     quant_out.set_attr<string>("qtype", "per_tensor");
@@ -364,9 +373,10 @@ bool LLGAOPCreator::CreateQuantizeOp(LLGAINFO* llga_info, const OperatorConfig& 
   float* min_data = reinterpret_cast<float*>(src0_min_->mutable_data());
   llga_op quantize_op(llga_info->GetOPIndex(), llga_op::kind::Quantize, {inputs[0]}, outputs,
                       "quantize" + to_string(llga_info->GetOPIndex()));
-  quantize_op.set_attr<vector<float>>("scales", {1/src0_scales[0]});
+  quantize_op.set_attr<vector<float>>("scales", {1 / src0_scales[0]});
+
   if (output_dtype == "u8") {
-    quantize_op.set_attr<vector<int64_t>>("zps", {nearbyint(- (*min_data) * src0_scales[0])});
+    quantize_op.set_attr<vector<int64_t>>("zps", {static_cast<int64_t>(nearbyint(-(*min_data) * src0_scales[0]))});
   } else if (output_dtype == "s8") {
     quantize_op.set_attr<vector<int64_t>>("zps", {0});
   }
@@ -390,7 +400,7 @@ bool LLGAOPCreator::CreateBinaryAddOp(LLGAINFO* llga_info, const OperatorConfig&
                     "sum" + to_string(llga_info->GetOPIndex()));
     llga_info->AddLLGAOP(sum1_op, index);
   } else {
-    logical_tensor out_desc {llga_info->GetLTIndex(), data_type::f32, layout_type::any};
+    logical_tensor out_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
     llga_info->AddLogicalTensor(out_desc);
     llga_op sum1_op(llga_info->GetOPIndex(), llga_op::kind::Add, {inputs[0], inputs[1]}, {out_desc},
                     "sum" + to_string(llga_info->GetOPIndex()));
@@ -431,7 +441,7 @@ bool LLGAOPCreator::CreateReshapeOp(LLGAINFO* llga_info, const OperatorConfig& o
   vector<int64_t> dims_;
   vector<int64_t> mul_;
   auto attrs_map = op_conf.attributes();
-    auto iter = attrs_map.find("dst_shape");
+  auto iter = attrs_map.find("dst_shape");
   if (iter != attrs_map.end()) StringSplit<int64_t>(&shape_, attrs_map["dst_shape"], ",");
   iter = attrs_map.find("dims");
   if (iter != attrs_map.end()) StringSplit<int64_t>(&dims_, attrs_map["dims"], ",");
@@ -474,7 +484,7 @@ bool LLGAOPCreator::CreateMatmulOp(LLGAINFO* llga_info, const OperatorConfig& op
   if (!src0_perm_.empty()) return false;
   std::cout << "CreateMatmulOp..\n";
   if (!src1_perm_.empty() && !dst_perm_.empty()) {
-    logical_tensor out_desc {llga_info->GetLTIndex(), data_type::f32, layout_type::any};
+    logical_tensor out_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
     std::cout << "in id: " << out_desc.get_id() << std::endl;
     llga_info->AddLogicalTensor(out_desc);
     // TODO(lzw) transpose op won't fuse with following matmul, and single transpose is not supported by llga.
@@ -483,7 +493,7 @@ bool LLGAOPCreator::CreateMatmulOp(LLGAINFO* llga_info, const OperatorConfig& op
     trans_op.set_attr<vector<int64_t>>("order", src1_perm_);
     llga_info->AddLLGAOP(trans_op, index);
 
-    logical_tensor out2_desc {llga_info->GetLTIndex(), data_type::f32, layout_type::any};
+    logical_tensor out2_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
     llga_info->AddLogicalTensor(out2_desc);
     llga_op matmul_op(llga_info->GetOPIndex(), llga_op::kind::MatMul, {inputs[0], out_desc}, {out2_desc},
                       "matmul" + to_string(llga_info->GetOPIndex()));
@@ -517,7 +527,7 @@ bool LLGAOPCreator::CreateErfOp(LLGAINFO* llga_info, const OperatorConfig& op_co
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
   llga_op erf_op(llga_info->GetOPIndex(), llga_op::kind::Erf, inputs, outputs,
-                     "erf" + to_string(llga_info->GetOPIndex()));
+                 "erf" + to_string(llga_info->GetOPIndex()));
   llga_info->AddLLGAOP(erf_op, index);
   return true;
 }
@@ -534,7 +544,7 @@ bool LLGAOPCreator::CreateDivideOp(LLGAINFO* llga_info, const OperatorConfig& op
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
   llga_op divide_op(llga_info->GetOPIndex(), llga_op::kind::Divide, inputs, outputs,
-                     "div" + to_string(llga_info->GetOPIndex()));
+                    "div" + to_string(llga_info->GetOPIndex()));
   llga_info->AddLLGAOP(divide_op, index);
   return true;
 }
@@ -551,7 +561,7 @@ bool LLGAOPCreator::CreateMultiplyOp(LLGAINFO* llga_info, const OperatorConfig& 
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
   llga_op multiply_op(llga_info->GetOPIndex(), llga_op::kind::Multiply, inputs, outputs,
-                     "mul" + to_string(llga_info->GetOPIndex()));
+                      "mul" + to_string(llga_info->GetOPIndex()));
   llga_info->AddLLGAOP(multiply_op, index);
   return true;
 }
@@ -568,7 +578,7 @@ bool LLGAOPCreator::CreateSqrtOp(LLGAINFO* llga_info, const OperatorConfig& op_c
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
   llga_op sqrt_op(llga_info->GetOPIndex(), llga_op::kind::Sqrt, inputs, outputs,
-                     "sqrt" + to_string(llga_info->GetOPIndex()));
+                  "sqrt" + to_string(llga_info->GetOPIndex()));
   llga_info->AddLLGAOP(sqrt_op, index);
   return true;
 }
@@ -585,7 +595,7 @@ bool LLGAOPCreator::CreateTanhOp(LLGAINFO* llga_info, const OperatorConfig& op_c
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
   llga_op tanh_op(llga_info->GetOPIndex(), llga_op::kind::Tanh, inputs, outputs,
-                     "tanh" + to_string(llga_info->GetOPIndex()));
+                  "tanh" + to_string(llga_info->GetOPIndex()));
   llga_info->AddLLGAOP(tanh_op, index);
   return true;
 }
@@ -602,7 +612,7 @@ bool LLGAOPCreator::CreateSubtractOp(LLGAINFO* llga_info, const OperatorConfig& 
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
   llga_op subtract_op(llga_info->GetOPIndex(), llga_op::kind::Subtract, inputs, outputs,
-                     "sub" + to_string(llga_info->GetOPIndex()));
+                      "sub" + to_string(llga_info->GetOPIndex()));
   llga_info->AddLLGAOP(subtract_op, index);
   return true;
 }
@@ -619,7 +629,7 @@ bool LLGAOPCreator::CreateTypeCastOp(LLGAINFO* llga_info, const OperatorConfig& 
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
   llga_op typecast_op(llga_info->GetOPIndex(), llga_op::kind::TypeCast, inputs, outputs,
-                     "cast" + to_string(llga_info->GetOPIndex()));
+                      "cast" + to_string(llga_info->GetOPIndex()));
   llga_info->AddLLGAOP(typecast_op, index);
   return true;
 }
@@ -639,7 +649,7 @@ bool LLGAOPCreator::CreateDequantizeOp(LLGAINFO* llga_info, const OperatorConfig
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
   llga_op dequantize_op(llga_info->GetOPIndex(), llga_op::kind::Dequantize, {inputs[0]}, outputs,
-                     "dequantize_linear" + to_string(llga_info->GetOPIndex()));
+                        "dequantize_linear" + to_string(llga_info->GetOPIndex()));
 
   // per channel only supports one axis
   assert(inputs[1].get_dims().size() == 1);
@@ -675,15 +685,13 @@ bool LLGAOPCreator::CreateDequantizeOp(LLGAINFO* llga_info, const OperatorConfig
           zps_vec.emplace_back(static_cast<int64_t>(zps_data[i]));
         }
       } else {
-        LOG(ERROR) << "zps dtype: " << zps->dtype() \
-                   << ", dequantize only supports u8/s8 dtype!";
+        LOG(ERROR) << "zps dtype: " << zps->dtype() << ", dequantize only supports u8/s8 dtype!";
       }
     } else {
       if (scales_size == zps_size) {  // engine supports this case
         return false;
       } else {
-        LOG(ERROR) << "illegal scales/zps size, scales size: " << scales_size \
-                   << ", zps size: " << zps_size;
+        LOG(ERROR) << "illegal scales/zps size, scales size: " << scales_size << ", zps size: " << zps_size;
       }
     }
   } else {  // zps is not optional

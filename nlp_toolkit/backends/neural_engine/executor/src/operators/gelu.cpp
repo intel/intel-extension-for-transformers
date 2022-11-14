@@ -39,14 +39,17 @@ void GeluOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& 
 }
 
 void GeluOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+#ifdef WITH_SPARSELIB
   if (int8_lut_optimize)
     ReshapeWithSparselib(input, output);
   else if (int8_lut_acc_test)
     ReshapeWithInt8LutAccTest(input, output);
   else
+#endif
     ReshapeWithOnednn(input, output);
 }
 
+#ifdef WITH_SPARSELIB
 void GeluOperator::ReshapeWithInt8LutAccTest(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   auto input_dt = input[0]->dtype();
   auto src_min = input[1];
@@ -54,6 +57,7 @@ void GeluOperator::ReshapeWithInt8LutAccTest(const vector<Tensor*>& input, const
   Tensor* dst_tensor_ptr = output[0];
   dst_tensor_ptr->set_shape(input[0]->shape());
 }
+
 
 void GeluOperator::ReshapeWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   auto input_dt = input[0]->dtype();
@@ -97,6 +101,7 @@ void GeluOperator::ReshapeWithSparselib(const vector<Tensor*>& input, const vect
   jd::eltwiseop_desc eltwiseop_desc(op_desc);
   eltwiseop_ker = jd::eltwiseop(eltwiseop_desc);
 }
+#endif
 
 void GeluOperator::ReshapeWithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Prepare tensors shape and memory descriptors
@@ -140,11 +145,13 @@ void GeluOperator::ReshapeWithOnednn(const vector<Tensor*>& input, const vector<
 }
 
 void GeluOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+#ifdef WITH_SPARSELIB
   if (int8_lut_optimize)
     ForwardWithSparselib(input, output);
   else if (int8_lut_acc_test)
     ForwardWithInt8LutAccTest(input, output);
   else
+#endif
     ForwardWithOnednn(input, output);
 }
 
@@ -170,6 +177,7 @@ void GeluOperator::ForwardWithOnednn(const vector<Tensor*>& input, const vector<
   this->unref_tensors(input);
 }
 
+#ifdef WITH_SPARSELIB
 void GeluOperator::ForwardWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   Tensor* dst_ptr = output[0];
   dst_ptr->mutable_data();
@@ -226,6 +234,7 @@ void GeluOperator::ForwardWithInt8LutAccTest(const vector<Tensor*>& input, const
 
   this->unref_tensors(input);
 }
+#endif
 
 REGISTER_OPERATOR_CLASS(Gelu);
 }  // namespace executor

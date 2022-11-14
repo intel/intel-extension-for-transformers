@@ -56,9 +56,10 @@ bool get_verbose_timestamp() {
 }
 
 double get_msec() {
-  struct timeval time;
-  gettimeofday(&time, nullptr);
-  return 1e+3 * time.tv_sec + 1e-3 * time.tv_usec;
+  return std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now())
+             .time_since_epoch()
+             .count() /
+         1e3;
 }
 
 static std::string init_info_layernorm_ba(std::vector<dim_t> shape) {

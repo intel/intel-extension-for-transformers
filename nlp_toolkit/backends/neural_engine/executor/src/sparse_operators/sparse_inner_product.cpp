@@ -135,7 +135,7 @@ template BSCMatrix<int8_t>* create_bsc_matrix(const int8_t* dense_matrix, const 
 
 template <typename T>
 void destroy_bsr_matrix(BSRMatrix<T>* bsr_matrix) {
-  free(bsr_matrix->data);
+  aligned_free(bsr_matrix->data);
   delete[] bsr_matrix->colidxs;
   delete[] bsr_matrix->rowptr;
   delete bsr_matrix;
@@ -145,7 +145,7 @@ template void destroy_bsr_matrix(BSRMatrix<int8_t>* bsr_matrix);
 
 template <typename T>
 void destroy_bsc_matrix(BSCMatrix<T>* bsc_matrix) {
-  free(bsc_matrix->data);
+  aligned_free(bsc_matrix->data);
   delete[] bsc_matrix->rowidxs;
   delete[] bsc_matrix->colptr;
   delete bsc_matrix;
@@ -188,19 +188,19 @@ void sparse_gemm_bsc_f32(int64_t M, int64_t N, int64_t K, const float* A, const 
 #pragma omp parallel for collapse(2)
   for (int64_t mb = 0; mb < M / M_NBLK; mb++) {
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
       __m512 output[M_NBLK];
+#endif
       for (int64_t i = 0; i < M_NBLK; i++) {
         output[i] = _mm512_setzero_ps();
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[M_NBLK];
-        for (int64_t i = 0; i < M_NBLK; i++) {
-          activation[i] = _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < M_NBLK; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < M_NBLK; i++) {
@@ -214,19 +214,19 @@ void sparse_gemm_bsc_f32(int64_t M, int64_t N, int64_t K, const float* A, const 
 #pragma omp parallel for
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
       const size_t kTailCnt = tail_row_num;
-      __m512 output[kTailCnt];
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
+      __m512 output[M_NBLK];
+#endif
       for (int64_t i = 0; i < tail_row_num; i++) {
         output[i] = _mm512_setzero_ps();
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[kTailCnt];
-        for (int64_t i = 0; i < tail_row_num; i++) {
-          activation[i] = _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < tail_row_num; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < tail_row_num; i++) {
@@ -241,22 +241,23 @@ void sparse_gemm_bsc_bias_f32(int64_t M, int64_t N, int64_t K, const float* A, c
                               const float* bias, float* C, const int64_t M_NBLK) {
   assert(K % blocksize[0] == 0);
   assert(N % blocksize[1] == 0);
+  LOG(ERROR) << M << " " << N << " " << K << " " << ncolptr << " " << blocksize.size() << " " << M_NBLK << std::endl;
 #pragma omp parallel for collapse(2)
   for (int64_t mb = 0; mb < M / M_NBLK; mb++) {
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
       __m512 output[M_NBLK];
+#endif
       for (int64_t i = 0; i < M_NBLK; i++) {
         output[i] = _mm512_load_ps(&bias[b_col * 16]);
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[M_NBLK];
-        for (int64_t i = 0; i < M_NBLK; i++) {
-          activation[i] = _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < M_NBLK; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < M_NBLK; i++) {
@@ -270,19 +271,19 @@ void sparse_gemm_bsc_bias_f32(int64_t M, int64_t N, int64_t K, const float* A, c
 #pragma omp parallel for
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
       const size_t kTailCnt = tail_row_num;
+#if _WIN32
+      std::vector<__m512> output(kTailCnt);
+#else
       __m512 output[kTailCnt];
+#endif
       for (int64_t i = 0; i < tail_row_num; i++) {
         output[i] = _mm512_load_ps(&bias[b_col * 16]);
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[kTailCnt];
-        for (int64_t i = 0; i < tail_row_num; i++) {
-          activation[i] = _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < tail_row_num; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < tail_row_num; i++) {
@@ -299,22 +300,23 @@ void sparse_gemm_bsc_bias_relu_f32(int64_t M, int64_t N, int64_t K, const float*
   assert(K % blocksize[0] == 0);
   assert(N % blocksize[1] == 0);
   __m512 d = _mm512_setzero_ps();
+
 #pragma omp parallel for collapse(2)
   for (int64_t mb = 0; mb < M / M_NBLK; mb++) {
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
       __m512 output[M_NBLK];
+#endif
       for (int64_t i = 0; i < M_NBLK; i++) {
         output[i] = _mm512_load_ps(&bias[b_col * 16]);
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[M_NBLK];
-        for (int64_t i = 0; i < M_NBLK; i++) {
-          activation[i] = _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < M_NBLK; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < M_NBLK; i++) {
@@ -329,19 +331,19 @@ void sparse_gemm_bsc_bias_relu_f32(int64_t M, int64_t N, int64_t K, const float*
 #pragma omp parallel for
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
       const size_t kTailCnt = tail_row_num;
+#if _WIN32
+      std::vector<__m512> output(kTailCnt);
+#else
       __m512 output[kTailCnt];
+#endif
       for (int64_t i = 0; i < tail_row_num; i++) {
         output[i] = _mm512_load_ps(&bias[b_col * 16]);
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[kTailCnt];
-        for (int64_t i = 0; i < tail_row_num; i++) {
-          activation[i] = _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < tail_row_num; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < tail_row_num; i++) {
@@ -361,20 +363,20 @@ void sparse_gemm_bsc_bias_sum_f32(int64_t M, int64_t N, int64_t K, const float* 
 #pragma omp parallel for collapse(2)
   for (int mb = 0; mb < M / M_NBLK; mb++) {
     for (int b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
       __m512 output[M_NBLK];
+#endif
       for (int i = 0; i < M_NBLK; i++) {
         output[i] =
             _mm512_add_ps(_mm512_load_ps(&bias[b_col * 16]), _mm512_load_ps(post + (mb * M_NBLK + i) * N + b_col * 16));
       }
       for (int b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int b_row = rowidxs[b_row_idx];
-        __m512 activation[M_NBLK];
-        for (int i = 0; i < M_NBLK; i++) {
-          activation[i] = _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int i = 0; i < M_NBLK; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]), output[i]);
         }
       }
       for (int i = 0; i < M_NBLK; i++) {
@@ -388,20 +390,20 @@ void sparse_gemm_bsc_bias_sum_f32(int64_t M, int64_t N, int64_t K, const float* 
 #pragma omp parallel for
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
       const size_t kTailCnt = tail_row_num;
-      __m512 output[kTailCnt];
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
+      __m512 output[M_NBLK];
+#endif
       for (int64_t i = 0; i < tail_row_num; i++) {
         output[i] = _mm512_add_ps(_mm512_load_ps(&bias[b_col * 16]),
                                   _mm512_load_ps(post + (tail_row_bgn + i) * N + b_col * 16));
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[kTailCnt];
-        for (int64_t i = 0; i < tail_row_num; i++) {
-          activation[i] = _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < tail_row_num; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < tail_row_num; i++) {
@@ -428,19 +430,19 @@ void sparse_gemm_bsc_bias_tanh_f32(int64_t M, int64_t N, int64_t K, const float*
 #pragma omp parallel for collapse(2)
   for (int mb = 0; mb < M / M_NBLK; mb++) {
     for (int b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
       __m512 output[M_NBLK];
+#endif
       for (int i = 0; i < M_NBLK; i++) {
         output[i] = _mm512_load_ps(&bias[b_col * 16]);
       }
       for (int b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int b_row = rowidxs[b_row_idx];
-        __m512 activation[M_NBLK];
-        for (int i = 0; i < M_NBLK; i++) {
-          activation[i] = _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int i = 0; i < M_NBLK; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]), output[i]);
         }
       }
       for (int i = 0; i < M_NBLK; i++) {
@@ -454,19 +456,19 @@ void sparse_gemm_bsc_bias_tanh_f32(int64_t M, int64_t N, int64_t K, const float*
 #pragma omp parallel for
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
       const size_t kTailCnt = tail_row_num;
-      __m512 output[kTailCnt];
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
+      __m512 output[M_NBLK];
+#endif
       for (int64_t i = 0; i < tail_row_num; i++) {
         output[i] = _mm512_load_ps(&bias[b_col * 16]);
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[kTailCnt];
-        for (int64_t i = 0; i < tail_row_num; i++) {
-          activation[i] = _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < tail_row_num; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < tail_row_num; i++) {
@@ -509,7 +511,11 @@ void sparse_gemm_bsc_bias_gelu_tanh_f32(int64_t M, int64_t N, int64_t K, const f
 #pragma omp parallel for collapse(2)
   for (int mb = 0; mb < M / M_NBLK; mb++) {
     for (int b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
       __m512 output[M_NBLK];
+#endif
       // load bias
       output[0] = _mm512_load_ps(bias + b_col * 16);
       for (int i = 1; i < M_NBLK; i++) {
@@ -517,13 +523,9 @@ void sparse_gemm_bsc_bias_gelu_tanh_f32(int64_t M, int64_t N, int64_t K, const f
       }
       for (int b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {  // K dim
         int b_row = rowidxs[b_row_idx];
-        __m512 activation[M_NBLK];
-        for (int i = 0; i < M_NBLK; i++) {
-          activation[i] = _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int i = 0; i < M_NBLK; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]), output[i]);
         }
       }
       for (int i = 0; i < M_NBLK; ++i) {
@@ -537,19 +539,19 @@ void sparse_gemm_bsc_bias_gelu_tanh_f32(int64_t M, int64_t N, int64_t K, const f
 #pragma omp parallel for
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
       const size_t kTailCnt = tail_row_num;
-      __m512 output[kTailCnt];
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
+      __m512 output[M_NBLK];
+#endif
       for (int64_t i = 0; i < tail_row_num; i++) {
         output[i] = _mm512_load_ps(&bias[b_col * 16]);
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[kTailCnt];
-        for (int64_t i = 0; i < tail_row_num; i++) {
-          activation[i] = _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < tail_row_num; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < tail_row_num; i++) {
@@ -580,7 +582,11 @@ void sparse_gemm_bsc_bias_sigmod_f32(int64_t M, int64_t N, int64_t K, const floa
 #pragma omp parallel for collapse(2)
   for (int mb = 0; mb < M / M_NBLK; mb++) {
     for (int b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
       __m512 output[M_NBLK];
+#endif
       // load bias
       output[0] = _mm512_load_ps(bias + b_col * 16);
       for (int i = 1; i < M_NBLK; i++) {
@@ -588,13 +594,9 @@ void sparse_gemm_bsc_bias_sigmod_f32(int64_t M, int64_t N, int64_t K, const floa
       }
       for (int b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {  // K dim
         int b_row = rowidxs[b_row_idx];
-        __m512 activation[M_NBLK];
-        for (int i = 0; i < M_NBLK; i++) {
-          activation[i] = _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int i = 0; i < M_NBLK; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(mb * M_NBLK + i) * K + b_row]), output[i]);
         }
       }
       for (int i = 0; i < M_NBLK; ++i) {
@@ -608,19 +610,19 @@ void sparse_gemm_bsc_bias_sigmod_f32(int64_t M, int64_t N, int64_t K, const floa
 #pragma omp parallel for
     for (int64_t b_col = 0; b_col < ncolptr - 1; b_col++) {  // N dim
       const size_t kTailCnt = tail_row_num;
-      __m512 output[kTailCnt];
+#if _WIN32
+      std::vector<__m512> output(M_NBLK);
+#else
+      __m512 output[M_NBLK];
+#endif
       for (int64_t i = 0; i < tail_row_num; i++) {
         output[i] = _mm512_load_ps(&bias[b_col * 16]);
       }
       for (int64_t b_row_idx = colptr[b_col]; b_row_idx < colptr[b_col + 1]; b_row_idx++) {
         int64_t b_row = rowidxs[b_row_idx];
-        __m512 activation[kTailCnt];
-        for (int64_t i = 0; i < tail_row_num; i++) {
-          activation[i] = _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]);
-        }
         __m512 sparse_weight = _mm512_load_ps(&B[b_row_idx * 16]);
         for (int64_t i = 0; i < tail_row_num; i++) {
-          output[i] = _mm512_fmadd_ps(sparse_weight, activation[i], output[i]);
+          output[i] = _mm512_fmadd_ps(sparse_weight, _mm512_set1_ps(A[(tail_row_bgn + i) * K + b_row]), output[i]);
         }
       }
       for (int64_t i = 0; i < tail_row_num; i++) {

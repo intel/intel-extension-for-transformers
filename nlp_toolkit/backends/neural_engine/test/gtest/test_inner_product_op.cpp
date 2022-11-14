@@ -15,10 +15,10 @@
 #include <map>
 #include <string>
 
-#include "../../include/common.hpp"
-#include "../../include/conf.hpp"
-#include "../../include/llga_operators/llga_kernel.hpp"
-#include "../../include/operators/inner_product.hpp"
+#include "common.hpp"
+#include "conf.hpp"
+#include "llga_operators/llga_kernel.hpp"
+#include "operators/inner_product.hpp"
 #include "gtest/gtest.h"
 using executor::AttrConfig;
 using executor::MemoryAllocator;

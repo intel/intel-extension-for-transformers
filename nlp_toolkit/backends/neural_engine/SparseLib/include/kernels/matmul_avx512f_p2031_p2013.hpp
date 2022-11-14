@@ -48,7 +48,7 @@ class matmul_avx512f_p2031_p2013_kd_t : public kernel_desc_t {
   // kernel_desc_t::create_primitive() override.
   DECLARE_COMMON_PD_T(matmul_avx512f_p2031_p2013_k_t, matmul_avx512f_p2031_p2013_kd_t);
 
-  const jd::operator_desc& operator_desc() const override { return op_desc_; }
+  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const ssd::matmul_param_t& jit_param() const { return jit_param_; }
 
   inline std::vector<dim_t> shape() const {

@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "common.hpp"
-#include "gflags/gflags.h"
 #include "tensor.hpp"
 
 namespace executor {

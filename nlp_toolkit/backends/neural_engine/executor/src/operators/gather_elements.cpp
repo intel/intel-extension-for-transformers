@@ -48,9 +48,9 @@ void GatherElementsOperator::Reshape(const vector<Tensor*>& input, const vector<
 }
 
 void GatherElementsOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  void* old_data = input[0]->mutable_data();
+  char* old_data = reinterpret_cast<char*>(input[0]->mutable_data());
   int32_t* idx_data = reinterpret_cast<int32_t*>(input[1]->mutable_data());
-  void* new_data = output[0]->mutable_data();
+  char* new_data = reinterpret_cast<char*>(output[0]->mutable_data());
   if (axis_ == dst_shape_.size() - 1) {
 #pragma omp parallel for
     for (int i = 0; i < outer_; i++) {

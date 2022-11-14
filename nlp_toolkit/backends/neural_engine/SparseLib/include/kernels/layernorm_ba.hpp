@@ -34,7 +34,7 @@ class layernorm_ba_kd_t : public kernel_desc_t {
       : kernel_desc_t(kernel_kind::layernorm_ba), op_desc_(op_desc) {}
 
   virtual ~layernorm_ba_kd_t() {
-    if (one_div_n_ != nullptr) free(one_div_n_);
+    if (one_div_n_ != nullptr) aligned_free(one_div_n_);
   }
 
  public:
@@ -43,7 +43,7 @@ class layernorm_ba_kd_t : public kernel_desc_t {
 
  public:
   inline std::vector<dim_t> shape() const { return op_desc_.tensor_descs()[0].shape(); }
-  const jd::operator_desc& operator_desc() const override { return op_desc_; }
+  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const std::vector<ssd::layernorm_ba_param_t>& params() const { return params_; }
   const float* one_div_n_ptr() const { return one_div_n_; }
 

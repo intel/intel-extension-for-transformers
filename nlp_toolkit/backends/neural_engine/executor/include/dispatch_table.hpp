@@ -15,7 +15,6 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_DISPATCH_TABLE_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_DISPATCH_TABLE_HPP_
 
-#include <unistd.h>
 #include <sys/stat.h>
 #include <glog/logging.h>
 #include <string>
@@ -30,6 +29,12 @@
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
+
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "conf.hpp"
 #include "operator.hpp"
@@ -110,7 +115,11 @@ class DispatchTable {
     // only for Linux system now
     int index = root.find_last_of("/");
     std::string folder_root = root.substr(0, index);
+    #ifdef _WIN32
+    _mkdir(folder_root.c_str());
+    #else
     if (access(folder_root.c_str(), F_OK) == -1) mkdir(folder_root.c_str(), ACCESSPERMS);
+    #endif
     auto shm_handle = GetTableHandle();
     auto& TableShm = OpenShm();
     auto& d_table = *(static_cast<DispatchMap*>(TableShm.get_address_from_handle(shm_handle)));

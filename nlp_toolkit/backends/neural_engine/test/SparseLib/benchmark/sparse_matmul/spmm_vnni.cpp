@@ -151,10 +151,11 @@ template <typename T>
 void prepare_sparse_data_spmm_vnni(T* vector_data, dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, float sparsity,
                                    uint32_t* seed = nullptr) {
   uint32_t default_seed = 123;
+  std::srand(default_seed);
   if (seed == nullptr) seed = &default_seed;
   for (int i = 0; i < rows; i += blk_row) {
     for (int j = 0; j < cols; j += blk_col) {
-      bool fill_zero = rand_r(seed) % 100 <= (sparsity * 100);
+      bool fill_zero = std::rand() % 100 <= (sparsity * 100);
       if (fill_zero) {
         for (int bi = i; bi < i + blk_row; ++bi) {
           for (int bj = j; bj < j + blk_col; ++bj) {

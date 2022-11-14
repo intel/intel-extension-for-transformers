@@ -36,7 +36,7 @@ namespace jd {
  *  Similar to onednn's "struct handle". oneapi/dnnl/dnnl.hpp:136.
  */
 template <typename T, typename arg_t = void>
-class proxy_base {
+class SPARSE_API_ proxy_base {
  public:
   proxy_base() {}
   virtual ~proxy_base() {}
@@ -56,7 +56,7 @@ class proxy_base {
 /**
  * @brief Base proxy class, interfacing to the real/cached kernel_desc_t.
  */
-class kernel_desc_proxy : public proxy_base<kernel_desc_t, operator_desc> {
+class SPARSE_API_ kernel_desc_proxy : public proxy_base<kernel_desc_t, operator_desc> {
  public:
   kernel_desc_proxy() {}
   explicit kernel_desc_proxy(const operator_desc& op_desc);
@@ -75,7 +75,7 @@ class kernel_desc_proxy : public proxy_base<kernel_desc_t, operator_desc> {
 /**
  * @brief Base proxy class, interfacing to the real/cached kernel_t.
  */
-class kernel_proxy : public proxy_base<kernel_t, std::shared_ptr<const kernel_desc_t>> {
+class SPARSE_API_ kernel_proxy : public proxy_base<kernel_t, std::shared_ptr<const kernel_desc_t>> {
  public:
   kernel_proxy() {}
   explicit kernel_proxy(const kernel_desc_proxy& kdp);
@@ -94,28 +94,28 @@ class kernel_proxy : public proxy_base<kernel_t, std::shared_ptr<const kernel_de
 /**
  * @brief Derived proxy class, interfacing to the real/cached sparse_matmul_desc_t.
  */
-class sparse_matmul_desc : public kernel_desc_proxy {
+class SPARSE_API_ sparse_matmul_desc : public kernel_desc_proxy {
  public:
   sparse_matmul_desc() {}
   explicit sparse_matmul_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~sparse_matmul_desc() {}
 };
 
-class transpose_matmul_desc : public kernel_desc_proxy {
+class SPARSE_API_ transpose_matmul_desc : public kernel_desc_proxy {
  public:
   transpose_matmul_desc() {}
   explicit transpose_matmul_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~transpose_matmul_desc() {}
 };
 
-class eltwiseop_desc : public kernel_desc_proxy {
+class SPARSE_API_ eltwiseop_desc : public kernel_desc_proxy {
  public:
   eltwiseop_desc() {}
   explicit eltwiseop_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~eltwiseop_desc() {}
 };
 
-class layernorm_ba_desc : public kernel_desc_proxy {
+class SPARSE_API_ layernorm_ba_desc : public kernel_desc_proxy {
  public:
   layernorm_ba_desc() {}
   explicit layernorm_ba_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
@@ -139,42 +139,42 @@ class softmax_desc : public kernel_desc_proxy {
 /**
  * @brief Derived proxy class, interfacing to the real/cached sparse_matmul_t.
  */
-class sparse_matmul : public kernel_proxy {
+class SPARSE_API_ sparse_matmul : public kernel_proxy {
  public:
   sparse_matmul() {}
   explicit sparse_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~sparse_matmul() {}
 };
 
-class transpose_matmul : public kernel_proxy {
+class SPARSE_API_ transpose_matmul : public kernel_proxy {
  public:
   transpose_matmul() {}
   explicit transpose_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~transpose_matmul() {}
 };
 
-class eltwiseop : public kernel_proxy {
+class SPARSE_API_ eltwiseop : public kernel_proxy {
  public:
   eltwiseop() {}
   explicit eltwiseop(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~eltwiseop() {}
 };
 
-class layernorm_ba : public kernel_proxy {
+class SPARSE_API_ layernorm_ba : public kernel_proxy {
  public:
   layernorm_ba() {}
   explicit layernorm_ba(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~layernorm_ba() {}
 };
 
-class gather : public kernel_proxy {
+class SPARSE_API_ gather : public kernel_proxy {
  public:
   gather() {}
   explicit gather(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~gather() {}
 };
 
-class softmax : public kernel_proxy {
+class SPARSE_API_ softmax : public kernel_proxy {
  public:
   softmax() {}
   explicit softmax(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}

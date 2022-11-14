@@ -20,8 +20,9 @@
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#ifdef WITH_SPARSELIB
 #include "SparseLib/include/interface.hpp"
-
+#endif
 namespace executor {
 using dnnl::algorithm;
 using dnnl::engine;
@@ -45,13 +46,13 @@ class GeluOperator : public Operator {
   void ReshapeWithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ForwardWithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
+#ifdef WITH_SPARSELIB
   void ReshapeWithInt8LutAccTest(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ForwardWithInt8LutAccTest(const vector<Tensor*>& input, const vector<Tensor*>& output);
-
   void ReshapeWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ForwardWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
-
   float TuneMatmulRange(float gelu_bound, float err, float step);
+#endif
 
  private:
   string algorithm_;
@@ -62,9 +63,11 @@ class GeluOperator : public Operator {
 
   bool int8_lut_optimize = false;
   bool int8_lut_acc_test = false;
+#ifdef WITH_SPARSELIB
   jd::tensor_desc src_desc_;
   jd::tensor_desc dst_desc_;
   jd::eltwiseop eltwiseop_ker;
+#endif
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_GELU_HPP_

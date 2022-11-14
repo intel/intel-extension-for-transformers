@@ -39,7 +39,7 @@ class eltwiseop_ref_kd_t : public kernel_desc_t {
 
  public:
   inline std::vector<dim_t> shape() const { return op_desc_.tensor_descs()[0].shape(); }
-  const jd::operator_desc& operator_desc() const override { return op_desc_; }
+  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
 
  private:
   jd::operator_desc op_desc_;

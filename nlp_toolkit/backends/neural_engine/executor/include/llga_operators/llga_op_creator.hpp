@@ -23,7 +23,7 @@
 
 namespace executor {
 
-class LLGAOPCreator {
+class NEURALENGINE_API_ LLGAOPCreator {
  public:
   typedef bool (LLGAOPCreator::*Creator)(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
   typedef std::unordered_map<string, Creator> CreatorRegistry;

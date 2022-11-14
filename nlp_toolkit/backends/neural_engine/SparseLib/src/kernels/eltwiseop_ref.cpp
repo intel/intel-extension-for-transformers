@@ -17,7 +17,7 @@
 namespace jd {
 
 bool eltwiseop_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
-  auto op_desc = derived_kd()->operator_desc();
+  auto op_desc = derived_kd()->get_operator_desc();
   auto src_tensor = op_desc.tensor_descs()[0];
   auto dst_tensor = op_desc.tensor_descs()[1];
   int size = src_tensor.size();

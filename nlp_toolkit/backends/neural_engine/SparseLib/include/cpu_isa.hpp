@@ -14,9 +14,6 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_CPU_ISA_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_CPU_ISA_HPP_
 
-#include <sys/mman.h>
-#include <sys/signal.h>
-#include <sys/syscall.h>
 
 #include "utils.hpp"
 #include "xbyak/xbyak.h"
@@ -64,7 +61,7 @@ inline const Xbyak::util::Cpu& cpu() {
   return cpu_;
 }
 
-set_once_before_first_get_setting_t<bool>& amx_setting();
+SPARSE_API_ set_once_before_first_get_setting_t<bool>& amx_setting();
 
 static inline bool isa_available(const cpu_isa_t cpu_isa) {
   using Cpu = Xbyak::util::Cpu;

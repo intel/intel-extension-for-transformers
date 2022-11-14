@@ -16,7 +16,6 @@
 #define ENGINE_EXECUTOR_INCLUDE_COMMON_HPP_
 
 #include <float.h>
-#include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <limits.h>
 #include <omp.h>
@@ -45,6 +44,26 @@
 #include <immintrin.h>
 #endif
 
+#ifdef NEURALENGINE_SHARED_LIB_
+#ifndef NEURALENGINE_API_
+#ifdef _MSC_VER
+#if NEURALENGINE_BUILD
+#define NEURALENGINE_API_ __declspec(dllexport)
+#else
+#define NEURALENGINE_API_ __declspec(dllimport)
+#endif
+#elif __GNUC__ >= 4 || defined(__clang__)
+#define NEURALENGINE_API_ __attribute__((visibility("default")))
+#endif  // _MSC_VER
+
+#endif  // SPARSE_API_
+#endif  // NEURALENGINE_SHARED_LIB_
+
+#ifndef NEURALENGINE_API_
+#define NEURALENGINE_API_
+#endif  // GTEST_API_
+
+
 namespace executor {
 
 using std::max;
@@ -53,7 +72,7 @@ using std::set;
 using std::unordered_map;
 using std::vector;
 
-void GlobalInit(int* pargc, char*** pargv);
+NEURALENGINE_API_ void GlobalInit(const char* pname);
 
 extern unordered_map<string, int> type2bytes;
 // some kernel may need config to execute when be dispatched
@@ -114,9 +133,9 @@ float GetSparseRatio(const T* data, const vector<int64_t>& shape, const vector<i
 
 vector<int64_t> ReversePerm(const vector<int64_t>& perm_to);
 
-int64_t Time();
+NEURALENGINE_API_ int64_t Time();
 
-float Duration(int64_t start, int64_t end);
+NEURALENGINE_API_ float Duration(int64_t start, int64_t end);
 
 template <typename T>
 void PrintToFile(const T* data, const std::string& name, size_t size = 1000);

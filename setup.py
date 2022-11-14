@@ -73,8 +73,11 @@ class build_ext(build_ext):
             build_temp.mkdir(parents=True, exist_ok=True)
             extdir = pathlib.Path(self.get_ext_fullpath(ext.name))
             executable_path = extdir.parent.absolute()
+            executable_path.mkdir(parents=True,exist_ok=True)
             cmake_args = [
-                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + str(extdir.parent.absolute()),
+                '-DCMAKE_BUILD_TYPE=Release',
+                '-DNE_WITH_SPARSELIB=ON',
+                '-DNE_WITH_TESTS=OFF',
                 '-DPYTHON_EXECUTABLE={}'.format(sys.executable)
             ]
 
@@ -85,9 +88,48 @@ class build_ext(build_ext):
             self.spawn(['make'] + build_args)
             if os.path.exists('neural_engine'):
                 shutil.copy('neural_engine', executable_path)
+
+            import glob
+            bin_lists=glob.glob('bin/*')
+            bin_lists.extend(glob.glob('lib/*.so'))
+            for path in bin_lists:
+                shutil.copy(path, executable_path)
             os.chdir(str(cwd))
         else:
-            print("Neural Engine is not support windows for now")
+            import pathlib
+            cwd = pathlib.Path().absolute()
+    
+            build_temp = pathlib.Path(self.build_temp)
+            build_temp.mkdir(parents=True, exist_ok=True)
+            extdir = pathlib.Path(self.get_ext_fullpath(ext.name))
+            executable_path = extdir.parent.absolute()
+            executable_path.mkdir(parents=True,exist_ok=True)
+            cmake_args = [
+                '-G Ninja',
+                '-DCMAKE_BUILD_TYPE=Release',
+                '-DNE_WITH_SPARSELIB=ON',
+                '-DNE_WITH_TESTS=OFF',
+                "-DCMAKE_C_COMPILER=cl.exe",
+                "-DCMAKE_CXX_COMPILER=cl.exe",
+                '-DPYTHON_EXECUTABLE={}'.format(sys.executable)
+            ]
+            build_args = [
+                '--build',
+                './',
+                '-j'
+            ]
+            cmake_command = get_cmake_command() 
+            os.chdir(str(build_temp))
+            self.spawn([cmake_command, ext.sourcedir] + cmake_args)
+            self.spawn(['cmake'] + build_args)
+            import glob
+            
+            bin_lists=glob.glob('bin/*.exe')
+            bin_lists.extend(glob.glob('bin/*.dll'))
+            bin_lists.extend(glob.glob('lib/*.pyd'))
+            for path in bin_lists:
+                shutil.copy(path, executable_path)
+            os.chdir(str(cwd))
 
 
 class CMakeExtension(Extension):
@@ -146,13 +188,10 @@ if __name__ == '__main__':
         'quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/",
-        ext_modules=[
-            CMakeExtension("neural_engine_py",
-                           str(cwd) + '/nlp_toolkit/backends/neural_engine/executor/')
-        ],
-        packages=find_packages(),
-        include_package_data=True,
-        package_dir={'': '.'},
+        ext_modules=[CMakeExtension("neural_engine_py", str(cwd) + '/nlp_toolkit/backends/neural_engine/')],
+        packages = find_packages(),
+        include_package_data = True,
+        package_dir = {'':'.'},
         package_data={
             '': ['*.py', '*.yaml'],
             'executor': ['*.py'],

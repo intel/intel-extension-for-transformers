@@ -50,7 +50,7 @@ class matmul_vnni_noperm_p2031_p1302_kd_t : public kernel_desc_t {
   // kernel_desc_t::create_primitive() override.
   DECLARE_COMMON_PD_T(matmul_vnni_noperm_p2031_p1302_k_t, matmul_vnni_noperm_p2031_p1302_kd_t);
 
-  const jd::operator_desc& operator_desc() const override { return op_desc_; }
+  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const ssd::matmul_param_t& jit_param() const { return jit_param_; }
   const bool using_unified_kernel() const { return using_unified_kernel_; }
 

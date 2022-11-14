@@ -16,7 +16,6 @@
 namespace jd {
 const std::vector<impl_list_item_t> cpu_engine::empty_list = {};
 
-const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const operator_desc& op_desc) const {
   // C API forward declaration.
 #define DECLARE_IMPL_LIST(kind) \
   const std::vector<impl_list_item_t>* get_##kind##_impl_list(const operator_desc& op_desc);
@@ -29,6 +28,8 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
   DECLARE_IMPL_LIST(softmax);
 
 #undef DECLARE_IMPL_LIST
+
+const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const operator_desc& op_desc) const {
 
   // Call C API.
 #define CASE(kind)        \

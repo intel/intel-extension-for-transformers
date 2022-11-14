@@ -218,8 +218,8 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
   }
 
   if (dst_->dtype() == "fp32" && binary_add_ && src0_->dtype() == "fp32") {
-    vector<int64_t> src0_perm_transpose {2, 0, 3, 1};
-    vector<int64_t> src1_perm_transpose {2, 0, 1, 3};
+    vector<int64_t> src0_perm_transpose{2, 0, 3, 1};
+    vector<int64_t> src1_perm_transpose{2, 0, 1, 3};
     transpose_mode_ = true;
     for (int i = 0; i < src0_perm_.size(); i++) {
       if (src0_perm_[i] != src0_perm_transpose[i]) {
@@ -234,8 +234,8 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
       }
     }
   } else if (dst_->dtype() == "u8") {
-    vector<int64_t> dst_perm_transpose {1, 3, 0, 2};
-    vector<int64_t> src1_perm_transpose {2, 0, 3, 1};
+    vector<int64_t> dst_perm_transpose{1, 3, 0, 2};
+    vector<int64_t> src1_perm_transpose{2, 0, 3, 1};
     transpose_mode_ = true;
     for (int i = 0; i < dst_perm_.size(); i++) {
       if (dst_perm_[i] != dst_perm_transpose[i]) {
@@ -268,10 +268,8 @@ void MatmulOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
   }
 }
 
-
 // 1. Create primitive
-void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input,
-                                       const vector<Tensor*>& output) {
+void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src0_shape_origin = src0_->shape();
   vector<int64_t> src1_shape_origin = src1_->shape();
   vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
@@ -286,7 +284,7 @@ void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input,
     vector<int64_t> dst_shape_after = GetShapes(dst_shape_origin, dst_perm_);
     dst_->set_shape(dst_shape_after);
   }
-  std::unordered_map<std::string, std::string> attrs {};
+  std::unordered_map<std::string, std::string> attrs{};
   attrs["alpha"] = std::to_string(output_scale_);
   attrs["beta"] = "1";
   src0_desc_ = {src0_shape_origin, type2sparsemem[src0_->dtype()], jd::format_type::ab};
@@ -296,8 +294,8 @@ void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input,
   if (binary_add_) {
     binary_desc_ = {dst_->shape(), type2sparsemem[post_->dtype()], jd::format_type::ab};
   }
-  scale_desc_ = {{rescales_.size()}, jd::data_type::fp32, jd::format_type::a};
-  zp_desc_ = {{1}, jd::data_type::fp32, jd::format_type::a};
+  scale_desc_ = {{static_cast<int64_t>(rescales_.size())}, jd::data_type::fp32, jd::format_type::a};
+  zp_desc_ = {{static_cast<int64_t>(dst_scales_.size())}, jd::data_type::fp32, jd::format_type::a};
   vector<jd::tensor_desc> ts_descs;
   if (dst_->dtype() == "u8") {
     ts_descs = {src0_desc_, src1_desc_, dst_desc_, binary_desc_, scale_desc_, zp_desc_};
@@ -306,8 +304,8 @@ void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input,
     ts_descs = {src0_desc_, src1_desc_, dst_desc_, binary_desc_};
   }
 
-  jd::operator_desc op_desc(jd::kernel_kind::transpose_matmul, jd::kernel_prop::forward_inference,
-                            jd::engine_kind::cpu, ts_descs, attrs);
+  jd::operator_desc op_desc(jd::kernel_kind::transpose_matmul, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                            ts_descs, attrs);
   jd::transpose_matmul_desc matmul_desc(op_desc);
   transpose_matmul_ = jd::transpose_matmul(matmul_desc);
   if (!reshape_.empty()) {
@@ -317,10 +315,11 @@ void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input,
   }
 }
 
-void MatmulOperator::ForwardwithTransMode(const vector<Tensor*>& input,
-                                       const vector<Tensor*>& output) {
+void MatmulOperator::ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   void* dst_data = dst_->mutable_data();
-  std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), dst_data,
+  std::vector<const void*> runtime_data = {src0_->data(),
+                                           src1_->data(),
+                                           dst_data,
                                            binary_add_ ? post_->data() : nullptr,
                                            dst_->dtype() == "u8" ? &rescales_[0] : nullptr,
                                            dst_->dtype() == "u8" ? &ouput_zp_ : nullptr};
@@ -329,8 +328,7 @@ void MatmulOperator::ForwardwithTransMode(const vector<Tensor*>& input,
 }
 
 // 1. Create primitive
-void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input,
-                                       const vector<Tensor*>& output) {
+void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
   // 1.1 Transpose tensor shape and get it
   vector<int64_t> src0_shape_origin = src0_->shape();
@@ -525,7 +523,6 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input,
     output[0]->set_shape(dst_shape);
   }
 
-
   any_src0_m_ = src0_m_;
   any_src1_m_ = src1_m_;
   any_dst_m_ = dst_m_;
@@ -547,8 +544,7 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input,
 }
 
 // 2. inference kernel(for int8 and f32)
-void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input,
-                                       const vector<Tensor*>& output) {
+void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
   const auto& src0_data = src0_->data();
   const auto& src1_data = src1_->data();

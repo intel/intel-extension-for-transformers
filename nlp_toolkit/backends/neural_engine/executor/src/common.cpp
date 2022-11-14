@@ -17,14 +17,13 @@
 
 namespace executor {
 
-unordered_map<string, int> type2bytes = {{"fp32", sizeof(float)},       {"int8", sizeof(char)}, {"int32", sizeof(int)},
-                                         {"u8", sizeof(unsigned char)}, {"s8", sizeof(char)},   {"s32", sizeof(int)},
-                                         {"bf16", sizeof(uint16_t)}, {"int64", sizeof(int64_t)}};
-unordered_map<string, vector<string>> dispatch_kernel_config = {{"InnerProduct_to_Convolution", {"input_shape"}},
-                                                                {"InnerProduct_to_SparseLib", {"input_shape",
-                                                                                               "micro_oc",
-                                                                                               "sub_func"}},
-                                                               };
+unordered_map<string, int> type2bytes = {
+    {"fp32", sizeof(float)}, {"int8", sizeof(char)}, {"int32", sizeof(int)},     {"u8", sizeof(unsigned char)},
+    {"s8", sizeof(char)},    {"s32", sizeof(int)},   {"bf16", sizeof(uint16_t)}, {"int64", sizeof(int64_t)}};
+unordered_map<string, vector<string>> dispatch_kernel_config = {
+    {"InnerProduct_to_Convolution", {"input_shape"}},
+    {"InnerProduct_to_SparseLib", {"input_shape", "micro_oc", "sub_func"}},
+};
 const int CPU_COUNT = omp_get_max_threads();
 #if __AVX512F__
 const int ALIGN_NUM = 64;
@@ -32,11 +31,9 @@ const int ALIGN_NUM = 64;
 const int ALIGN_NUM = 32;
 #endif
 
-void GlobalInit(int* pargc, char*** pargv) {
-  // Google flags.
-  ::gflags::ParseCommandLineFlags(pargc, pargv, true);
+void GlobalInit(const char* pname) {
   // Google logging.
-  ::google::InitGoogleLogging(*(pargv)[0]);
+  ::google::InitGoogleLogging(pname);
   FLAGS_logtostderr = 1;
   // Provide a backtrace on segfault.
   ::google::InstallFailureSignalHandler();
@@ -74,7 +71,6 @@ void* read_file_to_type(const string& root, const string& type, const vector<int
   }
   return p;
 }
-
 
 template <typename T>
 void InitVector(T* v, int buffer_size) {
@@ -160,21 +156,16 @@ bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2, int64_t 
   }
   return true;
 }
-template bool CompareData<float>(const void* buf1, int64_t elem_num1,
-                const void* buf2, int64_t elem_num2, float eps);
-template bool CompareData<uint16_t>(const void* buf1, int64_t elem_num1,
-                const void* buf2, int64_t elem_num2, float eps);  // bf16
-template bool CompareData<int8_t>(const void* buf1, int64_t elem_num1,
-                const void* buf2, int64_t elem_num2, float eps);
-template bool CompareData<uint8_t>(const void* buf1, int64_t elem_num1,
-                const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<float>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<uint16_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2,
+                                    float eps);  // bf16
+template bool CompareData<int8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<uint8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
 
 bool CompareShape(const vector<int64_t>& shape1, const vector<int64_t>& shape2) {
-  if (shape1.size() != shape2.size())
-    return false;
+  if (shape1.size() != shape2.size()) return false;
   for (int i = 0; i < shape1.size(); i++) {
-    if (shape1[i] != shape2[i])
-      return false;
+    if (shape1[i] != shape2[i]) return false;
   }
   return true;
 }
@@ -231,8 +222,7 @@ vector<float> GetRescales(const vector<float>& src0_scales, const vector<float>&
   return rescales;
 }
 
-vector<int64_t> GetDstShape(const vector<int64_t>& dst_shape, size_t dst_size,
-                            const vector<int64_t>& ref_shape,
+vector<int64_t> GetDstShape(const vector<int64_t>& dst_shape, size_t dst_size, const vector<int64_t>& ref_shape,
                             const vector<int64_t>& reshape_dims) {
   vector<int64_t> pre_dst_shape(dst_shape);
   if (!ref_shape.empty()) {
@@ -467,8 +457,7 @@ float GetSparseRatio(const T* data, const vector<int64_t>& shape, const vector<i
   float zero_ratio = blocknum == 0 ? 0 : static_cast<float>(zero_count) / blocknum;
   return zero_ratio;
 }
-template float GetSparseRatio<float>(const float* data, const vector<int64_t>& shape,
-                                     const vector<int64_t>& blocksize);
+template float GetSparseRatio<float>(const float* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize);
 template float GetSparseRatio<int8_t>(const int8_t* data, const vector<int64_t>& shape,
                                       const vector<int64_t>& blocksize);
 
@@ -512,15 +501,16 @@ template void StringSplit<unsigned char>(vector<unsigned char>* split_list, cons
 
 void InitSparse(int K, int N, int N_BLKSIZE, int K_BLKSIZE, int N_SPARSE, float* B) {
   unsigned int seed = 0;
+  srand(seed);
   for (int k = 0; k < K; k++) {
     for (int n = 0; n < N; n++) {
-      B[k * N + n] = rand_r(&seed) % 11 - 5;
+      B[k * N + n] = rand() % 11 - 5;  // NOLINT
     }
   }
   // sparsify B
   for (int nb = 0; nb < N / N_BLKSIZE; nb++) {
     for (int kb = 0; kb < K / K_BLKSIZE; kb++) {
-      bool zero_fill = rand_r(&seed) % N_SPARSE != 0;
+      bool zero_fill = rand() % N_SPARSE != 0;  // NOLINT
       if (zero_fill) {
         for (int n = 0; n < N_BLKSIZE; n++) {
           for (int k = 0; k < K_BLKSIZE; k++) {
@@ -535,7 +525,7 @@ void InitSparse(int K, int N, int N_BLKSIZE, int K_BLKSIZE, int N_SPARSE, float*
 /************* ref ************/
 template <typename dst_type, typename src_type>
 void ref_mov_ker(dst_type* inout, const src_type* in, size_t len) {
-#pragma omp palleral for
+#pragma omp parallel for
   for (int i = 0; i < len; i++) {
     *(inout + i) = *(in + i);
   }
@@ -546,7 +536,7 @@ template void ref_mov_ker(uint8_t* inout, const uint8_t* in, size_t len);
 
 template <typename dst_type, typename src_type>
 void ref_add_ker(dst_type* inout, src_type* in, size_t len) {
-#pragma omp palleral for
+#pragma omp parallel for
   for (int i = 0; i < len; i++) {
     *(inout + i) += *(in + i);
   }
@@ -1014,14 +1004,13 @@ size_t InnerProductPrimitiveFwdFactory::GenKey(const string& src0_dtype, const s
   return seed;
 }
 
-size_t InnerProductPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype,
-                                            const string& dst_dtype, const vector<int64_t>& src0_shape,
-                                            const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm,
-                                            const string& append_op, const vector<int64_t>& post_op_shape,
-                                            const float& output_scale, const dnnl::engine* eng) {
-  return InnerProductPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype,
-                                                               src0_shape, src1_shape, dst_perm,
-                                                               append_op, post_op_shape, output_scale, eng);
+size_t InnerProductPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
+                                            const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                            const vector<int64_t>& dst_perm, const string& append_op,
+                                            const vector<int64_t>& post_op_shape, const float& output_scale,
+                                            const dnnl::engine* eng) {
+  return InnerProductPrimitiveFwdFactory::GetInstance().GenKey(
+      src0_dtype, src1_dtype, dst_dtype, src0_shape, src1_shape, dst_perm, append_op, post_op_shape, output_scale, eng);
 }
 
 bool InnerProductPrimitiveFwdFactory::IsInFactory(const size_t& key) {
@@ -1048,11 +1037,11 @@ InnerProductPrimitiveFwdFactory& InnerProductPrimitiveFwdFactory::GetInstance() 
 }
 
 /************ MatMulPrimitiveFwdFactory member function ************/
-size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string& src1_dtype,
-                                         const string& dst_dtype, const vector<int64_t>& src0_shape,
-                                         const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm,
-                                         const string& append_op, const vector<int64_t>& post_op_shape,
-                                         const float& output_scale, const dnnl::engine* eng) {
+size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
+                                         const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                         const vector<int64_t>& dst_perm, const string& append_op,
+                                         const vector<int64_t>& post_op_shape, const float& output_scale,
+                                         const dnnl::engine* eng) {
   size_t seed = 0;
   // primitive kind
   string prefix = "matmul_fwd_";
@@ -1078,14 +1067,13 @@ size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string&
   return seed;
 }
 
-size_t MatMulPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype,
-                                      const string& dst_dtype, const vector<int64_t>& src0_shape,
-                                      const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm,
-                                      const string& append_op, const vector<int64_t>& post_op_shape,
-                                      const float& output_scale, const dnnl::engine* eng) {
-  return MatMulPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype,
-                                                         src0_shape, src1_shape, dst_perm,
-                                                         append_op, post_op_shape, output_scale, eng);
+size_t MatMulPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
+                                      const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                      const vector<int64_t>& dst_perm, const string& append_op,
+                                      const vector<int64_t>& post_op_shape, const float& output_scale,
+                                      const dnnl::engine* eng) {
+  return MatMulPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype, src0_shape, src1_shape,
+                                                         dst_perm, append_op, post_op_shape, output_scale, eng);
 }
 
 bool MatMulPrimitiveFwdFactory::IsInFactory(const size_t& key) {
@@ -1145,17 +1133,15 @@ size_t ConvolutionPrimitiveFwdFactory::GenKey(const string& src0_dtype, const st
   return seed;
 }
 
-size_t ConvolutionPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype,
-                                           const string& dst_dtype, const vector<int64_t>& src0_shape,
-                                           const vector<int64_t>& src1_shape, const vector<int64_t>& dst_perm,
-                                           const string& append_op, const vector<int64_t>& post_op_shape,
-                                           const float& output_scale, const int64_t& group,
-                                           const vector<int64_t>& pads, const vector<int64_t>& strides,
-                                           const dnnl::engine* eng) {
-  return ConvolutionPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype,
-                                                              src0_shape, src1_shape, dst_perm,
-                                                              append_op, post_op_shape, output_scale,
-                                                              group, pads, strides, eng);
+size_t ConvolutionPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
+                                           const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                           const vector<int64_t>& dst_perm, const string& append_op,
+                                           const vector<int64_t>& post_op_shape, const float& output_scale,
+                                           const int64_t& group, const vector<int64_t>& pads,
+                                           const vector<int64_t>& strides, const dnnl::engine* eng) {
+  return ConvolutionPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype, src0_shape, src1_shape,
+                                                              dst_perm, append_op, post_op_shape, output_scale, group,
+                                                              pads, strides, eng);
 }
 
 bool ConvolutionPrimitiveFwdFactory::IsInFactory(const size_t& key) {
@@ -1170,9 +1156,7 @@ void ConvolutionPrimitiveFwdFactory::Set(const size_t& key, dnnl::primitive prim
   ConvolutionPrimitiveFwdFactory::GetInstance().SetPrimitive(key, primitive);
 }
 
-void ConvolutionPrimitiveFwdFactory::ClearFactory() {
-  ConvolutionPrimitiveFwdFactory::GetInstance().Clear();
-}
+void ConvolutionPrimitiveFwdFactory::ClearFactory() { ConvolutionPrimitiveFwdFactory::GetInstance().Clear(); }
 
 bool ConvolutionPrimitiveFwdFactory::DoNotCache() {
   return ConvolutionPrimitiveFwdFactory::GetInstance().do_not_cache_;
