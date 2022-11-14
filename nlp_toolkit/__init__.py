@@ -20,6 +20,7 @@ from .optimization.config import (
     AutoDistillationConfig,
     DistillationConfig,
     FlashDistillationConfig,
+    TFDistillationConfig,
     NncfConfig,
     Provider,
     PruningConfig,

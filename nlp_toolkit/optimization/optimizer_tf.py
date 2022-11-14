@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import logging
+import pstats
 import numpy as np
 import os
 import time
@@ -23,7 +24,7 @@ from neural_compressor import __version__
 from neural_compressor.experimental import common
 from neural_compressor.model.model import saved_model_session
 from neural_compressor.model.model import get_model_type
-from nlp_toolkit import (DistillationConfig, QuantizationConfig, PruningConfig)
+from nlp_toolkit import (DistillationConfig, QuantizationConfig, PruningConfig, AutoDistillation)
 from nlp_toolkit.optimization.quantization import QuantizationMode
 from nlp_toolkit.optimization.utils.metrics import Metric
 from nlp_toolkit.optimization.utils.utility import LazyImport
@@ -32,6 +33,8 @@ from transformers import PreTrainedModel
 from transformers.training_args_tf import TFTrainingArguments
 from typing import Callable, Optional, List
 from .utils.utility_tf import TFDataloader, TMPPATH, TEACHERPATH, get_filepath
+
+from functools import partial
 
 tf = LazyImport("tensorflow")
 logger = logging.getLogger(__name__)
@@ -47,7 +50,8 @@ class TFOptimization:
                  criterion=None,
                  optimizer=None,
                  task_type=None,
-                 task_id=None):
+                 task_id=None, 
+                 strategy=None):
         """
         Args:
             model (:obj:`PreTrainedModel`):
@@ -85,6 +89,7 @@ class TFOptimization:
             os.path.join(get_filepath(TMPPATH, self.task_type, self.task_id), "saved_model/1"), input_tensor_names=[],
              output_tensor_names=[])
         self.eval_distributed = False
+        self.strategy = strategy
 
     @property
     def inputs(self):
@@ -456,7 +461,7 @@ class TFOptimization:
         self,
         distillation_config,
         teacher_model: PreTrainedModel,
-    ):  
+    ):
         from neural_compressor.experimental import Distillation
         assert isinstance(distillation_config, DistillationConfig), \
             "please pass a instance of DistillationConfig to trainer.distill!"
@@ -487,8 +492,8 @@ class TFOptimization:
         self.model.train_step = train_step
         # re-compile
         self.model.compile(
-            optimizer=self.model.optimizer, 
-            loss=self.model.loss, 
+            optimizer=self.model.optimizer,
+            loss=self.model.loss,
             metrics=self.model.compiled_metrics._user_metrics
             )
 
@@ -518,7 +523,7 @@ class TFOptimization:
         teacher_model: PreTrainedModel,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
-    ):  
+    ):
         if self.distiller is None:
             self.init_distiller(
                 distillation_config=distillation_config,
@@ -542,6 +547,152 @@ class TFOptimization:
         )
 
         return opt_model.model
+
+    def model_builder_builtin(self, arch_paras=None, model_cls=None):
+        config = self.model.config
+        if arch_paras is not None:
+            assert isinstance(arch_paras, dict), "Expect arch_paras to be a dict."
+            for k in arch_paras:
+                if hasattr(config, k):
+                    config.__setattr__(k, arch_paras[k])
+                    # for MobileBERT, 'intra_bottleneck_size' is associated with
+                    # 'true_hidden_size', and must have the same values.
+                    if k == 'intra_bottleneck_size':
+                        config.__setattr__('true_hidden_size', arch_paras[k])
+        return model_cls.from_config(config)
+
+
+    def autodistill(
+        self,
+        autodistillation_config,
+        teacher_model: PreTrainedModel,
+        model_builder: Optional[Callable] = None,
+        model_cls: Optional[Callable] = None,
+        eval_func: Optional[Callable] = None,
+        train_func: Optional[Callable] = None
+        ):
+        self.autodistillation_config = autodistillation_config
+        if model_builder is None:
+            assert model_cls is not None, "Must specify model_cls to use the built-in " + \
+                "model_builder, e.g. model_cls=AutoModelForPreTraining, or you can use " + \
+                "the customized model_builder."
+            model_builder = partial(self.model_builder_builtin, model_cls=model_cls)
+        agent = AutoDistillation(model_builder, self.autodistillation_config, framework='tensorflow')
+
+        def train_func_builtin(model):
+            def run_distillers(
+                model,
+                distillers,
+                train_steps,
+                block_names,
+                presentation='flash distillation'
+            ):
+                
+                for i, elements in enumerate(zip(distillers, train_steps, block_names)):
+                    distiller, ts, bln = elements
+                    logger.info(' '.join(
+                        ['=' * 30, 'Step {} of'.format(i + 1), presentation, '=' * 30]))
+
+                    def train_step(data):
+                        if len(data) == 3:
+                            x, y, sample_weight = data  # pragma: no cover
+                        else:
+                            sample_weight = None
+                            x, y = data
+                        with tf.GradientTape() as tape:
+                            y_pred = model(x)
+                            teacher_outputs = distiller.criterion.teacher_model_forward(
+                                input=x, teacher_model=teacher_model)
+
+                            loss = model.compute_loss(x, y, y_pred, sample_weight)
+                            # _on_after_compute_loss(self, input, student_output, student_loss, teacher_output=None)
+                            # TODO: check, combile
+                            loss = distiller.on_after_compute_loss(
+                                x, y_pred.logits, loss, teacher_outputs.logits)
+                        model._validate_target_and_loss(y, loss)
+                        # Run backwards pass.
+                        model.optimizer.minimize(loss,
+                                                model.trainable_variables,
+                                                tape=tape)
+                        return model.compute_metrics(x, y, y_pred, sample_weight)
+
+                    model.save_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id), saved_model=True)
+                    if self.strategy:
+                        with self.strategy.scope():
+                            model = model_cls.from_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id))
+                            model.compile(
+                            optimizer=self.model.optimizer,
+                            loss=self.model.loss,
+                            metrics=self.model.compiled_metrics._user_metrics
+                        )
+                            model.train_step = train_step
+                    else:
+                        model.train_step = train_step
+                        model.compile(
+                            optimizer=self.model.optimizer,
+                            loss=self.model.loss,
+                            metrics=self.model.compiled_metrics._user_metrics
+                        )
+                    self.model = model
+
+                    distiller.model = os.path.join(TMPPATH, "saved_model/1")
+                    distiller.model.model_type = "saved_model"
+                    teacher_model.save_pretrained(TEACHERPATH, saved_model=True)
+                    distiller.teacher_model = os.path.join(TEACHERPATH, "saved_model/1")
+                    distiller.teacher_model.model_type = "saved_model"
+
+                    if eval_func is not None:
+                        self._eval_func = eval_func
+                    else:
+                        self._eval_func = self.builtin_eval_func
+                    if train_func is not None:
+                        self._train_func = train_func
+                    else:
+                        self._train_func = self.build_train_func
+
+                    distiller.eval_func = self._eval_func
+                    distiller.train_func = self._train_func
+                    distiller.create_criterion()
+
+                    self.component = self.distiller = distiller
+                    
+
+                    opt_model = distiller.fit()
+                    opt_model.save(self.args.output_dir)
+                    return opt_model
+                    
+            agent.create_distillers()
+            # run flash_distillers
+            ori_model = model
+            if agent.flash_distillers:
+                model = run_distillers(ori_model, agent.flash_distillers,
+                                        agent.flash_train_steps,
+                                        agent.flash_block_names)
+            # run regular_distillers
+            if agent.regular_distillers:
+                model = run_distillers(ori_model,
+                                        agent.regular_distillers,
+                                        agent.regular_train_steps,
+                                        agent.regular_block_names,
+                                        presentation='regular distillation')
+            return model.model
+
+        def eval_func_builtin(model):
+            if self._eval_func:
+                result = self._eval_func(model)
+            else:
+                result = self.builtin_eval_func(model)
+            return {'metric': result}
+
+        agent.framework = 'tensorflow'
+        agent.train_func = train_func \
+            if train_func else train_func_builtin
+        agent.eval_func = eval_func \
+            if eval_func else eval_func_builtin
+        # pylint: disable=E1101
+        os.makedirs(self.args.output_dir, exist_ok=True)
+        return agent.search(self.args.output_dir, model_cls)
+
 
     def build_train_func(self, model):
         tf.random.set_seed(1)

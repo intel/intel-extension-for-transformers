@@ -434,9 +434,10 @@ class DistillationConfig(object):
         framework: str = "pytorch",
         criterion: Criterion = None,
         metrics: Metric = None,
+        inc_config = None
     ):
         super().__init__()
-        self.inc_config = Distillation_Conf()
+        self.inc_config = Distillation_Conf(inc_config)
         self.framework = framework
         if criterion is not None:
             self.criterion = criterion
@@ -505,6 +506,21 @@ class DistillationConfig(object):
         assert isinstance(metrics, Metric), \
             "metric should be a Metric calss!"
         self._metrics = metrics
+
+
+class TFDistillationConfig(object):
+    def __init__(
+        self,
+        loss_types: list = [],
+        loss_weights: list = [],
+        train_steps: list = [],
+        temperature: float = 1.0
+    ):
+        super().__init__()
+        self.loss_types = loss_types
+        self.loss_weights = loss_weights
+        self.train_steps = train_steps
+        self.temperature = temperature
 
 
 class FlashDistillationConfig(object):

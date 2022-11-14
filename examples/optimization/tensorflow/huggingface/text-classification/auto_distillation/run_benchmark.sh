@@ -1,0 +1,90 @@
+#!/bin/bash
+set -x
+
+function main {
+
+  init_params "$@"
+  run_benchmark
+
+}
+
+# init params
+function init_params {
+  iters=100
+  batch_size=16
+  tuned_checkpoint=saved_results
+  topology="distilbert-base-uncased"
+  mode="benchmark"
+  for var in "$@"
+  do
+    case $var in
+      --topology=*)
+          topology=$(echo $var |cut -f2 -d=)
+      ;;
+      --dataset_location=*)
+          dataset_location=$(echo $var |cut -f2 -d=)
+      ;;
+      --input_model=*)
+          input_model=$(echo $var |cut -f2 -d=)
+      ;;
+      --mode=*)
+          mode=$(echo $var |cut -f2 -d=)
+      ;;
+      --batch_size=*)
+          batch_size=$(echo $var |cut -f2 -d=)
+      ;;
+      --iters=*)
+          iters=$(echo ${var} |cut -f2 -d=)
+      ;;
+      --use_distillation_model=*)
+          use_distillation_model=$(echo ${var} |cut -f2 -d=)
+      ;;
+      --config=*)
+          tuned_checkpoint=$(echo $var |cut -f2 -d=)
+      ;;
+      *)
+          echo "Error: No such parameter: ${var}"
+          exit 1
+      ;;
+    esac
+  done
+
+}
+
+
+# run_benchmark
+function run_benchmark {
+    extra_cmd=''
+    MAX_SEQ_LENGTH=128
+
+    if [[ ${mode} == "accuracy" ]]; then
+        mode_cmd=" --accuracy_only"
+    elif [[ ${mode} == "benchmark" ]]; then
+        mode_cmd=" --benchmark "
+    else
+        echo "Error: No such mode: ${mode}"
+        exit 1
+    fi
+
+    if [ "${topology}" = "distilbert-base-uncased" ]; then
+        TASK_NAME='sst2'
+        model_name_or_path=distilbert-base-uncased
+    fi
+
+    if [[ ${use_distillation_model} == "true" ]]; then
+        extra_cmd=$extra_cmd" --use_distillation_model"
+    fi
+
+    python -u ./run_glue.py \
+        --model_name_or_path ${model_name_or_path} \
+        --task_name ${TASK_NAME} \
+        --do_eval \
+        --per_device_eval_batch_size ${batch_size} \
+        --output_dir ${tuned_checkpoint} \
+        --overwrite_cache \
+        ${mode_cmd} \
+        ${extra_cmd}
+
+}
+
+main "$@"

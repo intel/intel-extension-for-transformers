@@ -71,12 +71,14 @@ class TestDistillation(unittest.TestCase):
         self.model.compile(optimizer=optimizer, loss=loss_fn, metrics=metrics)
 
     def test_tf_model_distil(self):
-        metric = load_metric("accuracy")
-
-        def compute_metrics(p):
-            preds = p.predictions
+        metric = load_metric("glue", "sst2")
+        def compute_metrics(preds, label_ids):
+            preds = preds["logits"]
             preds = np.argmax(preds, axis=1)
-            return metric.compute(predictions=preds, references=p.label_ids)
+            result = metric.compute(predictions=preds, references=label_ids)
+            if len(result) > 1:
+                result["combined_score"] = np.mean(list(result.values())).item()
+            return result
 
         self.optimizer = TFOptimization(model=self.model,
                                         args=self.args,
@@ -98,6 +100,12 @@ class TestDistillation(unittest.TestCase):
             teacher_model=self.teacher_model,
             eval_func=eval_func,
             train_func=self.optimizer.build_train_func
+        )
+        distilled_model = self.optimizer.distill(
+            distillation_config=distillation_conf,
+            teacher_model=self.teacher_model,
+            eval_func=None,
+            train_func=None
         )
         # distilled_weight = copy.deepcopy(distilled_model.model.classifier.get_weights())
 

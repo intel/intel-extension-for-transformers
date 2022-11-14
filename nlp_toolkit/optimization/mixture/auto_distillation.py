@@ -15,10 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pickletools import optimize
 import numpy as np
 import os
 import random
 import shutil
+import tempfile
 
 from functools import partial
 from neural_compressor.conf.config import Conf, schema
@@ -47,7 +49,7 @@ class AutoDistillation(object):
 
     """
 
-    def __init__(self, model_builder, conf_fname_or_obj):
+    def __init__(self, model_builder, conf_fname_or_obj, framework='pytorch'):
         self.search_space = {}
         self.model_builder = model_builder
         self._advisor = None
@@ -56,6 +58,7 @@ class AutoDistillation(object):
         self.search_results = {}
         self.best_model_archs = None
         self.seed = None
+        self.framework = framework
         self.init_by_cfg(conf_fname_or_obj)
 
     def model_arch_proposition(self):
@@ -70,16 +73,24 @@ class AutoDistillation(object):
             "Keys of model_arch_paras should be the same with search_space_keys."
         return model_arch_paras
 
-    def search(self, res_save_path=None):
+    def search(self, res_save_path=None, model_cls=None):
         """AutoDistillation search process.
         
         Returns:
             Best model architecture found in search process.
         """
+        def reload_tf_model(model):
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                model.save_pretrained(tmp_dir)
+                assert model_cls, 'model_cls should not be None'
+                model = model_cls.from_pretrained(tmp_dir)
+            return model
+
         if res_save_path is None or not os.path.isdir(res_save_path):
             res_save_path = os.getcwd()
         save_path = os.path.join(res_save_path, 'AutoDistillationResults')
         self.model_paras_num = {}
+        logger.info(f'search save_path = {save_path}')
         self.load_search_results(save_path)
         os.makedirs(save_path, exist_ok=True)
 
@@ -89,15 +100,21 @@ class AutoDistillation(object):
                     n=i+1, r=self.max_trials-i-1, fix="="*30
                 )
             )
-            if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+            if self.framework == 'pytorch':
+                if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+                    model_arch_paras = self.model_arch_proposition()
+                    logger.info("Model architecture {} proposed.".format(model_arch_paras))
+                if torch.distributed.is_initialized():
+                    model_arch_paras_sync = [model_arch_paras] \
+                        if torch.distributed.get_rank() == 0 else [None]
+                    torch.distributed.broadcast_object_list(model_arch_paras_sync, src=0)
+                    model_arch_paras = model_arch_paras_sync[0]
+            else:
                 model_arch_paras = self.model_arch_proposition()
-                logger.info("Model architecture {} proposed.".format(model_arch_paras))
-            if torch.distributed.is_initialized():
-                model_arch_paras_sync = [model_arch_paras] \
-                    if torch.distributed.get_rank() == 0 else [None]
-                torch.distributed.broadcast_object_list(model_arch_paras_sync, src=0)
-                model_arch_paras = model_arch_paras_sync[0]
             model = self.model_builder(model_arch_paras)
+            if self.framework == 'tensorflow':
+                model = reload_tf_model(model)
+                
             model_paras = self.count_model_parameters(model)
             logger.info(
                 "***** Number of model parameters: {:.2f}M *****".format(model_paras / 10**6)
@@ -120,6 +137,8 @@ class AutoDistillation(object):
             self.search_results[tuple(model_arch_paras.values())] = metrics
             if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
                 self.advisor.feedback(sum(self.metrics_conversion(metrics)))
+                print(f'res_save_path: {res_save_path}, save_path = {save_path}')
+                os.makedirs(save_path, exist_ok=True)
                 self.dump_search_results(
                     os.path.join(save_path, 'Trial_{}_results.txt'.format(i+1))
                 )
@@ -130,6 +149,8 @@ class AutoDistillation(object):
                     self.search_results[model_arch_vec] = \
                         self.resumed_search_results[model_arch_vec]
                     model = self.model_builder(self.params_vec2params_dict(model_arch_vec))
+                    if self.framework == 'tensorflow':
+                        model = reload_tf_model(model)
                     self.model_paras_num[model_arch_vec] = self.count_model_parameters(model)
             self.dump_search_results(os.path.join(save_path, 'Final_results.txt'.format(i+1)))
         self.find_best_model_archs()
@@ -156,6 +177,8 @@ class AutoDistillation(object):
     def count_model_parameters(self, model):
         if isinstance(model, torch.nn.Module):
             return sum(p.numel() for p in model.parameters())
+        elif self.framework == 'tensorflow':
+            return model.num_parameters()
         else: # pragma: no cover
             raise NotImplementedError("Only support torch model now.")
 
@@ -237,7 +260,8 @@ class AutoDistillation(object):
                 )
         elif isinstance(conf_fname_or_obj, AutoDistillationConfig):
             self.config = conf_fname_or_obj.config
-            schema.validate(self.config)
+            if self.framework == 'pytorch':
+                schema.validate(self.config)
         else: # pragma: no cover
             raise NotImplementedError(
                 "Please provide a str path to config file or a config dict."
@@ -279,6 +303,26 @@ class AutoDistillation(object):
             )
 
     def create_distillers(self):
+        def create_tf_distiller(distillation_cfg):
+            block_names = distillation_cfg.block_names \
+                if distillation_cfg.block_names else ['']
+            train_steps = distillation_cfg.train_steps \
+                if distillation_cfg.train_steps else [500]
+            conf = DotDict({
+                'model':{
+                    'name': 'flash_distillation_{}'.format(0), 'framework': self.framework
+                },
+                'distillation':{
+                    'train':{'optimizer': {'SGD':{'learning_rate': 1e-4}},
+                            'criterion': {'KnowledgeDistillationLoss':
+                                        {'temperature': distillation_cfg.temperature,
+                                        'loss_types': distillation_cfg.loss_types,
+                                        'loss_weights': distillation_cfg.loss_weights,
+                                        }}}
+                }
+            })
+            return [Distillation(conf)], block_names, train_steps
+
         def create_distiller(distillation_cfg):
             distillers = []
             assert distillation_cfg.layer_mappings_for_knowledge_transfer, \
@@ -296,6 +340,8 @@ class AutoDistillation(object):
                 if distillation_cfg.add_origin_loss else [False] * len(layer_mappings)
             train_steps = distillation_cfg.train_steps \
                 if distillation_cfg.train_steps else [500] * len(layer_mappings)
+            temperatures = distillation_cfg.temperatures \
+                if distillation_cfg.temperatures else [1.0] * len(layer_mappings)
             assert len(layer_mappings) == len(block_names) == len(loss_types) == \
                 len(loss_weights) == len(add_origin_loss) == len(train_steps), \
                 "lengths of layer_mappings_for_knowledge_transfer, block_names, " + \
@@ -304,16 +350,16 @@ class AutoDistillation(object):
             for i, lm in enumerate(layer_mappings):
                 conf = DotDict({
                     'model':{
-                        'name': 'flash_distillation_{}'.format(i), 'framework': 'pytorch'
+                        'name': 'flash_distillation_{}'.format(i), 'framework': self.framework
                     },
                     'distillation':{
                         'train':{'optimizer': {'SGD':{'learning_rate': 1e-4}},
-                                 'criterion': {'IntermediateLayersKnowledgeDistillationLoss':
-                                               {'layer_mappings': lm,
+                                'criterion': {'IntermediateLayersKnowledgeDistillationLoss':
+                                            {'layer_mappings': lm,
                                                 'loss_types': loss_types[i],
                                                 'loss_weights': loss_weights[i],
                                                 'add_origin_loss': add_origin_loss[i]}}}
-                    }        
+                    }
                 })
                 distillers.append(Distillation(conf))
             return distillers, block_names, train_steps
@@ -323,15 +369,23 @@ class AutoDistillation(object):
         self.flash_distillers = []
         if flash_distillation_config.knowledge_transfer:
             knowledge_transfer_cfg = flash_distillation_config.knowledge_transfer
-            self.flash_distillers, self.flash_block_names, self.flash_train_steps = \
-                create_distiller(knowledge_transfer_cfg)
+            if self.framework == 'pytorch':
+                self.flash_distillers, self.flash_block_names, self.flash_train_steps = \
+                    create_distiller(knowledge_transfer_cfg)
+            else:
+                self.flash_distillers, self.flash_block_names, self.flash_train_steps = \
+                    create_tf_distiller(knowledge_transfer_cfg)
 
         # regular distillation related
         self.regular_distillers = []
         if flash_distillation_config.regular_distillation:
             regular_distillation_cfg = flash_distillation_config.regular_distillation
-            self.regular_distillers, self.regular_block_names, self.regular_train_steps = \
-                create_distiller(regular_distillation_cfg)
+            if self.framework == 'pytorch':
+                self.regular_distillers, self.regular_block_names, self.regular_train_steps = \
+                    create_distiller(regular_distillation_cfg)
+            else:
+                self.regular_distillers, self.regular_block_names, self.regular_train_steps = \
+                    create_tf_distiller(regular_distillation_cfg)
 
     @property
     def teacher_model(self):
