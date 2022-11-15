@@ -111,12 +111,14 @@ void Model::Init(const ModelConfig& conf) {
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
   is_dispatcher_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
   char* env_root = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
-  if (env_root == NULL && getenv("HOME") == NULL) {
+  char* home_env = getenv("HOME");
+  if (env_root != NULL) {
+    dispatch_table_file_root_ = env_root;
+  } else if (home_env != NULL) {
+    dispatch_table_file_root_ = string(home_env) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt";
+  } else {
     LOG(ERROR) << "Please export ENGINE_DISPATCH_TABLE_FILE_ROOT or HOME";
   }
-  dispatch_table_file_root_ = env_root == NULL ? \
-      string(getenv("HOME")) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt" : \
-      env_root;
   has_dispatch_table_file_ = (access(dispatch_table_file_root_.c_str(), F_OK) != -1);
   if (!has_dispatch_table_file_) LOG(INFO) << "Missing dispatch table file, " \
                                   "all operators will use their own default kernels." \

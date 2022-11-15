@@ -287,7 +287,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   weight_md_ = memory::desc(weight_shape_m, type2mem[weight_->dtype()], weight_stride_m);
   weight_m_ = memory(weight_md_, eng_, weight_->mutable_data());
 
-  if (has_bias_) {
+  if (bias_ != nullptr) {
     const vector<int64_t> bias_shape = bias_->shape();
     const vector<int64_t> bias_stride = GetStrides(bias_shape);
     bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);

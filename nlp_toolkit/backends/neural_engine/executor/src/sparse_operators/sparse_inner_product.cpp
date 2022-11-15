@@ -102,6 +102,7 @@ BSRMatrix<T>* create_bsr_matrix(const T* dense_matrix, const vector<int64_t>& sh
   if (!colidxs.empty()) {
     bsr_matrix->nnz = colidxs.size();
     bsr_matrix->colidxs = new int64_t[colidxs.size()];
+    memset(bsr_matrix->colidxs, 0, colidxs.size() * sizeof(int64_t));
     for (int64_t i = 0; i < bsr_matrix->nnz; i++) {
       bsr_matrix->colidxs[i] = colidxs[i];
     }
