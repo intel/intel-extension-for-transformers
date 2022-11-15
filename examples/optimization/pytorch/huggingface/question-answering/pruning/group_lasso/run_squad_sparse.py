@@ -942,7 +942,7 @@ def eval_func(model, args, dllogger, tokenizer, device):
         import subprocess
         import shlex
         eval_out = subprocess.check_output([sys.executable, shlex.quote(args.eval_script),
-                                            args.predict_file, args.output_dir + "/predictions.json"])
+                                            shlex.quote(args.predict_file), shlex.quote(args.output_dir) + "/predictions.json"])
         scores = str(eval_out).strip()
         exact_match = float(scores.split(":")[1].split(",")[0])
         f1 = float(scores.split(":")[2].split("}")[0])
