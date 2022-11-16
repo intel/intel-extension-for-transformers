@@ -98,7 +98,9 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   const auto& dst_dt = dtypes[ssd::DST0];
 
   // alpha * src0 x src1 + beta * src2 = dst.
+  // TBD(yi): change naming of matmul variables
   float alpha = 1.f, beta = 1.f;
+  const float* zp = nullptr;
   if (attrs["alpha"] != "") alpha = str_to_num<float>(attrs["alpha"]);
   if (attrs["beta"] != "") beta = str_to_num<float>(attrs["beta"]);
   if (!ref_kd.is_f32()) {
@@ -106,6 +108,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
     auto scale_f32 = static_cast<const float*>(scale_data);
     auto& scale_value = scale_f32[0];
     alpha = scale_value;
+    zp = static_cast<const float*>(rt_data[ssd::ZP0]);
   }
 
   // stride for dims index afte perm. e.g. first elements is always for bs0
@@ -164,7 +167,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
           } else if (dst_dt == dt::u8) {
             jd::postop_attr quantize{
                 dt::u8, postop_type::eltwise, postop_alg::quantize,
-                0,  // alpha
+                zp[0],  // alpha
                 0,  // beta
                 1,  // scale already applied in the previous step
             };
