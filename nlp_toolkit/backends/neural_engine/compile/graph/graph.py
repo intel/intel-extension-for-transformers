@@ -334,7 +334,8 @@ class Graph(object):
                 attr_map = dp.attrs_config({})
                 attr_map_list.append(attr_map)
             op_type = net_info['model']['operator'][node]['type']
-            op_config = dp.op_config(str(node), str(op_type), tensor_input[-1], tensor_output[-1], attr_map_list[-1])
+            op_config = dp.op_config(str(node), str(op_type), tensor_input[-1], tensor_output[-1],
+                                     attr_map_list[-1])
             op_configs.append(op_config)
 
         model_config = dp.model_config(net_info['model']['name'], op_configs)
@@ -412,8 +413,8 @@ class Graph(object):
                         reshape(tensor_shape)
                     tensorclass = Tensor()
                     if tensor_location == None:
-                        tensorclass = Tensor(tensor_name, ['input_data'], [], tensor_shape, tensor_data, tensor_dtype,
-                                             tensor_location)
+                        tensorclass = Tensor(tensor_name, ['input_data'], [], tensor_shape, tensor_data,
+                                             tensor_dtype, tensor_location)
                     else:
                         tensorclass = Tensor(tensor_name, [], [], tensor_shape, tensor_data, tensor_dtype,
                                              tensor_location)
@@ -444,8 +445,8 @@ class Graph(object):
                 if 'attr' in d['model']['operator'][node].keys():
                     attr = d['model']['operator'][node]['attr']
 
-                op = util.construct_node(node, optype, copy.deepcopy(input_tensors), copy.deepcopy(output_tensors),
-                                         attr)
+                op = util.construct_node(node, optype, copy.deepcopy(input_tensors),
+                                         copy.deepcopy(output_tensors), attr)
             self.insert_nodes(len(self.nodes), [op])
 
     def save(self, output_dir=None):
@@ -753,7 +754,7 @@ class Graph(object):
 
                 if 'output_dtype' in node.attr:
                     new_attr['output_dtype'] = node.attr['output_dtype']
-                
+
                 return new_attr
 
             return False
@@ -857,7 +858,14 @@ class Graph(object):
             if 'reshape' in node.attr:
                 _reorder_shape_list(node, 'reshape')
 
-        def reorder_recover_node_insert(node, pre_node=None):
+        def _modify_post_node_attr(post_node, attr_name='axis'):
+            if attr_name in post_node.attr:
+                if post_node.attr[attr_name] == 0:
+                    post_node.attr[attr_name] = 1
+                elif post_node.attr[attr_name] == 1:
+                    post_node.attr[attr_name] = 0
+
+        def _reorder_recover_node_insert(node, pre_node=None):
             '''
                 pre_node: the first predecessor node of the reorder_recover node
             '''
@@ -896,9 +904,10 @@ class Graph(object):
                     idx = idx + 1
 
             post_node.input_tensors[idx] = reorder_output_tensor
+            _modify_post_node_attr(post_node, 'axis')
             return reorder_recover_node
 
-        def modify_post_node_input_tensor(post_node, node, node_input_tensors_idx=0):
+        def _modify_post_node_input_tensor(post_node, node, node_input_tensors_idx=0):
             '''
                 post_node: the post node of the second parameter
                 node: the source of input_tensors
@@ -917,43 +926,42 @@ class Graph(object):
             pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
             for post_node_name in node.output_tensors[0].dest_op:
                 post_node = self.get_node_by_name(post_node_name)
-                modify_post_node_input_tensor(post_node, node, 0)
+                _modify_post_node_input_tensor(post_node, node, 0)
             self.remove_nodes([node.name])
             for post_node_name in node.output_tensors[0].dest_op:
                 post_node = self.get_node_by_name(post_node_name)
+                _modify_post_node_attr(post_node, 'axis')
                 pre_node.output_tensors[0].dest_op.append(post_node.name)
 
-        if node_name_list == None:
-            logger.info("The node_name_list is None. Start to get sparse nodes name...")
-            node_name_list = self.get_sparse_nodes_name()
-        
-        logger.info('node_name_list: %s', node_name_list)
-
-        if node_name_list == []:
-            logger.info("The node_name_list is [].")
-            return
-
-        def node_name_list_convert(node_name_list):
-            type_list = ''
+        def _node_name_list_convert(node_name_list):
+            merge_matmul_node_name_list = []
+            innerproduct_type = []
             for node_name in node_name_list:
                 node = self.get_node_by_name(node_name)
                 node_type = _innerproduct_type_check(node)
-                if node_type == 'add_innerproduct_0':
-                    type_list += '0'
-                if node_type == 'add_innerproduct_1':
-                    type_list += '1'
-                if node_type == 'mul_innerproduct_0':
-                    type_list += '2'
-            return type_list
+                innerproduct_type.append(node_type)
+                if node_type == 'add_innerproduct_0' or node_type == 'mul_innerproduct_0':
+                    if 'merge_matmul' in node.name:
+                        merge_matmul_node_name_list.append(node_name)
 
-        type_list = node_name_list_convert(node_name_list)
+            return innerproduct_type, merge_matmul_node_name_list
 
-        def _patthen_match(type_list, pattern):
+        def _pattern_matching(innerproduct_type_list, pattern):
             matched_idx = []
-            idx = type_list.find(pattern)
-            while idx != -1:
-                matched_idx.append(idx)
-                idx = type_list.find(pattern, idx + 1)
+            pattern_length = len(pattern)
+
+            left = 0
+            N = len(innerproduct_type_list)
+            while left < N:
+
+                def _check(left):
+                    if pattern == innerproduct_type_list[left:left + pattern_length]:
+                        return True
+                    return False
+
+                if _check(left) == True:
+                    matched_idx.append(left)
+                left += 1
 
             return matched_idx
 
@@ -964,51 +972,29 @@ class Graph(object):
             node_name_list = [i for item in tmp_node_name_list for i in item]
             return node_name_list
 
-        QKV_and_bias = '0001'
-        matched_idx = _patthen_match(type_list, QKV_and_bias)
-        QKV_node_name_list = _matched_node_name_list(node_name_list, matched_idx, 4)
-
-        geluTanh_and_sum = '21'
-        matched_idx = _patthen_match(type_list, geluTanh_and_sum)
-        post_process_node_name_list = _matched_node_name_list(node_name_list, matched_idx, 2)
-
-        def _check_layernorm_fusion_node(post_process_node_name_list, start_idx, range):
+        def _search_layernorm_fusion_node(ffn_lin_node_name_list, start_idx, range, node_name_list=[]):
             layernorm_node = []
-            for node_name in post_process_node_name_list[start_idx:][::range]:
+            # pcik all add_innerproduct_1 nodes from ffn_lin_node_name_list
+            for node_name in ffn_lin_node_name_list[start_idx:][::range]:
+                # The node_name_list here is also to identify the merge matmul pattern.
+                if node_name_list != []:
+                    split_node_name = self.get_node_by_name(node_name).output_tensors[0].dest_op[0]
+                    length_of_split_node_output = len(self.get_node_by_name(split_node_name).output_tensors)
+                    if length_of_split_node_output == 3:
+                        node_name = node_name_list[node_name_list.index(node_name) + 1]
+                    elif length_of_split_node_output == 2:
+                        node_name = node_name_list[node_name_list.index(node_name) + 2]
+                    else:
+                        logger.warning('The output of the split node is not expected.')
+
                 layernorm_node_name = self.get_node_by_name(node_name).input_tensors[3].source_op[0]
                 node = self.get_node_by_name(layernorm_node_name)
                 if node.op_type != 'LayerNorm':
-                    logger.warning('Post Process Pattern matching wrong')
+                    logger.warning('Post Process Pattern matching is not expected')
                 else:
                     layernorm_node.append(node.name)
             return layernorm_node
 
-        layernorm_fusion_node = _check_layernorm_fusion_node(post_process_node_name_list, 1, 2)
-        layernorm_fusion_node += _check_layernorm_fusion_node(QKV_node_name_list, 3, 4)
-
-        for node_name in node_name_list:
-            node = self.get_node_by_name(node_name)
-            node_type = _innerproduct_type_check(node)
-            if node_type == 'general':
-                continue
-
-            if node_type == 'add_innerproduct_0' or node_type == 'mul_innerproduct_0':
-                _reorder_node_insert(node, 0)
-                _swap_innertproduct_input(node, [0, 1], [3, 5], [4, 6])
-                reorder_recover_node_insert(node)
-
-            if node_type == 'add_innerproduct_1':
-                reorder_node = _reorder_node_insert(node, 0)
-                reorder_node.attr['output_dtype'] = 'u8'
-                _reorder_node_insert(node, 3, reorder_node)
-
-                _swap_innertproduct_input(node, [0, 1], [4, 6], [5, 7])
-                reorder_recover_node_insert(node)
-
-        for node_name in reorder_dict:
-            insert_idx = self.get_node_id(node_name)
-            self.insert_nodes(insert_idx, [reorder_dict[node_name]])
- 
         def _consecutive_reorder_fusion():
             '''
                 Fusion 1: 
@@ -1030,58 +1016,84 @@ class Graph(object):
                             self.remove_nodes([pre_node.name, node.name])
                             pre_node.input_tensors[0].dest_op.append(post_node.name)
 
-        _consecutive_reorder_fusion()
-
-        reorder_dict = {}
-
         def _reorder_post_fusion():
             '''
                 Fusion 2: 
-                Place reorder_post nodes before the quantize node, especially for QKV and output dense
+                    This fusion is used to place reorder_post nodes before the quantize node.
+                Conditions:
+                    Only fusion if all QKV nodes meet the sparsity ratio
+
+                E.g.
+                    original: quantize + reorder_post + innerproduct: K + innerproduct: Q + innerproduct: v
+                    fusion: reorder_post + quantize + innerproduct: K + innerproduct: Q + innerproduct: v
             '''
-            def _check_QKV_fusion(node):
-                post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
-                node_type = _innerproduct_type_check(post_node)
+
+            # check the current reorder_post_node whether need place reorder_post nodes before the quantize node
+            def _check_QKV_fusion(reorder_post_node):
+                innerproduct_node = self.get_node_by_name(reorder_post_node.output_tensors[0].dest_op[0])
+                node_type = _innerproduct_type_check(innerproduct_node)
+
+                # This branch is used to check type of the attention out node.
                 if node_type == 'mul_innerproduct_0':
                     return True
-                for post_node_name in node.output_tensors[0].dest_op:
-                    if post_node_name in QKV_node_name_list:
+
+                # The dest_op of reorder_post_node.output_tensors[0] are QKV nodes.
+                for QKV_node_name in reorder_post_node.output_tensors[0].dest_op:
+                    if QKV_node_name in QKV_node_name_list:
                         continue
                     else:
                         return False
+                # only when all QKV nodes are in the QKV node name list return true
+                return True
+
+            def _check_merged_matmul(reorder_post_node):
+                innerproduct_node = self.get_node_by_name(reorder_post_node.output_tensors[0].dest_op[0])
+                if innerproduct_node.name not in merge_matmul_node_name_list:
+                    return False
                 return True
 
             for node in self._nodes:
+                # search all Reorder_Post nodes
                 if node.op_type == 'Reorder' and 'Reorder_Post' in node.name:
-                    pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
                     if _check_QKV_fusion(node) == False:
-                        continue
+                        if _check_merged_matmul(node) == False:
+                            continue
+
+                    pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
                     if pre_node.op_type == 'Quantize':
                         # swap the pre_node and the current node
                         for post_node_name in node.output_tensors[0].dest_op:
                             post_node = self.get_node_by_name(post_node_name)
-                            modify_post_node_input_tensor(post_node, node, 0)
+                            _modify_post_node_input_tensor(post_node, node, 0)
                         self.remove_nodes([node.name])
                         reorder_node = _reorder_node_insert(pre_node, 0)
                         layernorm_node = self.get_node_by_name(reorder_node.input_tensors[0].source_op[0])
+                        if layernorm_node.op_type != 'LayerNorm':
+                            logger.warning('The node.op_type = {} is not expected.'.format(
+                                layernorm_node.op_type))
 
+                        # the dest_op of layernorm_node.output_tensors[0] is reorder_post node for attention out node.
                         if 'Reorder_Post' in layernorm_node.output_tensors[0].dest_op[0]:
-                            reorder_post_node = self.get_node_by_name(layernorm_node.output_tensors[0].dest_op[0])
-                            post_node = self.get_node_by_name(reorder_post_node.output_tensors[0].dest_op[0])
+                            reorder_post_node = self.get_node_by_name(
+                                layernorm_node.output_tensors[0].dest_op[0])
+                            attention_out_node = self.get_node_by_name(
+                                reorder_post_node.output_tensors[0].dest_op[0])
                             self.remove_nodes([reorder_post_node.name])
                             # append the new reorder_node
                             layernorm_node.output_tensors[0].dest_op.append(reorder_node.name)
-                            reorder_node.output_tensors[0].dest_op.append(post_node.name)
+                            reorder_node.output_tensors[0].dest_op.append(attention_out_node.name)
 
             for node_name in reorder_dict:
                 insert_idx = self.get_node_id(node_name)
                 self.insert_nodes(insert_idx, [reorder_dict[node_name]])
 
-        _reorder_post_fusion()
-
         def _reorder_recover_fusion():
             '''
                 Fusion 3: place the reorder_recover nodes after reshape and matmul nodes
+
+                This fusion deletes the reorder_recover nodes that follow Q, K, V and attention out nodes
+                and the post modify add_matmul and transpose_matmul nodes.
+
             '''
             for node in self._nodes:
                 # step1: delte all recover nodes of innerProduct nodes and modify reshape inputs
@@ -1091,6 +1103,8 @@ class Graph(object):
                     # innerproduct + reorder_recover + reshape
                     if 'Reorder_Recover' in post_node.name:
                         _del_current_node_and_modify_post_node(post_node)
+
+                        # This conditional branch will be skipped if the innerproduct node fuses the reshape node.
                         reshape_node = self.get_node_by_name(post_node.output_tensors[0].dest_op[0])
                         if reshape_node.op_type == 'Reshape':
                             _reorder_shape_list(reshape_node)
@@ -1106,24 +1120,190 @@ class Graph(object):
                                     _reorder_shape_list(reshape_node)
 
                                 reorder_node = _dfs_search(node, 'Reorder')
-                                innerproduct_node = self.get_node_by_name(reorder_node.output_tensors[0].dest_op[0])
+                                innerproduct_node = self.get_node_by_name(
+                                    reorder_node.output_tensors[0].dest_op[0])
                                 if 'Reorder_Post' in reorder_node.name and innerproduct_node.op_type == "InnerProduct":
                                     _del_current_node_and_modify_post_node(reorder_node)
 
                             _transpose_and_matmul_nodes_modification(target_node)
-
-        _reorder_recover_fusion()
+                    else:
+                        logger.warning('The node op_type == {} is not expected.'.format(post_node.name))
 
         def _layernorm_reorder_fusion():
             for node in self._nodes:
                 if node.op_type == 'LayerNorm' and node.name in layernorm_fusion_node:
                     reorder_recover_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
                     reorder_post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+
                     if 'Reorder_Recover' in reorder_recover_node.name and 'Reorder_Post' in reorder_post_node.name:
                         node.attr['transpose_mode'] = '1, 0'
                         _del_current_node_and_modify_post_node(reorder_recover_node)
                         _del_current_node_and_modify_post_node(reorder_post_node)
 
+        def _merged_matmul_fusion():
+            def _transpose_matmul_modification(node):
+                reorder_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+                attention_out_node = self.get_node_by_name(reorder_node.output_tensors[0].dest_op[0])
+                if attention_out_node.op_type == "InnerProduct":
+                    _del_current_node_and_modify_post_node(reorder_node)
+                else:
+                    logger.warning('The attention_out_node.op_type = {} is not expected'.format(
+                        attention_out_node.op_type))
+
+            for node_name in node_name_list:
+                node = self.get_node_by_name(node_name)
+
+                if 'merge_matmul' not in node.name:
+                    continue
+
+                reorder_recover_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
+
+                if 'Reorder_Recover' in reorder_recover_node.name:
+                    _del_current_node_and_modify_post_node(reorder_recover_node)
+                    split_node = self.get_node_by_name(reorder_recover_node.output_tensors[0].dest_op[0])
+
+                    def mergedQK_modify(split_node):
+                        for post_tensor in split_node.output_tensors:
+                            post_node = self.get_node_by_name(post_tensor.dest_op[0])
+
+                            # Reshape + Matmul + Softmax
+                            if post_node.op_type == 'Reshape':
+                                _reorder_shape_list(post_node)
+                                post_node_of_reshape = self.get_node_by_name(
+                                    post_node.output_tensors[0].dest_op[0])
+                                if post_node_of_reshape.op_type == 'Matmul':
+                                    _modify_attr_perm(post_node_of_reshape)
+
+                        # InnerProduct V + Matmul + InnerProduct Attention_output
+                        # delete the recover node of InnerProduct v
+                        split_node_id = self.get_node_id(split_node.name)
+                        next_node_id = split_node_id + 1
+                        v = self._nodes[next_node_id]
+
+                        if v.op_type == 'InnerProduct':
+                            recover_node = self.get_node_by_name(v.output_tensors[0].dest_op[0])
+                            _del_current_node_and_modify_post_node(recover_node)
+                        else:
+                            logger.warning('The v.op_type is not expected.')
+
+                        # modify the matmul node
+                        post_node_of_v = self.get_node_by_name(v.output_tensors[0].dest_op[0])
+                        # This branch is only used if there is no reshaping + innerproduct fusion.
+                        if post_node_of_v.op_type == 'Reshape':
+                            _reorder_shape_list(post_node_of_v)
+                            post_node_of_reshape = self.get_node_by_name(
+                                post_node_of_v.output_tensors[0].dest_op[0])
+                            if post_node_of_reshape.op_type == 'Matmul':
+                                _modify_attr_perm(post_node_of_reshape)
+                                tmp_node = self.get_node_by_name(
+                                    post_node_of_reshape.output_tensors[0].dest_op[0])
+                                if tmp_node.op_type == "Reshape":
+                                    _reorder_shape_list(tmp_node)
+                                    _transpose_matmul_modification(tmp_node)
+                        elif post_node_of_v.op_type == 'Matmul':
+                            _modify_attr_perm(post_node_of_v)
+                            _transpose_matmul_modification(post_node_of_v)
+                        else:
+                            logger.warning('The mergedQK fusion is not expected.')
+
+                    def mergedQKV_modify(split_node):
+                        for post_tensor in split_node.output_tensors:
+                            post_node = self.get_node_by_name(post_tensor.dest_op[0])
+                            # 3 * Reshape + Matmul + Innerproduct_Sum
+                            if post_node.op_type == 'Reshape':
+                                _reorder_shape_list(post_node)
+                                matmul_node = self.get_node_by_name(post_node.output_tensors[0].dest_op[0])
+                                if matmul_node.op_type == 'Matmul':
+                                    _modify_attr_perm(matmul_node)
+                                    post_node_of_matmul = self.get_node_by_name(
+                                        matmul_node.output_tensors[0].dest_op[0])
+                                    # post_node_of_matmul could also be softmax.
+                                    if post_node_of_matmul.op_type == 'Reorder':
+                                        _del_current_node_and_modify_post_node(post_node_of_matmul)
+                                else:
+                                    logger.warning('The post_node_of_reshape is not Matmul.')
+
+                    if len(split_node.output_tensors) == 2:
+                        mergedQK_modify(split_node)
+
+                    if len(split_node.output_tensors) == 3:
+                        mergedQKV_modify(split_node)
+
+        for node in self._nodes:
+            if node.op_type == 'Reorder':
+                logger.info('The current IR is reordered, No need to do transpose.')
+                return
+
+        if node_name_list == None:
+            logger.info("The node_name_list is None. Start to get sparse nodes name...")
+            node_name_list = self.get_sparse_nodes_name()
+
+        logger.info('node_name_list: %s', node_name_list)
+
+        if node_name_list == []:
+            logger.info("The node_name_list is [].")
+            return
+
+        innerproduct_type_list, merge_matmul_node_name_list = _node_name_list_convert(node_name_list)
+        logger.debug('merge_matmul_node_name_list = {}'.format(merge_matmul_node_name_list))
+
+        QKV_and_AttentionOut = [
+            'add_innerproduct_0', 'add_innerproduct_0', 'add_innerproduct_0', 'add_innerproduct_1'
+        ]
+        matched_idx = _pattern_matching(innerproduct_type_list, QKV_and_AttentionOut)
+        QKV_node_name_list = _matched_node_name_list(node_name_list, matched_idx, 4)
+        logger.debug('QKV_node_name_list = {}'.format(QKV_node_name_list))
+
+        ffn_lin = ['mul_innerproduct_0', 'add_innerproduct_1']
+        matched_idx = _pattern_matching(innerproduct_type_list, ffn_lin)
+        ffn_lin_node_name_list = _matched_node_name_list(node_name_list, matched_idx, 2)
+        logger.debug('ffn_lin_node_name_list = {}'.format(ffn_lin_node_name_list))
+
+        layernorm_fusion_node = _search_layernorm_fusion_node(ffn_lin_node_name_list, 1, 2)
+        layernorm_fusion_node += _search_layernorm_fusion_node(QKV_node_name_list, 3, 4)
+        if merge_matmul_node_name_list != []:
+            layernorm_fusion_node += _search_layernorm_fusion_node(merge_matmul_node_name_list, 0, 1,
+                                                                   node_name_list)
+        logger.debug('layernorm_fusion_node = {}'.format(layernorm_fusion_node))
+
+        for node_name in node_name_list:
+            node = self.get_node_by_name(node_name)
+            node_type = _innerproduct_type_check(node)
+
+            if node_type == 'general':
+                continue
+
+            if node_type == 'add_innerproduct_0' or node_type == 'mul_innerproduct_0':
+                _reorder_node_insert(node, 0)
+                _swap_innertproduct_input(node, [0, 1], [3, 5], [4, 6])
+                _reorder_recover_node_insert(node)
+
+            if node_type == 'add_innerproduct_1':
+                reorder_node = _reorder_node_insert(node, 0)
+                reorder_node.attr['output_dtype'] = 'u8'
+                _reorder_node_insert(node, 3, reorder_node)
+
+                _swap_innertproduct_input(node, [0, 1], [4, 6], [5, 7])
+                _reorder_recover_node_insert(node)
+
+        for node_name in reorder_dict:
+            insert_idx = self.get_node_id(node_name)
+            self.insert_nodes(insert_idx, [reorder_dict[node_name]])
+
+        _consecutive_reorder_fusion()
+
+        reorder_dict = {}
+        _reorder_post_fusion()
+
+        _reorder_recover_fusion()
+
         _layernorm_reorder_fusion()
+
+        if merge_matmul_node_name_list == []:
+            logger.info('No mergedMatmul nodes, No need do merged matmul fusion')
+            return
+
+        reorder_dict = {}
+        _merged_matmul_fusion()
 
         logger.info("Transpose_mode_int8 done")

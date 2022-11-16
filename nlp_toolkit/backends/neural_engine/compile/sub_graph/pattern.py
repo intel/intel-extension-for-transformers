@@ -66,6 +66,7 @@ supported_patterns = [
     'InsertQuantNode',
     'InsertBF16Node',
     'QunatizeFusion',
+    'QKVMerge',
     'ReshapeFusion',
     'OutputData',
 ]

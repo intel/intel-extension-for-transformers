@@ -20,10 +20,11 @@ from ..graph_utils import LazyImport, get_model_fwk_name
 onnx = LazyImport('onnx')
 tf = LazyImport('tensorflow')
 
+
 class Loader(object):
-    def __call__(self, model):
+    def __call__(self, model, pattern_config=None):
         framework = get_model_fwk_name(model)
-        if framework =='tensorflow':
+        if framework == 'tensorflow':
             if isinstance(model, str):
                 graph = tf.Graph()
                 graph_def = tf.compat.v1.GraphDef()
@@ -33,7 +34,7 @@ class Loader(object):
                         tf.import_graph_def(graph_def, name='')
                 config = tf.compat.v1.ConfigProto()
                 model = tf.compat.v1.Session(graph=graph, config=config)
-        if framework =='onnxruntime':
+        if framework == 'onnxruntime':
             if isinstance(model, str):
                 model = onnx.load(model)
         return model, framework

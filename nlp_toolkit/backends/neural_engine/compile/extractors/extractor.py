@@ -32,7 +32,7 @@ class Extractor(object):
     Do additional extraction of operation attributes without modifying of graph topology.
     """
 
-    def __call__(self, model):
+    def __call__(self, model, pattern_config = None):
         framework = model[1]
         extractor = EXTRACTORS[framework]()
         model = extractor(model[0])

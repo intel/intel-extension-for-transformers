@@ -32,11 +32,33 @@ class TestTranspose(unittest.TestCase):
         pass
 
     def test_transpose(self):
-        model_dir = '/home/tensorflow/localfile/nlptoolkit_ut_model/bert_mini_int8_original_IR'
+        os.environ['GLOG_minloglevel'] = '2'
+        root_dir = '/home/tensorflow/localfile/nlptoolkit_ut_model/'
+        model_dir = root_dir + 'onnx_best_acc_distilbert.merged.untransposed'
+        pattern_config = root_dir + 'pattern_config'
         self.assertTrue(os.path.exists(model_dir),
-            'INT8 IR model is not found, please set your own model path!')
-        model = compile(model_dir)
+                        'INT8 IR model is not found, please set your own model path!')
+        graph = compile(model_dir, config=pattern_config)
+        graph.save('./mergedQK')
+        model = Graph()
+        model.graph_init('./mergedQK/conf.yaml', './mergedQK/model.bin')
         model.transpose_mode_int8()
 
-if __name__ == "__main__":
+        model_dir_2 = root_dir + 'Intel.bert-mini-sst2-distilled-sparse-90-1X4-block.mergedQKV.untransposed'
+        self.assertTrue(os.path.exists(model_dir_2),
+                        'INT8 IR model is not found, please set your own model path!')
+        graph_2 = compile(model_dir_2, config=pattern_config)
+        graph_2.save('./mergedQKV')
+        model_2 = Graph()
+        model_2.graph_init('./mergedQKV/conf.yaml', './mergedQKV/model.bin')
+        model_2.transpose_mode_int8()
+
+        model_dir_3 = root_dir + 'bert_mini_int8_original_IR'
+        self.assertTrue(os.path.exists(model_dir),
+                        'INT8 IR model is not found, please set your own model path!')
+        model_3 = compile(model_dir_3)
+        model_3.transpose_mode_int8()
+
+
+if __name__ == '__main__':
     unittest.main()

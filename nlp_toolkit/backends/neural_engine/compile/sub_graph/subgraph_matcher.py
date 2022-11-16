@@ -53,18 +53,32 @@ EXECUTOR_TYPE = {
 }
 
 class SubGraphMatcher(object):
-    def __call__(self, model, tune = False):
+    def __call__(self, model, tune = False, pattern_config = None):
         logger.info('Start to implement Sub-Graph matching and replacing...') 
         if tune:
             self._tune_patterns(model)
         else:
-            self._fuse_patterns(model)
+            self._fuse_patterns(model, pattern_config=pattern_config)
         logger.info('Sub-Graph match and replace done...')
         return model
 
-    def _fuse_patterns(self, model, supported_patterns=supported_patterns, pattern_mask=None):
+    def _fuse_patterns(self, model, supported_patterns=supported_patterns, pattern_mask=None, pattern_config=None):
         pattern_mask = [True for _ in range(len(supported_patterns))] \
-                        if pattern_mask == None else pattern_mask
+                if pattern_mask == None else pattern_mask
+        
+        for index in range(len(supported_patterns)):
+            pattern_name = supported_patterns[index]
+            if pattern_name == 'QKVMerge':
+                pattern_mask[index] = False
+
+        # modify the pattern mask according to pattern_config
+        if pattern_config != None:
+            for index in range(len(supported_patterns)):
+                pattern_name = supported_patterns[index]
+                if pattern_name in pattern_config['pattern_switch']:
+                    status = pattern_config['pattern_switch'][pattern_name]
+                    pattern_mask[index] = status
+
         for pattern_id, pattern in enumerate(supported_patterns):
             if pattern in PATTERNS and pattern_mask[pattern_id]:
                 p_fusion = PATTERNS[pattern]()

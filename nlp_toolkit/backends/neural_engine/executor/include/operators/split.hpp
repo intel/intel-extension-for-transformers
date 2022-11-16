@@ -30,6 +30,7 @@ class SplitOperator : public Operator {
   explicit SplitOperator(const OperatorConfig& conf);
   virtual ~SplitOperator() {}
 
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 

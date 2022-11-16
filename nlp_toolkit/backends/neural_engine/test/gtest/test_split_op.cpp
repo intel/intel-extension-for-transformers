@@ -45,6 +45,11 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
     axis = stoi(iter->second);
   }
 
+  std::vector<int64_t> split;
+  iter = attrs_map.find("split");
+  if (iter != attrs_map.end()) {
+    executor::StringSplit<int64_t>(&split, attrs_map["split"], ",");
+  }
   auto src_tensor_shape = input[0]->shape();
   vector<int64_t> src_stride = executor::GetStrides(src_tensor_shape);
   vector<int64_t> dst_shape;
@@ -52,27 +57,33 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
     if (n != axis) {
       dst_shape.emplace_back(src_tensor_shape[n]);
     } else {
-      dst_shape.emplace_back(1);
+      dst_shape.emplace_back(split[n]);
     }
   }
 
   // dst shape
-  output[0]->set_shape(dst_shape);
-  output[1]->set_shape(dst_shape);
-  float* dst_data = static_cast<float*>(output[0]->mutable_data());
-  float* dst_data1 = static_cast<float*>(output[1]->mutable_data());
-
   const auto src_tensor_data = static_cast<const float*>(input[0]->data());
+  std::vector<float*> dst_data;
+  for (auto tensor : output) {
+    tensor->set_shape(dst_shape);
+    dst_data.push_back(static_cast<float*>(tensor->mutable_data()));
+  }
   int h = dst_shape[0];
   int w = dst_shape[1];
-  if (axis == 0) {
-    for (int i = 0; i < h; ++i) {
-      for (int j = 0; j < w; ++j) {
-        dst_data[i * w + j] = src_tensor_data[i * src_tensor_shape[1] + j];
-        dst_data1[i * w + j] = src_tensor_data[(i + 1) * src_tensor_shape[1] + j];
+  for (int index = 0; index < dst_data.size(); index++)
+    if (axis == 0) {
+      for (int i = 0; i < h; ++i) {
+        for (int j = 0; j < w; ++j) {
+          dst_data[index][i * w + j] = src_tensor_data[(i + h * index) * src_tensor_shape[1] + j];
+        }
+      }
+    } else if (axis == 1) {
+      for (int i = 0; i < h; ++i) {
+        for (int j = 0; j < w; ++j) {
+          dst_data[index][i * w + j] = src_tensor_data[i * src_tensor_shape[1] + j + w * index];
+        }
       }
     }
-  }
 }
 
 bool CheckResult(const TestParams& t) {
@@ -85,9 +96,15 @@ bool CheckResult(const TestParams& t) {
   if (!t.expect_to_fail) {
     GetTrueData(q.input, q.output, q.conf);
     // Should compare buffer with different addresses
-    EXPECT_NE(p.output[0]->data(), q.output[0]->data());
-    return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
-                                        q.output[0]->size());
+    bool result = true;
+    for (int i = 0; i < p.output.size(); i++) {
+      EXPECT_NE(p.output[i]->data(), q.output[i]->data());
+      if (executor::CompareData<float>(p.output[i]->data(), p.output[i]->size(), q.output[i]->data(),
+                                       q.output[i]->size()) == false) {
+        return false;
+      }
+    }
+    return true;
   }
   return false;
 }
@@ -163,9 +180,14 @@ static auto CasesFp32 = []() {
   // Config
   std::vector<int64_t> src_shape;
 
-  // case: simple for 0 axis
-  src_shape = {2, 32};
-  cases.push_back({GenerateFp32Case({src_shape}, "0", "1, 1"), false});
+  // case: simple for axis=0
+  cases.push_back({GenerateFp32Case({{4, 32}}, "0", "2, 2"), false});
+  cases.push_back({GenerateFp32Case({{1536, 1024}}, "0", "768, 768"), false});
+  cases.push_back({GenerateFp32Case({{2304, 1024}}, "0", "768, 768, 768"), false});
+  // case: simple for axis=1
+  cases.push_back({GenerateFp32Case({{32, 4}}, "1", "2, 2"), false});
+  cases.push_back({GenerateFp32Case({{1024, 1536}}, "1", "768, 768"), false});
+  cases.push_back({GenerateFp32Case({{1024, 2304}}, "1", "768, 768, 768"), false});
   return ::testing::ValuesIn(cases);
 };
 

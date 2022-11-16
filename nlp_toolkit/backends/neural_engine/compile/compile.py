@@ -36,6 +36,22 @@ COMPILES = OrderedDict({
 })
 
 
+def _config_validation(config):
+    if config == None:
+        return None
+
+    import yaml
+    from schema import Schema
+
+    with open(config, 'r') as conf_file:
+        conf = yaml.safe_load(conf_file)
+
+    conf_schema = Schema(
+        {'pattern_switch': Schema({str: bool}, error='You should provide correct fused_patterns.')})
+
+    return conf_schema.validate(conf)
+
+
 def start_pipeline(model, config=None):
     compile_list = []
     # initialize the compile
@@ -44,7 +60,7 @@ def start_pipeline(model, config=None):
         compile_list.append(compile_)
     # convert the model
     for compile_ in compile_list:
-        model = compile_(model)
+        model = compile_(model, pattern_config=config)
     return model
 
 
@@ -55,5 +71,6 @@ def compile(model, config=None):
         graph.graph_init(model + '/conf.yaml', model + '/model.bin')
         model = graph
     else:
+        config = _config_validation(config)
         model = start_pipeline(model, config=config)
     return model
