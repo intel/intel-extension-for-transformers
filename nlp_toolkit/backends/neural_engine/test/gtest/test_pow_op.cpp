@@ -57,8 +57,8 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
 #pragma omp simd
     for (int j = 0; j < channel; ++j) {
       dst_data[i*channel+j] =  input[0]->size() >= input[1]->size() ? \
-            pow(static_cast<double>(src0_data[i*channel+j]), static_cast<double>(src1_data[j])) : \
-            pow(static_cast<double>(src1_data[j]), static_cast<double>(src0_data[i*channel+j]));
+            pow(src0_data[i*channel+j], src1_data[j]) : \
+            pow(src1_data[j], src0_data[i*channel+j]);
     }
   }
 }
@@ -155,32 +155,32 @@ static auto CasesFp32 = []() {
 
   std::vector<int64_t> src0_shape;
   std::vector<int64_t> src1_shape;
-  // case: scalar / scalar
+  // case: scalar ^ scalar
   src0_shape = {1};
   src1_shape = {1};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape})});
 
-  // // case: 2D / 3D
+  // // case: 2D ^ 3D
   src0_shape = {16, 1024};
   src1_shape = {2, 16, 1024};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape})});
 
-  // // case: 3D / 2D
+  // // case: 3D ^ 2D
   src0_shape = {2, 16, 1024};
   src1_shape = {16, 1024};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape})});
 
-  // case: 2D / 2D
+  // case: 2D ^ 2D
   src0_shape = {16, 1024};
   src1_shape = {16, 1024};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape})});
 
-  // case: 2D / 1D
+  // case: 2D ^ 1D
   src0_shape = {16, 1024};
   src1_shape = {1024};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape})});
 
-  // case: 2D / scalar
+  // case: 2D ^ scalar
   src0_shape = {16, 1024};
   src1_shape = {1};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape})});

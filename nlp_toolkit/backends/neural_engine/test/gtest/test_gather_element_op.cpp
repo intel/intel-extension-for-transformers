@@ -51,9 +51,9 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
   vector<int64_t> dst_stride = executor::GetStrides(dst_shape, {});
   vector<int64_t> src_stride = executor::GetStrides(src_shape, {});
 
-  char* src_data = (char*)input[0]->mutable_data();
+  char* src_data = reinterpret_cast<char*>(input[0]->mutable_data());
   int32_t* idx_data = static_cast<int32_t*>(input[1]->mutable_data());
-  char* dst_data = (char*)output[0]->mutable_data();
+  char* dst_data = reinterpret_cast<char*>(output[0]->mutable_data());
 #pragma omp parallel for
   for (int i = 0; i < output[0]->size(); i++) {
     int target = idx_data[i];

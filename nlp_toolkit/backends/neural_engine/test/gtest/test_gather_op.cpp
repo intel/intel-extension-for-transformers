@@ -100,9 +100,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
       executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
     } else if (a_tensor->shape().size() == 1) {
       uint32_t seed = 123;
-      srand(seed);
       for (int i = 0; i < a_tensor->size(); ++i) {
-        int32_t index = (int32_t)(rand() % 30522);
+        int32_t index = (int32_t)(rand_r(&seed) % 30522);
         memcpy((tensor_data + i), &index, sizeof(int32_t));
       }
     }

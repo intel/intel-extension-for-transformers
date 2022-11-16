@@ -151,6 +151,8 @@ bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2, int64_t 
   for (int64_t i = 0; i < elem_num1; ++i) {
     auto err = fabs(buf1_data[i] - buf2_data[i]);
     if (err > eps) {
+      LOG(ERROR) << "idx: " << i << ", true: " << buf1_data[i] <<
+        ", predict: " << buf2_data[i] << ", err: " << err << ", eps: " << eps;
       return false;
     }
   }

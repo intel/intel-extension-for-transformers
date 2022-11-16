@@ -126,8 +126,10 @@ class InnerProductTest : public testing::TestWithParam<TestParams> {
 };
 
 TEST_P(InnerProductTest, TestPostfix) {
+#if __AVX512VNNI__
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckResult(t));
+#endif
 }
 
 Tensor* make_int32_bias_obj(const TensorConfig* bias_tensor_config, const float* origin_data, Tensor* weight_fp32,
@@ -227,7 +229,7 @@ vector<Tensor*> make_transposed_int8_tensor_obj(vector<const TensorConfig*> tens
 #if __AVX512F__
         executor::Quantize_avx512(tensors[0]->shape()[1], tensors[0]->dtype(),
                                   &transposed_data[y * tensors[0]->shape()[1]], min_data + y, scales,
-                                  (char*)dst_data + y * tensors[0]->shape()[1]);
+                                  reinterpret_cast<char*>(dst_data) + y * tensors[0]->shape()[1]);
 #else
         executor::Quantize(tensors[0]->shape()[1], tensors[0]->dtype(), &transposed_data[y * tensors[0]->shape()[1]],
                            min_data + y, scales, dst_data + y * tensors[0]->shape()[1]);

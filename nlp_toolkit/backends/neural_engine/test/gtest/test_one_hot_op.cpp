@@ -94,9 +94,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     // step3: library buffer can only be obtained afterwards
     auto tensor_data = static_cast<int32_t*>(a_tensor->mutable_data());
     uint32_t seed = 123;
-    srand(123);
     for (int i = 0; i < a_tensor->size(); ++i) {
-      tensor_data[i] = (int32_t)(rand() % 3);
+      tensor_data[i] = (int32_t)(rand_r(&seed) % 3);
     }
 
     Tensor* a_tensor_copy = new Tensor(*a_tensor_config);

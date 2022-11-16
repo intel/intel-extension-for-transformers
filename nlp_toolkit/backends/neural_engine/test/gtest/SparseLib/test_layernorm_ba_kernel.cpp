@@ -161,8 +161,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   src_ref = sparselib_ut_memo(src_ref, num, in_dt, MALLOC, true);
   dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MALLOC, true);
   dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MEMSET);
-  float* alpha = reinterpret_cast<float*>(aligned_alloc(64,row * sizeof(float)));
-  float* beta = reinterpret_cast<float*>(aligned_alloc(64,row * sizeof(float)));
+  float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
+  float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
 
   // init alpha&beta
   for (int i = 0; i < row; i++) alpha[i] = 1 + rand_float_postfix();

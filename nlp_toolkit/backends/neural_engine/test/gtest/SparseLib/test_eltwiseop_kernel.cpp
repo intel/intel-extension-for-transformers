@@ -209,7 +209,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
-  // TODO bf16 flag check? cooper lake and sapphire rapids only
+  // TODO(SpaseLib): bf16 flag check? cooper lake and sapphire rapids only
   tensor_desc data0_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
   tensor_desc data2_desc = {{64, 1}, jd::data_type::fp32, jd::format_type::undef};

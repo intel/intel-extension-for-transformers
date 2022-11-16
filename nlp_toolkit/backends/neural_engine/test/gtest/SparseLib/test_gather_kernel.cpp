@@ -95,7 +95,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
       std::srand(seed);
       for (int i = 0; i < a_tensor_config.size(); ++i) {
         int32_t index = (int32_t)(std::rand() % src0_shape[0]);
-        memcpy(((char*)tensor_data + i * 4), &index, sizeof(int32_t));
+        memcpy((reinterpret_cast<char*>(tensor_data) + i * 4), &index, sizeof(int32_t));
       }
       memcpy(tensor_data_copy, tensor_data, a_tensor_config.size() * sizeof(int32_t));
     } else {
@@ -111,8 +111,10 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
 
   auto src0_tensors = make_tensor_obj(ts_descs[0]);
   auto src1_tensors = make_tensor_obj(ts_descs[1]);
-  auto dst_data = (char*)sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC);
-  auto dst_data_copy = (char*)sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC);
+  auto dst_data = \
+    reinterpret_cast<char*>(sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC));
+  auto dst_data_copy = \
+    reinterpret_cast<char*>(sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC));
   std::vector<const void*> rt_data = {src0_tensors.first, src1_tensors.first, dst_data};
   std::vector<const void*> rt_data_copy = {src0_tensors.second, src1_tensors.second, dst_data_copy};
   std::vector<void*> append_vec_copys = {};
@@ -135,8 +137,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
       attr_map["binaryop_list"] += "add";
     }
   }
-  auto src0_data_copy = (char*)src0_tensors.second;
-  auto src1_data_copy = (const int32_t*)src1_tensors.second;
+  auto src0_data_copy = reinterpret_cast<char*>(src0_tensors.second);
+  auto src1_data_copy = reinterpret_cast<const int32_t*>(src1_tensors.second);
   auto src0_shape_copy = src0_shape;
   auto src1_shape_copy = src1_shape;
 #pragma omp parallel for
@@ -161,14 +163,17 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
           if (input_dt == data_type::s8) {
             binary_add<int8_t>(
                 dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
-                (char*)append_vec_copys[k] + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
+                reinterpret_cast<char*>(append_vec_copys[k]) \
+                + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
           } else if (input_dt == data_type::u8) {
             binary_add<uint8_t>(
                 dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
-                (char*)append_vec_copys[k] + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
+                reinterpret_cast<char*>(append_vec_copys[k]) \
+                + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
           } else if (input_dt == data_type::fp32) {
             binary_add<float>(dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
-                              (char*)append_vec_copys[k] + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
+                              reinterpret_cast<char*>(append_vec_copys[k]) \
+                              + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
           }
         }
       }

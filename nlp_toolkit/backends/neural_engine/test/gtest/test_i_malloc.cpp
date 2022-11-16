@@ -103,14 +103,15 @@ static std::vector<int> GenerateAllocFreeSeqs(int alloc_num) {
   action_sequences.reserve(alloc_num * 2);
   allocate_sizes.reserve(alloc_num);
 
+  unsigned int seed = 100;
   for (int i = 0; i < alloc_num; ++i) {
     action_sequences.push_back(i);
     action_sequences.push_back(i);
 
     // Size between 10k and 100k, make sure it is different
-    int size = 10 * 1024 + rand() % (90 * 1024);
+    int size = 10 * 1024 + rand_r(&seed) % (90 * 1024);
     while (std::find(allocate_sizes.begin(), allocate_sizes.end(), size) != allocate_sizes.end()) {
-      size = 10 * 1024 + rand() % (90 * 1024);
+      size = 10 * 1024 + rand_r(&seed) % (90 * 1024);
     }
 
     allocate_sizes.push_back(size);
@@ -118,7 +119,7 @@ static std::vector<int> GenerateAllocFreeSeqs(int alloc_num) {
 
   // Shuffle it
   for (int i = 0; i < alloc_num * 2; ++i) {
-    int j = i + rand() % (alloc_num * 2 - i);
+    int j = i + rand_r(&seed) % (alloc_num * 2 - i);
     // Swap element at i and j
     std::swap(action_sequences[i], action_sequences[j]);
   }
