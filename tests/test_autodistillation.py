@@ -42,17 +42,14 @@ def main_worker(rank, world_size, model, teacher_model, dataset):
             block_names=['bert.encoder.layer.0'],
             layer_mappings_for_knowledge_transfer=[
                 [
-                    (
-                        'bert.encoder.layer.0.output', 
-                        'bert.encoder.layer.0.output'
-                    )
+                    [('bert.encoder.layer.0.output',)]
                 ],
             ],
             train_steps=[3],
             loss_types=[['MSE']],),
         regular_distillation=FlashDistillationConfig(
             layer_mappings_for_knowledge_transfer=[
-            [('cls', '0', 'cls', '0')]
+                [[('cls', '0')]]
             ],
             loss_types=[['KL']],
             add_origin_loss=[True],
@@ -114,14 +111,14 @@ class TestAutoDistillation(unittest.TestCase):
                     block_names=['bert.encoder.layer.0'],
                     layer_mappings_for_knowledge_transfer=[
                         [
-                            ('bert.encoder.layer.0.output', 'bert.encoder.layer.0.output')
+                            [('bert.encoder.layer.0.output',)]
                         ],
                     ],
                     train_steps=[3],
                     loss_types=[['MSE']],),
                 regular_distillation=FlashDistillationConfig(
                     layer_mappings_for_knowledge_transfer=[
-                    [('cls', '0', 'cls', '0')]
+                        [[('cls', '0')]]
                     ],
                     loss_types=[['KL']],
                     add_origin_loss=[True],
