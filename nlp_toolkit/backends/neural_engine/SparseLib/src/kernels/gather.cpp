@@ -17,6 +17,7 @@
 namespace jd {
 
 bool gather_kd_t::init() {
+  if (!isa_available(avx512_core)) return false;
   auto& tensor_desc = op_desc_.tensor_descs();
   auto& src_shape = tensor_desc[0].shape();
   auto& idx_shape = tensor_desc[1].shape();
@@ -76,10 +77,11 @@ bool gather_k_t::execute(const std::vector<const void*>& rt_data) const {
       ssd::gather_data_t data_param = {
           const_cast<char*>((const char*)rt_data[0] + i * params.src_axis_size * params.inner_size * params.dt_size),
           const_cast<char*>((const char*)rt_data[1] + j * 4),  // idx is int32
-          const_cast<char*>((const char*)rt_data[2] + (i * params.dst_axis_size + j) * params.inner_size * params.dt_size)};
+          const_cast<char*>((const char*)rt_data[2] +
+                            (i * params.dst_axis_size + j) * params.inner_size * params.dt_size)};
       for (int k = 0; k < params.binaryop_attrs.size(); k++)
         data_param.binaryop_addrs[k] =
-            (char*)const_cast<void*>(rt_data[3 + k]) +
+            reinterpret_cast<char*>(const_cast<void*>(rt_data[3 + k])) +
             (((i * params.dst_axis_size + j) * params.inner_size) % params.binary_ts_sizes[i]) * params.dt_size;
       (*jit_impl)(&data_param);
     }

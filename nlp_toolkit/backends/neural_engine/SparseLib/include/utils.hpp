@@ -138,7 +138,7 @@ SPARSE_API_ std::vector<T> split_str(const std::string& s, const char& delim = '
   template SPARSE_API_ std::vector<type> split_str<type>(const std::string& s, const char& delim);
 
 DECLARE_SPLIT_STR(int)
-//DECLARE_SPLIT_STR(std::string)
+// DECLARE_SPLIT_STR(std::string)
 
 #undef DECLARE_SPLIT_STR
 #endif

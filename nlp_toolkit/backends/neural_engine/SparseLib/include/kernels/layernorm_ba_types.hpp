@@ -29,6 +29,7 @@ struct layernorm_ba_param_t {
   int process_col;           // for control loop.
   size_t thread_elt_offset;  // for load data.
   std::vector<postop_attr> postop_attrs;
+  std::vector<binaryop_attr> binaryop_attrs;
 };
 
 struct layernorm_ba_data_t {

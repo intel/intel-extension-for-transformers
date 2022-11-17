@@ -100,7 +100,7 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   ts_descs.emplace_back(gather_dst_shape, dt, jd::format_type::undef);
   if (binary_add_) {
     attr_map["binaryop_list"] = "binary_add";
-    binaryops.push_back({append_->mutable_data(), jd::binaryop_alg::add});
+    binaryops.push_back({append_->mutable_data(), jd::binaryop_alg::add, dt});
     ts_descs.emplace_back(append_->shape(), dt, jd::format_type::undef);
   }
 

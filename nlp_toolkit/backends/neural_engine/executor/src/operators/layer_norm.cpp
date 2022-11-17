@@ -55,7 +55,6 @@ void LayerNormOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
 #ifdef WITH_SPARSELIB
 void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src_shape = input[0]->shape();
-  // TODO(zhe1wang): support more input data type.
   src_desc_ = {src_shape, jd::data_type::fp32, jd::format_type::ba};
   jd::tensor_desc affine_desc = {{}, jd::data_type::fp32, jd::format_type::ba};
   jd::data_type dst_dt;

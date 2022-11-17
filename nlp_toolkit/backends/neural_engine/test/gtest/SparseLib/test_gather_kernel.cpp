@@ -24,20 +24,18 @@ struct OpArgs {
   operator_desc conf;
 };
 
-struct TestParams {
+struct test_params_t {
   std::pair<OpArgs, OpArgs> args;
   bool expect_to_fail;
   void memoryFree() {
     auto p = args.first;
     for (auto data : p.data) free(const_cast<void*>(data));
-    for (auto binaryop : p.conf.get_binaryop_list()) free(binaryop.src_addr);
     auto q = args.second;
     for (auto data : q.data) free(const_cast<void*>(data));
-    for (auto binaryop : q.conf.get_binaryop_list()) free(binaryop.src_addr);
   }
 };
 
-bool CheckResult(const TestParams& t) {
+bool CheckResult(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
 
@@ -52,7 +50,7 @@ bool CheckResult(const TestParams& t) {
     return compare_data<float>(p.data[2], p.conf.tensor_descs()[2].size(), q.data[2], q.conf.tensor_descs()[2].size());
 }
 
-class GatherOpTest : public testing::TestWithParam<TestParams> {
+class GatherOpTest : public testing::TestWithParam<test_params_t> {
  protected:
   GatherOpTest() {}
   ~GatherOpTest() {}
@@ -61,7 +59,7 @@ class GatherOpTest : public testing::TestWithParam<TestParams> {
 };
 
 TEST_P(GatherOpTest, TestPostfix) {
-  TestParams t = testing::TestWithParam<TestParams>::GetParam();
+  test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
   EXPECT_TRUE(CheckResult(t));
   t.memoryFree();
 }
@@ -111,10 +109,9 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
 
   auto src0_tensors = make_tensor_obj(ts_descs[0]);
   auto src1_tensors = make_tensor_obj(ts_descs[1]);
-  auto dst_data = \
-    reinterpret_cast<char*>(sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC));
-  auto dst_data_copy = \
-    reinterpret_cast<char*>(sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC));
+  auto dst_data = reinterpret_cast<char*>(sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC));
+  auto dst_data_copy =
+      reinterpret_cast<char*>(sparselib_ut_memo(nullptr, ts_descs[2].size(), input_dt, memo_mode::MALLOC));
   std::vector<const void*> rt_data = {src0_tensors.first, src1_tensors.first, dst_data};
   std::vector<const void*> rt_data_copy = {src0_tensors.second, src1_tensors.second, dst_data_copy};
   std::vector<void*> append_vec_copys = {};
@@ -126,13 +123,13 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
     if (k == 0)
       attr_map["binaryop_list"] = "";
     else
-      attr_map["binaryop_list"] += ",";
+      attr_map["binaryop_list"] += "_";
     if (append_op == "append_sum") {
       auto appends = make_tensor_obj(ts_descs[3 + k]);
       rt_data.push_back(appends.first);
       rt_data_copy.push_back(appends.second);
-      binaryops.push_back({nullptr, binaryop_alg::add});
-      binaryops_copy.push_back({nullptr, binaryop_alg::add});
+      binaryops.push_back({binaryop_alg::add, input_dt});
+      binaryops_copy.push_back({binaryop_alg::add, input_dt});
       append_vec_copys.push_back(appends.second);
       attr_map["binaryop_list"] += "add";
     }
@@ -152,6 +149,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
              get_data_size(input_dt));
     }
   }
+  // TODO(yucheng/zhe): refactor here when postop-injector avaliable
 #pragma omp parallel for
   for (int i = 0; i < dst_shape[0]; ++i) {
 #pragma omp simd
@@ -161,19 +159,17 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
           int broad_cast_i = i;
           if (ts_descs[k + 3].shape()[0] == 1) broad_cast_i = 0;
           if (input_dt == data_type::s8) {
-            binary_add<int8_t>(
-                dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
-                reinterpret_cast<char*>(append_vec_copys[k]) \
-                + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
+            binary_add<int8_t>(dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
+                               reinterpret_cast<char*>(append_vec_copys[k]) +
+                                   (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
           } else if (input_dt == data_type::u8) {
-            binary_add<uint8_t>(
-                dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
-                reinterpret_cast<char*>(append_vec_copys[k]) \
-                + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
+            binary_add<uint8_t>(dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
+                                reinterpret_cast<char*>(append_vec_copys[k]) +
+                                    (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
           } else if (input_dt == data_type::fp32) {
             binary_add<float>(dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
-                              reinterpret_cast<char*>(append_vec_copys[k]) \
-                              + (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
+                              reinterpret_cast<char*>(append_vec_copys[k]) +
+                                  (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
           }
         }
       }
@@ -191,7 +187,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
 }
 
 static auto CasesFp32 = []() {
-  std::vector<TestParams> cases;
+  std::vector<test_params_t> cases;
 
   // Config
   std::vector<int64_t> src0_shape;
@@ -224,7 +220,6 @@ static auto CasesFp32 = []() {
 
       binary0 = {{1, 32 * inner_size}, dt, jd::format_type::undef};
       binary1 = binary0;
-      cases.push_back({GenerateFp32Case({src0, src1, dst}, {}), false});
       cases.push_back({GenerateFp32Case({src0, src1, dst, binary0}, {"append_sum"}), false});
       cases.push_back({GenerateFp32Case({src0, src1, dst, binary0, binary1}, {"append_sum", "append_sum"}), false});
     }
@@ -233,5 +228,42 @@ static auto CasesFp32 = []() {
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, GatherOpTest, CasesFp32());
+std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
+  std::vector<std::string> params;
+  auto tensor_desc = tpi.param.args.first.conf.tensor_descs();
+  auto& src0_shape = tensor_desc[0].shape();
+  auto& src1_shape = tensor_desc[1].shape();
+  auto& dst_shape = tensor_desc[2].shape();
+  auto attrs_map = tpi.param.args.first.conf.attrs();
+
+  auto add_dt_info = [&](data_type dt, const std::string& tensor_dt) {
+    switch (tensor_desc[0].dtype()) {
+      case data_type::s8:
+        params.push_back(tensor_dt + "_s8");
+        break;
+      case data_type::fp32:
+        params.push_back(tensor_dt + "_fp32");
+        break;
+      case data_type::u8:
+        params.push_back(tensor_dt + "_u8");
+        break;
+      default:
+        assert(false);
+    }
+  };
+
+  add_dt_info(tensor_desc[0].dtype(), "src0");
+  for (auto&& i : src0_shape) params.push_back(std::to_string(i));
+  add_dt_info(tensor_desc[1].dtype(), "src1");
+  for (auto&& i : src1_shape) params.push_back(std::to_string(i));
+  add_dt_info(tensor_desc[2].dtype(), "dst");
+  for (auto&& i : dst_shape) params.push_back(std::to_string(i));
+  for (int i = 3; i < tensor_desc.size(); i++) {
+    add_dt_info(tensor_desc[i].dtype(), "add" + std::to_string(i - 3));
+    for (auto&& j : tensor_desc[i].shape()) params.push_back(std::to_string(j));
+  }
+  return join_str(params, "_");
+}
+
+INSTANTIATE_TEST_SUITE_P(SparseLib, GatherOpTest, CasesFp32(), test_suffix);
 }  // namespace jd

@@ -189,9 +189,8 @@ void jit_eltwise_injector::quantize_compute_vector_fwd(const Zmm& zmm_src) {
   h->vmulps(zmm_src, zmm_src, table_val(scale, scale_idx_map[key]));
   h->vaddps(zmm_src, zmm_src, table_val(alpha, alpha_idx_map[key]));
   if (cur_postop_attr_.dt == data_type::u8) {
-    h->vcmpps(k_mask, zmm_src, table_val(zero), _cmp_lt_os);
-    h->vmovups(zmm_src | k_mask, table_val(zero));
     h->vcvtps2udq(zmm_src, zmm_src);  // fp32->u32
+    h->vpmaxsd(zmm_src, zmm_src, table_val(zero));
   } else {
     h->vcvtps2dq(zmm_src, zmm_src);  // fp32->s32
   }
@@ -417,10 +416,6 @@ void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& 
       zmm_tb_allocate.insert(&zmm_aux0);
     }
 
-    if (i.op_alg == postop_alg::quantize) {
-      mask_tb_allocate.insert(&k_mask);
-    }
-
     if (i.op_alg == postop_alg::eltop_int_lut) {
       zmm_tb_allocate.insert(&zmm_aux0);
       zmm_tb_allocate.insert(&zmm_tmp);
@@ -511,7 +506,6 @@ void jit_eltwise_injector::prepare_table() {
 
 uint32_t jit_eltwise_injector::get_bit16_lut_term(int integer, const std::vector<postop_attr>& postop_attrs,
                                                   data_type output_dt) {
-  // TODO(zhe1wang): support fp16 or other 16bit data type in the future.
   SPARSE_LOG_IF(FATAL, output_dt != data_type::bf16) << "only support bf16 now";
   uint32_t ans = 0;
   uint16_t* u16 = new uint16_t(0);

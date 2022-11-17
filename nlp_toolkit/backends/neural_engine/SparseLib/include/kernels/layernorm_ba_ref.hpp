@@ -35,7 +35,7 @@ class layernorm_ba_ref_kd_t : public kernel_desc_t {
   virtual ~layernorm_ba_ref_kd_t() {}
 
  public:
-  bool init() override;
+  bool init() override { return true; };
   DECLARE_COMMON_PD_T(layernorm_ba_ref_k_t, layernorm_ba_ref_kd_t);
 
  public:

@@ -26,6 +26,8 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
+static unsigned int rand_seed = 123;
+
 void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   auto tensor_desc = op_desc.tensor_descs();
   int row = tensor_desc[0].reduce_rows();
@@ -59,11 +61,16 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
     var = sqrt(var);
     var = 1 / var;
     // calculate layernorm.
+    auto binary_op_list = op_desc.get_binaryop_list();
     for (int j = 0; j < row; j++) {
       int dst_idx = j * col + i;
       float value = (src[dst_idx] - mean) * var;
       value = alpha[j] * value + beta[j];
       value = apply_postop_list(value, op_desc.apply_postops_list());
+      // TODO(zhe1wang): refactor here when postop-injector avaliable
+      if (!binary_op_list.empty()) {
+        value = get_quantize(value, binary_op_list[0].zp[j], 1 / binary_op_list[0].scale[j], binary_op_list[0].op_dt);
+      }
       if (dst_dt == data_type::fp32) {
         dst_fp32[dst_idx] = static_cast<float>(value);
       } else if (dst_dt == data_type::s8) {
@@ -99,6 +106,7 @@ bool check_result(const test_params_t& t) {
     auto buf2 = q.data[1];
     auto size2 = p.op_desc.tensor_descs()[1].size();
     auto dst_type = p.op_desc.tensor_descs()[1].dtype();
+    auto binary_list = p.op_desc.get_binaryop_list();
     EXPECT_NE(buf1, buf2);
     bool ans = false;
     if (dst_type == data_type::fp32) {
@@ -114,6 +122,12 @@ bool check_result(const test_params_t& t) {
     aligned_free(const_cast<void*>(q.data[1]));
     aligned_free(const_cast<void*>(q.data[2]));
     aligned_free(const_cast<void*>(q.data[3]));
+    for (auto&& i : binary_list) {
+      if (i.static_addr) aligned_free(i.static_addr);
+      if (i.scale) aligned_free(i.scale);
+      if (i.zp) aligned_free(i.zp);
+    }
+
     return ans;
   }
   aligned_free(const_cast<void*>(p.data[0]));
@@ -133,14 +147,15 @@ class LayernormBaKernelTest : public testing::TestWithParam<test_params_t> {
   void TearDown() override {}
 };
 
-TEST_P(LayernormBaKernelTest, TestPostfix) {
+TEST_P(LayernormBaKernelTest, ) {
   test_params_t t = testing::TestWithParam<test_params_t>::GetParam();
   EXPECT_TRUE(check_result(t));
 }
 
 std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
                                          std::unordered_map<std::string, std::string> op_attrs,
-                                         const std::vector<postop_attr>& postop_attr = {}) {
+                                         const std::vector<postop_attr>& postop_attr = {},
+                                         bool per_channel_quant = false) {
   // malloc memory
   int row = ts_descs[0].reduce_rows();
   int col = ts_descs[0].shape().back();
@@ -164,17 +179,18 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
   float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
 
+  // set rand seed
+  unsigned int seed = 456;
+  srand(seed);
+
   // init alpha&beta
   for (int i = 0; i < row; i++) alpha[i] = 1 + rand_float_postfix();
   for (int i = 0; i < row; i++) beta[i] = 1 + rand_float_postfix();
 
   // init matrix.
-  const unsigned int seed = 667095;
-  std::srand(seed);
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j++) {
-      unsigned int seed_tmp = seed + i;
-      float rand_val = std::rand() % 256 - 128 + rand_float_postfix();
+      float rand_val = std::rand() % 256 - 128 + rand_float_postfix();  // NOLINT
       assign_val(src, in_dt, rand_val, i * col + j);
       assign_val(src_ref, in_dt, rand_val, i * col + j);
     }
@@ -192,9 +208,28 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   rt_data2.push_back(alpha);
   rt_data2.push_back(beta);
 
+  if (per_channel_quant) op_attrs["binaryop_list"] = "u8_perchannel_quant";
+
   operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                                   op_attrs, postop_attr);
 
+  // init per_channel quant factor
+  if (per_channel_quant) {
+    binaryop_attr u8_per_channel_quantize = {binaryop_alg::per_channel_quant, data_type::u8};
+    std::vector<binaryop_attr> binaryop_list = {u8_per_channel_quantize};
+    float* scale = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
+    float* zp = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
+    for (int i = 0; i < row; i++) {
+      scale[i] = 1 + rand_float_postfix();
+      zp[i] = rand() % 10;  // NOLINT
+      scale[i] /= 1;
+    }
+    auto per_chan_quant_attr = binaryop_list.front();
+    per_chan_quant_attr.set_scale(scale);
+    per_chan_quant_attr.set_zp(zp);
+    binaryop_list[0] = per_chan_quant_attr;
+    layernorm_ba_desc.set_binaryop_list(binaryop_list);
+  }
   op_args_t p = {layernorm_ba_desc, rt_data1};
   op_args_t q = {layernorm_ba_desc, rt_data2};
   return {p, q};
@@ -202,7 +237,6 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
 static auto case_func = []() {
   std::vector<test_params_t> cases;
-
   tensor_desc data_desc0 = {{768, 32}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc1 = {{768, 256}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc2 = {{128, 2, 128}, jd::data_type::fp32, jd::format_type::ba};
@@ -222,19 +256,48 @@ static auto case_func = []() {
   std::string quantize_attrs8 = "s8quantize";
   std::string quantize_attru8 = "u8quantize";
 
-  cases.push_back({gen_case({data_desc0, data_desc0, affine_data_attr}, {{"matrix_shape", tensor_shape0}}), false});
-  cases.push_back({gen_case({data_desc1, data_desc1, affine_data_attr}, {{"matrix_shape", tensor_shape1}}), false});
-  cases.push_back({gen_case({data_desc2, data_desc2, affine_data_attr}, {{"matrix_shape", tensor_shape2}}), false});
-  cases.push_back({gen_case({data_desc3, data_desc3, affine_data_attr}, {{"matrix_shape", tensor_shape3}}), false});
-  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr},
-                            {{"matrix_shape", tensor_shape0}, {"postop_list", quantize_attrs8}}, {s8_quantize}),
-                   false});
-  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr},
-                            {{"matrix_shape", tensor_shape0}, {"postop_list", quantize_attru8}}, {u8_quantize}),
-                   false});
-
+  cases.push_back({gen_case({data_desc0, data_desc0, affine_data_attr}, {}), false});
+  cases.push_back({gen_case({data_desc1, data_desc1, affine_data_attr}, {}), false});
+  cases.push_back({gen_case({data_desc2, data_desc2, affine_data_attr}, {}), false});
+  cases.push_back({gen_case({data_desc3, data_desc3, affine_data_attr}, {}), false});
+  cases.push_back(
+      {gen_case({data_desc1, data_desc4, affine_data_attr}, {{"postop_list", quantize_attrs8}}, {s8_quantize}), false});
+  cases.push_back(
+      {gen_case({data_desc1, data_desc4, affine_data_attr}, {{"postop_list", quantize_attru8}}, {u8_quantize}), false});
+  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr}, {{}}, {}, true), false});
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, LayernormBaKernelTest, case_func());
+std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
+  std::vector<std::string> params;
+  auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
+  auto& tensor_shape = tensor_desc[0].shape();
+  auto attrs_map = tpi.param.args.first.op_desc.attrs();
+  params.push_back("shape");
+  for (auto&& i : tensor_shape) params.push_back(std::to_string(i));
+
+  auto add_dt_info = [&](data_type dt, const std::string& tensor_dt) {
+    switch (tensor_desc[0].dtype()) {
+      case data_type::s8:
+        params.push_back(tensor_dt + "_s8");
+        break;
+      case data_type::fp32:
+        params.push_back(tensor_dt + "_fp32");
+        break;
+      case data_type::u8:
+        params.push_back(tensor_dt + "_u8");
+        break;
+      default:
+        assert(false);
+    }
+  };
+
+  add_dt_info(tensor_desc[0].dtype(), "indt");
+  add_dt_info(tensor_desc[1].dtype(), "outdt");
+  if (attrs_map["postop_list"] != "") params.push_back(attrs_map["postop_list"]);
+  if (attrs_map["binaryop_list"] != "") params.push_back(attrs_map["binaryop_list"]);
+  return join_str(params, "_");
+}
+
+INSTANTIATE_TEST_SUITE_P(SparseLib, LayernormBaKernelTest, case_func(), test_suffix);
 }  // namespace jd

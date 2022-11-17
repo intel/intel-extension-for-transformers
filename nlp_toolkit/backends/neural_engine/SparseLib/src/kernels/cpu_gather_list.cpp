@@ -18,10 +18,11 @@
 #include "param_types.hpp"
 #include "impl_list_item.hpp"
 #include "kernels/gather.hpp"
+#include "kernels/gather_ref.hpp"
 
 namespace jd {
 static const std::map<kernel_prop, std::vector<impl_list_item_t>> gather_impl_list_map = {
-    {kernel_prop::forward_inference, {CPU_INSTANCE(gather_k_t), NULL_INSTANCE()}},
+    {kernel_prop::forward_inference, {CPU_INSTANCE(gather_k_t), CPU_INSTANCE(gather_ref_k_t), NULL_INSTANCE()}},
 };
 
 const std::vector<impl_list_item_t>* get_gather_impl_list(const operator_desc& op_desc) {

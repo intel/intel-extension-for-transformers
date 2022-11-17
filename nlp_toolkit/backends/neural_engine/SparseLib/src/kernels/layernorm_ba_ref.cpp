@@ -15,23 +15,6 @@
 #include "kernels/layernorm_ba_ref.hpp"
 
 namespace jd {
-
-bool layernorm_ba_ref_kd_t::init() {
-  auto tensor_desc = op_desc_.tensor_descs();
-  SPARSE_LOG_IF(FATAL, tensor_desc.size() != 3);
-  // TODO(zhe1wang): support more data_type.
-  auto input_dt = tensor_desc[0].dtype();
-  SPARSE_LOG_IF(FATAL, input_dt != data_type::fp32);
-  SPARSE_LOG_IF(FATAL, tensor_desc[0].ftype() != format_type::ba);
-
-  auto tensor_shape = tensor_desc[0].shape();
-  int col_num = tensor_shape.back();
-  // TODO(zhe1wang): support col nums can't divded by 16.
-  SPARSE_LOG_IF(FATAL, col_num % 16 != 0)
-      << "Transposed LayerNorm currently only supports column number be able to be devided by 16";
-  return true;
-}
-
 bool layernorm_ba_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto op_desc = derived_kd()->get_operator_desc();
   auto tensor_desc = op_desc.tensor_descs();
@@ -64,11 +47,16 @@ bool layernorm_ba_ref_k_t::execute(const std::vector<const void*>& rt_data) cons
     var = sqrt(var);
     var = 1 / var;
     // calculate layernorm.
+    auto binary_op_list = op_desc.get_binaryop_list();
     for (int j = 0; j < row; j++) {
       int dst_idx = j * col + i;
       float value = (src[dst_idx] - mean) * var;
       value = alpha[j] * value + beta[j];
       value = apply_postop_list(value, op_desc.apply_postops_list());
+      // TODO(zhe1wang): refactor here when postop-injector avaliable.
+      if (!binary_op_list.empty()) {
+        value = get_quantize(value, binary_op_list[0].zp[j], 1 / binary_op_list[0].scale[j], binary_op_list[0].op_dt);
+      }
       if (dst_dt == data_type::fp32) {
         dst_fp32[dst_idx] = static_cast<float>(value);
       } else if (dst_dt == data_type::s8) {

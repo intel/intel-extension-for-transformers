@@ -149,8 +149,8 @@ SPARSE_API_ std::vector<bsr_data_t<T>*>* reorder_to_bsr_amx(dim_t rows, dim_t co
                                                             const void* uncoded_ptr);
 #ifdef _WIN32
 template SPARSE_API_ std::vector<bsr_data_t<bfloat16_t>*>* reorder_to_bsr_amx<bfloat16_t, 32>(dim_t rows, dim_t cols,
-                                                                                          dim_t micro_rows,
-                                                                     const void* uncoded_ptr);
+                                                                                              dim_t micro_rows,
+                                                                                              const void* uncoded_ptr);
 #endif
 
 template <typename T>
@@ -158,10 +158,10 @@ bsr_data_t<T> SPARSE_API_ tobsr(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk
 
 #ifdef _WIN32
 template bsr_data_t<signed char> SPARSE_API_ tobsr<signed char>(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col,
-    const signed char* uncoded_data);
+                                                                const signed char* uncoded_data);
 
 template bsr_data_t<float> SPARSE_API_ tobsr<float>(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col,
-    const float* uncoded_data);
+                                                    const float* uncoded_data);
 #endif
 
 /**
@@ -181,8 +181,9 @@ template bsr_data_t<float> SPARSE_API_ tobsr<float>(dim_t rows, dim_t cols, dim_
 template <typename T, dim_t group>
 bsr_data_t<T> reorder_to_bsr_group(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, const T* uncoded_data);
 #ifdef _WIN32
-template bsr_data_t<signed char> SPARSE_API_ reorder_to_bsr_group<signed char,4>(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col,
-                                                                  const signed char* uncoded_data);
+template bsr_data_t<signed char> SPARSE_API_ reorder_to_bsr_group<signed char, 4>(dim_t rows, dim_t cols, dim_t blk_row,
+                                                                                  dim_t blk_col,
+                                                                                  const signed char* uncoded_data);
 #endif
 
 template <typename T>
@@ -190,7 +191,7 @@ bsc_data_t<T> SPARSE_API_ tobsc(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk
 
 #ifdef _WIN32
 template bsc_data_t<float> SPARSE_API_ tobsc<float>(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col,
-                                             const float* uncoded_data);
+                                                    const float* uncoded_data);
 #endif
 }  // namespace spns
 }  // namespace jd

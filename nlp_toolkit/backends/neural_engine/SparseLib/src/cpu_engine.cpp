@@ -30,7 +30,6 @@ const std::vector<impl_list_item_t> cpu_engine::empty_list = {};
 #undef DECLARE_IMPL_LIST
 
 const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const operator_desc& op_desc) const {
-
   // Call C API.
 #define CASE(kind)        \
   case kernel_kind::kind: \

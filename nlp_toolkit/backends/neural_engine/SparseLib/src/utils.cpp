@@ -61,14 +61,13 @@ template void init_vector<uint8_t>(uint8_t*, int, float, float, int);
 template void init_vector<int8_t>(int8_t*, int, float, float, int);
 template void init_vector<bfloat16_t>(bfloat16_t*, int, float, float, int);
 
-
-template<typename T>
-struct s_is_u8s8{
-  enum {value=false};
+template <typename T>
+struct s_is_u8s8 {
+  enum { value = false };
 };
 
-template<>
-struct s_is_u8s8<int8_t>{
+template <>
+struct s_is_u8s8<int8_t> {
   enum { value = true };
 };
 
@@ -111,7 +110,6 @@ DECLARE_COMPARE_DATA(int32_t)
 DECLARE_COMPARE_DATA(uint8_t)
 DECLARE_COMPARE_DATA(uint16_t)
 DECLARE_COMPARE_DATA(int8_t)
-
 
 float time(const std::string& state) {
   static auto time_axis = std::chrono::microseconds();

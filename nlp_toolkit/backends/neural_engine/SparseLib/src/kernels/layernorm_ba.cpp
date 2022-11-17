@@ -20,7 +20,6 @@ bool layernorm_ba_kd_t::init() {
   if (!isa_available(avx512_core)) return false;
   auto tensor_desc = op_desc_.tensor_descs();
   SPARSE_LOG_IF(FATAL, tensor_desc.size() != 3) << "only support 3 rt_data";
-  // TODO(zhe1wang): support more data_type.
   auto input_dt = tensor_desc[0].dtype();
   auto output_dt = tensor_desc[1].dtype();
   auto affine_dt = tensor_desc[2].dtype();
@@ -41,7 +40,6 @@ bool layernorm_ba_kd_t::init() {
   // TODO(zhe1wang): support col nums can't divded by 16.
   SPARSE_LOG_IF(FATAL, col_num % 16 != 0) << "col nums should divded by 16 now";
   int max_eff_nthr = col_num / 16;
-  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   params_.resize(max_eff_nthr);
   int col_per_thr = col_num / max_eff_nthr;
   for (int i = 0; i < max_eff_nthr; i++) {
@@ -55,6 +53,7 @@ bool layernorm_ba_kd_t::init() {
     param.process_col = col_per_thr;
     param.thread_elt_offset = thread_elt_offset;
     param.postop_attrs = op_desc_.apply_postops_list();
+    param.binaryop_attrs = op_desc_.get_binaryop_list();
     params_[i] = param;
   }
   return true;
@@ -65,7 +64,6 @@ bool layernorm_ba_k_t::init() {
   auto output_dt = op_desc.tensor_descs()[1].dtype();
   auto col_num = op_desc.tensor_descs()[0].shape().back();
   nthr_ = col_num / 16;
-  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   jit_kers_.resize(nthr_);
   for (int i = 0; i < nthr_; i++) {
     td.push_back(new ssd::layernorm_ba_data_t());
@@ -79,7 +77,6 @@ bool layernorm_ba_k_t::init() {
 }
 
 bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
-  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize and restore it at end of the function.
 #pragma omp parallel for
   for (int i = 0; i < nthr_; i++) {
     const jit_layernorm_ba_t* jit_impl = jit_kers_[i];

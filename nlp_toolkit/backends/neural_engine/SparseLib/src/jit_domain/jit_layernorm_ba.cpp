@@ -72,11 +72,18 @@ void jit_layernorm_ba_t::generate() {
     vbroadcastss(zmm_beta, dword[reg_beta + reg_affine_offset + k * get_data_size(param_.affine_dt)]);
     vfmadd213ps(Zmm(k), zmm_alpha, zmm_beta);
   }
-  sub(reg_affine_offset, unroll_degree * get_data_size(param_.affine_dt));
   escape_regs(unroll_degree);
   // store the value.
   for (int k = 0; k < unroll_degree; k++) {
     eltwise_injector.vector_compute(Zmm(k), param_.postop_attrs);
+    RegExp binarop_offset;
+    for (auto&& attr : param_.binaryop_attrs) {
+      if (attr.op_alg == binaryop_alg::per_channel_quant || attr.op_alg == binaryop_alg::per_channel_dequant) {
+        binary_injector.init_quantization(Zmm(23), r15);
+        binarop_offset = reg_affine_offset + k * get_data_size(data_type::fp32);
+      }
+      binary_injector.compute_vector(Zmm(k), binarop_offset, attr);
+    }
     if (param_.output_dt == data_type::fp32) {
       vmovups(ptr[dst_addr + reg_dst_offset + dst_load_offset[k]], Zmm(k));
     } else {
@@ -85,6 +92,7 @@ void jit_layernorm_ba_t::generate() {
     }
   }
 
+  sub(reg_affine_offset, unroll_degree * get_data_size(param_.affine_dt));
   sub(reg_src_offset, unroll_degree * param_.col_num * get_data_size(param_.input_dt));
   sub(reg_dst_offset, unroll_degree * param_.col_num * get_data_size(param_.output_dt));
   add(reg_row, unroll_degree);
@@ -174,7 +182,6 @@ std::pair<int, int> jit_layernorm_ba_t::get_unroll_add_idx(int begin) {
   int first_idx = -1, second_idx = -1;
   int iter = begin;
   while (first_idx == -1 || second_idx == -1) {
-    //TODO memory access violation
     if (unroll_reg_idxs[iter] == true && first_idx == -1) {
       first_idx = iter;
     } else if (unroll_reg_idxs[iter] == true && first_idx != -1 && second_idx == -1) {

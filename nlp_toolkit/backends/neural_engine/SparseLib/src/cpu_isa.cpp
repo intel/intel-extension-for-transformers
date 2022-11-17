@@ -16,7 +16,7 @@
 #include "cpu_isa.hpp"
 #ifdef __linux__
 #include <sys/syscall.h>
-#endif  //__linux__
+#endif  // __linux__
 
 namespace jd {
 bool init_amx() {

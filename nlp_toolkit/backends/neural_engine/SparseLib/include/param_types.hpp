@@ -24,7 +24,7 @@ enum class kernel_kind : uint8_t { undef, sparse_matmul, eltwiseop, layernorm_ba
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };
 
-enum class binaryop_alg : uint8_t { undef, add };
+enum class binaryop_alg : uint8_t { undef, add, sub, mul, per_channel_quant, per_channel_dequant };
 
 enum class postop_type : uint8_t { eltwise };
 
@@ -98,8 +98,20 @@ class postop_attr {
 
 class binaryop_attr {
  public:
-  void* src_addr;
+  void* static_addr;
+  float* scale;
+  float* zp;
   binaryop_alg op_alg;
+  data_type op_dt;
+
+  binaryop_attr(binaryop_alg alg, data_type dt) : op_alg(alg), op_dt(dt) {
+    static_addr = nullptr;
+    scale = nullptr;
+    zp = nullptr;
+  }
+  binaryop_attr(void* ptr, binaryop_alg alg, data_type dt) : static_addr(ptr), op_alg(alg), op_dt(dt) {}
+  void set_scale(float* scale) { this->scale = scale; }
+  void set_zp(float* zp) { this->zp = zp; }
 };
 
 static std::unordered_map<data_type, int> type_size = {

@@ -43,7 +43,9 @@ int uint8_2_int32(uint8_t a) {
   return ans;
 }
 
-float rand_float_postfix() { return rand() / static_cast<float>(RAND_MAX); }
+float rand_float_postfix() {
+  return rand() / static_cast<float>(RAND_MAX);  // NOLINT
+}
 
 void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
   switch (dtype) {

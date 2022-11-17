@@ -41,6 +41,7 @@ class jit_layernorm_ba_t : public jit_generator {
     while (param_.row_num % unroll_degree != 0) unroll_degree -= 1;
     assign_regs();
     eltwise_injector.eltwise_injector_init(this, param_.postop_attrs);
+    binary_injector.binary_injector_init(this);
     gen_load_offset();
   }
   virtual ~jit_layernorm_ba_t() {}
@@ -66,6 +67,7 @@ class jit_layernorm_ba_t : public jit_generator {
  private:
   ssd::layernorm_ba_param_t param_;
   jit_eltwise_injector eltwise_injector;
+  jit_binary_injector binary_injector;
   int unroll_degree;
   const int zmm_byte_size = 64;
   std::vector<int> unroll_reg_idxs;

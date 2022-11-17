@@ -23,19 +23,28 @@
 namespace jd {
 class jit_binary_injector {
  public:
+  enum addr_type { normal, scale, zp };
   jit_binary_injector() {}
   virtual ~jit_binary_injector() {}
   void binary_injector_init(jit_generator* ptr);
   void set_mask(Opmask mask);
-  void get_addr(Reg64 reg, binaryop_attr op_attr);  // mov addr_ptr from op_attr to reg64.
-  void compute_vector(Zmm zmm_src1, RegExp src2, binaryop_attr op_attr, data_type op_dt, bool enable_mask = false,
+  void init_quantization(Zmm zmm, Reg64 reg);
+  void get_addr(Reg64 reg, binaryop_attr op_attr,
+                addr_type type = addr_type::normal);  // mov addr_ptr from op_attr to reg64.
+  void compute_vector(Zmm zmm_src1, RegExp src2, binaryop_attr op_attr, bool enable_mask = false,
                       bool broadcast = false);
-
   void add(Zmm src1, RegExp src2, data_type op_dt, bool enable_mask, bool broadcast);
+  void sub(Zmm src1, RegExp src2, data_type op_dt, bool enable_mask, bool broadcast);
+  void mul(Zmm src1, RegExp src2, data_type op_dt, bool enable_mask, bool broadcast);
 
  private:
   jit_generator* h;
   Opmask mask;
+  Zmm zmm_tmp;
+  Reg64 reg_tmp;
+
+  void per_channel_quant(Zmm src1, RegExp src2, binaryop_attr op_attr);
+  void per_channel_dequant(Zmm src1, RegExp src2, binaryop_attr op_attr);
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_BINARY_INJECTOR_HPP_
