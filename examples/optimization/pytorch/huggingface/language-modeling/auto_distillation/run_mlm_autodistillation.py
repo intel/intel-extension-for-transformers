@@ -499,23 +499,23 @@ def main():
                     knowledge_transfer=FlashDistillationConfig(
                     block_names=['mobilebert.encoder.layer.{}'.format(i) for i in range(stages)],
                     layer_mappings_for_knowledge_transfer=[
+                        [
                             [
-                            (
-                                'mobilebert.encoder.layer.{}.attention.self'.format(i), '1',
-                                'bert.encoder.layer.{}.attention.self'.format(i), '1'
-                            ),
-                            (
-                                'mobilebert.encoder.layer.{}.output'.format(i), 
-                                'bert.encoder.layer.{}.output'.format(i)
-                            )
-                            ] for i in range(stages)
-                        ],
+                                ('mobilebert.encoder.layer.{}.attention.self'.format(i), '1'),
+                                ('bert.encoder.layer.{}.attention.self'.format(i), '1')
+                            ],
+                            [
+                                ('mobilebert.encoder.layer.{}.output'.format(i),), 
+                                ('bert.encoder.layer.{}.output'.format(i),)
+                            ]
+                        ] for i in range(stages)
+                    ],
                     loss_types=[['KL', 'MSE'] for i in range(stages)],
                     loss_weights=[[0.5, 0.5] for i in range(stages)],
                     train_steps=[optim_args.flash_distillation_steps for i in range(stages)]),
                     regular_distillation=FlashDistillationConfig(
                     layer_mappings_for_knowledge_transfer=[
-                        [('cls', '0', 'cls', '0')]
+                        [[('cls', '0')]]
                     ],
                     loss_types=[['KL']],
                     add_origin_loss=[True],
@@ -540,24 +540,22 @@ def main():
                     block_names=['bert.encoder.layer.0', 'bert.encoder.layer.1'],
                     layer_mappings_for_knowledge_transfer=[
                             [
-                                (
-                                    'bert.encoder.layer.0.attention.self', '1',
-                                    'bert.encoder.layer.0.attention.self', '1'
-                                ),
-                                (
-                                    'bert.encoder.layer.0.output', 
-                                    'bert.encoder.layer.0.output'
-                                )
+                                [
+                                    ('bert.encoder.layer.0.attention.self', '1')
+                                ],
+                                [
+                                    ('bert.encoder.layer.0.output',)
+                                ]
                             ],
                             [
-                                (
-                                    'bert.encoder.layer.1.attention.self', '1',
-                                    'bert.encoder.layer.11.attention.self', '1'
-                                ),
-                                (
-                                    'bert.encoder.layer.1.output', 
-                                    'bert.encoder.layer.11.output'
-                                )
+                                [
+                                    ('bert.encoder.layer.1.attention.self', '1'),
+                                    ('bert.encoder.layer.11.attention.self', '1')
+                                ],
+                                [
+                                    ('bert.encoder.layer.1.output',),
+                                    ('bert.encoder.layer.11.output',)
+                                ]
                             ]
                         ],
                     loss_types=[['KL', 'MSE'], ['KL', 'MSE']],
@@ -565,7 +563,7 @@ def main():
                     train_steps=[optim_args.flash_distillation_steps] * 2),
                     regular_distillation=FlashDistillationConfig(
                     layer_mappings_for_knowledge_transfer=[
-                        [('cls', '0', 'cls', '0')]
+                        [[('cls', '0')]]
                     ],
                     loss_types=[['KL']],
                     add_origin_loss=[True],
