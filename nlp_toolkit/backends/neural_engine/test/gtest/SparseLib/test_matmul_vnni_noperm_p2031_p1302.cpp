@@ -271,6 +271,9 @@ static auto case_func = []() {
     cases.push_back({gen_case(384, 384, 64, 1, 12, nthr, {})});
     cases.push_back({gen_case(384, 384, 64, 2, 12, nthr, {})});
     cases.push_back({gen_case(384, 384, 64, 4, 12, nthr, {})});
+
+    // huge seq
+    cases.push_back({gen_case(4096, 4096, 32, 1, 1, nthr, {})});
   }
   return ::testing::ValuesIn(cases);
 };

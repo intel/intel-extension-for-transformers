@@ -67,7 +67,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
 
   const void* src = rt_data[0];
   void* dst = const_cast<void*>(rt_data[1]);
-  float* src_fp32 = static_cast<float*>(malloc(size * sizeof(float)));
+  float* src_fp32 = new float[size];
   if (src_dt == jd::data_type::s8) {
     cast_to_float_array<int8_t>(src, src_fp32, size);
   } else if (src_dt == jd::data_type::u8) {
@@ -94,7 +94,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   } else if (dst_dt == jd::data_type::fp32) {
     cast_from_float_array<float>(src_fp32, dst, size);
   }
-  free(src_fp32);
+  delete[] src_fp32;
 }
 
 bool check_result(const test_params_t& t) {

@@ -77,7 +77,7 @@ SPARSE_API_ void init_vector(T* v, int num_size, float bound1 = -10, float bound
 
 #ifdef _WIN32
 #define DECLARE_INIT_VECTOR(type) \
-template SPARSE_API_ void init_vector<type>(type * v, int num_size, float bound1, float bound2, int seed);
+  template SPARSE_API_ void init_vector<type>(type * v, int num_size, float bound1, float bound2, int seed);
 
 DECLARE_INIT_VECTOR(float)
 DECLARE_INIT_VECTOR(int)
@@ -92,9 +92,9 @@ template <typename T>
 bool SPARSE_API_ compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, float eps = 1e-6);
 
 #ifdef _WIN32
-#define DECLARE_COMPARE_DATA(type) \
+#define DECLARE_COMPARE_DATA(type)                                                                               \
   template SPARSE_API_ bool compare_data<type>(const void* buf1, int64_t size1, const void* buf2, int64_t size2, \
-    float eps);
+                                               float eps);
 
 DECLARE_COMPARE_DATA(float)
 DECLARE_COMPARE_DATA(int)
@@ -200,10 +200,8 @@ struct set_once_before_first_get_setting_t {
 template <typename T>
 void SPARSE_API_ cast_to_float_array(const void* src, std::vector<float>* dst, int size);
 
-
 template <typename T>
 void SPARSE_API_ cast_from_float_array(std::vector<float> src, void* dst, int size);
-
 
 template <class T>
 inline void safe_delete(T*& ptr) {  // NOLINT(runtime/references)
@@ -212,5 +210,69 @@ inline void safe_delete(T*& ptr) {  // NOLINT(runtime/references)
     ptr = nullptr;
   }
 }
+
+template <typename T, std::size_t N = 64>
+class aligned_allocator_t {
+ public:
+  typedef T value_type;
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
+
+  typedef T* pointer;
+  typedef const T* const_pointer;
+
+  typedef T& reference;
+  typedef const T& const_reference;
+
+ public:
+  static inline pointer aligned_alloc(size_type n, bool zero = false) {
+#ifdef _WIN32
+    auto ptr = static_cast<pointer>(_aligned_malloc(n * sizeof(value_type), N));
+#else
+    auto ptr = static_cast<pointer>(::aligned_alloc(N, n * sizeof(value_type)));
+#endif
+    if (zero) memset(ptr, 0, n * sizeof(value_type));
+    return ptr;
+  }
+  static inline void aligned_free(void* p, size_type = 0) {
+#ifdef _WIN32
+    _aligned_free(p);
+#else
+    ::free(p);
+#endif
+  }
+
+  inline aligned_allocator_t() throw() {}
+
+  template <typename T2>
+  inline aligned_allocator_t(const aligned_allocator_t<T2, N>&) throw() {}
+
+  inline ~aligned_allocator_t() throw() {}
+
+  inline pointer adress(reference r) { return &r; }
+
+  inline const_pointer adress(const_reference r) const { return &r; }
+
+  inline pointer allocate(size_type n) { return aligned_allocator_t<T, N>::aligned_alloc(n); }
+
+  inline void deallocate(pointer p, size_type n) { aligned_free(p); }
+  inline void construct(pointer p, const value_type& wert) { new (p) value_type(wert); }
+
+  inline void destroy(pointer p) { p->~value_type(); }
+
+  inline size_type max_size() const throw() { return size_type(-1) / sizeof(value_type); }
+
+  template <typename T2>
+  struct rebind {
+    typedef aligned_allocator_t<T2, N> other;
+  };
+
+  bool operator!=(const aligned_allocator_t<T, N>& other) const { return !(*this == other); }
+
+  // Returns true if and only if storage allocated from *this can be deallocated from other, and vice versa.
+  // Always returns true for stateless allocators.
+  bool operator==(const aligned_allocator_t<T, N>& other) const { return true; }
+};
+
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_

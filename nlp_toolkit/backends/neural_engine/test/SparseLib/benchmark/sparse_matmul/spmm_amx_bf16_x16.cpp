@@ -138,36 +138,34 @@ std::pair<const void*, const void*> make_data_obj_spmm_amx_bf16_x16(const dt& te
   void* data_ptr = nullptr;
   switch (index) {
     case 0: {  // prepare wei
-      data_ptr = new bfloat16_t[elem_num];
+      data_ptr = aligned_allocator_t<bfloat16_t>::aligned_alloc(elem_num);
       bfloat16_t* bf16_ptr = static_cast<bfloat16_t*>(data_ptr);
       prepare_sparse_data_spmm_amx_bf16_x16<bfloat16_t>(bf16_ptr, rows, cols, 16, 1, ratio);
       break;
     }
     case 1: {  // prepare src
-      data_ptr = new bfloat16_t[elem_num];
+      data_ptr = aligned_allocator_t<bfloat16_t>::aligned_alloc(elem_num);
       bfloat16_t* bf16_ptr = static_cast<bfloat16_t*>(data_ptr);
       init_vector(bf16_ptr, elem_num, ranges[0], ranges[1]);
       break;
     }
     case 2: {  // prepare bias
-      data_ptr = new float[elem_num];
+      data_ptr = aligned_allocator_t<float>::aligned_alloc(elem_num);
       float* fp32_ptr = static_cast<float*>(data_ptr);
       init_vector(fp32_ptr, elem_num, ranges[0], ranges[1]);
       break;
     }
     case 3: {  // prepare dst
       if (tensor_dt == dt::bf16) {
-        data_ptr = new bfloat16_t[elem_num];
-        memset(data_ptr, 0, bytes_size);
+        data_ptr = aligned_allocator_t<bfloat16_t>::aligned_alloc(elem_num, true);
       } else {
-        data_ptr = new float[elem_num];
-        memset(data_ptr, 0, bytes_size);
+        data_ptr = aligned_allocator_t<float>::aligned_alloc(elem_num, true);
       }
       break;
     }
   }
 
-  void* data_ptr_copy = new uint8_t[bytes_size];
+  void* data_ptr_copy = aligned_allocator_t<char>::aligned_alloc(bytes_size);
   memcpy(data_ptr_copy, data_ptr, bytes_size);
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }

@@ -58,8 +58,6 @@ int get_data_width(jd::data_type dtype);
 
 void assign_val(void* ptr, jd::data_type dtype, float val, int idx);
 
-void* memo_op(void* ptr, int num, jd::data_type dtype, memo_mode mode, bool align = false);
-
 int get_element_num(const jd::operator_desc& op_desc, int idx = 0);
 
 namespace jd {

@@ -332,6 +332,8 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   return {op_args, op_args_copy};
 }
 
+std::string level_to_string(const ssd::subfunc_level& l) { return std::to_string(static_cast<uint8_t>(l)); }
+
 static auto case_func = []() {
   std::vector<std::vector<dim_t>> bert_sizes = {
       // mini
@@ -408,11 +410,12 @@ static auto case_func = []() {
       cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, dt::s8, {{"micro_oc", "128"}})});
 
       // Test subfunc_level
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "0"}})});
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "1"}})});
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "2"}})});
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "3"}})});
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", "4"}})});
+      cases.push_back(
+          {gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", level_to_string(ssd::subfunc_level::none)}})});
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32,
+                                {{"sub_func", level_to_string(ssd::subfunc_level::non_kdims)}})});
+      cases.push_back(
+          {gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"sub_func", level_to_string(ssd::subfunc_level::kdims)}})});
 
       // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
       cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::s8)});

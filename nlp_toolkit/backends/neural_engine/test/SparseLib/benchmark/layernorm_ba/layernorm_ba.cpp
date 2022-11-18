@@ -124,20 +124,15 @@ void layernorm_ba_bench::gen_case() {
   void* dst = nullptr;
   void* src_ref = nullptr;
   void* dst_ref = nullptr;
-  memo_mode MALLOC = memo_mode::MALLOC;
-  memo_mode MEMSET = memo_mode::MEMSET;
 
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
-
-  src = memo_op(src, num, in_dt, MALLOC, true);
-  dst = memo_op(dst, num, out_dt, MALLOC, true);
-  dst = memo_op(dst, num, out_dt, MEMSET);
-  src_ref = memo_op(src_ref, num, in_dt, MALLOC, true);
-  dst_ref = memo_op(dst_ref, num, out_dt, MALLOC, true);
-  dst_ref = memo_op(dst_ref, num, out_dt, MEMSET);
-  float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
-  float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
+  src = aligned_allocator_t<char>::aligned_alloc(get_data_size(in_dt) * num);
+  dst = aligned_allocator_t<char>::aligned_alloc(get_data_size(in_dt) * num, true);
+  src_ref = aligned_allocator_t<char>::aligned_alloc(get_data_size(out_dt) * num);
+  dst_ref = aligned_allocator_t<char>::aligned_alloc(get_data_size(out_dt) * num, true);
+  float* alpha = aligned_allocator_t<float>::aligned_alloc(row);
+  float* beta = aligned_allocator_t<float>::aligned_alloc(row);
 
   // init alpha&beta
   for (int i = 0; i < row; i++) alpha[i] = 1 + rand_float_postfix();

@@ -152,11 +152,8 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
   const std::vector<dim_t> k_indices(idx_begin + indptr_lo, idx_begin + indptr_hi);
 
   switch (param_.sub_func) {
-    case ssd::subfunc_level::dense_and_prod:
-      mov(reg_seq_indices, reinterpret_cast<uint64_t>(dense_load_offsets.data() + indptr_lo - indptr_kernel_start));
-      break;
-    case ssd::subfunc_level::load_and_prod:
-    case ssd::subfunc_level::k_dims:
+    case ssd::subfunc_level::non_kdims:
+    case ssd::subfunc_level::kdims:
       mov(reg_seq_indices, reinterpret_cast<uint64_t>(dense_load_offsets.data() + indptr_lo - indptr_kernel_start));
       mov(reg_wei, reinterpret_cast<uint64_t>(param_.weight + param_.blocksize[0] * param_.blocksize[1] * indptr_lo));
       break;
@@ -165,9 +162,7 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
   }
   switch (param_.sub_func) {
     case ssd::subfunc_level::none:
-    case ssd::subfunc_level::prod:
-    case ssd::subfunc_level::dense_and_prod:
-    case ssd::subfunc_level::load_and_prod:
+    case ssd::subfunc_level::non_kdims:
       // kp (k-idx pointer is the idx of nnz blocks of the current row)
       for (int64_t kp_lo = 0; kp_lo < nnz; kp_lo += spns::ADJ) {
         const int64_t kp_hi = std::min(kp_lo + spns::ADJ, nnz);  // end of k-index pointer (noninclusive)
@@ -184,24 +179,15 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
             load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
             tile_product(TH(), TW());
             break;
-          case ssd::subfunc_level::prod:
-            load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
-            load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
-            call(sfptr_tile_prod_);
-            break;
-          case ssd::subfunc_level::dense_and_prod:
-            load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
-            call(sfptr_dense_and_prod_);
-            break;
-          case ssd::subfunc_level::load_and_prod:
-            call(sfptr_load_and_prod_);
+          case ssd::subfunc_level::non_kdims:
+            call(func_load_and_prod_);
             break;
           default:
             break;
         }
       }
       break;
-    case ssd::subfunc_level::k_dims:
+    case ssd::subfunc_level::kdims:
       if (nnz > 0) {  // at least one iteration
         xor_(reg_k_ptr, reg_k_ptr);
         add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
@@ -284,7 +270,7 @@ void jit_spmm_vnni_t::handle_dst_buffer_epilogue_sub() {
 }
 
 void jit_spmm_vnni_t::gen_subfunc_dst_epilogue() {
-  sfptr_dst_epilogue_ = getCurr();
+  L(func_dst_epilogue_);
   Xbyak::util::StackFrame callee1_sf(this, 0);
   handle_dst_buffer_epilogue_sub();
 }
@@ -294,49 +280,6 @@ void jit_spmm_vnni_t::read_params() {
   mov(reg_bias, ptr[param1 + GET_OFF(ptr_bias)]);
   mov(reg_dst, ptr[param1 + GET_OFF(ptr_dst)]);
   mov(reg_scale, ptr[param1 + GET_OFF(ptr_scales)]);
-}
-
-void jit_spmm_vnni_t::gen_subfunc_tile_prod() {
-  sfptr_tile_prod_ = getCurr();
-  Xbyak::util::StackFrame callee1_sf(this, 0);
-  tile_product(TH(), TW());
-}
-
-void jit_spmm_vnni_t::gen_subfunc_dense_and_prod() {
-  sfptr_dense_and_prod_ = getCurr();
-  add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
-
-  constexpr uint64_t idx_size = sizeof(decltype(param_.indices)::value_type);
-  mov(reg_addr_tmp[0], qword[reg_seq_indices + 0 * idx_size]);
-  mov(reg_addr_tmp[1], qword[reg_seq_indices + 1 * idx_size]);
-  mov(reg_addr_tmp[2], qword[reg_seq_indices + 2 * idx_size]);
-  mov(reg_addr_tmp[3], qword[reg_seq_indices + 3 * idx_size]);
-  add(reg_seq_indices, 4 * idx_size);
-
-  for (int j = 0; j < TW(); ++j) {
-    int vreg_dst_idx = TW_Vmm(j).getIdx();
-    Xbyak::Xmm TW_xmm(vreg_dst_idx);
-    Xbyak::Ymm TW_ymm = Xbyak::Ymm(vreg_dst_idx) | reg_k1;
-    int vreg_temp_idx = vreg_temp.getIdx();
-    Xbyak::Xmm temp_xmm(vreg_temp_idx);
-    Xbyak::Ymm temp_ymm = Xbyak::Ymm(vreg_temp_idx) | reg_k1;
-    // assert(k_indices.size() > 0 && k_indices.size() <= spns::ADJ);
-
-    vmovdqu8(TW_xmm, ptr[reg_dense + reg_addr_tmp[0] + j * VEC]);
-    vbroadcasti32x4(TW_ymm, ptr[reg_dense + reg_addr_tmp[1] + j * VEC]);
-    vmovdqu8(temp_xmm, ptr[reg_dense + reg_addr_tmp[2] + j * VEC]);
-    vbroadcasti32x4(temp_ymm, ptr[reg_dense + reg_addr_tmp[3] + j * VEC]);
-
-    vpermt2d(TW_Vmm(j), vpermt2d_arg_idx, vreg_temp);
-    vpshufb(TW_Vmm(j), TW_Vmm(j), vpshufb_arg_b);
-
-    for (int i = 0; i < TH(); ++i) {
-      vpdpbusd(dst_tile_Vmm(i, j), TW_Vmm(j), TH_Vmm(i));
-    }
-  }
-
-  sub(reg_dense, reg_n_idx);  // reg_dense = reg_n_idx * BYTE1
-  ret();
 }
 
 /**
@@ -385,7 +328,7 @@ void jit_spmm_vnni_t::load_dense_sparse_prod() {
 }
 
 void jit_spmm_vnni_t::gen_subfunc_load_and_prod() {
-  sfptr_load_and_prod_ = getCurr();
+  L(func_load_and_prod_);
   add(reg_dense, reg_n_idx);  // reg_dense += reg_n_idx * BYTE1
 
   load_dense_sparse_prod();
@@ -406,15 +349,9 @@ void jit_spmm_vnni_t::generate() {
   gen_subfunc_dst_epilogue();
   switch (param_.sub_func) {
     case ssd::subfunc_level::none:
-    case ssd::subfunc_level::k_dims:
+    case ssd::subfunc_level::kdims:
       break;
-    case ssd::subfunc_level::prod:
-      gen_subfunc_tile_prod();
-      break;
-    case ssd::subfunc_level::dense_and_prod:
-      gen_subfunc_dense_and_prod();
-      break;
-    case ssd::subfunc_level::load_and_prod:
+    case ssd::subfunc_level::non_kdims:
       gen_subfunc_load_and_prod();
       break;
     default:
@@ -423,8 +360,8 @@ void jit_spmm_vnni_t::generate() {
   }
   callee_functions_code_size_ = getSize();
 
-  Xbyak::Label g_label1;
-  Xbyak::Label g_label2;
+  Xbyak::Label L_vpermt2d_arg;
+  Xbyak::Label L_vpshufb_arg;
   {
     sub(rsp, nonvolatile_reg_size);
     mov(ptr[rsp + 0x00], rbx);
@@ -443,8 +380,8 @@ void jit_spmm_vnni_t::generate() {
     mov(reg_wei, reinterpret_cast<uint64_t>(param_.weight));
 
     // initialize the control reg which we are going to use for permutes and shuffles.
-    vpmovzxbd(vpermt2d_arg_idx, ptr[rip + g_label1]);
-    vbroadcasti32x4(vpshufb_arg_b, ptr[rip + g_label2]);
+    vpmovzxbd(vpermt2d_arg_idx, ptr[rip + L_vpermt2d_arg]);
+    vbroadcasti32x4(vpshufb_arg_b, ptr[rip + L_vpshufb_arg]);
     auto temp_r32 = Xbyak::Reg32(reg_tmp.getIdx());
     mov(temp_r32, 0xf0);
     kmovb(reg_k1, temp_r32);
@@ -466,7 +403,7 @@ void jit_spmm_vnni_t::generate() {
       repeat_THx4xTW_matmal(im);
       // generate the epilogue logic. This is different depending on B_blocks value (should we
       // cache intermediate results or write results with post-op to output)
-      call(sfptr_dst_epilogue_);
+      call(func_dst_epilogue_);
 
       add(reg_n_idx, nt_size());
       cmp(reg_n_idx, param_.BN);
@@ -496,11 +433,11 @@ void jit_spmm_vnni_t::generate() {
   int num_size = 16;
   const uint8_t vpermt2d_control[16] = {0, 4, 16, 20, 1, 5, 17, 21, 2, 6, 18, 22, 3, 7, 19, 23};
   const uint8_t vpshufb_control[16] = {0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15};
-  L(g_label1);
+  L(L_vpermt2d_arg);
   for (int i = 0; i < num_size; ++i) {
     db(vpermt2d_control[i], word_size);
   }
-  L(g_label2);
+  L(L_vpshufb_arg);
   for (int i = 0; i < num_size; ++i) {
     db(vpshufb_control[i], word_size);
   }

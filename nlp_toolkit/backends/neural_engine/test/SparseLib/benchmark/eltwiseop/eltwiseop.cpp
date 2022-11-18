@@ -76,22 +76,13 @@ void eltwiseop_bench::gen_case() {
                                op_attrs, postop_attrs);
 
   int num = get_element_num(eltwiseop_desc);
-  void* src = nullptr;
-  void* dst = nullptr;
-  void* src_ref = nullptr;
-  void* dst_ref = nullptr;
-  memo_mode MALLOC = memo_mode::MALLOC;
-  memo_mode MEMSET = memo_mode::MEMSET;
 
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
-
-  src = memo_op(src, num, in_dt, MALLOC);
-  dst = memo_op(dst, num, out_dt, MALLOC);
-  dst = memo_op(dst, num, out_dt, MEMSET);
-  src_ref = memo_op(src_ref, num, in_dt, MALLOC);
-  dst_ref = memo_op(dst_ref, num, out_dt, MALLOC);
-  dst_ref = memo_op(dst_ref, num, out_dt, MEMSET);
+  void* src = aligned_allocator_t<char>::aligned_alloc(get_data_size(in_dt) * num);
+  void* dst = aligned_allocator_t<char>::aligned_alloc(get_data_size(in_dt) * num, true);
+  void* src_ref = aligned_allocator_t<char>::aligned_alloc(get_data_size(out_dt) * num);
+  void* dst_ref = aligned_allocator_t<char>::aligned_alloc(get_data_size(out_dt) * num, true);
 
   const unsigned int seed = 667095;
   std::srand(seed);
@@ -123,7 +114,7 @@ void eltwiseop_bench::get_true_data() {
 
   const void* src = args.second.rt_data[0];
   void* dst = const_cast<void*>(args.second.rt_data[1]);
-  float* src_fp32 = static_cast<float*>(malloc(size * sizeof(float)));
+  float* src_fp32 = new float[size];
   if (src_dt == jd::data_type::s8) {
     cast_to_float_array<int8_t>(src, src_fp32, size);
   } else if (src_dt == jd::data_type::u8) {
@@ -150,7 +141,7 @@ void eltwiseop_bench::get_true_data() {
   } else if (dst_dt == jd::data_type::fp32) {
     cast_from_float_array<float>(src_fp32, dst, size);
   }
-  free(src_fp32);
+  delete[] src_fp32;
 }
 bool eltwiseop_bench::check_result() {
   get_true_data();

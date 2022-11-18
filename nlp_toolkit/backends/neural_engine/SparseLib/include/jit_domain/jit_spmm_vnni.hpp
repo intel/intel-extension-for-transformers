@@ -50,7 +50,7 @@ class jit_spmm_vnni_t : public jit_generator {
 
  private:
   ssd::vnni_param_t param_;
-  std::vector<dim_t> dense_load_offsets;  // param_.indices * ld_dst
+  std::vector<dim_t, aligned_allocator_t<dim_t>> dense_load_offsets;  // param_.indices * ld_dst
   jit_eltwise_injector eltwise_injector_;
 
  private:
@@ -73,8 +73,6 @@ class jit_spmm_vnni_t : public jit_generator {
   void clear_dst_tile();
   void load_intermediate_dst(dim_t m_start);
   void store_intermediate_dst(dim_t m_start);
-  void gen_subfunc_tile_prod();
-  void gen_subfunc_dense_and_prod();
   void load_dense_sparse_prod();
   void gen_subfunc_load_and_prod();
   void gen_subfunc_dst_epilogue();
@@ -93,10 +91,8 @@ class jit_spmm_vnni_t : public jit_generator {
  private:
   const int64_t PADDED_NEG_ONE = -1;
   const int64_t PADDED_ZERO = 0;
-  const uint8_t* sfptr_tile_prod_ = nullptr;       // subfunction for tile product
-  const uint8_t* sfptr_dense_and_prod_ = nullptr;  // subfunction for dense load & tile product
-  const uint8_t* sfptr_load_and_prod_ = nullptr;   // subfunction for dense load & sparse load & tile product
-  const uint8_t* sfptr_dst_epilogue_ = nullptr;    // subfunction for dst handling
+  Xbyak::Label func_load_and_prod_;  // subfunction for dense load & sparse load & tile product
+  Xbyak::Label func_dst_epilogue_;   // subfunction for dst handling
 
  private:
   static constexpr int stack_space_needed_ = 200;

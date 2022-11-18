@@ -121,24 +121,14 @@ void softmax_bench::gen_case() {
   operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs,
                              postop_attrs);
 
-
   int num = get_element_num(softmax_desc);
-  void* src = nullptr;
-  void* dst = nullptr;
-  void* src_ref = nullptr;
-  void* dst_ref = nullptr;
-  memo_mode MALLOC = memo_mode::MALLOC;
-  memo_mode MEMSET = memo_mode::MEMSET;
-
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
 
-  src = memo_op(src, num, in_dt, MALLOC);
-  dst = memo_op(dst, num, out_dt, MALLOC);
-  dst = memo_op(dst, num, out_dt, MEMSET);
-  src_ref = memo_op(src_ref, num, in_dt, MALLOC);
-  dst_ref = memo_op(dst_ref, num, out_dt, MALLOC);
-  dst_ref = memo_op(dst_ref, num, out_dt, MEMSET);
+  void* src = aligned_allocator_t<char>::aligned_alloc(get_data_size(in_dt) * num);
+  void* dst = aligned_allocator_t<char>::aligned_alloc(get_data_size(in_dt) * num, true);
+  void* src_ref = aligned_allocator_t<char>::aligned_alloc(get_data_size(out_dt) * num);
+  void* dst_ref = aligned_allocator_t<char>::aligned_alloc(get_data_size(out_dt) * num, true);
 
   const unsigned int seed = 667095;
   for (int i = 0; i < num; i++) {

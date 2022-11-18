@@ -42,13 +42,11 @@ void auto_blocking(dim_t& BM, dim_t BN, const dim_t M, const dim_t N) {  // NOLI
  *   append_sum: if the kenrel add the result to the destination tensor instead of overwriting it. Set to "true"
  *               to enable.
  *   tile_n: n-size of a tile in terms of #registers; default is 4
- *   sub_func: use -1 / 0 / 1 / 2 / 3 / 4 to specify sub_func folding level
+ *   sub_func: use -1 / 0 / 1 / 2 to specify sub_func folding level
  *    -1. use max available value
  *     0. no subfunction
- *     1. subfunction for tile product
- *     2. subfunction for dense loading & tile product
- *     3. subfunction for dense loading & sparse loading & tile product
- *     4. use cmp/jp to replace subfunction calls
+ *     1. subfunction for dense loading & sparse loading & tile product
+ *     2. use cmp/jp to replace subfunction calls
  *   micro_oc: m-size of a block; default is the whole M
  */
 

@@ -45,11 +45,11 @@ class layernorm_ba_bench : public kernel_bench {
  public:
   layernorm_ba_bench() {}
   virtual ~layernorm_ba_bench() {
-    std::set<const void*> s;  // some of rt_data is shared between p and q
+    std::set<const void*> s;  // some of rt_data (alpha & beta) is shared between p and q
     for (auto op_args : {args.first, args.second})
       for (auto rt_data : op_args.rt_data)
         if (rt_data != nullptr && s.find(rt_data) == s.end()) {
-          free(const_cast<void*>(rt_data));
+          aligned_allocator_t<char>::aligned_free(const_cast<void*>(rt_data));
           s.insert(rt_data);
         }
   }

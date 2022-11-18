@@ -159,16 +159,15 @@ std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
   if (is_clear) {
-    data_ptr = new uint8_t[bytes_size];
-    memset(data_ptr, 0, bytes_size);
+    data_ptr = aligned_allocator_t<char>::aligned_alloc(bytes_size, true);
   } else {
     switch (a_dt) {
       case dt::fp32:
-        data_ptr = new float[elem_num];
+        data_ptr = aligned_allocator_t<float>::aligned_alloc(elem_num);
         init_vector(static_cast<float*>(data_ptr), elem_num, ranges[0], ranges[1]);
         break;
       default:
-        assert(false);
+        SPARSE_LOG(ERROR) << "Unsupprted data type!";
         break;
     }
     if (sparsity != 0.f) {
@@ -186,7 +185,7 @@ std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector
     }
   }
 
-  void* data_ptr_copy = new uint8_t[bytes_size];
+  void* data_ptr_copy = aligned_allocator_t<char>::aligned_alloc(bytes_size);
   memcpy(data_ptr_copy, data_ptr, bytes_size);
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
@@ -218,7 +217,7 @@ void spmm_avx512f_bench::gen_case() {
 
   // Step 3: sparse data encoding
   bsc_data_t<float> bsc_obj = spns::tobsc<float>(K, N, 1, 16, static_cast<const float*>(rt_data1[ssd::WEI]));
-  auto sparse_ptr = new bsc_data_t<float>(bsc_obj);  // Will be deleted in `check_result_spmm_avx512f`
+  auto sparse_ptr = new bsc_data_t<float>(bsc_obj);  // Will be deleted in `~sparse_matmul_bench()`
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
   if (postop_algs.size()) {
     auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };

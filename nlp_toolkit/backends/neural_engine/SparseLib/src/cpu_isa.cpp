@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-
 #include "cpu_isa.hpp"
 #ifdef __linux__
 #include <sys/syscall.h>

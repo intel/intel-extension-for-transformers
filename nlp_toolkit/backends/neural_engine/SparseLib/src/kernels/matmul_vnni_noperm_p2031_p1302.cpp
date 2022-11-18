@@ -163,6 +163,12 @@ bool matmul_vnni_noperm_p2031_p1302_k_t::init() {
     if (ker == nullptr) return false;
     if (!ker->create_kernel()) return false;
     jit_ker_Ba4b_Ab4a_ba_ = ker;
+
+    // allocate memory on heap for large task (more than half MB)
+    if ((M_ + N_) * K_ > 512 * 1024) {
+      src0_tmp_ = reinterpret_cast<uint8_t*>(aligned_alloc(64, M_ * K_));
+      src1_tmp_ = reinterpret_cast<int8_t*>(aligned_alloc(64, N_ * K_));
+    }
   }
   return true;
 }
@@ -177,11 +183,19 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
   auto base_dst = const_cast<uint8_t*>(static_cast<const uint8_t*>(rt_data[ssd::DST0]));
   auto base_scale = static_cast<const float*>(rt_data[ssd::SCALE0]);
   auto base_zp = reinterpret_cast<const float*>(rt_data[ssd::ZP0]);
-  size_t tmp_total_len = (M_ + N_) * K_ + 64 + 4;  // 64 for alignment; 4 for extra access due to ping-pong loading
-  void* mem_tmp = alloca(tmp_total_len);
-  char* mem_tmp_aligned = static_cast<char*>(std::align(64, (M_ + N_) * K_, mem_tmp, tmp_total_len));
-  auto src0_tmp = reinterpret_cast<uint8_t*>(mem_tmp_aligned);
-  auto src1_tmp = reinterpret_cast<int8_t*>(mem_tmp_aligned + M_ * K_);
+
+  uint8_t* src0_tmp;
+  int8_t* src1_tmp;
+  if (src0_tmp_ != nullptr) {
+    src0_tmp = src0_tmp_ + (ibs0 * bs1_ + ibs1) * M_ * K_;
+    src1_tmp = src1_tmp_ + (ibs0 * bs1_ + ibs1) * N_ * K_;
+  } else {
+    size_t tmp_total_len = (M_ + N_) * K_ + 64 + 4;  // 64 for alignment; 4 for extra access due to ping-pong loading
+    void* mem_tmp = alloca(tmp_total_len);
+    char* mem_tmp_aligned = static_cast<char*>(std::align(64, (M_ + N_) * K_, mem_tmp, tmp_total_len));
+    src0_tmp = reinterpret_cast<uint8_t*>(mem_tmp_aligned);
+    src1_tmp = reinterpret_cast<int8_t*>(mem_tmp_aligned + M_ * K_);
+  }
 
   for (dim_t i = 0; i < M_; i += m_tile) {
     // src0: bs0_ bs1_ M_ K_

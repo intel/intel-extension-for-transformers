@@ -138,8 +138,8 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto dst_u8 = static_cast<uint8_t*>(dst_data);
   auto badd_fp32 = static_cast<const float*>(badd_data);
 
-  // Computing the kernel
-  // #pragma omp parallel for collapse(4)
+// Computing the kernel
+#pragma omp parallel for collapse(4)
   for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0)
     for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
       for (dim_t i = 0; i < M_; ++i)
@@ -147,7 +147,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
           float value = 0;
           dim_t dst_idx =
               ibs0 * dst_perm_stride[0] + ibs1 * dst_perm_stride[1] + i * dst_perm_stride[2] + j * dst_perm_stride[3];
-          // #pragma omp simd
+#pragma omp simd
           for (dim_t k = 0; k < K_; ++k) {
             dim_t l_idx = ibs0 * left_perm_stride[0] + ibs1 * left_perm_stride[1] + i * left_perm_stride[2] +
                           k * left_perm_stride[3];
@@ -168,8 +168,8 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
             jd::postop_attr quantize{
                 dt::u8, postop_type::eltwise, postop_alg::quantize,
                 zp[0],  // alpha
-                0,  // beta
-                1,  // scale already applied in the previous step
+                0,      // beta
+                1,      // scale already applied in the previous step
             };
             float quantized_value = apply_postop_list(value, {quantize});
             dst_u8[dst_idx] = static_cast<uint8_t>(quantized_value);

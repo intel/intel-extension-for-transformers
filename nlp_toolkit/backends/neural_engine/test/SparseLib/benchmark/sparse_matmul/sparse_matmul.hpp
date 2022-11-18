@@ -43,8 +43,7 @@ class sparse_matmul_bench : public kernel_bench {
       for (auto op_args : {args.first, args.second})
         for (auto rt_data : op_args.rt_data)
           if (rt_data != nullptr) {
-            char* data = reinterpret_cast<char*>(const_cast<void*>(rt_data));
-            delete[] data;
+            aligned_allocator_t<uint8_t, 64>::aligned_free(const_cast<void*>(rt_data));
           }
     }
   }

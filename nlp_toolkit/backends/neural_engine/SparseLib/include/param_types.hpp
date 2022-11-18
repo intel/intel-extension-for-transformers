@@ -114,7 +114,7 @@ class binaryop_attr {
   void set_zp(float* zp) { this->zp = zp; }
 };
 
-static std::unordered_map<data_type, int> type_size = {
+static std::unordered_map<data_type, const int> type_size = {
     {data_type::fp32, 4}, {data_type::s32, 4}, {data_type::fp16, 2},
     {data_type::bf16, 2}, {data_type::u8, 1},  {data_type::s8, 1},
 };

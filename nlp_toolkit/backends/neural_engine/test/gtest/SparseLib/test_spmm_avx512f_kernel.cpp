@@ -67,7 +67,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   // Computing the kernel
   assert(dims == 2);
   for (int i = 0; i < M; ++i) {
-// #pragma omp parallel for
+#pragma omp parallel for
     for (int j = 0; j < N; ++j) {
       float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
 #pragma omp simd

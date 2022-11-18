@@ -45,7 +45,7 @@ class eltwiseop_bench : public kernel_bench {
     for (auto op_args : {args.first, args.second})
       for (auto rt_data : op_args.rt_data)
         if (rt_data != nullptr) {
-          free(const_cast<void*>(rt_data));
+          aligned_allocator_t<char>::aligned_free(const_cast<void*>(rt_data));
         }
   }
 

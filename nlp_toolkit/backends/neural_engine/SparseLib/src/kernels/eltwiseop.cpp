@@ -64,10 +64,10 @@ bool eltwiseop_k_t::execute(const std::vector<const void*>& rt_data) const {
 #pragma omp parallel for
   for (int idx = 0; idx < nthr; idx++) {
     auto data_param = td[idx];
-    data_param->src = reinterpret_cast<char*>(const_cast<void*>(rt_data[0]) +
-                                              idx * src_offset() * eltwise_params.element_num_each_th);
-    data_param->dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[1]) +
-                                              idx * dst_offset() * eltwise_params.element_num_each_th);
+    data_param->src = reinterpret_cast<char*>(const_cast<void*>(rt_data[0])) +
+                      idx * src_offset() * eltwise_params.element_num_each_th;
+    data_param->dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[1])) +
+                      idx * dst_offset() * eltwise_params.element_num_each_th;
     if (idx != nthr - 1) {
       data_param->element_num = eltwise_params.element_num_each_th;
     } else {

@@ -80,8 +80,8 @@ class matmul_vnni_noperm_p2031_p1302_k_t : public kernel_t {
     safe_delete(jit_ker_Ba4b_Ab4a_ba_);
     safe_delete(jit_trans_src0_);
     safe_delete(jit_trans_src1_);
-    if (src0_tmp != 0) free(src0_tmp);
-    if (src1_tmp != 0) free(src1_tmp);
+    if (src0_tmp_ != nullptr) free(src0_tmp_);
+    if (src1_tmp_ != nullptr) free(src1_tmp_);
   }
 
   // Delete move constructor and move operator
@@ -99,8 +99,8 @@ class matmul_vnni_noperm_p2031_p1302_k_t : public kernel_t {
   void thread_exec(const std::vector<const void*>& rt_data, const dim_t ibs0, const dim_t ibs1) const;
   bool matmul_kernel_create(jit_matmul_vnni_noperm_p2031_p1302_t** ker_pp, const ssd::matmul_param_t& param);
 
-  uint8_t* src0_tmp = nullptr;
-  int8_t* src1_tmp = nullptr;
+  uint8_t* src0_tmp_ = nullptr;
+  int8_t* src1_tmp_ = nullptr;
 
   // A all-in-one kernel
   jit_matmul_vnni_noperm_p2031_p1302_t* jit_ker_noperm_p2031_p1302_ = nullptr;

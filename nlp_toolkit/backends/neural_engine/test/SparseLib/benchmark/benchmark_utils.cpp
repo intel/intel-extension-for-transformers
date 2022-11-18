@@ -141,11 +141,8 @@ bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vect
     int elem_num =
         std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
     int byte_size = elem_num * type_size[ts_descs[idx[i]].dtype()];
-    void* new_mem = malloc(byte_size);
-    if (!new_mem) {
-      LOG(ERROR) << "malloc failed.\n";
-      return false;
-    }
+    void* new_mem = aligned_allocator_t<uint8_t, 64>::aligned_alloc(byte_size);
+    SPARSE_LOG_IF(ERROR, !new_mem) << "malloc failed.";
     rt_data[idx[i]] = new_mem;
     new_data.emplace_back(new_mem);
   }
@@ -155,7 +152,7 @@ bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vect
 void bench_op::free_new_mem(std::vector<void*>* new_data_pointer) {
   std::vector<void*>& new_data = *new_data_pointer;
   for (size_t i = 0; i < new_data.size(); ++i) {
-    free(new_data[i]);
+    aligned_allocator_t<uint8_t, 64>::aligned_free(new_data[i]);
   }
 }
 

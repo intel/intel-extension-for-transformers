@@ -49,12 +49,10 @@ enum class sparse_scheme : uint8_t {
 };
 
 enum class subfunc_level : uint8_t {
-  none,            // No sub-function
-  prod,            // use sub-function for tile product
-  dense_and_prod,  // use fused sub-function for dense loading & tile product
-  load_and_prod,   // use fused sub-function for dense loading & sparse loading & tile product
-  k_dims,          // a whole THxKxTW tile generates a constent size of code
-  subfunc_level_MAX = k_dims
+  none,       // No sub-function
+  non_kdims,  // fold all except on K-dimension
+  kdims,      // a whole THxKxTW tile generates a constent size of code
+  subfunc_level_MAX = kdims
 };
 
 /**
