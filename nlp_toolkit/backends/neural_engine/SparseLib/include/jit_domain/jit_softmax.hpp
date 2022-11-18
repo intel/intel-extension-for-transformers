@@ -19,6 +19,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include "cpu_isa.hpp"
 #include "jit_generator.hpp"
 #include "utils.hpp"
 #include "kernels/softmax_types.hpp"

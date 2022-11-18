@@ -83,6 +83,9 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
       for (int j = 0; j < col; j++)
         reinterpret_cast<int8_t*>(dst)[i * col + j] =
             (int8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
+    } else {
+      for (int j = 0; j < col; j++)
+        reinterpret_cast<float*>(dst)[i * col + j] = float_dst_data[i * col + j] * scale, quant_list;
     }
   }
 }
@@ -119,6 +122,8 @@ bool check_result(const test_params_t& t) {
       ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-1);
     else if (dst_dt == data_type::bf16)
       ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-1);
+    else if (dst_dt == data_type::fp32)
+      ans = compare_data<float>(buf1, size1, buf2, size2, 1e-1);
     else
       return ans = false;
     free(const_cast<void*>(p.data[0]));
@@ -175,7 +180,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   std::srand(seed);
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
-    float rand_val = std::rand() % 256 - 128; //NOLINT
+    float rand_val = std::rand() % 256 - 128;  // NOLINT
     assign_val(src, in_dt, rand_val, i);
     assign_val(src_ref, in_dt, rand_val, i);
   }
@@ -197,11 +202,11 @@ static auto case_func = []() {
 
   tensor_desc data0_desc = {{8, 4, 128, 128}, jd::data_type::u8, jd::format_type::undef};
   tensor_desc data1_desc = {{8, 4, 128, 128}, jd::data_type::s8, jd::format_type::undef};
-  tensor_desc data2_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
+  tensor_desc data2_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data3_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
   tensor_desc data4_desc = {{4096, 384}, jd::data_type::u8, jd::format_type::undef};
   tensor_desc data5_desc = {{4096, 384}, jd::data_type::s8, jd::format_type::undef};
-  tensor_desc data6_desc = {{8, 4, 128, 126}, jd::data_type::bf16, jd::format_type::undef};
+  tensor_desc data6_desc = {{8, 4, 128, 126}, jd::data_type::fp32, jd::format_type::undef};
   tensor_desc data7_desc = {{8, 4, 128, 126}, jd::data_type::s8, jd::format_type::undef};
 
   postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, 140, 0, 0.643695);

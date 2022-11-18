@@ -87,9 +87,9 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
   je(sum_reduction_end, T_NEAR);
   L(sum_reduction_loop);
   lut_handle_exp();
-  add(src_addr_volatile, ymm_byte_size);
+  add(src_addr_volatile, isa_available(avx512_core_bf16) ? ymm_byte_size : xmm_byte_size);
   add(dst_addr_volatile, zmm_byte_size);
-  add(vec_offset, process_element_16bit);
+  add(vec_offset, isa_available(avx512_core_bf16) ? process_element_16bit : process_element_32bit);
   cmp(vec_offset, param_.vec_align_len);
   jl(sum_reduction_loop);
   L(sum_reduction_end);
@@ -106,8 +106,14 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
   je(softmax_end, T_NEAR);
   L(softmax_loop);
   get_unroll();
-  for (int i = 0; i < unroll; i++) vmovups(Ymm(10 + i), ptr[src_addr_volatile + i * ymm_byte_size]);  // exp value(bf16)
-  for (int i = 0; i < unroll; i++) bf16_cvt_fp32(Zmm(10 + i));
+  if (isa_available(avx512_core_bf16)) {
+    for (int i = 0; i < unroll; i++)
+      vmovups(Ymm(10 + i), ptr[src_addr_volatile + i * ymm_byte_size]);  // exp value(bf16)
+    for (int i = 0; i < unroll; i++) bf16_cvt_fp32(Zmm(10 + i));
+  } else {
+    for (int i = 0; i < unroll; i++)
+      vmovups(Zmm(10 + i), ptr[src_addr_volatile + i * zmm_byte_size]);  // exp value(bf16)
+  }
   for (int i = 0; i < unroll; i++) vmulps(Zmm(10 + i), Zmm(10 + i), zmm_denominator);
 
   // apply postops
@@ -117,15 +123,19 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
 
   // store data.
   for (int i = 0; i < unroll; i++) lut_store_data(10 + i, dst_addr_volatile, i);
-  add(src_addr_volatile, unroll * ymm_byte_size);
+  add(src_addr_volatile, isa_available(avx512_core_bf16) ? unroll * ymm_byte_size : unroll * zmm_byte_size);
   add(dst_addr_volatile, unroll * 16 * get_data_size(param_.output_dt));
   add(vec_offset, process_element_32bit * unroll);
   cmp(vec_offset, param_.vec_align_len);
   jl(softmax_loop);
   L(softmax_end);
   if (param_.vec_tail_len != 0) {
-    vmovups(ymm_vec, ptr[src_addr_volatile]);  // exp value(bf16)
-    bf16_cvt_fp32(zmm_vec);
+    if (isa_available(avx512_core_bf16)) {
+      vmovups(ymm_vec, ptr[src_addr_volatile]);  // exp value(bf16)
+      bf16_cvt_fp32(zmm_vec);
+    } else {
+      vmovups(zmm_vec, ptr[src_addr_volatile]);  // exp value(bf16)
+    }
     vmulps(zmm_vec, zmm_vec, zmm_denominator);
     if (param_.postop_attrs.size() != 0) eltwise_injector.vector_compute(zmm_vec, param_.postop_attrs);
     lut_store_data(zmm_vec.getIdx(), dst_addr_volatile, 0, true);
@@ -133,7 +143,11 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
 
   add(src_addr, param_.vec_align_len + param_.vec_tail_len);
   add(dst_addr, get_data_size(param_.output_dt) * (param_.vec_align_len + param_.vec_tail_len));
-  add(reg_tmp, get_data_size(data_type::bf16) * (param_.vec_align_len + param_.vec_tail_len));
+  if (isa_available(avx512_core_bf16)) {
+    add(reg_tmp, get_data_size(data_type::bf16) * (param_.vec_align_len + param_.vec_tail_len));
+  } else {
+    add(reg_tmp, get_data_size(data_type::fp32) * (param_.vec_align_len + param_.vec_tail_len));
+  }
   inc(vec_num);
   cmp(vec_num, ptr[reg_param + CUSTSM_GET_OFF(process_vec_num)]);
   jl(process_vec_loop);
@@ -151,19 +165,29 @@ void jit_softmax_t::lut_handle_exp(bool tail) {
   vpsubsb(ymm_vec, ymm_vec, ymm_exp_neg_max);                              // x-max
   get_lut_exp_injector.vector_compute(zmm_vec, param_.get_lut_exp_attrs);  // e^(x-max)
   if (!tail) {
-    vdpbf16ps(zmm_denominator, zmm_one_bf16, zmm_vec);
-    vmovups(ptr[dst_addr_volatile], zmm_vec);  // now tmp store the bf16 exp value
+    if (isa_available(avx512_core_bf16)) {
+      vdpbf16ps(zmm_denominator, zmm_one_bf16, zmm_vec);
+    } else {
+      bf16_cvt_fp32(zmm_vec);
+      vaddps(zmm_denominator, zmm_denominator, zmm_vec);
+    }
+    vmovups(ptr[dst_addr_volatile], zmm_vec);  // now tmp store the bf16/fp32 exp value
   } else {
-    vmovdqu16(ptr[dst_addr_volatile] | bit16_mask, zmm_vec);
+    if (isa_available(avx512_core_bf16)) vmovdqu16(ptr[dst_addr_volatile] | bit16_mask, zmm_vec);
     if (param_.vec_tail_len < 16) {
       bf16_cvt_fp32(zmm_vec);
       vaddps(zmm_denominator | bit32_mask, zmm_denominator, zmm_vec);
+      if (!isa_available(avx512_core_bf16)) vmovups(ptr[dst_addr_volatile] | bit16_mask, zmm_vec);
     } else {
       vextractf32x8(Ymm(zmm_tmp.getIdx()), zmm_vec, 1);
       bf16_cvt_fp32(zmm_vec);
       vaddps(zmm_denominator, zmm_denominator, zmm_vec);
       bf16_cvt_fp32(zmm_tmp);
       vaddps(zmm_denominator | bit32_mask, zmm_denominator, zmm_tmp);
+      if (!isa_available(avx512_core_bf16)) {
+        vmovups(ptr[dst_addr_volatile], zmm_vec);
+        vmovups(ptr[dst_addr_volatile + zmm_byte_size] | bit16_mask, zmm_tmp);
+      }
     }
   }
 }
@@ -173,9 +197,11 @@ void jit_softmax_t::lut_store_data(int simd_idx, Reg64 dst, int offset, bool mas
     vpmovusdb(mask ? ptr[dst + offset * xmm_byte_size] | bit32_mask : ptr[dst + offset * xmm_byte_size], Zmm(simd_idx));
   } else if (param_.output_dt == data_type::s8) {
     vpmovsdb(mask ? ptr[dst + offset * xmm_byte_size] | bit32_mask : ptr[dst + offset * xmm_byte_size], Zmm(simd_idx));
-  } else {
+  } else if (param_.output_dt == data_type::bf16) {
     vcvtneps2bf16(Ymm(simd_idx), Zmm(simd_idx));
     vmovdqu16(mask ? ptr[dst + offset * ymm_byte_size] | bit32_mask : ptr[dst + offset * ymm_byte_size], Ymm(simd_idx));
+  } else {
+    vmovups(mask ? ptr[dst + offset * zmm_byte_size] | bit32_mask : ptr[dst + offset * zmm_byte_size], Zmm(simd_idx));
   }
 }
 
@@ -215,9 +241,9 @@ void jit_softmax_t::perform_op(Zmm v, Zmm vtmp, op_t op) {
 }
 
 void jit_softmax_t::assign_regs() {
-  #ifdef _WIN32
+#ifdef _WIN32
   reg_param = rcx;
-  #else
+#else
   reg_param = rdi;
 #endif
   src_addr = r8;

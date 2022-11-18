@@ -25,8 +25,6 @@ bool softmax_ref_kd_t::init() {
       SPARSE_LOG(ERROR) << "softmax lut kernel need 2 tensor descriptor:src & dst." << std::endl;
     auto input_dt = tensor_desc[0].dtype();
     auto output_dt = tensor_desc[1].dtype();
-    SPARSE_LOG_IF(FATAL,
-                  output_dt == data_type::fp32);  // TODO(zhe1wang): support fp32 dt.
     if (get_data_size(input_dt) != 1)
       SPARSE_LOG(ERROR) << "softmax lut kernel only support int8 dtype as input currently." << std::endl;
   } else {
@@ -93,6 +91,9 @@ bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
       for (int j = 0; j < col; j++)
         reinterpret_cast<int8_t*>(dst)[i * col + j] =
             (int8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
+    } else {
+      for (int j = 0; j < col; j++)
+        reinterpret_cast<float*>(dst)[i * col + j] = float_dst_data[i * col + j] * scale, quant_list;
     }
   }
   return true;

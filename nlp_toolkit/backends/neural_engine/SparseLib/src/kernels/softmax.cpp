@@ -19,8 +19,8 @@ namespace jd {
 bool softmax_kd_t::init() {
   auto op_attrs = op_desc_.attrs();
   if (op_attrs["spec_type"] == "lut") {
-    if (!isa_available(avx512_core_bf16) || !isa_available(avx512_core_vbmi)) {
-      SPARSE_LOG(WARNING) << "bf16 or vbmi ISA not available, dispatch to ref_impl.";
+    if (!isa_available(avx512_core_vbmi)) {
+      SPARSE_LOG(WARNING) << "vbmi ISA not available, dispatch to ref_impl.";
       return false;
     }
     prepare_lut_softmax_params();
@@ -37,7 +37,11 @@ bool softmax_k_t::init() {
   for (int i = 0; i < nthr_; i++) {
     td.push_back(new ssd::softmax_data_t());
     if (op_attrs["spec_type"] == "lut") {
-      td[i]->tmp = malloc(param.scalar_num * sizeof(uint16_t));
+      if (isa_available(avx512_core_bf16)) {
+        td[i]->tmp = malloc(param.scalar_num * sizeof(uint16_t));
+      } else {
+        td[i]->tmp = malloc(param.scalar_num * sizeof(int32_t));
+      }
       td[i]->one = make_bf16(1.0);
     }
   }
@@ -54,7 +58,6 @@ void softmax_kd_t::prepare_lut_softmax_params() {
   if (tensor_desc.size() != 2) SPARSE_LOG(ERROR) << "softmax lut kernel need 2 tensor descriptor:src & dst.";
   auto input_dt = tensor_desc[0].dtype();
   auto output_dt = tensor_desc[1].dtype();
-  SPARSE_LOG_IF(FATAL, output_dt == data_type::fp32);
   if (get_data_size(input_dt) != 1) LOG(ERROR) << "softmax lut kernel only support int8 dtype as input." << std::endl;
   if (get_data_size(output_dt) == 1 && op_desc_.apply_postops_list().back().op_alg != postop_alg::quantize)
     LOG(WARNING) << "The result of softmax lut kernel need to be quantized when output_dt is int8." << std::endl;
