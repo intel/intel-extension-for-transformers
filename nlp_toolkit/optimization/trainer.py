@@ -1896,6 +1896,24 @@ class BaseTrainer():
                                  opset_version=opset_version,
                                  do_constant_folding=False,
                                  verbose=False)
+        # Fix onnx accuracy drop when trasformers > 4.21.0 
+        if version.parse(__version__) > version.parse("4.21.0"):
+            from onnx import TensorProto
+            model = onnx.load(fp32_path)
+            for node in model.graph.node:
+                if node.op_type == 'Constant' and len(node.attribute) != 0:
+                    constant_value = onnx.numpy_helper.to_array(node.attribute[0].t)
+                    if constant_value.shape == () and \
+                        constant_value == torch.finfo(torch.float32).min:
+                        new_tensor = onnx.helper.make_tensor(
+                            name=node.output[0],
+                            data_type=TensorProto.FLOAT,
+                            dims=[],
+                            vals=[-10000],
+                        )
+                        model.graph.initializer.append(new_tensor)
+                        model.graph.node.remove(node)
+            onnx.save(model, fp32_path)
         model = onnx.load(fp32_path)
 
         int8_model_dict = {}
