@@ -27,7 +27,7 @@ common_dir = os.path.join(sys.path[0], "../..")
 sys.path.append(common_dir)
 from utils_qa import postprocess_qa_predictions
 from executor_dataloader import DataLoader
-from common import (log, set_log_file, load_graph, DummyDataLoader, compute_performance)
+from common import (log, set_log_file, load_graph, DummyDataLoader)
 
 
 class IPEX(object):
@@ -65,8 +65,8 @@ class IPEX(object):
                 'attention_mask': torch.from_numpy(dataset[idx][2])
             }
             predictions = model(**inputs)
-            start_logits_list.append(predictions[0].detach().numpy())
-            end_logits_list.append(predictions[1].detach().numpy())
+            start_logits_list.append(predictions['start_logits'].detach().numpy())
+            end_logits_list.append(predictions['end_logits'].detach().numpy())
         start_logits = np.concatenate(start_logits_list, axis=0)
         end_logits = np.concatenate(end_logits_list, axis=0)
         results = (start_logits, end_logits)
@@ -108,4 +108,47 @@ class IPEX(object):
                                   highs=[128, 1, 1],
                                   dtypes=['int32', 'int32', 'int32'],
                                   iteration=iteration)
+        def compute_performance(dataset, graph, log, log_file, warm_up, batch_size, seq_len):
+            log.info("Start executor ......")
+            import torch
+            import intel_extension_for_pytorch as ipex
+            model = graph
+            model = model.to(memory_format=torch.channels_last)
+            model = ipex.optimize(model)
+            import torch.backends.mkldnn
+            torch.backends.quantized.engine = 'onednn'
+            duration = []
+            for idx in tqdm(range(len(dataset))):
+                inputs = {
+                    'input_ids': torch.from_numpy(dataset[idx][0]),
+                    'attention_mask': torch.from_numpy(dataset[idx][2])
+                }
+                start_time = time.time()
+                predictions = model(**inputs)
+                end_time = time.time()
+                duration.append(end_time - start_time)
+            log.info("End executor ......")
+            duration_w = duration[warm_up:]
+            all_latency = log_file.replace('.log', '.npy')
+            _, file_name = os.path.split(all_latency)
+            _ = os.getcwd() + '/all_latency'
+            try:
+                if os.path.exists(_) == False:
+                    os.mkdir(_)
+            except:
+                pass
+            all_latency = os.path.join(_, file_name)
+            All_latency = np.array(duration_w)
+            np.save(all_latency, All_latency, allow_pickle=True, fix_imports=True)
+            ave_latency = np.array(duration_w).mean() / batch_size
+            p50_latency = np.percentile(duration_w, 50) / batch_size
+            p90_latency = np.percentile(duration_w, 90) / batch_size
+            p99_latency = np.percentile(duration_w, 99) / batch_size
+            log.info("Batch size = {}".format(batch_size))
+            log.info("Sequence length = {}".format(seq_len))
+            log.info("P50 Latency: {:.3f} ms".format(p50_latency * 1000))
+            log.info("P90 Latency: {:.3f} ms".format(p90_latency * 1000))
+            log.info("P99 Latency: {:.3f} ms".format(p99_latency * 1000))
+            log.info("Average Latency: {:.3f} ms".format(ave_latency * 1000))
+            log.info("Throughput: {:.3f} samples/sec".format(1. / ave_latency))
         compute_performance(dataset, self.graph, log, self.log_file, warm_up, batch_size, seq_len)

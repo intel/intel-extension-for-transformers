@@ -49,20 +49,14 @@ python prepare_dataset.py --dataset_name=squad --output_dir=./data
 ```
 
 ### 2.2 Get Model
-The script `run_qa.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
-
-Here is how to run the script:
-
+You can get FP32 pytorch model from optimization module by setting precision=fp32, command as follows:
+```shell
+bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=fp32
 ```
-python run_qa.py \
-    --model_name_or_path bert-large-uncased-whole-word-masking-finetuned-squad \
-    --dataset_name squad \
-    --tune \
-    --quantization_approach PostTrainingStatic \
-    --do_train \
-    --do_eval \
-    --output_dir ./tmp/squad_output \
-    --overwrite_output_dir
+
+Throught setting precision=int8 you could get PTQ int8 JIT file
+```
+bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=int8
 ```
 
 ### Benchmark
@@ -70,16 +64,11 @@ python run_qa.py \
 
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./tmp/squad_output --mode=accuracy --data_dir=./data --batch_size=1
-  ```
-
-  or run shell
-  ```shell
-  bash run_benchmark.sh --input_model=./tmp/squad_output --mode=accuracy --data_dir=./data --batch_size=1
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=1
   ```
   if you just want a quick start, you can run only a part of dataset, like this
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./tmp/squad_output --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
   ```
   but the accuracy of quick start is unauthentic.
 
@@ -87,5 +76,5 @@ python run_qa.py \
 
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./tmp/squad_output --mode=performance --batch_size=1 --seq_len=384
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer --mode=performance --batch_size=1 --seq_len=384
   ```

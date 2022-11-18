@@ -236,6 +236,9 @@ class OptimizationArguments:
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
+    fp32: bool = field(
+        default=False,
+        metadata={"help":"Save pytorch fp32 model."})
 
 
 def main():
@@ -626,6 +629,10 @@ def main():
     )
 
     metric_name = optim_args.metric_name
+    if optim_args.fp32:
+        model.config.save_pretrained(training_args.output_dir)
+        trainer.save_model(training_args.output_dir)
+        return
 
     if optim_args.tune:
 
@@ -704,6 +711,7 @@ def main():
                 print("Throughput: {:.5f} samples/sec".format(samples/evalTime))
                 break
         assert ret, "No metric returned, Please check inference metric!"
+
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
