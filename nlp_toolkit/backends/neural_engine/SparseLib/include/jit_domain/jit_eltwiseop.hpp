@@ -77,12 +77,16 @@ class jit_eltwiseop_t : public jit_generator {
     if (param_.postop_attrs[0].op_alg == postop_alg::eltop_int_lut && param_.postop_attrs[0].alpha == 16) {
       return 32u;  // special case:bit16_lut
     }
+    if (param_.postop_attrs[0].op_alg == postop_alg::quantize) {
+      return 64u;  // special case:direct quantize
+    }
     auto head_dt = param_.postop_attrs.front().dt;
     switch (head_dt) {
       case data_type::fp32:
       case data_type::bf16:
         return 64u;
       case data_type::u8:  // dequantize case
+      case data_type::s8:
         return 16u;
       default:
         return 0u;
@@ -100,8 +104,8 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::bf16:
         return 64u;
       default:
-        return 0u;
         SPARSE_LOG(ERROR) << "wrong output data type, expect fp32/bf16" << std::endl;
+        return 0u;
     }
   }
 
@@ -115,6 +119,7 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::bf16:
         return 32;
       case data_type::u8:  // dequantize case
+      case data_type::s8:
         return 16;
       default:
         return 0u;

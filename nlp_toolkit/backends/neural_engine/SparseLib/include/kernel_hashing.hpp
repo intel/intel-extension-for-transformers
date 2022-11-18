@@ -81,6 +81,23 @@ class hash_t {
         hash_combine(seed, op_attrs["append_sum"]);
         hash_combine(seed, op_attrs["sub_func"]);
         break;
+      case kernel_kind::attention:
+        hash_combine(seed, op_attrs["q_weight_ptr"]);
+        hash_combine(seed, op_attrs["k_weight_ptr"]);
+        hash_combine(seed, op_attrs["v_weight_ptr"]);
+        hash_combine(seed, op_attrs["q_bias_ptr"]);
+        hash_combine(seed, op_attrs["k_bias_ptr"]);
+        hash_combine(seed, op_attrs["v_bias_ptr"]);
+        hash_combine(seed, op_attrs["q_scales_ptr"]);
+        hash_combine(seed, op_attrs["k_scales_ptr"]);
+        hash_combine(seed, op_attrs["v_scales_ptr"]);
+        hash_combine(seed, op_attrs["alpha"]);
+        hash_combine(seed, op_attrs["beta"]);
+        hash_combine(seed, op_attrs["softmax_in_zero_point"]);
+        hash_combine(seed, op_attrs["softmax_in_scale"]);
+        hash_combine(seed, op_attrs["softmax_out_zero_point"]);
+        hash_combine(seed, op_attrs["softmax_out_scale"]);
+        break;
       case kernel_kind::layernorm_ba:
       case kernel_kind::gather:
         hash_combine(seed, op_attrs["matrix_shape"]);

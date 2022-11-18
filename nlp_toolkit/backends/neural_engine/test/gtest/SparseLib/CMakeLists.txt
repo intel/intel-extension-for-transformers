@@ -30,6 +30,7 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_matmul_avx512f_p2031_p2013.cpp
     test_matmul_vnni_noperm_p2031_p1302.cpp
     test_softmax_kernel.cpp
+    test_attention.cpp
 )
 if(UNIX)
 list(APPEND KERNEL_TEST_CASES_SRC test_spmm_amx_bf16_x16_kernel.cpp)

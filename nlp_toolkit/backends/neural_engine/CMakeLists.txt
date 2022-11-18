@@ -122,6 +122,8 @@ if(NE_WITH_TESTS)
   add_subdirectory(${NE_THIRD_PARTY_DIR}/googletest)
   if(NOT NE_WITH_SPARSELIB_ONLY)
     add_subdirectory(test/gtest)
+  else()
+    add_subdirectory(test/gtest/SparseLib)
   endif()
 endif()
 

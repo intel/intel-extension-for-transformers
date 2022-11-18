@@ -20,7 +20,16 @@
 #include <map>
 namespace jd {
 // The main kinds of kernel.
-enum class kernel_kind : uint8_t { undef, sparse_matmul, eltwiseop, layernorm_ba, transpose_matmul, softmax, gather };
+enum class kernel_kind : uint8_t {
+  undef,
+  sparse_matmul,
+  eltwiseop,
+  layernorm_ba,
+  transpose_matmul,
+  softmax,
+  gather,
+  attention
+};
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };
 

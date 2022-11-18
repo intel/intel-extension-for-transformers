@@ -23,9 +23,10 @@ const std::vector<impl_list_item_t> cpu_engine::empty_list = {};
   DECLARE_IMPL_LIST(sparse_matmul);
   DECLARE_IMPL_LIST(eltwiseop);
   DECLARE_IMPL_LIST(layernorm_ba);
-  DECLARE_IMPL_LIST(gather);
   DECLARE_IMPL_LIST(transpose_matmul);
   DECLARE_IMPL_LIST(softmax);
+  DECLARE_IMPL_LIST(gather);
+  DECLARE_IMPL_LIST(attention);
 
 #undef DECLARE_IMPL_LIST
 
@@ -42,6 +43,7 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
     CASE(gather);
     CASE(transpose_matmul);
     CASE(softmax);
+    CASE(attention);
     default:
       return &cpu_engine::empty_list;
   }

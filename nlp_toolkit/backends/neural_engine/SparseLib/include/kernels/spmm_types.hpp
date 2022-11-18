@@ -33,10 +33,28 @@ namespace ssd {
  * TODO(Yi): potential confliction with indices of other op types
  */
 static constexpr int WEI = 0;
-static constexpr int SRC = 1;
+static constexpr int SRC = 1; /*  bs*seq, 768  */
 static constexpr int BIAS = 2;
 static constexpr int DST = 3;
 static constexpr int SCALES = 4;
+
+static constexpr int MERGE_SRC = 0;
+static constexpr int MERGE_DST = 1;
+static constexpr int Q_WEIGHT = 2;
+static constexpr int K_WEIGHT = 3;
+static constexpr int V_WEIGHT = 4;
+static constexpr int Q_BIAS = 5;
+static constexpr int K_BIAS = 6;
+static constexpr int V_BIAS = 7;
+static constexpr int Q_SCALES = 8;
+static constexpr int K_SCALES = 9;
+static constexpr int V_SCALES = 10;
+
+static constexpr int RESHAPE_INPUT = 11;           // bs * seq_len
+static constexpr int Q_K_SRC2 = 12;                // q X k output scale(to s8)
+static constexpr int Q_K_SCALES = 13;              // q X k output scale(to s8)
+static constexpr int QK_V_OUTPUT_ZERO_POINT = 14;  // qk X v output zero point
+static constexpr int QK_V_OUTPUT_SCALES = 15;      // qk X v output scale
 
 /**
  * @brief Scenarios supported by spmm_vnni kernel/algorithm.

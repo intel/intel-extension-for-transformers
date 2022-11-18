@@ -136,6 +136,13 @@ class softmax_desc : public kernel_desc_proxy {
   virtual ~softmax_desc() {}
 };
 
+class attention_desc : public kernel_desc_proxy {
+ public:
+  attention_desc() {}
+  explicit attention_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~attention_desc() {}
+};
+
 /**
  * @brief Derived proxy class, interfacing to the real/cached sparse_matmul_t.
  */
@@ -179,6 +186,13 @@ class SPARSE_API_ softmax : public kernel_proxy {
   softmax() {}
   explicit softmax(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~softmax() {}
+};
+
+class attention : public kernel_proxy {
+ public:
+  attention() {}
+  explicit attention(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~attention() {}
 };
 
 }  // namespace jd

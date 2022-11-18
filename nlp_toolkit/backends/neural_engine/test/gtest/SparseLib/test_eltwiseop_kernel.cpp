@@ -231,6 +231,10 @@ static auto case_func = []() {
   postop_attr bit8_lut_s8_attr{data_type::s8, postop_type::eltwise, postop_alg::eltop_int_lut, 8};  // s8 as input dt
   postop_attr bit16_lut_u8_attr{data_type::u8, postop_type::eltwise, postop_alg::eltop_int_lut, 16, 256};
 
+  cases.push_back({gen_case({data5_desc, data0_desc}, {{"postop_list", "s8dequantize"}}, {dequantize_s8_attr}), false});
+
+  cases.push_back({gen_case({data0_desc, data5_desc}, {{"postop_list", "s8quantize"}}, {quantize_s8_attr}), false});
+
   cases.push_back({gen_case({data4_desc, data1_desc}, {{"postop_list", "bit16_lut_u8+dequantize+bf16_exp"}},
                             {bit16_lut_u8_attr, dequantize_u8_attr, bf16_exp_attr}),
                    false});
@@ -254,7 +258,8 @@ static auto case_func = []() {
                    false});
 
   cases.push_back(
-      {gen_case({data0_desc, data5_desc}, {{"postop_list", "fp32_gelu+quantize"}}, {fp32_gelu_attr, quantize_s8_attr}),
+      {gen_case({data0_desc, data5_desc}, {{"postop_list", "fp32_gelu+quantize"}}, {fp32_gelu_attr,
+      quantize_s8_attr}),
        false});
 
   cases.push_back({gen_case({data0_desc, data0_desc}, {{"postop_list", "fp32_relu"}}, {fp32_relu_attr}), false});
