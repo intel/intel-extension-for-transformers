@@ -17,7 +17,11 @@ if(NE_WITH_SPARSELIB_ONLY AND NOT NE_WITH_SPARSELIB)
   message(FATAL_ERROR "SPAESELIB is off")
 endif()
 
-include(PresetOs)
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -ffast-math -lm -ftree-loop-vectorize -fpic -Wall -fopenmp -march=native -Wl,-rpath,'$ORIGIN'")
+else()
+    include(PresetOs)
+endif()
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

@@ -76,6 +76,7 @@ class build_ext(build_ext):
             executable_path.mkdir(parents=True,exist_ok=True)
             cmake_args = [
                 '-DCMAKE_BUILD_TYPE=Release',
+                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + str(extdir.parent.absolute()),
                 '-DNE_WITH_SPARSELIB=ON',
                 '-DNE_WITH_TESTS=OFF',
                 '-DPYTHON_EXECUTABLE={}'.format(sys.executable)
@@ -89,11 +90,6 @@ class build_ext(build_ext):
             if os.path.exists('neural_engine'):
                 shutil.copy('neural_engine', executable_path)
 
-            import glob
-            bin_lists=glob.glob('bin/*')
-            bin_lists.extend(glob.glob('lib/*.so'))
-            for path in bin_lists:
-                shutil.copy(path, executable_path)
             os.chdir(str(cwd))
         else:
             import pathlib
