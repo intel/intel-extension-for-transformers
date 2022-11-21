@@ -272,9 +272,6 @@ class OptimizationArguments:
     mutation_size: Optional[int] = field(default=30)
     mutation_prob: Optional[float] = field(default=0.5)
     crossover_size: Optional[int] = field(default=30)
-    do_ray_evo_search: Optional[bool] = field(default=False)
-    num_cpus: Optional[int] = field(default=48)
-    distributed_world_size: Optional[int] = field(default=10)
     latency_constraint: Optional[bool] = field(default=True)
     onnx: bool = field(
         default=False,
@@ -880,24 +877,6 @@ def main():
         # run search
         trainer.run_evolutionary_search()
 
-    if optim_args.do_ray_evo_search and training_args.local_rank in [-1, 0]:
-
-        dynamic_length_config = DynamicLengthConfig(
-            load_store_file=optim_args.load_store_file,
-            dynamic_training=False,
-            evo_iter=optim_args.evo_iter,
-            population_size=optim_args.population_size,
-            mutation_size=optim_args.mutation_size,
-            mutation_prob=optim_args.mutation_prob,
-            crossover_size=optim_args.crossover_size,
-            max_length=data_args.max_seq_length,
-            model_name_or_path=model_args.model_name_or_path,
-            num_cpus=optim_args.num_cpus,
-            distributed_world_size=optim_args.distributed_world_size
-        )
-        trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
-        
-        trainer.run_ray_evolutionary_search()
 
 
 def _mp_fn(index):

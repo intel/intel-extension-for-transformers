@@ -12,8 +12,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <th>Dataset</th>
     <th>PostTrainingDynamic</th>
     <th>PostTrainingStatic</th>
-    <th>QuantizationAwareTraining</th>
-    <th>No Trainer quantization</th>
   </tr>
 </thead>
 <tbody align="center">
@@ -23,8 +21,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/xlnet-base-case">xlnet-base-cased</a></td>
@@ -32,8 +28,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/EleutherAI/gpt-neo-125M">EleutherAI/gpt-neo-125M</a></td>
@@ -41,8 +35,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/sshleifer/tiny-ctrl">sshleifer/tiny-ctrl</a></td>
@@ -50,8 +42,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
     <td>WIP :star:</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/ehdwns1516/bert-base-uncased_SWAG">ehdwns1516/bert-base-uncased_SWAG</a></td>
@@ -59,8 +49,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/swag">swag</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/distilbert-base-uncased-distilled-squad">distilbert-base-uncased-distilled-squad</a></td>
@@ -68,16 +56,12 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/lvwerra/pegasus-samsum">lvwerra/pegasus-samsum</a></td>
     <td>summarization</td>
     <td><a href="https://huggingface.co/datasets/samsum">samsum</a></td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
     <td>WIP :star:</td>
   </tr>
   <tr>
@@ -86,16 +70,12 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>&#10004;</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid">echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid</a></td>
     <td>text-classification</td>
     <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
     <td>&#10004;</td>
-    <td>&#10004;</td>
-    <td>WIP :star:</td>
     <td>&#10004;</td>
   </tr>
   <tr>
@@ -104,8 +84,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/elastic/distilbert-base-uncased-finetuned-conll03-english">elastic/distilbert-base-uncased-finetuned-conll03-english</a></td>
@@ -113,16 +91,12 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/conll2003">conll2003</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/t5-small">t5-small</a></td>
     <td>translation</td>
     <td><a href="https://huggingface.co/datasets/wmt16">wmt16</a></td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
     <td>WIP :star:</td>
   </tr>
   <tr>
@@ -131,12 +105,37 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/wmt16">wmt16</a></td>
     <td>&#10004;</td>
     <td>WIP :star:</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
 </tbody>
 </table>
 
+<table>
+<thead>
+  <tr>
+    <th>Model</th>
+    <th>Task</th>
+    <th>Dataset</th>
+    <th>QuantizationAwareTraining</th>
+    <th>No Trainer quantization</th>
+  </tr>
+</thead>
+<tbody align="center">
+  <tr>
+    <td><a href="https://huggingface.co/textattack/bert-base-uncased-MRPC">textattack/bert-base-uncased-MRPC</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
+    <td>&#10004;</td>
+    <td> </td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid">echarlaix/bert-base-uncased-sst2-acc91.1-d37-hybrid</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
+    <td> </td>
+    <td>&#10004;</td>
+  </tr>
+</tbody>
+</table>
 
 ### IPEX examples
 <table>
@@ -147,8 +146,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <th>Dataset</th>
     <th>PostTrainingDynamic</th>
     <th>PostTrainingStatic</th>
-    <th>QuantizationAwareTraining</th>
-    <th>No Trainer quantization</th>
   </tr>
 </thead>
 <tbody align="center">
@@ -156,19 +153,15 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/distilbert-base-uncased-distilled-squad">distilbert-base-uncased-distilled-squad</a></td>
     <td>question-answering</td>
     <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
-    <td>WIP :star:</td>
+    <td> </td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/bert-large-uncased-whole-word-maskinuned-squad">bert-large-uncased-whole-word-maskinuned-squad</a></td>
     <td>question-answering</td>
     <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
-    <td>WIP :star:</td>
+    <td> </td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
 </tbody>
 </table>
@@ -182,8 +175,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <th>Dataset</th>
     <th>PostTrainingDynamic</th>
     <th>PostTrainingStatic</th>
-    <th>QuantizationAwareTraining</th>
-    <th>No Trainer quantization</th>
   </tr>
 </thead>
 <tbody align="center">
@@ -193,11 +184,89 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
     <td>WIP :star:</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
 </tbody>
 </table>
+
+
+
+## Dynamic-Length Transformer
+<table>
+<thead>
+  <tr>
+    <th rowspan="2">Model Name</th>
+    <th rowspan="2">Datatype</th>
+    <th rowspan="2">Optimization Method</th>
+    <th rowspan="2">Modelsize (MB)</th>
+    <th colspan="4">InferenceResult</th>
+  </tr>
+  <tr>
+    <th>Accuracy(F1)</th>
+    <th>Latency(ms)</th>
+    <th>GFLOPS**</th>
+    <th>Speedup(comparedwith BERT Base)</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>BERT Base</td>
+    <td>fp32</td>
+    <td>None</td>
+    <td>415.47</td>
+    <td>88.58</td>
+    <td>56.56</td>
+    <td>35.3</td>
+    <td>1x</td>
+  </tr>
+  <tr>
+    <td>LA-MiniLM</td>
+    <td>fp32</td>
+    <td>Drop and restore base MiniLMv2</td>
+    <td>115.04</td>
+    <td>89.28</td>
+    <td>16.99</td>
+    <td>4.76</td>
+    <td>3.33x</td>
+  </tr>
+  <tr>
+    <td>LA-MiniLM(269, 253, 252, 202, 104, 34)*</td>
+    <td>fp32</td>
+    <td>Evolution search (best config)</td>
+    <td>115.04</td>
+    <td>87.76</td>
+    <td>11.44</td>
+    <td>2.49</td>
+    <td>4.94x</td>
+  </tr>
+  <tr>
+    <td>QuaLA-MiniLM</td>
+    <td>int8</td>
+    <td>Quantization base LA-MiniLM</td>
+    <td>84.85</td>
+    <td>88.85</td>
+    <td>7.84</td>
+    <td>4.76</td>
+    <td>7.21x</td>
+  </tr>
+  <tr>
+    <td>QuaLA-MiniLM(315,251,242,159,142,33)*</td>
+    <td>int8</td>
+    <td>Evolution search (best config)</td>
+    <td>84.86</td>
+    <td>87.68</td>
+    <td>6.41</td>
+    <td>2.55</td>
+    <td>8.82x</td>
+  </tr>
+</tbody>
+</table>
+NOTES: * length config apply to LA model
+
+
+NOTES: ** the multiplication and addition operation amount when model inference  (GFLOPS is obtained from torchprofile tool)
+
+
+Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration detail please refer to [examples](../examples/optimization/pytorch/huggingface/question-answering/dynamic/README.md)
 
 
 ## Pruning
@@ -237,7 +306,7 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
     <td>BasicMagnitude</td>
     <td>Unstructured</td>
-    <td>Stock PyTorch/<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Intel TensorFlow</td>
+    <td>Stock PyTorch/&nbsp;&nbsp; Intel TensorFlow</td>
   </tr>
 </tbody>
 </table>
@@ -345,12 +414,9 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <th rowspan="2">Model</th>
     <th rowspan="2">Task</th>
     <th rowspan="2">Dataset</th>
-    <th colspan="2">Dense</th>
-    <th colspan="2">Sparse</th>
+    <th colspan="2">Datatype</th>
   </tr>
   <tr>
-    <th>INT8</th>
-    <th>BF16</th>
     <th>INT8</th>
     <th>BF16</th>
   </tr>
@@ -362,8 +428,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/bhadresh-savani/distilbert-base-uncased-emotion">bhadresh-savani/distilbert-base-uncased-emotion</td>
@@ -371,8 +435,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/emotion">emotion</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/textattack/bert-base-uncased-MRPC">textattack/bert-base-uncased-MRPC</td>
@@ -380,8 +442,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/textattack/distilbert-base-uncased-MRPC">textattack/distilbert-base-uncased-MRPC</td>
@@ -389,8 +449,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/Intel/roberta-base-mrpc">Intel/roberta-base-mrpc</td>
@@ -398,8 +456,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/M-FAC/bert-mini-finetuned-mrpc">M-FAC/bert-mini-finetuned-mrpc</td>
@@ -407,8 +463,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/gchhablani/bert-base-cased-finetuned-mrpc">gchhablani/bert-base-cased-finetuned-mrpc</td>
@@ -416,8 +470,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english">distilbert-base-uncased-finetuned-sst-2-english</td>
@@ -425,8 +477,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/philschmid/MiniLM-L6-H384-uncased-sst2">philschmid/MiniLM-L6-H384-uncased-sst2</td>
@@ -434,8 +484,6 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
-    <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/moshew/bert-mini-sst2-distilled">moshew/bert-mini-sst2-distilled</td>
@@ -443,17 +491,41 @@ NLP Toolkit is a powerful toolkit with multiple model optimization techniques fo
     <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
     <td>&#10004;</td>
     <td>&#10004;</td>
-    <td>WIP :star:</td>
+  </tr>
+</tbody>
+</table>
+
+## Sparse Reference Deployment on Neural Engine
+
+
+<table>
+<thead>
+  <tr>
+    <th rowspan="2">Model</th>
+    <th rowspan="2">Task</th>
+    <th rowspan="2">Dataset</th>
+    <th colspan="2">Datatype</th>
+  </tr>
+  <tr>
+    <th>INT8</th>
+    <th>BF16</th>
+  </tr>
+</thead>
+<tbody align="center">
+  <tr>
+    <td><a href="https://huggingface.co/Intel/distilbert-base-uncased-squadv1.1-sparse-80-1x4-block-pruneofa">Intel/distilbert-base-uncased-squadv1.1-sparse-80-1x4-block-pruneofa</td>
+    <td>question-answering</td>
+    <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
+    <td>&#10004;</td>
     <td>WIP :star:</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/Intel/bert-mini-sst2-distilled-sparse-90-1X4-block">Intel/bert-mini-sst2-distilled-sparse-90-1X4-block</td>
     <td>text-classification</td>
     <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
-    <td>N/A</td>
-    <td>N/A</td>
     <td>&#10004;</td>
     <td>WIP :star:</td>
   </tr>
 </tbody>
 </table>
+

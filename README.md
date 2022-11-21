@@ -6,13 +6,14 @@ This toolkit allows developers to improve the productivity through ease-of-use m
 
 - Model Compression
 
-    |Framework          |Quantization |Pruning/Sparsity |Distillation |AutoDistillation |
-    |-------------------|:-----------:|:---------------:|:-----------:|:--------------:|
-    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;        |
-    |TensorFlow         |&#10004;     |&#10004;         |Stay tuned :star:|Stay tuned :star:|
+    |Framework          |Quantization |Pruning/Sparsity |Distillation |AutoDistillation |Length Adaptive |
+    |-------------------|:-----------:|:---------------:|:-----------:|:---------------:|:--------------:|
+    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;         |&#10004;        |
+    |TensorFlow         |&#10004;     |&#10004;         |&#10004;     |Stay tuned :star:|                |
 
 - Data Augmentation for NLP Datasets
 - Neural Engine for Reference Deployment
+- Sparse Lib for Sparse Reference Kernel
 
 ## Getting Started
 ### Installation
@@ -96,6 +97,31 @@ raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", s
 
 Please refer to [data augmentation document](docs/data_augmentation.md) for more details.
 
+### Quantized Length Adaptive Transformer
+Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.
+```python
+from nlp_toolkit import QuantizationConfig, DynamicLengthConfig, metric, objectives
+from nlp_toolkit.optimization.trainer import NLPTrainer
+
+# Replace transformers.Trainer with NLPTrainer
+# trainer = transformers.Trainer(...)
+trainer = NLPTrainer(...)
+metric = metrics.Metric(name="eval_f1", is_relative=True, criterion=0.01)
+q_config = QuantizationConfig(
+    approach="PostTrainingStatic",
+    metrics=[metric],
+    objectives=[objectives.performance]
+)
+# Apply the length config
+dynamic_length_config = DynamicLengthConfig(length_config=length_config)
+trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
+# Quantization
+model = trainer.quantize(quant_config=q_config)
+```
+
+Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](examples/optimization/pytorch/huggingface/question-answering/dynamic) for details
+
+
 ### Neural Engine
 Neural Engine is one of reference deployments that NLP toolkit provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
 
@@ -108,3 +134,18 @@ model.inference(inputs)
 ```
 
 Please refer to [Neural Engine](examples/deployment/) for more details.
+
+### Sparse Lib
+SparseLib is a high-performance operator computing library implemented by assembly. SparseLib contains a JIT domain, a kernel domain, and a scheduling proxy framework.
+
+```C++
+#include "interface.hpp"
+  ...
+  operator_desc op_desc(ker_kind, ker_prop, eng_kind, ts_descs, op_attrs);
+  sparse_matmul_desc spmm_desc(op_desc);
+  sparse_matmul spmm_kern(spmm_desc);
+  std::vector<const void*> rt_data = {data0, data1, data2, data3, data4};
+  spmm_kern.execute(rt_data);
+```
+
+Please refer to [Sparse Lib](intel_extension_for_transformers/backends/neural_engine/SparseLib/README.md) for more details.
