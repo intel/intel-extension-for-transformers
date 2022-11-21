@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -30,8 +31,8 @@ namespace executor {
 
 class ShapeOperator : public Operator {
  public:
-  explicit ShapeOperator(const OperatorConfig& conf) : Operator(conf) {
-    auto attrs_map = operator_conf_.attributes();
+  explicit ShapeOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+    auto attrs_map = operator_conf_->attributes();
     auto iter = attrs_map.find("start");
     if (iter != attrs_map.end())
       start_ = stoi(iter->second);

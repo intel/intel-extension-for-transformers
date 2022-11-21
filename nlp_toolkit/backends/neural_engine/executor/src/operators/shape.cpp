@@ -24,7 +24,7 @@ void ShapeOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>&
 
 void ShapeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   auto rank = input[0]->shape().size();
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("end");
   if (iter != attrs_map.end()) {
     end_ = stoi(iter->second);

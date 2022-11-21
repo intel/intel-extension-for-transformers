@@ -52,9 +52,9 @@ class Dispatcher {
   // kernel implementation table
   typedef std::unordered_map<string, shared_ptr<Operator>> KernelHandler;
 
-  explicit Dispatcher(const OperatorConfig& conf): operator_conf_(conf) {
-    name_ = operator_conf_.name();
-    type_ = operator_conf_.type();
+  explicit Dispatcher(const shared_ptr<OperatorConfig>& conf): operator_conf_(conf) {
+    name_ = operator_conf_->name();
+    type_ = operator_conf_->type();
     cpu_isa_ = get_max_isa();
     OperatorRegistry::CreatorRegistry& registry = OperatorRegistry::Registry();
     CHECK_EQ(registry.count(type_), 1) << "Unknown operator type: " << type_
@@ -71,8 +71,8 @@ class Dispatcher {
   }
 
   explicit Dispatcher(const shared_ptr<Operator>& op) : operator_conf_(op->operator_conf()) {
-    name_ = operator_conf_.name();
-    type_ = operator_conf_.type();
+    name_ = operator_conf_->name();
+    type_ = operator_conf_->type();
     cpu_isa_ = get_max_isa();
     kernel_handler_[name_] = op;
     execute_kernel_ = type_;
@@ -243,7 +243,7 @@ class Dispatcher {
   inline const bool& do_tuning() const { return do_tuning_; }
   inline const string& name() const { return name_; }
   inline const string& type() const { return type_; }
-  inline const OperatorConfig& operator_conf() const { return operator_conf_; }
+  inline const shared_ptr<OperatorConfig>& operator_conf() const { return operator_conf_; }
   inline const string& execute_kernel() const { return execute_kernel_; }
   inline const bool& no_tuning_space() const { return no_tuning_space_; }
   inline const void set_warmup_iter(const int& warmup_iter) { warmup_iter_ = warmup_iter; }
@@ -299,7 +299,7 @@ class Dispatcher {
 
   string name_;
   string type_;
-  OperatorConfig operator_conf_;
+  shared_ptr<OperatorConfig> operator_conf_;
   isa cpu_isa_;
   KernelHandler kernel_handler_;
   string execute_kernel_;

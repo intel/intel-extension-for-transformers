@@ -29,7 +29,7 @@ using executor::TensorConfig;
 struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
-  OperatorConfig conf;
+  shared_ptr<OperatorConfig> conf;
 };
 
 struct TestParams {
@@ -37,7 +37,8 @@ struct TestParams {
   bool expect_to_fail;
 };
 
-void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
+void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
+                 const shared_ptr<OperatorConfig>& conf) {
   vector<int64_t> dst_shape = {1, 2};
   // dst shape
   output[0]->set_shape(dst_shape);
@@ -82,25 +83,26 @@ TEST_P(ConcatTest, TestPostfix) {
 std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape) {
   // Step 1: Construct Tensor config ptr
   const auto& src_shape = input_shape[1];
-  TensorConfig* src_config = new TensorConfig("src", src_shape);
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
   const auto& src_shape1 = input_shape[0];
-  TensorConfig* src_config1 = new TensorConfig("src", src_shape1);
+  shared_ptr<TensorConfig> src_config1 = std::make_shared<TensorConfig>("src", src_shape1);
   const auto& src_shape2 = input_shape[0];
-  TensorConfig* src_config2 = new TensorConfig("src", src_shape2);
-  std::vector<TensorConfig*> input_config = {src_config1, src_config2, src_config};
+  shared_ptr<TensorConfig> src_config2 = std::make_shared<TensorConfig>("src", src_shape2);
+  std::vector<shared_ptr<TensorConfig>> input_config = {src_config1, src_config2, src_config};
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config = {dst_config, dst_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config, dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map = {{"mode", "sum"}};
 
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("embeddingbag", "fp32", input_config, output_config, op_attr);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("embeddingbag", "fp32",
+                                         input_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life
@@ -116,7 +118,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
   };
 
-  auto make_int_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_int_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

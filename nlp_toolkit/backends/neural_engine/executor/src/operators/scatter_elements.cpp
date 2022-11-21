@@ -182,8 +182,8 @@ static inline int64_t HandleNegativeAxis(int64_t axis, int64_t tensor_rank) {
 }
 
 
-ScatterElementsOperator::ScatterElementsOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+ScatterElementsOperator::ScatterElementsOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : 0;
 }

@@ -29,7 +29,7 @@ using executor::TensorConfig;
 struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
-  OperatorConfig conf;
+  shared_ptr<OperatorConfig> conf;
 };
 
 struct TestParams {
@@ -37,7 +37,8 @@ struct TestParams {
   bool expect_to_fail;
 };
 
-void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
+void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
+                 const shared_ptr<OperatorConfig>& conf) {
   const vector<int64_t>& src_shape = input[0]->shape();
   const vector<int64_t>& idx_shape = input[1]->shape();
   vector<int64_t> dst_shape = idx_shape;
@@ -45,7 +46,7 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
   output[0]->set_shape(dst_shape);
   output[0]->set_dtype(input[0]->dtype());
 
-  auto attrs_map = conf.attributes();
+  auto attrs_map = conf->attributes();
   int64_t axis = stoi(attrs_map["axis"]);
 
   vector<int64_t> dst_stride = executor::GetStrides(dst_shape, {});
@@ -97,23 +98,24 @@ std::pair<OpArgs, OpArgs> GenerateCase(const std::vector<std::vector<int64_t> >&
                                        std::string attr_position = "0", std::string dtype = "fp32") {
   // Step 1: Construct Tensor config ptr
   const auto& src_shape = input_shape[0];
-  TensorConfig* src_config = new TensorConfig("input", src_shape, dtype);
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("input", src_shape, dtype);
   const auto& idx_shape = input_shape[1];
-  TensorConfig* idx_config = new TensorConfig("index", idx_shape, "int32");
-  std::vector<TensorConfig*> input_config_vec = {src_config, idx_config};
+  shared_ptr<TensorConfig> idx_config = std::make_shared<TensorConfig>("index", idx_shape, "int32");
+  std::vector<shared_ptr<TensorConfig>> input_config_vec = {src_config, idx_config};
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config_vec = {dst_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> output_config_vec = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map["axis"] = attr_position;
   int axis = stoi(attr_position);
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("gather_elements", dtype, input_config_vec, output_config_vec, op_attr);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("gather_elements",
+                                         dtype, input_config_vec, output_config_vec, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

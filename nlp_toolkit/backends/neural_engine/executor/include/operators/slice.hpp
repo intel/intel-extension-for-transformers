@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_SLICE_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_SLICE_HPP_
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 
@@ -32,7 +33,7 @@ void SliceData(const T* src_data, T* dst_data, const vector<int64_t>& src_shape,
 
 class SliceOperator : public Operator {
  public:
-  explicit SliceOperator(const OperatorConfig& conf);
+  explicit SliceOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~SliceOperator() {}
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

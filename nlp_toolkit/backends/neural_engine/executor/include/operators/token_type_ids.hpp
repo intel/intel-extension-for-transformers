@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 
@@ -30,7 +31,7 @@ namespace executor {
 
 class TokenTypeIdsOperator : public Operator {
  public:
-  explicit TokenTypeIdsOperator(const OperatorConfig& conf);
+  explicit TokenTypeIdsOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~TokenTypeIdsOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

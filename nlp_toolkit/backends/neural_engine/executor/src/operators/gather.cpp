@@ -20,9 +20,11 @@ namespace executor {
 static unordered_map<string, jd::data_type> type2sparsemem{
     {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
     {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
+
 #endif
-GatherOperator::GatherOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+
+GatherOperator::GatherOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   idx_axis_ = (iter != attrs_map.end() && iter->second != "") ? iter->second : "0";
   iter = attrs_map.find("batch_dims");

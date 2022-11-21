@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_STRIDED_SLICE_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_STRIDED_SLICE_HPP_
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 
@@ -27,7 +28,7 @@ namespace executor {
 
 class StridedSliceOperator : public Operator {
  public:
-  explicit StridedSliceOperator(const OperatorConfig& conf);
+  explicit StridedSliceOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~StridedSliceOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

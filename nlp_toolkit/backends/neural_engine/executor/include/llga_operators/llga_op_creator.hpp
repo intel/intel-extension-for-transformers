@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "llga_info.hpp"
 #include "conf.hpp"
@@ -25,7 +26,7 @@ namespace executor {
 
 class NEURALENGINE_API_ LLGAOPCreator {
  public:
-  typedef bool (LLGAOPCreator::*Creator)(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  typedef bool (LLGAOPCreator::*Creator)(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
   typedef std::unordered_map<string, Creator> CreatorRegistry;
 
   static LLGAOPCreator& GetInstance() {
@@ -33,46 +34,46 @@ class NEURALENGINE_API_ LLGAOPCreator {
     return ins;
   }
 
-  void CreateOP(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index = 0, bool fallback = false) {
-    auto operator_name = op_conf.name();
-    auto op_type = op_conf.type();
+  void CreateOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0, bool fallback = false) {
+    auto operator_name = op_conf->name();
+    auto op_type = op_conf->type();
     LOG(INFO) << "creating operator " << operator_name << ", " << op_type;
 
-    if (fallback || !creator_list.count(op_conf.type())) {
+    if (fallback || !creator_list.count(op_conf->type())) {
       if (!fallback)
-        LOG(WARNING) << "Failed to create " << op_conf.name() << " by llga, " << op_conf.type() << " is not supported"
+        LOG(WARNING) << "Failed to create " << op_conf->name() << " by llga, " << op_conf->type() << " is not supported"
                      << ", fallback will be executed";
       CreateWildcardOP(llga_info, op_conf, index);
     } else {
-      Creator f = creator_list[op_conf.type()];
+      Creator f = creator_list[op_conf->type()];
       // create llga op, and if it fails, create wildcard op.
       if (!(this->*f)(llga_info, op_conf, index)) {
-        LOG(WARNING) << "Failed to create " << op_conf.name() << " by llga, fallback will be executed";
+        LOG(WARNING) << "Failed to create " << op_conf->name() << " by llga, fallback will be executed";
         CreateWildcardOP(llga_info, op_conf, index);
       }
     }
   }
 
-  void CreateWildcardOP(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateSoftmaxOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  void CreateWildcardOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
   int CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
                                bool has_bias, bool transpose_a_, bool transpose_b_);
   int CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
                                bool has_bias, bool transpose_a_, bool transpose_b_, bool append_sum);
-  bool CreateInnerProductOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateQuantizeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateBinaryAddOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateLayerNormOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateReshapeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateMatmulOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateErfOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateDivideOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateMultiplyOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateSqrtOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateTanhOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateSubtractOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateTypeCastOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
-  bool CreateDequantizeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index);
+  bool CreateInnerProductOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateQuantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateBinaryAddOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateLayerNormOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateReshapeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateMatmulOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateErfOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateDivideOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateMultiplyOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateSqrtOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateTanhOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateSubtractOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateTypeCastOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateDequantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
 
  private:
   LLGAOPCreator() {

@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_RESHAPE_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_RESHAPE_HPP_
 #include <vector>
+#include <memory>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -29,7 +30,7 @@ namespace executor {
 
 class ReshapeOperator : public Operator {
  public:
-  explicit ReshapeOperator(const OperatorConfig& conf);
+  explicit ReshapeOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~ReshapeOperator();
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

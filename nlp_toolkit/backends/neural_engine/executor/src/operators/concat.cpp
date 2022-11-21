@@ -26,8 +26,8 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{{"fp32", dnnl::me
                                                                {"u8", dnnl::memory::data_type::u8},
                                                                {"s8", dnnl::memory::data_type::s8}};
 
-ConcatOperator::ConcatOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+ConcatOperator::ConcatOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   if (iter != attrs_map.end()) {
     axis_ = StringToNum<int64_t>(attrs_map["axis"]);

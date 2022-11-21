@@ -29,7 +29,7 @@ using executor::TensorConfig;
 struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
-  OperatorConfig conf;
+  shared_ptr<OperatorConfig> conf;
 };
 
 struct TestParams {
@@ -38,8 +38,9 @@ struct TestParams {
 };
 
 template<typename T>
-void Dequant(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
-  auto attrs_map = conf.attributes();
+void Dequant(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
+             const shared_ptr<OperatorConfig>& conf) {
+  auto attrs_map = conf->attributes();
   auto iter = attrs_map.find("axis");
   int64_t axis = (iter != attrs_map.end() && iter->second != "") ? std::stoi(iter->second) : 1;
   Tensor* src = input[0];
@@ -99,7 +100,8 @@ void Dequant(const std::vector<Tensor*>& input, const std::vector<Tensor*>& outp
   }
 }
 
-void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
+void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
+                 const shared_ptr<OperatorConfig>& conf) {
   Tensor* src = input[0];
   if (src->dtype() == "u8") {
     Dequant<uint8_t>(input, output, conf);
@@ -155,7 +157,7 @@ TEST_P(DequantizeTest, TestPostfix) {
 }
 
 template <typename T>
-std::pair<Tensor*, Tensor*> make_tensor_obj(const TensorConfig* a_tensor_config) {
+std::pair<Tensor*, Tensor*> make_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config) {
   // step1: set shape
   Tensor* a_tensor = new Tensor(*a_tensor_config);
   // step2: set tensor life
@@ -176,23 +178,24 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   // Step 1: Construct Tensor config ptr
   const auto& src0_shape = input_shape[0];
   const auto& src1_shape = input_shape[1];
-  TensorConfig* src0_config = new TensorConfig("src0", src0_shape, src_dtype);
-  TensorConfig* src1_config = new TensorConfig("src1", src1_shape);
+  shared_ptr<TensorConfig> src0_config = std::make_shared<TensorConfig>("src0", src0_shape, src_dtype);
+  shared_ptr<TensorConfig> src1_config = std::make_shared<TensorConfig>("src1", src1_shape);
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> inputs_config = {src0_config, src1_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> inputs_config = {src0_config, src1_config};
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
   if (input_shape.size() > 2) {
     const auto& src2_shape = input_shape[2];
-    TensorConfig* src2_config = new TensorConfig("src2", src2_shape, src_dtype);
+    shared_ptr<TensorConfig> src2_config = std::make_shared<TensorConfig>("src2", src2_shape, src_dtype);
     inputs_config.push_back(src2_config);
   }
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map = {{"axis", axis}};
 
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("dequantize",
-                           "DequantizeLinear", inputs_config, {dst_config}, op_attr);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("dequantize",
+                           "DequantizeLinear", inputs_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto src0_tensors = src_dtype == "u8" ? make_tensor_obj<uint8_t>(src0_config) :\

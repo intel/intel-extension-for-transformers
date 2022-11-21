@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -35,7 +36,7 @@ using dnnl::prop_kind;
 
 class SoftmaxOperator : public Operator {
  public:
-  explicit SoftmaxOperator(const OperatorConfig& conf);
+  explicit SoftmaxOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~SoftmaxOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

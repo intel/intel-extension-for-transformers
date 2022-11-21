@@ -18,8 +18,8 @@
 
 namespace executor {
 
-StridedSliceOperator::StridedSliceOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+StridedSliceOperator::StridedSliceOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   begin_mask_ = StringToNum<int64_t>(attrs_map["begin_mask"]);
   ellipsis_mask_ = StringToNum<int64_t>(attrs_map["ellipsis_mask"]);
   end_mask_ = StringToNum<int64_t>(attrs_map["end_mask"]);

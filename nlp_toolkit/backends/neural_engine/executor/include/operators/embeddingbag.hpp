@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_EMBEDDINGBAG_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_EMBEDDINGBAG_HPP_
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 
@@ -27,7 +28,7 @@ namespace executor {
 
 class EmbeddingBagOperator : public Operator {
  public:
-  explicit EmbeddingBagOperator(const OperatorConfig& conf);
+  explicit EmbeddingBagOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~EmbeddingBagOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

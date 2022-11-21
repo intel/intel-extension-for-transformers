@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 #include <unordered_set>
 
 #include "../common.hpp"
@@ -37,7 +38,7 @@ using dnnl::prop_kind;
 // \brief InnerProduct or Batchmatmul operators
 class InnerProductOperator : public Operator {
  public:
-  explicit InnerProductOperator(const OperatorConfig& conf);
+  explicit InnerProductOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~InnerProductOperator();
 
  public:

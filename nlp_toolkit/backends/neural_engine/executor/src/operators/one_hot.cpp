@@ -18,8 +18,8 @@
 
 namespace executor {
 
-OnehotOperator::OnehotOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+OnehotOperator::OnehotOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : -1;
   iter = attrs_map.find("depth");

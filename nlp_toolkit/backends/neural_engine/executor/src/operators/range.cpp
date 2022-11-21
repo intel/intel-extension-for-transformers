@@ -18,8 +18,8 @@
 
 namespace executor {
 
-RangeOperator::RangeOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+RangeOperator::RangeOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("start");
   start_ = (iter != attrs_map.end() && iter->second != "") ? StringToNum<int>(iter->second) : 0;
   iter = attrs_map.find("step");

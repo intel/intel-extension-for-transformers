@@ -18,9 +18,9 @@
 
 namespace executor {
 
-ReduceSumOperator::ReduceSumOperator(const OperatorConfig& conf)
+ReduceSumOperator::ReduceSumOperator(const shared_ptr<OperatorConfig>& conf)
     : Operator(conf), axis_({}), keep_dims_(true) {
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&axis_, attrs_map["axis"], ",");

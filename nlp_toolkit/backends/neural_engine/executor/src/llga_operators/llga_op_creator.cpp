@@ -45,7 +45,7 @@ vector<float> LLGAGetScales(const void* mins, const void* maxs, const int64_t si
   return scales;
 }
 
-void LLGAOPCreator::CreateWildcardOP(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+void LLGAOPCreator::CreateWildcardOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
 
@@ -54,8 +54,8 @@ void LLGAOPCreator::CreateWildcardOP(LLGAINFO* llga_info, const OperatorConfig& 
   llga_info->AddLLGAOP(wildcard_op, index);
 }
 
-bool LLGAOPCreator::CreateSoftmaxOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];
@@ -212,12 +212,12 @@ int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<lo
   return ip_out_desc.get_id();
 }
 
-bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
   // TODO(lzw): compile(append op) causes this part more complex. (remove compile part will clean here.)
   vector<logical_tensor> inputs, outputs;
-  int input_size = op_conf.input_tensor_size();
+  int input_size = op_conf->input_tensor_size();
   for (int input_id = 0; input_id < input_size; ++input_id) {
-    const string& tensor_name = op_conf.input_tensors(input_id)->name();
+    const string& tensor_name = op_conf->input_tensors(input_id)->name();
     inputs.push_back(llga_info->GetLogicalTensor(tensor_name));
   }
 
@@ -225,7 +225,7 @@ bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const OperatorConf
   vector<int64_t> src0_perm_;
   vector<int64_t> src1_perm_;
   string output_dtype_ = "fp32";
-  auto attrs_map = op_conf.attributes();
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("src0_perm");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&src0_perm_, attrs_map["src0_perm"], ",");
@@ -326,7 +326,7 @@ bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const OperatorConf
     vector<float> dst_scales;
     vector<int64_t> dst_zps;
 
-    const string& tensor_name = op_conf.output_tensors(0)->name();
+    const string& tensor_name = op_conf->output_tensors(0)->name();
     data_type dtype = data_type::f32;
     if (output_dtype_ == "u8") {
       dtype = data_type::u8;
@@ -352,20 +352,20 @@ bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const OperatorConf
     last_lt_id = out_desc.get_id();
   }
 
-  const string& tensor_name = op_conf.output_tensors(0)->name();
+  const string& tensor_name = op_conf->output_tensors(0)->name();
   llga_info->AddLogicalTensor(tensor_name, llga_info->GetLogicalTensor(last_lt_id), last_lt_id);
   outputs.push_back(llga_info->GetLogicalTensor(tensor_name));
   return true;
 }
 
-bool LLGAOPCreator::CreateQuantizeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+bool LLGAOPCreator::CreateQuantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
 
   auto src0_min_ = llga_info->GetTensorByID(inputs[1].get_id());
   auto src0_max_ = llga_info->GetTensorByID(inputs[2].get_id());
 
-  auto attrs_map = op_conf.attributes();
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   string output_dtype = attrs_map["output_dtype"];
 
@@ -386,12 +386,12 @@ bool LLGAOPCreator::CreateQuantizeOp(LLGAINFO* llga_info, const OperatorConfig& 
   return true;
 }
 
-bool LLGAOPCreator::CreateBinaryAddOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+bool LLGAOPCreator::CreateBinaryAddOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
   // TODO(lzw) boardcast
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
 
-  auto attrs_map = op_conf.attributes();
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("append_op");
   bool append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
 
@@ -412,11 +412,11 @@ bool LLGAOPCreator::CreateBinaryAddOp(LLGAINFO* llga_info, const OperatorConfig&
   return true;
 }
 
-bool LLGAOPCreator::CreateLayerNormOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+bool LLGAOPCreator::CreateLayerNormOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
 
-  auto attrs_map = op_conf.attributes();
+  auto attrs_map = op_conf->attributes();
   float epsilon_ = StringToNum<float>(attrs_map["epsilon"]);
   auto iter = attrs_map.find("transpose_mode");
   if (iter != attrs_map.end()) {
@@ -433,14 +433,14 @@ bool LLGAOPCreator::CreateLayerNormOp(LLGAINFO* llga_info, const OperatorConfig&
   return true;
 }
 
-bool LLGAOPCreator::CreateReshapeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+bool LLGAOPCreator::CreateReshapeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
 
   vector<int64_t> shape_;
   vector<int64_t> dims_;
   vector<int64_t> mul_;
-  auto attrs_map = op_conf.attributes();
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("dst_shape");
   if (iter != attrs_map.end()) StringSplit<int64_t>(&shape_, attrs_map["dst_shape"], ",");
   iter = attrs_map.find("dims");
@@ -459,14 +459,14 @@ bool LLGAOPCreator::CreateReshapeOp(LLGAINFO* llga_info, const OperatorConfig& o
   return true;
 }
 
-bool LLGAOPCreator::CreateMatmulOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
+bool LLGAOPCreator::CreateMatmulOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
 
   vector<int64_t> src0_perm_;
   vector<int64_t> src1_perm_;
   vector<int64_t> dst_perm_;
-  auto attrs_map = op_conf.attributes();
+  auto attrs_map = op_conf->attributes();
 
   auto iter = attrs_map.find("src0_perm");
   if (iter != attrs_map.end()) {
@@ -515,8 +515,8 @@ bool LLGAOPCreator::CreateMatmulOp(LLGAINFO* llga_info, const OperatorConfig& op
 }
 
 // Note: oneDNN Graph only supports gelu fusion: Divide+ Erf +Add + Multiply + Multiply
-bool LLGAOPCreator::CreateErfOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateErfOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];
@@ -532,8 +532,8 @@ bool LLGAOPCreator::CreateErfOp(LLGAINFO* llga_info, const OperatorConfig& op_co
   return true;
 }
 
-bool LLGAOPCreator::CreateDivideOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateDivideOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];
@@ -549,8 +549,8 @@ bool LLGAOPCreator::CreateDivideOp(LLGAINFO* llga_info, const OperatorConfig& op
   return true;
 }
 
-bool LLGAOPCreator::CreateMultiplyOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateMultiplyOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];
@@ -566,8 +566,8 @@ bool LLGAOPCreator::CreateMultiplyOp(LLGAINFO* llga_info, const OperatorConfig& 
   return true;
 }
 
-bool LLGAOPCreator::CreateSqrtOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateSqrtOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];
@@ -583,8 +583,8 @@ bool LLGAOPCreator::CreateSqrtOp(LLGAINFO* llga_info, const OperatorConfig& op_c
   return true;
 }
 
-bool LLGAOPCreator::CreateTanhOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateTanhOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];
@@ -600,8 +600,8 @@ bool LLGAOPCreator::CreateTanhOp(LLGAINFO* llga_info, const OperatorConfig& op_c
   return true;
 }
 
-bool LLGAOPCreator::CreateSubtractOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateSubtractOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];
@@ -617,8 +617,8 @@ bool LLGAOPCreator::CreateSubtractOp(LLGAINFO* llga_info, const OperatorConfig& 
   return true;
 }
 
-bool LLGAOPCreator::CreateTypeCastOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateTypeCastOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];
@@ -634,8 +634,8 @@ bool LLGAOPCreator::CreateTypeCastOp(LLGAINFO* llga_info, const OperatorConfig& 
   return true;
 }
 
-bool LLGAOPCreator::CreateDequantizeOp(LLGAINFO* llga_info, const OperatorConfig& op_conf, int index) {
-  auto attrs_map = op_conf.attributes();
+bool LLGAOPCreator::CreateDequantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     string output_dtype_ = attrs_map["output_dtype"];

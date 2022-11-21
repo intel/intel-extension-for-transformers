@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <vector>
 #include <utility>
+#include <memory>
 
 #include "../operator.hpp"
 #include "llga_op_creator.hpp"
@@ -31,7 +32,7 @@ namespace executor {
 
 class LLGAKernel : public Operator {
  public:
-  LLGAKernel(const OperatorConfig& conf, LLGAINFO* llga_info) : Operator(conf), llga_info_(llga_info) {
+  LLGAKernel(const shared_ptr<OperatorConfig>& conf, LLGAINFO* llga_info) : Operator(conf), llga_info_(llga_info) {
     // create llgakernel from conf, just for gtest.
     // one config maps only one llga kernel.
     LLGAOPCreator::GetInstance().CreateOP(llga_info, conf);
@@ -40,7 +41,7 @@ class LLGAKernel : public Operator {
     partition_ = partitions[0];
   }
 
-  LLGAKernel(const OperatorConfig& conf,
+  LLGAKernel(const shared_ptr<OperatorConfig>& conf,
                      LLGAINFO* llga_info,
                      const dnnl::graph::partition& partition)
                      : Operator(conf), llga_info_(llga_info), partition_(partition) {}

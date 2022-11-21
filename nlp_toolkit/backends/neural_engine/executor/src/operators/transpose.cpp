@@ -16,8 +16,8 @@
 
 namespace executor {
 
-TransposeOperator::TransposeOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+TransposeOperator::TransposeOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
 
   auto iter = attrs_map.find("src_perm");
   if (iter != attrs_map.end()) {

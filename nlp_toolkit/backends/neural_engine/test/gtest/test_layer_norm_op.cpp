@@ -31,7 +31,7 @@ using executor::TensorConfig;
 struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
-  OperatorConfig conf;
+  shared_ptr<OperatorConfig> conf;
 };
 
 struct TestParams {
@@ -39,7 +39,8 @@ struct TestParams {
   bool expect_to_fail;
 };
 
-void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
+void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
+                 const shared_ptr<OperatorConfig>& conf) {
   auto src_tensor_shape = input[0]->shape();
   auto gamma_tensor_shape = input[1]->shape();
   auto beta_tensor_shape = input[2]->shape();
@@ -51,7 +52,7 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
   float* dst_data = static_cast<float*>(output[0]->mutable_data());
 
   // attrs map
-  auto attrs_map = conf.attributes();
+  auto attrs_map = conf->attributes();
   float epsilon = executor::StringToNum<float>(attrs_map["epsilon"]);
   auto mu_shape = vector<int64_t>(src_tensor_shape.begin(), src_tensor_shape.end() - 1);
   auto sigma2_shape = mu_shape;
@@ -169,23 +170,23 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   const auto& src_shape = input_shape[0];
   const auto& gamma_shape = input_shape[1];
   const auto& beta_shape = input_shape[2];
-  TensorConfig* src_config = new TensorConfig("src", src_shape);
-  TensorConfig* gamma_config = new TensorConfig("gamma", gamma_shape);
-  TensorConfig* beta_config = new TensorConfig("beta", beta_shape);
-  std::vector<TensorConfig*> input_config_vec = {src_config, gamma_config, beta_config};
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
+  shared_ptr<TensorConfig> gamma_config = std::make_shared<TensorConfig>("gamma", gamma_shape);
+  shared_ptr<TensorConfig> beta_config = std::make_shared<TensorConfig>("beta", beta_shape);
+  std::vector<shared_ptr<TensorConfig>> input_config_vec = {src_config, gamma_config, beta_config};
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config_vec = {dst_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> output_config_vec = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map["epsilon"] = "0.0010000000474974513";
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("layer_norm_fp32", "LayerNorm",
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("layer_norm_fp32", "LayerNorm",
                                             input_config_vec, output_config_vec, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config, int life_num = 1) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config, int life_num = 1) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life
@@ -210,7 +211,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   dst_tensor_copy->add_tensor_life(1);
 
   OpArgs op_args = {{src_tensors.first, gamma_tensors.first, beta_tensors.first}, {dst_tensor}, op_config};
-  OpArgs op_args_copy = {{src_tensors.second, gamma_tensors.second, beta_tensors.second}, {dst_tensor_copy}, op_config};
+  OpArgs op_args_copy = {{src_tensors.second, gamma_tensors.second, beta_tensors.second},
+                         {dst_tensor_copy}, op_config};
 
   return {op_args, op_args_copy};
 }

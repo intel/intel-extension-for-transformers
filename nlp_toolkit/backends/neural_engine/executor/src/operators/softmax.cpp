@@ -203,8 +203,8 @@ static inline void softmax_int_kernel(uint8_t* out, float* in, float oscale, int
 }
 #endif
 
-SoftmaxOperator::SoftmaxOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+SoftmaxOperator::SoftmaxOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : -1;
 

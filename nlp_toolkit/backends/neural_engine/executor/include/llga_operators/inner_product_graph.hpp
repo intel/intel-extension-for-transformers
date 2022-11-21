@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl_graph.hpp"
@@ -35,7 +36,7 @@ using property_type = dnnl::graph::logical_tensor::property_type;
 
 class InnerProductGraphOperator : public Operator {
  public:
-  explicit InnerProductGraphOperator(const OperatorConfig& conf);
+  explicit InnerProductGraphOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~InnerProductGraphOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

@@ -21,7 +21,7 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{
     {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
     {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
 
-InnerProductOperator::InnerProductOperator(const OperatorConfig& conf)
+InnerProductOperator::InnerProductOperator(const shared_ptr<OperatorConfig>& conf)
     : Operator(conf),
       src0_perm_({}),
       src1_perm_({}),
@@ -31,7 +31,7 @@ InnerProductOperator::InnerProductOperator(const OperatorConfig& conf)
       gelu_split_(false),
       weight_cached_(false),
       has_bias_(false) {
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("src0_perm");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&src0_perm_, attrs_map["src0_perm"], ",");

@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -36,7 +37,7 @@ using dnnl::prop_kind;
 
 class GeluOperator : public Operator {
  public:
-  explicit GeluOperator(const OperatorConfig& conf);
+  explicit GeluOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~GeluOperator() {}
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

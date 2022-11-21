@@ -29,7 +29,7 @@ class Operator;
 
 class OperatorRegistry {
  public:
-  typedef shared_ptr<Operator> (*Creator)(const OperatorConfig&);
+  typedef shared_ptr<Operator> (*Creator)(const shared_ptr<OperatorConfig>&);
   // op_type-kernel_name-kernel
   // register kernel class
   typedef std::map<string, std::map<string, Creator>> CreatorRegistry;
@@ -53,8 +53,8 @@ class OperatorRegistry {
   }
 
   // Get a operator using a OperatorConfig.
-  static shared_ptr<Operator> CreateOperator(const OperatorConfig& conf, const string& kernel_name) {
-    const string& type = conf.type();
+  static shared_ptr<Operator> CreateOperator(const shared_ptr<OperatorConfig>& conf, const string& kernel_name) {
+    const string& type = conf->type();
     CreatorRegistry& registry = Registry();
     CHECK_EQ(registry.count(type), 1) << "Unknown operator type: " << type
                                       << " (known types: " << OperatorTypeListString() << ").";
@@ -93,7 +93,7 @@ class OperatorRegistry {
 class OperatorRegisterer {
  public:
   OperatorRegisterer(const string& type, const string& kernel_name,
-                    shared_ptr<Operator> (*creator)(const OperatorConfig&)) {
+                    shared_ptr<Operator> (*creator)(const shared_ptr<OperatorConfig>&)) {
     OperatorRegistry::AddCreator(type, kernel_name, creator);
   }
 };
@@ -102,14 +102,14 @@ class OperatorRegisterer {
   static OperatorRegisterer g_creator_##type##kernel_name(#type, #kernel_name, creator);
 
 #define REGISTER_KERNEL_CLASS(type, kernel_name)                                   \
-  shared_ptr<Operator> Creator_##type##kernel_name##Operator(const OperatorConfig& conf) \
+  shared_ptr<Operator> Creator_##type##kernel_name##Operator(const shared_ptr<OperatorConfig>& conf) \
   {                                                                                \
     return shared_ptr<Operator>(new kernel_name##Operator(conf));                  \
   }                                                                                \
   REGISTER_OPERATOR_CREATOR(type, kernel_name, Creator_##type##kernel_name##Operator)
 
 #define REGISTER_OPERATOR_CLASS(type)                                              \
-  shared_ptr<Operator> Creator_##type##type##Operator(const OperatorConfig& conf)  \
+  shared_ptr<Operator> Creator_##type##type##Operator(const shared_ptr<OperatorConfig>& conf)  \
   {                                                                                \
     return shared_ptr<Operator> (new type##Operator(conf));                        \
   }                                                                                \

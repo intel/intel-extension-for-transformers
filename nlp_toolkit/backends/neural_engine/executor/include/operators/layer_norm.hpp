@@ -18,6 +18,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -39,7 +40,7 @@ using dnnl::prop_kind;
 
 class LayerNormOperator : public Operator {
  public:
-  explicit LayerNormOperator(const OperatorConfig& conf);
+  explicit LayerNormOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~LayerNormOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

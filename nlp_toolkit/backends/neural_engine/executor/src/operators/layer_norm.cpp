@@ -23,8 +23,8 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{
     {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
     {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
 
-LayerNormOperator::LayerNormOperator(const OperatorConfig& conf) : Operator(conf), weight_cached_(false) {
-  auto attrs_map = operator_conf_.attributes();
+LayerNormOperator::LayerNormOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf), weight_cached_(false) {
+  auto attrs_map = operator_conf_->attributes();
   epsilon_ = StringToNum<float>(attrs_map["epsilon"]);
   auto iter = attrs_map.find("transpose_mode");
   if (iter != attrs_map.end()) {
@@ -75,9 +75,9 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
     src_shape_str += "x";
   }
   op_attrs_["matrix_shape"] = src_shape_str;
-  vector<jd::postop_attr> postops = {};
+  vector<jd::postop_attr> postops;
   if (quantize_fuse_) {
-    float zp, scale;
+    float zp = 0, scale = 1;
     // TODO(Wang Zhe): get zp & scale.
     jd::postop_attr u8_quantize = {jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, zp, 0, scale};
     postops.push_back(u8_quantize);

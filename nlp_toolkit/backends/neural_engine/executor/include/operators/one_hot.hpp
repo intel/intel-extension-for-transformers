@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_ONE_HOT_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_ONE_HOT_HPP_
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 
@@ -27,7 +28,7 @@ namespace executor {
 
 class OnehotOperator : public Operator {
  public:
-  explicit OnehotOperator(const OperatorConfig& conf);
+  explicit OnehotOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~OnehotOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

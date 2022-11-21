@@ -27,7 +27,7 @@ static unordered_map<string, jd::data_type> type2sparsemem{
     {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
     {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
 
-MatmulOperator::MatmulOperator(const OperatorConfig& conf)
+MatmulOperator::MatmulOperator(const shared_ptr<OperatorConfig>& conf)
     : Operator(conf),
       src0_perm_({}),
       src1_perm_({}),
@@ -35,7 +35,7 @@ MatmulOperator::MatmulOperator(const OperatorConfig& conf)
       output_scale_(1.),
       format_any_(true),
       cache_weight_(false) {
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
 
   auto iter = attrs_map.find("src0_perm");
   if (iter != attrs_map.end()) {
@@ -701,15 +701,18 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
   // The bias loaded from file is not scaled. So need rescaled runtime.
   if (has_bias_) {
     dynamic_bias.resize(bias_->size());
-    float* bias_data = reinterpret_cast<float*>(bias_m_.get_data_handle());
-    if (channel_size == 1) {
+    void* bias_m_data = bias_m_.get_data_handle();
+    if (bias_m_data != nullptr) {
+      float* bias_data = reinterpret_cast<float*>(bias_m_data);
+      if (channel_size == 1) {
 #pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[0];
-    } else {
+        for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[0];
+      } else {
 #pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[i];
+        for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[i];
+      }
+      bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
     }
-    bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
   }
 
   if (src0_->dtype() == "u8") {

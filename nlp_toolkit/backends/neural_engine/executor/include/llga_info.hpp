@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <map>
 #include <vector>
+#include <memory>
 
 #include "tensor.hpp"
 #include "conf.hpp"
@@ -86,20 +87,20 @@ class LLGAINFO {
   inline const string& GetTensorName(int id) { return id2names_[id]; }
   inline int GetIndexFromOPID(int id) { return opid2index_[id]; }
 
-  void InitLTFromTensorConf(const OperatorConfig& op_conf, bool from_output_config = true) {
+  void InitLTFromTensorConf(const shared_ptr<OperatorConfig>& op_conf, bool from_output_config = true) {
     // Add logical tensor from operator config, for model initialization and test initialization.
     int tensor_count = 0;
     if (from_output_config) {
-      tensor_count = op_conf.output_tensor_size();
+      tensor_count = op_conf->output_tensor_size();
     } else {
-      tensor_count = op_conf.input_tensor_size();
+      tensor_count = op_conf->input_tensor_size();
     }
     for (int idx = 0; idx < tensor_count; ++idx) {
-      TensorConfig* tensor_config = nullptr;
+      shared_ptr<TensorConfig> tensor_config = nullptr;
       if (from_output_config) {
-        tensor_config = op_conf.output_tensors(idx);
+        tensor_config = op_conf->output_tensors(idx);
       } else {
-        tensor_config = op_conf.input_tensors(idx);
+        tensor_config = op_conf->input_tensors(idx);
       }
       const string& tensor_name = tensor_config->name();
       data_type dtype = ConvertDataType(tensor_config->dtype());
@@ -117,15 +118,15 @@ class LLGAINFO {
     }
   }
 
-  void PrepareLTForOperator(const OperatorConfig& op_conf,
+  void PrepareLTForOperator(const shared_ptr<OperatorConfig>& op_conf,
        vector<logical_tensor>* inputs, vector<logical_tensor>* outputs) {
     // prepare logical tensors for creating llga operator
-    int input_size = op_conf.input_tensor_size();
-    int output_size = op_conf.output_tensor_size();
-    auto attrs_map = op_conf.attributes();
+    int input_size = op_conf->input_tensor_size();
+    int output_size = op_conf->output_tensor_size();
+    auto attrs_map = op_conf->attributes();
 
     for (int input_id = 0; input_id < input_size; ++input_id) {
-      const string& tensor_name = op_conf.input_tensors(input_id)->name();
+      const string& tensor_name = op_conf->input_tensors(input_id)->name();
       inputs->push_back(GetLogicalTensor(tensor_name));
     }
 
@@ -141,11 +142,11 @@ class LLGAINFO {
         dtype = ConvertDataType(output_dtype_);
       } else {
         // delivery dtype if output dtype not specifced.
-        if (op_conf.type() == "Gather" && inputs->size() >= 2) {
+        if (op_conf->type() == "Gather" && inputs->size() >= 2) {
           dtype = inputs->at(1).get_data_type();
-        } else if (op_conf.type() == "DequantizeLinear") {
+        } else if (op_conf->type() == "DequantizeLinear") {
           dtype = data_type::f32;
-        } else if ((op_conf.type() == "Matmul" || op_conf.type() == "InnerProduct") &&
+        } else if ((op_conf->type() == "Matmul" || op_conf->type() == "InnerProduct") &&
                   (inputs->at(0).get_data_type() == data_type::u8 || inputs->at(0).get_data_type() == data_type::s8)) {
           dtype = data_type::f32;
         } else {
@@ -153,7 +154,7 @@ class LLGAINFO {
         }
       }
       logical_tensor dst_desc {GetLTIndex(), dtype, layout_type::any};
-      const string& tensor_name = op_conf.output_tensors(output_id)->name();
+      const string& tensor_name = op_conf->output_tensors(output_id)->name();
       AddLogicalTensor(tensor_name, dst_desc);
       outputs->push_back(dst_desc);
     }

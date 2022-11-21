@@ -20,6 +20,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -37,7 +38,7 @@ void GroupNormRef(const float* src_data, const float* gamma_data, const float* b
 
 class GroupNormOperator : public Operator {
  public:
-  explicit GroupNormOperator(const OperatorConfig& conf);
+  explicit GroupNormOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~GroupNormOperator() {}
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

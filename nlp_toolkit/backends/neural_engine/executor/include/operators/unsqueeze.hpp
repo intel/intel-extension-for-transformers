@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -30,8 +31,8 @@ namespace executor {
 
 class UnsqueezeOperator : public Operator {
  public:
-  explicit UnsqueezeOperator(const OperatorConfig& conf) : Operator(conf) {
-    auto attrs_map = operator_conf_.attributes();
+  explicit UnsqueezeOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+    auto attrs_map = operator_conf_->attributes();
     auto iter = attrs_map.find("axes");
     if (iter != attrs_map.end())
       StringSplit<int64_t>(&axes_, attrs_map["axes"], ",");

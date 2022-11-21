@@ -23,7 +23,7 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{
     {"u8", dnnl::memory::data_type::u8},    {"s8", dnnl::memory::data_type::s8},
     {"bf16", dnnl::memory::data_type::bf16}};
 
-ConvolutionOperator::ConvolutionOperator(const OperatorConfig& conf)
+ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
     : Operator(conf),
       src_perm_({}),
       dst_perm_({}),
@@ -32,7 +32,7 @@ ConvolutionOperator::ConvolutionOperator(const OperatorConfig& conf)
       gelu_split_(false),
       weight_cached_(false),
       has_bias_(false) {
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("src_perm");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&src_perm_, attrs_map["src_perm"], ",");
@@ -287,7 +287,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   weight_md_ = memory::desc(weight_shape_m, type2mem[weight_->dtype()], weight_stride_m);
   weight_m_ = memory(weight_md_, eng_, weight_->mutable_data());
 
-  if (has_bias_) {
+  if (bias_ != nullptr) {
     const vector<int64_t> bias_shape = bias_->shape();
     const vector<int64_t> bias_stride = GetStrides(bias_shape);
     bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);

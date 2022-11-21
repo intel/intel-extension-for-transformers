@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -30,7 +31,7 @@ namespace executor {
 
 class ErfOperator : public Operator {
  public:
-  explicit ErfOperator(const OperatorConfig& conf) : Operator(conf) {}
+  explicit ErfOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

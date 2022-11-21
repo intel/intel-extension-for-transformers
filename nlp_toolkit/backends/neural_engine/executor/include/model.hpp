@@ -59,10 +59,10 @@ class NEURALENGINE_API_ Model {
                                                         const vector<int64_t>& shape, const vector<int64_t>& location);
   vector<Tensor>& Forward(vector<Tensor>& input_data);  // NOLINT
 
-  void SetInput(const OperatorConfig& conf, const int operator_id, const int tensor_id,
+  void SetInput(const shared_ptr<OperatorConfig>& conf, const int operator_id, const int tensor_id,
                 map<string, int>* tensor_name_to_idx);
 
-  void SetOutput(const OperatorConfig& conf, const int operator_id, const int tensor_id,
+  void SetOutput(const shared_ptr<OperatorConfig>& conf, const int operator_id, const int tensor_id,
                  map<string, int>* tensor_name_to_idx);
 
   void SetDispatchKernel(const bool& reshape_model);
@@ -76,7 +76,7 @@ class NEURALENGINE_API_ Model {
   inline int num_inputs() const { return model_input_tensors_.size(); }
   inline int num_outputs() const { return model_output_tensors_.size(); }
 
-  inline const vector<TensorConfig*>& input_configs() const { return model_input_configs_; }
+  inline const vector<shared_ptr<TensorConfig>>& input_configs() const { return model_input_configs_; }
 
   inline vector<Tensor>& output_tensors() {
     LOG(INFO) << "Output tensor size is " << model_output_tensors_.size();
@@ -119,7 +119,7 @@ class NEURALENGINE_API_ Model {
   vector<vector<Tensor*> > output_vecs_;
 
   vector<Tensor*> model_input_tensors_;
-  vector<TensorConfig*> model_input_configs_;
+  vector<shared_ptr<TensorConfig>> model_input_configs_;
   vector<Tensor*> model_output_tensors_;
   vector<Tensor> output_tensors_;
   bool multi_stream_flag = (getenv("MULTI_STREAM") != NULL);
@@ -134,9 +134,9 @@ class NEURALENGINE_API_ Model {
   bool engine_profiling_ = false;
   // for onednn graph
   LLGAINFO llga_info_;
-  shared_ptr<Operator> CreateLLGAKernel(const vector<OperatorConfig*>& op_configs,
+  shared_ptr<Operator> CreateLLGAKernel(const vector<shared_ptr<OperatorConfig>>& op_configs,
                                         const dnnl::graph::partition& partition);
-  void ConstructLLGA(const vector<OperatorConfig*>& op_configs);
+  void ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs);
 };
 
 }  // namespace executor

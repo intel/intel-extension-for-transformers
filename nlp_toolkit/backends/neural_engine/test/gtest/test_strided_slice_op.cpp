@@ -29,7 +29,7 @@ using executor::TensorConfig;
 struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
-  OperatorConfig conf;
+  shared_ptr<OperatorConfig> conf;
 };
 
 struct TestParams {
@@ -68,11 +68,11 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
                                            std::string append_op = "") {
   // Step 1: Construct Tensor config ptr
   const auto& src_shape = input_shape[0];
-  TensorConfig* src_config = new TensorConfig("src", src_shape);
-  std::vector<TensorConfig*> input_config_vec = {src_config};
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
+  std::vector<shared_ptr<TensorConfig>> input_config_vec = {src_config};
   std::vector<int64_t> dst_shape = {src_shape[0], 1, src_shape[2]};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config_vec = {dst_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> output_config_vec = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
@@ -84,11 +84,12 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   attr_map["begin"] = "0,0,0";
   attr_map["end"] = "0,1,0";
   attr_map["strides"] = "1,1,1";
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("strided_slice", "fp32", input_config_vec, output_config_vec, op_attr);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  auto op_config = std::make_shared<OperatorConfig>("strided_slice", "fp32",
+                   input_config_vec, output_config_vec, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config, int life_num = 1) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config, int life_num = 1) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

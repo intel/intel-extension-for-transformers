@@ -15,8 +15,8 @@
 
 namespace executor {
 
-MergedEmbeddingbagOperator::MergedEmbeddingbagOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+MergedEmbeddingbagOperator::MergedEmbeddingbagOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("mode");
   mode_ = (iter != attrs_map.end()) ? iter->second : "";
 }

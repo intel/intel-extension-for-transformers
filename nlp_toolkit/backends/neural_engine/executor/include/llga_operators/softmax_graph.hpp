@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl_graph.hpp"
@@ -35,7 +36,7 @@ using property_type = dnnl::graph::logical_tensor::property_type;
 
 class SoftmaxGraphOperator : public Operator {
  public:
-  explicit SoftmaxGraphOperator(const OperatorConfig& conf);
+  explicit SoftmaxGraphOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~SoftmaxGraphOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

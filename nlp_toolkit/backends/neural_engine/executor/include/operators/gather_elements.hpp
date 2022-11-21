@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_ELEMENTS_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_ELEMENTS_HPP_
 #include <vector>
+#include <memory>
 
 #include "common.hpp"
 #include "../operator.hpp"
@@ -28,7 +29,7 @@ namespace executor {
 
 class GatherElementsOperator : public Operator {
  public:
-  explicit GatherElementsOperator(const OperatorConfig& conf);
+  explicit GatherElementsOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~GatherElementsOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

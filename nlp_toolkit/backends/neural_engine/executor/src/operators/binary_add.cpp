@@ -18,8 +18,8 @@
 
 namespace executor {
 
-BinaryAddOperator::BinaryAddOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+BinaryAddOperator::BinaryAddOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("append_op");
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
 }

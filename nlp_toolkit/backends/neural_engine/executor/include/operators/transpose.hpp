@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_TRANSPOSE_HPP_
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -30,7 +31,7 @@ namespace executor {
 
 class TransposeOperator : public Operator {
  public:
-  explicit TransposeOperator(const OperatorConfig& conf);
+  explicit TransposeOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~TransposeOperator();
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

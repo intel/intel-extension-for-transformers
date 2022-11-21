@@ -18,8 +18,8 @@
 
 namespace executor {
 
-EmbeddingBagOperator::EmbeddingBagOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+EmbeddingBagOperator::EmbeddingBagOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("mode");
   embedding_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
 }

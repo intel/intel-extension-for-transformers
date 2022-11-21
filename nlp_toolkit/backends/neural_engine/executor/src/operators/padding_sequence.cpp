@@ -18,8 +18,8 @@
 
 namespace executor {
 
-PaddingSequenceOperator::PaddingSequenceOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+PaddingSequenceOperator::PaddingSequenceOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("padding_value");
   padding_ = (iter != attrs_map.end() && iter->second != "") ? StringToNum<float>(iter->second) : -10000;
   StringSplit<int64_t>(&attr_dst_shape_, attrs_map["dst_shape"], ",");

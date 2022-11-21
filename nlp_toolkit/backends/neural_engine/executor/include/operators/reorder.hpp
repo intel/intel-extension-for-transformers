@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_REORDER_HPP_
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -34,7 +35,7 @@ using dnnl::prop_kind;
 
 class ReorderOperator : public Operator {
  public:
-  explicit ReorderOperator(const OperatorConfig& conf);
+  explicit ReorderOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~ReorderOperator();
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

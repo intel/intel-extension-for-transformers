@@ -92,8 +92,8 @@ template void SliceData<int8_t>(const int8_t* src_data, int8_t* dst_data, const 
                                 const vector<int64_t>& dst_shape, const vector<int64_t>& starts,
                                 const vector<int64_t>& ends, const vector<int64_t>& axes, const vector<int64_t>& steps);
 
-SliceOperator::SliceOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+SliceOperator::SliceOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("starts");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&starts_, attrs_map["starts"], ",");

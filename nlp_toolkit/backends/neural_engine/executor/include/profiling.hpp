@@ -223,7 +223,7 @@ class Profiling_ {
 #endif
     ipc::interprocess_mutex* mtx = shm.find_or_construct<ipc::interprocess_mutex>(mtx_name)();
     mtx->lock();
-    char ch_curr_time[256];
+    char ch_curr_time[256] = {0};
     time_t curr_time = time(NULL);
     strftime(ch_curr_time, sizeof(ch_curr_time), "%Y-%m-%d_%H-%M-%S", localtime(&curr_time));
     std::string csv_file = profiling_csv_dir + "/profiling_" + ch_curr_time + "_" \
@@ -321,7 +321,7 @@ class Profiling_ {
     fprintf(fp, ",%s,%s\n", "aim to sparse support latency(ms)", aim_sparse_latency.c_str());
     // dense matmul/ip latency / totoal latency
     fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
-                    "sparse support latency ratio", enable_sparse_latency / total_latency);
+                    "sparse support latency ratio", enable_sparse_latency / (total_latency + 1e-6));
     // sparse matmul/ip latency / totoal latency
     string totol_aim_latency_id = "P" \
                     + std::to_string(atoi((*(operators_.end()-2))->table_id().c_str()) + 1);

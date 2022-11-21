@@ -19,13 +19,13 @@
 namespace executor {
 
 
-TopKOperator::TopKOperator(const OperatorConfig& conf)
+TopKOperator::TopKOperator(const shared_ptr<OperatorConfig>& conf)
     : Operator(conf),
       axis_(0),
       largest_(1),
       sorted_(1),
       k_(0) {
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
 
   auto iter = attrs_map.find("axis");
   axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : 0;

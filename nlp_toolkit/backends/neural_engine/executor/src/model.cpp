@@ -57,7 +57,7 @@ void Model::Init(const ModelConfig& conf) {
     auto op_conf = op_configs[operator_id];
     int output_size = op_conf->output_tensor_size();
     for (int output_id = 0; output_id < output_size; ++output_id) {
-      SetOutput(*op_conf, operator_id, output_id, &tensor_name_index_);
+      SetOutput(op_conf, operator_id, output_id, &tensor_name_index_);
     }
   }
   ConstructLLGA(op_configs);
@@ -67,12 +67,12 @@ void Model::Init(const ModelConfig& conf) {
     auto op = operators_[operator_id];
     // set output
     auto op_conf = op->operator_conf();
-    int output_size = op_conf.output_tensor_size();
+    int output_size = op_conf->output_tensor_size();
     for (int output_id = 0; output_id < output_size; ++output_id) {
       SetOutput(op_conf, operator_id, output_id, &tensor_name_index_);
     }
     // set input
-    int input_size = op_conf.input_tensor_size();
+    int input_size = op_conf->input_tensor_size();
     for (int input_id = 0; input_id < input_size; ++input_id) {
       SetInput(op_conf, operator_id, input_id, &tensor_name_index_);
     }
@@ -87,7 +87,7 @@ void Model::Init(const ModelConfig& conf) {
     operators_[i]->Prepare(input_vecs_[i], output_vecs_[i]);
     // for profiling post op
     if (operators_[i]->type() != "LLGAKernel") {
-      auto attrs = operators_[i]->operator_conf().attributes();
+      auto attrs = operators_[i]->operator_conf()->attributes();
       if (attrs.find("append_op") != attrs.end()) {
         operators_[i]->set_post_op(attrs["append_op"]);
       }
@@ -97,7 +97,7 @@ void Model::Init(const ModelConfig& conf) {
   if (multi_stream_flag) {
     multi_stream_tasks_.clear();
     for (int i = 0; i < operators_.size(); ++i) {
-      auto op_attr_map = operators_[i]->operator_conf().attributes();
+      auto op_attr_map = operators_[i]->operator_conf()->attributes();
       auto it = op_attr_map.find("multi_stream");
       if (it != op_attr_map.end()) {
         multi_stream_tasks_.insert({i, StringToNum<int64_t>(it->second)});
@@ -117,14 +117,15 @@ void Model::Init(const ModelConfig& conf) {
 
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
   is_dispatcher_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
-  if (getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT")) {
-    dispatch_table_file_root_ = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
+
+  char* env_root = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
+  char* home_env = getenv("HOME");
+  if (env_root != NULL) {
+    dispatch_table_file_root_ = env_root;
+  } else if (home_env != NULL) {
+    dispatch_table_file_root_ = string(home_env) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt";
   } else {
-    if (getenv("HOME")) {
-      dispatch_table_file_root_ = string(getenv("HOME")) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt";
-    } else {
-      dispatch_table_file_root_ = "./ engine_dispatch_table.txt ";
-    }
+    LOG(ERROR) << "Please export ENGINE_DISPATCH_TABLE_FILE_ROOT or HOME";
   }
 
 #ifdef WIN32
@@ -198,12 +199,12 @@ ipc::managed_shared_memory::handle_t Model::LoadSharedWeight(const string& root,
   return handle;
 }
 
-void Model::SetInput(const OperatorConfig& op_conf, const int operator_id, const int tensor_id,
+void Model::SetInput(const shared_ptr<OperatorConfig>& op_conf, const int operator_id, const int tensor_id,
                      map<string, int>* tensor_name_index_) {
   // model input tensor not in output tensors
-  const string& tensor_name = op_conf.input_tensors(tensor_id)->name();
+  const string& tensor_name = op_conf->input_tensors(tensor_id)->name();
   if (!tensor_name_index_->count(tensor_name)) {
-    LOG(FATAL) << "Unknown input tensor " << tensor_name << ", operator " << op_conf.name() << ", input index "
+    LOG(FATAL) << "Unknown input tensor " << tensor_name << ", operator " << op_conf->name() << ", input index "
                << tensor_id;
   }
   const int id = (*tensor_name_index_)[tensor_name];
@@ -212,21 +213,21 @@ void Model::SetInput(const OperatorConfig& op_conf, const int operator_id, const
   input_vecs_[operator_id].push_back(tensors_[id]);
   // set model output tensors, it maybe a little strange as Output operator only
   // have input and the input is MODEL's output
-  const string& op_type = op_conf.type();
+  const string& op_type = op_conf->type();
   if (op_type == "Output") {
     model_output_tensors_.push_back(tensors_[id]);
     output_tensors_.push_back(Tensor(nullptr, tensors_[id]->shape(), tensors_[id]->dtype()));
   }
 }
 
-void Model::SetOutput(const OperatorConfig& op_conf, const int operator_id, const int tensor_id,
+void Model::SetOutput(const shared_ptr<OperatorConfig>& op_conf, const int operator_id, const int tensor_id,
                       map<string, int>* tensor_name_index_) {
-  const string& tensor_name = op_conf.output_tensors(tensor_id)->name();
+  const string& tensor_name = op_conf->output_tensors(tensor_id)->name();
   if (tensor_name_index_->count(tensor_name)) {
     LOG(FATAL) << "duplicate output tensor name..." << tensor_name;
   }
   // start from output tensor
-  auto tensor_config = op_conf.output_tensors(tensor_id);
+  auto tensor_config = op_conf->output_tensors(tensor_id);
   const int id = tensors_.size();
   Tensor* tensor_ptr(new Tensor(*tensor_config));
   tensors_.push_back(tensor_ptr);
@@ -235,7 +236,7 @@ void Model::SetOutput(const OperatorConfig& op_conf, const int operator_id, cons
   (*tensor_name_index_)[tensor_name] = id;
   // set model input tensors, it maybe a little strange as Input operator only
   // have output and the output is MODEL's input
-  const string& op_type = op_conf.type();
+  const string& op_type = op_conf->type();
   if (op_type == "Input") {
     // parse weight here
     if (tensor_config->location().size() != 0) {
@@ -387,7 +388,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
   return this->output_tensors();
 }
 
-TensorConfig* findTensorConfig(const vector<OperatorConfig*>& op_configs, string tensor_name) {
+shared_ptr<TensorConfig> findTensorConfig(const vector<shared_ptr<OperatorConfig>>& op_configs, string tensor_name) {
   // travel op_configs to find tensorconfig with specificed tensor name
   for (int i = 0; i < op_configs.size() - 1; ++i) {
     auto op_conf = op_configs[i];
@@ -410,9 +411,9 @@ TensorConfig* findTensorConfig(const vector<OperatorConfig*>& op_configs, string
   return nullptr;
 }
 
-shared_ptr<Operator> Model::CreateLLGAKernel(const vector<OperatorConfig*>& op_configs,
+shared_ptr<Operator> Model::CreateLLGAKernel(const vector<shared_ptr<OperatorConfig>>& op_configs,
                                              const dnnl::graph::partition& partition) {
-  vector<TensorConfig*> partition_inputs, partition_outputs;
+  vector<shared_ptr<TensorConfig>> partition_inputs, partition_outputs;
   auto lt_inputs = partition.get_in_ports();
   auto lt_outputs = partition.get_out_ports();
   for (auto lt : lt_inputs) {
@@ -422,7 +423,7 @@ shared_ptr<Operator> Model::CreateLLGAKernel(const vector<OperatorConfig*>& op_c
     if (tensor_config) {
       partition_inputs.push_back(tensor_config);
     } else {
-      partition_inputs.push_back(new TensorConfig("hardcode_" + std::to_string(id)));
+      partition_inputs.push_back(std::make_shared<TensorConfig>("hardcode_" + std::to_string(id)));
     }
   }
   for (auto lt : lt_outputs) {
@@ -432,21 +433,22 @@ shared_ptr<Operator> Model::CreateLLGAKernel(const vector<OperatorConfig*>& op_c
     if (tensor_config) {
       partition_outputs.push_back(tensor_config);
     } else {
-      partition_outputs.push_back(new TensorConfig("hardcode_" + std::to_string(id)));
+      partition_outputs.push_back(std::make_shared<TensorConfig>("hardcode_" + std::to_string(id)));
     }
   }
   // create dummy config mainly for delivering tensor names of inputs/outputs.
-  OperatorConfig dummy_op_conf("LLGAKernel", "LLGAKernel", partition_inputs, partition_outputs, nullptr);
+  shared_ptr<OperatorConfig> dummy_op_conf = std::make_shared<OperatorConfig>("LLGAKernel", "LLGAKernel",
+                                             partition_inputs, partition_outputs, nullptr);
   return shared_ptr<Operator>(new LLGAKernel(dummy_op_conf, &llga_info_, partition));
 }
 
-void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
+void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) {
   bool llga_enable = (getenv("LLGA_ENABLE") != NULL);
   LOG(INFO) << "LLGA_ENABLE: " << llga_enable;
   if (!llga_enable) {
     LOG(INFO) << "Constructing original graph...";
     for (int i = 0; i < op_configs.size(); i++) {
-      operators_.push_back(std::make_shared<Dispatcher>(*op_configs[i]));
+      operators_.push_back(std::make_shared<Dispatcher>(op_configs[i]));
     }
     return;
   }
@@ -454,7 +456,7 @@ void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
   LOG(INFO) << "Constructing LLGA graph...";
   for (int i = 0; i < op_configs.size() - 1; ++i) {
     if (op_configs[i]->type() == "Input") {
-      llga_info_.InitLTFromTensorConf(*op_configs[i]);
+      llga_info_.InitLTFromTensorConf(op_configs[i]);
       continue;
     }
     // determine whether to fallback to the original innerproduct.
@@ -470,13 +472,13 @@ void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
       }
     }
     // create llga op according to operator config, which will be added into llga graph g_.
-    LLGAOPCreator::GetInstance().CreateOP(&llga_info_, *op_configs[i], i, fallback);
+    LLGAOPCreator::GetInstance().CreateOP(&llga_info_, op_configs[i], i, fallback);
   }
 
   auto partitions = llga_info_.GetPartitions();
 
   // add Input layer into operators_
-  operators_.push_back(std::make_shared<Dispatcher>(*op_configs[0]));
+  operators_.push_back(std::make_shared<Dispatcher>(op_configs[0]));
 
   std::set<int> unique_index;
   for (int i = 0; i < partitions.size(); i++) {
@@ -493,14 +495,14 @@ void Model::ConstructLLGA(const vector<OperatorConfig*>& op_configs) {
           continue;
         } else {
           unique_index.insert(idx);
-          operators_.push_back(std::make_shared<Dispatcher>(*op_configs[idx]));
+          operators_.push_back(std::make_shared<Dispatcher>(op_configs[idx]));
         }
       }
     }
   }
 
   // add Output layer into operators_
-  operators_.push_back(std::make_shared<Dispatcher>(*op_configs[op_configs.size() - 1]));
+  operators_.push_back(std::make_shared<Dispatcher>(op_configs[op_configs.size() - 1]));
 }
 
 }  // namespace executor

@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_REDUCE_SUM_HPP_
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -33,7 +34,7 @@ using dnnl::prop_kind;
 
 class ReduceSumOperator : public Operator {
  public:
-  explicit ReduceSumOperator(const OperatorConfig& conf);
+  explicit ReduceSumOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~ReduceSumOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

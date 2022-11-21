@@ -22,8 +22,8 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{{"fp32", dnnl::me
                                                                {"u8", dnnl::memory::data_type::u8},
                                                                {"s8", dnnl::memory::data_type::s8}};
 
-QuantizeOperator::QuantizeOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+QuantizeOperator::QuantizeOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
 
   auto iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {

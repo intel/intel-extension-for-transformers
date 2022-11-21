@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_HPP_
 #include <vector>
+#include <memory>
 #include <string>
 
 #include "../operator.hpp"
@@ -30,7 +31,7 @@ namespace executor {
 
 class GatherOperator : public Operator {
  public:
-  explicit GatherOperator(const OperatorConfig& conf);
+  explicit GatherOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~GatherOperator() {}
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

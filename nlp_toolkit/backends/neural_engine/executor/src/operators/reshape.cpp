@@ -16,8 +16,8 @@
 
 namespace executor {
 
-ReshapeOperator::ReshapeOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+ReshapeOperator::ReshapeOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("dst_shape");
   if (iter != attrs_map.end()) StringSplit<int64_t>(&shape_, attrs_map["dst_shape"], ",");
   iter = attrs_map.find("dims");

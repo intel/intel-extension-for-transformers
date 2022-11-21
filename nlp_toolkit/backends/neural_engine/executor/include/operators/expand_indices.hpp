@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_EXPAND_INDICES_HPP_
 #include <algorithm>
 #include <vector>
+#include <memory>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -29,7 +30,7 @@ namespace executor {
 
 class ExpandIndicesOperator : public Operator {
  public:
-  explicit ExpandIndicesOperator(const OperatorConfig& conf);
+  explicit ExpandIndicesOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~ExpandIndicesOperator();
 
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

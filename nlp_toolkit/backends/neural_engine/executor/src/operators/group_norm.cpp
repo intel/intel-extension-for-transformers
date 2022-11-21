@@ -81,8 +81,8 @@ void GroupNormRef(const float* src_data, const float* gamma_data, const float* b
   }
 }
 
-GroupNormOperator::GroupNormOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+GroupNormOperator::GroupNormOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("epsilon");
   if (iter != attrs_map.end()) {
     epsilon_ = StringToNum<float>(attrs_map["epsilon"]);

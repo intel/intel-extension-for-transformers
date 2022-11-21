@@ -18,8 +18,8 @@
 
 namespace executor {
 
-GeluOperator::GeluOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+GeluOperator::GeluOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("algorithm");
   if (iter != attrs_map.end()) {
     algorithm_ = iter->second;
@@ -69,8 +69,8 @@ void GeluOperator::ReshapeWithSparselib(const vector<Tensor*>& input, const vect
   const float* min_p = static_cast<const float*>(src_min->data());
   const float* max_p = static_cast<const float*>(src_max->data());
   float scale = (max_p[0] - min_p[0]) / 255;
-  float zp;
-  jd::data_type attr_dtype;
+  float zp = 0;
+  jd::data_type attr_dtype = jd::data_type::undef;
   // gen int8-lut attr
   if (input_dt == "s8") {
     attr_dtype = jd::data_type::s8;

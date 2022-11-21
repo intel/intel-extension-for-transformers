@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_TOPK_HPP_
 
 #include <vector>
+#include <memory>
 #include "../operator.hpp"
 namespace executor {
 
@@ -26,7 +27,7 @@ namespace executor {
 
 class TopKOperator : public Operator {
  public:
-  explicit TopKOperator(const OperatorConfig& conf);
+  explicit TopKOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~TopKOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

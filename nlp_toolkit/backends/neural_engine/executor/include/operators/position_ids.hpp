@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_POSITION_IDS_HPP_
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 
@@ -28,7 +29,7 @@ namespace executor {
 
 class PositionIdsOperator : public Operator {
  public:
-  explicit PositionIdsOperator(const OperatorConfig& conf);
+  explicit PositionIdsOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~PositionIdsOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

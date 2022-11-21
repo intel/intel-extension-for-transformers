@@ -29,7 +29,7 @@ using executor::TensorConfig;
 struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
-  OperatorConfig conf;
+  shared_ptr<OperatorConfig> conf;
 };
 
 struct TestParams {
@@ -37,8 +37,9 @@ struct TestParams {
   bool expect_to_fail;
 };
 
-void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
-  auto attrs_map = conf.attributes();
+void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
+                 const shared_ptr<OperatorConfig>& conf) {
+  auto attrs_map = conf->attributes();
   vector<int64_t> src0_perm;
   executor::StringSplit<int64_t>(&src0_perm, attrs_map["src0_perm"], ",");
   if (src0_perm.empty()) {  // default perm
@@ -172,25 +173,27 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   const auto& src0_shape = input_shape[0];
   const auto& src1_shape = input_shape[1];
   const auto& bias_shape = input_shape[2];
-  TensorConfig* src0_config = new TensorConfig("src", src0_shape);
-  TensorConfig* src1_config = new TensorConfig("weight", src1_shape);
-  TensorConfig* bias_config = new TensorConfig("bias", bias_shape);
+  shared_ptr<TensorConfig> src0_config = std::make_shared<TensorConfig>("src", src0_shape);
+  shared_ptr<TensorConfig> src1_config = std::make_shared<TensorConfig>("weight", src1_shape);
+  shared_ptr<TensorConfig> bias_config = std::make_shared<TensorConfig>("bias", bias_shape);
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> inputs_config = {src0_config, src1_config, bias_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> inputs_config = {src0_config, src1_config, bias_config};
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
   if (append_op == "sum") {
-    inputs_config.push_back(new TensorConfig("src2", input_shape[3]));
+    inputs_config.push_back(std::make_shared<TensorConfig>("src2", input_shape[3]));
   }
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map = {{"src0_perm", ""}, {"src1_perm", src1_perm}, {"output_dtype", "fp32"}, {"append_op", append_op}};
 
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("inner_product_fp32", "InnerProduct", inputs_config, {dst_config}, op_attr);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("inner_product_fp32",
+                                         "InnerProduct", inputs_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life
@@ -205,7 +208,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     memcpy(tensor_data_copy, tensor_data, a_tensor_copy->size() * sizeof(float));
     return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
   };
-  auto make_tensor_obj_sparse = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj_sparse = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life
@@ -233,7 +236,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   dst_tensor_copy->add_tensor_life(1);
 
   OpArgs op_args = {{src0_tensors.first, src1_tensors.first, bias_tensors.first}, {dst_tensor}, op_config};
-  OpArgs op_args_copy = {{src0_tensors.second, src1_tensors.second, bias_tensors.second}, {dst_tensor_copy}, op_config};
+  OpArgs op_args_copy = {{src0_tensors.second, src1_tensors.second, bias_tensors.second},
+                         {dst_tensor_copy}, op_config};
 
   if (append_op == "sum") {
     auto src2_tensors = make_tensor_obj(inputs_config[3]);

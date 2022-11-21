@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_SPLIT_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_SPLIT_HPP_
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 
@@ -27,7 +28,7 @@ namespace executor {
 
 class SplitOperator : public Operator {
  public:
-  explicit SplitOperator(const OperatorConfig& conf);
+  explicit SplitOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~SplitOperator() {}
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_OUTPUT_HPP_
 
 #include <vector>
+#include <memory>
 
 #include "operator.hpp"
 
@@ -29,7 +30,7 @@ namespace executor {
 
 class OutputOperator : public Operator {
  public:
-  explicit OutputOperator(const OperatorConfig& config) : Operator(config) {}
+  explicit OutputOperator(const shared_ptr<OperatorConfig>& config) : Operator(config) {}
 
   // Output operator only have no output, do nothing with Reshape .
   virtual void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {}

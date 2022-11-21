@@ -18,8 +18,8 @@
 
 namespace executor {
 
-SplitOperator::SplitOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+SplitOperator::SplitOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   if (iter != attrs_map.end()) {
     axis_ = StringToNum<int64_t>(attrs_map["axis"]);

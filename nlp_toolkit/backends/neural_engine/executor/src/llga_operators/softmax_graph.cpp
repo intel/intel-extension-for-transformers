@@ -18,9 +18,9 @@
 
 namespace executor {
 
-SoftmaxGraphOperator::SoftmaxGraphOperator(const OperatorConfig& conf) :
+SoftmaxGraphOperator::SoftmaxGraphOperator(const shared_ptr<OperatorConfig>& conf) :
                       Operator(conf), g_(dnnl::graph::engine::kind::cpu) {
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : -1;
 

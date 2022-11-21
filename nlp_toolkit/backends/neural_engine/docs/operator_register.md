@@ -6,7 +6,7 @@ The *.h is the file to define member variables and functions. Class GeluOperator
 ```cpp
 class GeluOperator : public Operator {
  public:
-  explicit GeluOperator(const OperatorConfig& conf);
+  explicit GeluOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~GeluOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
@@ -23,9 +23,9 @@ class GeluOperator : public Operator {
 ## 2. Add *.cpp of customized operator to executor/src/operators
 It's the constructor used to parse the parameters like attributes in the operator. Gelu has two algorithm gelu_erf and gelu_tanh, so the attribute "algorithm" is parsed here.
 ```cpp
-GeluOperator::GeluOperator(const OperatorConfig& conf) :
+GeluOperator::GeluOperator(const shared_ptr<OperatorConfig>& conf) :
   Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("algorithm");
   if (iter != attrs_map.end()) {
     algorithm_ = iter->second;

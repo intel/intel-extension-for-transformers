@@ -18,9 +18,9 @@
 
 namespace executor {
 
-InnerProductGraphOperator::InnerProductGraphOperator(const OperatorConfig& conf) :
+InnerProductGraphOperator::InnerProductGraphOperator(const shared_ptr<OperatorConfig>& conf) :
                            Operator(conf), g_(dnnl::graph::engine::kind::cpu) {
-  auto attrs_map = operator_conf_.attributes();
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("src0_perm");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&src0_perm_, attrs_map["src0_perm"], ",");

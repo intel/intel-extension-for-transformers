@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -31,7 +32,7 @@ namespace executor {
 
 class MergedEmbeddingbagOperator : public Operator {
  public:
-  explicit MergedEmbeddingbagOperator(const OperatorConfig& conf);
+  explicit MergedEmbeddingbagOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~MergedEmbeddingbagOperator() {}
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

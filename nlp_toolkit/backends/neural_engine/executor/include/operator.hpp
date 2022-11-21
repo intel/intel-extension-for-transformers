@@ -21,10 +21,12 @@
 #include <map>            //NOLINT
 #include <unordered_map>  //NOLINT
 #include <mutex>          //NOLINT
+#include <memory>         //NOLINT
 
 #include "common.hpp"
 #include "operator_registry.hpp"
 #include "tensor.hpp"
+using std::shared_ptr;
 
 namespace executor {
 
@@ -40,9 +42,9 @@ enum KERNEL_TYPE { Unsupported = 0, Dense = 1, Sparse = 2, SparseLib = 3 };
 
 class Operator {
  public:
-  explicit Operator(const OperatorConfig& conf) : operator_conf_(conf) {
-    name_ = operator_conf_.name();
-    type_ = operator_conf_.type();
+  explicit Operator(const shared_ptr<OperatorConfig>& conf) : operator_conf_(conf) {
+    name_ = operator_conf_->name();
+    type_ = operator_conf_->type();
   }
 
   virtual ~Operator() {}
@@ -73,7 +75,7 @@ class Operator {
 
   inline const string& name() const { return name_; }
   inline const string& type() const { return type_; }
-  const OperatorConfig& operator_conf() const { return operator_conf_; }
+  const shared_ptr<OperatorConfig>& operator_conf() const { return operator_conf_; }
   // dispatch kernel may need to do reshape and receive config, like InnerProduct to Convolution
   inline void set_dispatch_from_type(const string& type) { dispatch_from_ = type; }
   inline void set_dispatch_config(const vector<string>& config = {}) { dispatch_config_ = config; }
@@ -111,7 +113,7 @@ class Operator {
   /** The conf that stores the operator configurations */
   string name_;
   string type_;
-  OperatorConfig operator_conf_;
+  shared_ptr<OperatorConfig> operator_conf_;
   string dispatch_from_;
   vector<string> dispatch_config_;
   bool do_shape_infer_ = false;

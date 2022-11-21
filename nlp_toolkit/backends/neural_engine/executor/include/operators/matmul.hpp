@@ -17,6 +17,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -33,7 +34,7 @@ using dnnl::prop_kind;
 // \brief Matmul or Batchmatmul operators
 class MatmulOperator : public Operator {
  public:
-  explicit MatmulOperator(const OperatorConfig& conf);
+  explicit MatmulOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~MatmulOperator();
 
  public:

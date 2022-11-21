@@ -18,8 +18,8 @@
 
 namespace executor {
 
-PositionIdsOperator::PositionIdsOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+PositionIdsOperator::PositionIdsOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("mode");
   if (iter != attrs_map.end()) {
     mode_ = iter->second;

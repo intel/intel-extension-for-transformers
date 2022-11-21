@@ -30,7 +30,7 @@ using executor::TensorConfig;
 struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
-  OperatorConfig conf;
+  shared_ptr<OperatorConfig> conf;
 };
 
 struct TestParams {
@@ -38,7 +38,8 @@ struct TestParams {
   bool expect_to_fail;
 };
 
-void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
+void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
+                 const shared_ptr<OperatorConfig>& conf) {
   // set output shape
   Tensor* input0 = input[0]->size() >= input[1]->size() ? input[0] : input[1];
   Tensor* input1 = input[1]->size() <= input[0]->size() ? input[1] : input[0];
@@ -107,21 +108,21 @@ TEST_P(SubTest, TestPostfix) {
 std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape) {
   // Step 1: Construct Tensor config ptr
   const auto& src0_shape = input_shape[0];
-  TensorConfig* src0_config = new TensorConfig("src0", src0_shape);
+  shared_ptr<TensorConfig> src0_config = std::make_shared<TensorConfig>("src0", src0_shape);
   const auto& src1_shape = input_shape[1];
-  TensorConfig* src1_config = new TensorConfig("src1", src1_shape);
-  std::vector<TensorConfig*> input_config = {src0_config, src1_config};
+  shared_ptr<TensorConfig> src1_config = std::make_shared<TensorConfig>("src1", src1_shape);
+  std::vector<shared_ptr<TensorConfig>> input_config = {src0_config, src1_config};
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config = {dst_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("sub", "Sub", input_config, output_config, op_attr);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  auto op_config = std::make_shared<OperatorConfig>("sub", "Sub", input_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

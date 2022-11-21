@@ -16,8 +16,8 @@
 
 namespace executor {
 
-ExpandIndicesOperator::ExpandIndicesOperator(const OperatorConfig& conf) : Operator(conf) {
-  auto attrs_map = operator_conf_.attributes();
+ExpandIndicesOperator::ExpandIndicesOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+  auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("position");
   if (iter != attrs_map.end()) {
     executor::StringSplit<int64_t>(&position_, attrs_map["position"], ",");

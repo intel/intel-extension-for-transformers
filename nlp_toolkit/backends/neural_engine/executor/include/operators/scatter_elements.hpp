@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_ELEMENTS_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_ELEMENTS_HPP_
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 
@@ -27,7 +28,7 @@ namespace executor {
 
 class ScatterElementsOperator : public Operator {
  public:
-  explicit ScatterElementsOperator(const OperatorConfig& conf);
+  explicit ScatterElementsOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~ScatterElementsOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

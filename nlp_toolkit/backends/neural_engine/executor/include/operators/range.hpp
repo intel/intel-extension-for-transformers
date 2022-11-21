@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_RANGE_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_RANGE_HPP_
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -28,7 +29,7 @@ namespace executor {
 
 class RangeOperator : public Operator {
  public:
-  explicit RangeOperator(const OperatorConfig& conf);
+  explicit RangeOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~RangeOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

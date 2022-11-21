@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_BINARY_ADD_HPP_
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -33,7 +34,7 @@ using dnnl::prop_kind;
 
 class BinaryAddOperator : public Operator {
  public:
-  explicit BinaryAddOperator(const OperatorConfig& conf);
+  explicit BinaryAddOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~BinaryAddOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

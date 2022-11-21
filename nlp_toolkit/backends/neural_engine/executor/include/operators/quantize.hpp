@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_QUANTIZE_HPP_
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -34,7 +35,7 @@ using dnnl::prop_kind;
 
 class QuantizeOperator : public Operator {
  public:
-  explicit QuantizeOperator(const OperatorConfig& conf);
+  explicit QuantizeOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~QuantizeOperator();
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

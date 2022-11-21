@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_REDUCE_MEAN_HPP_
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -33,7 +34,7 @@ using dnnl::prop_kind;
 
 class ReduceMeanOperator : public Operator {
  public:
-  explicit ReduceMeanOperator(const OperatorConfig& conf);
+  explicit ReduceMeanOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~ReduceMeanOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

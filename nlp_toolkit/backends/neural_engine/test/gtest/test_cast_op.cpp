@@ -29,7 +29,7 @@ using executor::TensorConfig;
 struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
-  OperatorConfig conf;
+  shared_ptr<OperatorConfig> conf;
 };
 
 struct TestParams {
@@ -37,12 +37,13 @@ struct TestParams {
   bool expect_to_fail;
 };
 
-void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output, const OperatorConfig& conf) {
+void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
+                 const shared_ptr<OperatorConfig>& conf) {
   Tensor* src = input[0];
   Tensor* dst = output[0];
   dst->set_shape(src->shape());
 
-  auto attrs_map = conf.attributes();
+  auto attrs_map = conf->attributes();
   auto iter = attrs_map.find("output_dtype");
   string output_dtype = iter == attrs_map.end() ? "fp32": attrs_map["output_dtype"];
 
@@ -121,7 +122,7 @@ TEST_P(CastTest, TestPostfix) {
 }
 
 template <typename T>
-std::pair<Tensor*, Tensor*> make_tensor_obj(const TensorConfig* a_tensor_config) {
+std::pair<Tensor*, Tensor*> make_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config) {
   // step1: set shape
   Tensor* a_tensor = new Tensor(*a_tensor_config);
   // step2: set tensor life
@@ -142,17 +143,19 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   // Step 1: Construct Tensor config ptr
   const vector<int64_t> src0_shape = input_shape[0];
   string src_dtype = output_dtype == "bf16" ? "fp32" : "bf16";
-  TensorConfig* src0_config = new TensorConfig("src0", src0_shape, src_dtype);
+  shared_ptr<TensorConfig> src0_config = std::make_shared<TensorConfig>("src0", src0_shape, src_dtype);
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape, output_dtype);
-  std::vector<TensorConfig*> inputs_config = {src0_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape, output_dtype);
+  std::vector<shared_ptr<TensorConfig>> inputs_config = {src0_config};
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map = {{"output_dtype", output_dtype}};
 
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("cast", "Cast", inputs_config, {dst_config}, op_attr);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("cast", "Cast",
+                                                   inputs_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto src0_tensors = output_dtype == "bf16" ? make_tensor_obj<float>(src0_config) :\
