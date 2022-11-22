@@ -1,4 +1,4 @@
-Just-in-time Deep Neural Network Library (SparseLib)
+SparseLib -- Transformers-accelerated Libraries
 ===========================================
 
 ## Abstract

@@ -1,10 +1,16 @@
 ### Performance and Profiling
-* We support a brief verbose logging for kernel execution
+
+## Verbose
+We support a brief verbose logger for kernel execution
 ```shell
 SPARSE_LIB_VERBOSE=1 ./{executable}
+sparselib_verbose,info,cpu,runtime:CPU,nthr:224                      # general info
+sparselib_verbose,exec,cpu,sparse_matmul,shape_256_256_128,14.4658   # first kernel
+sparselib_verbose,exec,cpu,sparse_matmul,shape_256_256_128,2.56982   # second kernel
 ```
 
-* For advanced users we also support vtune profling for kernels execution through [ITT Tasks](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/api-support/instrumentation-and-tracing-technology-apis/basic-usage-and-configuration/viewing-itt-api-task-data.html), to enable it you can follow the instructions:
+## VTune
+For advanced users we also support vtune profling for kernels execution through [ITT Tasks](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/api-support/instrumentation-and-tracing-technology-apis/basic-usage-and-configuration/viewing-itt-api-task-data.html), to enable it you can follow the instructions:
 
 ```shell
 mkdir build
@@ -17,7 +23,11 @@ make -j
 SPARSE_LIB_VTUNE=1 ./{executable}
 ```
 
-* There is another way to verify the code generation itself via [SDE](https://www.intel.com/content/www/us/en/developer/articles/tool/software-development-emulator.html). SDE is also simulators for future intel CPU hardware so you can verify the implementation using feature ISAs without real hardware support:
+We would recommend SSH methods in VTune to analyse details based on GUI.
+
+
+## SDE
+There is another way to verify the code generation itself via [SDE](https://www.intel.com/content/www/us/en/developer/articles/tool/software-development-emulator.html). SDE is also simulators for future intel CPU hardware so you can verify the implementation using feature ISAs **without** real hardware support:
 ```shell
 SPARSE_LIB_DUMP=1 ./{executable}
 path/to/sde/xed64 -64 -ir *.bin >> *.txt
