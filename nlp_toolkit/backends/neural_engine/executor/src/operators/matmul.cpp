@@ -216,7 +216,7 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
     attr_.set_output_scales(ic_dim, rescales);
     rescales_ = rescales;
   }
-
+#if __AVX512F__ && !__AMXINT8__
   if (dst_->dtype() == "fp32" && binary_add_ && src0_->dtype() == "fp32") {
     vector<int64_t> src0_perm_transpose{2, 0, 3, 1};
     vector<int64_t> src1_perm_transpose{2, 0, 1, 3};
@@ -250,6 +250,7 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
       }
     }
   }
+#endif
 }
 
 void MatmulOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
