@@ -166,7 +166,7 @@ if __name__ == '__main__':
         },
         install_requires=['numpy', 'transformers>=4.12.0', 'packaging'],
         scripts=['intel_extension_for_transformers/backends/neural_engine/bin/neural_engine'],
-        python_requires='>=3.6.0',
+        python_requires='>=3.7.0',
         classifiers=[
             'Intended Audience :: Science/Research',
             'Programming Language :: Python :: 3',
