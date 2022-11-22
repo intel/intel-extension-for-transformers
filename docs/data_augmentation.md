@@ -7,16 +7,16 @@ Data Augmentation is a tool to helps you with augmenting nlp datasets for your m
 pip install nlpaug
 pip install transformers>=4.12.0
 
-#### Install Nlp-toolkit
-git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git nlp_toolkit
-cd nlp_toolkit
+#### Install intel-extension-for-transformers
+git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
+cd intel_extension_for_transformers
 git submodule update --init --recursive
 python setup.py install
 
 ### Data Augmentation
 #### Script(Please refer to [example](tests/test_data_augmentation.py))
     ```python
-    from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
+    from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
     aug = DataAugmentation(augmenter_type="TextGenerationAug")
     aug.input_dataset = "dev.csv"
     aug.output_path = os.path.join(self.result_path, "test1.cvs")
@@ -58,7 +58,7 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
         example:
         ```python
         from datasets import load_dataset
-        from nlp_toolkit.preprocessing.utils import EOS
+        from intel_extension_for_transformers.preprocessing.utils import EOS
         for split in {'train', 'validation'}:
             dataset = load_dataset('glue', 'sst2', split=split)
             with open('SST-2/' + split + '.txt', 'w') as fw:
@@ -90,7 +90,7 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
 
 - Second, we generate labeled data. Given class labels sampled from the training set, we use the fine-tuned language model to predict sentences with below script:
     ```python
-    from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
+    from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
     aug = DataAugmentation(augmenter_type="TextGenerationAug")
     aug.input_dataset = "/your/original/training_set.csv"
     aug.output_path = os.path.join(self.result_path, "/your/augmented/dataset.cvs")
@@ -104,8 +104,8 @@ This data augmentation algorithm can be used in several scenarios, like model di
 augmenter_arguments:
 |parameter |Type|Description                                                 |default value |
 |:---------|:---|:---------------------------------------------------|:-------------|
-|"model_name_or_path"|String|Language modeling model to generate data, refer to [line](nlp_toolkit/preprocessing/data_augmentation.py#L181)|NA|
-|"stop_token"|String|Stop token used in input data file                     |[EOS](nlp_toolkit/preprocessing/utils.py#L7)|
+|"model_name_or_path"|String|Language modeling model to generate data, refer to [line](intel_extension_for_transformers/preprocessing/data_augmentation.py#L181)|NA|
+|"stop_token"|String|Stop token used in input data file                     |[EOS](intel_extension_for_transformers/preprocessing/utils.py#L7)|
 |"num_return_sentences"|Integer|Total samples to generate, -1 means the number of the input samples                    |-1|
 |"temperature"|float|parameter for CLM model                               |1.0|
 |"k"|float|top K                                |0.0|

@@ -17,8 +17,8 @@ Quantization is a widely-used model compression technique that can reduce model 
 ## quantization usage
 ### script:
 ```python
-from nlp_toolkit import metric, objectives, QuantizationConfig
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import metric, objectives, QuantizationConfig
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)

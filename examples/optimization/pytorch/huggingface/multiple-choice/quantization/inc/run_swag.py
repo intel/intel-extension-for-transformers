@@ -28,8 +28,8 @@ import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset
 from itertools import chain
-from nlp_toolkit import metrics, OptimizedModel, QuantizationConfig
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import metrics, OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 from transformers import (
     AutoConfig,
     AutoModelForMultipleChoice,

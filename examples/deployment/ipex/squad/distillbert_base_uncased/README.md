@@ -22,18 +22,18 @@ sudo apt install autoconf
 ```
 Install NLPTookit from source code
 ```shell
-cd <NLP_Toolkit_folder>
+cd <intel_extension_for_transformers_folder>
 git submodule update --init --recursive
 python setup.py install
 ```
 Install package for examples
 ```shell
-cd <NLP_Toolkit_folder>/examples/deployment/neural_engine/squad/bert_large
+cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/squad/bert_large
 pip install -r requirements.txt
 ```
 1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instance.
 ```
-export LD_PRELOAD=<NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
+export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
 Using weight sharing can save memory and improve the performance when multi instance.
 ```

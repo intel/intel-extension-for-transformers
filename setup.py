@@ -11,7 +11,7 @@ from subprocess import check_output
 cwd = os.path.dirname(os.path.abspath(__file__))
 
 try:
-    filepath = './nlp_toolkit/version.py'
+    filepath = './intel_extension_for_transformers/version.py'
     with open(filepath) as version_file:
         __version__, = re.findall('__version__ = "(.*)"', version_file.read())
 except Exception as error:
@@ -138,12 +138,12 @@ if __name__ == '__main__':
     check_submodules()
 
     setup(
-        name="nlp_toolkit",
+        name="intel_extension_for_transformers",
         version=__version__,
         author="Intel AIA/AIPC Team",
         author_email=
         "feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
-        description="Repository of Intel® NLP toolkit",
+        description="Repository of Intel® Extension for Transformers",
         long_description=open("README.md", "r", encoding='utf-8').read(),
         long_description_content_type="text/markdown",
         keywords=
@@ -152,7 +152,7 @@ if __name__ == '__main__':
         url="https://github.com/intel/",
         ext_modules=[
             CMakeExtension("neural_engine_py",
-                           str(cwd) + '/nlp_toolkit/backends/neural_engine/executor/')
+                           str(cwd) + '/intel_extension_for_transformers/backends/neural_engine/executor/')
         ],
         packages=find_packages(),
         include_package_data=True,
@@ -165,7 +165,7 @@ if __name__ == '__main__':
             'build_ext': build_ext,
         },
         install_requires=['numpy', 'transformers>=4.12.0', 'packaging'],
-        scripts=['nlp_toolkit/backends/neural_engine/bin/neural_engine'],
+        scripts=['intel_extension_for_transformers/backends/neural_engine/bin/neural_engine'],
         python_requires='>=3.6.0',
         classifiers=[
             'Intended Audience :: Science/Research',

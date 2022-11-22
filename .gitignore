@@ -13,5 +13,5 @@ tags
 build/
 _build
 dist/
-nlp_toolkit.egg-info/
+intel_extension_for_transformers.egg-info/
 

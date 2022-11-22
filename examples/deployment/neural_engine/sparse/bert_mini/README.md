@@ -30,20 +30,20 @@ sudo apt install autoconf
 Install NLPTookit from source code
 
 ```shell
-cd <NLP_Toolkit_folder>
+cd <intel_extension_for_transformers_folder>
 git submodule update --init --recursive
 python setup.py install
 ```
 Install package for example
 ```shell
-cd <NLP_Toolkit_folder>/examples/deployment/neural_engine/sst2/bert_mini
+cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/sst2/bert_mini
 pip install -r requirements.txt
 ```
 
 1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instances.
 
 ```
-export LD_PRELOAD=<NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
+export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
 
 Using weight sharing can save memory and improve the performance when multi instances.
@@ -75,7 +75,7 @@ python export_tranpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
 ```
 
 ### Benchmark
-Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [SparseLib](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/nlp_toolkit/backends/neural_engine/SparseLib) kernels and high performance layernorm op with transpose mode to improve inference performance.
+Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [SparseLib](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/SparseLib) kernels and high performance layernorm op with transpose mode to improve inference performance.
 
   2.1 accuracy
   run python
@@ -108,7 +108,7 @@ Neural Engine will automatically detect weight structured sparse ratio, as long 
   export OMP_NUM_THREADS=<cpu_cores>
   export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
   export UNIFIED_BUFFER=1
-  numactl -C 0-<cpu_cores-1> <NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/bin/neural_engine
+  numactl -C 0-<cpu_cores-1> <intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/bin/neural_engine
   --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
   --seq_len=128 --config=./sparse_int8_ir/conf.yaml --weight=./sparse_int8_ir/model.bin
   ```

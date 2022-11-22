@@ -1,5 +1,5 @@
-from nlp_toolkit.backends.neural_engine.compile import compile
-from nlp_toolkit.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 import os
 import argparse
 

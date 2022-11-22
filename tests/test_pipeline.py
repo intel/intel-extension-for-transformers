@@ -2,7 +2,7 @@ import os
 import unittest
 import neural_compressor.adaptor.pytorch as nc_torch
 from distutils.version import LooseVersion
-from nlp_toolkit.optimization.pipeline import pipeline
+from intel_extension_for_transformers.optimization.pipeline import pipeline
 from transformers import (
     AutoConfig,
     AutoTokenizer,

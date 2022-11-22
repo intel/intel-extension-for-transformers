@@ -1,82 +1,82 @@
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/gflags"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/gflags
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/gflags"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/gflags
 	url = https://github.com/gflags/gflags.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/glog"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/glog
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/glog"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/glog
 	url = https://github.com/google/glog.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/googletest"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/googletest
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/googletest"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/googletest
 	url = https://github.com/google/googletest.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/pybind11"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/pybind11
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/pybind11"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/oneDNN"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/oneDNN
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/oneDNN"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/oneDNN
 	url = https://github.com/oneapi-src/oneDNN.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/yaml-cpp"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/yaml-cpp
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/yaml-cpp"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/assert"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/assert
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/assert"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/assert
 	url = https://github.com/boostorg/assert.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/core"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/core
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/core"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/core
 	url = https://github.com/boostorg/core.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/move"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/move
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/move"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/move
 	url = https://github.com/boostorg/move.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/config"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/config
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/config"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/config
 	url = https://github.com/boostorg/config.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/container"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/container
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/container"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/container
 	url = https://github.com/boostorg/container.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/intrusive"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/intrusive
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/intrusive"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/intrusive
 	url = https://github.com/boostorg/intrusive.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/static_assert"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/static_assert
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/static_assert"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/static_assert
 	url = https://github.com/boostorg/static_assert.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/type_traits"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/type_traits
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/type_traits"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/type_traits
 	url = https://github.com/boostorg/type_traits.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/interprocess"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/interprocess
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/interprocess"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/interprocess
 	url = https://github.com/boostorg/interprocess.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc
 	url = https://github.com/jemalloc/jemalloc.git
-[submodule "nlp_toolkit/backends/neural_engine/SparseLib/third_party/xbyak"]
-	path = nlp_toolkit/backends/neural_engine/SparseLib/third_party/xbyak
+[submodule "intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/xbyak"]
+	path = intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/xbyak
 	url = https://github.com/herumi/xbyak.git
-[submodule "nlp_toolkit/backends/neural_engine/SparseLib/third_party/glog"]
-	path = nlp_toolkit/backends/neural_engine/SparseLib/third_party/glog
+[submodule "intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/glog"]
+	path = intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/glog
 	url = https://github.com/google/glog.git
-[submodule "nlp_toolkit/backends/neural_engine/SparseLib/third_party/googletest"]
-	path = nlp_toolkit/backends/neural_engine/SparseLib/third_party/googletest
+[submodule "intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/googletest"]
+	path = intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/googletest
 	url = https://github.com/google/googletest.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/unordered"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/unordered
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/unordered"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/unordered
 	url = https://github.com/boostorg/unordered.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/container_hash"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/container_hash
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/container_hash"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/container_hash
 	url = https://github.com/boostorg/container_hash.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/preprocessor"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/preprocessor
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/preprocessor"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/preprocessor
 	url = https://github.com/boostorg/preprocessor.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/throw_exception"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/throw_exception
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/throw_exception"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/throw_exception
 	url = https://github.com/boostorg/throw_exception.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/tuple"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/tuple
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/tuple"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/tuple
 	url = https://github.com/boostorg/tuple.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/predef"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/predef
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/predef"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/predef
 	url = https://github.com/boostorg/predef.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/mp11"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/boost/libs/mp11
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/mp11"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/mp11
 	url = https://github.com/boostorg/mp11.git
-[submodule "nlp_toolkit/backends/neural_engine/executor/third_party/oneDNNGraph"]
-	path = nlp_toolkit/backends/neural_engine/executor/third_party/oneDNNGraph
+[submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/oneDNNGraph"]
+	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/oneDNNGraph
 	url = https://github.com/oneapi-src/oneDNN.git
 	branch = dev-graph

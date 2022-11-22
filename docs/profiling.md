@@ -1,7 +1,7 @@
 # Profiling
 ## Introduction
 In terms of improving the performance of the model  ,we should evaluate the performance of each operator(op)  during inference.
-NLP Toolkit supports  tracing the profiling of operator latency.
+Intel Extension for Transformers supports  tracing the profiling of operator latency.
 ## Usage
 ### Example
 run python
@@ -11,7 +11,7 @@ ENGINE_PROFILING=1  python run_executor.py --input_model=./model_and_tokenizer/i
  or run C++
  ```shell
 export ENGINE_PROFILING=1 
-<NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/bin/neural_engine --batch_size=<batch_size> --iterations=<iterations> --w=<warmup> --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
+<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/bin/neural_engine --batch_size=<batch_size> --iterations=<iterations> --w=<warmup> --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
  ```
 
  ## Result

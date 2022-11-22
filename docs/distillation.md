@@ -8,8 +8,8 @@ Knowledge distillation is one of popular approaches of network compression, whic
 ## usage
 ### script:
 ```python
-from nlp_toolkit import metric, objectives, DistillationConfig, Criterion
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import metric, objectives, DistillationConfig, Criterion
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)

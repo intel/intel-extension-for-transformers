@@ -26,8 +26,8 @@ import sys
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from nlp_toolkit import metrics, objectives, OptimizedModel, QuantizationConfig
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import metrics, objectives, OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,

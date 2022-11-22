@@ -28,9 +28,9 @@ import numpy as np
 from datasets import load_dataset, load_metric
 
 import transformers
-from nlp_toolkit import OptimizedModel
-from nlp_toolkit.backends.openvino.nncf_utils import get_nncf_train_dataloader_for_init
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import OptimizedModel
+from intel_extension_for_transformers.backends.openvino.nncf_utils import get_nncf_train_dataloader_for_init
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 from nncf import NNCFConfig
 from nncf.config.structures import BNAdaptationInitArgs
 from nncf.config.structures import QuantizationRangeInitArgs

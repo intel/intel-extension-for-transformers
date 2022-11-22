@@ -4,13 +4,13 @@ import shutil
 import tensorflow as tf
 import unittest
 from datasets import load_dataset, load_metric
-from nlp_toolkit import (
+from intel_extension_for_transformers import (
     metrics,
     objectives,
     QuantizationConfig,
     TFOptimization
 )
-# from nlp_toolkit import metrics, objectives
+# from intel_extension_for_transformers import metrics, objectives
 from transformers import (
     AutoTokenizer,
     DefaultDataCollator,

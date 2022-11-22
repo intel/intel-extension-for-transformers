@@ -1222,7 +1222,7 @@ def main():
     
     if args.do_prune:
         # Pruning!
-        from nlp_toolkit import NoTrainerOptimizer, PrunerConfig, PruningConfig
+        from intel_extension_for_transformers import NoTrainerOptimizer, PrunerConfig, PruningConfig
         pruner_config = PrunerConfig(
             prune_type="GroupLasso",
             target_sparsity_ratio=0.7,

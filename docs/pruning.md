@@ -15,8 +15,8 @@ Pruning is the process of removing redundant parameters of a network. The idea i
 ## usage
 ### script:
 ```python
-from nlp_toolkit import metric, objectives, PrunerConfig, PruningConfig,
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import metric, objectives, PrunerConfig, PruningConfig,
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -37,7 +37,7 @@ The Metric define which metric will used to measure the performance of tuned mod
     Please refer to [metrics document](metrics.md) for the details.
 
 ### Create list of an instance of PrunerConfig(Optional)
-PrunerConfig defines which pruning algorithm is used and how to apply it during training process. NLP Toolkit supports pruning type is "BasicMagnitude", "PatternLock", and "GroupLasso". You can create different pruner for different layers.
+PrunerConfig defines which pruning algorithm is used and how to apply it during training process. Intel Extension for Transformers supports pruning type is "BasicMagnitude", "PatternLock", and "GroupLasso". You can create different pruner for different layers.
 
 - arguments:
     |Argument   |Type       |Description                                        |Default value    |

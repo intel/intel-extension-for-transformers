@@ -17,7 +17,7 @@ A subclass of `Trainer` specific to Question-Answering tasks
 """
 
 from transformers import  is_torch_tpu_available
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 from transformers.trainer_utils import PredictionOutput
 
 

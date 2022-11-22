@@ -532,7 +532,7 @@ def main():
     # endregion
     if distributed_args.multinode:
         logger.info('*** using multinode mode... ***')
-        from nlp_toolkit.optimization.utils.utility_tf import distributed_init, get_filepath
+        from intel_extension_for_transformers.optimization.utils.utility_tf import distributed_init, get_filepath
         assert distributed_args.worker is not None, "worker address list should not be empty"
         distributed_args.worker = distributed_args.worker.strip().split(',')
         distributed_init(distributed_args.worker,
@@ -628,8 +628,8 @@ def main():
         # endregion
     if optim_args.distill:
         logger.info('*** start distillation... ***')
-        from nlp_toolkit import metrics, DistillationConfig, TFOptimization
-        from nlp_toolkit.optimization.distillation import Criterion
+        from intel_extension_for_transformers import metrics, DistillationConfig, TFOptimization
+        from intel_extension_for_transformers.optimization.distillation import Criterion
         optimization = TFOptimization(
             model=model,
             args=training_args,

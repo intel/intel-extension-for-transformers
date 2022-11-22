@@ -1,5 +1,5 @@
 # Deployment
-NLP Toolkit provides multiple reference deployments: 1) [**Neural Engine**](neural_engine); 2) [IPEX (Coming Soon)](ipex/).
+Intel Extension for Transformers provides multiple reference deployments: 1) [**Neural Engine**](neural_engine); 2) [IPEX (Coming Soon)](ipex/).
 
 ## Neural Engine
 Neural Engine can provide the optimal performance of extremely compressed NLP models, the optimization is both from HW and SW.It's a reference deployment for NLPToolkit, we will enable other backends.
@@ -7,12 +7,12 @@ Neural Engine can provide the optimal performance of extremely compressed NLP mo
 Supported Examples
 | Question-Answering | Text-Classification |
 |:---:|:---:|
-|[Bert-large (SQUAD)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/squad/bert_large)|[Bert-mini (SST2)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/sst2/bert_mini)</br> [MiniLM (SST2)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/sst2/minilm_l6_h384_uncased)</br> [Distilbert (SST2)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/sst2/distilbert_base_uncased) </br> [Distilbert (Emotion)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/emotion/distilbert_base_uncased) </br> [Bert-base (MRPC)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/mrpc/bert_base)</br> [Bert-mini (MRPC)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/mrpc/bert_mini)</br>[Distilbert (MRPC)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/mrpc/distilbert_base_uncased)</br> [Roberta-base (MRPC)](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/examples/deployment/neural_engine/mrpc/roberta_base)</br>|
+|[Bert-large (SQUAD)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/squad/bert_large)|[Bert-mini (SST2)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/sst2/bert_mini)</br> [MiniLM (SST2)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/sst2/minilm_l6_h384_uncased)</br> [Distilbert (SST2)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/sst2/distilbert_base_uncased) </br> [Distilbert (Emotion)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/emotion/distilbert_base_uncased) </br> [Bert-base (MRPC)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/mrpc/bert_base)</br> [Bert-mini (MRPC)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/mrpc/bert_mini)</br>[Distilbert (MRPC)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/mrpc/distilbert_base_uncased)</br> [Roberta-base (MRPC)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/mrpc/roberta_base)</br>|
 
 ### Architecture
 Here is the architecture of reference deployment:
-<a target="_blank" href="../../nlp_toolkit/backends/nlp_executor/docs/imgs/infrastructure.png">
-  <img src="../../nlp_toolkit/backends/neural_engine/docs/imgs/infrastructure.png" alt="Infrastructure" width=762 height=672>
+<a target="_blank" href="../../intel_extension_for_transformers/backends/nlp_executor/docs/imgs/infrastructure.png">
+  <img src="../../intel_extension_for_transformers/backends/neural_engine/docs/imgs/infrastructure.png" alt="Infrastructure" width=762 height=672>
 </a>  
 
 #### Installation
@@ -37,15 +37,15 @@ pip install neural-compressor
 ##### 2. Build neural engine
 
 ```
-cd <project folder/nlp_toolkit/>
+cd <project folder/intel_extension_for_transformers/>
 python setup.py install/develop
 ```
-After succesful build, you will see `neural_engine` in the nlp_toolkit/build folder. 
+After succesful build, you will see `neural_engine` in the intel_extension_for_transformers/build folder. 
 
 ##### 3. Generate optimal BERT model
 
 ```
-from nlp_toolkit.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.backends.neural_engine.compile import compile
 model = compile('/path/to/your/model')
 model.save('/ir/path')
 ```

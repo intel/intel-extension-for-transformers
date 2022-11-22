@@ -36,7 +36,7 @@ For the old `finetune_trainer.py` and related utils, see [`examples/legacy/seq2s
 For custom datasets in `jsonlines` format please see: https://huggingface.co/docs/datasets/loading_datasets.html#json-files
 and you also will find examples of these below.
 
-## tune a quantized model with NLP_toolkit
+## tune a quantized model with intel_extension_for_transformers
 
 Here is an example on a summarization task:
 ```bash

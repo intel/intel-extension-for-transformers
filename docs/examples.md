@@ -1,6 +1,6 @@
 Examples 
 ===
-NLP Toolkit is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile NLP Toolkit provides Neural Engine, an optimized backend for NLP models to demonstrate the deployment.
+Intel Extension for Transformers is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile Intel Extension for Transformers provides Neural Engine, an optimized backend for NLP models to demonstrate the deployment.
 
 ## Quantization
 ### Stock PyTorch Examples

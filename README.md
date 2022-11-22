@@ -1,7 +1,7 @@
-# NLP Toolkit: Optimization for Natural Language Processing (NLP) Models
-NLP Toolkit is a powerful toolkit for automatically applying model optimizations on Natural Language Processing Models. It leverages [Intel® Neural Compressor](https://intel.github.io/neural-compressor) to provide a variety of model compression techniques: quantization, pruning, distillation and so on.
+# Intel Extension for Transformers: Optimization for Natural Language Processing (NLP) Models
+Intel Extension for Transformers is a powerful toolkit for automatically applying model optimizations on Natural Language Processing Models. It leverages [Intel® Neural Compressor](https://intel.github.io/neural-compressor) to provide a variety of model compression techniques: quantization, pruning, distillation and so on.
 
-## What does NLP Toolkit offer?
+## What does Intel Extension for Transformers offer?
 This toolkit allows developers to improve the productivity through ease-of-use model compression APIs by extending HuggingFace transformer APIs for deep learning models in NLP (Natural Language Processing) domain and accelerate the inference performance using compressed models.
 
 - Model Compression
@@ -22,18 +22,18 @@ This toolkit allows developers to improve the productivity through ease-of-use m
 pip install -r requirements.txt
 ```
 
-#### Install NLP Toolkit
+#### Install Intel Extension for Transformers
 ```bash
-git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git nlp_toolkit
-cd nlp_toolkit
+git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
+cd intel_extension_for_transformers
 git submodule update --init --recursive
 python setup.py install
 ```
 
 ### Quantization
 ```python
-from nlp_toolkit import QuantizationConfig, metric, objectives
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import QuantizationConfig, metric, objectives
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -51,8 +51,8 @@ Please refer to [quantization document](docs/quantization.md) for more details.
 
 ### Pruning
 ```python
-from nlp_toolkit import PrunerConfig, PruningConfig
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import PrunerConfig, PruningConfig
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -67,8 +67,8 @@ Please refer to [pruning document](docs/pruning.md) for more details.
 
 ### Distillation
 ```python
-from nlp_toolkit import DistillationConfig, Criterion
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import DistillationConfig, Criterion
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -85,7 +85,7 @@ Please refer to [distillation document](docs/distillation.md) for more details.
 Data augmentation provides the facilities to generate synthesized NLP dataset for further model optimization. The data augmentation supports text generation on popular fine-tuned models like GPT, GPT2, and other text synthesis approaches from [nlpaug](https://github.com/makcedward/nlpaug).
 
 ```python
-from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
+from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
 aug = DataAugmentation(augmenter_type="TextGenerationAug")
 aug.input_dataset = "original_dataset.csv" # example: https://huggingface.co/datasets/glue/viewer/sst2/train
 aug.column_names = "sentence"
@@ -123,10 +123,10 @@ Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [
 
 
 ### Neural Engine
-Neural Engine is one of reference deployments that NLP toolkit provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
+Neural Engine is one of reference deployments that Intel Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
 
 ```python
-from nlp_toolkit.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.backends.neural_engine.compile import compile
 # /path/to/your/model is a TensorFlow pb model or ONNX model
 model = compile('/path/to/your/model')
 inputs = ... # [input_ids, segment_ids, input_mask]

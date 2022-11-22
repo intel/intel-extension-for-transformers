@@ -3,7 +3,7 @@ import shutil
 import torch
 import unittest
 
-from nlp_toolkit import (
+from intel_extension_for_transformers import (
     DistillationConfig,
     metrics,
     objectives,
@@ -14,12 +14,12 @@ from nlp_toolkit import (
     FlashDistillationConfig,
     TFOptimization,
 )
-from nlp_toolkit.optimization.distillation import Criterion as DistillationCriterion
-from nlp_toolkit.optimization.distillation import DistillationCriterionMode
-from nlp_toolkit.optimization.trainer import NLPTrainer
-from nlp_toolkit.optimization.utils.objectives import Objective
-from nlp_toolkit.optimization.utils.utility_tf import TFDataloader
-from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
+from intel_extension_for_transformers.optimization.distillation import Criterion as DistillationCriterion
+from intel_extension_for_transformers.optimization.distillation import DistillationCriterionMode
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.optimization.utils.objectives import Objective
+from intel_extension_for_transformers.optimization.utils.utility_tf import TFDataloader
+from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
 
 from transformers import (
     AutoModelForPreTraining,

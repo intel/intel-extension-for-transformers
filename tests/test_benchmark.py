@@ -3,12 +3,12 @@ import shutil
 import unittest
 import neural_compressor.adaptor.pytorch as nc_torch
 from distutils.version import LooseVersion
-from nlp_toolkit import (
+from intel_extension_for_transformers import (
     metrics,
     objectives,
     QuantizationConfig,
 )
-from nlp_toolkit.optimization.benchmark import (
+from intel_extension_for_transformers.optimization.benchmark import (
     PyTorchBenchmark,
     PyTorchBenchmarkArguments,
     ExecutorBenchmark,

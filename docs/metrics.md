@@ -11,6 +11,6 @@ The Metric define which metric will used to measure the performance of tuned mod
 
 - example:
     ```python
-    from nlp_toolkit import metric
+    from intel_extension_for_transformers import metric
     metric.Metric(name="eval_f1", greater_is_better=True, is_relative=True, criterion=0.01, weight_ratio=None)
     ```
