@@ -52,7 +52,9 @@ class Dispatcher {
   // kernel implementation table
   typedef std::unordered_map<string, shared_ptr<Operator>> KernelHandler;
 
-  explicit Dispatcher(const shared_ptr<OperatorConfig>& conf): operator_conf_(conf) {
+  explicit Dispatcher(const shared_ptr<OperatorConfig>& conf, const ExecutionOptions* e_ptr)
+      : operator_conf_(conf),
+        execution_options_ptr_(e_ptr) {
     name_ = operator_conf_->name();
     type_ = operator_conf_->type();
     cpu_isa_ = get_max_isa();
@@ -65,18 +67,21 @@ class Dispatcher {
       CHECK_EQ(registry[type_].count(kernel_name), 1) << "Unknown dispatch kernel: "
         << kernel_name;
       kernel_handler_[kernel_name] = registry[type_][kernel_name](conf);
+      kernel_handler_[kernel_name]->execution_options_ptr_ = execution_options_ptr_;
     }
     execute_kernel_ = type_;
-    do_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
+    do_tuning_ = (execution_options_ptr_->execution_mode == ExecutionMode::TUNING);
   }
 
-  explicit Dispatcher(const shared_ptr<Operator>& op) : operator_conf_(op->operator_conf()) {
+  explicit Dispatcher(const shared_ptr<Operator>& op, const ExecutionOptions* e_ptr)
+      : operator_conf_(op->operator_conf()),
+        execution_options_ptr_(e_ptr) {
     name_ = operator_conf_->name();
     type_ = operator_conf_->type();
     cpu_isa_ = get_max_isa();
     kernel_handler_[name_] = op;
     execute_kernel_ = type_;
-    do_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
+    do_tuning_ = (execution_options_ptr_->execution_mode == ExecutionMode::TUNING);
   }
 
   ~Dispatcher() {}
@@ -110,64 +115,96 @@ class Dispatcher {
   }
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-    if (kernel_handler_[type_]->do_shape_infer()) {
-      // reset
-      kernel_handler_[type_]->set_do_shape_infer(false);
+    if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE && dispatch_table_file_exists_) {
+      if (kernel_handler_[type_]->do_shape_infer()) {
+        // reset
+        kernel_handler_[type_]->set_do_shape_infer(false);
+        if (adapt_action_) AdaptAttrs(input, output, "in");
+        kernel_handler_[execute_kernel_]->Reshape(input, output);
+        if (adapt_action_) AdaptAttrs(input, output, "out");
+      }
+    } else {
+      if (adapt_action_) AdaptAttrs(input, output, "in");
       kernel_handler_[execute_kernel_]->Reshape(input, output);
+      if (adapt_action_) AdaptAttrs(input, output, "out");
     }
   }
 
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-    AdaptTensors(input, output, "in");
+    if (adapt_action_) AdaptTensors(input, output, "in");
     kernel_handler_[execute_kernel_]->Forward(input, output);
-    AdaptTensors(input, output, "out");
+    if (adapt_action_) AdaptTensors(input, output, "out");
+  }
+
+  // modify op attrs if need.
+  // e.g. SparseLib 3D gemm - BatchMatmul, prem related attrs in BatchMatMul need to adjust.
+  void AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {
+    kernel_handler_[execute_kernel_]->AdaptAttrs(input, output, stage);
   }
 
   // modify tensors when dispatched kernel needs different format, etc.
   // should call it before (in) or after (out) Forward
   void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {
-    if (!sparselib_available_[0] || kernel_handler_[execute_kernel_]->dispatch_config().empty()) return;
     kernel_handler_[execute_kernel_]->AdaptTensors(input, output, stage);
+    if (!output.empty() && stage == "out") {
+      LOG(INFO) << "Operator " << name_ << " output tensor's format is " << int(output[0]->tensor_format())
+                << " (please see tensor.hpp for format details)...";
+    }
+  }
+
+  // reset op like tensor format after finishing inference iteration
+  void ResetOpStatus(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+    if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE && dispatch_table_file_exists_) {
+      kernel_handler_[execute_kernel_]->ResetOpStatus(input, output);
+    }
   }
 
   void GetExecuteKernel(const vector<Tensor*>& input, const vector<Tensor*>& output,
-                        const bool& reshape_model, const string& dispatch_table_file_root,
-                        const bool& has_dispatch_table_file) {
+                        const bool& reshape_model, const bool& has_dispatch_table_file) {
     LOG(INFO) << "Operator " << name_ << " with type " << type_ << " is ready to get execute kernel...";
     // reset
     execute_kernel_ = type_;
     if (!do_tuning_) {
-      // get input tensor info if is under dynamic model inputs
-      if (reshape_model) {
-        if (kernel_handler_.size() > 1 || (!sparselib_available_.empty() && sparselib_available_[0])) {
-          kernel_handler_[type_]->set_do_shape_infer(true);
-          kernel_handler_[type_]->ShapeInfer(input, output);
-        }
-        kernel_handler_[type_]->Reshape(input, output);
-      }
       vector<string> kernel_config;
-      if (!no_tuning_space_ && has_dispatch_table_file) {
-        // generate hash key and find the best kernel if has dispatch table
-        // only load once
+      if (has_dispatch_table_file) {
+        dispatch_table_file_exists_ = true;
+        // dispatch table only load once
         if (DispatchTable::Size() == 0) {
           LOG(INFO) << "Loading diapatch table file...";
-          DispatchTable::Load(dispatch_table_file_root);
+          DispatchTable::Load(execution_options_ptr_->dispatch_table_file_root);
         }
-        kernel_config = DispatchTable::Find(type_, GetHash(input));
-        if (!kernel_config.empty()) {
-          string kernel_name = kernel_config[0];
-          // sparselib
-          if (kernel_name == "SparseLib") {
-            execute_kernel_ = type_;
-            kernel_handler_[type_]->set_dispatch_config(kernel_config);
-          } else {
-            // dense
-            if (kernel_handler_.count(kernel_name) > 0) {
-              execute_kernel_ = kernel_name;
-              kernel_handler_[kernel_name]->set_dispatch_config(kernel_config);
+        // get input tensor info if is under dynamic model inputs
+        // generate hash key and find the best kernel if has dispatch table
+        if (reshape_model) {
+          if (kernel_handler_.size() > 1 || (!sparselib_available_.empty() && sparselib_available_[0])) {
+            kernel_handler_[type_]->set_do_shape_infer(true);
+            kernel_handler_[type_]->ShapeInfer(input, output);
+          }
+          AdaptAttrs(input, output, "in");
+          kernel_handler_[type_]->Reshape(input, output);
+          AdaptAttrs(input, output, "out");
+        }
+        if (!no_tuning_space_) {
+          kernel_config = DispatchTable::Find(type_, GetHash(input));
+          if (!kernel_config.empty()) {
+            string kernel_name = kernel_config[0];
+            // sparselib
+            if (kernel_name == "SparseLib") {
+              execute_kernel_ = type_;
+              kernel_handler_[type_]->set_dispatch_config(kernel_config);
+              // pass SparseLib 3D shape
+              kernel_handler_[type_]->ShapeInfer(input, output);
+            } else {
+              // dense
+              if (kernel_handler_.count(kernel_name) > 0) {
+                execute_kernel_ = kernel_name;
+                kernel_handler_[kernel_name]->set_dispatch_config(kernel_config);
+              }
             }
           }
         }
+      } else {
+        if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE) adapt_action_ = false;
       }
       LOG(INFO) << "Operator " << name_ << " with type " << type_ << " gonna dispatch by kernel "
                 << (kernel_config.empty() ? execute_kernel_ : kernel_config[0]);
@@ -179,7 +216,9 @@ class Dispatcher {
       size_t input_hash = GetHash(input);
       iter_cnt_ += 1;
       // consider warmup when tuning
-      if (!no_tuning_space_ && (iter_cnt_<= warmup_iter_ + 1 || DispatchTable::Find(type_, input_hash).empty())) {
+      LOG(INFO) << "tuning warm up iterations is " << (execution_options_ptr_->warmup_iter);
+      if (!no_tuning_space_ && (iter_cnt_<= (execution_options_ptr_->warmup_iter + 1) ||
+          DispatchTable::Find(type_, input_hash).empty())) {
         // keep kernel with the least time as first pair
         std::map<float, vector<string>, std::less<float>> timer;
         OpTuning op_tuning(type_);
@@ -231,8 +270,8 @@ class Dispatcher {
         vector<string> kernel_config = DispatchTable::Find(type_, input_hash);
         string kernel_name = (!kernel_config.empty() && kernel_config[0] != "SparseLib") ? kernel_config[0] : type_;
         kernel_handler_[kernel_name]->set_dispatch_config(kernel_config);
-        if (reshape_model || !kernel_config.empty()) kernel_handler_[kernel_name]->Reshape(input, output);
         execute_kernel_ = kernel_name;
+        if (reshape_model || !kernel_config.empty()) Reshape(input, output);
         Forward(input, output);
       }
     }
@@ -246,7 +285,6 @@ class Dispatcher {
   inline const shared_ptr<OperatorConfig>& operator_conf() const { return operator_conf_; }
   inline const string& execute_kernel() const { return execute_kernel_; }
   inline const bool& no_tuning_space() const { return no_tuning_space_; }
-  inline const void set_warmup_iter(const int& warmup_iter) { warmup_iter_ = warmup_iter; }
   // for profiling
   inline void set_post_op(const string& post_op) { kernel_handler_[execute_kernel_]->set_post_op(post_op); }
   inline const string& post_op() { return kernel_handler_[execute_kernel_]->post_op(); }
@@ -305,11 +343,13 @@ class Dispatcher {
   string execute_kernel_;
   bool do_tuning_ = false;
   bool no_tuning_space_ = false;
-  int64_t warmup_iter_ = 1;
   int64_t iter_cnt_ = 0;
   vector<bool> sparselib_available_;
   bool tune_dense_in_sparse_ = false;
   string monopoly_kernel_;
+  bool dispatch_table_file_exists_ = false;
+  const ExecutionOptions* execution_options_ptr_;
+  bool adapt_action_ = true;
 };
 }  // namespace executor
 

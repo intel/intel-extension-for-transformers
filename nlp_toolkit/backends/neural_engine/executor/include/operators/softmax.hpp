@@ -42,6 +42,7 @@ class SoftmaxOperator : public Operator {
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  void AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
 
  private:
   int axis_;

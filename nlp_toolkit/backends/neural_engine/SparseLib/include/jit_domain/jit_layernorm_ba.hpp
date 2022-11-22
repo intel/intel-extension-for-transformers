@@ -94,11 +94,13 @@ class jit_layernorm_ba_t : public jit_generator {
   Reg64 reg_alpha;
   Reg64 reg_beta;
   Reg64 reg_affine_offset;
+  Reg64 reg_batch;
 
   Xbyak::Label col_loop_start;
   Xbyak::Label mean_loop_start;
   Xbyak::Label var_loop_start;
   Xbyak::Label norm_loop_start;
+  Xbyak::Label batch_loop_start;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_

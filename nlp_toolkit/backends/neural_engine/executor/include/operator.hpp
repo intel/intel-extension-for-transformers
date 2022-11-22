@@ -26,6 +26,8 @@
 #include "common.hpp"
 #include "operator_registry.hpp"
 #include "tensor.hpp"
+#include "execution_options.hpp"
+
 using std::shared_ptr;
 
 namespace executor {
@@ -56,8 +58,24 @@ class Operator {
 
   virtual void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) = 0;
 
+  // modify op attrs befor (in) and after (out) Reshape
+  virtual void AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {}
+
   // modify tensors before (in) or after (out) Forward
-  virtual void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {}
+  virtual void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {
+    if (stage == "in") {
+      if (!input.empty() && !output.empty()) {
+        output[0]->set_tensor_format(input[0]->tensor_format());
+      }
+    } else if (stage == "out") {
+      return;
+    } else {
+      LOG(WARNING) << "Wrong stage parameter, should be in or out...";
+    }
+  }
+
+  // reset op like tensor format after finishing inference iteration
+  virtual void ResetOpStatus(const vector<Tensor*>& input, const vector<Tensor*>& output) {}
 
   // infer dst tensor's shape
   // use the shape to get hash when feed random inputs
@@ -73,6 +91,7 @@ class Operator {
     }
   }
 
+  friend class Dispatcher;
   inline const string& name() const { return name_; }
   inline const string& type() const { return type_; }
   const shared_ptr<OperatorConfig>& operator_conf() const { return operator_conf_; }
@@ -118,6 +137,8 @@ class Operator {
   vector<string> dispatch_config_;
   bool do_shape_infer_ = false;
   bool monopolize_dispatcher_ = false;
+  const ExecutionOptions* execution_options_ptr_;
+  bool adapt_attrs_ = false;
   // for profiling
   string post_op_;
   vector<float> latency_;

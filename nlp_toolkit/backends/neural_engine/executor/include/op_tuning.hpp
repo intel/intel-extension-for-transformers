@@ -169,14 +169,14 @@ class OpTuning {
       return;
     }
     // sparselib search space
-    vector<int64_t> bs_space = {64, 128, 192, 256};
+    vector<int64_t> bs_space = {64, 128, 192, 256, 384, 512};
     // micro_oc is positive integer fulfilling micro_oc <= OC && micro_oc % 4 == 0 determined the
     // size along the output dimension is processed in each OMP iteration. If it is set to 0, the
     // kernel will choose a value so that number of OMP iterations is equal to omp_get_max_threads().
     // That is : micro_oc = ceil(OC / (num_threads / num_microbs)) && (micro_oc % 4) == 0
     vector<string> micro_oc_space = {"0", "64", "128", "256"};
     // higher sub_func value means more operations are done in sub-function (i.e. less unrolling).
-    vector<string> sub_func_space = {"0", "1", "2", "3", "4"};
+    vector<string> sub_func_space = {"0", "1", "2"};
     // sparselib dispatch kernel config is {"input_shape", "micro_oc", "sub_func"}
     std::map<float, vector<string>, std::less<float>> bs_attr_timer;
     // M x k -> mic_bs x K x bs
@@ -185,6 +185,7 @@ class OpTuning {
     vector<int64_t> src1_shape = input[1]->shape();
     int64_t m_dim = src1_shape[1];
     int64_t k_dim = src1_shape[0];
+    int64_t model_input_bs = InputShapeRecorder::GetInstance().GetShape()[0];
     bool oneKM_shape_filling = false;
     for (const auto& bs : bs_space) {
       if (bs == 0) continue;
@@ -194,10 +195,14 @@ class OpTuning {
       }
       if (m_dim < bs) break;
       if (m_dim % bs == 0) {
-        if (m_dim / bs == 1 && oneKM_shape_filling) continue;
+        if ((m_dim / bs) == 1 && oneKM_shape_filling) continue;
+        if ((m_dim / bs) > model_input_bs || model_input_bs % (m_dim / bs) > 0) continue;
         micbs_bs_comb.push_back(std::to_string(m_dim / bs) + "," + std::to_string(k_dim) + "," + std::to_string(bs));
-        if (m_dim / bs == 1) oneKM_shape_filling = true;
+        if ((m_dim / bs) == 1) oneKM_shape_filling = true;
       }
+    }
+    if (micbs_bs_comb.empty() || !oneKM_shape_filling) {
+      micbs_bs_comb.push_back("1," + std::to_string(k_dim) + "," + std::to_string(m_dim));
     }
     // select the micro_os which is <= oc
     vector<string> micro_oc_space_filtered;
@@ -233,11 +238,11 @@ class OpTuning {
       kernel->Reshape(input, output);
       end_time = Time();
       reshape_time = Duration(start_time, end_time);
-      start_time = Time();
       kernel->AdaptTensors(input, output, "in");
+      start_time = Time();
       kernel->Forward(input, output);
-      kernel->AdaptTensors(input, output, "out");
       end_time = Time();
+      kernel->AdaptTensors(input, output, "out");
       float execute_time = Duration(start_time, end_time);
       if (reshape_model) execute_time += reshape_time;
       bs_attr_timer[execute_time] = kernel_config_cpy;

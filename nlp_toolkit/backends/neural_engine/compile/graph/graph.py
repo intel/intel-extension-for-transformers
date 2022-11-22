@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import re
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from .. import logger
 import numpy as np
 import yaml
@@ -30,6 +30,8 @@ class Graph(object):
         self._nodes = []
         self._node_id = {}
         self._engine = None
+        self._execution_options = None
+        self._refresh_execution_options = False
 
     @property
     def nodes(self):
@@ -38,6 +40,27 @@ class Graph(object):
     @nodes.setter
     def nodes(self, new_nodes):
         self._nodes = new_nodes
+
+    @property
+    def execution_options(self):
+        logger.warning("execution_options' option values are constants. " \
+                    "Please reset the execution_option property if you want change some " \
+                    "options when inference, like 'graph.execution_options = your_new_options'. " \
+                    "Do not use 'graph.execution_options.some_option = value' directly!")
+        import neural_engine_py as dp
+        options = dp.ExecutionOptions()
+        options_list = [option for option in dir(options)
+                            if not option.startswith("__") and not option.startswith("__")]
+        execution_option_ret = namedtuple("ExecutionOptions", options_list)
+        values = [None] * len(options_list)
+        if self._execution_options:
+            values = [getattr(self._execution_options, option) for option in options_list]
+        return execution_option_ret._make(values)
+
+    @execution_options.setter
+    def execution_options(self, options):
+        self._execution_options = options
+        self._refresh_execution_options = True
 
     def insert_nodes(self, index, nodes):
         idx = index
@@ -342,12 +365,16 @@ class Graph(object):
         output_list = []
         for node in net_info['model']['operator']['output_data']['input']:
             output_list.append(node)
-        model = dp.Model(model_config, weight_data)
+        if self._execution_options:
+            model = dp.Model(model_config, weight_data, self._execution_options)
+        else:
+            model = dp.Model(model_config, weight_data)
         self._engine = [model, output_list, op_configs, tensor_output, tensor_input, attr_map_list]
 
     def inference(self, input_data):
-        if self._engine is None:
+        if self._refresh_execution_options or self._engine is None:
             self.engine_init()
+            self._refresh_execution_options = False
         output = self._engine[0].forward(input_data)
         index = 0
         output_dict = OrderedDict()

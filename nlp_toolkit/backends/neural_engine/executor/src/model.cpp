@@ -26,6 +26,14 @@ Model::Model(const string& conf_file, const string& weight_root) :
   Init(conf);
 }
 
+Model::Model(const ModelConfig& conf, const string& weight_root, const ExecutionOptions& execution_options)
+    : weight_root_(weight_root),
+      execution_options_(execution_options) {
+    if (execution_options_.enable_op_tuning) execution_options_.execution_mode = ExecutionMode::TUNING;
+    if (execution_options_.execution_mode == ExecutionMode::TUNING) execution_options_.enable_op_tuning = true;
+    Init(conf);
+}
+
 Model::~Model() {
   if (engine_profiling_) {
     LOG(INFO) << "Neural engine profiling ...";
@@ -82,6 +90,19 @@ void Model::Init(const ModelConfig& conf) {
   for (size_t i = 0; i < tensors_.size(); ++i) {
     LOG(INFO) << "tensor name is " << tensors_[i]->name() << " tensor life is  " << tensors_[i]->life();
   }
+  // set execution_mode to DEBUG if add intermediate tensor in Output op
+  if (execution_options_.execution_mode == ExecutionMode::INFERENCE && model_output_tensors_.size() > 1) {
+    for (int i = 0; i < model_output_tensors_.size(); ++i) {
+      if (model_output_tensors_[i]->life() > 1) {
+        execution_options_.execution_mode = ExecutionMode::DEBUG;
+        break;
+      } else {
+        continue;
+      }
+    }
+  }
+  LOG(INFO) << "Model Execution Mode is " << int(execution_options_.execution_mode)
+            << ", (0: INFERENCE, 1: DEBUG, 2: TUNING)...";
   // prepare the operator like cache weight
   for (int i = 0; i < operators_.size(); ++i) {
     operators_[i]->Prepare(input_vecs_[i], output_vecs_[i]);
@@ -116,28 +137,17 @@ void Model::Init(const ModelConfig& conf) {
   }
 
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
-  is_dispatcher_tuning_ = (getenv("ENGINE_DISPATCHER_TUNING_ON") != NULL);
-
-  char* env_root = getenv("ENGINE_DISPATCH_TABLE_FILE_ROOT");
-  char* home_env = getenv("HOME");
-  if (env_root != NULL) {
-    dispatch_table_file_root_ = env_root;
-  } else if (home_env != NULL) {
-    dispatch_table_file_root_ = string(home_env) + "/.cache/neural_engine_workspace/engine_dispatch_table.txt";
-  } else {
-    LOG(ERROR) << "Please export ENGINE_DISPATCH_TABLE_FILE_ROOT or HOME";
-  }
 
 #ifdef WIN32
   {
-    FILE* fp = fopen(dispatch_table_file_root_.c_str(), "r");
+    FILE* fp = fopen(execution_options_.dispatch_table_file_root.c_str(), "r");
     has_dispatch_table_file_ = fp != NULL;
     if (fp) {
       fclose(fp);
     }
   }
 #else
-  has_dispatch_table_file_ = (access(dispatch_table_file_root_.c_str(), F_OK) != -1);
+  has_dispatch_table_file_ = (access(execution_options_.dispatch_table_file_root.c_str(), F_OK) != -1);
 #endif
   if (!has_dispatch_table_file_) LOG(INFO) << "Missing dispatch table file, " \
                                   "all operators will use their own default kernels." \
@@ -258,22 +268,22 @@ void Model::SetOutput(const shared_ptr<OperatorConfig>& op_conf, const int opera
 }
 
 void Model::SetDispatchKernel(const bool& reshape_model) {
-  if (is_dispatcher_tuning_) {
+  if (execution_options_.execution_mode == ExecutionMode::TUNING) {
     for (int i = 0; i < operators_.size(); ++i) {
-      operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model,
-                                      dispatch_table_file_root_, has_dispatch_table_file_);
+      operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model, has_dispatch_table_file_);
     }
   } else {
     if (reshape_model) {
       for (int i = 0; i < operators_.size(); ++i) {
-        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model,
-                                        dispatch_table_file_root_, has_dispatch_table_file_);
+        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model, has_dispatch_table_file_);
       }
     }
   }
 
   // save dispatch table file after tuniung
-  if (is_dispatcher_tuning_ && DispatchTable::Size() > 0) DispatchTable::Save(dispatch_table_file_root_);
+  if (execution_options_.execution_mode == ExecutionMode::TUNING && DispatchTable::Size() > 0) {
+    DispatchTable::Save(execution_options_.dispatch_table_file_root);
+  }
 }
 
 vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
@@ -302,6 +312,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
       }
     }
   }
+  if (reshape_model) InputShapeRecorder::GetInstance().RecordShape(input_data[0].shape());
   for (int i = 0; i < input_data.size(); ++i) {
   // model_input_tesnor_[i]->free_data();
     model_input_tensors_[i]->set_data(input_data[i].mutable_data());
@@ -310,7 +321,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
 
   SetDispatchKernel(reshape_model);
 
-  if (!is_dispatcher_tuning_) {
+  if (execution_options_.execution_mode != ExecutionMode::TUNING) {
     if (reshape_model&&engine_profiling_) {
         for (int i = 0; i < operators_.size(); ++i) {
         LOG(INFO) << "operator " << operators_[i]->name() << " gonna reshape with type " << operators_[i]->type();
@@ -384,6 +395,11 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
         }
       }
     }
+    if (execution_options_.execution_mode == ExecutionMode::INFERENCE && has_dispatch_table_file_) {
+      for (int i = 0; i < operators_.size(); ++i) {
+        operators_[i]->ResetOpStatus(input_vecs_[i], output_vecs_[i]);
+      }
+    }
   }
   return this->output_tensors();
 }
@@ -448,7 +464,7 @@ void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) 
   if (!llga_enable) {
     LOG(INFO) << "Constructing original graph...";
     for (int i = 0; i < op_configs.size(); i++) {
-      operators_.push_back(std::make_shared<Dispatcher>(op_configs[i]));
+      operators_.push_back(std::make_shared<Dispatcher>(op_configs[i],  &execution_options_));
     }
     return;
   }
@@ -478,15 +494,14 @@ void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) 
   auto partitions = llga_info_.GetPartitions();
 
   // add Input layer into operators_
-  operators_.push_back(std::make_shared<Dispatcher>(op_configs[0]));
-
+  operators_.push_back(std::make_shared<Dispatcher>(op_configs[0], &execution_options_));
   std::set<int> unique_index;
   for (int i = 0; i < partitions.size(); i++) {
     auto partition = partitions[i];
     if (partition.is_supported()) {
       // create llga kernel and add it into operators_
       auto llgakernel = CreateLLGAKernel(op_configs, partition);
-      operators_.push_back(std::make_shared<Dispatcher>(llgakernel));
+      operators_.push_back(std::make_shared<Dispatcher>(llgakernel, &execution_options_));
     } else {
       // create original kernel and add it into operators_
       for (auto id : partition.get_ops()) {
@@ -495,14 +510,14 @@ void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) 
           continue;
         } else {
           unique_index.insert(idx);
-          operators_.push_back(std::make_shared<Dispatcher>(op_configs[idx]));
+          operators_.push_back(std::make_shared<Dispatcher>(op_configs[idx], &execution_options_));
         }
       }
     }
   }
 
   // add Output layer into operators_
-  operators_.push_back(std::make_shared<Dispatcher>(op_configs[op_configs.size() - 1]));
+  operators_.push_back(std::make_shared<Dispatcher>(op_configs[op_configs.size() - 1], &execution_options_));
 }
 
 }  // namespace executor

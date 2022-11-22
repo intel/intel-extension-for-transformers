@@ -139,5 +139,44 @@ void ReorderOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*
   this->unref_tensors(input);
 }
 
+void ReorderOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output,
+                                   const string& stage) {
+  if (stage == "in") {
+    // SparseLib 3D gemm - Reorder - Dense gemm
+    if (input[0]->tensor_format() == TensorFormat::MmKMb &&
+        src_perm_ == std::vector<int64_t>({0, 1}) && dst_perm_ == std::vector<int64_t>({1, 0})) {
+      src_shape_origin_ = input[0]->shape();
+      input[0]->set_shape({src_shape_origin_[1], src_shape_origin_[0] * src_shape_origin_[2]});
+      adapt_attrs_ = true;
+    }
+  } else if (stage == "out") {
+    if (adapt_attrs_) {
+      input[0]->set_shape(src_shape_origin_);
+      adapt_attrs_ = false;
+    }
+  } else {
+    LOG(WARNING) << "Wrong stage parameter, should be in or out...";
+  }
+}
+
+void ReorderOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output,
+                                   const string& stage) {
+  if (stage == "in") {
+    // SparseLib 3D gemm - Reorder - Dense gemm
+    if (input[0]->tensor_format() == TensorFormat::MmKMb &&
+        src_perm_ == std::vector<int64_t>({0, 1}) && dst_perm_ == std::vector<int64_t>({1, 0})) {
+      input[0]->reorder(input[0]->shape());
+      input[0]->set_tensor_format(TensorFormat::KM);
+      input[0]->set_shape({input[0]->shape()[0], input[0]->shape()[1] * input[0]->shape()[2]});
+      output[0]->set_tensor_format(TensorFormat::MK);
+      LOG(INFO) << "Reorder src tensor from MmKMb to KM of operator " << name_;
+    }
+  } else if (stage == "out") {
+    return;
+  } else {
+    LOG(WARNING) << "Wrong stage parameter, should be in or out...";
+  }
+}
+
 REGISTER_OPERATOR_CLASS(Reorder);
 }  // namespace executor

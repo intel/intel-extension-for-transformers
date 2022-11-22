@@ -480,5 +480,15 @@ void SoftmaxOperator::RuntimeMinmax(dnnl::stream& s) {
   dnnl::reduction::primitive_desc reduce_max_pd(reduce_max_d, eng_);
   dnnl::reduction(reduce_max_pd).execute(s, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
 }
+
+void SoftmaxOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {
+  if (stage == "in") {
+    output[0]->set_tensor_format(input[0]->tensor_format());
+  } else if (stage == "out") {
+    return;
+  } else {
+    LOG(WARNING) << "Wrong stage parameter, should be in or out...";
+  }
+}
 REGISTER_OPERATOR_CLASS(Softmax);
 }  // namespace executor

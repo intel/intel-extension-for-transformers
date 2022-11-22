@@ -42,6 +42,8 @@ class MatmulOperator : public Operator {
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  void AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
+  void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
 
   void ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
@@ -57,6 +59,11 @@ class MatmulOperator : public Operator {
   void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
                       vector<float>* dynamic_bias_ptr);
   void RuntimeMinmax();
+  void SetTransposeMode();
+  void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  inline void InputShapeFallBack(const vector<Tensor*>& input);
+  inline void UnsqueezePerm(vector<int64_t>* perm);
+  inline void ResetPerm(vector<int64_t>* perm, const string& perm_name);
   // Converting string variables from operators attrs to boolean, or int/float
  protected:
   // Matrix can optionally be adjointed (to adjoint a matrix means to transpose and conjugate it).
@@ -120,6 +127,11 @@ class MatmulOperator : public Operator {
   Tensor* dst_min_ = nullptr;
   Tensor* dst_max_ = nullptr;
   string append_op_;
+
+  // src tensor shape before fall back
+  vector<int64_t> src0_shape_bfb_;
+  vector<int64_t> src1_shape_bfb_;
+
   jd::tensor_desc src0_desc_;
   jd::tensor_desc src1_desc_;
   jd::tensor_desc binary_desc_;

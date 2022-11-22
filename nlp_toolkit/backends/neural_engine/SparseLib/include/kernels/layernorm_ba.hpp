@@ -78,7 +78,13 @@ class layernorm_ba_k_t : public kernel_t {
 
  private:
   std::vector<jit_layernorm_ba_t*> jit_kers_;
-  int64_t nthr_;
+  int64_t per_ker_process_batch;
+  int64_t ker_num;
+  int batch_loop;
+  int row_num;
+  int col_num;
+  data_type src_dt;
+  data_type dst_dt;
   std::vector<ssd::layernorm_ba_data_t*> td;
 };
 

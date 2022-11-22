@@ -48,6 +48,7 @@ class InnerProductOperator : public Operator {
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
   void ShapeInfer(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  void ResetOpStatus(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
@@ -56,6 +57,7 @@ class InnerProductOperator : public Operator {
   void ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void PrepareDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ShapeInferDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
   void ReshapeSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #if __AVX512F__

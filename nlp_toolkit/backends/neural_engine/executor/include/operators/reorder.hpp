@@ -41,6 +41,8 @@ class ReorderOperator : public Operator {
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  void AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
+  void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
 
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
@@ -61,6 +63,8 @@ class ReorderOperator : public Operator {
 
   Tensor* src_min_ = nullptr;
   Tensor* src_max_ = nullptr;
+  // for dispatcher
+  vector<int64_t> src_shape_origin_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_REORDER_HPP_

@@ -26,7 +26,9 @@ struct layernorm_ba_param_t {
   data_type affine_dt;
   int row_num;
   int col_num;
-  int process_col;           // for control loop.
+  int process_col;  // for control loop.
+  int process_batch_per_ker;
+  int ker_per_batch;
   size_t thread_elt_offset;  // for load data.
   std::vector<postop_attr> postop_attrs;
   std::vector<binaryop_attr> binaryop_attrs;

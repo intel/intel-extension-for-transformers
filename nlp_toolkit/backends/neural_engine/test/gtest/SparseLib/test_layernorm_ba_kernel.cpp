@@ -30,7 +30,8 @@ static unsigned int rand_seed = 123;
 
 void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   auto tensor_desc = op_desc.tensor_descs();
-  int row = tensor_desc[0].reduce_rows();
+  int batch = tensor_desc[0].shape().size() == 2 ? 1 : tensor_desc[0].shape()[0];
+  int row = tensor_desc[0].shape().size() == 2 ? tensor_desc[0].shape()[0] : tensor_desc[0].shape()[1];
   int col = tensor_desc[0].shape().back();
   auto src_dt = tensor_desc[0].dtype();
   LOG_IF(FATAL, src_dt != data_type::fp32);
@@ -44,39 +45,33 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   auto dst_fp32 = static_cast<float*>(dst_data);
   auto dst_u8 = static_cast<uint8_t*>(dst_data);
   auto dst_s8 = static_cast<int8_t*>(dst_data);
-
-  std::vector<float> v_mean, v_var;
-  for (int i = 0; i < col; i++) {
-    // calculate mean.
-    float mean = 0;
-    for (int j = 0; j < row; j++) mean += src[j * col + i];
-    mean /= row;
-    v_mean.push_back(mean);
-    // calculate var
-    float var = 0;
-    for (int j = 0; j < row; j++) var += (src[j * col + i] - mean) * (src[j * col + i] - mean);
-    var /= row;
-    v_var.push_back(var);
-    var += 1e-5;
-    var = sqrt(var);
-    var = 1 / var;
-    // calculate layernorm.
-    auto binary_op_list = op_desc.get_binaryop_list();
-    for (int j = 0; j < row; j++) {
-      int dst_idx = j * col + i;
-      float value = (src[dst_idx] - mean) * var;
-      value = alpha[j] * value + beta[j];
-      value = apply_postop_list(value, op_desc.apply_postops_list());
-      // TODO(zhe1wang): refactor here when postop-injector avaliable
-      if (!binary_op_list.empty()) {
-        value = get_quantize(value, binary_op_list[0].zp[j], 1 / binary_op_list[0].scale[j], binary_op_list[0].op_dt);
-      }
-      if (dst_dt == data_type::fp32) {
-        dst_fp32[dst_idx] = static_cast<float>(value);
-      } else if (dst_dt == data_type::s8) {
-        dst_s8[dst_idx] = static_cast<int8_t>(value);
-      } else if (dst_dt == data_type::u8) {
-        dst_u8[dst_idx] = static_cast<uint8_t>(value);
+  for (int k = 0; k < batch; k++) {
+    for (int i = 0; i < col; i++) {
+      // calculate mean.
+      float mean = 0;
+      for (int j = 0; j < row; j++) mean += src[k * col * row + j * col + i];
+      mean /= row;
+      // calculate var
+      float var = 0;
+      for (int j = 0; j < row; j++)
+        var += (src[k * col * row + j * col + i] - mean) * (src[k * col * row + j * col + i] - mean);
+      var /= row;
+      var += 1e-5;
+      var = sqrt(var);
+      var = 1 / var;
+      // calculate layernorm.
+      for (int j = 0; j < row; j++) {
+        int dst_idx = k * row * col + j * col + i;
+        float value = (src[dst_idx] - mean) * var;
+        value = alpha[j] * value + beta[j];
+        value = apply_postop_list(value, op_desc.apply_postops_list());
+        if (dst_dt == data_type::fp32) {
+          dst_fp32[dst_idx] = static_cast<float>(value);
+        } else if (dst_dt == data_type::s8) {
+          dst_s8[dst_idx] = static_cast<int8_t>(value);
+        } else if (dst_dt == data_type::u8) {
+          dst_u8[dst_idx] = static_cast<uint8_t>(value);
+        }
       }
     }
   }
@@ -239,8 +234,8 @@ static auto case_func = []() {
   std::vector<test_params_t> cases;
   tensor_desc data_desc0 = {{768, 32}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc1 = {{768, 256}, jd::data_type::fp32, jd::format_type::ba};
-  tensor_desc data_desc2 = {{128, 2, 128}, jd::data_type::fp32, jd::format_type::ba};
-  tensor_desc data_desc3 = {{1024, 224}, jd::data_type::fp32, jd::format_type::ba};
+  tensor_desc data_desc2 = {{8, 768, 256}, jd::data_type::fp32, jd::format_type::ba};
+  tensor_desc data_desc3 = {{1024, 256}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc4 = {{768, 256}, jd::data_type::s8, jd::format_type::ba};
   tensor_desc affine_data_attr = {{}, jd::data_type::fp32, jd::format_type::ba};
 
@@ -250,21 +245,23 @@ static auto case_func = []() {
                              rand_float_postfix()};
 
   std::string tensor_shape0 = "728x32";
-  std::string tensor_shape1 = "768x224";
-  std::string tensor_shape2 = "256x128";
+  std::string tensor_shape1 = "768x256";
+  std::string tensor_shape2 = "32x768x256";
   std::string tensor_shape3 = "1024x256";
   std::string quantize_attrs8 = "s8quantize";
   std::string quantize_attru8 = "u8quantize";
 
-  cases.push_back({gen_case({data_desc0, data_desc0, affine_data_attr}, {}), false});
-  cases.push_back({gen_case({data_desc1, data_desc1, affine_data_attr}, {}), false});
-  cases.push_back({gen_case({data_desc2, data_desc2, affine_data_attr}, {}), false});
-  cases.push_back({gen_case({data_desc3, data_desc3, affine_data_attr}, {}), false});
-  cases.push_back(
-      {gen_case({data_desc1, data_desc4, affine_data_attr}, {{"postop_list", quantize_attrs8}}, {s8_quantize}), false});
-  cases.push_back(
-      {gen_case({data_desc1, data_desc4, affine_data_attr}, {{"postop_list", quantize_attru8}}, {u8_quantize}), false});
-  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr}, {{}}, {}, true), false});
+  cases.push_back({gen_case({data_desc0, data_desc0, affine_data_attr}, {{"matrix_shape", tensor_shape0}}), false});
+  cases.push_back({gen_case({data_desc1, data_desc1, affine_data_attr}, {{"matrix_shape", tensor_shape1}}), false});
+  cases.push_back({gen_case({data_desc2, data_desc2, affine_data_attr}, {{"matrix_shape", tensor_shape2}}), false});
+  cases.push_back({gen_case({data_desc3, data_desc3, affine_data_attr}, {{"matrix_shape", tensor_shape3}}), false});
+  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr},
+                            {{"matrix_shape", tensor_shape1}, {"postop_list", quantize_attrs8}}, {s8_quantize}),
+                   false});
+  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr},
+                            {{"matrix_shape", tensor_shape0}, {"postop_list", quantize_attru8}}, {u8_quantize}),
+                   false});
+
   return ::testing::ValuesIn(cases);
 };
 

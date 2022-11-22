@@ -46,6 +46,7 @@ class NEURALENGINE_API_ Model {
  public:
   explicit Model(const ModelConfig& conf, const string& weight_root);
   explicit Model(const string& conf_file, const string& weight_root);
+  explicit Model(const ModelConfig& conf, const string& weight_root, const ExecutionOptions& execution_options);
   virtual ~Model();
 
   void Init(const ModelConfig& conf);
@@ -128,8 +129,7 @@ class NEURALENGINE_API_ Model {
   ThreadPool tp;
   // for dispatcher
   bool has_dispatch_table_file_ = false;
-  string dispatch_table_file_root_;
-  bool is_dispatcher_tuning_ = false;
+  ExecutionOptions execution_options_;
   // for profiling
   bool engine_profiling_ = false;
   // for onednn graph

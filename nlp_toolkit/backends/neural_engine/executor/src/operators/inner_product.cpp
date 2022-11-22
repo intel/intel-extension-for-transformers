@@ -326,6 +326,25 @@ void InnerProductOperator::ShapeInfer(const vector<Tensor*>& input, const vector
   }
 }
 
+void InnerProductOperator::DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (!reshape_.empty()) {
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+    }
+    vector<int64_t> reshape(reshape_);
+    if (output[0]->shape().size() == 3 && output[0]->tensor_format() == TensorFormat::MmKMb) {
+      int64_t micro_bs = output[0]->shape()[0];
+      int64_t model_input_bs = InputShapeRecorder::GetInstance().GetShape()[0];
+      reshape.insert(reshape.begin(), micro_bs);
+      // replace batch size of ref_shape
+      ref_shape[0] = model_input_bs / micro_bs;
+    }
+    vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), ref_shape, reshape_dims_);
+    output[0]->set_shape(dst_shape);
+  }
+}
+
 void InnerProductOperator::PrepareSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   const vector<int64_t> weight_shape = src1_->shape();
   vector<int64_t> weight_shape_perm = weight_shape;
@@ -513,33 +532,49 @@ void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const 
   src0_->set_shape(src0_shape);
   src0_desc_ = {src0_->shape(), jd::data_type::s8, jd::format_type::bsr};
   if (has_bias_) bias_desc_ = {bias_->shape(), jd::data_type::s32, jd::format_type::ab};
+  // set sparse weight, src activation, dst activation and append_sum post activation tensor format
+  src0_->set_tensor_format(TensorFormat::NK);
+  src1_->set_tensor_format(TensorFormat::KM);
+  dst_->set_tensor_format(TensorFormat::KM);
+  if (post_ != nullptr && !binary_add_) post_->set_tensor_format(TensorFormat::KM);
 }
 
 void InnerProductOperator::ShapeInferSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // shape infer for dispatcher
   // save the SparseLib primitive class creation time
-  vector<int64_t> src1_shape_origin = src1_->shape();
-  vector<int64_t> src1_shape = src1_shape_origin;
-  if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{0, 1}) {
-    src1_shape = {src1_shape[1], src1_shape[0]};
-  }
-  vector<int64_t> dst_shape = {src0_->shape()[0], src1_shape[1]};
-  dst_->set_shape(dst_shape);
-  if (!reshape_.empty()) {
-    vector<int64_t> ref_shape;
-    if (!reshape_dims_.empty()) {
-      ref_shape = input.back()->shape();
+  if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
+    CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
+            << "InnerProduct to SparseLib has wrong dispatch kernel config...";
+    LOG(INFO) << "Operator " << name_ << " dispatch configs are " << dispatch_config_[0] << ","
+              <<  dispatch_config_[1] << "," <<  dispatch_config_[2] << "," <<  dispatch_config_[3];
+    // pass 3D shape and tensor_format
+    vector<int64_t> src1_3d_shape;
+    StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
+    dst_->set_tensor_format(TensorFormat::MmKMb);
+    dst_->set_shape({src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]});
+  } else {
+    vector<int64_t> src1_shape = src1_->shape();
+    if (src1_shape.size() == 2) {
+      if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{0, 1}) {
+        src1_shape = {src1_shape[1], src1_shape[0]};
+      }
+      dst_->set_shape({src0_->shape()[0], src1_shape[1]});
+      src0_->set_tensor_format(TensorFormat::NK);
+      src1_->set_tensor_format(TensorFormat::KM);
+      dst_->set_tensor_format(TensorFormat::KM);
+      if (post_ != nullptr && !binary_add_) post_->set_tensor_format(TensorFormat::KM);
+    } else {
+      dst_->set_shape({src1_shape[0], src0_->shape()[0], src1_shape[2]});
+      dst_->set_tensor_format(TensorFormat::MmKMb);
     }
-    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
-    output[0]->set_shape(dst_shape);
   }
+  DstReshapeFusion(input, output);
 }
 
 void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src1_shape_origin = src1_->shape();
   vector<int64_t> src1_shape = src1_shape_origin;
   // set dispatch config from tuning
-
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
     // e.g. dispatch_config_ = {"SparseLib", "1,256,128", "1,1,1", "4,4", "1"};
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
@@ -550,22 +585,35 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
     op_attrs_["micro_oc"] = dispatch_config_[2];
     op_attrs_["sub_func"] = dispatch_config_[3];
 
-    src1_->set_shape(src1_shape);
-    src1_desc_ = {src1_3d_shape, jd::data_type::u8, jd::format_type::ab};
-
     vector<int64_t> dst_3d_shape = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
     vector<int64_t> dst_2d_shape = {src0_->shape()[0], src1_3d_shape[0] * src1_3d_shape[2]};
-    dst_->set_shape(dst_2d_shape);
+    // pass SparseLib gemm 3D shape in INFERENCE mode
+    // the ops after it will do attrs and tensor adaptation
+    if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE) {
+      src1_->set_shape(src1_3d_shape);
+      dst_->set_shape(dst_3d_shape);
+    } else {
+      src1_->set_shape(src1_shape);
+      dst_->set_shape(dst_2d_shape);
+    }
+    src1_desc_ = {src1_3d_shape, jd::data_type::u8, jd::format_type::ab};
     dst_desc_ = {dst_3d_shape, type2sparsemem_[dst_->dtype()], jd::format_type::ab};
   } else {
+    vector<int64_t> dst_shape;
     // 2D
-    if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{0, 1}) {
-      src1_shape = {src1_shape[1], src1_shape[0]};
+    if (input[1]->shape().size() == 2) {
+      if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{0, 1}) {
+        src1_shape = {src1_shape[1], src1_shape[0]};
+      }
+      dst_shape = {src0_->shape()[0], src1_shape[1]};
+    // 3D
+    } else if (input[1]->shape().size() == 3) {
+      dst_shape = {src1_shape[0], src0_->shape()[0], src1_shape[2]};
+    } else {
+      LOG(FATAL) << "Wrong input shape for InnerProduct SparseLib, must be 2D or 3D...";
     }
     src1_->set_shape(src1_shape);
     src1_desc_ = {src1_shape, jd::data_type::u8, jd::format_type::ab};
-
-    vector<int64_t> dst_shape = {src0_->shape()[0], src1_shape[1]};
     dst_->set_shape(dst_shape);
     dst_desc_ = {dst_shape, type2sparsemem_[dst_->dtype()], jd::format_type::ab};
   }
@@ -597,15 +645,7 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
                             ts_descs, op_attrs_, postop_chain);
   jd::sparse_matmul_desc spmm_desc(op_desc);
   spmm_kern_ = jd::sparse_matmul(spmm_desc);
-
-  if (!reshape_.empty()) {
-    vector<int64_t> ref_shape;
-    if (!reshape_dims_.empty()) {
-      ref_shape = input.back()->shape();
-    }
-    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
-    output[0]->set_shape(dst_shape);
-  }
+  DstReshapeFusion(input, output);
 }
 
 #if __AVX512F__
@@ -640,38 +680,103 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
 
 void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output,
                                         const string& stage) {
-  // no use of sparselib
-  if (dispatch_config_.empty()) return;
   if (stage == "in") {
     // reorder 2d to 3d in SparseLib
     // 2D dense: [256, 768] x [768 328] -> [256, 328]
     // 2D sparselib: [328, 768] x [768, 256] -> [328, 256]
     // dispatch 3D sparselib: [328, 768] x [2, 768, 128] -> [2, 328, 128]
     // reorder src and post activation
-    if (dispatch_config_[0] == "SparseLib") {
+    if (kernel_type_ == SparseLib) {
       // reshape to 3d then reorder
       vector<int64_t> src1_3d_shape;
-      StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
-      vector<int64_t> src1_3d_shape_origin = {src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]};
-      input[1]->reorder(src1_3d_shape_origin);
-      if (post_ != nullptr && !binary_add_) {
-        vector<int64_t> post_3d_shape_origin = {src0_->shape()[0], src1_3d_shape[0], src1_3d_shape[2]};
-        post_->reorder(post_3d_shape_origin);
+      if (!dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
+        StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
       }
+      if (src1_3d_shape.empty()) {
+        src1_3d_shape = input[1]->shape();
+      }
+      if (src1_3d_shape.size() == 3) {
+        if (input[1]->tensor_format() == TensorFormat::KM) {
+          vector<int64_t> src1_3d_shape_origin = {src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]};
+          input[1]->reorder(src1_3d_shape_origin);
+          input[1]->set_tensor_format(TensorFormat::MmKMb);
+          LOG(INFO) << "Reorder src1 tensor from KM to MmKMb of operator " << name_;
+        }
+        if (post_ != nullptr && !binary_add_ && post_->tensor_format() == TensorFormat::KM) {
+          vector<int64_t> post_3d_shape_origin = {src0_->shape()[0], src1_3d_shape[0], src1_3d_shape[2]};
+          post_->reorder(post_3d_shape_origin);
+          post_->set_tensor_format(TensorFormat::MmKMb);
+          LOG(INFO) << "Reorder post tensor from KM to MmKMb of operator " << name_;
+        }
+        // set dst activation tensor format
+        output[0]->set_tensor_format(TensorFormat::MmKMb);
+        output[0]->set_shape({src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]});
+        DstReshapeFusion(input, output);
+      }
+    } else if (kernel_type_ == Dense) {
+      // SparseLib 3D gemm - Dense gemm (no Reorder between)
+      // BatchMatmul (receive SparseLib 3d format) - Reshape - Dense gemm (reshape does not change format)
+      if (input[0]->tensor_format() == TensorFormat::MmKMb ||
+          input[0]->tensor_format() == TensorFormat::BmHnHsBbS) {
+          if (input[0]->tensor_format() == TensorFormat::MmKMb) input[0]->reorder(input[0]->shape(), {0, 2, 1});
+          input[0]->set_tensor_format(TensorFormat::MK);
+          output[0]->set_tensor_format(TensorFormat::MK);
+          input[0]->set_shape({input[0]->shape()[0] * input[0]->shape()[1], input[0]->shape()[2]});
+      } else {
+        return;
+      }
+    } else {
+      return;
     }
   } else if (stage == "out") {
-    if (dispatch_config_[0] == "SparseLib") {
-      // reorder dst activation (optional)
-      vector<int64_t> src1_3d_shape;
-      StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
-      vector<int64_t> dst_3d_shape_origin = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
-      output[0]->reorder(dst_3d_shape_origin);
-      // reorder src and post back
-      if (input[1]->left_life() > 0) input[1]->reorder(src1_3d_shape);
-      if (post_ != nullptr && !binary_add_ && post_->left_life() > 0) post_->reorder(dst_3d_shape_origin);
+    if (kernel_type_ == SparseLib) {
+      // INFERENCE mode will try to reduce order operations times as few as possible
+      if (execution_options_ptr_->execution_mode != ExecutionMode::INFERENCE) {
+        // reorder dst, src and post activation back (optional)
+        // DEBUG and TUNING mode require all the tensors' format to keep same before and after the op
+        if (!dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
+          vector<int64_t> src1_3d_shape;
+          StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
+          vector<int64_t> dst_3d_shape_origin = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
+          output[0]->reorder(dst_3d_shape_origin);
+          output[0]->set_tensor_format(TensorFormat::KM);
+          output[0]->set_shape({output[0]->shape()[0],  output[0]->shape()[1] * output[0]->shape()[2]});
+          DstReshapeFusion(input, output);
+          LOG(INFO) << "Reorder dst tensor from MmKMb to KM of operator " << name_;
+          // reorder src and post back
+          input[1]->set_tensor_format(TensorFormat::KM);
+          if (input[1]->left_life() > 0) input[1]->reorder(src1_3d_shape);
+          input[1]->set_shape({src1_3d_shape[1], src1_3d_shape[0] * src1_3d_shape[2]});
+          LOG(INFO) << "Reorder src1 tensor from MmKMb to KM of operator " << name_;
+          if (post_ != nullptr && !binary_add_) {
+            post_->set_tensor_format(TensorFormat::KM);
+            if (post_->left_life() > 0) post_->reorder(dst_3d_shape_origin);
+            post_->set_shape(output[0]->shape());
+            LOG(INFO) << "Reorder post tensor from MmKMb to KM of operator " << name_;
+          }
+        }
+      }
     }
   } else {
     LOG(WARNING) << "Wrong stage parameter, should be in or out...";
+  }
+}
+
+void InnerProductOperator::ResetOpStatus(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (kernel_type_ == Dense) {
+    src0_->set_tensor_format(TensorFormat::MK);
+    src1_->set_tensor_format(TensorFormat::KN);
+    dst_->set_tensor_format(TensorFormat::MK);
+    if (post_ != nullptr && !binary_add_) post_->set_tensor_format(TensorFormat::MK);
+  } else if (kernel_type_ == SparseLib) {
+    src0_->set_tensor_format(TensorFormat::NK);
+    if (src1_->tensor_format() == TensorFormat::MmKMb) src1_->set_tensor_format(TensorFormat::KM);
+    if (dst_->tensor_format() == TensorFormat::MmKMb) dst_->set_tensor_format(TensorFormat::KM);
+    if (post_ != nullptr && !binary_add_ && post_->tensor_format() == TensorFormat::MmKMb) {
+      post_->set_tensor_format(TensorFormat::KM);
+    }
+  } else {
+    return;
   }
 }
 
@@ -713,6 +818,11 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
     any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
     bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
   }
+  // set src activation, dense weight, dst activation and append_sum post activationtensor format
+  src0_->set_tensor_format(TensorFormat::MK);
+  src1_->set_tensor_format(TensorFormat::KN);
+  dst_->set_tensor_format(TensorFormat::MK);
+  if (post_ != nullptr && !binary_add_) post_->set_tensor_format(TensorFormat::MK);
 }
 
 void InnerProductOperator::CalculateCompensation(const vector<int64_t>& src1_shape, const vector<int64_t>& src1_stride,
@@ -746,14 +856,7 @@ void InnerProductOperator::ShapeInferDense(const vector<Tensor*>& input, const v
     dst_min_->set_shape({1});
     dst_max_->set_shape({1});
   }
-  if (!reshape_.empty()) {
-    vector<int64_t> ref_shape;
-    if (!reshape_dims_.empty()) {
-      ref_shape = input.back()->shape();
-    }
-    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
-    output[0]->set_shape(dst_shape);
-  }
+  DstReshapeFusion(input, output);
 }
 
 // 1. Create primitive
@@ -952,15 +1055,7 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     inner_product_p_ = dnnl::inner_product_forward(inner_product_pd_);
     InnerProductPrimitiveFwdFactory::Set(key, inner_product_p_);
   }
-
-  if (!reshape_.empty()) {
-    vector<int64_t> ref_shape;
-    if (!reshape_dims_.empty()) {
-      ref_shape = input.back()->shape();
-    }
-    vector<int64_t> dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
-    output[0]->set_shape(dst_shape);
-  }
+  DstReshapeFusion(input, output);
 }
 
 // 2. inference kernel(for int8 and f32)

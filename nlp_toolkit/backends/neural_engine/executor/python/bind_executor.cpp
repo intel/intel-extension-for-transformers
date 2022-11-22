@@ -20,6 +20,7 @@
 #include "executor.hpp"
 #include "pybind_tensor.hpp"
 #include "tensor.hpp"
+#include "execution_options.hpp"
 
 namespace py = pybind11;
 
@@ -28,6 +29,7 @@ PYBIND11_MODULE(neural_engine_py, m) {
   py::class_<executor::Model>(m, "Model")
       .def(py::init<std::string, std::string>())
       .def(py::init<executor::ModelConfig, std::string>())
+      .def(py::init<executor::ModelConfig, std::string, executor::ExecutionOptions>())
       .def("forward", &executor::Model::Forward, py::arg("input"));
 
   py::class_<executor::TensorConfig, std::shared_ptr<executor::TensorConfig>>(m, "tensor_config")
@@ -44,4 +46,16 @@ PYBIND11_MODULE(neural_engine_py, m) {
   py::class_<executor::ModelConfig>(m, "model_config")
       .def(py::init<std::string, const std::vector<std::shared_ptr<executor::OperatorConfig>>&>())
       .def(py::init<YAML::Node>());
+
+  py::enum_<executor::ExecutionMode>(m, "ExecutionMode")
+    .value("INFERENCE", executor::ExecutionMode::INFERENCE)
+    .value("DEBUG", executor::ExecutionMode::DEBUG)
+    .value("TUNING", executor::ExecutionMode::TUNING);
+
+  py::class_<executor::ExecutionOptions>(m, "ExecutionOptions")
+      .def(py::init<>())
+      .def_readwrite("warmup_iter", &executor::ExecutionOptions::warmup_iter)
+      .def_readwrite("dispatch_table_file_root", &executor::ExecutionOptions::dispatch_table_file_root)
+      .def_readwrite("enable_op_tuning", &executor::ExecutionOptions::enable_op_tuning)
+      .def_readwrite("execution_mode", &executor::ExecutionOptions::execution_mode);
 }

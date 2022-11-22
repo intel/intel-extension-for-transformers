@@ -20,6 +20,8 @@ void jit_layernorm_ba_t::generate() {
   load_params();
   vbroadcastss(zmm_one, ptr[reg_param + LNBA_GET_OFF(one)]);
   vbroadcastss(zmm_eps, ptr[reg_param + LNBA_GET_OFF(eps)]);
+  mov(reg_batch, 0);
+  L(batch_loop_start);
   mov(reg_col, 0);
   L(col_loop_start);
   vxorps(zmm_mean, zmm_mean, zmm_mean);
@@ -103,6 +105,11 @@ void jit_layernorm_ba_t::generate() {
   cmp(reg_col, param_.process_col);
   jl(col_loop_start, T_NEAR);
 
+  add(reg_batch, 1);
+  add(src_addr, param_.col_num * param_.row_num * get_data_size(param_.input_dt));
+  add(dst_addr, param_.col_num * param_.row_num * get_data_size(param_.output_dt));
+  cmp(reg_batch, param_.process_batch_per_ker);
+  jl(batch_loop_start, T_NEAR);
   this->postamble();
   eltwise_injector.prepare_table();
 }
@@ -151,15 +158,16 @@ void jit_layernorm_ba_t::assign_regs() {
   reg_beta = rbx;
   reg_col = r8;
   reg_src_offset = r9;
-  reg_dst_offset = r14;
   reg_row = r10;
   src_addr = r11;
   dst_addr = r12;
   one_div_n = r13;
+  reg_dst_offset = r14;
+  reg_batch = r15;
   reg_map.insert(std::pair<reg_type, std::set<int>>(
-      reg_type::reg64,
-      {reg_affine_offset.getIdx(), reg_row.getIdx(), reg_col.getIdx(), src_addr.getIdx(), reg_alpha.getIdx(),
-       reg_src_offset.getIdx(), reg_dst_offset.getIdx(), reg_beta.getIdx(), dst_addr.getIdx(), one_div_n.getIdx()}));
+      reg_type::reg64, {reg_affine_offset.getIdx(), reg_row.getIdx(), reg_col.getIdx(), src_addr.getIdx(),
+                        reg_alpha.getIdx(), reg_src_offset.getIdx(), reg_dst_offset.getIdx(), reg_beta.getIdx(),
+                        dst_addr.getIdx(), one_div_n.getIdx(), reg_batch.getIdx()}));
 }
 
 void jit_layernorm_ba_t::gen_load_offset() {

@@ -184,21 +184,20 @@ inline size_t hash_combine(size_t seed, const T& v) {
 }
 
 template <typename T>
-inline void hash_val(size_t seed, const T& val) {
-  hash_combine(seed, val);
+inline size_t hash_val(size_t seed, const T& val) {
+  return hash_combine(seed, val);
 }
 
 template <typename T, typename... Types>
-inline void hash_val(size_t seed, const T& val, const Types&... args) {
-  hash_combine(seed, val);
-  hash_val(seed, args...);
+inline size_t hash_val(size_t seed, const T& val, const Types&... args) {
+  seed = hash_combine(seed, val);
+  return hash_val(seed, args...);
 }
 
 template <typename... Types>
 inline size_t hash_val(const Types&... args) {
   size_t seed = 0;
-  hash_val(seed, args...);
-  return seed;
+  return hash_val(seed, args...);
 }
 
 template <typename T>
@@ -207,6 +206,16 @@ inline size_t get_array_hash(size_t seed, const T& v, int size) {
     seed = hash_combine(seed, v[i]);
   }
   return seed;
+}
+
+template <typename K, typename V>
+inline size_t get_map_hash(size_t seed, const std::map<K, V>& map) {
+  if (!map.empty()) {
+    for (auto iter = map.begin(); iter != map.end(); ++iter) {
+      seed = hash_val(seed, iter->first, iter->second);
+    }
+    return seed;
+  }
 }
 
 // Base class for dnnl primitive cache map.
@@ -372,6 +381,22 @@ class ConvolutionPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::convolu
                        const float& output_scale, const int64_t& group, const vector<int64_t>& pads,
                        const vector<int64_t>& strides, const dnnl::engine* eng);
 };
+
+// Singleton, record model input shape
+class InputShapeRecorder {
+ public:
+  static InputShapeRecorder& GetInstance();
+  void RecordShape(const vector<int64_t>& shape);
+  const vector<int64_t>& GetShape();
+
+ private:
+  InputShapeRecorder() {}
+  ~InputShapeRecorder() {}
+  // just record one input
+  // assume shapes of all input data should be same
+  vector<int64_t> input_shape_;
+};
+
 }  // namespace executor
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_COMMON_HPP_

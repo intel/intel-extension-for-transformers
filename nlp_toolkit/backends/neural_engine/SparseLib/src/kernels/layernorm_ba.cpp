@@ -26,23 +26,25 @@ bool layernorm_ba_kd_t::init() {
   SPARSE_LOG_IF(FATAL, input_dt != data_type::fp32) << "only support fp32";
   SPARSE_LOG_IF(FATAL, tensor_desc[0].ftype() != format_type::ba) << "only support transpose";
   auto tensor_shape = tensor_desc[0].shape();
+  assert(tensor_shape.size() >= 2 && tensor_shape.size() <= 3);  //  support 2D/3D input.
+  if (tensor_shape.size() == 2) tensor_shape.insert(tensor_shape.begin(), 1);
 
-  int row_num = 1;
-  for (int i = 0; i < tensor_shape.size() - 1; i++) row_num *= tensor_shape[i];
-  int col_num = tensor_shape.back();
+  int batch_num = tensor_shape[0];
+  int row_num = tensor_shape[1];
+  int col_num = tensor_shape[2];
 
   // init ptr
   one_div_n_ = reinterpret_cast<float*>(aligned_alloc(64, col_num * sizeof(float)));
 
   for (int i = 0; i < col_num; i++) one_div_n_[i] = 1.0 / row_num;
-
   // init params
   // TODO(zhe1wang): support col nums can't divded by 16.
   SPARSE_LOG_IF(FATAL, col_num % 16 != 0) << "col nums should divded by 16 now";
-  int max_eff_nthr = col_num / 16;
-  params_.resize(max_eff_nthr);
-  int col_per_thr = col_num / max_eff_nthr;
-  for (int i = 0; i < max_eff_nthr; i++) {
+  auto ker_num = col_num / 16;
+  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
+  params_.resize(ker_num);
+  int col_per_thr = col_num / ker_num;
+  for (int i = 0; i < ker_num; i++) {
     int thread_elt_offset = col_per_thr * i;
     ssd::layernorm_ba_param_t param;
     param.input_dt = input_dt;
@@ -51,6 +53,8 @@ bool layernorm_ba_kd_t::init() {
     param.row_num = row_num;
     param.col_num = col_num;
     param.process_col = col_per_thr;
+    param.process_batch_per_ker = omp_get_max_threads() >= batch_num ? 1 : batch_num;
+    param.ker_per_batch = ker_num;
     param.thread_elt_offset = thread_elt_offset;
     param.postop_attrs = op_desc_.apply_postops_list();
     param.binaryop_attrs = op_desc_.get_binaryop_list();
@@ -61,12 +65,20 @@ bool layernorm_ba_kd_t::init() {
 
 bool layernorm_ba_k_t::init() {
   auto op_desc = kd()->get_operator_desc();
-  auto output_dt = op_desc.tensor_descs()[1].dtype();
-  auto col_num = op_desc.tensor_descs()[0].shape().back();
-  nthr_ = col_num / 16;
-  jit_kers_.resize(nthr_);
-  for (int i = 0; i < nthr_; i++) {
-    td.push_back(new ssd::layernorm_ba_data_t());
+  auto tensor_shape = op_desc.tensor_descs()[0].shape();
+  src_dt = op_desc.tensor_descs()[0].dtype();
+  dst_dt = op_desc.tensor_descs()[1].dtype();
+  auto params = derived_kd()->params();
+  per_ker_process_batch = params[0].process_batch_per_ker;
+  ker_num = params[0].ker_per_batch;
+  if (tensor_shape.size() == 2) tensor_shape.insert(tensor_shape.begin(), 1);
+  batch_loop = tensor_shape[0] / per_ker_process_batch;
+  row_num = tensor_shape[1];
+  col_num = tensor_shape[2];
+  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
+  jit_kers_.resize(ker_num);
+  for (int i = 0; i < batch_loop; i++) td.push_back(new ssd::layernorm_ba_data_t());
+  for (int i = 0; i < ker_num; i++) {
     jit_layernorm_ba_t* ker = new jit_layernorm_ba_t(derived_kd()->params()[i]);
     if (ker == nullptr) return false;
     if (!(ker->create_kernel())) return false;
@@ -77,19 +89,20 @@ bool layernorm_ba_k_t::init() {
 }
 
 bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
-#pragma omp parallel for
-  for (int i = 0; i < nthr_; i++) {
-    const jit_layernorm_ba_t* jit_impl = jit_kers_[i];
-    auto data_param = td[i];
-    data_param->src = const_cast<void*>(rt_data[0]);
-    data_param->dst = const_cast<void*>(rt_data[1]);
-    data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
-    data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
-    data_param->one_div_n = derived_kd()->one_div_n_ptr();
-    (*jit_impl)(td[i]);
+  // TODO(zhe1wang): set most appreciate thread num when fuse with quantize and restore it at end of the function.
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < batch_loop; i++) {
+    for (int j = 0; j < ker_num; j++) {
+      const jit_layernorm_ba_t* jit_impl = jit_kers_[j];
+      auto data_param = td[i];
+      data_param->src = const_cast<void*>(rt_data[0] + i * row_num * col_num * get_data_size(src_dt));
+      data_param->dst = const_cast<void*>(rt_data[1] + i * row_num * col_num * get_data_size(dst_dt));
+      data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
+      data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
+      data_param->one_div_n = derived_kd()->one_div_n_ptr();
+      (*jit_impl)(td[i]);
+    }
   }
-
   return true;
 }
-
 }  // namespace jd
