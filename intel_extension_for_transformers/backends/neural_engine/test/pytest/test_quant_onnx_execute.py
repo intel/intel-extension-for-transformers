@@ -35,7 +35,7 @@ class TestQuantOnnxExecute(unittest.TestCase):
         input_1 = np.random.uniform(low=0, high=1, size=[1, 128]).astype('int32')
         input_2 = np.random.uniform(low=0, high=1, size=[1, 128]).astype('int32')
         # compile and execute qlinear model
-        qlinear_model_path = "/tf_dataset2/models/intel_extension_for_transformers/qlinear/bert_mini_sst2_qlinear.onnx"
+        qlinear_model_path = "/tf_dataset2/models/nlp_toolkit/qlinear/bert_mini_sst2_qlinear.onnx"
         os.environ['GLOG_minloglevel'] = '2'
         self.assertTrue(os.path.exists(qlinear_model_path),
             'ONNX QLinear model is not found, please set your own model path!')
@@ -43,7 +43,7 @@ class TestQuantOnnxExecute(unittest.TestCase):
         qlinear_output_dict = qlinear_model.inference([input_0, input_1, input_2])
         qlinear_output = list(qlinear_output_dict.values())[0]        
         # compile and execute qdq model
-        qdq_model_path = "/tf_dataset2/models/intel_extension_for_transformers/qlinear/bert_mini_sst2_qdq.onnx"
+        qdq_model_path = "/tf_dataset2/models/nlp_toolkit/qlinear/bert_mini_sst2_qdq.onnx"
         self.assertTrue(os.path.exists(qdq_model_path),
             'ONNX QDQ model is not found, please set your own model path!')
         qdq_model = compile(qdq_model_path)
