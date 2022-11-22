@@ -1,5 +1,5 @@
 # Pruning
-## introduction
+## Introduction
 Pruning is the process of removing redundant parameters of a network. The idea is from Yan Lecun in 1990: [paper](http://yann.lecun.com/exdb/publis/pdf/lecun-90b.pdf) . There are two types of pruning: Unstructured and Structured. Unstructured pruning means finding and removing the less salient connection in the model, the place could be anywhere in the matrix. Structured pruning means deleting entire blocks, filters, or channels.
 
 ## Pruning types in NLPToolkit
@@ -12,8 +12,8 @@ Pruning is the process of removing redundant parameters of a network. The idea i
 - Pattern Lock (Unstructured & Structured)
   - The algorithm locks the sparsity pattern in fine tune phase by freezing those zero values of weight tensor during weight update of training. 
 
-## usage
-### script:
+## Usage
+### Script:
 ```python
 from intel_extension_for_transformers import metric, objectives, PrunerConfig, PruningConfig,
 from intel_extension_for_transformers.optimization.trainer import NLPTrainer
@@ -28,7 +28,7 @@ model = trainer.prune(pruning_config=p_conf)
 Please refer to [example](../examples/optimize/pytorch/huggingface/text-classification/pruning/run_glue.py) for the details.
 
 ### Create an instance of Metric
-The Metric define which metric will used to measure the performance of tuned models.
+The Metric defines which metric will be used to measure the performance of tuned models.
 - example:
     ```python
     metric = metrics.Metric(name="eval_accuracy")
@@ -57,14 +57,14 @@ PrunerConfig defines which pruning algorithm is used and how to apply it during 
     ```
 
 ### Create an instance of PruningConfig
-The PruningConfig contains all the information related to the model pruning behavior. If you created Metric and PrunerConfig instance, then you can create an instance of PruningConfig. Metric and pruner is optional.
+The PruningConfig contains all the information related to the model pruning behavior. If you have created Metric and PrunerConfig instance, then you can create an instance of PruningConfig. Metric and pruner are optional.
 
 - arguments:
     |Argument   |Type       |Description                                        |Default value    |
     |:----------|:----------|:-----------------------------------------------|:----------------|
-    |framework  |string     |which framework you used                        |"pytorch"        |
+    |framework  |string     |Which framework you used                        |"pytorch"        |
     |initial_sparsity_ratio|float |Initial sparsity goal, if pruner_config argument is defined, it didn't need                       |0.0|
-    |target_sparsity_ratio|float |target sparsity goal, if pruner argument is defined, it didn't need                       |0.97|
+    |target_sparsity_ratio|float |Target sparsity goal, if pruner argument is defined, it didn't need                       |0.97|
     |metrics    |Metric    |Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None    |
     |pruner_config |PrunerConfig    |Defined pruning behavior, if it is None, then NLP will create a default a pruner with 'BasicMagnitude' pruning type                                  |None              |
 
