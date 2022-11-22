@@ -1,5 +1,5 @@
-# Intel Extension for Transformers: Optimization for Natural Language Processing (NLP) Models
-Intel Extension for Transformers is a powerful toolkit for automatically applying model optimizations on Natural Language Processing Models. It leverages [Intel® Neural Compressor](https://intel.github.io/neural-compressor) to provide a variety of model compression techniques: quantization, pruning, distillation and so on.
+# Intel Extension for Transformers: Optimization for Transformer Models
+Intel Extension for Transformers is a powerful toolkit for automatically applying model optimizations on Transformer Models. It leverages [Intel® Neural Compressor](https://intel.github.io/neural-compressor) to provide a variety of model compression techniques: quantization, pruning, distillation and so on.
 
 ## What does Intel Extension for Transformers offer?
 This toolkit allows developers to improve the productivity through ease-of-use model compression APIs by extending HuggingFace transformer APIs for deep learning models in NLP (Natural Language Processing) domain and accelerate the inference performance using compressed models.
@@ -100,8 +100,8 @@ Please refer to [data augmentation document](docs/data_augmentation.md) for more
 ### Quantized Length Adaptive Transformer
 Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.
 ```python
-from nlp_toolkit import QuantizationConfig, DynamicLengthConfig, metric, objectives
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import QuantizationConfig, DynamicLengthConfig, metric, objectives
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -133,7 +133,7 @@ inputs = ... # [input_ids, segment_ids, input_mask]
 model.inference(inputs)
 ```
 
-Please refer to [Neural Engine](examples/deployment/) for more details.
+Please refer to [Neural Engine](examples/deployment/) and paper[Fast Distilbert on CPU](https://arxiv.org/abs/2211.07715) for more details.
 
 ### Sparse Lib
 SparseLib is a high-performance operator computing library implemented by assembly. SparseLib contains a JIT domain, a kernel domain, and a scheduling proxy framework.

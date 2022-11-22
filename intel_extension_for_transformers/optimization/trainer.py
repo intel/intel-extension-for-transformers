@@ -764,7 +764,7 @@ class BaseTrainer():
             if hasattr(self.component, "teacher_model"):
                 self.component.teacher_model._model = self._wrap_model(
                     self.component.teacher_model.model)
-            component.pre_epoch_begin()
+            component.pre_epoch_begin(self.calib_dataloader if self.calib_dataloader else None)
             if component.combination is not None and "Quantization" in component.combination:
                 model = component.model.model
         for epoch in range(epochs_trained, num_train_epochs):

@@ -1,19 +1,34 @@
 # Objective
+
+1. [Introduction](#introduction)
+
+1. [Supported Objectives Matrix](#supported-objectives-matrix)
+
+1. [Examples](#examples)
+
+## Introduction
 In terms of evaluating the status of a specific model during tuning, we should have general objectives to measure the status of different models.
 
-Intel Extension for Transformers supports to optimized low-precision recipes for deep learning models to achieve optimal product objectives like inference performance and memory usage with expected accuracy criteria and now supports Objectives which is supported in [INC](https://github.com/intel-innersource/frameworks.ai.lpot.intel-lpot/blob/master/docs/objective.md#built-in-objective-support-list).
+Intel Extension for Transformers supports optimized low-precision recipes for deep learning models to achieve optimal product objectives like inference performance and memory usage with expected accuracy criteria.
 
-- arguments:
-    |Argument   |Type       |Description                                        |Default value    |
-    |:----------|:----------|:-----------------------------------------------|:----------------|
-    |name       |string     |the Objective name in [INC](https://github.com/intel-innersource/frameworks.ai.lpot.intel-lpot/blob/master/docs/objective.md#built-in-objective-support-list). Like "performance", "modelsize",......and so on|        |
-    |greater_is_better|bool |Used to describe the usage of the objective, like: greater is better for performance, but lower is better for modelsize|True|
-    |weight_ratio|float   |Used when there are multiple objective, for example: you want to focus on both performance and modelsize, then you will create performance objective instance and modelsize objective instance, and indicate their weight proportion|None |
+## Supported Objectives Matrix:
+|Argument   |Type       |Description                                        |Default value    |
+|:----------|:----------|:-----------------------------------------------|:----------------|
+|name       |string     |a objective name in [Intel Neural Compressor](https://github.com/intel/neural-compressor/blob/master/docs/objective.md#built-in-objective-support-list). Like "performance", "modelsize",......and so on| / |
+|greater_is_better|bool |used to describe the usage of the objective, like: greater is better for performance, but lower is better for modelsize| True |
+|weight_ratio|float   |used when there are multiple objective. <br> for example: different weight proportion on performance and modelsize.| None |
 
-- example:
-    ```python
-    from intel_extension_for_transformers import objectives
-    objectives.Objective(name="performance", greater_is_better=True, weight_ratio=None)
-    ```
+## Examples:
 
-- Built-in Objective instance: performance, modelsize.
+There are two built-in objective instances: performance, modelsize. Users can also build their own objective as below:
+
+```python
+from intel_extension_for_transformers.objectives import performance, modelsize
+```
+
+or
+
+```python
+from intel_extension_for_transformers import objectives
+performance = objectives.Objective(name="performance", greater_is_better=True, weight_ratio=None)
+```

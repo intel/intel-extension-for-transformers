@@ -73,6 +73,7 @@ class TestOrchestrateOptimizations(unittest.TestCase):
                 eval_dataset=self.dataset,
                 compute_metrics=compute_metrics,
             )
+            self.trainer.calib_dataloader = self.trainer.get_eval_dataloader()
         tune_metric = metrics.Metric(
             name="eval_accuracy", is_relative=True, criterion=0.5
         )
