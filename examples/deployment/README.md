@@ -1,8 +1,8 @@
 # Deployment
-Intel Extension for Transformers provides multiple reference deployments: 1) [**Neural Engine**](neural_engine); 2) [IPEX (Coming Soon)](ipex/).
+Intel Extension for Transformers provides multiple reference deployments: 1) [**Neural Engine**](neural_engine); 2) [IPEX](ipex/).
 
 ## Neural Engine
-Neural Engine can provide the optimal performance of extremely compressed NLP models, the optimization is both from HW and SW.It's a reference deployment for NLPToolkit, we will enable other backends.
+Neural Engine can provide the optimal performance of extremely compressed transformer based models, the optimization is both from HW and SW. It's a reference deployment for Intel Extension for Transformers, we will enable other backends.
 
 Supported Examples
 | Question-Answering | Text-Classification |
@@ -68,14 +68,16 @@ Open/Close Log:(GLOG_minloglevel=1/GLOG_minloglevel=2)
 
 ###### 4.2. Python API
 
-If you use pip install -e . to install the neural engine in your current folder, please make sure to export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/your/libneural_engine.so.
+If you use python setup.py install to install the neural engine in your current folder, then you can use python api as following.
 
 ```python
-from neural_engine_py import Model
-# load the model, config_path:path of generated yaml, weight_path: path of generated bin
-model = Model(config_path, weight_path)
-# use model.forward to do inference
-out = model.forward([input_ids, segment_ids, input_mask])
+from intel_extension_for_transformers.backends.neural_engine.compile import compile
+# load the model
+graph = compile('./model_and_tokenizer/int8-model.onnx')
+# use model.inference to do inference
+out = graph.inference([input_ids, segment_ids, input_mask])
+# dump the neural engine IR to file
+graph.save('./ir')
 ```
 
 The `input_ids`, `segment_ids` and `input_mask` are the input numpy array data of BERT model, and the input dimension is (batch_size x seq_len). 
@@ -87,5 +89,5 @@ If you want to analyze performance of each operator, just export ENGINE_PROFILIN
 It will dump latency of each operator to <curr_path>/engine_profiling/profiling_<inst_id>.csv.
 
 ## IPEX
-Intel® Extension for PyTorch* extends PyTorch with optimizations for extra performance boost on Intel hardware. Sample deployment is coming soon.
+Intel® Extension for PyTorch* extends PyTorch with optimizations for extra performance boost on Intel hardware.
 

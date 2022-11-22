@@ -69,7 +69,7 @@ You can get INT8 ONNX sparse model from optimization module by setting precision
 ```shell
 bash prepare_model.sh --input_model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
 ```
-Then you can generate tranposed sparse model to get better performance, command as follows:
+Then you can generate transposed sparse model to get better performance, command as follows:
 ```shell
 python export_tranpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
 ```
@@ -100,7 +100,7 @@ Neural Engine will automatically detect weight structured sparse ratio, as long 
   bash run_benchmark.sh --input_model=./sparse_int8_ir  --mode=performance --batch_size=8 --seq_len=128
   ```
   
-  Or run C++
+  or run C++
   The warmup below is recommended to be 1/10 of iterations and no less than 3.
   
   ```
