@@ -1,5 +1,5 @@
 # Data Augmentation: The Tool for Augmenting NLP Datasets
-Data Augmentation is a tool to helps you with augmenting nlp datasets for your machine learning projects. The tool integrated [nlpaug](https://github.com/makcedward/nlpaug) and other methods from Intel Lab.
+Data Augmentation is a tool to helps you with augmenting nlp datasets for your machine learning projects. This tool integrates [nlpaug](https://github.com/makcedward/nlpaug) and other methods from Intel Lab.
 
 ## Getting Started!
 ### Installation
@@ -49,7 +49,7 @@ python setup.py install
 |"ContextualWordEmbsForSentenceAug"|refer to ["ContextualWordEmbsForSentenceAug"](https://github.com/makcedward/nlpaug/blob/40794970124c26ce2e587e567738247bf20ebcad/nlpaug/augmenter/sentence/context_word_embs_sentence.py#L77)      |    |
 
 #### Text Generation Augmenter
-The text generation augment contains the recipe to run data augmentation algorithm based on conditional text generation using auto-regressive transformer model (like GPT, GPT-2, Transformer-XL, XLNet, CTRL) in order to automatically generate labeled data.
+The text generation augment contains the recipe to run data augmentation algorithm based on the conditional text generation using auto-regressive transformer model (like GPT, GPT-2, Transformer-XL, XLNet, CTRL) in order to automatically generate labeled data.
 Our approach follows algorithms described by [Not Enough Data? Deep Learning to the Rescue!](https://arxiv.org/abs/1911.03118) and [Natural Language Generation for Effective Knowledge Distillation](https://www.aclweb.org/anthology/D19-6122.pdf).
 
 - First, we fine-tune an auto-regressive model on the training set. Each sample contains both the label and the sentence.
@@ -66,9 +66,9 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
                     fw.write(str(d['label']) + '\t' + d['sentence'] + EOS + '\n')
         ```
 
-    - Fine-tuning Causal Language Model
+    - Fine-tune Causal Language Model
 
-        You can use the script [run_clm.py](https://github.com/huggingface/transformers/tree/v4.6.1/examples/pytorch/language-modeling/run_clm.py) from transformers examples for fine-tuning GPT2 (gpt2-medium) on SST-2. The loss is that of causal language modeling. 
+        You can use the script [run_clm.py](https://github.com/huggingface/transformers/tree/v4.6.1/examples/pytorch/language-modeling/run_clm.py) from transformers examples for fine-tuning GPT2 (gpt2-medium) on SST-2 task. The loss is that of causal language modeling. 
 
         ```shell
         DATASET=SST-2
