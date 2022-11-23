@@ -18,7 +18,7 @@ This toolkit allows developers to improve the productivity through ease-of-use m
 - Advanced AI Algorithm
     |Neural architecture search |Length Adaptive |Set Fit |
     |:-------------------------:|:--------------:|:------:|
-    |PyTorch &#10004;           |TensorFlow &#10004;|TODO |
+    |PyTorch &#10004;           |PyTorch &#10004;|TODO |
 
 - Architecture of Intel® Extension for Transformers
 <img src="docs/imgs/arch.png" width=691 height=444 alt="arch">
@@ -164,7 +164,7 @@ Please refer to [Transformers-accelerated Libraries](intel_extension_for_transfo
 Intel® Extension for Transformers supports systems based on [Intel 64 architecture or compatible processors](https://en.wikipedia.org/wiki/X86-64) that are specifically optimized for the following CPUs:
 
 * Intel Xeon Scalable processor (formerly Cascade Lake, Icelake)
-* Future Intel Xeon Scalable procvalidatessor (code name Sapphire Rapids)
+* Future Intel Xeon Scalable processor (code name Sapphire Rapids)
 
 ### Validated Software Environment
 
