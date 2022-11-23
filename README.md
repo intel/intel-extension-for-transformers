@@ -1,24 +1,23 @@
-# Intel® Extension for Transformers: Optimization for Transformer Models
-Intel® Extension for Transformers is a powerful toolkit for automatically optimizing on Transformer models. This toolkit helps developers to improve the productivity through ease-of-use model compression APIs by extending HuggingFace Transformers APIs. The compression infrastructures leverage Intel® Neural Compressor to provide a variety of basic model compression techniques: quantization, pruning, distillation and so on.  However, Intel® Extension for Transformers provides advanced optimization techniques like Length Adaptive Transformer (LAT). This toolkit also provides amazing runtime (Transformers-accelerated Neural Engine) to accelerate the inference of transformer models. Some features are published in NeurIPS 2022: https://arxiv.org/abs/2211.07715, https://arxiv.org/abs/2210.17114.
+# Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms
+Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms. The toolkit helps developers to improve the productivity through ease-of-use model compression APIs by extending Hugging Face transformers APIs. The compression infrastructure leverages Intel® Neural Compressor which provides a rich set of model compression techniques: quantization, pruning, distillation and so on. The toolkit provides Transformers-accelerated Libraries and Neural Engine to demonstrate the performance of extremely compressed models, and therefore significantly improve the inference efficiency on Intel platforms. Some of the key features have been published in NeurIPS 2021 and 2022.
 
 ## What does Intel® Extension for Transformers offer?
-This toolkit allows developers to improve the productivity through ease-of-use model compression APIs by extending HuggingFace transformer APIs for deep learning models in NLP (Natural Language Processing) domain and accelerate the inference performance using compressed models.
+This toolkit helps developers to improve the productivity of inference deployment by extending Hugging Face transformers APIs for Transformer-based models in natural language processing (NLP) domain. With extremely compressed models, the toolkit can greatly improve the inference efficiency on Intel platforms.
 
 - Model Compression
 
-    |Framework          |Quantization |Pruning/Sparsity |Distillation |
-    |-------------------|:-----------:|:---------------:|:-----------:|
-    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |
-    |TensorFlow         |&#10004;     |&#10004;         |&#10004;     |
+    |Framework          |Quantization |Pruning/Sparsity |Distillation |Neural Architecture Search |
+    |-------------------|:-----------:|:---------------:|:-----------:|:-------------------------:|
+    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;                   |
+    |TensorFlow         |&#10004;     |&#10004;         |&#10004;     |Stay tuned :star:          |
 
 - Data Augmentation for NLP Datasets
-- Neural Engine for Reference Deployment
-- Sparse Lib for Sparse Reference Kernel
-
-- Advanced AI Algorithm
-    |Neural architecture search |Length Adaptive |Set Fit |
-    |:-------------------------:|:--------------:|:------:|
-    |PyTorch &#10004;           |PyTorch &#10004;|TODO |
+- Transformers-accelerated Neural Engine
+- Transformers-accelerated Libraries
+- Domain Algorithms
+    |Length Adaptive Transformer |
+    |:--------------------------:|
+    |PyTorch &#10004;            |
 
 - Architecture of Intel® Extension for Transformers
 <img src="docs/imgs/arch.png" width=691 height=444 alt="arch">
@@ -198,8 +197,7 @@ Intel® Extension for Transformers supports systems based on [Intel 64 architect
 
 
 ## Selected Publications/Events
-* NeurIPS2022: [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (Nov 2022)
-* NeurIPS2022: [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/pdf/2210.17114) (Nov 2022)
-* Alibaba posted the blog of the acceleration from Neural Engine: [Bert-mini on Intel Custom Runtime (Neural Engine)](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
-
-
+* NeurIPS'2022: [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (Nov 2022)
+* NeurIPS'2022: [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) (Nov 2022)
+* Blog published by Alibaba: [Deep learning inference optimization for Address Purification](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
+* NeurIPS'2021: [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754) (Nov 2021)
