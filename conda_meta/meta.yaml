@@ -7,7 +7,6 @@ build:
   script_env:
     - IMEX_WHL
   number: {{buildnumber}}
-  noarch: python
   script: pip install --no-deps {{IMEX_WHL}}
 requirements:
   build:
@@ -19,6 +18,8 @@ requirements:
     - numpy
     - transformers
     - packaging
+    - neural_compressor
+    - protobuf
 test:
   imports:
     - intel_extension_for_transformers
