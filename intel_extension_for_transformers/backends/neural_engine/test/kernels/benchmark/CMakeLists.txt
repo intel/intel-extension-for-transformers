@@ -40,7 +40,7 @@ message("OpenMP found: ${OpenMP_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 message(${CMAKE_CXX_FLAGS})
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../../SparseLib/ ./hostlibs)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../../kernels/ ./hostlibs)
 
 file(GLOB SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 

@@ -1,5 +1,5 @@
-# Benchmark for SparseLib
-To perform accuracy test and performance test for kernels in [SparseLib](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/SparseLib).
+# Benchmark for Transformers-accelerated Libraries(SparseLib)
+To perform accuracy test and performance test for kernels in [SparseLib](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/kernels).
 
 ## Build
 ```shell

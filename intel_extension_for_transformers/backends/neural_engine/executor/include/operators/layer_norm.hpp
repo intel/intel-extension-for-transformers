@@ -21,7 +21,7 @@
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
-#include "SparseLib/include/interface.hpp"
+#include "kernels/include/interface.hpp"
 
 namespace executor {
 using dnnl::algorithm;

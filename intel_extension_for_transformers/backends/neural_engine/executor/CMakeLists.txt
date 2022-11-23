@@ -53,7 +53,7 @@ set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
 add_subdirectory(${THIRD_PARTY_DIR}/oneDNNGraph)
 add_subdirectory(${THIRD_PARTY_DIR}/pybind11)
 add_subdirectory(${THIRD_PARTY_DIR}/yaml-cpp)
-add_subdirectory(../SparseLib/ ./hostlibs)
+add_subdirectory(../kernels/ ./hostlibs)
 
 add_library(neural_engine SHARED
     src/model.cpp

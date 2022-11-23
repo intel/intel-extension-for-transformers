@@ -1,10 +1,10 @@
 <a name="VRz3S"></a>
 # Introduction
-op-fusion is a very widely used optimization approach in Deep-Learning.Consider we have two ops,Conv and Relu,in traditional way,we apply Conv op firstly,then store the value to the memory,after that we load the value and apply Relu.Obviously there have a useless load&store operations,we can fuse the Conv&Relu to remove the useless I/O,this is the key idea about op-fusion.<br />In SparseLib,we will provide a new class named injector for the op-fusion.In the perspective of the developers who want to apply the op-fusion optimization,they can make injector as a member of their jit_kernel class and initalize it in the kernel class's construct function,when they want to apply postop,just need to  call **injector->vector_compute** and tell injector what registers has been used by **injector->escape_regs**.Besides,upper level user also should call **injector->prepare_table** to prepare the LUT which postop need in the end of thier xbyak kernel.<br />injector supports 8 operators currently,there are exp,tanh,gelu,relu,linear,quantize(fp32->u8/s8),dequantize(u8/s8->fp32) and look-up result from LUT(as experimental API now).Injector also supports a postop-chain for apply multiple postops sequentially.
+op-fusion is a very widely used optimization approach in Deep-Learning.Consider we have two ops,Conv and Relu,in traditional way,we apply Conv op firstly,then store the value to the memory,after that we load the value and apply Relu.Obviously there have a useless load&store operations,we can fuse the Conv&Relu to remove the useless I/O,this is the key idea about op-fusion.<br />In Transformers-accelerated Libraries,we will provide a new class named injector for the op-fusion.In the perspective of the developers who want to apply the op-fusion optimization,they can make injector as a member of their jit_kernel class and initalize it in the kernel class's construct function,when they want to apply postop,just need to  call **injector->vector_compute** and tell injector what registers has been used by **injector->escape_regs**.Besides,upper level user also should call **injector->prepare_table** to prepare the LUT which postop need in the end of thier xbyak kernel.<br />injector supports 8 operators currently,there are exp,tanh,gelu,relu,linear,quantize(fp32->u8/s8),dequantize(u8/s8->fp32) and look-up result from LUT(as experimental API now).Injector also supports a postop-chain for apply multiple postops sequentially.
 <a name="vY7m9"></a>
 # Proposal
 <a name="ml53U"></a>
-## SparseLib developer's perspective
+## Transformers-accelerated Libraries developer's perspective
 <a name="PuqaO"></a>
 ### Framework changes
 <a name="Bu07F"></a>
@@ -163,7 +163,7 @@ void jit_eltwiseop_t::generate() {
 ```
 **NOTE:The postops will be apply **`in-place`** and storing work is upper op's task.**
 <a name="rV6bL"></a>
-## SparseLib user's perspective
+## Transformers-accelerated Libraries user's perspective
 This is the guide about how to set op-fusion in UT in user's perspective.
 <a name="IqCA0"></a>
 #### step0.Prepare the postop_attr

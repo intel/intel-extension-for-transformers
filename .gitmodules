@@ -46,14 +46,14 @@
 [submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc"]
 	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc
 	url = https://github.com/jemalloc/jemalloc.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/xbyak"]
-	path = intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/xbyak
+[submodule "intel_extension_for_transformers/backends/neural_engine/kernels/third_party/xbyak"]
+	path = intel_extension_for_transformers/backends/neural_engine/kernels/third_party/xbyak
 	url = https://github.com/herumi/xbyak.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/glog"]
-	path = intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/glog
+[submodule "intel_extension_for_transformers/backends/neural_engine/kernels/third_party/glog"]
+	path = intel_extension_for_transformers/backends/neural_engine/kernels/third_party/glog
 	url = https://github.com/google/glog.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/googletest"]
-	path = intel_extension_for_transformers/backends/neural_engine/SparseLib/third_party/googletest
+[submodule "intel_extension_for_transformers/backends/neural_engine/kernels/third_party/googletest"]
+	path = intel_extension_for_transformers/backends/neural_engine/kernels/third_party/googletest
 	url = https://github.com/google/googletest.git
 [submodule "intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/unordered"]
 	path = intel_extension_for_transformers/backends/neural_engine/executor/third_party/boost/libs/unordered

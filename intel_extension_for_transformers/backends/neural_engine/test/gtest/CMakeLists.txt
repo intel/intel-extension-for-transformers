@@ -30,7 +30,7 @@ set(WITH_GFLAGS OFF CACHE BOOL "disable gflags for glog")
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/oneDNN ./oneDNN)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/yaml-cpp ./yaml)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../executor/third_party/googletest ./googletest)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../SparseLib/ ./hostlibs)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../kernels/ ./hostlibs)
 
 #### PART1: build host_operators.so shared library ####
 add_library(host_operators SHARED

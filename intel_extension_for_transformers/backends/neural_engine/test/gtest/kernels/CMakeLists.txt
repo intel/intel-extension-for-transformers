@@ -37,8 +37,8 @@ else()
     message(STATUS "Cannot find OpenMP")
 endif()
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../../SparseLib/third_party/googletest ./googletest)
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../../SparseLib/ ./hostlibs)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../../kernels/third_party/googletest ./googletest)
+add_subdirectory(${PROJECT_SOURCE_DIR}/../../../kernels/ ./hostlibs)
 
 #### PART2: build gtest cases ####
 file(GLOB KERNEL_TEST_CASES_SRC

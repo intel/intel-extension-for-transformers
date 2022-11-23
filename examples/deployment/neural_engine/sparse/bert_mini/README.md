@@ -1,6 +1,6 @@
 # Sparse model Step-by-Step
 Here is an example of blocked sparsity and quantization of Bert Mini, sparse ratio is 90%.
-Intel® Extension for Transformers provided a high-performance sparse matrix multiplication library – SparseLib and demonstrated the performance improvement of sparse outweigh the accuracy loss.
+Intel® Extension for Transformers provided a high-performance sparse matrix multiplication library – Transformers-accelerated Libraries and demonstrated the performance improvement of sparse outweigh the accuracy loss.
 This sparse solution is a software-based solution and utilizes the Intel instructions. More sparse examples will be released in the future.
 # Prerequisite
 
@@ -75,7 +75,7 @@ python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onn
 ```
 
 ### Benchmark
-Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [SparseLib](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/SparseLib) kernels and high performance layernorm op with transpose mode to improve inference performance.
+Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/kernels) and high performance layernorm op with transpose mode to improve inference performance.
 
   2.1 accuracy
   run python

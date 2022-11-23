@@ -1,14 +1,14 @@
-SparseLib -- Transformers-accelerated Libraries
+Transformers-accelerated Libraries
 ===========================================
 
 ## Abstract
 
-SparseLib is a high-performance operator computing library implemented by assembly. SparseLib contains a JIT domain, a kernel domain, and a scheduling proxy framework.
+Transformers-accelerated Libraries (formerly known as **SparseLib**) is a high-performance operator computing library implemented by assembly. Transformers-accelerated Libraries contains a JIT domain, a kernel domain, and a scheduling proxy framework.
 
 ## Installation
 ### Build
 ```shell
-cd SparseLib/
+cd kernels/
 mkdir build
 cd build
 cmake ..
@@ -17,7 +17,7 @@ make -j
 
 ### Test
 ```shell
-cd test/gtest/SparseLib/
+cd test/gtest/kernels/
 mkdir build
 cd build
 cmake ..
@@ -27,7 +27,7 @@ make -j
 ```
 
 ### Performance
-We provide a benchmark tool to measure the performance out of box, please refer to [benchmark](../test/SparseLib/benchmark/README.md) for more details.
+We provide a benchmark tool to measure the performance out of box, please refer to [benchmark](../test/kernels/benchmark/README.md) for more details.
 For advanced users, please refer to [profling section](docs/profiling.md).
 
 ## API reference for users

@@ -1,6 +1,6 @@
 # Sparse model Step-by-Step
 Here is a example from pruning a distilbert base model using group lasso during a distillation process to get sparse model, and then 
-inference with SparseLib which is a high-performance operator computing library. Overall, get performance improvement.
+inference with Transformers-accelerated Library which is a high-performance operator computing library. Overall, get performance improvement.
 # Prerequisite
 
 ### 1\. Installation
@@ -73,7 +73,7 @@ python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onn
 ```
 
 ### Benchmark
-Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [SparseLib](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/SparseLib) kernels and high performance layernorm op with transpose mode to improve inference performance.
+Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/kernels) and high performance layernorm op with transpose mode to improve inference performance.
 
   2.1 accuracy
   run python
