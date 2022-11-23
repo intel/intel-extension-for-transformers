@@ -2,7 +2,7 @@
 ## Introduction
 Pruning is the process of removing redundant parameters of a network. The idea is from Yan Lecun in 1990: [paper](http://yann.lecun.com/exdb/publis/pdf/lecun-90b.pdf) . There are two types of pruning: Unstructured and Structured. Unstructured pruning means finding and removing the less salient connection in the model, the place could be anywhere in the matrix. Structured pruning means deleting entire blocks, filters, or channels.
 
-## Pruning types in NLPToolkit
+## Pruning types in Intel® Extension for Transformers
 - Magnitude (Unstructured)
   - The algorithm prunes the weight by the lowest absolute value at each layer with given sparsity target. 
 

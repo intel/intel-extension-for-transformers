@@ -1,6 +1,6 @@
 # Sparse model Step-by-Step
 Here is an example of blocked sparsity and quantization of Bert Mini, sparse ratio is 90%.
-NLPToolkit provided a high-performance sparse matrix multiplication library – SparseLib and demonstrated the performance improvement of sparse outweigh the accuracy loss.
+Intel® Extension for Transformers provided a high-performance sparse matrix multiplication library – SparseLib and demonstrated the performance improvement of sparse outweigh the accuracy loss.
 This sparse solution is a software-based solution and utilizes the Intel instructions. More sparse examples will be released in the future.
 # Prerequisite
 

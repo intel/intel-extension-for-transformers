@@ -1,28 +1,36 @@
-# Intel Extension for Transformers: Optimization for Transformer Models
-Intel Extension for Transformers is a powerful toolkit for automatically applying model optimizations on Transformer Models. It leverages [Intel® Neural Compressor](https://intel.github.io/neural-compressor) to provide a variety of model compression techniques: quantization, pruning, distillation and so on.
+# Intel® Extension for Transformers: Optimization for Transformer Models
+Intel® Extension for Transformers is a powerful toolkit for automatically optimizing on Transformer models. This toolkit helps developers to improve the productivity through ease-of-use model compression APIs by extending HuggingFace Transformers APIs. The compression infrastructures leverage Intel® Neural Compressor to provide a variety of basic model compression techniques: quantization, pruning, distillation and so on.  However, Intel® Extension for Transformers provides advanced optimization techniques like Length Adaptive Transformer (LAT). This toolkit also provides amazing runtime (Transformers-accelerated Neural Engine) to accelerate the inference of transformer models. Some features are published in NeurIPS 2022: https://arxiv.org/abs/2211.07715, https://arxiv.org/abs/2210.17114.
 
-## What does Intel Extension for Transformers offer?
+## What does Intel® Extension for Transformers offer?
 This toolkit allows developers to improve the productivity through ease-of-use model compression APIs by extending HuggingFace transformer APIs for deep learning models in NLP (Natural Language Processing) domain and accelerate the inference performance using compressed models.
 
 - Model Compression
 
-    |Framework          |Quantization |Pruning/Sparsity |Distillation |AutoDistillation |Length Adaptive |
-    |-------------------|:-----------:|:---------------:|:-----------:|:---------------:|:--------------:|
-    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;         |&#10004;        |
-    |TensorFlow         |&#10004;     |&#10004;         |&#10004;     |Stay tuned :star:|                |
+    |Framework          |Quantization |Pruning/Sparsity |Distillation |
+    |-------------------|:-----------:|:---------------:|:-----------:|
+    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |
+    |TensorFlow         |&#10004;     |&#10004;         |&#10004;     |
 
 - Data Augmentation for NLP Datasets
 - Neural Engine for Reference Deployment
 - Sparse Lib for Sparse Reference Kernel
 
-## Getting Started
-### Installation
+- Advanced AI Algorithm
+    |Neural architecture search |Length Adaptive |Set Fit |
+    |:-------------------------:|:--------------:|:------:|
+    |PyTorch &#10004;           |TensorFlow &#10004;|TODO |
+
+- Architecture of Intel® Extension for Transformers
+<img src="docs/imgs/arch.png" width=691 height=444 alt="arch">
+</br>
+
+## Installation
 #### Install Dependency
 ```bash
 pip install -r requirements.txt
 ```
 
-#### Install Intel Extension for Transformers
+#### Install Intel® Extension for Transformers
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
 cd intel_extension_for_transformers
@@ -30,6 +38,7 @@ git submodule update --init --recursive
 python setup.py install
 ```
 
+## Getting Started
 ### Quantization
 ```python
 from intel_extension_for_transformers import QuantizationConfig, metric, objectives
@@ -122,8 +131,8 @@ model = trainer.quantize(quant_config=q_config)
 Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](examples/optimization/pytorch/huggingface/question-answering/dynamic) for details
 
 
-### Neural Engine
-Neural Engine is one of reference deployments that Intel Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
+### Transformers-accelerated Neural Engine
+Transformers-accelerated Neural Engine is one of reference deployments that Intel® Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
 
 ```python
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
@@ -133,10 +142,10 @@ inputs = ... # [input_ids, segment_ids, input_mask]
 model.inference(inputs)
 ```
 
-Please refer to [Neural Engine](examples/deployment/) and paper[Fast Distilbert on CPU](https://arxiv.org/abs/2211.07715) for more details.
+Please refer to [example](examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.
 
-### Sparse Lib
-SparseLib is a high-performance operator computing library implemented by assembly. SparseLib contains a JIT domain, a kernel domain, and a scheduling proxy framework.
+### Transformers-accelerated Libraries
+Transformers-accelerated Libraries is a high-performance operator computing library implemented by assembly. Transformers-accelerated Libraries contains a JIT domain, a kernel domain, and a scheduling proxy framework.
 
 ```C++
 #include "interface.hpp"
@@ -147,5 +156,50 @@ SparseLib is a high-performance operator computing library implemented by assemb
   std::vector<const void*> rt_data = {data0, data1, data2, data3, data4};
   spmm_kern.execute(rt_data);
 ```
+Please refer to [Transformers-accelerated Libraries](intel_extension_for_transformers/backends/neural_engine/Kernels/README.md) for more details.
 
-Please refer to [Sparse Lib](intel_extension_for_transformers/backends/neural_engine/SparseLib/README.md) for more details.
+
+## System Requirements
+### Validated Hardware Environment
+Intel® Extension for Transformers supports systems based on [Intel 64 architecture or compatible processors](https://en.wikipedia.org/wiki/X86-64) that are specifically optimized for the following CPUs:
+
+* Intel Xeon Scalable processor (formerly Cascade Lake, Icelake)
+* Future Intel Xeon Scalable procvalidatessor (code name Sapphire Rapids)
+
+### Validated Software Environment
+
+* OS version: CentOS 8.4, Ubuntu 20.04  
+* Python version: 3.7, 3.8, 3.9, 3.10  
+
+<table class="docutils">
+<thead>
+  <tr>
+    <th>Framework</th>
+    <th>TensorFlow</th>
+    <th>Intel TensorFlow</th>
+    <th>PyTorch</th>
+    <th>IPEX</th>
+  </tr>
+</thead>
+<tbody>
+  <tr align="center">
+    <th>Version</th>
+    <td class="tg-7zrl"><a href=https://github.com/tensorflow/tensorflow/tree/v2.10.0>2.10.0</a><br>
+    <a href=https://github.com/tensorflow/tensorflow/tree/v2.9.1>2.9.1</a><br>
+    <td class="tg-7zrl"><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.10.0>2.10.0</a><br>
+    <a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.9.1>2.9.1</a><br>
+    <td class="tg-7zrl"><a href=https://download.pytorch.org/whl/torch_stable.html>1.13.0+cpu</a><br>
+    <a href=https://download.pytorch.org/whl/torch_stable.html>1.12.0+cpu</a><br>
+    <td class="tg-7zrl"><a href=https://github.com/intel/intel-extension-for-pytorch/tree/1.11.0>1.13.0</a><br>
+    <a href=https://github.com/intel/intel-extension-for-pytorch/tree/v1.10.0>1.12.0</a></td>
+  </tr>
+</tbody>
+</table>
+
+
+## Selected Publications/Events
+* NeurIPS2022: [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (Nov 2022)
+* NeurIPS2022: [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/pdf/2210.17114) (Nov 2022)
+* Alibaba posted the blog of the acceleration from Neural Engine: [Bert-mini on Intel Custom Runtime (Neural Engine)](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
+
+
