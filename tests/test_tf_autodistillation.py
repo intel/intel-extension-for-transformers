@@ -118,7 +118,9 @@ class TestAutoDistillation(unittest.TestCase):
             best_model_archs1 = self.optimizer.autodistill(
                 autodistillation_config,
                 self.teacher_model,
-                model_cls=TFAutoModelForSequenceClassification
+                model_cls=TFAutoModelForSequenceClassification,
+                train_func=None,
+                eval_func=None
             )
 
             best_model_archs2 = self.optimizer.autodistill(
@@ -131,40 +133,6 @@ class TestAutoDistillation(unittest.TestCase):
             # check best model architectures
             self.assertTrue(len(best_model_archs1) > 0)
             self.assertTrue(len(best_model_archs2) > 0)
-
-    def test_tf_distributed_auto_distillation(self):
-        distributed_init(
-            ['127.0.0.1'],
-            'worker',
-            0)
-        with self.strategy.scope():
-            self.optimizer.strategy = self.strategy
-            max_trials = 3
-            autodistillation_config = AutoDistillationConfig(
-                search_space={
-                    'hidden_size': [120, 240],
-                    'intermediate_size': [256, 512]
-                },
-                search_algorithm='BO',
-                max_trials=max_trials,
-                metrics=[
-                    metrics.Metric(name="eval_loss", greater_is_better=False)
-                ],
-                knowledge_transfer=TFDistillationConfig(
-                    train_steps=[3],
-                    loss_types=['CE', 'CE'],
-                    loss_weights=[0.5, 0.5],
-                    temperature=1.0
-                )
-            )
-            best_model_archs = self.optimizer.autodistill(
-                autodistillation_config,
-                self.teacher_model,
-                model_cls=TFAutoModelForSequenceClassification
-                )
-            # check best model architectures
-            self.assertTrue(len(best_model_archs) > 0)
-
 
 
 if __name__ == "__main__":

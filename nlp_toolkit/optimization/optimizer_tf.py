@@ -50,7 +50,7 @@ class TFOptimization:
                  criterion=None,
                  optimizer=None,
                  task_type=None,
-                 task_id=None, 
+                 task_id=None,
                  strategy=None):
         """
         Args:
@@ -587,7 +587,7 @@ class TFOptimization:
                 block_names,
                 presentation='flash distillation'
             ):
-                
+
                 for i, elements in enumerate(zip(distillers, train_steps, block_names)):
                     distiller, ts, bln = elements
                     logger.info(' '.join(
@@ -617,22 +617,27 @@ class TFOptimization:
                         return model.compute_metrics(x, y, y_pred, sample_weight)
 
                     model.save_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id), saved_model=True)
-                    if self.strategy:
+
+                    # re-build optimizer
+                    opt_kwargs = {}
+                    for k, v in self.model.optimizer.__dict__.items():
+                        if not k.startswith('_'):
+                            opt_kwargs[k] = v
+                    optimizer = self.model.optimizer.__class__(**opt_kwargs)
+                    if self.strategy:  # pragma: no cover
                         with self.strategy.scope():
                             model = model_cls.from_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id))
                             model.compile(
-                            optimizer=self.model.optimizer,
-                            loss=self.model.loss,
-                            metrics=self.model.compiled_metrics._user_metrics
-                        )
+                                    optimizer=optimizer,
+                                    loss=self.model.loss,
+                                    metrics=self.model.compiled_metrics._user_metrics)
                             model.train_step = train_step
                     else:
                         model.train_step = train_step
                         model.compile(
-                            optimizer=self.model.optimizer,
+                            optimizer=optimizer,
                             loss=self.model.loss,
-                            metrics=self.model.compiled_metrics._user_metrics
-                        )
+                            metrics=self.model.compiled_metrics._user_metrics)
                     self.model = model
 
                     distiller.model = os.path.join(TMPPATH, "saved_model/1")
@@ -655,12 +660,12 @@ class TFOptimization:
                     distiller.create_criterion()
 
                     self.component = self.distiller = distiller
-                    
+
 
                     opt_model = distiller.fit()
                     opt_model.save(self.args.output_dir)
                     return opt_model
-                    
+
             agent.create_distillers()
             # run flash_distillers
             ori_model = model
@@ -681,7 +686,7 @@ class TFOptimization:
             if self._eval_func:
                 result = self._eval_func(model)
             else:
-                result = self.builtin_eval_func(model)
+                result = self.builtin_eval_func(model)  # pragma: no cover
             return {'metric': result}
 
         agent.framework = 'tensorflow'
