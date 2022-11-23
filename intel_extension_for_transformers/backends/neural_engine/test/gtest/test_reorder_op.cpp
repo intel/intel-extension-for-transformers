@@ -106,20 +106,21 @@ TEST_P(ReorderOpTest, TestPostfix) {
 std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t> >& input_shape) {
   // Step 1: Construct Tensor config ptr
   const auto& src_shape = input_shape[0];
-  TensorConfig* src_config = new TensorConfig("src", src_shape);
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> inputs_config = {src_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> inputs_config = {src_config};
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map["src_perm"] = "0,1";
   attr_map["dst_perm"] = "1,0";
-  AttrConfig* op_attr = new AttrConfig(attr_map);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   OperatorConfig op_config = OperatorConfig("reorder", "fp32", inputs_config, {dst_config}, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

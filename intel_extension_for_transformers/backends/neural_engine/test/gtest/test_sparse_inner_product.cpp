@@ -129,7 +129,8 @@ TEST_P(InnerProductTest, TestPostfix) {
   EXPECT_TRUE(CheckResult(t));
 }
 
-Tensor* make_int32_bias_obj(const TensorConfig* bias_tensor_config, const float* origin_data, Tensor* weight_fp32,
+Tensor* make_int32_bias_obj(const shared_ptr<TensorConfig>& bias_tensor_config,
+                            const float* origin_data, Tensor* weight_fp32,
                             Tensor* weight_min, Tensor* weight_max, Tensor* src_min, Tensor* src_max) {
   Tensor* bias_tensor = new Tensor(*bias_tensor_config);
   bias_tensor->add_tensor_life(1);
@@ -148,7 +149,7 @@ Tensor* make_int32_bias_obj(const TensorConfig* bias_tensor_config, const float*
   return bias_tensor;
 }
 
-Tensor* get_fp32_dst(const TensorConfig* dst_tensor_config, vector<Tensor*> inputs) {
+Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<Tensor*> inputs) {
   using dnnl::matmul;
   using dnnl::memory;
   Tensor* dst_tensor = new Tensor(*dst_tensor_config);
@@ -185,7 +186,7 @@ Tensor* get_fp32_dst(const TensorConfig* dst_tensor_config, vector<Tensor*> inpu
   return dst_tensor;
 }
 
-Tensor* make_fp32_tensor_obj(const TensorConfig* a_tensor_config, bool is_sparse = false) {
+Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, bool is_sparse = false) {
   // step1: set shape
   Tensor* a_tensor = new Tensor(*a_tensor_config);
   // step2: set tensor life
@@ -204,7 +205,7 @@ Tensor* make_fp32_tensor_obj(const TensorConfig* a_tensor_config, bool is_sparse
   return a_tensor;
 }
 
-vector<Tensor*> make_transposed_int8_tensor_obj(vector<const TensorConfig*> tensor_configs,
+vector<Tensor*> make_transposed_int8_tensor_obj(const vector<shared_ptr<TensorConfig>>& tensor_configs,
                                                 const float* origin_fp32_data, bool per_channel = false) {
   vector<Tensor*> tensors(3);
   for (int i = 0; i < 3; i++) {
@@ -249,16 +250,17 @@ vector<Tensor*> make_transposed_int8_tensor_obj(vector<const TensorConfig*> tens
   return tensors;
 }
 
-OpArgs GenenrateCopies(vector<TensorConfig*> old_configs, vector<Tensor*> old_tensors, Tensor* old_dst,
+OpArgs GenenrateCopies(const vector<shared_ptr<TensorConfig>>& old_configs,
+                       vector<Tensor*> old_tensors, Tensor* old_dst,
                        std::map<std::string, std::string> attr_map) {
   int tensor_number = old_configs.size();
-  vector<TensorConfig*> new_configs(tensor_number);
+  vector<shared_ptr<TensorConfig>> new_configs(tensor_number);
   vector<Tensor*> new_tensors(tensor_number);
   for (int i = 0; i < tensor_number; i++) {
     vector<int64_t> shape = old_tensors[i]->shape();
     if (shape.size() > 1) {
-      new_configs[i] =
-          new TensorConfig(old_tensors[i]->name(), executor::GetShapes(shape, {1, 0}), old_tensors[i]->dtype());
+      new_configs[i] = std::make_shared<TensorConfig>(old_tensors[i]->name(),
+                       executor::GetShapes(shape, {1, 0}), old_tensors[i]->dtype());
       new_tensors[i] = new Tensor(*new_configs[i]);
       new_tensors[i]->add_tensor_life(1);
       if (old_tensors[i]->dtype() == "fp32")
@@ -274,7 +276,7 @@ OpArgs GenenrateCopies(vector<TensorConfig*> old_configs, vector<Tensor*> old_te
         transpose(reinterpret_cast<int32_t*>(old_tensors[i]->mutable_data()),
                   reinterpret_cast<int32_t*>(new_tensors[i]->mutable_data()), shape[0], shape[1]);
     } else {
-      new_configs[i] = new TensorConfig(old_tensors[i]->name(), shape, old_tensors[i]->dtype());
+      new_configs[i] = std::make_shared<TensorConfig>(old_tensors[i]->name(), shape, old_tensors[i]->dtype());
       new_tensors[i] = new Tensor(*new_configs[i]);
       new_tensors[i]->add_tensor_life(1);
       memcpy(new_tensors[i]->mutable_data(), old_tensors[i]->mutable_data(),
@@ -289,13 +291,14 @@ OpArgs GenenrateCopies(vector<TensorConfig*> old_configs, vector<Tensor*> old_te
     std::swap(new_tensors[swap_idx[i].first], new_tensors[swap_idx[i].second]);
   }
 
-  TensorConfig* dst_config =
-      new TensorConfig(old_dst->name(), executor::GetShapes(old_dst->shape(), {1, 0}), old_dst->dtype());
+  auto dst_config = std::make_shared<TensorConfig>(old_dst->name(),
+                    executor::GetShapes(old_dst->shape(), {1, 0}), old_dst->dtype());
   Tensor* dst = new Tensor(*dst_config);
   dst->add_tensor_life(1);
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
 
   attr_map["src1_perm"] = "1,0";
-  AttrConfig* op_attr = new AttrConfig(attr_map);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   OperatorConfig op_config = OperatorConfig("inner_product", old_dst->dtype(), new_configs, {dst_config}, op_attr);
   return {new_tensors, {dst}, op_config};
 }
@@ -307,32 +310,32 @@ std::pair<OpArgs, OpArgs> GenerateInt8Case(const std::vector<std::vector<int64_t
   const auto& src1_shape = input_shape[1];
   const auto& bias_shape = input_shape[2];
   std::vector<int64_t> dst_shape = {src0_shape[0], src1_shape[1]};
-  TensorConfig* weight_fp32_config = new TensorConfig("weight", executor::GetShapes(src0_shape, {1, 0}), "fp32");
-  TensorConfig* weight_s8_config = new TensorConfig("weight", src0_shape, "s8");
-  TensorConfig* weight_min_config = new TensorConfig("weight_min", bias_shape, "fp32");
-  TensorConfig* weight_max_config = new TensorConfig("weight_max", bias_shape, "fp32");
+  auto weight_fp32_config = std::make_shared<TensorConfig>("weight", executor::GetShapes(src0_shape, {1, 0}), "fp32");
+  auto weight_s8_config = std::make_shared<TensorConfig>("weight", src0_shape, "s8");
+  auto weight_min_config = std::make_shared<TensorConfig>("weight_min", bias_shape, "fp32");
+  auto weight_max_config = std::make_shared<TensorConfig>("weight_max", bias_shape, "fp32");
   Tensor* weight_fp32 = make_fp32_tensor_obj(weight_fp32_config, true);
   auto weight_tensors = make_transposed_int8_tensor_obj({weight_s8_config, weight_min_config, weight_max_config},
                                                         reinterpret_cast<const float*>(weight_fp32->data()), true);
 
-  TensorConfig* src_fp32_config = new TensorConfig("src", executor::GetShapes(src1_shape, {1, 0}), "fp32");
-  TensorConfig* src_u8_config = new TensorConfig("src", src1_shape, "u8");
-  TensorConfig* src_min_config = new TensorConfig("src_min", {1}, "fp32");
-  TensorConfig* src_max_config = new TensorConfig("src_max", {1}, "fp32");
+  auto src_fp32_config = std::make_shared<TensorConfig>("src", executor::GetShapes(src1_shape, {1, 0}), "fp32");
+  auto src_u8_config = std::make_shared<TensorConfig>("src", src1_shape, "u8");
+  auto src_min_config = std::make_shared<TensorConfig>("src_min", vector<int64_t>({1}), "fp32");
+  auto src_max_config = std::make_shared<TensorConfig>("src_max", vector<int64_t>({1}), "fp32");
   Tensor* src_fp32 = make_fp32_tensor_obj(src_fp32_config, false);
   auto src_tensors = make_transposed_int8_tensor_obj({src_u8_config, src_min_config, src_max_config},
                                                      reinterpret_cast<const float*>(src_fp32->data()), false);
 
   // bias should include compensation
-  TensorConfig* bias_fp32_config = new TensorConfig("bias", bias_shape, "fp32");
-  TensorConfig* bias_int32_config = new TensorConfig("bias", bias_shape, "s32");
+  auto bias_fp32_config = std::make_shared<TensorConfig>("bias", bias_shape, "fp32");
+  auto bias_int32_config = std::make_shared<TensorConfig>("bias", bias_shape, "s32");
   Tensor* bias_fp32 = make_fp32_tensor_obj(bias_fp32_config, false);
   Tensor* bias_int32 =
       make_int32_bias_obj(bias_int32_config, reinterpret_cast<const float*>(bias_fp32->data()), weight_fp32,
                           weight_tensors[1], weight_tensors[2], src_tensors[1], src_tensors[2]);
 
-  TensorConfig* post_fp32_config = new TensorConfig("post", executor::GetShapes(dst_shape, {1, 0}), "fp32");
-  TensorConfig* post_config = new TensorConfig("post", dst_shape, "fp32");
+  auto post_fp32_config = std::make_shared<TensorConfig>("post", executor::GetShapes(dst_shape, {1, 0}), "fp32");
+  auto post_config = std::make_shared<TensorConfig>("post", dst_shape, "fp32");
   Tensor* post_fp32 = nullptr;
   Tensor* post = nullptr;
   if (output_type == "fp32" && append_op == "sum") {
@@ -344,10 +347,11 @@ std::pair<OpArgs, OpArgs> GenerateInt8Case(const std::vector<std::vector<int64_t
   }
 
   // get true fp32 result and calculate min/max
-  TensorConfig* dst_fp32_config = new TensorConfig("dst", executor::GetShapes(dst_shape, {1, 0}), "fp32");
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape, output_type);
-  TensorConfig* dst_min_config = new TensorConfig("dst_min", {1}, "fp32");
-  TensorConfig* dst_max_config = new TensorConfig("dst_max", {1}, "fp32");
+  auto dst_fp32_config = std::make_shared<TensorConfig>("dst", executor::GetShapes(dst_shape, {1, 0}), "fp32");
+  auto dst_config = std::make_shared<TensorConfig>("dst", dst_shape, output_type);
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
+  auto dst_min_config = std::make_shared<TensorConfig>("dst_min", vector<int64_t>({1}), "fp32");
+  auto dst_max_config = std::make_shared<TensorConfig>("dst_max", vector<int64_t>({1}), "fp32");
   Tensor* dst_fp32 = get_fp32_dst(dst_fp32_config, {src_fp32, weight_fp32, bias_fp32, post});
   Tensor* dst = new Tensor(*dst_config);
   dst->add_tensor_life(1);
@@ -359,7 +363,7 @@ std::pair<OpArgs, OpArgs> GenerateInt8Case(const std::vector<std::vector<int64_t
                            reinterpret_cast<float*>(dst_min->mutable_data()),
                            reinterpret_cast<float*>(dst_max->mutable_data()));
 
-  std::vector<TensorConfig*> inputs_configs = {weight_s8_config,  src_u8_config,     bias_int32_config,
+  std::vector<shared_ptr<TensorConfig>> inputs_configs = {weight_s8_config,  src_u8_config,     bias_int32_config,
                                                weight_min_config, weight_max_config, src_min_config,
                                                src_max_config,    dst_min_config,    dst_max_config};
   vector<Tensor*> inputs = {weight_tensors[0], src_tensors[0],    bias_int32,
@@ -373,7 +377,7 @@ std::pair<OpArgs, OpArgs> GenerateInt8Case(const std::vector<std::vector<int64_t
   std::map<std::string, std::string> attr_map;
   attr_map = {{"src0_perm", ""}, {"src1_perm", ""}, {"output_dtype", output_type}, {"append_op", append_op}};
 
-  AttrConfig* op_attr = new AttrConfig(attr_map);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   OperatorConfig op_config = OperatorConfig("inner_product", output_type, inputs_configs, {dst_config}, op_attr);
 
   OpArgs op_args = {inputs, {dst}, op_config};

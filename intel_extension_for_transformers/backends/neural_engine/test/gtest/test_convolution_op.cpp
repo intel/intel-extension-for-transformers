@@ -362,14 +362,15 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   const auto& src_shape = input_shape[0];
   const auto& weight_shape = input_shape[1];
   const auto& bias_shape = input_shape[2];
-  TensorConfig* src_config = new TensorConfig("src", src_shape);
-  TensorConfig* weight_config = new TensorConfig("weight", weight_shape);
-  TensorConfig* bias_config = new TensorConfig("bias", bias_shape);
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
+  shared_ptr<TensorConfig> weight_config = std::make_shared<TensorConfig>("weight", weight_shape);
+  shared_ptr<TensorConfig> bias_config = std::make_shared<TensorConfig>("bias", bias_shape);
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> inputs_config = {src_config, weight_config, bias_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> inputs_config = {src_config, weight_config, bias_config};
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
   if (append_op == "binary_add") {
-    inputs_config.push_back(new TensorConfig("src2", input_shape[3]));
+    inputs_config.push_back(std::make_shared<TensorConfig>("src2", input_shape[3]));
   }
 
   // Step 1.1: Construct Operator config obj
@@ -377,11 +378,11 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   attr_map = {{"src_perm", src_perm}, {"dst_perm", dst_perm},         {"group", group},        {"pads", pads},
               {"strides", strides},   {"output_dtype", output_dtype}, {"append_op", append_op}};
 
-  AttrConfig* op_attr = new AttrConfig(attr_map);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   OperatorConfig op_config = OperatorConfig("convolution", output_dtype, inputs_config, {dst_config}, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

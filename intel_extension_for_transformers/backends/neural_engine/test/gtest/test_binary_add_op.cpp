@@ -123,24 +123,24 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   // Step 1: Construct Tensor config ptr
   const auto& src0_shape = input_shape[0];
   const auto& src1_shape = input_shape[1];
-  TensorConfig* src0_config = new TensorConfig("src0", src0_shape);
-  TensorConfig* src1_config = new TensorConfig("src1", src1_shape);
-  std::vector<TensorConfig*> input_config_vec = {src0_config, src1_config};
+  shared_ptr<TensorConfig> src0_config = std::make_shared<TensorConfig>("src0", src0_shape);
+  shared_ptr<TensorConfig> src1_config = std::make_shared<TensorConfig>("src1", src1_shape);
+  std::vector<shared_ptr<TensorConfig>> input_config_vec = {src0_config, src1_config};
   if (append_op == "sum") {
-    input_config_vec.push_back(new TensorConfig("src2", input_shape[2]));
+    input_config_vec.push_back(std::make_shared<TensorConfig>("src2", input_shape[2]));
   }
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config_vec = {dst_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> output_config_vec = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map["append_op"] = append_op;
-  AttrConfig* op_attr = new AttrConfig(attr_map);
-  OperatorConfig op_config = OperatorConfig("binary_add", "fp32", input_config_vec, output_config_vec, op_attr);
-
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  OperatorConfig op_config = OperatorConfig("binary_add_fp32", "BinaryAdd",
+                             input_config_vec, output_config_vec, op_attr);
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config, int life_num = 1) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config, int life_num = 1) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

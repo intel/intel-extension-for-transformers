@@ -181,22 +181,22 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   const auto& src_shape = input_shape[0];
   const auto& gamma_shape = input_shape[1];
   const auto& beta_shape = input_shape[2];
-  TensorConfig* src_config = new TensorConfig("src", src_shape);
-  TensorConfig* gamma_config = new TensorConfig("gamma", gamma_shape);
-  TensorConfig* beta_config = new TensorConfig("beta", beta_shape);
-  std::vector<TensorConfig*> input_config_vec = {src_config, gamma_config, beta_config};
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
+  shared_ptr<TensorConfig> gamma_config = std::make_shared<TensorConfig>("gamma", gamma_shape);
+  shared_ptr<TensorConfig> beta_config = std::make_shared<TensorConfig>("beta", beta_shape);
+  std::vector<shared_ptr<TensorConfig>> input_config_vec = {src_config, gamma_config, beta_config};
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> output_config_vec = {dst_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> output_config_vec = {dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map = {{"epsilon", epsilon}, {"group", group}, {"channels", channels}};
-  AttrConfig* op_attr = new AttrConfig(attr_map);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   OperatorConfig op_config = OperatorConfig("group_norm", "fp32", input_config_vec, output_config_vec, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config, int life_num = 1) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config, int life_num = 1) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

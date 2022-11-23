@@ -139,25 +139,26 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   const auto& src0_shape = input_shape[0];
   const auto& src1_shape = input_shape[1];
   const auto& bias_shape = input_shape[2];
-  TensorConfig* src0_config = new TensorConfig("src", src0_shape);
-  TensorConfig* src1_config = new TensorConfig("weight", src1_shape);
-  TensorConfig* bias_config = new TensorConfig("bias", bias_shape);
+  shared_ptr<TensorConfig> src0_config = std::make_shared<TensorConfig>("src", src0_shape);
+  shared_ptr<TensorConfig> src1_config = std::make_shared<TensorConfig>("weight", src1_shape);
+  shared_ptr<TensorConfig> bias_config = std::make_shared<TensorConfig>("bias", bias_shape);
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> inputs_config = {src0_config, src1_config, bias_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> inputs_config = {src0_config, src1_config, bias_config};
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
   if (append_op == "sum") {
-    inputs_config.push_back(new TensorConfig("src2", input_shape[3]));
+    inputs_config.push_back(std::make_shared<TensorConfig>("src2", input_shape[3]));
   }
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   attr_map = {{"src0_perm", ""}, {"src1_perm", src1_perm}, {"output_dtype", "fp32"}, {"append_op", append_op}};
 
-  AttrConfig* op_attr = new AttrConfig(attr_map);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   OperatorConfig op_config = OperatorConfig("inner_product", "fp32", inputs_config, {dst_config}, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life
@@ -172,7 +173,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     memcpy(tensor_data_copy, tensor_data, a_tensor_copy->size() * sizeof(float));
     return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
   };
-  auto make_tensor_obj_sparse = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj_sparse = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life

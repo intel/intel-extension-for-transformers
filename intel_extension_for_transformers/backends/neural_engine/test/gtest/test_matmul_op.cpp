@@ -186,13 +186,14 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   // Step 1: Construct Tensor config ptr
   const auto& src0_shape = input_shape[0];
   const auto& src1_shape = input_shape[1];
-  TensorConfig* src0_config = new TensorConfig("src0", src0_shape);
-  TensorConfig* src1_config = new TensorConfig("src1", src1_shape);
+  shared_ptr<TensorConfig> src0_config = std::make_shared<TensorConfig>("src0", src0_shape);
+  shared_ptr<TensorConfig> src1_config = std::make_shared<TensorConfig>("src1", src1_shape);
   std::vector<int64_t> dst_shape = {};
-  TensorConfig* dst_config = new TensorConfig("dst", dst_shape);
-  std::vector<TensorConfig*> inputs_config = {src0_config, src1_config};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> inputs_config = {src0_config, src1_config};
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
   if (append_op == "sum") {
-    inputs_config.push_back(new TensorConfig("src2", input_shape[2]));
+    inputs_config.push_back(std::make_shared<TensorConfig>("src2", input_shape[2]));
   }
 
   // Step 1.1: Construct Operator config obj
@@ -200,11 +201,11 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   attr_map = {{"src0_perm", src0_perm},   {"src1_perm", src1_perm}, {"dst_perm", dst_perm},
               {"format_any", format_any}, {"output_dtype", "fp32"}, {"append_op", append_op}};
 
-  AttrConfig* op_attr = new AttrConfig(attr_map);
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   OperatorConfig op_config = OperatorConfig("matmul", "fp32", inputs_config, {dst_config}, op_attr);
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const TensorConfig* a_tensor_config) {
+  auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
     // step1: set shape
     Tensor* a_tensor = new Tensor(*a_tensor_config);
     // step2: set tensor life
