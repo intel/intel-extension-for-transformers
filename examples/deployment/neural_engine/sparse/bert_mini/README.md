@@ -64,14 +64,14 @@ python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./da
 ### 2.2 Get sparse model
 
 Neural Engine can parse Sparse ONNX model and Neural Engine IR.
-You can train a Bert mini sst2 sparse model with distillation through Neural Compressor [example](https://github.com/intel-innersource/frameworks.ai.lpot.intel-lpot/blob/28e9b1e66c23f4443a2be8f2926fee1e919f5a14/examples/pytorch/nlp/huggingface_models/text-classification/pruning_while_distillation/group_lasso/eager/README.md). Or use the [sparse model](https://huggingface.co/Intel/bert-mini-sst2-distilled-sparse-90-1X4-block) we publiced on huggingface which is bert mini on sst2 with sparse ratio 90% 1X4 block.
-You can get INT8 ONNX sparse model from optimization module by setting precision=int8, command as follows:
+You can use the [sparse model](https://huggingface.co/Intel/bert-mini-sst2-distilled-sparse-90-1X4-block) we publiced on huggingface which is bert mini on sst2 with sparse ratio 90% 1X4 block(include int8 onnx model and int8 Neural Engine IR).
+You can also get INT8 ONNX sparse model from optimization module by setting precision=int8, command as follows:
 ```shell
 bash prepare_model.sh --input_model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
 ```
 Then you can generate transposed sparse model to get better performance, command as follows:
 ```shell
-python export_tranpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
+python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
 ```
 
 ### Benchmark
