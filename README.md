@@ -155,7 +155,7 @@ Transformers-accelerated Libraries is a high-performance operator computing libr
   std::vector<const void*> rt_data = {data0, data1, data2, data3, data4};
   spmm_kern.execute(rt_data);
 ```
-Please refer to [Transformers-accelerated Libraries](intel_extension_for_transformers/backends/neural_engine/Kernels/README.md) for more details.
+Please refer to [Transformers-accelerated Libraries](intel_extension_for_transformers/backends/neural_engine/kernels/README.md) for more details.
 
 
 ## System Requirements
