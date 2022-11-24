@@ -2,7 +2,7 @@
 
 ## GLUE task
 
-The script `run_glue.py` provides the pruning approach (Magnitude) based on [NLP toolkit].
+The script `run_glue.py` provides the pruning approach (Magnitude) based on [Intel Extension for Transformers].
 
 Here is how to run the script:
  

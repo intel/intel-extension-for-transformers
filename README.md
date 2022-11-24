@@ -1,38 +1,51 @@
-# NLP Toolkit: Optimization for Natural Language Processing (NLP) Models
-NLP Toolkit is a powerful toolkit for automatically applying model optimizations on Natural Language Processing Models. It leverages [Intel® Neural Compressor](https://intel.github.io/neural-compressor) to provide a variety of model compression techniques: quantization, pruning, distillation and so on.
+# Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms
+Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms. The toolkit helps developers to improve the productivity through ease-of-use model compression APIs by extending Hugging Face transformers APIs. The compression infrastructure leverages Intel® Neural Compressor which provides a rich set of model compression techniques: quantization, pruning, distillation and so on. The toolkit provides Transformers-accelerated Libraries and Neural Engine to demonstrate the performance of extremely compressed models, and therefore significantly improve the inference efficiency on Intel platforms. Some of the key features have been published in NeurIPS 2021 and 2022.
 
-## What does NLP Toolkit offer?
-This toolkit allows developers to improve the productivity through ease-of-use model compression APIs by extending HuggingFace transformer APIs for deep learning models in NLP (Natural Language Processing) domain and accelerate the inference performance using compressed models.
+## What does Intel® Extension for Transformers offer?
+This toolkit helps developers to improve the productivity of inference deployment by extending Hugging Face transformers APIs for Transformer-based models in natural language processing (NLP) domain. With extremely compressed models, the toolkit can greatly improve the inference efficiency on Intel platforms.
 
 - Model Compression
 
-    |Framework          |Quantization |Pruning/Sparsity |Distillation |AutoDistillation |
-    |-------------------|:-----------:|:---------------:|:-----------:|:--------------:|
-    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;        |
-    |TensorFlow         |&#10004;     |&#10004;         |Stay tuned :star:|Stay tuned :star:|
+    |Framework          |Quantization |Pruning/Sparsity |Distillation |Neural Architecture Search |
+    |-------------------|:-----------:|:---------------:|:-----------:|:-------------------------:|
+    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;                   |
+    |TensorFlow         |&#10004;     |&#10004;         |&#10004;     |Stay tuned :star:          |
 
 - Data Augmentation for NLP Datasets
-- Neural Engine for Reference Deployment
+- Transformers-accelerated Neural Engine
+- Transformers-accelerated Libraries
+- Domain Algorithms
+    |Length Adaptive Transformer |
+    |:--------------------------:|
+    |PyTorch &#10004;            |
 
-## Getting Started
-### Installation
-#### Install Dependency
+- Architecture of Intel® Extension for Transformers
+<img src="docs/imgs/arch.png" width=691 height=444 alt="arch">
+</br>
+
+## Installation
+### Release Binary Install
 ```bash
-pip install -r requirements.txt
+pip install intel-extension-for-transformers
 ```
 
-#### Install NLP Toolkit
+### Install From Source
+#### Install Intel® Extension for Transformers
 ```bash
-git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git nlp_toolkit
-cd nlp_toolkit
+git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
+cd intel_extension_for_transformers
+# Install Dependency
+pip install -r requirements.txt
 git submodule update --init --recursive
+# Install intel_extension_for_transformers
 python setup.py install
 ```
 
+## Getting Started
 ### Quantization
 ```python
-from nlp_toolkit import QuantizationConfig, metric, objectives
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import QuantizationConfig, metric, objectives
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -50,8 +63,8 @@ Please refer to [quantization document](docs/quantization.md) for more details.
 
 ### Pruning
 ```python
-from nlp_toolkit import PrunerConfig, PruningConfig
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import PrunerConfig, PruningConfig
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -66,8 +79,8 @@ Please refer to [pruning document](docs/pruning.md) for more details.
 
 ### Distillation
 ```python
-from nlp_toolkit import DistillationConfig, Criterion
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import DistillationConfig, Criterion
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -84,7 +97,7 @@ Please refer to [distillation document](docs/distillation.md) for more details.
 Data augmentation provides the facilities to generate synthesized NLP dataset for further model optimization. The data augmentation supports text generation on popular fine-tuned models like GPT, GPT2, and other text synthesis approaches from [nlpaug](https://github.com/makcedward/nlpaug).
 
 ```python
-from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
+from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
 aug = DataAugmentation(augmenter_type="TextGenerationAug")
 aug.input_dataset = "original_dataset.csv" # example: https://huggingface.co/datasets/glue/viewer/sst2/train
 aug.column_names = "sentence"
@@ -97,10 +110,10 @@ raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", s
 Please refer to [data augmentation document](docs/data_augmentation.md) for more details.
 
 ### Neural Engine
-Neural Engine is one of reference deployments that NLP toolkit provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
+Neural Engine is one of reference deployments that Intel Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
 
 ```python
-from nlp_toolkit.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.backends.neural_engine.compile import compile
 # /path/to/your/model is a TensorFlow pb model or ONNX model
 model = compile('/path/to/your/model')
 inputs = ... # [input_ids, segment_ids, input_mask]
@@ -112,8 +125,8 @@ Please refer to [Neural Engine](examples/deployment/) for more details.
 ### Quantized Length Adaptive Transformer
 Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.
 ```python
-from nlp_toolkit import QuantizationConfig, DynamicLengthConfig, metric, objectives
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import QuantizationConfig, DynamicLengthConfig, metric, objectives
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -132,3 +145,76 @@ model = trainer.quantize(quant_config=q_config)
 ```
 
 Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](examples/optimization/pytorch/huggingface/question-answering/dynamic) for details
+
+
+### Transformers-accelerated Neural Engine
+Transformers-accelerated Neural Engine is one of reference deployments that Intel® Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
+
+```python
+from intel_extension_for_transformers.backends.neural_engine.compile import compile
+# /path/to/your/model is a TensorFlow pb model or ONNX model
+model = compile('/path/to/your/model')
+inputs = ... # [input_ids, segment_ids, input_mask]
+model.inference(inputs)
+```
+
+Please refer to [example](examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.
+
+### Transformers-accelerated Libraries
+Transformers-accelerated Libraries is a high-performance operator computing library implemented by assembly. Transformers-accelerated Libraries contains a JIT domain, a kernel domain, and a scheduling proxy framework.
+
+```C++
+#include "interface.hpp"
+  ...
+  operator_desc op_desc(ker_kind, ker_prop, eng_kind, ts_descs, op_attrs);
+  sparse_matmul_desc spmm_desc(op_desc);
+  sparse_matmul spmm_kern(spmm_desc);
+  std::vector<const void*> rt_data = {data0, data1, data2, data3, data4};
+  spmm_kern.execute(rt_data);
+```
+Please refer to [Transformers-accelerated Libraries](intel_extension_for_transformers/backends/neural_engine/kernels/README.md) for more details.
+
+
+## System Requirements
+### Validated Hardware Environment
+Intel® Extension for Transformers supports systems based on [Intel 64 architecture or compatible processors](https://en.wikipedia.org/wiki/X86-64) that are specifically optimized for the following CPUs:
+
+* Intel Xeon Scalable processor (formerly Cascade Lake, Icelake)
+* Future Intel Xeon Scalable processor (code name Sapphire Rapids)
+
+### Validated Software Environment
+
+* OS version: CentOS 8.4, Ubuntu 20.04  
+* Python version: 3.7, 3.8, 3.9, 3.10  
+
+<table class="docutils">
+<thead>
+  <tr>
+    <th>Framework</th>
+    <th>TensorFlow</th>
+    <th>Intel TensorFlow</th>
+    <th>PyTorch</th>
+    <th>IPEX</th>
+  </tr>
+</thead>
+<tbody>
+  <tr align="center">
+    <th>Version</th>
+    <td class="tg-7zrl"><a href=https://github.com/tensorflow/tensorflow/tree/v2.10.0>2.10.0</a><br>
+    <a href=https://github.com/tensorflow/tensorflow/tree/v2.9.1>2.9.1</a><br>
+    <td class="tg-7zrl"><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.10.0>2.10.0</a><br>
+    <a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.9.1>2.9.1</a><br>
+    <td class="tg-7zrl"><a href=https://download.pytorch.org/whl/torch_stable.html>1.13.0+cpu</a><br>
+    <a href=https://download.pytorch.org/whl/torch_stable.html>1.12.0+cpu</a><br>
+    <td class="tg-7zrl"><a href=https://github.com/intel/intel-extension-for-pytorch/tree/1.11.0>1.13.0</a><br>
+    <a href=https://github.com/intel/intel-extension-for-pytorch/tree/v1.10.0>1.12.0</a></td>
+  </tr>
+</tbody>
+</table>
+
+
+## Selected Publications/Events
+* NeurIPS'2022: [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (Nov 2022)
+* NeurIPS'2022: [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) (Nov 2022)
+* Blog published by Alibaba: [Deep learning inference optimization for Address Purification](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
+* NeurIPS'2021: [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754) (Nov 2021)

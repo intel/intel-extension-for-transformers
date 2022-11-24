@@ -1,7 +1,7 @@
 # Quantization
 Quantization is a widely-used model compression technique that can reduce model size while also improving inference and training latency. The full precision data converts to low-precision, there is little degradation in model accuracy, but the inference performance of quantized model can gain higher performance by saving the memory bandwidth and accelerating computations with low precision instructions. Intel provided several lower precision instructions (ex: 8-bit or 16-bit multipliers), both training and inference can get benefits from them. Refer to the Intel article on lower numerical precision inference and training in deep learning.
 
-## quantization approach
+## Quantization Approach
 ### Post-Training Static Quantization performs quantization on already trained models, it requires an additional pass over the dataset to work, only activations do calibration.
 <img src="imgs/PTQ.png" width=256 height=129 alt="PTQ">
 <br>
@@ -14,11 +14,11 @@ Quantization is a widely-used model compression technique that can reduce model 
 <img src="imgs/QAT.png" width=244 height=147 alt="QAT">
 
 
-## quantization usage
-### script:
+## Quantization Usage
+### Script:
 ```python
-from nlp_toolkit import metric, objectives, QuantizationConfig
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import metric, objectives, QuantizationConfig
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -33,10 +33,10 @@ q_config = QuantizationConfig(
 )
 model = trainer.quantize(quant_config=q_config)
 ```
-Please refer to [quantization example](../examples/optimize/pytorch/huggingface/text-classification/quantization/inc/run_glue.py) for the details
+Please refer to [quantization example](../examples/optimize/pytorch/huggingface/text-classification/quantization/inc/run_glue.py) for the details.
 
 ### Create an instance of Metric
-The Metric define which metric will used to measure the performance of tuned models.
+The Metric defines which metric will be used to measure the performance of tuned models.
 - example:
     ```python
     metric = metrics.Metric(name="eval_f1", greater_is_better=True, is_relative=True, criterion=0.01, weight_ratio=None)
@@ -55,17 +55,17 @@ In terms of evaluating the status of a specific model during tuning, we should h
     Please refer to [objective document](objectives.md) for the details.
 
 ### Create an instance of QuantizationConfig
-The QuantizationConfig contains all the information related to the model quantization behavior. If you created Metric and Objective instance(default Objective is "performance"), then you can create an instance of QuantizationConfig.
+The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is "performance"), then you can create an instance of QuantizationConfig.
 
 - arguments:
     |Argument   |Type       |Description                                        |Default value    |
     |:----------|:----------|:-----------------------------------------------|:----------------|
-    |framework  |string     |which framework you used                        |"pytorch"        |
+    |framework  |string     |Which framework you used                        |"pytorch"        |
     |approach   |string     |Which quantization approach you used            |"PostTrainingStatic"|
-    |timeout    |integer    |Tuning timeout(seconds), 0 means early stop. combine with max_trials field to decide when to exit|0    |
+    |timeout    |integer    |Tuning timeout(seconds), 0 means early stop; combine with max_trials field to decide when to exit|0    |
     |max_trials |integer    |Max tune times                                  |100              |
     |metrics    |list of Metric|Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None |
-    |objectives |list of Objective|objective with accuracy constraint guaranteed|performance|
+    |objectives |list of Objective|Objective with accuracy constraint guaranteed|performance|
 
 - example:
     ```python

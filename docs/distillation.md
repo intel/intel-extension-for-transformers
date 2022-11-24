@@ -1,6 +1,6 @@
 # Distillation
 ## Introduction
-Knowledge distillation is one of popular approaches of network compression, which transfers knowledge from a large model to a smaller one without loss of validity. As smaller models are less expensive to evaluate, they can be deployed on less powerful hardware (such as a mobile device). Graph shown below is the workflow of the distillation, the teacher model will take the same input that feed into the student model to produce the output that contains knowledge of the teacher model to instruct the student model.
+Knowledge distillation is one of popular approaches of the network compression, which transfers knowledge from a large model to a smaller one without loss of validity. As smaller models are less expensive to be evaluated, they can be deployed on less powerful hardwares (such as mobile devices). The graph shown below is the workflow of the distillation, the teacher model will take the same input that feed into the student model to produce the output that contains knowledge of the teacher model to instruct the student model.
 <br>
 ![Distillation Workflow](./imgs/Distillation_workflow.png)
 <br>
@@ -8,8 +8,8 @@ Knowledge distillation is one of popular approaches of network compression, whic
 ## usage
 ### script:
 ```python
-from nlp_toolkit import metric, objectives, DistillationConfig, Criterion
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import metric, objectives, DistillationConfig, Criterion
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -23,7 +23,7 @@ model = trainer.distill(
 Please refer to [example](../examples/optimize/pytorch/huggingface/text-classification/distillation/run_glue.py) for the details.
 
 ### Create an instance of Metric
-The Metric define which metric will used to measure the performance of tuned models.
+The Metric defines which metric will be used to measure the performance of tuned models.
 - example:
     ```python
     metric = metrics.Metric(name="eval_accuracy")
@@ -66,7 +66,7 @@ The DistillationConfig contains all the information related to the model distill
 
 ### Distill with Trainer
 - Distill with Trainer
-    NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can distill model with trainer.distill function.
+    NLPTrainer inherits from transformers.Trainer, so you can create a trainer as in examples of Transformers. Then you can distill model with trainer.distill function.
     ```python
     model = trainer.distill(
         distillation_config=d_conf, teacher_model=teacher_model

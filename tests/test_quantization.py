@@ -5,7 +5,7 @@ import shutil
 import torch
 import torch.utils.data as data
 import unittest
-from nlp_toolkit import (
+from intel_extension_for_transformers import (
     metrics,
     objectives,
     OptimizedModel,
@@ -13,8 +13,8 @@ from nlp_toolkit import (
     QuantizationMode,
     NoTrainerOptimizer,
 )
-from nlp_toolkit.optimization.trainer import NLPTrainer
-from nlp_toolkit.optimization.trainer import NLPSeq2SeqTrainer
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.optimization.trainer import NLPSeq2SeqTrainer
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -28,8 +28,8 @@ MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 class DummyDataset(data.Dataset):
     def __init__(self):
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        self.sequence_a = "NLP-toolkit is based in SH"
-        self.sequence_b = "Where is NLP-toolkit based? NYC or SH"
+        self.sequence_a = "intel-extension-for-transformers is based in SH"
+        self.sequence_b = "Where is intel-extension-for-transformers based? NYC or SH"
         self.encoded_dict = self.tokenizer(self.sequence_a, self.sequence_b)
         self.encoded_dict['labels'] = 1
 

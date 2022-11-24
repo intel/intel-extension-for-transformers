@@ -22,18 +22,18 @@ sudo apt install autoconf
 ```
 Install NLPTookit from source code
 ```shell
-cd <NLP_Toolkit_folder>
+cd <intel_extension_for_transformers_folder>
 git submodule update --init --recursive
 python setup.py install
 ```
 Install package for examples
 ```shell
-cd <NLP_Toolkit_folder>/examples/deployment/neural_engine/sst2/distilbert_base_uncased
+cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/sst2/distilbert_base_uncased
 pip install -r requirements.txt
 ```
 1.2 Environment Variables Preload libjemalloc.so can improve the performance when multi instance.
 ```
-export LD_PRELOAD=<NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
+export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
 Using weight sharing can save memory and improve the performance when multi instance.
 ```
@@ -82,7 +82,7 @@ bash prepare_model.sh --input_model=distilbert-base-uncased-finetuned-sst-2-engl
   ```
   or compile framwork model to IR using python API
   ```
-  from nlp_toolkit.backends.neural_engine.compile import compile
+  from intel_extension_for_transformers.backends.neural_engine.compile import compile
   graph = compile('./model_and_tokenizer/int8-model.onnx')
   graph.save('./ir')
   ```
@@ -93,7 +93,7 @@ bash prepare_model.sh --input_model=distilbert-base-uncased-finetuned-sst-2-engl
   export OMP_NUM_THREADS=<cpu_cores>
   export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
   export UNIFIED_BUFFER=1
-  numactl -C 0-<cpu_cores-1> <NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/bin/neural_engine
+  numactl -C 0-<cpu_cores-1> <intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/bin/neural_engine
   --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
   --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
   ```

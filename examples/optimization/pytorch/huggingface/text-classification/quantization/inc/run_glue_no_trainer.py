@@ -30,7 +30,7 @@ from torch.utils.data import DataLoader
 import transformers
 from accelerate import Accelerator
 from huggingface_hub import Repository
-from nlp_toolkit import (metrics, NoTrainerOptimizer, objectives, OptimizedModel,
+from intel_extension_for_transformers import (metrics, NoTrainerOptimizer, objectives, OptimizedModel,
                          QuantizationConfig)
 from transformers import (
     AdamW,
@@ -169,7 +169,7 @@ def parse_args():
         type=str,
         help="The name of the repository to keep in sync with the local `output_dir`.")
     parser.add_argument("--hub_token", type=str, help="The token to use to push to the Model Hub.")
-    parser.add_argument("--tune", action="store_true", help="tune a best model with nlp toolkit.")
+    parser.add_argument("--tune", action="store_true", help="tune a best model with Intel Extension for Transformers.")
     parser.add_argument("--quantization_approach",
                         type=str,
                         default="PostTrainingStatic",

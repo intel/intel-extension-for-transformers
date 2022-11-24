@@ -3,18 +3,18 @@
 The pipeline is inherited from transformers [pipeline](https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.mdx), and two more features are appended.
 
 * Use a [`pipeline`] for int8 model inference.
-* Use a [`pipeline`] for inference on our [executor](../nlp_toolkit/backends/neural_engine/) backend.
+* Use a [`pipeline`] for inference on our [executor](../intel_extension_for_transformers/backends/neural_engine/) backend.
 
-Executor is a inference tool for accelerated deployment in NLP-toolkit.
+Executor is a inference tool for accelerated deployment in Intel_Extension_for_Transformers.
 
 ## Pipeline usage
 
 ----
 ### **INT8 model**
 
-1. Initializer a pipeline instance with model name and specific task.
+1. Initialize a pipeline instance with model name and specific task.
     ```py
-    from nlp_toolkit.optimization.pipeline import pipeline
+    from intel_extension_for_transformers.optimization.pipeline import pipeline
     text_classifier = pipeline(
         task="text-classification",
         model="Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static",
@@ -34,9 +34,9 @@ Executor is a inference tool for accelerated deployment in NLP-toolkit.
 
 For executor, we only accept ONNX model now for pipeline. Users can get onnx model from PyTorch model with our existing [API](export.md). Right now, pipeline for executor only supports text-classcification task. 
 
-1. Initializer a pipeline instance with an ONNX model, model config, model tokenizer and specific backend. The MODEL_NAME is the pytorch model name you used for exporting the ONNX model.
+1. Initialize a pipeline instance with an ONNX model, model config, model tokenizer and specific backend. The MODEL_NAME is the pytorch model name you used for exporting the ONNX model.
     ```py
-    from nlp_toolkit.optimization.pipeline import pipeline
+    from intel_extension_for_transformers.optimization.pipeline import pipeline
     from transformers import AutoConfig, AutoTokenizer
 
     config = AutoConfig.from_pretrained(MODEL_NAME)

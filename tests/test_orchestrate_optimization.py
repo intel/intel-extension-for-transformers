@@ -7,7 +7,7 @@ import torch.utils.data as data
 import unittest
 import neural_compressor
 from datasets import load_dataset, load_metric
-from nlp_toolkit import (
+from intel_extension_for_transformers import (
     PrunerConfig,
     PruningConfig,
     DistillationConfig,
@@ -17,8 +17,8 @@ from nlp_toolkit import (
     objectives,
     OptimizedModel,
 )
-from nlp_toolkit.optimization.trainer import NLPTrainer
-from nlp_toolkit.optimization.distillation import Criterion
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.optimization.distillation import Criterion
 
 from transformers import (
     AutoModelForSequenceClassification,
@@ -73,6 +73,7 @@ class TestOrchestrateOptimizations(unittest.TestCase):
                 eval_dataset=self.dataset,
                 compute_metrics=compute_metrics,
             )
+            self.trainer.calib_dataloader = self.trainer.get_eval_dataloader()
         tune_metric = metrics.Metric(
             name="eval_accuracy", is_relative=True, criterion=0.5
         )

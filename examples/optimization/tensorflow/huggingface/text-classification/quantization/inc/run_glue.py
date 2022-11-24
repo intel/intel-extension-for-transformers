@@ -258,11 +258,11 @@ def main():
 
         worker_list = distributed_args.worker.split(",")
 
-        from nlp_toolkit.optimization.utils.utility_tf import distributed_init
+        from intel_extension_for_transformers.optimization.utils.utility_tf import distributed_init
         distributed_init(worker_list, "worker", distributed_args.task_index)
 
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
-        from nlp_toolkit.optimization.utils.utility_tf import get_filepath
+        from intel_extension_for_transformers.optimization.utils.utility_tf import get_filepath
         training_args.output_dir = get_filepath(training_args.output_dir, strategy.cluster_resolver.task_type, strategy.cluster_resolver.task_id)
     else:
         strategy = training_args.strategy
@@ -510,7 +510,7 @@ def main():
         # endregion
 
     if optim_args.tune:
-        from nlp_toolkit import metrics, objectives, QuantizationConfig, TFOptimization
+        from intel_extension_for_transformers import metrics, objectives, QuantizationConfig, TFOptimization
         optimization = TFOptimization(
             model=model,
             args=training_args,

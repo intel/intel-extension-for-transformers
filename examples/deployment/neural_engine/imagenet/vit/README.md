@@ -22,7 +22,7 @@ sudo apt install autoconf
 ```
 Install NLPTookit from source code
 ```shell
-cd <NLP_Toolkit_folder>
+cd <intel_extension_for_transformers_folder>
 git submodule update --init --recursive
 python setup.py install
 ```

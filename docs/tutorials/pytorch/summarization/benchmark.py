@@ -3,8 +3,8 @@ import os
 import numpy as np
 import nltk 
 from datasets import load_dataset, load_metric
-from nlp_toolkit import metrics, OptimizedModel
-from nlp_toolkit.optimization.trainer import NLPSeq2SeqTrainer
+from intel_extension_for_transformers import metrics, OptimizedModel
+from intel_extension_for_transformers.optimization.trainer import NLPSeq2SeqTrainer
 from argparse import ArgumentParser
 from transformers import (
     AutoConfig,

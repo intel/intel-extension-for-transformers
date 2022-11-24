@@ -30,9 +30,9 @@ import transformers
 from datasets import load_dataset, load_metric
 
 from filelock import FileLock
-from nlp_toolkit import OptimizedModel, QuantizationConfig
-from nlp_toolkit import metrics as nlp_metrics
-from nlp_toolkit.optimization.trainer import NLPSeq2SeqTrainer
+from intel_extension_for_transformers import OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers import metrics as nlp_metrics
+from intel_extension_for_transformers.optimization.trainer import NLPSeq2SeqTrainer
 from transformers import (
     AutoConfig,
     AutoModelForSeq2SeqLM,

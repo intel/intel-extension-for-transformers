@@ -37,9 +37,9 @@ For custom datasets in `jsonlines` format please see: https://huggingface.co/doc
 and you also will find examples of these below.
 
 
-## tune a quantized model with NLP_toolkit
+## tune a quantized model with intel_extension_for_transformers
 
-Here is an example of a translation MarianMT model to tune a quantized model with NLP toolkit:
+Here is an example of a translation MarianMT model to tune a quantized model with Intel Extension for Transformers:
 
 ```bash
 python examples/pytorch/translation/run_translation.py \

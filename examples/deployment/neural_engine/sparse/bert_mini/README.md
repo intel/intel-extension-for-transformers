@@ -1,6 +1,6 @@
 # Sparse model Step-by-Step
 Here is an example of blocked sparsity and quantization of Bert Mini, sparse ratio is 90%.
-NLPToolkit provided a high-performance sparse matrix multiplication library – SparseLib and demonstrated the performance improvement of sparse outweigh the accuracy loss.
+Intel® Extension for Transformers provided a high-performance sparse matrix multiplication library – Transformers-accelerated Libraries and demonstrated the performance improvement of sparse outweigh the accuracy loss.
 This sparse solution is a software-based solution and utilizes the Intel instructions. More sparse examples will be released in the future.
 # Prerequisite
 
@@ -30,20 +30,20 @@ sudo apt install autoconf
 Install NLPTookit from source code
 
 ```shell
-cd <NLP_Toolkit_folder>
+cd <intel_extension_for_transformers_folder>
 git submodule update --init --recursive
 python setup.py install
 ```
 Install package for example
 ```shell
-cd <NLP_Toolkit_folder>/examples/deployment/neural_engine/sst2/bert_mini
+cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/sst2/bert_mini
 pip install -r requirements.txt
 ```
 
 1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instances.
 
 ```
-export LD_PRELOAD=<NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
+export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
 
 Using weight sharing can save memory and improve the performance when multi instances.
@@ -64,18 +64,18 @@ python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./da
 ### 2.2 Get sparse model
 
 Neural Engine can parse Sparse ONNX model and Neural Engine IR.
-You can train a Bert mini sst2 sparse model with distillation through Neural Compressor [example](https://github.com/intel-innersource/frameworks.ai.lpot.intel-lpot/blob/28e9b1e66c23f4443a2be8f2926fee1e919f5a14/examples/pytorch/nlp/huggingface_models/text-classification/pruning_while_distillation/group_lasso/eager/README.md). Or use the [sparse model](https://huggingface.co/Intel/bert-mini-sst2-distilled-sparse-90-1X4-block) we publiced on huggingface which is bert mini on sst2 with sparse ratio 90% 1X4 block.
-You can get INT8 ONNX sparse model from optimization module by setting precision=int8, command as follows:
+You can use the [sparse model](https://huggingface.co/Intel/bert-mini-sst2-distilled-sparse-90-1X4-block) we publiced on huggingface which is bert mini on sst2 with sparse ratio 90% 1X4 block(include int8 onnx model and int8 Neural Engine IR).
+You can also get INT8 ONNX sparse model from optimization module by setting precision=int8, command as follows:
 ```shell
 bash prepare_model.sh --input_model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
 ```
-Then you can generate tranposed sparse model to get better performance, command as follows:
+Then you can generate transposed sparse model to get better performance, command as follows:
 ```shell
-python export_tranpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
+python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
 ```
 
 ### Benchmark
-Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [SparseLib](https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/tree/develop/nlp_toolkit/backends/neural_engine/SparseLib) kernels and high performance layernorm op with transpose mode to improve inference performance.
+Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/kernels) and high performance layernorm op with transpose mode to improve inference performance.
 
   2.1 accuracy
   run python
@@ -100,7 +100,7 @@ Neural Engine will automatically detect weight structured sparse ratio, as long 
   bash run_benchmark.sh --input_model=./sparse_int8_ir  --mode=performance --batch_size=8 --seq_len=128
   ```
   
-  Or run C++
+  or run C++
   The warmup below is recommended to be 1/10 of iterations and no less than 3.
   
   ```
@@ -108,7 +108,7 @@ Neural Engine will automatically detect weight structured sparse ratio, as long 
   export OMP_NUM_THREADS=<cpu_cores>
   export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
   export UNIFIED_BUFFER=1
-  numactl -C 0-<cpu_cores-1> <NLP_Toolkit_folder>/nlp_toolkit/backends/neural_engine/bin/neural_engine
+  numactl -C 0-<cpu_cores-1> <intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/bin/neural_engine
   --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
   --seq_len=128 --config=./sparse_int8_ir/conf.yaml --weight=./sparse_int8_ir/model.bin
   ```

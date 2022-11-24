@@ -11,7 +11,7 @@ In Model Exploration, a search engine will search for a better compressed model 
 Flash Distillation is the stage for training the searched model to discover its potential.
 <br>
 
-In Evaluation stage, trained model will be evaluated to measure its performances (e.g. the prediction accuracy, the hardware performance etc.) inorder to select the best model architecture.
+In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.
 <br>
 
 For implementing AutoDistillation, a framework class ***'AutoDistillation'*** is designed for excuting the total pipeline, and a criterion class ***'IntermediateLayersKnowledgeDistillationLoss'*** is designed for handling Flash Distillation with existing Distillation class.
@@ -34,19 +34,19 @@ Within each iteration, ***model_arch_proposition*** method will propose a promis
 **1. search_space** (e.g. {'hidden_size':[64, 128], 'layer_num':[4, 8]})
 <br>
 
-**2. model_builder** (function for building model instance based on the specific sample point in the search space, ***need provided by user***)
+**2. model_builder** (the function for building model instance based on the specific sample point in the search space, ***need provided by user***)
 <br>
 
-**3. advisor** (search algorithm instance e.g. Bayesian Optimization, Random Search)
+**3. advisor** (the search algorithm instance e.g. Bayesian Optimization, Random Search)
 <br>
 
-**4. train_func** (train function to train the model)
+**4. train_func** (the train function to train the model)
 <br>
 
-**5. eval_func** (evaluation function to evaluate the model)
+**5. eval_func** (the evaluation function to evaluate the model)
 <br>
 
-**6. config** (configuration, ***need provided by user***)
+**6. config** (the configuration, ***need provided by user***)
 <br>
 
 **7. search_result** (store results of the search process)
@@ -62,7 +62,7 @@ Within each iteration, ***model_arch_proposition*** method will propose a promis
 **2. search_loop** (begin search iterations)
 <br>
 
-**3. train_evaluate** (process of one search iteration to train and evaluate the model proposed by search algorithm)
+**3. train_evaluate** (the process of one search iteration to train and evaluate the model proposed by search algorithm)
 
 ## **3. Criterion Class Design**
 ***IntermediateLayersKnowledgeDistillationLoss*** is designed for calculating the knowledge distillation loss of the intermediate layer features.
@@ -71,7 +71,7 @@ Within each iteration, ***model_arch_proposition*** method will propose a promis
 To deal the issue of dimension mismatch between the intermediate layer features of the teacher model and the student model, feature_matchers is provided for matching the features dimension.
 <br>
 
-For example, shape of a feature from the teacher model is (8, 512), shape of a corresponding feature from the student model is (8, 128), then feature_matcher will be a linear transformation layer whose weight has a shape of (128, 512).
+For example, the shape of a feature from the teacher model is (8, 512), and the shape of a corresponding feature from the student model is (8, 128), then the feature_matcher will be a linear transformation layer whose weight has a shape of (128, 512).
 
 ### **Class IntermediateLayersKnowledgeDistillationLoss**
 
@@ -111,7 +111,7 @@ For example, shape of a feature from the teacher model is (8, 512), shape of a c
 **2. init_feature_matcher** (initialize the feature_matcher instance)
 <br>
 
-**3. teacher_model_forward** (run forward for teacher_model)
+**3. teacher_model_forward** (run forward for the teacher_model)
 <br>
 
 **4. loss_cal** (calculate loss)
@@ -252,7 +252,7 @@ trainer.autodistillation_config = {
 best_model_arch = trainer.autodistillation(teacher_model, model_builder, train_func=train_func, eval_func=eval_func)
 ```
 
-### **flash distillation config example**
+### **Flash distillation config example**
 
 ```yaml
 model:
@@ -275,7 +275,7 @@ distillation:
         add_origin_loss: False
 ```
 
-### **regular distillation config example**
+### **Regular distillation config example**
 
 ```yaml
 model:

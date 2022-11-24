@@ -106,7 +106,7 @@ P99 latency: the 99th latency percentile (namely 99% of the requests faster than
 
 Please note that the output file records all the commands during automatic tuning, and therefore users can reproduce easily.
 ```
-UNIFIED_BUFFER=1 OMP_NUM_THREADS=2 numactl --localalloc --physcpubind=18,19  /home/xxx/anaconda3/envs/bin/python -u mrpc/bert_mini/run_executor.py --input_model=mrpc/bert_mini/ref_model --mode=performance --batch_size=8 --seq_len=128 2>&1|tee /home/xxx/test/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/examples/deploy/ref_executor/12_2_9_disabled_default_unified_buffer.log &
+UNIFIED_BUFFER=1 OMP_NUM_THREADS=2 numactl --localalloc --physcpubind=18,19  /home/xxx/anaconda3/envs/bin/python -u mrpc/bert_mini/run_executor.py --input_model=mrpc/bert_mini/ref_model --mode=performance --batch_size=8 --seq_len=128 2>&1|tee /home/xxx/test/intel/intel-extension-for-transformers/examples/deploy/ref_executor/12_2_9_disabled_default_unified_buffer.log &
 ```
 For more sample outputs, please refer to the [example](details.csv).<br>
 

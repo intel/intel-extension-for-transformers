@@ -8,15 +8,15 @@ import transformers
 import logging
 import numpy as np
 
-from nlp_toolkit.optimization.trainer import NLPTrainer
-from nlp_toolkit.optimization.utils.models.modeling_roberta_dynamic import RobertaForQuestionAnswering
-from nlp_toolkit.optimization.utils.models.modeling_bert_dynamic import BertForQuestionAnswering
-from nlp_toolkit.optimization.dynamic.drop_and_restore_utils import (
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic import RobertaForQuestionAnswering
+from intel_extension_for_transformers.optimization.utils.models.modeling_bert_dynamic import BertForQuestionAnswering
+from intel_extension_for_transformers.optimization.dynamic.drop_and_restore_utils import (
     sample_length_configuration,
     sample_layer_configuration
 )
 
-from nlp_toolkit.optimization.dynamic.evolution import (
+from intel_extension_for_transformers.optimization.dynamic.evolution import (
     approx_ratio, inverse, store2str, Evolution
 )
 
@@ -30,7 +30,7 @@ from transformers import (
     TrainingArguments,
 )
 
-from nlp_toolkit import (
+from intel_extension_for_transformers import (
     DynamicLengthConfig,
 )
 
@@ -55,8 +55,8 @@ class DummyDataset(data.Dataset):
     def __init__(self, labels=False, type=None):
         MODEL_NAME = BERT_MODEL if type=='bert' else MINILM_MODEL
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-        self.sequence_a = "NLP-toolkit is based in SH"
-        self.sequence_b = "Where is NLP-toolkit based?"
+        self.sequence_a = "intel-extension-for-transformers is based in SH"
+        self.sequence_b = "Where is intel-extension-for-transformers based?"
         self.encoded_dict = self.tokenizer(self.sequence_a, self.sequence_b, padding="max_length", max_length=MAX_LENGTH)
         if labels:
             self.encoded_dict['start_positions'] = [21]

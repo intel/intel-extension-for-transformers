@@ -14,12 +14,12 @@ tags
 build/
 _build
 dist/
-nlp_toolkit.egg-info/
+intel_extension_for_transformers.egg-info/
 
 /.vs
 
-/nlp_toolkit/backends/neural_engine/.vs
-/nlp_toolkit/backends/neural_engine/out
+/intel_extension_for_transformers/backends/neural_engine/.vs
+/intel_extension_for_transformers/backends/neural_engine/out
 /examples/**/*.npy
 /examples/**/*.bin
 /examples/**/*.yaml

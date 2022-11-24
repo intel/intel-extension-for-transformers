@@ -1,5 +1,5 @@
 # Data Augmentation: The Tool for Augmenting NLP Datasets
-Data Augmentation is a tool to helps you with augmenting nlp datasets for your machine learning projects. The tool integrated [nlpaug](https://github.com/makcedward/nlpaug) and other methods from Intel Lab.
+Data Augmentation is a tool to helps you with augmenting nlp datasets for your machine learning projects. This tool integrates [nlpaug](https://github.com/makcedward/nlpaug) and other methods from Intel Lab.
 
 ## Getting Started!
 ### Installation
@@ -7,16 +7,16 @@ Data Augmentation is a tool to helps you with augmenting nlp datasets for your m
 pip install nlpaug
 pip install transformers>=4.12.0
 
-#### Install Nlp-toolkit
-git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git nlp_toolkit
-cd nlp_toolkit
+#### Install Intel_Extension_for_Transformers
+git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
+cd intel_extension_for_transformers
 git submodule update --init --recursive
 python setup.py install
 
 ### Data Augmentation
 #### Script(Please refer to [example](tests/test_data_augmentation.py))
     ```python
-    from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
+    from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
     aug = DataAugmentation(augmenter_type="TextGenerationAug")
     aug.input_dataset = "dev.csv"
     aug.output_path = os.path.join(self.result_path, "test1.cvs")
@@ -49,7 +49,7 @@ python setup.py install
 |"ContextualWordEmbsForSentenceAug"|refer to ["ContextualWordEmbsForSentenceAug"](https://github.com/makcedward/nlpaug/blob/40794970124c26ce2e587e567738247bf20ebcad/nlpaug/augmenter/sentence/context_word_embs_sentence.py#L77)      |    |
 
 #### Text Generation Augmenter
-The text generation augment contains the recipe to run data augmentation algorithm based on conditional text generation using auto-regressive transformer model (like GPT, GPT-2, Transformer-XL, XLNet, CTRL) in order to automatically generate labeled data.
+The text generation augment contains the recipe to run data augmentation algorithm based on the conditional text generation using auto-regressive transformer model (like GPT, GPT-2, Transformer-XL, XLNet, CTRL) in order to automatically generate labeled data.
 Our approach follows algorithms described by [Not Enough Data? Deep Learning to the Rescue!](https://arxiv.org/abs/1911.03118) and [Natural Language Generation for Effective Knowledge Distillation](https://www.aclweb.org/anthology/D19-6122.pdf).
 
 - First, we fine-tune an auto-regressive model on the training set. Each sample contains both the label and the sentence.
@@ -58,7 +58,7 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
         example:
         ```python
         from datasets import load_dataset
-        from nlp_toolkit.preprocessing.utils import EOS
+        from intel_extension_for_transformers.preprocessing.utils import EOS
         for split in {'train', 'validation'}:
             dataset = load_dataset('glue', 'sst2', split=split)
             with open('SST-2/' + split + '.txt', 'w') as fw:
@@ -66,9 +66,9 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
                     fw.write(str(d['label']) + '\t' + d['sentence'] + EOS + '\n')
         ```
 
-    - Fine-tuning Causal Language Model
+    - Fine-tune Causal Language Model
 
-        You can use the script [run_clm.py](https://github.com/huggingface/transformers/tree/v4.6.1/examples/pytorch/language-modeling/run_clm.py) from transformers examples for fine-tuning GPT2 (gpt2-medium) on SST-2. The loss is that of causal language modeling. 
+        You can use the script [run_clm.py](https://github.com/huggingface/transformers/tree/v4.6.1/examples/pytorch/language-modeling/run_clm.py) from transformers examples for fine-tuning GPT2 (gpt2-medium) on SST-2 task. The loss is that of causal language modeling. 
 
         ```shell
         DATASET=SST-2
@@ -90,7 +90,7 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
 
 - Second, we generate labeled data. Given class labels sampled from the training set, we use the fine-tuned language model to predict sentences with below script:
     ```python
-    from nlp_toolkit.preprocessing.data_augmentation import DataAugmentation
+    from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
     aug = DataAugmentation(augmenter_type="TextGenerationAug")
     aug.input_dataset = "/your/original/training_set.csv"
     aug.output_path = os.path.join(self.result_path, "/your/augmented/dataset.cvs")
@@ -104,8 +104,8 @@ This data augmentation algorithm can be used in several scenarios, like model di
 augmenter_arguments:
 |parameter |Type|Description                                                 |default value |
 |:---------|:---|:---------------------------------------------------|:-------------|
-|"model_name_or_path"|String|Language modeling model to generate data, refer to [line](nlp_toolkit/preprocessing/data_augmentation.py#L181)|NA|
-|"stop_token"|String|Stop token used in input data file                     |[EOS](nlp_toolkit/preprocessing/utils.py#L7)|
+|"model_name_or_path"|String|Language modeling model to generate data, refer to [line](intel_extension_for_transformers/preprocessing/data_augmentation.py#L181)|NA|
+|"stop_token"|String|Stop token used in input data file                     |[EOS](intel_extension_for_transformers/preprocessing/utils.py#L7)|
 |"num_return_sentences"|Integer|Total samples to generate, -1 means the number of the input samples                    |-1|
 |"temperature"|float|parameter for CLM model                               |1.0|
 |"k"|float|top K                                |0.0|

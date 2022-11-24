@@ -29,6 +29,7 @@ python run_qa.py \
     --overwrite_output_dir
     --framework ipex
 ```
+**Note**: support IPEX version >= 1.12
 ### Validated model list
 
 |Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining

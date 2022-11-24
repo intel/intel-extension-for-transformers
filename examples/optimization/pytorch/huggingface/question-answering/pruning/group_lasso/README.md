@@ -11,9 +11,9 @@ This document is used to list steps of reproducing PyTorch BERT pruning result.
 
 Recommend python 3.7 or higher version.
 
-#### Install [nlp-toolkit]()
+#### Install [intel-extension-for-transformers]()
 ```
-pip install nlp-toolkit
+pip install intel-extension-for-transformers
 ```
 
 #### Install PyTorch

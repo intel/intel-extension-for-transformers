@@ -46,12 +46,12 @@ import transformers
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from nlp_toolkit import (
+from intel_extension_for_transformers import (
     AutoDistillationConfig,
     FlashDistillationConfig,
     metrics
 )
-from nlp_toolkit.optimization.trainer import NLPTrainer as Trainer
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer as Trainer
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from transformers import (
@@ -264,7 +264,7 @@ class OptimizationArguments:
 
 def main():
     if int(os.environ.get("LOCAL_RANK", -1)) != -1 and '--no_cuda' in sys.argv:
-        from nlp_toolkit.optimization.utils.utility import distributed_init
+        from intel_extension_for_transformers.optimization.utils.utility import distributed_init
         distributed_init()
 
     # See all possible arguments in src/transformers/training_args.py

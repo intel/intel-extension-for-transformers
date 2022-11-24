@@ -29,11 +29,11 @@ import torch
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from nlp_toolkit import metrics , OptimizedModel, QuantizationConfig, DynamicLengthConfig
+from intel_extension_for_transformers import metrics , OptimizedModel, QuantizationConfig, DynamicLengthConfig
 from trainer_qa import QuestionAnsweringTrainer
 
-from nlp_toolkit.optimization.utils.models.modeling_roberta_dynamic import RobertaForQuestionAnswering
-from nlp_toolkit.optimization.utils.models.modeling_bert_dynamic import BertForQuestionAnswering
+from intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic import RobertaForQuestionAnswering
+from intel_extension_for_transformers.optimization.utils.models.modeling_bert_dynamic import BertForQuestionAnswering
 # to use modeling with LAT:
 transformers.models.roberta.modeling_roberta.RobertaForQuestionAnswering = RobertaForQuestionAnswering
 transformers.models.bert.modeling_bert.BertForQuestionAnswering = BertForQuestionAnswering

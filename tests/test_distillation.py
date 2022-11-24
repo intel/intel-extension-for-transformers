@@ -6,15 +6,15 @@ import shutil
 import torch.utils.data as data
 import unittest
 from datasets import load_dataset, load_metric
-from nlp_toolkit import (
+from intel_extension_for_transformers import (
     DistillationConfig,
     DistillationCriterionMode,
     metrics,
     OptimizedModel,
     NoTrainerOptimizer
 )
-from nlp_toolkit.optimization.trainer import NLPTrainer
-from nlp_toolkit.optimization.distillation import Criterion
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.optimization.distillation import Criterion
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,

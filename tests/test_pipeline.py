@@ -1,7 +1,7 @@
 import os
 import unittest
 import neural_compressor.adaptor.pytorch as nc_torch
-from nlp_toolkit.optimization.pipeline import pipeline
+from intel_extension_for_transformers.optimization.pipeline import pipeline
 from packaging.version import Version
 from transformers import (
     AutoConfig,

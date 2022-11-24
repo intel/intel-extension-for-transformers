@@ -2,8 +2,8 @@ import logging
 import os
 from datasets import load_dataset, load_metric
 from itertools import chain
-from nlp_toolkit import metrics, OptimizedModel
-from nlp_toolkit.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers import metrics, OptimizedModel
+from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 from argparse import ArgumentParser
 from transformers import (
     MODEL_FOR_MASKED_LM_MAPPING,
