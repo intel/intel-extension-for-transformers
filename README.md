@@ -24,16 +24,20 @@ This toolkit helps developers to improve the productivity of inference deploymen
 </br>
 
 ## Installation
-#### Install Dependency
+### Release binary install
 ```bash
-pip install -r requirements.txt
+pip install intel-extension-for-transformers
 ```
 
+### Install from source
 #### Install Intel® Extension for Transformers
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
 cd intel_extension_for_transformers
+# Install Dependency
+pip install -r requirements.txt
 git submodule update --init --recursive
+# Install intel_extension_for_transformers
 python setup.py install
 ```
 
