@@ -1,3 +1,4 @@
+import shutil
 import numpy as np
 import unittest
 import tensorflow as tf
@@ -69,6 +70,11 @@ class TestDistillation(unittest.TestCase):
             from_logits=True, reduction=tf.keras.losses.Reduction.SUM)
         metrics = ["accuracy"]
         self.model.compile(optimizer=optimizer, loss=loss_fn, metrics=metrics)
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree('./tmp', ignore_errors=True)
+        shutil.rmtree('./distilled_model', ignore_errors=True)
 
     def test_tf_model_distil(self):
         metric = load_metric("glue", "sst2")

@@ -1,3 +1,4 @@
+import shutil
 import numpy as np
 import unittest
 import tensorflow as tf
@@ -88,6 +89,11 @@ class TestAutoDistillation(unittest.TestCase):
                                         train_dataset=self.dummy_dataset,
                                         eval_dataset=self.dummy_dataset,
                                         compute_metrics=compute_metrics)
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree('./tmp', ignore_errors=True)
+        shutil.rmtree('./distilled_model', ignore_errors=True)
 
     def test_tf_auto_distillation(self):
         for search_algorithm in ['BO', 'Grid', 'Random']:

@@ -611,9 +611,11 @@ class TFOptimization:
                                 x, y_pred.logits, loss, teacher_outputs.logits)
                         model._validate_target_and_loss(y, loss)
                         # Run backwards pass.
-                        model.optimizer.minimize(loss,
-                                                model.trainable_variables,
-                                                tape=tape)
+                        optimizer = self.model.optimizer
+                        optimizer.minimize(
+                            loss,
+                            model.trainable_variables,
+                            tape=tape)
                         return model.compute_metrics(x, y, y_pred, sample_weight)
 
                     model.save_pretrained(get_filepath(TMPPATH, self.task_type, self.task_id), saved_model=True)
@@ -630,7 +632,8 @@ class TFOptimization:
                             model.compile(
                                     optimizer=optimizer,
                                     loss=self.model.loss,
-                                    metrics=self.model.compiled_metrics._user_metrics)
+                                    metrics=self.model.compiled_metrics._user_metrics
+                                    )
                             model.train_step = train_step
                     else:
                         model.train_step = train_step
@@ -661,7 +664,6 @@ class TFOptimization:
 
                     self.component = self.distiller = distiller
 
-
                     opt_model = distiller.fit()
                     opt_model.save(self.args.output_dir)
                     return opt_model
@@ -671,15 +673,15 @@ class TFOptimization:
             ori_model = model
             if agent.flash_distillers:
                 model = run_distillers(ori_model, agent.flash_distillers,
-                                        agent.flash_train_steps,
-                                        agent.flash_block_names)
+                                       agent.flash_train_steps,
+                                       agent.flash_block_names)
             # run regular_distillers
             if agent.regular_distillers:
                 model = run_distillers(ori_model,
-                                        agent.regular_distillers,
-                                        agent.regular_train_steps,
-                                        agent.regular_block_names,
-                                        presentation='regular distillation')
+                                       agent.regular_distillers,
+                                       agent.regular_train_steps,
+                                       agent.regular_block_names,
+                                       presentation='regular distillation')
             return model.model
 
         def eval_func_builtin(model):
@@ -697,7 +699,6 @@ class TFOptimization:
         # pylint: disable=E1101
         os.makedirs(self.args.output_dir, exist_ok=True)
         return agent.search(self.args.output_dir, model_cls)
-
 
     def build_train_func(self, model):
         tf.random.set_seed(1)
