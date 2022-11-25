@@ -10,7 +10,7 @@ Supported Examples
 |[Bert-large (SQUAD)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/squad/bert_large)|[Bert-mini (SST2)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/sst2/bert_mini)</br> [MiniLM (SST2)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/sst2/minilm_l6_h384_uncased)</br> [Distilbert (SST2)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/sst2/distilbert_base_uncased) </br> [Distilbert (Emotion)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/emotion/distilbert_base_uncased) </br> [Bert-base (MRPC)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/mrpc/bert_base)</br> [Bert-mini (MRPC)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/mrpc/bert_mini)</br>[Distilbert (MRPC)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/mrpc/distilbert_base_uncased)</br> [Roberta-base (MRPC)](https://github.com/intel/intel-extension-for-transformers/tree/develop/examples/deployment/neural_engine/mrpc/roberta_base)</br>|
 
 #### Installation
-Linux is supported only.
+Windows and Linux are supported.
 
 ##### 0. Prepare environment and requirement
 ```
@@ -34,7 +34,6 @@ pip install neural-compressor
 cd <project folder/intel_extension_for_transformers/>
 python setup.py install/develop
 ```
-After succesful build, you will see `neural_engine` in the intel_extension_for_transformers/build folder. 
 
 ##### 3. Generate optimal BERT model
 
@@ -68,19 +67,19 @@ If you use python setup.py install to install the neural engine in your current 
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 # load the model
 graph = compile('./model_and_tokenizer/int8-model.onnx')
-# use model.inference to do inference
+# use graph.inference to do inference
 out = graph.inference([input_ids, segment_ids, input_mask])
 # dump the neural engine IR to file
 graph.save('./ir')
 ```
 
-The `input_ids`, `segment_ids` and `input_mask` are the input numpy array data of BERT model, and the input dimension is (batch_size x seq_len). 
-Note that the `out` is a list contains the bert model output numpy data (`out=[output numpy data]`). 
+The `input_ids`, `segment_ids` and `input_mask` are the input numpy array data of model, and the input dimension is variable. 
+Note that the `out` is a dict contains the bert model output name and numpy data (`out={output name : numpy data}`). 
 
 ##### 5. Analyze operator performance
 
 If you want to analyze performance of each operator, just export ENGINE_PROFILING=1 and export INST_NUM=<inst_num>.
-It will dump latency of each operator to <curr_path>/engine_profiling/profiling_<inst_id>.csv.
+It will dump latency of each operator to <curr_path>/engine_profiling/profiling_<time>_<inst_count>.csv and each iteration to <curr_path>/engine_profiling/profiling_<time>_<inst_count>.json.
 
 ## IPEX
 Intel® Extension for PyTorch* extends PyTorch with optimizations for extra performance boost on Intel hardware.

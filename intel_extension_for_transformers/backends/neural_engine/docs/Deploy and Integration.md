@@ -2,6 +2,13 @@
 
 In this tutorial, we will deploy a TF/ONNX model using Engine inference OR through Manual customized yaml and weight binary to use Engine inference.
 
+## Architecture
+Neural Engine support model optimizer, model executor and high performance kernel for multi device.
+
+<a target="_blank" href="imgs/infrastructure.png">
+  <img src="imgs/infrastructure.png" alt="Architecture" width=762 height=672>
+</a>
+
 ### 1. Deploy a TF/ONNX model using Engine inference
 
 ### Generate the Engine Graph through TF/ONNX model
@@ -79,7 +86,7 @@ All input tensors are in an operator typed Input. But slightly difference is som
 
 ### Run the inference by Engine
 
-Parse the yaml and weight bin to Engine Graph
+Parse the yaml and weight bin to Engine Graph throught Python API
 
 ```
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
@@ -89,6 +96,14 @@ input_data = [input_0, input_1, input_2]
 out = model.inference(input_data)
 ```
 
-Same as the previous session, the ***input_data*** should be numpy array data as a list, and ***out*** is a dict the output tensor name and value(numpy array).
+You can also use C++ API
+```
+./neural_engine --config=<path to yaml file> --weight=<path to bin file> --batch_size=32 --iterations=20
+```
+By using the numactl command to bind cpu cores and open multi-instances:
+```
+OMP_NUM_THREADS=4 numactl -C '0-3' ./neural_engine ...
+```
+Same as the previous session, the ***input_data*** should be numpy array data as a list, and ***out*** is a dict which pair the output tensor name and value(numpy array).
 
 If you want to close log information during inference, use the command `export GLOG_minloglevel=2` before run the inference to set log level to ERROR.  `export GLOG_minloglevel=1` set log level to info again.
