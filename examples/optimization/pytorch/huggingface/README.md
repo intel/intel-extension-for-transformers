@@ -6,13 +6,13 @@ Welcome to Pytorch Huggingface examples. The examples is following from [Hugging
 
 | Task | PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|:---:|:---:|:---:|
-|**`language-modeling`**| ✅ | ✅ | N/A
-|**`multi-choice`**| ✅ | ✅ | N/A
-|**`question-answering`**| ✅ | ✅ | N/A
+|**`language-modeling`**| ✅ | ✅ | ✅
+|**`multi-choice`**| ✅ | ✅ | ✅
+|**`question-answering`**| ✅ | ✅ | ✅
 |**`text-classification`**| ✅ | ✅ | ✅
-|**`token-classification`**| ✅ | ✅ | N/A
-|**`summarization`**| ✅ | N/A | N/A
-|**`translation`**| ✅ | N/A | N/A
+|**`token-classification`**| ✅ | ✅ | ✅
+|**`summarization`**| ✅ | ✅ | ✅
+|**`translation`**| ✅ | ✅ | ✅
 
 ## Pruning approach
 

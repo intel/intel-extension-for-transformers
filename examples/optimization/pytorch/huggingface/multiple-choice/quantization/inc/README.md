@@ -20,7 +20,7 @@ python run_swag.py \
 
 |DATASET|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
-|SWAG|ehdwns1516/bert-base-uncased_SWAG| ✅| ✅| ✅ N/A
+|SWAG|ehdwns1516/bert-base-uncased_SWAG| ✅| ✅| ✅
 
 
 
