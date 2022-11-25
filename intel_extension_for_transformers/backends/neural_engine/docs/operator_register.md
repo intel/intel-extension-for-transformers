@@ -1,8 +1,15 @@
-# Add a customized operator and register to engine executor
-It's very easy to add a customized operator and register to engine executor. Three steps are only needed to register a customized operator: 1. Add *.h of customized operator to executor/include/operators; 2. Add *.cpp of customized operator to executor/src/operators; 3. Add path of *.cpp to CMakeLists.txt for compiling. Let's register Gelu operator to engine executor as an example.
+# Add and register a customized operator to engine executor
+It only takes two steps for developers to register a customized operator: 
 
-## 1. Add *.h of customized operator to executor/include/operators
-The *.h is the file to define member variables and functions. Class GeluOperator inherits from class Operator. GeluOperator has basic constructor, destructor, Reshape function and Forward function. And it also has some member variables used inside the class. The examples use oneDNN API, so we define some variables for onednn primitives. The details about oneDNN can refer the following link https://oneapi-src.github.io/oneDNN/index.html.
+1. Add *.h of the customized operator to executor/include/operators;
+2. Add *.cpp of the customized operator to executor/src/operators; 
+
+Let's register a Gelu operator to engine executor as an example.
+
+## 1. Add *.h of the customized operator to executor/include/operators
+The *.h is a file to define member variables and functions. The GeluOperator class inherits from the Operator base class. The GeluOperator has a basic constructor, destructor, Reshape function and Forward function, and it also has some member variables used inside the class. 
+
+The example uses oneDNN API, so we define some variables for onednn primitives. The details about oneDNN can refer the following link https://oneapi-src.github.io/oneDNN/index.html.
 ```cpp
 class GeluOperator : public Operator {
  public:
@@ -20,8 +27,8 @@ class GeluOperator : public Operator {
   memory dst_m_;
 };
 ```
-## 2. Add *.cpp of customized operator to executor/src/operators
-It's the constructor used to parse the parameters like attributes in the operator. Gelu has two algorithm gelu_erf and gelu_tanh, so the attribute "algorithm" is parsed here.
+## 2. Add *.cpp of the customized operator to executor/src/operators
+The following function is a constructor to parse the operator config. Gelu has two algorithm gelu_erf and gelu_tanh, and the attribute "algorithm" is parsed here.
 ```cpp
 GeluOperator::GeluOperator(const shared_ptr<OperatorConfig>& conf) :
   Operator(conf) {
@@ -33,7 +40,7 @@ GeluOperator::GeluOperator(const shared_ptr<OperatorConfig>& conf) :
 }
 ```
 
-Output shape maybe is dynamic, so you can adjust the shape of output tensor in reshape function. And the gelu operator is based on oneDNN, so we also prepare primitive here. 
+The output shape can be dynamic, so we can adjust the shape of the output tensor in the reshape function. We also prepare primitives here, becuase the Gelu operator is based on oneDNN.
 ```cpp
 void GeluOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Prepare tensors shape and memory descriptors
@@ -78,7 +85,10 @@ void GeluOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& 
   gelu_p_ = dnnl::eltwise_forward(gelu_pd);
 }
 ```
-Forward function is to execute operator. Using oneDNN, we set input and output to data_handle, and execute the primitive. And after executing the primitive, don't forget to unref input tensors, that's to reduce the reference count of tensor and manage memory more rigorously.
+The forward function executes the operator. Using oneDNN, we set input and output to data_handle, and execute the primitive. 
+
+Notes: Please don't forget to unrefernce the input tensors after executing the primitive. The reason is to reduce the reference count of tensors and manage memory more strictly.
+
 ```cpp
 void GeluOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
 // 1. Alias variables part
@@ -105,14 +115,4 @@ this->unref_tensors(input);
 After creating the customized operator, finally register it to operator class as follow:
 ```
 REGISTER_OPERATOR_CLASS(Gelu);
-```
-
-## 3. add *.cpp to CMakeLists.txt
-Each operator is compiled as shared library, so we should add gelu.cpp to CMakeLists.txt.
-```
-add_library(engine SHARED
-    src/model.cpp
-    src/common.cpp
-    src/operators/gelu.cpp
-)
 ```
