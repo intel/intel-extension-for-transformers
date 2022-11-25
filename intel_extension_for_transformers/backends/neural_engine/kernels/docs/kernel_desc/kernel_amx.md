@@ -30,7 +30,7 @@ Let the left matrix in the above image be A and the right be B. In our case, A i
 
 Alternatively, considering A as activation and B as weight can save a lot of time because weight is fixed and can be compressed, concatenated and reordered offline. However, the loading of activation is a disaster because all 32 **16x1** blocks are not consecutive can will greatly impact performance, related experiments WIP.
 
-Then the key to the question is that how to re-layout activation on the fly. Luckily, a really smart guy gave [a brief and talented solution](https://stackoverflow.com/questions/64409634/4-way-bytewise-interleave-4x-16-byte-vectors-from-memory-with-avx512). Although the answer is for VNNI layout, but also applicable for our questions. The related code is as the following:
+Then the key to the question is how to re-layout activation on the fly. We use [a similar method with the VNNI kernel](./kernel_vnni.md#on-the-fly-activation-reordering) but saving two load instructions. The related code is as follows:
 
 ```cpp
 const static __m512i mask = _mm512_set_epi16(31,15,30,14,29,13,28,12,27,11,26,10,25,9,24,8,23,7,22,6,21,5,20,4,19,3,18,2,17,1,16,0);
