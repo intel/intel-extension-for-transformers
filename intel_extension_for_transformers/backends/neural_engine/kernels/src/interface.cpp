@@ -34,6 +34,10 @@ bool kernel_desc_proxy::create_proxy_object(std::shared_ptr<const kernel_desc_t>
   // Step 2.1: get impl_list_
   const auto& eng_kind = op_desc.engine_kind();
   const engine* eng = engine_factory::instance().create(eng_kind);
+  if (eng == nullptr) {
+    SPARSE_LOG(ERROR) << "Found no engine supported" << std::endl;
+    return false;
+  }
   impl_list_ = eng->get_implementation_list(op_desc);
   if (impl_list_ == nullptr) {
     return false;

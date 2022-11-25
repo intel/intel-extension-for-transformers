@@ -64,7 +64,7 @@ class jit_eltwise_injector {
 
  private:
   postop_attr cur_postop_attr_;
-  jit_generator* h;
+  jit_generator* h = nullptr;
   std::unordered_map<reg_type, std::set<int>> used_regs;
   std::unordered_map<std::string, int> alpha_idx_map;
   std::unordered_map<std::string, int> beta_idx_map;
@@ -159,7 +159,7 @@ class jit_eltwise_injector {
   };
   using table_t = std::multimap<key_t, table_entry_t>;
   using mapped_table_t = std::multimap<key_t, mapped_table_entry_t>;
-  mapped_table_t entry_map;
+  mapped_table_t entry_map = {};
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_

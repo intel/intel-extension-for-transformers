@@ -145,23 +145,35 @@ bool matmul_vnni_noperm_p2031_p1302_k_t::init() {
   if (using_unified_kernel_) {
     auto ker = new jit_matmul_vnni_noperm_p2031_p1302_t(ker_param);
     if (ker == nullptr) return false;
-    if (!ker->create_kernel()) return false;
+    if (!ker->create_kernel()) {
+      safe_delete(ker);
+      return false;
+    }
     jit_ker_noperm_p2031_p1302_ = ker;
   } else {
     auto K = static_cast<int>(K_), bs0 = static_cast<int>(bs0_);
     auto ker_tr_src0 = new jit_transpose_nx8_4b<32>({K, K});
     if (ker_tr_src0 == nullptr) return false;
-    if (!ker_tr_src0->create_kernel()) return false;
+    if (!ker_tr_src0->create_kernel()) {
+      safe_delete(ker_tr_src0);
+      return false;
+    }
     jit_trans_src0_ = ker_tr_src0;
 
     auto ker_tr_src1 = new jit_transpose_nx8_4b<8>({K, K * bs0});
     if (ker_tr_src1 == nullptr) return false;
-    if (!ker_tr_src1->create_kernel()) return false;
+    if (!ker_tr_src1->create_kernel()) {
+      safe_delete(ker_tr_src1);
+      return false;
+    }
     jit_trans_src1_ = ker_tr_src1;
 
     auto ker = new jit_matmul_vnni_Ba4b_Ab4a_ba_t(ker_param);
     if (ker == nullptr) return false;
-    if (!ker->create_kernel()) return false;
+    if (!ker->create_kernel()) {
+      safe_delete(ker);
+      return false;
+    }
     jit_ker_Ba4b_Ab4a_ba_ = ker;
 
     // allocate memory on heap for large task (more than half MB)

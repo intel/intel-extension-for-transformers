@@ -26,17 +26,13 @@ bool layernorm_ba_kd_t::init() {
   SPARSE_LOG_IF(FATAL, input_dt != data_type::fp32) << "only support fp32";
   SPARSE_LOG_IF(FATAL, tensor_desc[0].ftype() != format_type::ba) << "only support transpose";
   auto tensor_shape = tensor_desc[0].shape();
-  assert(tensor_shape.size() >= 2 && tensor_shape.size() <= 3);  //  support 2D/3D input.
+  SPARSE_LOG_IF(FATAL, tensor_shape.size() < 2 || tensor_shape.size() > 3) << "layernorm support 2D/3D input";
   if (tensor_shape.size() == 2) tensor_shape.insert(tensor_shape.begin(), 1);
 
   int batch_num = tensor_shape[0];
   int row_num = tensor_shape[1];
   int col_num = tensor_shape[2];
 
-  // init ptr
-  one_div_n_ = reinterpret_cast<float*>(aligned_alloc(64, col_num * sizeof(float)));
-
-  for (int i = 0; i < col_num; i++) one_div_n_[i] = 1.0 / row_num;
   // init params
   // TODO(zhe1wang): support col nums can't divded by 16.
   SPARSE_LOG_IF(FATAL, col_num % 16 != 0) << "col nums should divded by 16 now";
@@ -75,6 +71,9 @@ bool layernorm_ba_k_t::init() {
   batch_loop = tensor_shape[0] / per_ker_process_batch;
   row_num = tensor_shape[1];
   col_num = tensor_shape[2];
+  one_div_n_ = reinterpret_cast<float*>(aligned_alloc(64, col_num * sizeof(float)));
+  SPARSE_LOG_IF(FATAL, one_div_n_ == nullptr) << "layernorm alloc one_div failed";
+  for (int i = 0; i < col_num; i++) one_div_n_[i] = 1.0 / row_num;
   // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   jit_kers_.resize(ker_num);
   for (int i = 0; i < batch_loop; i++) td.push_back(new ssd::layernorm_ba_data_t());
@@ -99,7 +98,7 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
       data_param->dst = const_cast<void*>(rt_data[1] + i * row_num * col_num * get_data_size(dst_dt));
       data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
       data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
-      data_param->one_div_n = derived_kd()->one_div_n_ptr();
+      data_param->one_div_n = one_div_n_ptr();
       (*jit_impl)(td[i]);
     }
   }

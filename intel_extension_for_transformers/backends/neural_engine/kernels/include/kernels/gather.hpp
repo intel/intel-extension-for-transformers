@@ -51,8 +51,13 @@ class gather_k_t : public kernel_t {
  public:
   using kd_t = gather_kd_t;
   explicit gather_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
-
   virtual ~gather_k_t() { safe_delete(jit_kers_); }
+  // Delete move constructor and move operator
+  gather_k_t(gather_k_t&& other) = delete;
+  gather_k_t& operator=(gather_k_t&& other) = delete;
+  // Delete copy constructor and copy operator
+  gather_k_t(const gather_k_t& other) = delete;
+  gather_k_t& operator=(const gather_k_t& other) = delete;
 
  public:
   bool init() override;

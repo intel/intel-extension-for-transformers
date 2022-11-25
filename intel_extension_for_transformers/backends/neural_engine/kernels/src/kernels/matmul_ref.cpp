@@ -158,7 +158,9 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
             value += l_value * r_value;
           }
           float badd_value = 0;
-          if (has_binary_add) badd_value = dtypes[ssd::SRC2] == dt::fp32 ? badd_fp32[dst_idx] : 0;
+          if (badd_data != nullptr) {
+            if (has_binary_add) badd_value = dtypes[ssd::SRC2] == dt::fp32 ? badd_fp32[dst_idx] : 0;
+          }
           value = alpha * value + beta * badd_value;
 
           // Quantize dst data

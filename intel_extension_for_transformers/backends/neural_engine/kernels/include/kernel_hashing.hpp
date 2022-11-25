@@ -45,7 +45,7 @@ class hash_t {
   // http://boost.sourceforge.net/doc/html/boost/hash_combine.html
   template <typename T>
   static void hash_combine(size_t& seed, const T& v) {  // NOLINT
-    seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= static_cast<size_t>(std::hash<T>()(v)) + static_cast<size_t>(0x9e3779b9) + (seed << 6) + (seed >> 2);
   }
 
  private:

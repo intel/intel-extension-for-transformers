@@ -123,5 +123,5 @@ foreach(TEST_FILE ${OPS_TEST_CASES_SRC})
 endforeach()
 
 if(NE_WITH_SPARSELIB)
-add_subdirectory(SparseLib)
+add_subdirectory(kernels)
 endif()

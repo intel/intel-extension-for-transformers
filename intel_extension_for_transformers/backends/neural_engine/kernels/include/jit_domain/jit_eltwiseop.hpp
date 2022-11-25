@@ -89,8 +89,8 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::s8:
         return 16u;
       default:
-        return 0u;
         SPARSE_LOG(ERROR) << "wrong head data type, expect fp32/bf16/u8" << std::endl;
+        return 0u;
     }
   }
 
@@ -122,8 +122,8 @@ class jit_eltwiseop_t : public jit_generator {
       case data_type::s8:
         return 16;
       default:
-        return 0u;
         SPARSE_LOG(ERROR) << "wrong input data type, expect fp32/bf16/u8" << std::endl;
+        return 0u;
     }
   }
 

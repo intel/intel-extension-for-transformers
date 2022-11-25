@@ -33,9 +33,7 @@ class layernorm_ba_kd_t : public kernel_desc_t {
   explicit layernorm_ba_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::layernorm_ba), op_desc_(op_desc) {}
 
-  virtual ~layernorm_ba_kd_t() {
-    if (one_div_n_ != nullptr) aligned_free(one_div_n_);
-  }
+  virtual ~layernorm_ba_kd_t() {}
 
  public:
   bool init() override;
@@ -45,12 +43,10 @@ class layernorm_ba_kd_t : public kernel_desc_t {
   inline std::vector<dim_t> shape() const { return op_desc_.tensor_descs()[0].shape(); }
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const std::vector<ssd::layernorm_ba_param_t>& params() const { return params_; }
-  const float* one_div_n_ptr() const { return one_div_n_; }
 
  private:
   jd::operator_desc op_desc_;
   std::vector<ssd::layernorm_ba_param_t> params_;
-  float* one_div_n_ = nullptr;
 };
 
 class layernorm_ba_k_t : public kernel_t {
@@ -60,6 +56,7 @@ class layernorm_ba_k_t : public kernel_t {
   virtual ~layernorm_ba_k_t() {
     for (auto& kernel : jit_kers_) safe_delete(kernel);
     for (auto& data : td) safe_delete(data);
+    aligned_free(one_div_n_);
   }
   // Delete move constructor and move operator
   layernorm_ba_k_t(layernorm_ba_k_t&& other) = delete;
@@ -75,8 +72,10 @@ class layernorm_ba_k_t : public kernel_t {
 
  public:
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
+  const float* one_div_n_ptr() const { return one_div_n_; }
 
  private:
+  float* one_div_n_ = nullptr;
   std::vector<jit_layernorm_ba_t*> jit_kers_;
   int64_t per_ker_process_batch;
   int64_t ker_num;

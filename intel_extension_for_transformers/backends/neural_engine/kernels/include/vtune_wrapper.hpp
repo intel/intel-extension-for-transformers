@@ -14,6 +14,8 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_VTUNE_WRAPPER_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_VTUNE_WRAPPER_HPP_
+
+#include <stdlib.h>
 #include <string>
 #include <cstring>
 

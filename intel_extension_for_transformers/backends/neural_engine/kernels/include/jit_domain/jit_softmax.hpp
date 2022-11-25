@@ -61,7 +61,7 @@ class jit_softmax_t : public jit_generator {
   const size_t zmm_byte_size = 64;
   const size_t process_element_16bit = 32;
   const size_t process_element_32bit = 16;
-  int unroll;
+  int unroll = 8;
 
   Reg64 reg_param;
   Reg64 src_addr;

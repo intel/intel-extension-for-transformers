@@ -65,7 +65,12 @@ class amx_tile_config_t {
     int nthr = omp_get_max_threads();
     param_.resize(nthr, {0});
   }
-  ~amx_tile_config_t() {}
+  ~amx_tile_config_t() {
+    if (config_ != nullptr) {
+      delete config_;
+      config_ = nullptr;
+    }
+  }
   std::vector<tile_param_t> param_;
   tileconfig_t* config_ = new tileconfig_t({0});
 

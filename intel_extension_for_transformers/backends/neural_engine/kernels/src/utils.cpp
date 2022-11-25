@@ -245,7 +245,7 @@ float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) 
       if (i.op_alg == jd::postop_alg::linear) value = get_linear(value, i.alpha, i.beta);
       if (i.op_alg == jd::postop_alg::eltop_int_lut) continue;
     } else {
-      std::runtime_error("do not support postop type.");
+      SPARSE_LOG(ERROR) << "unsupported postop type.";
     }
   }
   return value;

@@ -908,12 +908,30 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
 
     table_t bit_lut;
     auto register_bit_lut_entries = [&](int integer, int bitwidth) {
-      uint32_t term;
-      if (bitwidth == 8) term = get_bit8_lut_term(integer, postop_attrs, output_dt);
-      if (bitwidth == 16) term = get_bit16_lut_term(integer, postop_attrs, output_dt);
+      uint32_t term = 0;
+      switch (bitwidth) {
+        case 8:
+          term = get_bit8_lut_term(integer, postop_attrs, output_dt);
+          break;
+        case 16:
+          term = get_bit16_lut_term(integer, postop_attrs, output_dt);
+          break;
+        default:
+          SPARSE_LOG(ERROR) << "Unexpected bit width for LUT: " << bitwidth;
+          break;
+      }
       table_entry_t tmp = {term, false};
-      if (bitwidth == 8) bit_lut.insert(std::make_pair(bit8_lut_term, tmp));
-      if (bitwidth == 16) bit_lut.insert(std::make_pair(bit16_lut_term, tmp));
+      switch (bitwidth) {
+        case 8:
+          bit_lut.insert(std::make_pair(bit8_lut_term, tmp));
+          break;
+        case 16:
+          bit_lut.insert(std::make_pair(bit16_lut_term, tmp));
+          break;
+        default:
+          SPARSE_LOG(ERROR) << "Unexpected bit width for LUT: " << bitwidth;
+          break;
+      }
     };
 
     if (input_dt == data_type::u8) {
