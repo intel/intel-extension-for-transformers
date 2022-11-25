@@ -175,33 +175,6 @@ class NoTrainerOptimizer:   # pragma: no cover
         self.quantizer = quantizer
         return quantizer
 
-    # pylint: disable=E0401
-    def _nncf_quantize(self):   # pragma: no cover
-        from intel_extension_for_transformers import NncfConfig
-        from nncf import create_compressed_model
-        compression_state = None
-        assert isinstance(self.quant_config, NncfConfig), \
-            "Please pass a NNCFConfig instance to trainer.quantize!"
-        
-        self.metrics = self.quant_config.metrics
-        nncf_compression_state_file = self.quant_config.compression_state
-
-        if os.path.isfile(nncf_compression_state_file):
-            compression_state = torch.load(nncf_compression_state_file)
-        else:
-            compression_state = None
-
-        compression_algo_controller, model = create_compressed_model(
-            self.model, self.quant_config.nncf_config,
-            compression_state=compression_state
-        )
-
-        self.compression_ctrl = \
-            compression_algo_controller.distributed() \
-            if self.quant_config.distributed else compression_algo_controller
-
-        self.model = self._train_func(model)
-
     def _inc_quantize(
         self,
         quant_config,
@@ -246,9 +219,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         if self.quantizer is None:
             self._provider = Provider[provider.upper()].value
 
-        if self._provider == Provider.NNCF.value:
-            return self._nncf_quantize()
-        elif self._provider == Provider.INC.value:
+        if self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
         else:
             assert False, "Unsupport provider:{}".format(self._provider)
