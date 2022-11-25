@@ -1,6 +1,6 @@
 # Pattern Recognize
 
-Pattern recognition is one of the most important part of pattern fusion. The corresponding API is `search_pattern` in [`engine.compile.graph_utils`](https://github.com/intel/neural-compressor/blob/master/engine/compile/graph_utils.py). The main purpose of it is to find all the group nodes' names from the model that satisfy the given pattern representation.  The process of it can be divided into three parts: **1.parse the pattern representation list; 2.search each straight chain pattern; 3.splice sub-chains  with main chain and remove duplicate results**.
+Pattern recognition is one of the most important part of pattern fusion. The corresponding API is `search_pattern` in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py). The main purpose of it is to find all the group nodes' names from the model that satisfy the given pattern representation. The process of it can be divided into three parts: **1.parse the pattern representation list; 2.search each straight chain pattern; 3.splice sub-chains with main chain and remove duplicate results**.
 
 ## Pattern representation
 
@@ -16,21 +16,17 @@ ln_pattern = [[(0, 'Mean'), (1, 'SquaredDifference'), (2, 'Mean'), (3, ['Add', '
 
 First, due to computation order, we set index for each node in the `LayerNorm` pattern. These indexes also supply the locations for splicing sub-chains with main chain. You can set the index number by yourself as long as calculation order is correct (We recommend the number starts from 0 and grows recursively for conciseness and intuition).
 
-Second, define a main chain by choosing a longest one containing head and tail nodes of pattern, and the rest are the sub-chains whose tail node must be in main chain for splicing successfully. In the `LayerNorm` pattern, we choose the chain with index  `[0,1,2,3,4,5,7,8,9]`(see the image below) as the main chain. And the rest chain with index `[5,6,9]` is a sub-chain attached to the main chain.  Of course you can choose the chain with index `[0,1,2,3,4,5,6,9]` as the main chain, but generally we recommend and prefer longer ones.
+Second, define the main chain by choosing the longest one containing head and tail nodes of the pattern, and the rest are the sub-chains whose tail node must be in the main chain for splicing successfully. In the `LayerNorm` pattern, we choose the chain with index `[0,1,2,3,4,5,7,8,9]`(see the image below) as the main chain. And the rest chain with index `[5,6,9]` is a sub-chain attached to the main chain. Of course you can choose the chain with index `[0,1,2,3,4,5,6,9]` as the main chain, but generally we recommend and prefer longer ones.
 
 Finally, write the index and op_type of each node into list and form the pattern representation.
 
->  **NOTE**:
+>📌 **NOTE**:
 >
 > 1. The main chain representation should always be the first one in the list, while the rest sub-chains have not order requirements.
 >
 > 2. `[op_type1, op_type2]` means the the op_type could be op_type1 or op_type2. It is optional. This feature would be useful for add new pattern representation which just has some different op_types.
 >
-> 3. The sub-chains must have tail node which is in main chain, while the head node can be empty ('empty' means the head node is not in main chain, mostly from the outside of the pattern, using `()` to indicate a empty head node). For example, if node `(6, 'Mul')`  has node head node, then its representation list should be:
->
->    ```python
->    [(), (6, 'Mul'), (9, ['Add', 'AddV2'])]
->    ```
+> 3. The sub-chains must have tail node which is in main chain, while the head node can be empty ('empty' means the head node is not in main chain, mostly from the outside of the pattern, using `()` to indicate a empty head node). For example, if node `(6, 'Mul')` has node head node, then its representation list should be: `[(), (6, 'Mul'), (9, ['Add', 'AddV2'])]`
 
 
 
@@ -42,20 +38,20 @@ The pattern recognition function would firstly parse the pattern representation 
 
 ## Search each straight chain pattern
 
-The [`engine.compile.graph_utils`](https://github.com/intel/neural-compressor/blob/master/engine/compile/graph_utils.py) has `search_straight_pattern` API for searching sequence pattern. It receives `input_pattern` and `graph` parameters and exploits `DFS` algorithm to find eligible results. The `input_pattern` is a list contains several op_type from the step above. For example, it could be one like this:
+The [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py) has `search_straight_pattern` API for searching sequence pattern. It receives `input_pattern` and `graph` parameters and exploits `DFS` algorithm to find eligible results. The `input_pattern` is a list contains several op_type from the step above. For example, it could be one like this:
 
 ```python
 ['MatMul', 'BiasAdd', ['Add', 'AddV2']]
 ```
 
-The `graph` is the intermediate graph of `engine.compile`. This API returns matched node_names results list. For example, if the intermediate graph has 24 layers and each layer has a `['MatMul', 'BiasAdd', ['Add', 'AddV2']]` pattern, then the length is 24. Each match pattern result is still a list contains the node names, and the last element is the op_type list corresponding to the former node names.
+The `graph` is the intermediate graph of `compile`. This API returns matched node_names results list. For example, if the intermediate graph has 24 layers and each layer has a `['MatMul', 'BiasAdd', ['Add', 'AddV2']]` pattern, then the length is 24. Each match pattern result is still a list contains the node names, and the last element is the op_type list corresponding to the former node names.
 
 ```python
 # the input_pattern is [A, B, C]
 ret = [[A_node_name_1, B_node_name_1, C_node_name_1, [A, B, C]], [A_node_name_2, B_node_name_2, C_node_name_2, [A, B, C]], ..., [A_node_name_n, B_node_name_n, C_node_name_n, [A, B, C]], ...]
 ```
 
-Assume you want to find the match results of pattern `['MatMul', 'BiasAdd', ['Add', 'AddV2']]` in bert_large TensorFlow model (you can get this model from this [link](https://github.com/intel/neural-compressor/tree/master/examples/engine/nlp/squad/bert_large#2-prepare-dataset-and-model) and make sure the tf version is `intel-tensorflow-1.15-up2`).
+Assume you want to find the match results of pattern `['MatMul', 'BiasAdd', ['Add', 'AddV2']]` in bert_large TensorFlow model.
 
 ```python
 from intel_extension_for_transformers.backends.neural_engine.compile import COMPILES
@@ -75,11 +71,11 @@ If nothing wrong, you can get the output like this:
 
 The pattern recognition function would search each straight chain pattern after parsing in the graph. It stores the main chain pattern matched results firstly and implements other sub-chain pattern search and splicing one by one afterwards.
 
-## Splice sub-chains  with main chain and remove duplicate results
+## Splice sub-chains with main chain and remove duplicate results
 
-Each sub-chain pattern matched results would find their attached main chain by check the node names with the indexes. They are merged into the last result recursively by inserting node name at certain position with the help of the indexes. However, due to the volatile and complicated pattern form, there must have other validation ways to avoiding duplicated and incorrect outcomes. For example,  a pattern may be symmetric, the main chain and sub-chain are totally same. Or a pattern has several exactly the same sub-chains attached at same location. So when doing splicing, the pattern recognition function would screen the sub-chain pattern matched results by checking if any node name occurs already or not. And before return the final results, it also remove the duplicate element in the list.  For more details, you can see the implementation of `search_pattern` API.
+Each sub-chain pattern matched results would find their attached main chain by check the node names with the indexes. They are merged into the last result recursively by inserting node name at certain position with the help of the indexes. However, due to the volatile and complicated pattern form, there must have other validation ways to avoiding duplicated and incorrect outcomes. For example, a pattern may be symmetric, the main chain and sub-chain are totally same. Or a pattern has several exactly the same sub-chains attached at same location. So when doing splicing, the pattern recognition function would screen the sub-chain pattern matched results by checking if any node name occurs already or not. And before return the final results, it also remove the duplicate element in the list. For more details, you can see the implementation of `search_pattern` API.
 
-In the end, here is the example shows how to get the `LayerNorm`  pattern matched results in bert_large TensorFlow model.
+In the end, here is the example shows how to get the `LayerNorm` pattern matched results in bert_large TensorFlow model.
 
 ```python
 from intel_extension_for_transformers.backends.neural_engine.compile import COMPILES
