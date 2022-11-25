@@ -18,11 +18,8 @@ requirements:
     - numpy
     - transformers
     - packaging
-<<<<<<< HEAD
     - neural-compressor
     - protobuf
-=======
->>>>>>> cc446a0 (add conda meta yaml and fix some types (#409))
 test:
   imports:
     - intel_extension_for_transformers
