@@ -2,15 +2,15 @@
 
 ## Introduction
 
-The Neural Engine as a backend supports frozen static graph model from ONNX deep learning framework. The image below shows the workflow of how it compile framework model to its own intermediate representation (IR). The `Loader` is used to load models from different frameworks. Then the `Extractors` would extract operations of the origin model and compose the Neural Engine graph. Next, the `Subgraph matcher` fuse pattern to accelerate inference. In the end, the `Emitter` saves the final intermediate graph on the disk as the format of `.yaml` and `.bin` files.
+The Neural Engine as a backend supports frozen static graph models from ONNX deep learning framework. The image below shows the workflow of how it compiles framework model to its own intermediate representation (IR). The `Loader` is used to load models from different frameworks. Then the `Extractors` would extract operations of the original model and compose the Neural Engine graph. Next, the `Subgraph matcher` fuse pattern to accelerate inference. In the end, the `Emitter` saves the final intermediate graph on the disk as the format of `.yaml` and `.bin` files.
 
 ![](imgs/compile_workflow.png)
 
 ## ONNX format supported by compile module
-Neual Engine could compile several ONNX format model like fp32, bf16, int8(qlinear/qdq). Here are the respective QKV MatMul graphs opened by netron.  
-Notice: As for int8 model, Neural Engine only supports int8 matmul with s8 weight and u8 activation now. And we will supports more int8 operator in the future.  
+Neural Engine could compile several ONNX format models like fp32, bf16, int8(qlinear/qdq). Here are the respective QKV MatMul graphs opened by netron.  
+Notice: As for int8 model, Neural Engine only supports int8 matmul with s8 weight and u8 activation now. And we will support more int8 operators in the future.  
 
-And We will support more operators in the features. The fp32 and bf16 model use the same graph, just different in data type of tensors.  
+And We will support more operators in the features. The fp32 and bf16 models use the same graph, just different in data type of tensors.  
 ![](imgs/onnx_fp32_bf16.png)
 
 The qdq model will insert QuantizeLinear and DequantizeLinear before int8 operator. You can see there's QuantizeLinear and DequantizeLinear before matmul.  
@@ -20,11 +20,11 @@ The qdq model will insert QuantizeLinear before int8 operator and modify MatMul 
 ![](imgs/onnx_qlinear.png)
 
 ## How to use
-Here is the `distilbert_base_mrpc` example in <NLP_Toolkit_folder>/examples/deployment/neural_engine/mrpc/distilbert_base_uncased> to show how to compile ONNX model to Neural Engine IR.
+Here is the example [distilbert_base_mrpc](../../../../examples/deployment/neural_engine/mrpc/distilbert_base_uncased) to show how to compile ONNX model to Neural Engine IR.
 
 ### 1.Prepare model
 
-We have prepared a script to get the model from [Hugging Face](https://huggingface.co/) and export it followed steps in example README.md. You can get FP32 ONNX model from optimization module by setting precision=fp32. The command is as follows:
+We have prepared a script to get the model from [Hugging Face](https://huggingface.co/) and exported it following steps in example README.md. You can get FP32 ONNX model from optimization module by setting precision=fp32. The command is as follows:
 ```shell
 bash prepare_model.sh --input_model=textattack/distilbert-base-uncased-MRPC  --task_name=mrpc --output_dir=./model_and_tokenizer --precision=fp32
 ```
@@ -37,7 +37,7 @@ After that, you can get the <fp32/bf16/int8>-model.onnx under model_and_tokenize
 
 ### 2.Compile model to Nerual Engine IR
 
-Compiling model to IR is much easy. You just use compile API in python as follows and IR will stored in the specified directory path like the following fp32 model example.
+Compiling a model to IR is much easy. You just use compile API in python as follows and IR will be stored in the specified directory path like the following fp32 model example.
 ```python
 # import compile api from neural engine
 from nlp_toolkit.backends.neural_engine.compile import compile

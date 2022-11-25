@@ -7,7 +7,7 @@ In order to better analyze the performance of the model, we could evaluate the p
 
 ### You can get profile only with ENGINE_PROFILING=1 before running model by python/c++ API.
 
-Let's take bert_mini_sst2(<NLP_Toolkit_folder>/examples/deployment/neural_engine/sst2/bert_mini) for example. You can follow the steps in example README.md and just add ENGINE_PROFILING=1 before run executor like this:
+Let's take [bert_mini_sst2](../../../../examples/deployment/neural_engine/sst2/bert_mini) for example. You can follow the steps in example README.md and just add ENGINE_PROFILING=1 before run executor like this:
 run python
 ```shell
 ENGINE_PROFILING=1 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128
@@ -34,7 +34,7 @@ ENGINE_PROFILING=1 neural_engine --batch_size=<batch_size> --iterations=10 --w=5
 |   value    |  1024x256  |**5(settable)**|**3.5(settable)**|**3(settable)**|
 |description       |  Shape of weight for "matmul" or "innerproduct"  |The op's sparse ratio is 90%, and the performance ratio is "dense op latency"/ "sparse op latency" , representing the performance improvement of the op after sparse. This parameter can be set by the user.|Same as 90% 4x1 perf ratio |Same as 90% 4x1 perf ratio|
 #### Part 2
-- All operator's profiling, such as operator type ,input tensor ,output tensor and latency .Let's take "innerproduct" as an example.
+- All operator's profiling, such as operator type, input tensor, output tensor and latency. Let's take "innerproduct" as an example.
 - In this form, we can auto calculate the sparse op performance by customized sparse ratio.
 
 |   Argument    |  Value  |  Additional description  |
@@ -76,42 +76,42 @@ ENGINE_PROFILING=1 neural_engine --batch_size=<batch_size> --iterations=10 --w=5
  #### Level 1
 The model_inference level records the latency of model from start to end.
 
- ```shell
-Title	model_inference
-Category	inference
-User Friendly Category	other
-Start	0.000 ms
-Wall Duration	17.138 ms
- ```
+```shell
+Title    model_inference
+Category    inference
+User Friendly Category    other
+Start    0.000 ms
+Wall Duration    17.138 ms
+```
 
  #### Level 2
 The iteration level records the latency of each iteration from start to end.
- ```shell
-Title	Iteration4
-Category	iteration
-User Friendly Category	other
-Start	0.000 ms
-Wall Duration	8.726 ms
- ```
+```shell
+Title    Iteration4
+Category    iteration
+User Friendly Category    other
+Start    0.000 ms
+Wall Duration    8.726 ms
+```
 
  #### Level 3
-The operator level records the latency of per operator in per interation from start to end. And there are also detials in Args. The reshape_time means the latency happened to prepare tensor shape phrase. It will be 0ms in interation more than 0 static shape case. The forward_time means latency of kernel calculation. And you can also see input/output tensor_name, tensor_type, tensor_shape. As for attributes, it will include some parameters in this operator such as padding in conv, post op such as sum and permuatation informations such src1_perm:1,0 meaning that input tensor 1 transposes 0 and 1 axis.
- ```shell
-Title	Add_284
-Category	InnerProduct
-User Friendly Category	other
-Start	12.028 ms
-Wall Duration	0.044 ms
+The operator level records the latency of per operator in per iteration from start to end. And there are also details in Args. The reshape_time means the latency happened to prepare tensor shape phrase. It will be 0ms in iteration more than 0 static shape case. The forward_time means latency of kernel calculation. And you can also see input/output tensor_name, tensor_type, tensor_shape. As for attributes, it will include some parameters in this operator such as padding in conv, post op such as sum and permutation information such src1_perm:1,0 meaning that input tensor 1 transposes 0 and 1 axis.
+```shell
+Title    Add_284
+Category    InnerProduct
+User Friendly Category    other
+Start    12.028 ms
+Wall Duration    0.044 ms
 Args
-    reshape_time	"0.004ms"
-    forward_time	"0.044ms"
-    input_tensor_name	"onnx::MatMul_357:0,onnx::MatMul_358:0,
-                        bert.encoder.layer.1.output.dense.bias:0,
-                        onnx::MatMul_346:0"
-    input_type	"fp32,fp32,f32,"
-    input_shape	"64*1024,256*1024,256"
-    output_tensor_name	"input.44:0"
-    output_type	"fp32"
-    output_shape	"64*256"
-    attributes	"append_op:sum;src1_perm:1,0"
- ```
+reshape_time    "0.004ms"
+forward_time    "0.044ms"
+input_tensor_name    "onnx::MatMul_357:0,onnx::MatMul_358:0,
+                    bert.encoder.layer.1.output.dense.bias:0,
+                    onnx::MatMul_346:0"
+input_type    "fp32,fp32,f32,"
+input_shape    "64*1024,256*1024,256"
+output_tensor_name    "input.44:0"
+output_type    "fp32"
+output_shape    "64*256"
+attributes    "append_op:sum;src1_perm:1,0"
+```
