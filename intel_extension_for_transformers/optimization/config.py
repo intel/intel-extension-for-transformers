@@ -96,7 +96,7 @@ class QuantizationConfig(object):
         objectives: Union[Objective, List] = performance,
         config_file: str = None,
         sampling_size: int = 100,
-        use_bf16: bool = True,
+        use_bf16: bool = False,
     ):
         super().__init__()
         if config_file is None:

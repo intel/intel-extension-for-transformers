@@ -67,7 +67,6 @@ function run_tuning {
         approach="PostTrainingStatic"
         # extra_cmd=$extra_cmd" --version_2_with_negative"
     elif [ "${topology}" = "distilbert_base_squad_ipex" ]; then
-        pip install transformers==4.19.0
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
         extra_cmd=$extra_cmd" --perf_tol 0.02"
