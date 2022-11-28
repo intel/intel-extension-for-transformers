@@ -69,7 +69,7 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
   for (d = 0; d < ld / 16 * 16; d += 16) {
 #pragma unroll N
     for (int i = 0; i < N; ++i) {
-      auto src_f32 = _mm512_loadu_ps(pin + i * ld_16 + d);
+      auto src_f32 = _mm512_loadu_ps(pin + i * ld + d);
       vmax[i] = _mm512_max_ps(src_f32, vmax[i]);
       _mm512_storeu_ps(dout + i * ld_16 + d, src_f32);
     }
@@ -83,7 +83,7 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
     auto min_ps = _mm512_set1_ps(-100000.f);
 #pragma unroll N
     for (int i = 0; i < N; ++i) {
-      auto src_f32 = _mm512_mask_loadu_ps(min_ps, res_mask, pin + i * ld_16 + d);
+      auto src_f32 = _mm512_mask_loadu_ps(min_ps, res_mask, pin + i * ld + d);
       vmax[i] = _mm512_max_ps(src_f32, vmax[i]);
       _mm512_storeu_ps(dout + i * ld_16 + d, src_f32);
     }
@@ -132,7 +132,7 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
       auto softmax_f32_clip_255 = _mm512_min_ps(softmax_f32, __255);
       auto softmax_f32_clip_0 = _mm512_max_ps(softmax_f32_clip_255, __0);
       auto softmax_s32 = _mm512_cvtps_epi32(softmax_f32_clip_0);
-      _mm512_mask_cvtusepi32_storeu_epi8(pout + i * ld_16 + d, 0xffff, softmax_s32);
+      _mm512_mask_cvtusepi32_storeu_epi8(pout + i * ld + d, 0xffff, softmax_s32);
     }
   }
 
@@ -148,7 +148,7 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
       auto softmax_f32_clip_255 = _mm512_min_ps(softmax_f32, __255);
       auto softmax_f32_clip_0 = _mm512_max_ps(softmax_f32_clip_255, __0);
       auto softmax_s32 = _mm512_cvtps_epi32(softmax_f32_clip_0);
-      _mm512_mask_cvtusepi32_storeu_epi8(pout + i * ld_16 + d, res_mask, softmax_s32);
+      _mm512_mask_cvtusepi32_storeu_epi8(pout + i * ld + d, res_mask, softmax_s32);
     }
   }
 

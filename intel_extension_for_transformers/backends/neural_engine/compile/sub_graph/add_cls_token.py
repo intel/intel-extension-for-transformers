@@ -91,6 +91,37 @@ class AddClsToken(Pattern):
                     },
                     'returns': [0, 12]
                 },
+
+                {
+                    'patterns': {
+                        'in': [[(1, 'Shape'), (2, 'Gather'), (3, 'Unsqueeze'), (4, 'Concat'), (5, 'Reshape'),
+                                (6, 'Equal'), (7, 'Where'), (8, 'Expand'), (9, 'Concat')],
+                                [(), (0, 'Transpose'), (9, 'Concat')]],
+                        'out': [[(0, 'Transpose'), (1, 'Concat')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 0,
+                        1: 9
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            0: [0]
+                        }], [[0], 1]],
+                        1: [[{
+                            8: [0]
+                        }], [[0], 2]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            0: [0]
+                        }], [[0], 1]],
+                        1: [[{
+                            9: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [0, 9]
+                },
             ]
         }
 

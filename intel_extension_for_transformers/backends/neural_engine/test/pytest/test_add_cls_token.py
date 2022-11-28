@@ -258,5 +258,96 @@ class TestAddClsToken(unittest.TestCase):
         self.assertEqual(1, graph.nodes[1].attr['axis'])
 
 
+    def test_add_cls_token_2(self):
+        graph = Graph()
+        input_data_node = OPERATORS['Input']()
+        input_tensors = []
+        output_tensors = [Tensor(), Tensor(), Tensor()]
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        transpose_node = OPERATORS['Transpose']()
+        input_tensors = [Tensor(data=np.array(1))]
+        output_tensors = [Tensor(name='transpose:0', source_op=['transpose'], dest_op=['concat1'])]
+        transpose_node.construct('transpose', 'Transpose', input_tensors=input_tensors,
+                                    output_tensors=output_tensors, attr=OrderedDict({
+                                        'src_perm': '0,1,2', 'dst_perm': '0,2,1'}))
+
+        shape_node = OPERATORS['Shape']()
+        input_tensors = [Tensor(data=np.array(1))]
+        output_tensors = [Tensor(name='shape:0', source_op=['shape'], dest_op=['gather'])]
+        shape_node.construct('shape', 'Shape', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        gather_node = OPERATORS['Gather']()
+        input_tensors = [Tensor(name='shape:0', source_op=['shape'], dest_op=['gather']),
+                            Tensor(name='gather:0_1', data=np.array(0), shape=[1])]
+        output_tensors = [Tensor(name='gather:0', source_op=['gather'], dest_op=['unsqueeze'])]
+        gather_node.construct('gather', 'Gather', input_tensors=input_tensors,
+                                output_tensors=output_tensors, attr=OrderedDict({
+                                    'axis': 0}))
+
+        unsqueeze_node = OPERATORS['Unsqueeze']()
+        input_tensors = [Tensor(name='gather:0', source_op=['gather'], dest_op=['unsqueeze']),
+                            Tensor(name='unsqueeze:0_1', data=np.array(0), shape=[1])]
+        output_tensors = [Tensor(name='unsqueeze:0', source_op=['unsqueeze'], dest_op=['concat'])]
+        unsqueeze_node.construct('unsqueeze', 'Unsqueeze', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        concat_node = OPERATORS['Concat']()
+        input_tensors = [Tensor(name='unsqueeze:0', source_op=['unsqueeze'], dest_op=['concat']),
+                            Tensor(name='concat:0_1', data=np.array(-1), shape=[1]),
+                            Tensor(name='concat:0_2', data=np.array(-1), shape=[1])]
+        output_tensors = [Tensor(name='concat:0', source_op=['concat'], dest_op=['reshape'])]
+        concat_node.construct('concat', 'Concat', input_tensors=input_tensors,
+                                output_tensors=output_tensors, attr=OrderedDict({
+                                    'axis': 0}))
+
+        reshape_node = OPERATORS['Reshape']()
+        input_tensors = [Tensor(name='concat:0', source_op=['concat'], dest_op=['reshape']),
+                            Tensor(name='reshape:0_1', data=np.array(-1), shape=[1])]
+        output_tensors = [Tensor(name='reshape:0', source_op=['reshape'], dest_op=['equal']),
+                            Tensor(name='reshape:0', source_op=['reshape'], dest_op=['where'])]
+        reshape_node.construct('reshape', 'Reshape', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        equal_node = OPERATORS['Equal']()
+        input_tensors = [Tensor(name='reshape:0', source_op=['reshape'], dest_op=['equal']),
+                            Tensor(name='equal:0_1', data=np.array(-1), shape=[3])]
+        output_tensors = [Tensor(name='equal:0', source_op=['equal'], dest_op=['where'])]
+        equal_node.construct('equal', 'Equal', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        where_node = OPERATORS['Where']()
+        input_tensors = [Tensor(name='equal:0', source_op=['equal'], dest_op=['where']),
+                            Tensor(name='where:0_1', data=np.array(1), shape=[3]),
+                            Tensor(name='reshape:0', source_op=['reshape'], dest_op=['where'])]
+        output_tensors = [Tensor(name='where:0', source_op=['where'], dest_op=['expand'])]
+        where_node.construct('where', 'Where', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        expand_node = OPERATORS['Expand']()
+        input_tensors = [Tensor(name='expand:0_0', data=np.array(1), shape=[1, 1, 768]),
+                            Tensor(name='where:0', source_op=['where'], dest_op=['expand'])]
+        output_tensors = [Tensor(name='expand:0', source_op=['expand'], dest_op=['concat1'])]
+        expand_node.construct('expand', 'Expand', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        concat_node_1 = OPERATORS['Concat']()
+        input_tensors = [Tensor(name='expand:0', source_op=['expand'], dest_op=['concat1']),
+                            Tensor(name='transpose:0', source_op=['transpose'], dest_op=['concat1'])]
+        output_tensors = [Tensor(name='concat:1', source_op=['concat1'], dest_op=[])]
+        concat_node_1.construct('concat1', 'Concat', input_tensors=input_tensors,
+                                output_tensors=output_tensors, attr=OrderedDict({
+                                    'axis': 1}))
+
+        graph.insert_nodes(len(graph.nodes), [transpose_node, shape_node, gather_node, unsqueeze_node, concat_node, reshape_node,
+                                            equal_node, where_node, expand_node, concat_node_1])
+        graph = AddClsToken()(graph)
+        self.assertEqual(2, len(graph.nodes))
+        self.assertEqual('0,2,1', graph.nodes[0].attr['dst_perm'])
+        self.assertEqual(1, graph.nodes[1].attr['axis'])
+
+
 if __name__ == "__main__":
     unittest.main()

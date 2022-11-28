@@ -223,7 +223,7 @@ void ConcatOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
         int64_t loop_size = concat_bytes & ~(AVX512_BYTES - 1);
         // Tail part size = concat_bytes - loop_size
         // To process tail part, we need a tail_mask, whose number of bit 1 equals to tail part size.
-        __mmask64 tail_mask = (1UL << (concat_bytes - loop_size)) - 1;
+        __mmask64 tail_mask = (1ULL << (concat_bytes - loop_size)) - 1;
         for (int64_t j = 0; j < loop_size; j += AVX512_BYTES) {
           __m512 reg = _mm512_loadu_ps(src_addr + j);
           _mm512_storeu_ps(dst_addr + j, reg);
