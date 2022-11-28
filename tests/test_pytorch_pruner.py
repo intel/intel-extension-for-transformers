@@ -8,7 +8,7 @@ import torchvision
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 
-from nlp_toolkit.optimization.pytorch_pruner.pruning import Pruning
+from intel_extension_for_transformers.optimization.pytorch_pruner.pruning import Pruning
 
 sys.path.insert(0, './')
 
