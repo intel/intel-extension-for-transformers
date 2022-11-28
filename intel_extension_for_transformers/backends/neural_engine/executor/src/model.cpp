@@ -149,10 +149,16 @@ void Model::Init(const ModelConfig& conf) {
 #else
   has_dispatch_table_file_ = (access(execution_options_.dispatch_table_file_root.c_str(), F_OK) != -1);
 #endif
-  if (!has_dispatch_table_file_) LOG(INFO) << "Missing dispatch table file, " \
-                                  "all operators will use their own default kernels." \
-                                  "Recommend to turn on the tuning mode for better performance." \
-                                  "Ignore above info if you are doing tuning...";
+  if (!has_dispatch_table_file_) {
+    LOG(INFO) << "Missing dispatch table file, " \
+                 "all operators will use their own default kernels." \
+                 "Recommend to turn on the tuning mode for better performance." \
+                 "Ignore above info if you are doing tuning...";
+  } else {
+    if (execution_options_.execution_mode == ExecutionMode::DEBUG) {
+      LOG(INFO) << "In DEBUG MODE, ignore dispatch table file even if there is it...";
+    }
+  }
 }
 
 void Model::RemoveSharedWeight(bool is_begin, char* count_space_name, char* count_name,

@@ -59,10 +59,7 @@ struct ExecutionOptions {
 
   // set the absolute txt file path of dispatch table.
   // dispatch table will be saved in this path if enable op tuning.
-  std::string dispatch_table_file_root = std::getenv("HOME") != NULL
-                                         ? (std::string(std::getenv("HOME")) +
-                                         "/.cache/neural_engine_workspace/engine_dispatch_table.txt")
-                                         : "./ engine_dispatch_table.txt";
+  std::string dispatch_table_file_root = "./engine_dispatch_table.txt";
 };
 
 }  // namespace executor

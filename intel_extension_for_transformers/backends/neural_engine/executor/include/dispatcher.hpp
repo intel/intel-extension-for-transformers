@@ -166,7 +166,7 @@ class Dispatcher {
     execute_kernel_ = type_;
     if (!do_tuning_) {
       vector<string> kernel_config;
-      if (has_dispatch_table_file) {
+      if (has_dispatch_table_file && execution_options_ptr_->execution_mode != ExecutionMode::DEBUG) {
         dispatch_table_file_exists_ = true;
         // dispatch table only load once
         if (DispatchTable::Size() == 0) {
@@ -204,7 +204,7 @@ class Dispatcher {
           }
         }
       } else {
-        if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE) adapt_action_ = false;
+        adapt_action_ = false;
       }
       LOG(INFO) << "Operator " << name_ << " with type " << type_ << " gonna dispatch by kernel "
                 << (kernel_config.empty() ? execute_kernel_ : kernel_config[0]);

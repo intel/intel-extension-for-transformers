@@ -112,7 +112,6 @@ class DispatchTable {
     ipc::interprocess_mutex* mtx_save = utils_shm.find_or_construct<ipc::interprocess_mutex>("mtx_save")();
     mtx_save->lock();
     if (root == "") LOG(FATAL) << "Please supply dispatch table saving path...";
-    // only for Linux system now
     int index = root.find_last_of("/");
     std::string folder_root = root.substr(0, index);
     #ifdef _WIN32

@@ -19,9 +19,9 @@ import unittest
 import numpy as np
 import neural_engine_py as dp
 import os
-from nlp_toolkit.backends.neural_engine.compile.ops.op import OPERATORS
-from nlp_toolkit.backends.neural_engine.compile.ops.tensor import Tensor
-from nlp_toolkit.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS
+from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 
 
 class TestExecutionOptions(unittest.TestCase):
