@@ -1,18 +1,21 @@
-# Pipelines for inference
+# Pipeline
 
-The pipeline is inherited from transformers [pipeline](https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.mdx), and two more features are appended.
+1. [Introduction](#introduction)
+2. [Examples](#examples)
 
-* Use a [`pipeline`] for int8 model inference.
-* Use a [`pipeline`] for inference on our [executor](../intel_extension_for_transformers/backends/neural_engine/) backend.
+    2.1. [Pipeline Inference for INT8 Model](#pipeline-inference-for-int8-model)
 
-Executor is a inference tool for accelerated deployment in Intel_Extension_for_Transformers.
+    2.2. [Pipeline Inference for Executor Backend](#pipeline-inference-for-executor-backend)
 
-## Pipeline usage
+## Introduction
+The pipeline is inherited from [huggingface/transformers pipeline](https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.mdx), it is simple to use any model from [Hub](https://huggingface.co/models) for inference on any language, computer vision, speech, and multimodal tasks. Two features for int8 model inference and model inference on [executor backend](../intel_extension_for_transformers/backends/neural_engine/) have been added to the extension.
 
-----
-### **INT8 model**
 
-1. Initialize a pipeline instance with model name and specific task.
+## Examples
+
+### Pipeline Inference for INT8 Model
+
+1. Initialize a pipeline instance with a model name and specific task.
     ```py
     from intel_extension_for_transformers.optimization.pipeline import pipeline
     text_classifier = pipeline(
@@ -28,11 +31,10 @@ Executor is a inference tool for accelerated deployment in Intel_Extension_for_T
     # output: [{'label': 1, 'score': 0.9998425245285034}]
     ```
 
-----
 
-### **Executor backend**
+### Pipeline Inference for Executor Backend
 
-For executor, we only accept ONNX model now for pipeline. Users can get onnx model from PyTorch model with our existing [API](export.md). Right now, pipeline for executor only supports text-classcification task. 
+For executor, we only accept ONNX model now for pipeline. Users can get ONNX model from PyTorch model with our existing [API](export.md). Right now, pipeline for executor only supports text-classification task. 
 
 1. Initialize a pipeline instance with an ONNX model, model config, model tokenizer and specific backend. The MODEL_NAME is the pytorch model name you used for exporting the ONNX model.
     ```py
