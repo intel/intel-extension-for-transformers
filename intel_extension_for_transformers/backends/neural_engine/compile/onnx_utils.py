@@ -114,11 +114,18 @@ def graph_node_names_details(model):
 
     return node_names_details
 
+def is_supported_onnx_graph(graph):
+    for node in graph.node:
+        if not is_supported_onnx_node(node.op_type):
+            return False
+    return True
+
 def is_supported_onnx_node(node_name):
     supported_ops_type = ["Add", "Softmax", "Slice", "ReduceMean", "Reshape",
                         "Concat", "Gather", "QuantizeLinear", "Transpose", "MatMul",
                         "Sqrt", "Unsqueeze", "Shape", "Erf", "Pow", "DequantizeLinear",
-                        "Cast", "Tanh", "Div", "Mul", "Sub"]
+                        "Cast", "Tanh", "Div", "Mul", "Sub", "Constant", "Relu", "Conv",
+                        "Identity", "Split", "TopK"]
     if node_name in supported_ops_type:
         return True
     else:
