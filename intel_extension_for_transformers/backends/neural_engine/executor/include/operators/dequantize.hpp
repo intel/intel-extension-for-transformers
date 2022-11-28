@@ -12,34 +12,43 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_POW_HPP_
-#define ENGINE_EXECUTOR_INCLUDE_OPERATORS_POW_HPP_
+#ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_DEQUANTIZE_HPP_
+#define ENGINE_EXECUTOR_INCLUDE_OPERATORS_DEQUANTIZE_HPP_
 #include <string>
-#include <unordered_map>
 #include <vector>
 #include <memory>
 
+#include "../common.hpp"
 #include "../operator.hpp"
 
 namespace executor {
 
 /**
- * @brief A Pow operator.
- *
+ * @brief A DeQuantize operator.
+ * Same function as ONNX DequantizeLinear
  */
 
-class PowOperator : public Operator {
+class DequantizeLinearOperator : public Operator {
  public:
-  explicit PowOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {}
+  explicit DequantizeLinearOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+    auto attrs_map = operator_conf_->attributes();
+    auto iter = attrs_map.find("axis");
+    if (iter != attrs_map.end())
+      axis_ = std::stoi(iter->second);
+  }
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
-  vector<int64_t> src0_shape_, src0_stride_;
-  vector<int64_t> src1_shape_, src1_stride_;
-  vector<int64_t> out_stride_;
+  template <typename T>
+  void ForwardImpl(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
+  int axis_ = 1;
+  bool has_zp_ = false;
+  size_t size_, scales_size_;
+  vector<int64_t> src0_stride_;
 };
 }  // namespace executor
-#endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_POW_HPP_
+#endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_DEQUANTIZE_HPP_

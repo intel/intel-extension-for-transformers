@@ -19,6 +19,7 @@
 #include "../../include/conf.hpp"
 #include "llga_kernel.hpp"
 #include "llga_op_creator.hpp"
+#include "../../include/operators/dequantize.hpp"
 #include "gtest/gtest.h"
 using executor::AttrConfig;
 using executor::MemoryAllocator;
@@ -116,6 +117,31 @@ bool CheckResult(const TestParams& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   try {
+    executor::DequantizeLinearOperator dequantize(p.conf);
+    dequantize.Prepare(p.input, p.output);
+    dequantize.Reshape(p.input, p.output);
+    dequantize.Forward(p.input, p.output);
+  } catch (const dnnl::error& e) {
+    if (e.status != dnnl_status_t::dnnl_success && t.expect_to_fail) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  if (!t.expect_to_fail) {
+    GetTrueData(q.input, q.output, q.conf);
+    // Should compare buffer with different addresses
+    EXPECT_NE(p.output[0]->data(), q.output[0]->data());
+    return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
+                                        q.output[0]->size(), 1e-4);
+  }
+  return false;
+}
+
+bool CheckLLGAResult(const TestParams& t) {
+  const auto& p = t.args.first;
+  const auto& q = t.args.second;
+  try {
     executor::LLGAINFO llga_info;
     vector<executor::Tensor*> inputs = p.input;
     llga_info.SetTensors(&inputs);
@@ -138,7 +164,7 @@ bool CheckResult(const TestParams& t) {
     // Should compare buffer with different addresses
     EXPECT_NE(p.output[0]->data(), q.output[0]->data());
     return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
-                                        q.output[0]->size(), 1e-3);
+                                        q.output[0]->size(), 1e-4);
   }
   return false;
 }
@@ -154,6 +180,19 @@ class DequantizeTest : public testing::TestWithParam<TestParams> {
 TEST_P(DequantizeTest, TestPostfix) {
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckResult(t));
+}
+
+class DequantizeTestLLGA : public testing::TestWithParam<TestParams> {
+ protected:
+  DequantizeTestLLGA() {}
+  ~DequantizeTestLLGA() override {}
+  void SetUp() override {}
+  void TearDown() override {}
+};
+
+TEST_P(DequantizeTestLLGA, TestPostfixLLGA) {
+  TestParams t = testing::TestWithParam<TestParams>::GetParam();
+  EXPECT_TRUE(CheckLLGAResult(t));
 }
 
 template <typename T>
@@ -219,7 +258,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   return {op_args, op_args_copy};
 }
 
-static auto CasesInt8Fp32 = []() {
+static auto CasesInt8Fp32LLGA = []() {
   MemoryAllocator::InitStrategy();
   std::vector<TestParams> cases;
 
@@ -246,6 +285,11 @@ static auto CasesInt8Fp32 = []() {
   src1_shape = {16};
   cases.push_back({GenerateFp32Case({src0_shape, src1_shape}, "1", "u8"), false});
 
+  // case: 2D u8 -> fp32(per channel, no zp)
+  src0_shape = {2, 16};
+  src1_shape = {2};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape}, "0", "u8"), false});
+
   // case: 3D u8 -> fp32(per channel, no zp)
   src0_shape = {2, 3, 16};
   src1_shape = {3};
@@ -259,4 +303,62 @@ static auto CasesInt8Fp32 = []() {
   return ::testing::ValuesIn(cases);
 };
 
+static auto CasesInt8Fp32 = []() {
+  MemoryAllocator::InitStrategy();
+  std::vector<TestParams> cases;
+
+  // Config
+  std::vector<int64_t> src0_shape;
+  std::vector<int64_t> src1_shape;
+  std::vector<int64_t> src2_shape;
+
+  // case: 2D u8 -> fp32(per tensor)
+  src0_shape = {16, 1024};
+  src1_shape = {1};
+  src2_shape = {1};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape, src2_shape}, "1", "u8"), false});
+
+  // case: 2D s8 -> fp32(per tensor)
+  src0_shape = {16, 1024};
+  src1_shape = {1};
+  src2_shape = {1};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape, src2_shape}, "1", "s8"), false});
+
+  // case: 2D u8 -> fp32(per channel, no zp)
+  src0_shape = {2, 16};
+  src1_shape = {16};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape}, "1", "u8"), false});
+
+  // case: 2D u8 -> fp32(per channel, no zp)
+  src0_shape = {2, 16};
+  src1_shape = {2};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape}, "0", "u8"), false});
+
+  // case: 3D u8 -> fp32(per channel, no zp)
+  src0_shape = {2, 3, 16};
+  src1_shape = {3};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape}, "1", "u8"), false});
+
+  // case: 3D s8 -> fp32(per channel, no zp)
+  src0_shape = {2, 3, 16};
+  src1_shape = {3};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape}, "1", "s8"), false});
+
+  // case: 2D u8 -> fp32(per channel, zp)
+  src0_shape = {16, 1024};
+  src1_shape = {1024};
+  src2_shape = {1024};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape, src2_shape}, "1", "u8"), false});
+
+  // case: 3D s8 -> fp32(per channel, zp)
+  src0_shape = {2, 3, 16};
+  src1_shape = {3};
+  src2_shape = {3};
+  cases.push_back({GenerateFp32Case({src0_shape, src1_shape, src2_shape}, "1", "s8"), false});
+
+
+  return ::testing::ValuesIn(cases);
+};
+
 INSTANTIATE_TEST_SUITE_P(Prefix, DequantizeTest, CasesInt8Fp32());
+INSTANTIATE_TEST_SUITE_P(Prefix, DequantizeTestLLGA, CasesInt8Fp32LLGA());

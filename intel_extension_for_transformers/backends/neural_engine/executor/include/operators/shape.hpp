@@ -20,7 +20,6 @@
 #include <memory>
 
 #include "../operator.hpp"
-#include "oneapi/dnnl/dnnl.hpp"
 
 namespace executor {
 
