@@ -1,6 +1,6 @@
 Examples 
 ===
-Intel Extension for Transformers is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile Intel Extension for Transformers provides Neural Engine, an optimized backend for NLP models to demonstrate the deployment.
+Intel Extension for Transformers is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile Intel Extension for Transformers provides Transformers-accelerated Neural Engine, an optimized backend for NLP models to demonstrate the deployment.
 
 ## Quantization
 ### Stock PyTorch Examples
@@ -137,7 +137,7 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
 </tbody>
 </table>
 
-### IPEX examples
+### Intel Extension for Pytorch (IPEX) examples
 <table>
 <thead>
   <tr>
@@ -190,7 +190,7 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
 
 
 
-## Dynamic-Length Transformer
+## Length Adaptive Transformers
 <table>
 <thead>
   <tr>
@@ -260,7 +260,7 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
   </tr>
 </tbody>
 </table>
-NOTES: * length config apply to LA model
+NOTES: * length config apply to Length Adaptive model
 
 
 NOTES: ** the multiplication and addition operation amount when model inference  (GFLOPS is obtained from torchprofile tool)
