@@ -235,31 +235,6 @@ class BaseTrainer():
         self.quantizer = quantizer
         return quantizer
 
-    # pylint: disable=E0401
-    def _nncf_quantize(self):  # pragma: no cover
-        from intel_extension_for_transformers import NncfConfig
-        from nncf import create_compressed_model
-        compression_state = None
-        assert isinstance(self.quant_config, NncfConfig), \
-            "Please pass a NNCFConfig instance to trainer.quantize!"
-
-        self.metrics = self.quant_config.metrics
-        nncf_compression_state_file = self.quant_config.compression_state
-
-        if os.path.isfile(nncf_compression_state_file):
-            compression_state = torch.load(nncf_compression_state_file)
-        else:
-            compression_state = None
-
-        compression_algo_controller, model = create_compressed_model(
-            self.model, self.quant_config.nncf_config, compression_state=compression_state)
-
-        self.compression_ctrl = \
-            compression_algo_controller.distributed() \
-            if self.quant_config.distributed else compression_algo_controller
-
-        self.model = self._train_func(model)
-
     def _inc_quantize(
         self,
         quant_config,
@@ -312,9 +287,7 @@ class BaseTrainer():
         if self.quantizer is None:
             self._provider = Provider[provider.upper()].value
 
-        if self._provider == Provider.NNCF.value:  # pragma: no cover
-            return self._nncf_quantize()
-        elif self._provider == Provider.INC.value:
+        if self._provider == Provider.INC.value:
             return self._inc_quantize(quant_config=quant_config, provider=provider)
         else:
             assert False, "Unsupport provider:{}".format(self._provider)
@@ -980,15 +953,6 @@ class BaseTrainer():
                 tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged), 4)
             logs["learning_rate"] = self._get_learning_rate()
 
-            # pylint: disable=E0401
-            if self.compression_ctrl is not None:
-                from nncf.common.utils.tensorboard import prepare_for_tensorboard
-                logs["compression_loss"] = self.compression_ctrl.loss().item()
-                compression_stats = self.compression_ctrl.statistics()
-                for key, value in prepare_for_tensorboard(compression_stats).items():
-                    logs["compression/statistics/{0}".format(key)] = value
-                print(compression_stats.to_str())
-
             self._total_loss_scalar += tr_loss_scalar
             self._globalstep_last_logged = self.state.global_step
             self.store_flos()
@@ -1370,10 +1334,7 @@ class BaseTrainer():
             return dataset
         if self._signature_columns is None:
             # Inspect model forward signature to keep only the arguments it accepts.
-            if self._provider == "nncf":
-                signature = inspect.signature(self.model.get_nncf_wrapped_model().forward)
-            else:
-                signature = inspect.signature(self.model.forward)
+            signature = inspect.signature(self.model.forward)
             self._signature_columns = list(signature.parameters.keys())
             # Labels may be named label or label_ids, the default data collator handles that.
             self._signature_columns += ["label", "label_ids", "teacher_logits"]
@@ -1712,11 +1673,7 @@ class BaseTrainer():
         # They can then be reloaded using `from_pretrained()`
         if not isinstance(self.model, PreTrainedModel):  # pragma: no cover
             unwrapped_model = unwrap_model(self.model)
-            if self._provider == "nncf":
-                is_pretrained = isinstance(unwrapped_model.get_nncf_wrapped_model(),
-                                           PreTrainedModel)
-            else:
-                is_pretrained = isinstance(unwrapped_model, PreTrainedModel)
+            is_pretrained = isinstance(unwrapped_model, PreTrainedModel)
 
             if is_pretrained:
                 if state_dict is None:

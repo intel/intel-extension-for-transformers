@@ -21,7 +21,6 @@ from .optimization.config import (
     DistillationConfig,
     FlashDistillationConfig,
     TFDistillationConfig,
-    NncfConfig,
     Provider,
     PruningConfig,
     QuantizationConfig,

@@ -54,9 +54,9 @@ python run_mlm.py \
 
 |Type|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
-|CLM|EleutherAI/gpt-neo-125M| ✅| ✅| N/A
-|MLM|bert-base-uncased| ✅| ✅| N/A
-|PLM|xlnet-base-cased| ✅| ✅| N/A
+|CLM|EleutherAI/gpt-neo-125M| ✅| ✅| ✅
+|MLM|bert-base-uncased| ✅| ✅| ✅
+|PLM|xlnet-base-cased| ✅| ✅| ✅
 
 ### Command
 

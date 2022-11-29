@@ -34,4 +34,4 @@ python run_qa.py \
 
 |Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
-|squad|distilbert-base-uncased-distilled-squad| ✅| ✅| N/A
+|squad|distilbert-base-uncased-distilled-squad| ✅| ✅| ✅

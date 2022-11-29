@@ -30,15 +30,12 @@ from intel_extension_for_transformers.optimization.utils.utility import LazyImpo
 from typing import List, Union
 from xmlrpc.client import boolean
 
-nncf = LazyImport("nncf")
-
 
 WEIGHTS_NAME = "pytorch_model.bin"
 
 
 class Provider(Enum):
     INC = "inc"
-    NNCF = "nncf"
 
 
 class DynamicLengthConfig(object):
@@ -662,56 +659,3 @@ class AutoDistillationConfig(object):
             self.config.auto_distillation.search.higher_is_better.append(
                 metric.greater_is_better
                 )
-
-
-# pylint: disable=E0401
-class NncfConfig(object):   # pragma: no cover
-    def __init__(
-        self,
-        nncf_config,
-        distributed: bool = False,
-        to_onnx: bool = False,
-        metrics: Union[List, Metric] = None,
-    ):
-        super().__init__()
-        from nncf import NNCFConfig
-        assert isinstance(nncf_config, NNCFConfig)
-        self.nncf_config = nncf_config
-        if metrics is not None:
-            self._metrics = metrics
-        self._distributed = distributed
-        self._to_onnx = to_onnx
-
-
-    @property
-    def distributed(self):
-        return self._distributed
-
-    @distributed.setter
-    def distributed(self, distributed):
-        self._distributed = distributed
-
-    @property
-    def to_onnx(self):
-        return self._to_onnx
-
-    @to_onnx.setter
-    def to_onnx(self, to_onnx):
-        self._to_onnx = to_onnx
-
-    @property
-    def metrics(self):
-        return self._metrics
-
-    @metrics.setter
-    def metrics(self, metrics):
-        self._metrics = metrics
-
-    @property
-    def nncf_config(self):
-        return self._nncf_config
-
-    @nncf_config.setter
-    def nncf_config(self, nncf_config):
-        self._nncf_config = nncf_config
-

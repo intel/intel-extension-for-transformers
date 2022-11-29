@@ -21,7 +21,7 @@ Here is how to run the script:
 
 |Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
-|NER|elastic/distilbert-base-uncased-finetuned-conll03-english| ✅| ✅| N/A
+|NER|elastic/distilbert-base-uncased-finetuned-conll03-english| ✅| ✅| ✅
 
 
 
