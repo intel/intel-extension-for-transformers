@@ -127,6 +127,7 @@ bool CheckLLGAResult(const TestParams& t) {
   try {
     executor::LLGAINFO llga_info;
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateLayerNormOp(&llga_info, p.conf);
     executor::LLGAKernel lnorm_op(p.conf, &llga_info);
     lnorm_op.Reshape(p.input, p.output);
     lnorm_op.Forward(p.input, p.output);

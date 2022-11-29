@@ -113,6 +113,7 @@ bool CheckLLGAResult(const TestParams& t) {
   try {
     executor::LLGAINFO llga_info;
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateBinaryAddOp(&llga_info, p.conf);
     executor::LLGAKernel badd_op(p.conf, &llga_info);
     badd_op.Prepare(p.input, p.output);
     badd_op.Reshape(p.input, p.output);

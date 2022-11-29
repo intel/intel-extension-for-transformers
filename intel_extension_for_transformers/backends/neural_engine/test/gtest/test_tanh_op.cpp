@@ -60,6 +60,7 @@ bool CheckResult(const TestParams& t) {
   try {
     executor::LLGAINFO llga_info;
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateTanhOp(&llga_info, p.conf);
     executor::LLGAKernel tanh(p.conf, &llga_info);
     tanh.Prepare(p.input, p.output);
     tanh.Reshape(p.input, p.output);

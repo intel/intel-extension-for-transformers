@@ -148,6 +148,7 @@ bool CheckLLGAResult(const TestParams& t) {
     map<string, int> tensor_map = {{"src1", 1}, {"src2", 2}};
     llga_info.SetTensorNameIndex(&tensor_map);
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateDequantizeOp(&llga_info, p.conf);
     executor::LLGAKernel dequantize(p.conf, &llga_info);
     dequantize.Prepare(p.input, p.output);
     dequantize.Reshape(p.input, p.output);

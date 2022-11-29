@@ -135,6 +135,7 @@ bool CheckLLGAResult(const TestParams& t) {
   try {
     executor::LLGAINFO llga_info;
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateSoftmaxOp(&llga_info, p.conf);
     executor::LLGAKernel smax_op(p.conf, &llga_info);
     smax_op.Prepare(p.input, p.output);
     smax_op.Reshape(p.input, p.output);

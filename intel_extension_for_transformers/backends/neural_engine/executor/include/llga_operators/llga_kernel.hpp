@@ -33,9 +33,8 @@ namespace executor {
 class LLGAKernel : public Operator {
  public:
   LLGAKernel(const shared_ptr<OperatorConfig>& conf, LLGAINFO* llga_info) : Operator(conf), llga_info_(llga_info) {
-    // create llgakernel from conf, just for gtest.
+    // create llgakernel from llga_info, just for gtest.
     // one config maps only one llga kernel.
-    LLGAOPCreator::GetInstance().CreateOP(llga_info, conf);
     auto partitions = llga_info->GetPartitions();
     assert(partitions.size() == 1);
     partition_ = partitions[0];

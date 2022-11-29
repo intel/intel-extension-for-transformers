@@ -60,6 +60,7 @@ bool CheckResult(const TestParams& t) {
   try {
     executor::LLGAINFO llga_info;
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateSqrtOp(&llga_info, p.conf);
     executor::LLGAKernel sqrt(p.conf, &llga_info);
     sqrt.Prepare(p.input, p.output);
     sqrt.Reshape(p.input, p.output);

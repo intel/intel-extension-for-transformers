@@ -82,6 +82,7 @@ bool CheckResult(const TestParams& t) {
   try {
     executor::LLGAINFO llga_info;
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateTypeCastOp(&llga_info, p.conf);
     executor::LLGAKernel cast(p.conf, &llga_info);
     cast.Prepare(p.input, p.output);
     cast.Reshape(p.input, p.output);

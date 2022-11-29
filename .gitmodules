@@ -1,9 +1,6 @@
 [submodule "intel_extension_for_transformers/backends/neural_engine/third_party/yaml-cpp"]
 	path = intel_extension_for_transformers/backends/neural_engine/third_party/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/oneDNN"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/oneDNN
-	url = https://github.com/oneapi-src/oneDNN.git
 [submodule "intel_extension_for_transformers/backends/neural_engine/third_party/pybind11"]
 	path = intel_extension_for_transformers/backends/neural_engine/third_party/pybind11
 	url = https://github.com/pybind/pybind11.git

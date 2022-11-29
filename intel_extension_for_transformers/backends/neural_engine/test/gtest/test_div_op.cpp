@@ -70,6 +70,7 @@ bool CheckResult(const TestParams& t) {
   try {
     executor::LLGAINFO llga_info;
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateDivideOp(&llga_info, p.conf);
     executor::LLGAKernel div(p.conf, &llga_info);
     div.Prepare(p.input, p.output);
     div.Reshape(p.input, p.output);

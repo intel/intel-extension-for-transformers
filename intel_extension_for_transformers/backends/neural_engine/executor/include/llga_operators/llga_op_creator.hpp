@@ -34,7 +34,7 @@ class NEURALENGINE_API_ LLGAOPCreator {
     return ins;
   }
 
-  void CreateOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0, bool fallback = false) {
+  void CreateOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index, bool fallback = false) {
     auto operator_name = op_conf->name();
     auto op_type = op_conf->type();
     LOG(INFO) << "creating operator " << operator_name << ", " << op_type;
@@ -54,44 +54,44 @@ class NEURALENGINE_API_ LLGAOPCreator {
     }
   }
 
-  void CreateWildcardOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  void CreateWildcardOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
   int CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
                                bool has_bias, bool transpose_a_, bool transpose_b_);
   int CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
                                bool has_bias, bool transpose_a_, bool transpose_b_, bool append_sum);
-  bool CreateInnerProductOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateQuantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateBinaryAddOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateLayerNormOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateReshapeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateMatmulOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateErfOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateDivideOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateMultiplyOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateSqrtOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateTanhOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateSubtractOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateTypeCastOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
-  bool CreateDequantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index);
+  bool CreateInnerProductOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateQuantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateBinaryAddOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateLayerNormOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateReshapeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateMatmulOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateErfOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateDivideOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateMultiplyOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateSqrtOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateTanhOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateSubtractOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateTypeCastOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateDequantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
 
  private:
   LLGAOPCreator() {
-    creator_list["InnerProduct"] = &LLGAOPCreator::CreateInnerProductOp;
-    creator_list["Quantize"] = &LLGAOPCreator::CreateQuantizeOp;
-    creator_list["Softmax"] = &LLGAOPCreator::CreateSoftmaxOp;
-    creator_list["BinaryAdd"] = &LLGAOPCreator::CreateBinaryAddOp;
-    creator_list["LayerNorm"] = &LLGAOPCreator::CreateLayerNormOp;  // can not inplace, affecting performance
-  //   creator_list["Reshape"] = &LLGAOPCreator::CreateReshapeOp;
+    // creator_list["InnerProduct"] = &LLGAOPCreator::CreateInnerProductOp;
+    // creator_list["Quantize"] = &LLGAOPCreator::CreateQuantizeOp;
+    // creator_list["Softmax"] = &LLGAOPCreator::CreateSoftmaxOp;
+    // creator_list["BinaryAdd"] = &LLGAOPCreator::CreateBinaryAddOp;
+    // creator_list["LayerNorm"] = &LLGAOPCreator::CreateLayerNormOp;  // can not inplace, affecting performance
+    // creator_list["Reshape"] = &LLGAOPCreator::CreateReshapeOp;
     // creator_list["Matmul"] = &LLGAOPCreator::CreateMatmulOp;
-      creator_list["Erf"] = &LLGAOPCreator::CreateErfOp;
-      creator_list["Div"] = &LLGAOPCreator::CreateDivideOp;
-      creator_list["Mul"] = &LLGAOPCreator::CreateMultiplyOp;
-      creator_list["Sqrt"] = &LLGAOPCreator::CreateSqrtOp;
-      creator_list["Tanh"] = &LLGAOPCreator::CreateTanhOp;
-      creator_list["Sub"] = &LLGAOPCreator::CreateSubtractOp;
-      creator_list["Cast"] = &LLGAOPCreator::CreateTypeCastOp;
-      creator_list["DequantizeLinear"] = &LLGAOPCreator::CreateDequantizeOp;
+    creator_list["Erf"] = &LLGAOPCreator::CreateErfOp;
+    creator_list["Div"] = &LLGAOPCreator::CreateDivideOp;
+    creator_list["Mul"] = &LLGAOPCreator::CreateMultiplyOp;
+    creator_list["Sqrt"] = &LLGAOPCreator::CreateSqrtOp;
+    creator_list["Tanh"] = &LLGAOPCreator::CreateTanhOp;
+    creator_list["Sub"] = &LLGAOPCreator::CreateSubtractOp;
+    creator_list["Cast"] = &LLGAOPCreator::CreateTypeCastOp;
+    creator_list["DequantizeLinear"] = &LLGAOPCreator::CreateDequantizeOp;
   }
   LLGAOPCreator(const LLGAOPCreator&) {}
 

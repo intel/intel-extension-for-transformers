@@ -465,9 +465,9 @@ shared_ptr<Operator> Model::CreateLLGAKernel(const vector<shared_ptr<OperatorCon
 }
 
 void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) {
-  bool llga_enable = (getenv("LLGA_ENABLE") != NULL);
-  LOG(INFO) << "LLGA_ENABLE: " << llga_enable;
-  if (!llga_enable) {
+  bool llga_disable = (getenv("LLGA_DISABLE") != NULL);
+  LOG(INFO) << "LLGA_DISABLE: " << llga_disable;
+  if (llga_disable) {
     LOG(INFO) << "Constructing original graph...";
     for (int i = 0; i < op_configs.size(); i++) {
       operators_.push_back(std::make_shared<Dispatcher>(op_configs[i],  &execution_options_));

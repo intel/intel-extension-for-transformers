@@ -69,6 +69,7 @@ bool CheckResult(const TestParams& t) {
   try {
     executor::LLGAINFO llga_info;
     llga_info.InitLTFromTensorConf(p.conf, false);
+    executor::LLGAOPCreator::GetInstance().CreateMultiplyOp(&llga_info, p.conf);
     executor::LLGAKernel mul(p.conf, &llga_info);
     mul.Prepare(p.input, p.output);
     mul.Reshape(p.input, p.output);
