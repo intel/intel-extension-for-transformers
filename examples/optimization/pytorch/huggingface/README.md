@@ -32,6 +32,6 @@ Welcome to Pytorch Huggingface examples. The examples is following from [Hugging
 ## Orchestrate
 
 | Task | Knowledge Distillation | Magnitude Pruning | Pattern Lock Pruning
-|---|:---:|:---:| :---:|
+|---|:---:|:---:|:---:| 
 |**`question-answering`**| ✅ | ✅ | ✅
 |**`text-classification`**| ✅| ✅ | ✅

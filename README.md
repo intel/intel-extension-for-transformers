@@ -24,16 +24,20 @@ This toolkit helps developers to improve the productivity of inference deploymen
 </br>
 
 ## Installation
-#### Install Dependency
+### Release Binary Install
 ```bash
-pip install -r requirements.txt
+pip install intel-extension-for-transformers
 ```
 
+### Install From Source
 #### Install Intel® Extension for Transformers
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
 cd intel_extension_for_transformers
+# Install Dependency
+pip install -r requirements.txt
 git submodule update --init --recursive
+# Install intel_extension_for_transformers
 python setup.py install
 ```
 
@@ -155,7 +159,7 @@ Transformers-accelerated Libraries is a high-performance operator computing libr
   std::vector<const void*> rt_data = {data0, data1, data2, data3, data4};
   spmm_kern.execute(rt_data);
 ```
-Please refer to [Transformers-accelerated Libraries](intel_extension_for_transformers/backends/neural_engine/Kernels/README.md) for more details.
+Please refer to [Transformers-accelerated Libraries](intel_extension_for_transformers/backends/neural_engine/kernels/README.md) for more details.
 
 
 ## System Requirements
