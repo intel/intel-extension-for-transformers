@@ -74,7 +74,7 @@ graph.save('./ir')
 ```
 
 The `input_ids`, `segment_ids` and `input_mask` are the input numpy array data of model, and the input dimension is variable. 
-Note that the `out` is a dict contains the bert model output name and numpy data (`out={output name : numpy data}`). 
+Note that the `out` is a dict contains the bert model output tensor name and numpy data (`out={output name : numpy data}`). 
 
 ##### 5. Analyze operator performance
 

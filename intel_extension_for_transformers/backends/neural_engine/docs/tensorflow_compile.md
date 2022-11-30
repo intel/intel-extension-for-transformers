@@ -6,7 +6,7 @@ The following image shows the `Intel® Extension for Transformers` workflow to c
 
 1. The `Loader` loads models from different deep learning frameworks. 
 2. The `Extractors` extract original model operators to compose the engine graph.
-3. The `Subgraph matcher`  implements pattern fusion to accelerate inference. 
+3. The `Subgraph matcher` implements pattern fusion to accelerate inference. 
 4. The `Emitter` saves the intermediate graph to the disk in the format of `.yaml` and `.bin` files.
 
 ![](imgs/compile_workflow.png)
