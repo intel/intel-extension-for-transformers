@@ -344,26 +344,23 @@ void SoftmaxOperator::Reshape_Sparselib(const vector<Tensor*>& input, const vect
   dst_desc_ = {output[0]->shape(), type2sparsemem_[output[0]->dtype()], jd::format_type::undef};
   vector<jd::tensor_desc> ts_descs = {src_desc_, dst_desc_};
   std::unordered_map<std::string, std::string> op_attrs;
-  float input_zp, input_scale, output_zp, output_scale;
+  float input_scale, output_scale;
   const float* min_p = static_cast<const float*>(input[1]->data());
   const float* max_p = static_cast<const float*>(input[2]->data());
   input_scale = (max_p[0] - min_p[0]) / 255;
-  input_zp = -min_p[0] / input_scale;
 
   min_p = static_cast<const float*>(input[3]->data());
   max_p = static_cast<const float*>(input[4]->data());
   output_scale = (max_p[0] - min_p[0]) / 255;
-  output_zp = -min_p[0] / output_scale;
-  output_zp = 0;
 
-  jd::postop_attr dequantize_attr(jd::data_type::s8, jd::postop_type::eltwise, jd::postop_alg::dequantize, input_zp, 0,
+  jd::postop_attr dequantize_attr(jd::data_type::s8, jd::postop_type::eltwise, jd::postop_alg::dequantize, 0, 0,
                                   input_scale);
-  jd::postop_attr quantize_attr(jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, output_zp, 0,
+  jd::postop_attr quantize_attr(jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, 0, 0,
                                 output_scale);
   if (lut_optimization_) {
     op_attrs["spec_type"] = "lut";
     op_attrs["vec_len"] = std::to_string(input[0]->shape().back());
-    // TODO(zhe1wang): add quant factor attr.
+    op_attrs["quant_factor"] = "dequantize" + std::to_string(input_scale) + "quantize" + std::to_string(output_scale);
     jd::operator_desc op_desc(jd::kernel_kind::softmax, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
                               ts_descs, op_attrs, {dequantize_attr, quantize_attr});
     jd::softmax_desc softmax_desc(op_desc);

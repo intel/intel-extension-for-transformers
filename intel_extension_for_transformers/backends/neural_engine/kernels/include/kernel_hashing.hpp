@@ -111,6 +111,7 @@ class hash_t {
       case kernel_kind::softmax:
         hash_combine(seed, op_attrs["spec_type"]);
         hash_combine(seed, op_attrs["vec_len"]);
+        hash_combine(seed, op_attrs["quant_factor"]);
         break;
       case kernel_kind::eltwiseop:
       default:
