@@ -213,11 +213,11 @@ void jit_softmax_t::get_unroll() {
 
 void jit_softmax_t::prepare_mask() {
   int mask = 0x0;
-  for (int i = 0; i < param_.vec_tail_len; i++) mask = (mask << 1) + 1;
+  for (size_t i = 0; i < param_.vec_tail_len; i++) mask = (mask << 1) + 1;
   mov(reg_tmp.cvt32(), mask);
   kmovd(bit16_mask, reg_tmp.cvt32());
   mask = 0x0;
-  for (int i = 0; i < param_.vec_tail_len % 16; i++) mask = (mask << 1) + 1;
+  for (size_t i = 0; i < param_.vec_tail_len % 16; i++) mask = (mask << 1) + 1;
   mov(reg_tmp.cvt32(), mask);
   kmovd(bit32_mask, reg_tmp.cvt32());
 }

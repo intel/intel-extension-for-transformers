@@ -187,7 +187,6 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   const unsigned int seed = 667095;
   std::srand(seed);
   for (int i = 0; i < num; i++) {
-    unsigned int seed_tmp = seed + i;
     float rand_val = std::rand() % 256 - 128;
     assign_val(src, in_dt, rand_val, i);
     assign_val(src_ref, in_dt, rand_val, i);
@@ -258,8 +257,7 @@ static auto case_func = []() {
                    false});
 
   cases.push_back(
-      {gen_case({data0_desc, data5_desc}, {{"postop_list", "fp32_gelu+quantize"}}, {fp32_gelu_attr,
-      quantize_s8_attr}),
+      {gen_case({data0_desc, data5_desc}, {{"postop_list", "fp32_gelu+quantize"}}, {fp32_gelu_attr, quantize_s8_attr}),
        false});
 
   cases.push_back({gen_case({data0_desc, data0_desc}, {{"postop_list", "fp32_relu"}}, {fp32_relu_attr}), false});

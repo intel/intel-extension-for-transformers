@@ -89,6 +89,8 @@ bool attention_kd_t::init() {
   const auto& v_scales_desc = op_desc_.tensor_descs()[ssd::V_SCALES];
   const auto& q_k_src2_desc = op_desc_.tensor_descs()[ssd::Q_K_SRC2];  // for binary add
   const auto& dst_desc = op_desc_.tensor_descs()[ssd::MERGE_DST];
+  SPARSE_LOG_IF(FATAL, q_bias_desc.shape().empty() || k_bias_desc.shape().empty() || v_bias_desc.shape().empty())
+      << "Attension shoulf have valid bias" << std::endl;
 
   // check tensor dim
   KERNEL_INIT_CHECK(dst_desc.shape().size() == 4)
@@ -126,7 +128,6 @@ bool attention_kd_t::init() {
   const tensor_desc qk_scales_desc({ip_chanel * 2, 1}, q_scales_desc.dtype(), q_scales_desc.ftype());
   const tensor_desc qk_dst_desc_s8({ip_chanel * 2, batch_size * seq_len}, data_type::s8, format_type::ab);
   const tensor_desc qk_dst_desc_f32({ip_chanel * 2, batch_size * seq_len}, data_type::fp32, format_type::ab);
-  bool has_bias = !q_bias_desc.shape().empty();
 
   auto op_attrs = op_desc_.attrs();
   const auto q_weight_addr = reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["q_weight_ptr"]));
@@ -372,7 +373,7 @@ bool attention_k_t::init() {
 }
 
 bool attention_k_t::execute(const std::vector<const void*>& rt_data) const {
-  for (int i = 0; i < kernels_.size(); i++) {
+  for (size_t i = 0; i < kernels_.size(); i++) {
     std::vector<const void*> data = set_input_output(i, rt_data);
     kernels_[i]->execute(data);
   }

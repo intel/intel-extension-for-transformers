@@ -14,7 +14,6 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_CPU_ISA_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_CPU_ISA_HPP_
 
-
 #include "utils.hpp"
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"

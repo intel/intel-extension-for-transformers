@@ -23,11 +23,11 @@ inline void jit_spmm_avx512f_t::load_params() {
 }
 
 void jit_spmm_avx512f_t::generate() {
-  #ifdef _WIN32
+#ifdef _WIN32
   const int nonvolatile_reg_size = 8 * 8;
-  #else
+#else
   const int nonvolatile_reg_size = 8 * 6;
-  #endif
+#endif
   const auto& sparse_indptr = param_.sparse_ptr->indptr();
   const auto& sparse_indices = param_.sparse_ptr->indices();
   inLocalLabel();  // use local label for multiple instance
@@ -40,10 +40,10 @@ void jit_spmm_avx512f_t::generate() {
     mov(ptr[rsp + 0x18], r13);
     mov(ptr[rsp + 0x20], r14);
     mov(ptr[rsp + 0x28], r15);
-    #ifdef _WIN32
+#ifdef _WIN32
     mov(ptr[rsp + 0x30], rdi);
     mov(ptr[rsp + 0x38], rsi);
-    #endif
+#endif
 
     load_params();
     mov(reg_dense_end, reg_dense);

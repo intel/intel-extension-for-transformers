@@ -255,7 +255,10 @@ class aligned_allocator_t {
 
   inline pointer allocate(size_type n) { return aligned_allocator_t<T, N>::aligned_alloc(n); }
 
-  inline void deallocate(pointer p, size_type n) { aligned_free(p); }
+  inline void deallocate(pointer p, size_t n) {
+    SPARSE_LOG_IF(FATAL, n <= 0) << "Dealloc size should > 0" << std::endl;
+    aligned_free(p);
+  }
   inline void construct(pointer p, const value_type& wert) { new (p) value_type(wert); }
 
   inline void destroy(pointer p) { p->~value_type(); }

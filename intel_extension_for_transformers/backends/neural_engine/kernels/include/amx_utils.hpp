@@ -30,6 +30,10 @@ class tile_param_t {
   bool is_bf16;
   int K_pack;
 
+  tile_param_t() {}
+  tile_param_t(int m_tile, int n_tile, int k_tile, bool bf16, int k_pack)
+      : M_tile(m_tile), N_tile(n_tile), K_tile(k_tile), is_bf16(bf16), K_pack(k_pack) {}
+
  public:
   bool operator!=(const tile_param_t& rhs) {
     return (M_tile != rhs.M_tile) | (K_tile != rhs.K_tile) | (N_tile != rhs.N_tile) | (is_bf16 != rhs.is_bf16) |
@@ -39,10 +43,10 @@ class tile_param_t {
 
 // Tile configure structure
 struct tileconfig_t {
-  uint8_t palette_id;
-  uint8_t reserved[15];
-  uint16_t colb[16];
-  uint8_t rows[16];
+  uint8_t palette_id = 0;
+  uint8_t reserved[15] = {0};
+  uint16_t colb[16] = {64};
+  uint8_t rows[16] = {16};
 };
 
 void sparselib_configure_tiles(tile_param_t param, tileconfig_t* sparselib_tc);
@@ -63,7 +67,7 @@ class amx_tile_config_t {
     tilecfg.create_kernel();
     tilerls.create_kernel();
     int nthr = omp_get_max_threads();
-    param_.resize(nthr, {0});
+    param_.resize(nthr);
   }
   ~amx_tile_config_t() {
     if (config_ != nullptr) {
@@ -72,7 +76,7 @@ class amx_tile_config_t {
     }
   }
   std::vector<tile_param_t> param_;
-  tileconfig_t* config_ = new tileconfig_t({0});
+  tileconfig_t* config_ = new tileconfig_t();
 
  public:
   /**

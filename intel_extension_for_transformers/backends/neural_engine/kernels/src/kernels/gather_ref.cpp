@@ -30,7 +30,7 @@ bool gather_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto src0_shape = ts_descs[0].shape();
   auto src1_shape = ts_descs[1].shape();
   auto dst_shape = ts_descs[2].shape();
-  auto src0_data = rt_data[0];
+  auto src0_data = reinterpret_cast<const char*>(rt_data[0]);
   auto src1_data = (const int32_t*)rt_data[1];
   auto dst_data = reinterpret_cast<char*>(const_cast<void*>(rt_data[2]));
 
@@ -49,7 +49,7 @@ bool gather_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
 #pragma omp simd
     for (int j = 0; j < dst_shape[1]; ++j) {
       // TODO(Yucheng/Zhe): refactor here when postop-injector avaliable.
-      for (int k = 3; k < ts_descs.size(); k++) {
+      for (size_t k = 3; k < ts_descs.size(); k++) {
         int broad_cast_i = i;
         if (ts_descs[k].shape()[0] == 1) broad_cast_i = 0;
         if (input_dt == data_type::s8) {

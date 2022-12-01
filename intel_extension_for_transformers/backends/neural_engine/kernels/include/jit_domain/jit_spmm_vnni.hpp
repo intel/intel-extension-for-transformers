@@ -85,7 +85,7 @@ class jit_spmm_vnni_t : public jit_generator {
   inline int mt_size() const { return TH(); }
   inline int n_tiles() const { return param_.BN / nt_size(); }
   inline int m_tiles() const { return param_.BM / mt_size(); }
-  const data_type output_type();
+  const data_type& output_type();
   inline int ld_dst() const { return param_.BN; }  // leading dimension of dst matrix
 
  private:

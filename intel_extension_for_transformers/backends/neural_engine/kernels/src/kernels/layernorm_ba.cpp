@@ -94,8 +94,10 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
     for (int j = 0; j < ker_num; j++) {
       const jit_layernorm_ba_t* jit_impl = jit_kers_[j];
       auto data_param = td[i];
-      data_param->src = const_cast<void*>(rt_data[0] + i * row_num * col_num * get_data_size(src_dt));
-      data_param->dst = const_cast<void*>(rt_data[1] + i * row_num * col_num * get_data_size(dst_dt));
+      data_param->src =
+          reinterpret_cast<char*>(const_cast<void*>(rt_data[0])) + i * row_num * col_num * get_data_size(src_dt);
+      data_param->dst =
+          reinterpret_cast<char*>(const_cast<void*>(rt_data[1])) + i * row_num * col_num * get_data_size(dst_dt);
       data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
       data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
       data_param->one_div_n = one_div_n_ptr();

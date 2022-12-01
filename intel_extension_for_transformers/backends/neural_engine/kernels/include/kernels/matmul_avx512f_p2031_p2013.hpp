@@ -58,7 +58,7 @@ class matmul_avx512f_p2031_p2013_kd_t : public kernel_desc_t {
   }
 
  private:
-  bool matmul_params_init(const jd::operator_desc& op_desc);
+  bool matmul_params_init();
 
   jd::operator_desc op_desc_;
   ssd::matmul_param_t jit_param_;

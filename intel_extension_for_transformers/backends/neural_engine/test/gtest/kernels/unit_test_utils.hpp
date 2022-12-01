@@ -30,14 +30,6 @@ enum memo_mode { MALLOC, MEMSET };
 
 using bfloat16_t = jd::bfloat16_t;
 
-bfloat16_t fp32_2_bf16(float float_val) { return (*reinterpret_cast<unsigned int*>(&float_val)) >> 16; }
-
-float bf16_2_fp32(bfloat16_t bf16_val) {
-  unsigned int ans = bf16_val;
-  ans = ans << 16;
-  return *reinterpret_cast<float*>(&ans);
-}
-
 int uint8_2_int32(uint8_t a) {
   int ans = a;
   return ans;
@@ -53,7 +45,7 @@ void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
       *(reinterpret_cast<float*>(ptr) + idx) = val;
       break;
     case jd::data_type::bf16:
-      *(reinterpret_cast<bfloat16_t*>(ptr) + idx) = fp32_2_bf16(val);
+      *(reinterpret_cast<bfloat16_t*>(ptr) + idx) = jd::make_bf16(val);
       break;
     case jd::data_type::u8:
       *(reinterpret_cast<uint8_t*>(ptr) + idx) = (uint8_t)val;

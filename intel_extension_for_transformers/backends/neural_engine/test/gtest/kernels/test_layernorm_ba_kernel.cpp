@@ -26,8 +26,6 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-static unsigned int rand_seed = 123;
-
 void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   auto tensor_desc = op_desc.tensor_descs();
   int batch = tensor_desc[0].shape().size() == 2 ? 1 : tensor_desc[0].shape()[0];
@@ -131,7 +129,7 @@ bool check_result(const test_params_t& t) {
   aligned_free(const_cast<void*>(q.data[1]));
   aligned_free(const_cast<void*>(q.data[2]));
   aligned_free(const_cast<void*>(q.data[3]));
-  return false;
+  return ans;
 }
 
 class LayernormBaKernelTest : public testing::TestWithParam<test_params_t> {
@@ -273,7 +271,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back("shape");
   for (auto&& i : tensor_shape) params.push_back(std::to_string(i));
 
-  auto add_dt_info = [&](data_type dt, const std::string& tensor_dt) {
+  auto add_dt_info = [&](const std::string& tensor_dt) {
     switch (tensor_desc[0].dtype()) {
       case data_type::s8:
         params.push_back(tensor_dt + "_s8");
@@ -289,8 +287,8 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
     }
   };
 
-  add_dt_info(tensor_desc[0].dtype(), "indt");
-  add_dt_info(tensor_desc[1].dtype(), "outdt");
+  add_dt_info("indt");
+  add_dt_info("outdt");
   if (attrs_map["postop_list"] != "") params.push_back(attrs_map["postop_list"]);
   if (attrs_map["binaryop_list"] != "") params.push_back(attrs_map["binaryop_list"]);
   return join_str(params, "_");

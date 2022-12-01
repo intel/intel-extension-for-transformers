@@ -66,7 +66,7 @@ void softmax_kd_t::prepare_lut_softmax_params() {
   // init param
   int vec_len = input_shape.back();
   int total_vec_num = 1;
-  for (int i = 0; i < input_shape.size() - 1; i++) total_vec_num *= input_shape[i];
+  for (size_t i = 0; i < input_shape.size() - 1; i++) total_vec_num *= input_shape[i];
   param_.scalar_num = total_vec_num * vec_len;
   int thr_num = omp_get_max_threads();
   int vec_num_per_thr = total_vec_num / thr_num;

@@ -29,7 +29,7 @@ void jit_gather_t::generate() {
   for (int m = 0; m < param_.loops; ++m) {
     offset = m * 512 / 8;
     vmovdqu32(Zmm(m % 16), ptr[src_addr + offset]);
-    for (int i = 0; i < param_.binaryop_attrs.size(); i++) {
+    for (size_t i = 0; i < param_.binaryop_attrs.size(); i++) {
       RegExp offset_exp = binaryop_addr[i] + offset;  //
       binary_injector.compute_vector(Zmm(m % 16), offset_exp, param_.binaryop_attrs[i]);
     }
@@ -46,7 +46,7 @@ void jit_gather_t::generate() {
     kmovq(extend_tail_mask, r10);
     offset = param_.loops * 512 / 8;
     vmovdqu8(Zmm(0) | extend_tail_mask, ptr[src_addr + offset]);
-    for (int i = 0; i < param_.binaryop_attrs.size(); i++) {
+    for (size_t i = 0; i < param_.binaryop_attrs.size(); i++) {
       RegExp offset_exp = binaryop_addr[i] + offset;
       binary_injector.compute_vector(Zmm(0), offset_exp, param_.binaryop_attrs[i], true);
     }
@@ -61,7 +61,7 @@ void jit_gather_t::assign_regs() {
   dst_addr = r13;
   gather_idx = r12;
   next_gather_idx = r11;
-  for (int i = 0; i < param_.binaryop_attrs.size(); i++) {
+  for (size_t i = 0; i < param_.binaryop_attrs.size(); i++) {
     binaryop_addr.push_back(Reg64(i));
   }
   tail_mask = Xbyak::Opmask(2);

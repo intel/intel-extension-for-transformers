@@ -30,12 +30,12 @@ struct type_deduction_helper_t {
 class impl_list_item_t {
  public:
   impl_list_item_t() {}
-  explicit impl_list_item_t(std::nullptr_t nu) {}
+  explicit impl_list_item_t(std::nullptr_t) {}
   virtual ~impl_list_item_t() {}
 
  public:
   template <typename derived_kd_t>
-  explicit impl_list_item_t(const type_deduction_helper_t<derived_kd_t> a) {
+  explicit impl_list_item_t(const type_deduction_helper_t<derived_kd_t>) {
     using deduced_t = typename type_deduction_helper_t<derived_kd_t>::type;
     create_kd_func_ = &kernel_desc_t::create<deduced_t>;
   }

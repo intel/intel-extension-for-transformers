@@ -17,7 +17,7 @@
 #define GET_OFF(field) offsetof(ssd::vnni_data_t<void>, field)
 
 namespace jd {
-const data_type jit_spmm_vnni_t::output_type() { return param_.output_type; }
+const data_type& jit_spmm_vnni_t::output_type() { return param_.output_type; }
 
 // {zmm28, zmm27, zmm26, zmm25, ...}
 Xbyak::Zmm jit_spmm_vnni_t::TH_Vmm(int i) {

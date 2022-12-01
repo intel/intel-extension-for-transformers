@@ -52,7 +52,7 @@ void get_true_ip(const std::vector<jd::tensor_desc>& ts_descs, const std::vector
   const auto& src_shape = ts_descs[ssd::SRC].shape();
   const auto& dst_type = ts_descs[ssd::DST].dtype();
   const auto& dst_shape = ts_descs[ssd::DST].shape();
-  SPARSE_LOG_IF(FATAL, src_shape.size() != 2 && src_shape.size() != 3 || src_shape.size() != dst_shape.size())
+  SPARSE_LOG_IF(FATAL, src_shape.size() != 2 && (src_shape.size() != 3 || src_shape.size() != dst_shape.size()))
       << "Invalid shape";
 
   int oc = wei_shape[0];
@@ -363,11 +363,6 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   std::transform(ts_descs.begin(), ts_descs.end(), ts_shapes.begin(), [](tensor_desc d) { return d.shape(); });
   std::vector<dt> ts_types(ts_descs.size());
   std::transform(ts_descs.begin(), ts_descs.end(), ts_types.begin(), [](tensor_desc d) { return d.dtype(); });
-
-  const dim_t head_num = ts_shapes[ssd::MERGE_DST][0];
-  const dim_t head_size = ts_shapes[ssd::MERGE_DST][1];
-  const dim_t batch_size = ts_shapes[ssd::MERGE_DST][2];
-  const dim_t seq_len = ts_shapes[ssd::MERGE_DST][3];
 
   const void* q_weight_ptr = reinterpret_cast<void*>(str_to_num<uint64_t>(op_attrs["q_weight_ptr"]));
   const void* q_bias_ptr = reinterpret_cast<void*>(str_to_num<uint64_t>(op_attrs["q_bias_ptr"]));
@@ -740,8 +735,6 @@ std::pair<op_args_t, op_args_t> gen_case(const dim_t head_num, const dim_t head_
   op_attrs["k_scales_ptr"] = std::to_string(reinterpret_cast<uint64_t>(k_scales_addr));
   op_attrs["v_scales_ptr"] = std::to_string(reinterpret_cast<uint64_t>(v_scales_addr));
 
-  float scale = make_output_scale(1)[0];
-  float zero_point = make_output_zo(1)[0];
   operator_desc op_desc(kernel_kind::attention, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs);
 
   // Step 3: op_args_t testcase pair

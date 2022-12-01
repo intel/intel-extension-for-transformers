@@ -48,7 +48,7 @@ class spmm_avx512f_kd_t : public kernel_desc_t {
 
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const std::vector<ssd::avx512_fp32_params_t>& params() const { return params_; }
-  const dim_t block_m() const { return block_m_; }
+  const dim_t& block_m() const { return block_m_; }
   inline std::vector<dim_t> shape() const {
     return {op_desc_.tensor_descs()[ssd::WEI].shape()[0], op_desc_.tensor_descs()[ssd::WEI].shape()[1],
             op_desc_.tensor_descs()[ssd::SRC].shape()[1]};

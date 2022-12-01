@@ -73,7 +73,7 @@ void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_a
 void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs,
                                           std::vector<int> postop_idxs) {
   if (postop_idxs.size() == 0) {
-    for (int i = 0; i < postop_attrs.size(); i++) postop_idxs.push_back(i);
+    for (std::size_t i = 0; i < postop_attrs.size(); i++) postop_idxs.push_back(i);
   }
 
   assert_check(postop_attrs);
@@ -552,6 +552,7 @@ std::string jit_eltwise_injector::get_attr_idx_key(const postop_attr& attr) {
       break;
     case postop_alg::relu:
       result += "relu";
+      break;
     default:
       std::runtime_error("this alg_type do not need alpha/beta/scale.");
   }
@@ -950,16 +951,16 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
     return;
   }
 
-  int alpha_idx = 0, beta_idx = 0, scale_idx = 0;
+  size_t alpha_idx = 0, beta_idx = 0, scale_idx = 0;
   for (auto&& attr : postop_attrs) {
-    mapped_table_entry_t alpha_entry{alpha_idx, bit_cast<int, float>(attr.alpha), true};
-    mapped_table_entry_t beta_entry{beta_idx, bit_cast<int, float>(attr.beta), true};
+    mapped_table_entry_t alpha_entry{alpha_idx, bit_cast<uint32_t, float>(attr.alpha), true};
+    mapped_table_entry_t beta_entry{beta_idx, bit_cast<uint32_t, float>(attr.beta), true};
     float final_scale;
     if (attr.op_alg == postop_alg::quantize)
       final_scale = 1 / attr.scale;
     else
       final_scale = attr.scale;
-    mapped_table_entry_t scale_entry{scale_idx, bit_cast<int, float>(final_scale), true};
+    mapped_table_entry_t scale_entry{scale_idx, bit_cast<uint32_t, float>(final_scale), true};
     auto key = get_attr_idx_key(attr);
     if (attr.op_alg == postop_alg::quantize || attr.op_alg == postop_alg::dequantize) {
       alpha_idx_map[key] = alpha_idx++;

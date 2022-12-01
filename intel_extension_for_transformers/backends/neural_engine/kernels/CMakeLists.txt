@@ -1,3 +1,17 @@
+##  Copyright (c) 2022 Intel Corporation
+##
+##  Licensed under the Apache License, Version 2.0 (the "License");
+##  you may not use this file except in compliance with the License.
+##  You may obtain a copy of the License at
+##
+##    http://www.apache.org/licenses/LICENSE-2.0
+##
+##  Unless required by applicable law or agreed to in writing, software
+##  distributed under the License is distributed on an "AS IS" BASIS,
+##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+##  See the License for the specific language governing permissions and
+##  limitations under the License.
+
 cmake_minimum_required(VERSION 3.11)
 project(kernellibs)
 set(HOST_LIBRARY_NAME "kernellibs")
@@ -13,20 +27,6 @@ if (SPARSE_LIB_USE_VTUNE)
     include(cmake/FindVTune.cmake)
     message( STATUS "VTune enbled" )
 endif()
-
-
-
-if(OpenMP_FOUND)
-    #message(${CMAKE_CXX_FLAGS})
-else()
-    find_package(OpenMP REQUIRED)
-    if(WIN32)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:experimental")
-    else()
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    endif()
-endif()
-
 
 file(GLOB SOURCES
   ${PROJECT_SOURCE_DIR}/src/*.cpp
@@ -45,6 +45,23 @@ add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
 install(TARGETS ${HOST_LIBRARY_NAME})
 
 target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_KERNEL_BUILD)
+include(cmake/Common.cmake)
+include(cmake/FindOpenMP.cmake)
+include(cmake/Utility.cmake)
+
+set(GIT_HASH "unknown")
+get_git_hash(GIT_HASH)
+message(STATUS "Git hash is ${GIT_HASH}")
+
+set(GIT_BRANCH "unknown")
+get_git_branch(GIT_BRANCH)
+message(STATUS "Git branch is ${GIT_BRANCH}")
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/git_version.h.in
+  ${CMAKE_BINARY_DIR}/git_version.h
+  @ONLY
+  )
 
 set_target_properties(${HOST_LIBRARY_NAME}
     PROPERTIES
@@ -60,7 +77,6 @@ target_include_directories(${HOST_LIBRARY_NAME}
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
 )
-
 
 ## link against the third party libraries
 target_link_libraries(${HOST_LIBRARY_NAME}

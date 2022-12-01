@@ -109,10 +109,10 @@ class bsr_data_t : public sparse_data_t<T> {
   virtual ~bsr_data_t() {}
 
  public:
-  inline const std::vector<dim_t> shape() const { return shape_; }
-  inline const std::vector<dim_t> block_size() const { return block_size_; }
-  inline const dim_t group() const { return group_; }
-  inline const dim_t nnz_group() const { return nnz_group_; }
+  inline const std::vector<dim_t>& shape() const { return shape_; }
+  inline const std::vector<dim_t>& block_size() const { return block_size_; }
+  inline const dim_t& group() const { return group_; }
+  inline const dim_t& nnz_group() const { return nnz_group_; }
 
  private:
   std::vector<dim_t> shape_;

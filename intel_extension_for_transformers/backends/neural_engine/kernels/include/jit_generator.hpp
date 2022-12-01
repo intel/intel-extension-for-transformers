@@ -132,8 +132,8 @@ class jit_generator : public Xbyak::CodeGenerator {
   void preamble() {
     if (xmm_to_preserve) {
       sub(rsp, xmm_to_preserve * VEC);
-      for (size_t i = 0; i < xmm_to_preserve; ++i)
-        uni_vmovdqu(ptr[rsp + i * VEC], Xbyak::Xmm(xmm_to_preserve_start + i));
+      for (size_t i = 1; i < xmm_to_preserve + 1; ++i)
+        uni_vmovdqu(ptr[rsp + (i - 1) * VEC], Xbyak::Xmm(xmm_to_preserve_start + i - 1));
     }
     for (size_t i = 0; i < num_abi_save_gpr_regs; ++i) {
       push(Xbyak::Reg64(abi_save_gpr_regs[i]));
@@ -145,8 +145,8 @@ class jit_generator : public Xbyak::CodeGenerator {
     for (size_t i = 0; i < num_abi_save_gpr_regs; ++i)
       pop(Xbyak::Reg64(abi_save_gpr_regs[num_abi_save_gpr_regs - 1 - i]));
     if (xmm_to_preserve) {
-      for (size_t i = 0; i < xmm_to_preserve; ++i)
-        uni_vmovdqu(Xbyak::Xmm(xmm_to_preserve_start + i), ptr[rsp + i * VEC]);
+      for (size_t i = 1; i < xmm_to_preserve + 1; ++i)
+        uni_vmovdqu(Xbyak::Xmm(xmm_to_preserve_start + i - 1), ptr[rsp + (i - 1) * VEC]);
       add(rsp, xmm_to_preserve * VEC);
     }
     uni_vzeroupper();

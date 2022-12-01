@@ -91,11 +91,11 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
     }
   }
 
-  matmul_params_init(op_desc_);
+  matmul_params_init();
   return true;
 }
 
-bool matmul_vnni_noperm_p2031_p1302_kd_t::matmul_params_init(const jd::operator_desc& op_desc) {
+bool matmul_vnni_noperm_p2031_p1302_kd_t::matmul_params_init() {
   auto& descs = op_desc_.tensor_descs();
   std::vector<std::vector<dim_t>> shapes(descs.size());
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });

@@ -36,6 +36,9 @@ struct gather_data_t {
   void* idx;
   void* dst;
   void* binaryop_addrs[16];
+
+ public:
+  gather_data_t(void* a, void* b, void* c) : src(a), idx(b), dst(c){}
 };
 
 }  // namespace ssd

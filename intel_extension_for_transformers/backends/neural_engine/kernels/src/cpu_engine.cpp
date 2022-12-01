@@ -16,17 +16,17 @@
 namespace jd {
 const std::vector<impl_list_item_t> cpu_engine::empty_list = {};
 
-  // C API forward declaration.
+// C API forward declaration.
 #define DECLARE_IMPL_LIST(kind) \
   const std::vector<impl_list_item_t>* get_##kind##_impl_list(const operator_desc& op_desc);
 
-  DECLARE_IMPL_LIST(sparse_matmul);
-  DECLARE_IMPL_LIST(eltwiseop);
-  DECLARE_IMPL_LIST(layernorm_ba);
-  DECLARE_IMPL_LIST(transpose_matmul);
-  DECLARE_IMPL_LIST(softmax);
-  DECLARE_IMPL_LIST(gather);
-  DECLARE_IMPL_LIST(attention);
+DECLARE_IMPL_LIST(sparse_matmul);
+DECLARE_IMPL_LIST(eltwiseop);
+DECLARE_IMPL_LIST(layernorm_ba);
+DECLARE_IMPL_LIST(transpose_matmul);
+DECLARE_IMPL_LIST(softmax);
+DECLARE_IMPL_LIST(gather);
+DECLARE_IMPL_LIST(attention);
 
 #undef DECLARE_IMPL_LIST
 

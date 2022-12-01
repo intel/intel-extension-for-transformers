@@ -33,18 +33,43 @@ float cast_to<bfloat16_t, float>(bfloat16_t x) {
   return make_fp32(x);
 }
 
-float make_fp32(bfloat16_t x) {
-  unsigned int y = x;
+// undefined behaviour, https://stackoverflow.com/questions/98650/what-is-the-strict-aliasing-rule
+// typedef union
+// {
+//   float f;
+//   unsigned int u;
+//   bfloat16_t b[2];
+// } union_b;
+//
+//
+// inline float make_fp32(bfloat16_t x) {
+//   union_b tmp;
+//   tmp.u = 0;
+//   tmp.b[1] = x;
+//   return tmp.f;
+// }
+//
+// inline bfloat16_t make_bf16(float x) {
+//   union_b tmp;
+//   tmp.f = x;
+//   return tmp.b[1];
+// }
+
+#pragma GCC push_options
+#pragma GCC optimize "no-strict-aliasing"
+inline float make_fp32(bfloat16_t x) {
+  unsigned int y = static_cast<unsigned int>(x);
   y = y << 16;
   float* res = reinterpret_cast<float*>(&y);
   return *res;
 }
 
-bfloat16_t make_bf16(float x) {
+inline bfloat16_t make_bf16(float x) {
   int* res = reinterpret_cast<int*>(&x);
   *res = *res >> 16;
   return (bfloat16_t)*res;
 }
+#pragma GCC pop_options
 
 template <typename T>
 void init_vector(T* v, int num_size, float range1, float range2, int seed) {
@@ -185,18 +210,20 @@ int get_data_size(jd::data_type dt) {
   return jd::type_size.at(dt);
 }
 
+#pragma GCC optimize "no-strict-aliasing"
 float get_exp(float x) {
   unsigned int max = 0x42b17218;
   unsigned int min = 0xc2aeac50;
-  float fmax = *reinterpret_cast<float*>(&max);
-  float fmin = *reinterpret_cast<float*>(&min);
-  if (x < fmin) x = fmin;
-  if (x > fmax) {
+  float* fmax = reinterpret_cast<float*>(&max);
+  float* fmin = reinterpret_cast<float*>(&min);
+  if (x < *fmin) x = *fmin;
+  if (x > *fmax) {
     return INFINITY;
   } else {
     return expf(x);
   }
 }
+#pragma GCC optimize "strict-aliasing"
 
 // todo:add a erf_gelu version.
 float get_gelu(float x) {

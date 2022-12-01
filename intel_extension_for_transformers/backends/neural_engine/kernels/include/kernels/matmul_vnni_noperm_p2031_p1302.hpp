@@ -52,7 +52,7 @@ class matmul_vnni_noperm_p2031_p1302_kd_t : public kernel_desc_t {
 
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const ssd::matmul_param_t& jit_param() const { return jit_param_; }
-  const bool using_unified_kernel() const { return using_unified_kernel_; }
+  const bool& using_unified_kernel() const { return using_unified_kernel_; }
 
   inline std::vector<dim_t> shape() const {
     std::vector<dim_t> result(op_desc_.tensor_descs()[ssd::SRC0].shape());  // bs0 bs1 M K
@@ -61,7 +61,7 @@ class matmul_vnni_noperm_p2031_p1302_kd_t : public kernel_desc_t {
   }
 
  private:
-  bool matmul_params_init(const jd::operator_desc& op_desc);
+  bool matmul_params_init();
 
   jd::operator_desc op_desc_;
   ssd::matmul_param_t jit_param_;

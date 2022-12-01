@@ -18,6 +18,7 @@ namespace jd {
 kernel_desc_proxy::kernel_desc_proxy(const operator_desc& op_desc) {
   std::shared_ptr<const kernel_desc_t> result = nullptr;
   auto status = create_proxy_object(result, op_desc);
+  if (!status) SPARSE_LOG(ERROR) << "Found no kernel_desc supported" << std::endl;
   reset_sp(result);
 }
 
@@ -44,20 +45,21 @@ bool kernel_desc_proxy::create_proxy_object(std::shared_ptr<const kernel_desc_t>
   }
   // Step 2.2: Get the first && success object in impl_list_.
   auto& impl_list = (*impl_list_);
-  for (int i = 0; i < impl_list.size(); ++i) {
+  for (auto& impl : impl_list) {
     candidate_kd = nullptr;
-    auto status = impl_list[i](candidate_kd, op_desc);  // kd->create() + kd->init()
+    auto status = impl(candidate_kd, op_desc);  // kd->create() + kd->init()
     if (status) {
-      break;
+      result_ref = candidate_kd;
+      return true;
     }
   }
-  result_ref = candidate_kd;
-  return true;
+  return false;
 }
 
 kernel_proxy::kernel_proxy(const kernel_desc_proxy& kdp) {
   std::shared_ptr<const kernel_t> result = nullptr;
   auto status = create_proxy_object(result, kdp.get_sp());
+  if (!status) SPARSE_LOG(ERROR) << "Found no kernel supported" << std::endl;
   reset_sp(result);
 }
 
@@ -99,6 +101,7 @@ void kernel_proxy::execute(const std::vector<const void*>& rt_data) {
     vtune_wrapper.profiling_end();
   }
 #endif
+  if (!status) SPARSE_LOG(ERROR) << "Execution failed" << std::endl;
   return;
 }
 }  // namespace jd

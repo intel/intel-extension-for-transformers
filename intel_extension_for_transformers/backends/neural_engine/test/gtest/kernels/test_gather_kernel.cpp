@@ -118,7 +118,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
 
   std::vector<binaryop_attr> binaryops;
   std::vector<binaryop_attr> binaryops_copy;
-  for (int k = 0; k < append_ops.size(); k++) {
+  for (size_t k = 0; k < append_ops.size(); k++) {
     auto& append_op = append_ops[k];
     if (k == 0)
       attr_map["binaryop_list"] = "";
@@ -154,7 +154,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
   for (int i = 0; i < dst_shape[0]; ++i) {
 #pragma omp simd
     for (int j = 0; j < dst_shape[1]; ++j) {
-      for (int k = 0; k < append_ops.size(); k++) {
+      for (size_t k = 0; k < append_ops.size(); k++) {
         if (append_ops[k] == "append_sum") {
           int broad_cast_i = i;
           if (ts_descs[k + 3].shape()[0] == 1) broad_cast_i = 0;
@@ -200,7 +200,7 @@ static auto CasesFp32 = []() {
       src0_shape = {30522, inner_size, 1, 1};
       src1_shape = {256};
       dst_shape = {src1_shape[0]};
-      for (int i = 1; i < src0_shape.size(); i++) dst_shape.push_back(src0_shape[i]);
+      for (size_t i = 1; i < src0_shape.size(); i++) dst_shape.push_back(src0_shape[i]);
       src0 = {src0_shape, dt, jd::format_type::undef};
       src1 = {src1_shape, data_type::s32, jd::format_type::undef};
       dst = {dst_shape, dt, jd::format_type::undef};
@@ -236,7 +236,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   auto& dst_shape = tensor_desc[2].shape();
   auto attrs_map = tpi.param.args.first.conf.attrs();
 
-  auto add_dt_info = [&](data_type dt, const std::string& tensor_dt) {
+  auto add_dt_info = [&](const std::string& tensor_dt) {
     switch (tensor_desc[0].dtype()) {
       case data_type::s8:
         params.push_back(tensor_dt + "_s8");
@@ -252,14 +252,14 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
     }
   };
 
-  add_dt_info(tensor_desc[0].dtype(), "src0");
+  add_dt_info("src0");
   for (auto&& i : src0_shape) params.push_back(std::to_string(i));
-  add_dt_info(tensor_desc[1].dtype(), "src1");
+  add_dt_info("src1");
   for (auto&& i : src1_shape) params.push_back(std::to_string(i));
-  add_dt_info(tensor_desc[2].dtype(), "dst");
+  add_dt_info("dst");
   for (auto&& i : dst_shape) params.push_back(std::to_string(i));
-  for (int i = 3; i < tensor_desc.size(); i++) {
-    add_dt_info(tensor_desc[i].dtype(), "add" + std::to_string(i - 3));
+  for (size_t i = 3; i < tensor_desc.size(); i++) {
+    add_dt_info("add" + std::to_string(i - 3));
     for (auto&& j : tensor_desc[i].shape()) params.push_back(std::to_string(j));
   }
   return join_str(params, "_");

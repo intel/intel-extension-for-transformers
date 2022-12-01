@@ -68,6 +68,12 @@ static std::string init_info_layernorm_ba(std::vector<dim_t> shape) {
      << ","
      << "layernorm_ba"
      << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
   return ss.str();
 }
 
@@ -77,6 +83,12 @@ static std::string init_info_eltwiseop(std::vector<dim_t> shape) {
      << ","
      << "eltwiseop"
      << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
   return ss.str();
 }
 

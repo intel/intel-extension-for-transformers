@@ -48,8 +48,7 @@ class jit_gather_t : public jit_generator {
     mov(src_addr, ptr[reg_param + GATHER_GET_OFF(src)]);
     mov(idx_addr, ptr[reg_param + GATHER_GET_OFF(idx)]);
     mov(dst_addr, ptr[reg_param + GATHER_GET_OFF(dst)]);
-    for (int i = 0; i < param_.binaryop_attrs.size(); i++) {
-      int offset = GATHER_GET_OFF(binaryop_addrs) + i * 4;
+    for (size_t i = 0; i < param_.binaryop_attrs.size(); i++) {
       mov(binaryop_addr[i], ptr[reg_param + GATHER_GET_OFF(binaryop_addrs)]);
     }
   }

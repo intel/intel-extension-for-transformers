@@ -84,8 +84,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
         reinterpret_cast<int8_t*>(dst)[i * col + j] =
             (int8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
     } else {
-      for (int j = 0; j < col; j++)
-        reinterpret_cast<float*>(dst)[i * col + j] = float_dst_data[i * col + j] * scale, quant_list;
+      for (int j = 0; j < col; j++) reinterpret_cast<float*>(dst)[i * col + j] = float_dst_data[i * col + j] * scale;
     }
   }
 }
@@ -179,7 +178,6 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   const unsigned int seed = 667095;
   std::srand(seed);
   for (int i = 0; i < num; i++) {
-    unsigned int seed_tmp = seed + i;
     float rand_val = std::rand() % 256 - 128;  // NOLINT
     assign_val(src, in_dt, rand_val, i);
     assign_val(src_ref, in_dt, rand_val, i);

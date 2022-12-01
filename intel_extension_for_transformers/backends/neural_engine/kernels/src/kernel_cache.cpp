@@ -54,6 +54,7 @@ const std::shared_ptr<const kernel_t>& kernel_cache::find_or_construct(
   BLOCK_REST = true;
   std::shared_ptr<const kernel_t> derived_prim = nullptr;
   auto status = callback(derived_prim);
+  if (!status) SPARSE_LOG(ERROR) << "Found no cache for this operator_desc" << std::endl;
   set(derived_prim);
   BLOCK_REST = false;
   cv_.notify_all();
