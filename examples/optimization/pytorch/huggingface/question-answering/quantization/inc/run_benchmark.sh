@@ -54,14 +54,12 @@ function init_params {
 function run_benchmark {
     extra_cmd=""
     MAX_SEQ_LENGTH=384
-    max_eval_samples=`expr ${iters} \* ${batch_size}`
     echo ${max_eval_samples}
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy_only"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark"
-        extra_cmd=$extra_cmd" --max_eval_samples ${max_eval_samples}"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
