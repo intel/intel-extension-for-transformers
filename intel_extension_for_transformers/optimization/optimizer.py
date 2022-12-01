@@ -32,7 +32,7 @@ from intel_extension_for_transformers import(
 )
 from intel_extension_for_transformers.optimization.utils.utility import LazyImport
 from intel_extension_for_transformers.optimization.quantization import QuantizationMode
-from transformers import PreTrainedModel
+from transformers import PreTrainedModel, PretrainedConfig
 from transformers.file_utils import WEIGHTS_NAME
 from typing import Callable, Optional, Union, List
 
@@ -106,6 +106,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         self.teacher_model = None
         self._eval_func = None
         self._train_func = None
+        self._calib_func = None
         self._calib_dataloader = None
         self.output_dir = output_dir
         self.quant_config = None
@@ -124,6 +125,10 @@ class NoTrainerOptimizer:   # pragma: no cover
     @property
     def train_func(self):
         return self._train_func
+
+    @property
+    def calib_func(self):
+        return self._calib_func
 
     @property
     def provider(self):
@@ -184,7 +189,8 @@ class NoTrainerOptimizer:   # pragma: no cover
             self.init_quantizer(quant_config=quant_config, provider=provider)
         if self._eval_func is not None:
             self.quantizer.eval_func = self._eval_func
-
+        if self._calib_func is not None:
+            self.quantizer.calib_func = self._calib_func
         if self.quant_config.approach == QuantizationMode.POSTTRAININGSTATIC.value:
             assert self._calib_dataloader is not None, \
                 "Please pass calib_dataloader to NoTrainerOptimizer.calib_dataloader"
@@ -207,12 +213,15 @@ class NoTrainerOptimizer:   # pragma: no cover
         provider: str = Provider.INC.value,
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
+        calib_func: Optional[Callable] = None,
         calib_dataloader=None,
     ):
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:
             self._train_func = train_func
+        if calib_func is not None:
+            self._calib_func = calib_func
         if calib_dataloader is not None:
             self._calib_dataloader = calib_dataloader
 
@@ -314,9 +323,11 @@ class NoTrainerOptimizer:   # pragma: no cover
         return self.opt_model
 
     def _save_inc_int8(self, opt_model, output_dir):
+        os.makedirs(output_dir, exist_ok=True)
         self.model.config.architectures = [self.model.__class__.__name__]
         self.model.config.torch_dtype = "int8"
-        self.model.config.save_pretrained(output_dir)
+        if isinstance(self.model.config, PretrainedConfig):
+            self.model.config.save_pretrained(output_dir)
         weights_file = os.path.join(os.path.abspath(
           os.path.expanduser(output_dir)), WEIGHTS_NAME)
         torch.save(opt_model.quantized_state_dict(), weights_file)
