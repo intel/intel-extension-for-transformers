@@ -62,7 +62,7 @@ python prepare_dataset.py --dataset_name=squad --output_dir=./data
 
 ### 2.2 Get sparse model
 
-Use the [sparse model](https://huggingface.co/Intel/distilbert-base-uncased-squadv1.1-sparse-80-1X4-block) we publiced on huggingface which is distilbert base on SQuADv1.1 with sparse ration 80 on 1X4 block(include int8 onnx model and int8 Neural Engine IR).
+Use the [sparse model](https://huggingface.co/Intel/distilbert-base-uncased-squadv1.1-sparse-80-1X4-block) we publiced on huggingface which is distilbert base on SQuADv1.1 with sparse ratio 80% on 1X4 block(include int8 onnx model and int8 Neural Engine IR).
 You can also get INT8 ONNX sparse model from optimization module by setting precision=int8, command as follows:
 ```shell
 bash prepare_model.sh --input_model=Intel/distilbert-base-uncased-squadv1.1-sparse-80-1x4-block-pruneofa  --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=int8
