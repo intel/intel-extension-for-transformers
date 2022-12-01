@@ -105,6 +105,7 @@ set(BOOST_INC_DIRS
         ${NE_THIRD_PARTY_DIR}/boost/libs/tuple/include
         ${NE_THIRD_PARTY_DIR}/boost/libs/predef/include
         ${NE_THIRD_PARTY_DIR}/boost/libs/mp11/include
+        ${NE_THIRD_PARTY_DIR}/cereal/include
 )
 
 if(WIN32)

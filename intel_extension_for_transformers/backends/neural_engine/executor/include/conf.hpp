@@ -24,6 +24,14 @@
 
 #include "glog/logging.h"
 #include "yaml-cpp/yaml.h"
+
+#include "cereal/access.hpp"
+#include "cereal/archives/portable_binary.hpp"
+#include "cereal/types/map.hpp"
+#include "cereal/types/memory.hpp"
+#include "cereal/types/string.hpp"
+#include "cereal/types/vector.hpp"
+
 using std::map;
 using std::string;
 using std::vector;
@@ -38,6 +46,8 @@ namespace executor {
 
 class AttrConfig {
  public:
+  AttrConfig() = default;
+
   explicit AttrConfig(const YAML::Node node) {
     for (auto it = node.begin(); it != node.end(); ++it) {
       YAML::Node key = it->first;
@@ -50,10 +60,19 @@ class AttrConfig {
 
  protected:
   map<string, string> attrs_;
+
+  // serialization
+  friend class cereal::access;
+  template<class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(attrs_);
+  }
 };
 
 class TensorConfig {
  public:
+  TensorConfig() = default;
+
   TensorConfig(const string& name, const YAML::Node& node)
       : name_(name), dtype_("fp32"), strides_({}), count_(0), location_({}) {
     for (auto it = node.begin(); it != node.end(); ++it) {
@@ -93,10 +112,19 @@ class TensorConfig {
   vector<int64_t> strides_;
   // (TODO) not good to add location in TensorConfig, it's used for weight tensor parse
   vector<int64_t> location_;
+
+  // serialization
+  friend class cereal::access;
+  template<class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(name_, count_, shape_, dtype_, strides_, location_);
+  }
 };
 
 class OperatorConfig {
  public:
+  OperatorConfig() = default;
+
   OperatorConfig(const string name, const YAML::Node& node)
       : name_(name) {
     for (auto v = node.begin(); v != node.end(); ++v) {
@@ -145,10 +173,19 @@ class OperatorConfig {
   vector<shared_ptr<TensorConfig>> inputs_;
   vector<shared_ptr<TensorConfig>> outputs_;
   shared_ptr<AttrConfig> attrs_;
+
+  // serialization
+  friend class cereal::access;
+  template<class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(name_, type_, inputs_, outputs_, attrs_);
+  }
 };
 
 class ModelConfig {
  public:
+  ModelConfig() = default;
+
   explicit ModelConfig(const YAML::Node& node) {
     YAML::Node model_config = node["model"];
     // iter out all the config and initialize
@@ -185,6 +222,13 @@ class ModelConfig {
  protected:
   string name_;
   vector<shared_ptr<OperatorConfig>> operators_;
+
+  // serialization
+  friend class cereal::access;
+  template<class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(name_, operators_);
+  }
 };
 
 }  // namespace executor

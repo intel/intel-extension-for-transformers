@@ -73,7 +73,9 @@ target_include_directories(neural_engine
 )
 
 # link against the third party libraries
-set(LINK_LIBS ${DEP_LIBS})
+set(LINK_LIBS
+    ${DEP_LIBS}
+)
 
 if(NE_WITH_SPARSELIB)
   target_compile_definitions(neural_engine PRIVATE WITH_SPARSELIB)

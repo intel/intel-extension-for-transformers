@@ -11,19 +11,18 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #include "model.hpp"
 
 namespace executor {
 
 Model::Model(const ModelConfig& conf, const string& weight_root) :
-              weight_root_(weight_root) { Init(conf); }
+              model_conf_(std::make_shared<ModelConfig>(conf)), weight_root_(weight_root) { Init(conf); }
 
 Model::Model(const string& conf_file, const string& weight_root) :
               weight_root_(weight_root) {
-  ModelConfig conf = ModelConfig(conf_file);
-  CHECK_EQ(conf.CheckConfig(), true) << "model config not right....";
-  Init(conf);
+  model_conf_ = std::make_shared<ModelConfig>(conf_file);
+  CHECK_EQ(model_conf_->CheckConfig(), true) << "model config not right....";
+  Init(*model_conf_);
 }
 
 Model::Model(const ModelConfig& conf, const string& weight_root, const ExecutionOptions& execution_options)
@@ -42,6 +41,95 @@ Model::~Model() {
   }
   if (MemoryAllocator::SharedEnv()) {
     RemoveSharedWeight(false);
+  }
+}
+
+string Model::Serialize() {
+  // serialize model conf
+  std::stringstream model_conf_stream;
+  cereal::PortableBinaryOutputArchive model_conf_oa(model_conf_stream);
+  model_conf_oa(*model_conf_);
+  string model_conf_str = model_conf_stream.str();
+  size_t model_conf_len = model_conf_str.length();
+  // get weight string
+  std::ifstream weight_file(weight_root_, std::ios::in | std::ios::binary);
+  size_t weight_len = 0;
+  std::shared_ptr<char> weight_c;
+  if (weight_file) {
+    weight_len = static_cast<size_t>(weight_file.seekg(0, std::ios::end).tellg());
+    weight_file.seekg(0, std::ios::beg);
+    weight_c = std::shared_ptr<char>(new char[weight_len],
+                                     std::default_delete<char[]>());
+    weight_file.read(weight_c.get(), weight_len);
+    weight_file.close();
+  } else {
+    weight_c = std::shared_ptr<char>(const_cast<char*>(weight_root_.c_str()));
+    weight_len = weight_root_.length();
+  }
+  // combine model_conf_len, weight_len, model_config, weight into one string
+  std::shared_ptr<char> model_conf_len_c = std::shared_ptr<char>(new char[sizeof(size_t)+1],
+                                                             std::default_delete<char[]>());
+#if _WIN32
+  _snprintf(model_conf_len_c.get(), sizeof(size_t)+1, "%ul64", model_conf_len);
+#else
+  snprintf(model_conf_len_c.get(), sizeof(size_t)+1, "%ul64", model_conf_len);
+#endif
+  std::shared_ptr<char> weight_len_c = std::shared_ptr<char>(new char[sizeof(size_t)+1],
+                                                             std::default_delete<char[]>());
+#if _WIN32
+  _snprintf(weight_len_c.get(), sizeof(size_t)+1, "%ul64", weight_len);
+#else
+  snprintf(weight_len_c.get(), sizeof(size_t)+1, "%ul64", weight_len);
+#endif
+  string serialization = string(model_conf_len_c.get(), sizeof(size_t)) \
+                         + string(weight_len_c.get(), sizeof(size_t)) \
+                         + model_conf_str + string(weight_c.get(), weight_len);
+  return serialization;
+}
+
+void Model::Deserialize(const string& serialization) {
+  // get model conf len
+  size_t model_conf_len = StringToNum<size_t>(serialization.substr(0, sizeof(size_t)));
+  // get weight len
+  size_t weight_len = StringToNum<size_t>(serialization.substr(sizeof(size_t), sizeof(size_t)));
+  // deserialize model conf:
+  // weight_len and model_conf_len are size_t, so the location of model_conf starts 2 * sizeof(size_t)
+  string model_conf_str = serialization.substr(2 * sizeof(size_t), model_conf_len);
+  std::stringstream model_conf_stream;
+  model_conf_stream << model_conf_str;
+  cereal::PortableBinaryInputArchive model_conf_ia(model_conf_stream);
+  model_conf_ = std::make_shared<ModelConfig>();
+  model_conf_ia(*model_conf_);
+  // get weight
+  weight_root_ = serialization.substr(2 * sizeof(size_t) + model_conf_len, weight_len);
+  // init model
+  Init(*model_conf_);
+}
+
+void Model::SerializeToFile(const string& file_name) {
+  std::ofstream model_file(file_name, std::ios::out | std::ios::binary);
+  if (model_file) {
+    model_file.seekp(0, std::ios::beg);
+    string model_str = Serialize();  // serialize
+    model_file.write(model_str.c_str(), model_str.length());
+    model_file.close();
+  } else {
+    LOG(ERROR) << "Can't open serialization file: " << file_name;
+  }
+}
+
+void Model::DeserializeFromFile(const string& file_name) {
+  std::ifstream model_file(file_name, std::ios::in | std::ios::binary);
+  if (model_file) {
+    size_t model_len = static_cast<size_t>(model_file.seekg(0, std::ios::end).tellg());
+    model_file.seekg(0, std::ios::beg);
+    std::shared_ptr<char> model_c = std::shared_ptr<char>(new char[model_len],
+                                                          std::default_delete<char[]>());
+    model_file.read(model_c.get(), model_len);
+    Deserialize(string(model_c.get(), model_len));  // deserialize
+    model_file.close();
+  } else {
+    LOG(ERROR) << "Can't open deserialization file: " << file_name;
   }
 }
 
@@ -191,6 +279,9 @@ void Model::InitSharedWeight(char* space_name) {
     std::ifstream inFile(weight_root_, std::ios::in | std::ios::binary);
     size_t weight_size =
         inFile ? static_cast<size_t>(inFile.seekg(0, std::ios::end).tellg()) : static_cast<size_t>(weight_root_.size());
+    if (inFile) {
+      inFile.close();
+    }
     // 2 * weight_size: an empirical value to check weight buffers could be allocated enough in shared memory
     static ipc::managed_shared_memory managed_shm(ipc::open_or_create, space_name, 2 * weight_size);
   }

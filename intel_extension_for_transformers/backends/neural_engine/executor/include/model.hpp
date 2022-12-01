@@ -16,7 +16,6 @@
 #define ENGINE_EXECUTOR_INCLUDE_MODEL_HPP_
 
 #include <stdio.h>
-
 #include <algorithm>
 #include <map>
 #include <memory>
@@ -25,6 +24,8 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
+#include <sstream>
+#include <iomanip>
 #include "common.hpp"
 #include "glog/logging.h"
 #include "memory_allocator.hpp"
@@ -44,10 +45,17 @@ namespace executor {
  */
 class NEURALENGINE_API_ Model {
  public:
+  Model() = default;
   explicit Model(const ModelConfig& conf, const string& weight_root);
   explicit Model(const string& conf_file, const string& weight_root);
   explicit Model(const ModelConfig& conf, const string& weight_root, const ExecutionOptions& execution_options);
   virtual ~Model();
+
+  string Serialize();
+  void Deserialize(const string& serialization);
+
+  void SerializeToFile(const string& file_name);
+  void DeserializeFromFile(const string& file_name);
 
   void Init(const ModelConfig& conf);
   void RemoveSharedWeight(bool is_begin = false,
@@ -107,6 +115,7 @@ class NEURALENGINE_API_ Model {
 
  protected:
   string name_;
+  shared_ptr<ModelConfig> model_conf_;
   string weight_root_;
   vector<shared_ptr<Dispatcher> > operators_;
   vector<string> operator_names_;

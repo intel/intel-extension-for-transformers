@@ -91,3 +91,6 @@
 	path = intel_extension_for_transformers/backends/neural_engine/third_party/oneDNNGraph
 	url = https://github.com/oneapi-src/oneDNN.git
 	branch = dev-graph
+[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/cereal"]
+	path = intel_extension_for_transformers/backends/neural_engine/third_party/cereal
+	url = https://github.com/USCiLab/cereal

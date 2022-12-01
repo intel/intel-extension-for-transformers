@@ -433,6 +433,7 @@ T StringToNum(const string& str) {
 template float StringToNum<float>(const string& str);
 template int64_t StringToNum<int64_t>(const string& str);
 template int StringToNum<int>(const string& str);
+template size_t StringToNum<size_t>(const string& str);
 
 template <typename T>
 float GetSparseRatio(const T* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize) {
