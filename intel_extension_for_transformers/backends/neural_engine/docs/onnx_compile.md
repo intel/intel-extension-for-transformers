@@ -1,4 +1,9 @@
-# Compile an ONNX Model to Engine IR
+# Compile an ONNX model to Engine IR
+1. [Introduction](#Introduction)  
+2. [Supported ONNX Format](#Supported-ONNX-Format)  
+3. [Compile Examples](#Compile-Examples)  
+3.1 [Prepare ONNX Model](#Prepare-ONNX-Model)  
+3.2 [Compile to IR](#Compile-to-IR)  
 
 ## Introduction
 
@@ -6,7 +11,7 @@ The Neural Engine as a backend supports frozen static graph models from ONNX dee
 
 ![](imgs/compile_workflow.png)
 
-## ONNX format supported by compile module
+## Supported ONNX Format
 Neural Engine could compile several ONNX format models like fp32, bf16, int8(qlinear/qdq). Here are the respective QKV MatMul graphs opened by netron.  
 Notice: As for int8 model, Neural Engine only supports int8 matmul with s8 weight and u8 activation now. And we will support more int8 operators in the future.  
 
@@ -19,10 +24,10 @@ The qdq model will insert QuantizeLinear and DequantizeLinear before int8 operat
 The qdq model will insert QuantizeLinear before int8 operator and modify MatMul to QLinearMatMul. If you want to get fp32 output and you also need to insert DequantizeLinear. You can see there are QuantizeLinear before QLinearMatMul and DequantizeLinear after it.  
 ![](imgs/onnx_qlinear.png)
 
-## How to use
+## Compile Examples
 Here is the example [distilbert_base_mrpc](../../../../examples/deployment/neural_engine/mrpc/distilbert_base_uncased) to show how to compile ONNX model to Neural Engine IR.
 
-### 1.Prepare model
+### Prepare ONNX Model
 
 We have prepared a script to get the model from [Hugging Face](https://huggingface.co/) and exported it following steps in example README.md. You can get FP32 ONNX model from optimization module by setting precision=fp32. The command is as follows:
 ```shell
@@ -35,7 +40,7 @@ bash prepare_model.sh --input_model=textattack/distilbert-base-uncased-MRPC  --t
 ```
 After that, you can get the <fp32/bf16/int8>-model.onnx under model_and_tokenizer folder.
 
-### 2.Compile model to Nerual Engine IR
+### Compile to IR
 
 Compiling a model to IR is much easy. You just use compile API in python as follows and IR will be stored in the specified directory path like the following fp32 model example.
 ```python
