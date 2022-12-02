@@ -45,7 +45,7 @@ class TestDataAugmentation(unittest.TestCase):
         aug.data_augment()
         print("Augmented data:")
         count = 0
-        with open(aug.output_path) as f:
+        with open(aug.output_path, encoding='utf8') as f:
             for line in f:
                 count += 1
                 print(line)

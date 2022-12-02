@@ -20,8 +20,17 @@ os.environ["WANDB_DISABLED"] = "true"
 
 
 def main_worker(rank, world_size, model, teacher_model, dataset):
-    distributed_init("gloo", world_size=world_size, rank=rank,
-                     init_method='tcp://127.0.0.1:23456')
+    try:
+        distributed_init("gloo",
+                         world_size=world_size,
+                         rank=rank,
+                         init_method='tcp://127.0.0.1:23456')
+    except:
+        distributed_init("gloo",
+                         world_size=world_size,
+                         rank=rank,
+                         init_method='tcp://127.0.0.1:12345')
+
     training_args = TrainingArguments(
         output_dir='tmp_trainer',
         overwrite_output_dir=True,
