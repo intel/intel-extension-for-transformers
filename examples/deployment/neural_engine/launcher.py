@@ -458,7 +458,9 @@ class OneInstanceLauncher(Launcher):
                     memory_planning = get_memory_planning(cmd_prefix)
 
 
-                    cmd.append(args.program)
+                    import shlex
+                    cmd.append("-e")
+                    cmd.append(shlex.quote(args.program))
                     cmd_for_print.append(args.program) 
                     batch_size = replace_batch(cmd, args, batch_size)
                     replace_batch(cmd_for_print, args, batch_size)
@@ -484,7 +486,8 @@ class OneInstanceLauncher(Launcher):
                     set_instance_num(env_cmd, instance)
                     #print("env is "+str(env_cmd))
 
-                    process = subprocess.Popen(cmd, env=env_cmd)
+                    process = subprocess.Popen(cmd, env=env_cmd, shell=False, 
+                                                stderr=subprocess.PIPE, stdout=subprocess.PIPE)
                     processes.append(process)
                     for process in processes:
                         process.wait()
@@ -540,7 +543,9 @@ class OneInstanceLauncher(Launcher):
                         memory_planning = get_memory_planning(cmd_prefix)
 
 
-                        cmd.append(args.program)
+                        import shlex
+                        cmd.append("-e")
+                        cmd.append(shlex.quote(args.program))
                         cmd_for_print.append(args.program)
                         batch_size = replace_batch(cmd, args, batch_size)
                         replace_batch(cmd_for_print, args, batch_size)
@@ -565,7 +570,8 @@ class OneInstanceLauncher(Launcher):
                         set_weight_sharing(env_cmd, weight_sharing)
                         set_instance_num(env_cmd, instance)
 
-                        process = subprocess.Popen(cmd, env=env_cmd)
+                        process = subprocess.Popen(cmd, env=env_cmd, shell=False,
+                                                    stderr=subprocess.PIPE, stdout=subprocess.PIPE)
                         processes.append(process)
                         for process in processes:
                             process.wait()

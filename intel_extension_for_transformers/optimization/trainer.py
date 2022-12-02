@@ -2147,7 +2147,8 @@ class BaseTrainer():
         lc = None
 
         if self.dynamic_config.length_config is not None:
-            lc = eval(self.dynamic_config.length_config)
+            import ast
+            lc = ast.literal_eval(self.dynamic_config.length_config)
         else:
             assert self.dynamic_config.max_length is not None, \
             """

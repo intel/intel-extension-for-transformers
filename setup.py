@@ -20,11 +20,15 @@ except Exception as error:
 
 def which(thefile):
     path = os.environ.get("PATH", os.defpath).split(os.pathsep)
+    if path == None:
+        return None
     for d in path:
         fname = os.path.join(d, thefile)
         fnames = [fname]
         if sys.platform == 'win32':
             exts = os.environ.get('PATHEXT', '').split(os.pathsep)
+            if exts == None:
+                return None
             fnames += [fname + ext for ext in exts]
         for name in fnames:
             if os.access(name, os.F_OK | os.X_OK) and not os.path.isdir(name):

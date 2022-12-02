@@ -44,7 +44,16 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 from tokenization import (BasicTokenizer, BertTokenizer, whitespace_tokenize)
 from utils import is_main_process, format_step
+import builtins
+import io
 
+safe_builtins = {
+    'range',
+    'complex',
+    'set',
+    'frozenset',
+    'slice',
+}
 
 torch._C._jit_set_profiling_mode(False)
 torch._C._jit_set_profiling_executor(False)
@@ -725,6 +734,20 @@ class GradientClipper:
         if clip_coef < 1:
             multi_tensor_applier(self.multi_tensor_scale, self._overflow_buf, [l, l], clip_coef)
 
+class RestrictedUnpickler(pickle.Unpickler):
+
+    def find_class(self, module, name):
+        # Only allow safe classes from builtins.
+        if module == "builtins" and name in safe_builtins:
+            return getattr(builtins, name)
+        # Forbid everything else.
+        raise pickle.UnpicklingError("global '%s.%s' is forbidden" %
+                                     (module, name))
+
+def restricted_loads(s):
+    """Helper function analogous to pickle.loads()."""
+    return RestrictedUnpickler(io.BytesIO(s)).load()
+
 
 def train_func(model, agent, args, dllogger, global_step, train_examples, num_train_optimization_steps, n_gpu, device, optimizer):
     model = agent.model.model
@@ -741,7 +764,7 @@ def train_func(model, agent, args, dllogger, global_step, train_examples, num_tr
     train_features = None
     try:
         with open(cached_train_features_file, "rb") as reader:
-            train_features = pickle.load(reader)
+            train_features = restricted_loads(reader)
     except:
         train_features = convert_examples_to_features(
             examples=train_examples,
@@ -917,8 +940,9 @@ def eval_func(model, args, dllogger, tokenizer, device):
     if args.do_eval and is_main_process():
         import sys
         import subprocess
-        eval_out = subprocess.check_output([sys.executable, args.eval_script,
-                                            args.predict_file, args.output_dir + "/predictions.json"])
+        import shlex
+        eval_out = subprocess.check_output([sys.executable, shlex.quote(args.eval_script), 
+                                            shlex.quote(args.predict_file), shlex.quote(args.output_dir) + "/predictions.json"])
         scores = str(eval_out).strip()
         exact_match = float(scores.split(":")[1].split(",")[0])
         f1 = float(scores.split(":")[2].split("}")[0])

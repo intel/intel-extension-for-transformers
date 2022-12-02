@@ -693,7 +693,8 @@ def main():
         import torchprofile
         size = (1, data_args.max_seq_length)
         dummy_inputs = torch.ones(size, dtype=torch.long).to(training_args.device)
-        rates = eval(optim_args.measure_rate)
+        import ast
+        rates = ast.literal_eval(optim_args.measure_rate)
 
         results = {}
         # Create output directory if needed
