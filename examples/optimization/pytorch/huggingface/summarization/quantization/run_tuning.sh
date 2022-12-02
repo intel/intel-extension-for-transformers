@@ -42,28 +42,52 @@ function init_params {
 
 # run_tuning
 function run_tuning {
-    if [ "${topology}" = "pegasus_samsum_dynamic" ]; then
+    if [ "${topology}" == "pegasus_samsum_dynamic" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="lvwerra/pegasus-samsum"
+        approach="PostTrainingDynamic"
+    elif [ "${topology}" == "t5_base_cnn_dynamic" ]; then
+        DATASET_NAME="cnn_dailymail"
+        model_name_or_path="flax-community/t5-base-cnn-dm"
         approach="PostTrainingDynamic"
     else
         echo "unsupport topology: ${topology}"
         exit 1
     fi
-    python -u ./run_summarization.py \
-        --model_name_or_path ${model_name_or_path} \
-        --dataset_name ${DATASET_NAME} \
-        --do_eval \
-        --do_train \
-        --per_device_eval_batch_size ${batch_size} \
-        --output_dir ${tuned_checkpoint} \
-        --no_cuda \
-        --tune \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --predict_with_generate \
-        --quantization_approach ${approach} \
-        ${extra_cmd}
+
+    if [ "${DATASET_NAME}" == "cnn_dailymail" ]; then
+        python -u ./run_summarization.py \
+            --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${DATASET_NAME} \
+            --dataset_config "3.0.0" \
+            --source_prefix "summarize: " \
+            --do_eval \
+            --do_train \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --no_cuda \
+            --tune \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --predict_with_generate \
+            --quantization_approach ${approach} \
+            ${extra_cmd}
+    else
+        python -u ./run_summarization.py \
+            --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${DATASET_NAME} \
+            --do_eval \
+            --do_train \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --no_cuda \
+            --tune \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --predict_with_generate \
+            --quantization_approach ${approach} \
+            ${extra_cmd}
+    fi
 }
 
 main "$@"

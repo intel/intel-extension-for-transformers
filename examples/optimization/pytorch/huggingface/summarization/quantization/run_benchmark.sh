@@ -58,15 +58,19 @@ function run_benchmark {
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy_only"
     elif [[ ${mode} == "benchmark" ]]; then
-        mode_cmd=" --benchmark "
+        mode_cmd=" --benchmark --max_eval_samples 100"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
     fi
 
-    if [ "${topology}" = "pegasus_samsum_dynamic" ]; then
+    if [ "${topology}" == "pegasus_samsum_dynamic" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="lvwerra/pegasus-samsum"
+    elif [ "${topology}" == "t5_base_cnn_dynamic" ]; then
+        DATASET_NAME="cnn_dailymail"
+        model_name_or_path="flax-community/t5-base-cnn-dm"
+        extra_cmd=`--dataset_config "3.0.0" --source_prefix "summarize: "`
     else
         echo "unsupport topology: ${topology}"
         exit 1
@@ -78,18 +82,35 @@ function run_benchmark {
     fi
     echo $extra_cmd
 
-    python -u ./run_summarization.py \
-        --model_name_or_path ${model_name_or_path} \
-        --dataset_name ${DATASET_NAME} \
-        --do_eval \
-        --per_device_eval_batch_size ${batch_size} \
-        --output_dir ${tuned_checkpoint} \
-        --no_cuda \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --predict_with_generate \
-        ${mode_cmd} \
-        ${extra_cmd}
+    if [ "${DATASET_NAME}" == "cnn_dailymail" ]; then
+        python -u ./run_summarization.py \
+            --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${DATASET_NAME} \
+            --dataset_config "3.0.0" \
+            --source_prefix "summarize: " \
+            --do_eval \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --no_cuda \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --predict_with_generate \
+            ${mode_cmd} \
+            ${extra_cmd}
+    else
+        python -u ./run_summarization.py \
+            --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${DATASET_NAME} \
+            --do_eval \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --no_cuda \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --predict_with_generate \
+            ${mode_cmd} \
+            ${extra_cmd}
+    fi
 }
 
 main "$@"
