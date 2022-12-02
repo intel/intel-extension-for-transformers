@@ -2,14 +2,20 @@ Deploy and Integration
 =====
 In this tutorial, we will deploy a TF/ONNX model using Engine inference or through Manual customized yaml and weight binary to use Engine inference.
 
-## Architecture
-Neural Engine supports model optimizer, model executor and high performance kernel for multiple devices.
+[1. Architecture](#1-architecture)
+
+[2. Deploy a TF/ONNX model using Engine inference](#2-deploy-a-tfonnx-model-using-engine-inference)
+
+[3. Manual customized yaml and weight binary to use Engine inference](#3-manual-customized-yaml-and-weight-binary-to-use-engine-inference)
+
+## 1. Architecture
+Neural Engine support model optimizer, model executor and high performance kernel for multi device.
 
 <a target="_blank" href="imgs/infrastructure.png">
   <img src="imgs/infrastructure.png" alt="Architecture" width=762 height=672>
 </a>
 
-## Deploy a TF/ONNX model using Engine inference
+## 2. Deploy a TF/ONNX model using Engine inference
 
 ### Generate the Engine Graph through TF/ONNX model
 
@@ -31,7 +37,7 @@ model.inference([input_ids, segment_ids, input_mask])  # input should be numpy a
 
 The `input_ids`, `segment_ids` and `input_mask` are the input numpy array data of a bert model, which have size (batch_size, seq_len). Note that the `out` is a dict contains the output tensor name and value(numpy array).
 
-## Manual customized yaml and weight binary to use Engine inference
+## 3. Manual customized yaml and weight binary to use Engine inference
 
 ### Build the yaml and weight binary
 

@@ -1,4 +1,6 @@
-# Compile a TensorFlow Model to Neural Engine IR
+# The TensorFlow Model Compiler
+
+This document describes the compile module that converts TensorFlow models to the Neural Engine IR.
 
 The `Neural Engine` as a backend for `Intel® Extension for Transformers` currently supports frozen static graph models from two deep learning frameworks (`TensorFlow` and `ONNX`).
 

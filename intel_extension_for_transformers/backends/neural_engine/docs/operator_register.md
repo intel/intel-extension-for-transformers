@@ -1,8 +1,11 @@
-# Add and register a customized operator to engine executor
+# Customized Operators Register
+
 It only takes two steps for developers to register a customized operator: 
 
-1. Add *.h of the customized operator to executor/include/operators;
-2. Add *.cpp of the customized operator to executor/src/operators; 
+[1. Add *.h of the customized operator to executor/include/operators](#1-add-h-of-the-customized-operator-to-executorincludeoperators)
+
+[2. Add *.cpp of the customized operator to executor/src/operators](#2-add-cpp-of-the-customized-operator-to-executorsrcoperators)
+
 
 Let's register a Gelu operator to engine executor as an example.
 
@@ -18,6 +21,7 @@ class GeluOperator : public Operator {
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
   string algorithm_;
@@ -112,7 +116,15 @@ this->unref_tensors(input);
 }
 ```
 
+The prepare fusion is necessary for some kernels. Developers should set the dtype of output in prepare function especially when output is not fp32.
+```cpp
+void GeluOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (int8_lut_optimize || int8_lut_acc_test) output[0]->set_dtype("u8");
+}
+```
+
 After creating the customized operator, finally register it to operator class as follow:
 ```
 REGISTER_OPERATOR_CLASS(Gelu);
 ```
+
