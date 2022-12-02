@@ -80,6 +80,8 @@ python run_glue.py
 
 We also supported Distributed Data Parallel training on multi nodes settings for quantization.
 
+**Notice: multi node settings boost performance in the training process and may not show good performance with PostTrainingStatic quantization strategy**
+
 The default strategy we used is `MultiWorkerMirroredStrategy` in Tensorflow, and with `task_type` set as "worker", we are expected to pass following extra parameters to the script:
 
 * `worker`: a string of your worker ip addresses which is separated by comma and there should not be space between each two of them
@@ -99,7 +101,7 @@ bash run_tuning.sh --topology=bert_base_mrpc_static --output_model=./saved_int8 
 * On follower node
 
 ```
-bash run_tuning.sh --topology=bert_base_mrpc_static --output_model=./saved_int8 --worker="localhost:12345,localhost:23456"  --task_index=0
+bash run_tuning.sh --topology=bert_base_mrpc_static --output_model=./saved_int8 --worker="localhost:12345,localhost:23456"  --task_index=1
 ```
 
 Please replace the worker ip address list with your own.
@@ -115,7 +117,7 @@ bash run_benchmark.sh --topology=bert_base_mrpc_static --config=./saved_int8 --m
 * On follower node
 
 ```
-bash run_benchmark.sh --topology=bert_base_mrpc_static --config=./saved_int8 --mode=benchmark --int8=true --worker="localhost:12345,localhost:23456"  --task_index=0
+bash run_benchmark.sh --topology=bert_base_mrpc_static --config=./saved_int8 --mode=benchmark --int8=true --worker="localhost:12345,localhost:23456"  --task_index=1
 ```
 
 Please replace the worker ip address list with your own.

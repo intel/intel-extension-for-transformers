@@ -210,7 +210,7 @@ class OptimizationArguments:
         metadata={"help": "run benchmark."})
     int8: bool = field(
         default=False,
-        metadata={"help":"run benchmark."})
+        metadata={"help":"Whether to use the quantized int8 model."})
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
@@ -420,7 +420,7 @@ def main():
     # endregion
 
     # region Metric function
-    metric = load_metric("glue", data_args.task_name)
+    metric = load_metric("glue", data_args.task_name, cache_dir=model_args.cache_dir)
 
     def compute_metrics(preds, label_ids):
         preds = preds["logits"]
@@ -432,8 +432,42 @@ def main():
 
     # endregion
 
-    if distributed_args.worker is None:
-        strategy = training_args.strategy
+    def eval_func_mrpc(model):
+        label_ids: np.ndarray = None
+        tf_eval_dataset = tf_data["validation"]
+
+        num_examples = sum(1 for _ in (
+            tf_eval_dataset.unbatch() if hasattr(tf_eval_dataset, "unbatch") else tf_eval_dataset))
+        logger.info(f"***** Running Evaluation *****")
+        logger.info(f"  Num examples in dataset = {num_examples}")
+        logger.info(f"  Batch size = {training_args.per_device_eval_batch_size}")
+
+        preds: np.ndarray = None
+        infer = model.signatures["serving_default"]
+
+        for idx, (inputs, labels) in enumerate(tf_eval_dataset):
+            for name in inputs:
+                inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
+
+            results = infer(**inputs)
+            if preds is None:
+                preds = results["Identity"].numpy()
+            else:
+                preds = np.append(preds, results["Identity"].numpy(), axis=0)
+
+            if label_ids is None:
+                label_ids = labels[0].numpy() if isinstance(
+                    labels, list) else labels.numpy()
+            else:
+                label_ids = np.append(
+                    label_ids,
+                    labels[0].numpy()
+                    if isinstance(labels, list) else labels.numpy(),
+                    axis=0)
+        test_predictions = {"logits": preds}
+        metrics = compute_metrics(test_predictions, label_ids)
+
+        return metrics["accuracy"]
 
     with strategy.scope():
         # region Load pretrained model
@@ -520,8 +554,12 @@ def main():
             task_type=strategy.cluster_resolver.task_type if isinstance(strategy, tf.distribute.MultiWorkerMirroredStrategy) else None,
             task_id=strategy.cluster_resolver.task_id if isinstance(strategy, tf.distribute.MultiWorkerMirroredStrategy) else None,
         )
+
+        # use customized eval function
+        optimization.eval_func = eval_func_mrpc
+
         tune_metric = metrics.Metric(
-            name="accuracy", greater_is_better=True, is_relative=True, criterion=0.01,
+            name="accuracy", greater_is_better=True, is_relative=True, criterion=optim_args.perf_tol,
         )
         quantization_config = QuantizationConfig(
             framework="tensorflow",
@@ -544,7 +582,7 @@ def main():
         model.fit(
             tf_data["train"],
             validation_data=validation_data,
-            epochs=int(training_args.num_train_epochs),
+            epochs=2,
             callbacks=callbacks,
         )
     # endregion
@@ -570,39 +608,34 @@ def main():
         num_examples = 0
         if optim_args.int8:
             model = tf.saved_model.load(training_args.output_dir)
+        else:
+            from intel_extension_for_transformers.optimization.utils.utility_tf import keras2SavedModel
+            model = keras2SavedModel(model)
         for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
             num_examples += sum(
                 1 for _ in (tf_dataset.unbatch()
                             if hasattr(tf_dataset, "unbatch") else tf_dataset
                             )
             )
-            if optim_args.int8:
-                preds: np.ndarray = None
-                label_ids: np.ndarray = None
-                infer = model.signatures[list(model.signatures.keys())[0]]
-                for i, (inputs, labels) in enumerate(tf_dataset):
-                    for name in inputs:
-                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
-                    start = time.time()
-                    results = infer(**inputs)
-                    total_time += time.time() - start
-                    for val in results:
-                        if preds is None:
-                            preds = results[val].numpy()
-                        else:
-                            preds = np.append(preds, results[val].numpy(), axis=0)
-                    if label_ids is None:
-                        label_ids = labels.numpy()
-                    else:
-                        label_ids = np.append(label_ids, labels.numpy(), axis=0)
-                eval_metrics = compute_metrics({"logits": preds}, label_ids)
-            else:
+            preds: np.ndarray = None
+            label_ids: np.ndarray = None
+            infer = model.signatures[list(model.signatures.keys())[0]]
+            for i, (inputs, labels) in enumerate(tf_dataset):
+                for name in inputs:
+                    inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
                 start = time.time()
-                eval_predictions = model.predict(tf_dataset)
+                results = infer(**inputs)
                 total_time += time.time() - start
-                eval_metrics = compute_metrics(eval_predictions, raw_dataset["label"])
-                print(f"Evaluation metrics ({task}):")
-                print(eval_metrics)
+                if preds is None:
+                    preds = results["Identity"].numpy()
+                else:
+                    preds = np.append(preds, results["Identity"].numpy(), axis=0)
+                if label_ids is None:
+                    label_ids = labels.numpy()
+                else:
+                    label_ids = np.append(label_ids, labels.numpy(), axis=0)
+            eval_metrics = compute_metrics({"logits": preds}, label_ids)
+
         logger.info("metric ({}) Accuracy: {}".format(task, eval_metrics["accuracy"]))
         logger.info(
             "Throughput: {} samples/sec".format(

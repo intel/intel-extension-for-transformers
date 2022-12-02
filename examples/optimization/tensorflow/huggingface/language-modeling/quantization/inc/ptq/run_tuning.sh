@@ -10,7 +10,7 @@ function main {
 
 # init params
 function init_params {
-  topology="bert_base_mrpc_static"
+  topology="distilgpt2_clm"
   tuned_checkpoint="saved_results"
   extra_cmd=""
   batch_size=8
@@ -53,58 +53,58 @@ function init_params {
 
 # run_tuning
 function run_tuning {
-    batch_size=64
-    if [ "${topology}" = "bert_base_mrpc_static" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="bert-base-cased-finetuned-mrpc"
+    if [ "${topology}" = "distilgpt2_clm" ]; then
+        script="run_clm.py"
+        model_name_or_path="distilgpt2"
+        dataset_name="wikitext"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "legalbert_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="nlpaueb/legal-bert-small-uncased"
+        dataset_config_name="wikitext-2-raw-v1"
+        # remove or change following two parameters if you have enough memory
+        extra_cmd=$extra_cmd" --max_eval_samples 96 --block_size 128 --perf_tol 0.08"
+    elif [ "${topology}" = "distilbert_mlm" ]; then
+        script="run_mlm.py"
+        model_name_or_path="distilbert-base-cased"
+        dataset_name="wikitext"
         approach="PostTrainingStatic"
-        extra_cmd=$extra_cmd" --perf_tol 0.1"
-    elif [ "${topology}" = "xlnet_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="xlnet-base-cased"
+        dataset_config_name="wikitext-2-raw-v1"
+        # remove or change following two parameters if you have enough memory
+        extra_cmd=$extra_cmd" --max_eval_samples 96 --max_seq_length 128 --perf_tol 0.08"
+    elif [ "${topology}" = "distilroberta_mlm" ]; then
+        script="run_mlm.py"
+        model_name_or_path="Rocketknight1/distilroberta-base-finetuned-wikitext2"
+        dataset_name="wikitext"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "albert_large_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="albert-large-v2"
-        approach="PostTrainingStatic"
-        extra_cmd=$extra_cmd" --perf_tol 0.05"
+        dataset_config_name="wikitext-2-raw-v1"
+        # remove or change following two parameters if you have enough memory
+        extra_cmd=$extra_cmd" --max_eval_samples 96 --max_seq_length 128 --perf_tol 0.08"
     fi
-    
+
     if [ "${worker}" = "" ]
     then
-        python -u ../run_glue.py \
+        python -u ../${script} \
             --model_name_or_path ${model_name_or_path} \
-            --task_name ${TASK_NAME} \
+            --dataset_name ${dataset_name} \
+            --dataset_config_name ${dataset_config_name} \
             --do_eval \
-            --max_seq_length ${MAX_SEQ_LENGTH} \
-            --per_device_train_batch_size ${batch_size} \
-            --per_device_eval_batch_size ${batch_size} \
             --output_dir ${tuned_checkpoint} \
-            --no_cuda \
-            --overwrite_output_dir \
-            --cache_dir ${cache_dir} \
             --quantization_approach ${approach} \
             --do_train \
+            --overwrite_output_dir \
+            --cache_dir ${cache_dir} \
             --tune \
             ${extra_cmd}
     else
-        python -u ../run_glue.py \
+        python -u ../${script} \
             --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${dataset_name} \
+            --dataset_config_name ${dataset_config_name} \
             --task_name ${TASK_NAME} \
             --do_eval \
-            --max_seq_length ${MAX_SEQ_LENGTH} \
-            --per_device_train_batch_size ${batch_size} \
-            --per_device_eval_batch_size ${batch_size} \
             --output_dir ${tuned_checkpoint} \
-            --no_cuda \
-            --overwrite_output_dir \
-            --cache_dir ${cache_dir} \
             --quantization_approach ${approach} \
             --do_train \
+            --overwrite_output_dir \
+            --cache_dir ${cache_dir} \
             --tune \
             --worker "${worker}" \
             --task_index ${task_index} \

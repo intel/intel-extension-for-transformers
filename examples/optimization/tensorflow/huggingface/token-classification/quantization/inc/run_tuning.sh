@@ -10,7 +10,7 @@ function main {
 
 # init params
 function init_params {
-  topology="bert_base_mrpc_static"
+  topology="bert_base_ner"
   tuned_checkpoint="saved_results"
   extra_cmd=""
   batch_size=8
@@ -54,33 +54,22 @@ function init_params {
 # run_tuning
 function run_tuning {
     batch_size=64
-    if [ "${topology}" = "bert_base_mrpc_static" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="bert-base-cased-finetuned-mrpc"
+    if [ "${topology}" = "bert_base_ner" ]; then
+        TASK_NAME="ner"
+        model_name_or_path="dslim/bert-base-NER"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "legalbert_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="nlpaueb/legal-bert-small-uncased"
-        approach="PostTrainingStatic"
-        extra_cmd=$extra_cmd" --perf_tol 0.1"
-    elif [ "${topology}" = "xlnet_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="xlnet-base-cased"
-        approach="PostTrainingStatic"
-    elif [ "${topology}" = "albert_large_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="albert-large-v2"
-        approach="PostTrainingStatic"
-        extra_cmd=$extra_cmd" --perf_tol 0.05"
+        dataset_name=conll2003
     fi
     
     if [ "${worker}" = "" ]
     then
-        python -u ../run_glue.py \
+        python -u run_ner.py \
             --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${dataset_name} \
             --task_name ${TASK_NAME} \
+            --pad_to_max_length \
             --do_eval \
-            --max_seq_length ${MAX_SEQ_LENGTH} \
+            --max_length ${MAX_SEQ_LENGTH} \
             --per_device_train_batch_size ${batch_size} \
             --per_device_eval_batch_size ${batch_size} \
             --output_dir ${tuned_checkpoint} \
@@ -88,15 +77,16 @@ function run_tuning {
             --overwrite_output_dir \
             --cache_dir ${cache_dir} \
             --quantization_approach ${approach} \
-            --do_train \
             --tune \
             ${extra_cmd}
     else
-        python -u ../run_glue.py \
+        python -u run_ner.py \
             --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${dataset_name} \
             --task_name ${TASK_NAME} \
+            --pad_to_max_length \
             --do_eval \
-            --max_seq_length ${MAX_SEQ_LENGTH} \
+            --max_length ${MAX_SEQ_LENGTH} \
             --per_device_train_batch_size ${batch_size} \
             --per_device_eval_batch_size ${batch_size} \
             --output_dir ${tuned_checkpoint} \
@@ -104,7 +94,6 @@ function run_tuning {
             --overwrite_output_dir \
             --cache_dir ${cache_dir} \
             --quantization_approach ${approach} \
-            --do_train \
             --tune \
             --worker "${worker}" \
             --task_index ${task_index} \

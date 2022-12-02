@@ -18,6 +18,7 @@
 import os
 import json
 from collections import OrderedDict, UserDict
+from neural_compressor.experimental import common
 
 TMPPATH = os.path.join('tmp', 'model')
 TEACHERPATH = os.path.join('tmp', 'teacher_model')
@@ -78,3 +79,9 @@ def get_filepath(base_dirpath, task_type, task_id):
         return os.path.join(base_dirpath, 'chief')
     else:
         return os.path.join(base_dirpath, 'worker_' + str(task_id))
+
+
+# convert a Keras model to SavedModel
+def keras2SavedModel(model):   # pragma: no cover
+    model = common.Model(model)
+    return model.model

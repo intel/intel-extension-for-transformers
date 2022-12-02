@@ -10,9 +10,9 @@ function main {
 
 # init params
 function init_params {
-  topology="bert_base_mrpc_static"
+  topology="bert_base_ner"
   iters=100
-  batch_size=1
+  batch_size=16
   tuned_checkpoint=saved_results
   cache_dir="cache"
   for var in "$@"
@@ -65,6 +65,7 @@ function init_params {
 function run_benchmark {
     extra_cmd=''
     MAX_SEQ_LENGTH=128
+    batch_size=64
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy_only"
@@ -75,20 +76,11 @@ function run_benchmark {
         exit 1
     fi
 
-    if [ "${topology}" = "bert_base_mrpc_static" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="bert-base-cased-finetuned-mrpc"
-    elif [ "${topology}" = "legalbert_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="nlpaueb/legal-bert-small-uncased"
-    elif [ "${topology}" = "xlnet_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="xlnet-base-cased"
-    elif [ "${topology}" = "albert_large_mrpc" ]; then
-        TASK_NAME="mrpc"
-        model_name_or_path="albert-large-v2"
-        # add following parameters for quicker debugging
-        extra_cmd=$extra_cmd" --max_eval_samples 48"
+    if [ "${topology}" = "bert_base_ner" ]; then
+        TASK_NAME="ner"
+        model_name_or_path="dslim/bert-base-NER"
+        approach="PostTrainingStatic"
+        dataset_name=conll2003
     fi
 
     if [[ ${int8} == "true" ]]; then
@@ -98,11 +90,13 @@ function run_benchmark {
 
     if [ "${worker}" = "" ]
     then
-        python -u ../run_glue.py \
+        python -u run_ner.py \
             --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${dataset_name} \
             --task_name ${TASK_NAME} \
+            --pad_to_max_length \
             --do_eval \
-            --max_seq_length ${MAX_SEQ_LENGTH} \
+            --max_length ${MAX_SEQ_LENGTH} \
             --per_device_eval_batch_size ${batch_size} \
             --output_dir ${tuned_checkpoint} \
             --overwrite_output_dir \
@@ -111,11 +105,13 @@ function run_benchmark {
             ${mode_cmd} \
             ${extra_cmd}
     else
-        python -u ../run_glue.py \
+        python -u ../run_ner.py \
             --model_name_or_path ${model_name_or_path} \
             --task_name ${TASK_NAME} \
+            --dataset_name ${dataset_name} \
+            --pad_to_max_length \
             --do_eval \
-            --max_seq_length ${MAX_SEQ_LENGTH} \
+            --max_length ${MAX_SEQ_LENGTH} \
             --per_device_eval_batch_size ${batch_size} \
             --output_dir ${tuned_checkpoint} \
             --overwrite_output_dir \
