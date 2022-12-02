@@ -1,16 +1,24 @@
-# Pruning
-## Introduction
-Pruning is the process of removing redundant parameters of a network. The idea is from Yan Lecun in 1990: [paper](http://yann.lecun.com/exdb/publis/pdf/lecun-90b.pdf) . There are two types of pruning: Unstructured and Structured. Unstructured pruning means finding and removing the less salient connection in the model, the place could be anywhere in the matrix. Structured pruning means deleting entire blocks, filters, or channels.
+Pruning
+======
+1. [Introduction](#introduction)
+2. [Pruning types](#pruning-types)
+3. [Usage](#usage)
 
-## Pruning types in Intel® Extension for Transformers
+## Introduction
+Pruning is the process of removing redundant parameters of a network. The idea bears similarity to the ["optimal brain damage"](http://yann.lecun.com/exdb/publis/pdf/lecun-90b.pdf) hypothesis by Yann LeCun. There are two types of pruning: Unstructured and Structured. Unstructured pruning means finding and removing the less salient connection in the model, the place could be anywhere in the matrix. Structured pruning means deleting entire blocks, filters, or channels.
+
+## Pruning types
+
+There are three pruning types in Intel® Extension for Transformers:
+
 - Magnitude (Unstructured)
-  - The algorithm prunes the weight by the lowest absolute value at each layer with given sparsity target. 
+  - The algorithm prunes the weight by the lowest absolute value at each layer with a given sparsity target. 
 
 - Group Lasso (Structured)
-  - The algorithm uses Group lasso regularization to prune entire rows, columns or blocks of parameters that result in a smaller dense network.
+  - The algorithm uses Group lasso regularization to prune entire rows, columns, or blocks of parameters that result in a smaller dense network.
 
 - Pattern Lock (Unstructured & Structured)
-  - The algorithm locks the sparsity pattern in fine tune phase by freezing those zero values of weight tensor during weight update of training. 
+  - The algorithm locks the sparsity pattern in fine tune phase by freezing those zero values of the weight tensor during the weight update of training.
 
 ## Usage
 ### Script:
@@ -37,7 +45,7 @@ The Metric defines which metric will be used to measure the performance of tuned
     Please refer to [metrics document](metrics.md) for the details.
 
 ### Create list of an instance of PrunerConfig(Optional)
-PrunerConfig defines which pruning algorithm is used and how to apply it during training process. Intel Extension for Transformers supports pruning type is "BasicMagnitude", "PatternLock", and "GroupLasso". You can create different pruner for different layers.
+PrunerConfig defines which pruning algorithm to use and how to apply it during the training process. Intel® Extension for Transformers supports pruning types "BasicMagnitude", "PatternLock", and "GroupLasso". You can create different pruners for different layers.
 
 - arguments:
     |Argument   |Type       |Description                                        |Default value    |
@@ -75,7 +83,7 @@ The PruningConfig contains all the information related to the model pruning beha
 
 ### Prune with Trainer
 - Prune with Trainer
-    NLPTrainer inherits from transformers.Trainer, so you can create trainer like you do in transformers examples. Then you can prune model with trainer.prune function.
+    NLPTrainer inherits from `transformers.Trainer`, so you can create a trainer like what you do in transformers examples. Then you can prune model with `trainer.prune` function.
     ```python
     model = trainer.prune(pruning_config=pruning_conf)
     ```
