@@ -1,5 +1,33 @@
 Examples 
-===
+
+1. [Quantization](#Quantization)
+
+    1.1 [Stock PyTorch Examples](#Stock-PyTorch)
+
+    1.2 [Intel Extension for Pytorch (IPEX) Examples](#Intel-Extension-for-Pytorch)
+
+    1.3 [Intel TensorFlow Examples](#Intel-TensorFlow)
+
+2. [Length Adaptive Transformers](#Length-Adaptive-Transformers)
+E
+3. [Pruning](#Pruning)
+
+4. [Distillation](#Distillation)
+
+    4.1 [Knowledge Distillation](#Knowledge-Distillation)
+
+    4.2 [Auto Distillation (NAS Based)](#Auto-Distillation)
+
+5. [Orchestrate](#Orchestrate)
+
+6. [Reference Deployment on Neural Engine](#Reference-Deployment-Neural-Engine)
+
+   6.1 [Dense Reference](#Dense-Reference-Deployment-Neural-Engine)
+
+   6.2 [Sparse Reference](#Sparse-Reference-Deployment-Neural-Engine)
+
+
+
 Intel Extension for Transformers is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile Intel Extension for Transformers provides Transformers-accelerated Neural Engine, an optimized backend for NLP models to demonstrate the deployment.
 
 ## Quantization
@@ -166,7 +194,7 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
 </tbody>
 </table>
 
-### Intel TensorFlow examples
+### Intel TensorFlow Examples
 <table>
 <thead>
   <tr>
@@ -198,13 +226,13 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <th rowspan="2">Datatype</th>
     <th rowspan="2">Optimization Method</th>
     <th rowspan="2">Modelsize (MB)</th>
-    <th colspan="4">InferenceResult</th>
+    <th colspan="4">Inference Result</th>
   </tr>
   <tr>
     <th>Accuracy(F1)</th>
     <th>Latency(ms)</th>
     <th>GFLOPS**</th>
-    <th>Speedup(comparedwith BERT Base)</th>
+    <th>Speedup(compared with BERT Base)</th>
   </tr>
 </thead>
 <tbody>
@@ -260,10 +288,11 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
   </tr>
 </tbody>
 </table>
-NOTES: * length config apply to Length Adaptive model
+
+>**Note**: * length config apply to Length Adaptive model
 
 
-NOTES: ** the multiplication and addition operation amount when model inference  (GFLOPS is obtained from torchprofile tool)
+>**Note**: ** the multiplication and addition operation amount when model inference  (GFLOPS is obtained from torchprofile tool)
 
 
 Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration detail please refer to [examples](../examples/optimization/pytorch/huggingface/question-answering/dynamic/README.md)
@@ -407,7 +436,7 @@ Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration det
 
 ## Reference Deployment on Neural Engine
 
-
+### Dense Reference Deployment on Neural Engine
 <table>
 <thead>
   <tr>
@@ -495,7 +524,7 @@ Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration det
 </tbody>
 </table>
 
-## Sparse Reference Deployment on Neural Engine
+### Sparse Reference Deployment on Neural Engine
 
 
 <table>
