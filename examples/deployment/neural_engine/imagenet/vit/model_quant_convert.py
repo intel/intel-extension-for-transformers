@@ -194,7 +194,13 @@ class OptimizationArguments:
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
-
+    load_dataset_from_file: Optional[str] = field(
+        default=None,
+        metadata={"help":"Whether to load dataset from local file"}
+    )
+    enable_bf16: bool = field(
+        default=False,
+        metadata={"help":"Whether or not to apply bf16."})
 
 def collate_fn(examples):
     pixel_values = torch.stack([example["pixel_values"] for example in examples])
@@ -258,13 +264,16 @@ def main():
 
     # Initialize our dataset and prepare it for the 'image-classification' task.
     if data_args.dataset_name is not None:
-        dataset = load_dataset(
-            data_args.dataset_name,
-            cache_dir=model_args.cache_dir,
-            task="image-classification",
-            ignore_verifications=True,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
+        if optim_args.load_dataset_from_file is not None:
+            dataset = datasets.load_from_disk(optim_args.load_dataset_from_file)
+        else:    
+            dataset = load_dataset(
+                data_args.dataset_name,
+                cache_dir=model_args.cache_dir,
+                task="image-classification",
+                ignore_verifications=True,
+                use_auth_token=True if model_args.use_auth_token else None,
+            )
     else:
         data_files = {}
         if data_args.train_dir is not None:
@@ -278,22 +287,13 @@ def main():
             task="image-classification",
         )
 
-    # ##########save cache dataset#########
-    # dataset.save_to_disk("./cached-2k-imagenet-1k-datasets")
-    #
-    # ##########if load dataset############
-    # dataset = datasets.load_from_disk("./cached-2k-imagenet-1k-datasets")
-
-
     # If we don't have a validation split, split off a percentage of train as validation.
     # data_args.train_val_split = None if "validation" in dataset.keys() else data_args.train_val_split
     data_args.train_val_split = None if "train" in dataset.keys() else data_args.train_val_split
     if isinstance(data_args.train_val_split, float) and data_args.train_val_split > 0.0:
-        print("************dataset split***************")
-        split = dataset["validation"].train_test_split(data_args.train_val_split)
+        split = dataset["validation"].train_test_split(data_args.train_val_split, shuffle=False)
         dataset["train"] = split["train"]
         dataset["validation"] = split["test"]
-    # dataset["validation"] = dataset["validation"].select(range(1000))
 
     # Prepare label mappings.
     # We'll include these in the model's config to get human readable labels in the Inference API.
@@ -350,7 +350,6 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
             ignore_mismatched_sizes=model_args.ignore_mismatched_sizes,
         )
-
 
     # Define torchvision transforms to be applied to each image.
     normalize = Normalize(mean=feature_extractor.image_mean, std=feature_extractor.image_std)
@@ -448,8 +447,7 @@ def main():
         )
 
         model = trainer.quantize(quant_config=quantization_config)
-        trainer.enable_executor = True
-        trainer.export_to_onnx()
+
 
     if optim_args.benchmark or optim_args.accuracy_only:
 
@@ -469,7 +467,11 @@ def main():
                 print("Throughput: {:.5f} samples/sec".format(throughput))
                 break
         assert ret, "No metric returned, Please check inference metric!"
-
+    if optim_args.enable_bf16:
+        trainer.enable_bf16 = True
+        
+    trainer.enable_executor = True
+    trainer.export_to_onnx()
 
 if __name__ == "__main__":
     main()

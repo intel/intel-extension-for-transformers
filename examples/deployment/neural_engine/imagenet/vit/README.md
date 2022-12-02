@@ -26,26 +26,57 @@ cd <intel_extension_for_transformers_folder>
 git submodule update --init --recursive
 python setup.py install
 ```
-
-### 2. Run the code to conduct model quantization and model conversion to ONNX format
-
-### 2.1 Automatically download the pretrained model and conduct the operation
+Install package for examples
 ```shell
-python -u model_quant_convert.py --model_name_or_path google/vit-large-patch16-224 --per_device_eval_batch_size 8 --remove_unused_columns False --output_dir ./output/ --use_auth_token --do_eval --no_cuda --overwrite_output_dir --accuracy_only  --tune --do_train --dataset_name imagenet-1k
+cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/sst2/bert_mini
+pip install -r requirements.txt
+```
+1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instance.
+```
+export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
+```
+Using weight sharing can save memory and improve the performance when multi instance.
+```
+export WEIGHT_SHARING=1
+export INST_NUM=<inst num>
+```
+### 2. Prepare Dataset and pretrained model
+
+### 2.1 Get dataset
+
+```shell
+python prepare_dataset.py --task_name=image-classification --output_dir=./data
 ```
 
-### 2.2 Save the cache data
-Considering the size of the dataset is too large, we recommend the user to save the cache data for the ease of next running:
+### 2.2 Get model
+Neural Engine can parse Tensorflow/Pytorch/ONNX model and Neural Engine IR.
+You can get FP32 ONNX model from optimization module by setting precision=fp32, command as follows:
 ```shell
-dataset.save_to_disk("./cached-2k-imagenet-1k-datasets")
+bash prepare_model.sh --input_model=google/vit-base-patch16-224  --task_name=imagenet-1k --output_dir=./model_and_tokenizer --precision=fp32
 ```
-And the dataset could be reloaded by:
+Throught setting precision=int8 you could get PTQ int8 model and setting precision=bf16 to get bf16 model.
 ```shell
-dataset = datasets.load_from_disk("./cached-2k-imagenet-1k-datasets")
+bash prepare_model.sh --input_model=google/vit-base-patch16-224  --task_name=imagenet-1k --output_dir=./model_and_tokenizer --precision=int8
 ```
+Notice: input_model could be changed from vit base to vit large.
 
-### 3 Check the performance of the converted ONNX model
-The converted onnx model could be found in --output_dir. The user could check the accuracy with:
-```shell
-python model_eval.py --model_name_or_path google/vit-large-patch16-224 --per_device_eval_batch_size 8 --remove_unused_columns False --output_dir ./output/ --overwrite_output_dir --dataset_name imagenet-1k --mode onnx
-```
+### Benchmark
+
+  2.1 accuracy  
+  run python
+  ```shell
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=8
+  ```
+
+  2.2 performance  
+  run python
+  ```shell
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128
+  ```
+
+  or compile framwork model to IR using python API
+  ```
+  from intel_extension_for_transformers.backends.neural_engine.compile import compile
+  graph = compile('./model_and_tokenizer/int8-model.onnx')
+  graph.save('./ir')
+  ```
