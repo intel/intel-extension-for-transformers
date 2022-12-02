@@ -772,6 +772,24 @@ static auto case_func = []() {
                                   {"softmax_out_zero_point", "0"},
                                   {"softmax_out_scale", "0.00324144"},
                               })});
+    cases.push_back({gen_case(4, 64, 2, 128, .85f, nthr, dt::u8,
+                              {
+                                  {"alpha", "0.125"},
+                                  {"beta", "1"},
+                                  {"softmax_in_zero_point", "140"},
+                                  {"softmax_in_scale", "500"},
+                                  {"softmax_out_zero_point", "0"},
+                                  {"softmax_out_scale", "0.00324144"},
+                              })});
+    cases.push_back({gen_case(12, 64, 2, 128, .85f, nthr, dt::u8,
+                              {
+                                  {"alpha", "0.125"},
+                                  {"beta", "1"},
+                                  {"softmax_in_zero_point", "140"},
+                                  {"softmax_in_scale", "500"},
+                                  {"softmax_out_zero_point", "0"},
+                                  {"softmax_out_scale", "0.00324144"},
+                              })});
   }
   return ::testing::ValuesIn(cases);
 };

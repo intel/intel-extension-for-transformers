@@ -176,6 +176,14 @@ Softmax in Kernels only suuport LUT with int8 input and bf16 output.
 ```shell
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf softmax lut 256x256 u8 bf16
 ```
+### attention
+```shell
+[<environment_variable>...] ./benchmark <mode> attention <head_num> <head_size> <batch_size> <seq_len> <sparsity> <dst_type>
+```
+#### Examples
+```shell
+BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf attention 1 64 8 128 0.5 1
+```
 
 # For developers
 To add benchmark support for a newly-added kernel, you may need to follow several steps:
