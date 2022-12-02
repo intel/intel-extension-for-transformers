@@ -22,6 +22,10 @@ from intel_extension_for_transformers.backends.neural_engine.compile import comp
 from intel_extension_for_transformers.backends.neural_engine.compile.loaders.loader import Loader
 from intel_extension_for_transformers.backends.neural_engine.compile.extractors.extractor import Extractor
 from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.subgraph_matcher import SubGraphMatcher
+import sys
+
+def is_win():
+    return sys.platform.startswith('win')
 
 class TestPatternDispatch(unittest.TestCase):
     @classmethod
@@ -41,6 +45,8 @@ class TestPatternDispatch(unittest.TestCase):
     
         # validate pattern tuning
         fp32_model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/bert_mini_sst2_1x4_fp32.onnx"
+        if is_win():
+            fp32_model_path = "C:/Users/sdp/Documents/models/localfile/nlptoolkit_ut_model/bert_mini_sst2_1x4_fp32.onnx"
         self.assertTrue(os.path.exists(fp32_model_path),
             'FP32 ONNX model is not found, please set your own model path!')
         fp32_model = compile(fp32_model_path)

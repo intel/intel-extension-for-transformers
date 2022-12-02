@@ -18,7 +18,10 @@
 import unittest
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+import sys
 
+def is_win():
+    return sys.platform.startswith('win')
 
 class TestQKVMerge(unittest.TestCase):
     @classmethod
@@ -32,6 +35,9 @@ class TestQKVMerge(unittest.TestCase):
     def test_qkv_merge_1(self):
         model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
         pattern_config = "/home/tensorflow/localfile/nlptoolkit_ut_model/qkv_merge_pattern_config"
+        if is_win():
+            model_path = "C:/Users/sdp/Documents/models/localfile/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
+            pattern_config = "C:/Users/sdp/Documents/models/localfile/nlptoolkit_ut_model/qkv_merge_pattern_config"
         graph = compile(model_path, config=pattern_config)
         self.assertEqual(100, len(graph.nodes))
 
