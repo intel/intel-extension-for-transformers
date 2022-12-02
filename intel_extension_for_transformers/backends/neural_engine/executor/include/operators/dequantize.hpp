@@ -47,7 +47,7 @@ class DequantizeLinearOperator : public Operator {
 
   int axis_ = 1;
   bool has_zp_ = false;
-  size_t size_, scales_size_;
+  size_t size_ = 0, scales_size_ = 0;
   vector<int64_t> src0_stride_;
 };
 }  // namespace executor

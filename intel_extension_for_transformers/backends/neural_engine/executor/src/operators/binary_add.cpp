@@ -219,7 +219,7 @@ memory::dims BinaryAddOperator::GetStrideBinaryDstShape(const memory::dims& src0
 }
 
 memory::format_tag BinaryAddOperator::SetFormatTag(int tensor_dim) {
-  memory::format_tag tag;
+  memory::format_tag tag = memory::format_tag::undef;
   switch (tensor_dim) {
     case 2:
       tag = memory::format_tag::ab;

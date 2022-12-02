@@ -137,7 +137,7 @@ class Operator {
   vector<string> dispatch_config_;
   bool do_shape_infer_ = false;
   bool monopolize_dispatcher_ = false;
-  const ExecutionOptions* execution_options_ptr_;
+  const ExecutionOptions* execution_options_ptr_ = nullptr;
   bool adapt_attrs_ = false;
   // for profiling
   string post_op_;

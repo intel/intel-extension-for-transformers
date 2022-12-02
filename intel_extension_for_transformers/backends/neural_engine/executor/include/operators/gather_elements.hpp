@@ -42,7 +42,7 @@ class GatherElementsOperator : public Operator {
   vector<int64_t> dst_shape_;
   vector<int64_t> src_stride_;
   vector<int64_t> dst_stride_;
-  int inner_block_size_;
+  int inner_block_size_ = 0;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_ELEMENTS_HPP_

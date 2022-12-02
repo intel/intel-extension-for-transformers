@@ -42,7 +42,7 @@ class ShapeOperator : public Operator {
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
-  int64_t start_ = 0, end_;
+  int64_t start_ = 0, end_ = 0;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_SHAPE_HPP_
