@@ -13,7 +13,7 @@ The benchmark classes `PyTorchBenchmark` and `ExecutorBenchmark` expect an objec
 
 ## PyTorchBenchmark
 
-The PyTorchBenchmark is only used for inference when the input model is an INT8 model.
+`PyTorchBenchmark` is only used for inference when the input model is an INT8 model.
 
 ```py
 from intel_extension_for_transformers.optimization.benchmark import PyTorchBenchmark, PyTorchBenchmarkArguments
