@@ -38,7 +38,7 @@ class jit_binary_injector {
   void mul(Zmm src1, RegExp src2, data_type op_dt, bool enable_mask, bool broadcast);
 
  private:
-  jit_generator* h;
+  jit_generator* h = nullptr;
   Opmask mask;
   Zmm zmm_tmp;
   Reg64 reg_tmp;

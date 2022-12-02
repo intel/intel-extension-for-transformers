@@ -147,25 +147,25 @@ bool attention_kd_t::init() {
 
   // weight merge
   // TODO(Yi): merge QKV together
-  int8_t* qk_weight_addr = aligned_allocator_t<int8_t>::aligned_alloc(ip_chanel * ip_chanel * 2);
+  int8_t* qk_weight_addr = aligned_allocator_t<int8_t>::allocate(ip_chanel * ip_chanel * 2);
   memcpy(qk_weight_addr, q_weight_addr, wei_bytes);
   memcpy(qk_weight_addr + wei_bytes, k_weight_addr, wei_bytes);
 
   auto qk_sparse_ptr =
       new bsr_data_t<int8_t>(spns::reorder_to_bsr_group<int8_t, 4>(ip_chanel * 2, ip_chanel, 4, 1, qk_weight_addr));
-  aligned_allocator_t<int8_t>::aligned_free(qk_weight_addr);
+  aligned_allocator_t<int8_t>::deallocate(qk_weight_addr);
 
   // bias merge
-  char* bias_addr = aligned_allocator_t<char>::aligned_alloc(bias_bytes * 3);
-  memcpy(bias_addr, q_bias_addr, bias_bytes);
-  memcpy(bias_addr + bias_bytes, k_bias_addr, bias_bytes);
-  memcpy(bias_addr + bias_bytes * 2, v_bias_addr, bias_bytes);
+  fused_bias_addr_ = aligned_allocator_t<char>::allocate(bias_bytes * 3);
+  memcpy(fused_bias_addr_, q_bias_addr, bias_bytes);
+  memcpy(fused_bias_addr_ + bias_bytes, k_bias_addr, bias_bytes);
+  memcpy(fused_bias_addr_ + bias_bytes * 2, v_bias_addr, bias_bytes);
 
   // scales merge
-  char* scales_addr = aligned_allocator_t<char>::aligned_alloc(scale_bytes * 3);
-  memcpy(scales_addr, q_scales_addr, scale_bytes);
-  memcpy(scales_addr + scale_bytes, k_scales_addr, scale_bytes);
-  memcpy(scales_addr + scale_bytes * 2, v_scales_addr, scale_bytes);
+  fused_scales_addr_ = aligned_allocator_t<char>::allocate(scale_bytes * 3);
+  memcpy(fused_scales_addr_, q_scales_addr, scale_bytes);
+  memcpy(fused_scales_addr_ + scale_bytes, k_scales_addr, scale_bytes);
+  memcpy(fused_scales_addr_ + scale_bytes * 2, v_scales_addr, scale_bytes);
 
   const float softmax_in_zero_point = str_to_num<float>(op_attrs["softmax_in_zero_point"]);
   const float softmax_in_scale = str_to_num<float>(op_attrs["softmax_in_scale"]);
@@ -177,8 +177,8 @@ bool attention_kd_t::init() {
       operator_desc(kernel_kind::sparse_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
                     {qk_weight_desc, src_desc, qk_bias_desc, qk_dst_desc_s8, qk_scales_desc},
                     {{"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(qk_sparse_ptr))},
-                     {"bias_addr", std::to_string(reinterpret_cast<uint64_t>(bias_addr))},
-                     {"scales_addr", std::to_string(reinterpret_cast<uint64_t>(scales_addr))}});
+                     {"bias_addr", std::to_string(reinterpret_cast<uint64_t>(fused_bias_addr_))},
+                     {"scales_addr", std::to_string(reinterpret_cast<uint64_t>(fused_scales_addr_))}});
   if (!add_kernel_desc<spmm_vnni_kd_t>(spmm_qk_desc, "spmm_qk")) return false;
 
   // sub-kernel 1: eltwise dequantize for result of QK spmm
@@ -253,15 +253,13 @@ attention_k_t::~attention_k_t() {
   if (kernels_[KernelSort::Q_K_SPMM] != nullptr) {
     const auto& ker_attr = ker_opdesc(KernelSort::Q_K_SPMM).attrs();
     delete reinterpret_cast<bsr_data_t<int8_t>*>(str_to_num<intptr_t>(ker_attr.at("sparse_ptr")));
-    aligned_allocator_t<char>::aligned_free(reinterpret_cast<char*>(str_to_num<intptr_t>(ker_attr.at("bias_addr"))));
-    aligned_allocator_t<char>::aligned_free(reinterpret_cast<char*>(str_to_num<intptr_t>(ker_attr.at("scales_addr"))));
   }
   if (kernels_[KernelSort::V_SPMM] != nullptr) {
     const auto& ker_attr = ker_opdesc(KernelSort::V_SPMM).attrs();
     delete reinterpret_cast<bsr_data_t<int8_t>*>(str_to_num<intptr_t>(ker_attr.at("sparse_ptr")));
   }
   if (!mem_.empty()) {
-    aligned_allocator_t<char>::aligned_free(mem_[KernelSort::Q_K_SPMM][ssd::DST]);
+    aligned_allocator_t<char>::deallocate(mem_[KernelSort::Q_K_SPMM][ssd::DST]);
   }
 }
 
@@ -316,7 +314,7 @@ void attention_k_t::setup_memory() {
   offset.push_back(tensor_bytes(ker_opdesc(KernelSort::V_SPMM).tensor_descs()[ssd::DST]));
   // the last kernel(QK(softmax) * V) don't need alloc memory
 
-  char* base = aligned_allocator_t<char>::aligned_alloc(std::accumulate(offset.begin(), offset.end(), 0));
+  char* base = aligned_allocator_t<char>::allocate(std::accumulate(offset.begin(), offset.end(), 0));
 
   // part0 QK merged inner product with spmm_vnni
   mem_[KernelSort::Q_K_SPMM].resize(ssd::SCALES + 1);

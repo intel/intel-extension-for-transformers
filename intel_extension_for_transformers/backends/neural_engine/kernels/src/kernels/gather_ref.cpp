@@ -41,7 +41,8 @@ bool gather_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
 #pragma omp simd
     for (int j = 0; j < src0_shape[1]; ++j) {
       memcpy(dst_data + (i * src0_shape[1] + j) * get_data_size(input_dt),
-             src0_data + (indices_val * src0_shape[1] + j) * get_data_size(input_dt), get_data_size(input_dt));
+             reinterpret_cast<const char*>(src0_data) + (indices_val * src0_shape[1] + j) * get_data_size(input_dt),
+             get_data_size(input_dt));
     }
   }
 #pragma omp parallel for

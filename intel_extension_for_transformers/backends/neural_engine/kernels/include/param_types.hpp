@@ -110,8 +110,8 @@ class binaryop_attr {
   void* static_addr;
   float* scale;
   float* zp;
-  binaryop_alg op_alg;
-  data_type op_dt;
+  binaryop_alg op_alg = binaryop_alg::undef;
+  data_type op_dt = data_type::undef;
 
   binaryop_attr(binaryop_alg alg, data_type dt) : op_alg(alg), op_dt(dt) {
     static_addr = nullptr;

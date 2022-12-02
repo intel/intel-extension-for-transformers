@@ -75,7 +75,10 @@ bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
       float_dst_data[i * col + j] = value;
       exp_sum += value;
     }
-
+    if (exp_sum == 0) {
+      SPARSE_LOG(INFO) << "input of softmax are all zeros" << std::endl;
+      return false;
+    }
     float scale = 1 / exp_sum;
     // step3. compute softmax
     if (dst_dt == data_type::bf16) {

@@ -225,7 +225,7 @@ class aligned_allocator_t {
   typedef const T& const_reference;
 
  public:
-  static inline pointer aligned_alloc(size_type n, bool zero = false) {
+  static inline pointer allocate(size_type n, bool zero = false) {
 #ifdef _WIN32
     auto ptr = static_cast<pointer>(_aligned_malloc(n * sizeof(value_type), N));
 #else
@@ -234,7 +234,7 @@ class aligned_allocator_t {
     if (zero) memset(ptr, 0, n * sizeof(value_type));
     return ptr;
   }
-  static inline void aligned_free(void* p, size_type = 0) {
+  static inline void deallocate(void* p, size_type = 0) {
 #ifdef _WIN32
     _aligned_free(p);
 #else
@@ -253,12 +253,6 @@ class aligned_allocator_t {
 
   inline const_pointer adress(const_reference r) const { return &r; }
 
-  inline pointer allocate(size_type n) { return aligned_allocator_t<T, N>::aligned_alloc(n); }
-
-  inline void deallocate(pointer p, size_t n) {
-    SPARSE_LOG_IF(FATAL, n <= 0) << "Dealloc size should > 0" << std::endl;
-    aligned_free(p);
-  }
   inline void construct(pointer p, const value_type& wert) { new (p) value_type(wert); }
 
   inline void destroy(pointer p) { p->~value_type(); }

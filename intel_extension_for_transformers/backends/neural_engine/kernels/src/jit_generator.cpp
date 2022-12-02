@@ -90,7 +90,5 @@ void jit_generator::dump_asm() {
   std::ofstream out_file(file_name, std::ios::out | std::ios::binary);
   out_file.write(reinterpret_cast<const char*>(getCode()), getSize());
   out_file.close();
-  std::string cmd = "objdump -M x86-64 -D -b binary -m i386 " + file_name;
-  system(cmd.c_str());
 }
 }  // namespace jd

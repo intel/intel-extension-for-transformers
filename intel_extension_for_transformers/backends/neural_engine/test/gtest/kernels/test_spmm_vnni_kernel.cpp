@@ -51,7 +51,8 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   const auto& src_shape = ts_descs[ssd::SRC].shape();
   const auto& dst_type = ts_descs[ssd::DST].dtype();
   const auto& dst_shape = ts_descs[ssd::DST].shape();
-  assert((src_shape.size() == 2 || src_shape.size() == 3) && src_shape.size() == dst_shape.size());
+  SPARSE_LOG_IF(FATAL, (src_shape.size() != 2 && src_shape.size() != 3) || src_shape.size() != dst_shape.size())
+      << "Unsupported src shape!";
 
   int oc = wei_shape[0];
   int ic = wei_shape[1];

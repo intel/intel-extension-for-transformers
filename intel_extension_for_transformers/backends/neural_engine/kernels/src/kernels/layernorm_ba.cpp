@@ -72,7 +72,10 @@ bool layernorm_ba_k_t::init() {
   row_num = tensor_shape[1];
   col_num = tensor_shape[2];
   one_div_n_ = reinterpret_cast<float*>(aligned_alloc(64, col_num * sizeof(float)));
-  SPARSE_LOG_IF(FATAL, one_div_n_ == nullptr) << "layernorm alloc one_div failed";
+  if (one_div_n_ == nullptr) {
+    SPARSE_LOG(INFO) << "layernorm alloc one_div failed";
+    return false;
+  }
   for (int i = 0; i < col_num; i++) one_div_n_[i] = 1.0 / row_num;
   // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   jit_kers_.resize(ker_num);
@@ -95,9 +98,9 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
       const jit_layernorm_ba_t* jit_impl = jit_kers_[j];
       auto data_param = td[i];
       data_param->src =
-          reinterpret_cast<char*>(const_cast<void*>(rt_data[0])) + i * row_num * col_num * get_data_size(src_dt);
+          const_cast<char*>(reinterpret_cast<const char*>(rt_data[0]) + i * row_num * col_num * get_data_size(src_dt));
       data_param->dst =
-          reinterpret_cast<char*>(const_cast<void*>(rt_data[1])) + i * row_num * col_num * get_data_size(dst_dt);
+          const_cast<char*>(reinterpret_cast<const char*>(rt_data[1]) + i * row_num * col_num * get_data_size(dst_dt));
       data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
       data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
       data_param->one_div_n = one_div_n_ptr();

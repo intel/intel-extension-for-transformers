@@ -88,7 +88,7 @@ bool spmm_avx512f_k_t::init() {
 
 bool spmm_avx512f_k_t::execute(const std::vector<const void*>& rt_data) const {
 #pragma omp parallel for
-  for (size_t i = 0; i < jit_kers_.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(jit_kers_.size()); ++i) {
     auto& jit_impl = jit_kers_[i];
     ssd::avx512_data_t rt_param;
     rt_param.sparse = jit_impl->bsc_data()->data().data();

@@ -128,24 +128,24 @@ std::pair<const void*, const void*> make_data_obj_matmul_avx512f_p2031_p2013(  /
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
   if (is_clear) {
-    data_ptr = aligned_allocator_t<char>::aligned_alloc(bytes_size, true);
+    data_ptr = aligned_allocator_t<char>::allocate(bytes_size, true);
   } else {
     if (a_dt == dt::fp32) {
-      data_ptr = aligned_allocator_t<float>::aligned_alloc(elem_num);
+      data_ptr = aligned_allocator_t<float>::allocate(elem_num);
       init_vector(static_cast<float*>(data_ptr), elem_num, ranges[0], ranges[1]);
     } else if (a_dt == dt::s32) {
-      data_ptr = aligned_allocator_t<int32_t>::aligned_alloc(elem_num);
+      data_ptr = aligned_allocator_t<int32_t>::allocate(elem_num);
       init_vector(static_cast<int32_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
     } else if (a_dt == dt::u8) {
-      data_ptr = aligned_allocator_t<uint8_t>::aligned_alloc(elem_num);
+      data_ptr = aligned_allocator_t<uint8_t>::allocate(elem_num);
       init_vector(static_cast<uint8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
     } else if (a_dt == dt::s8) {
-      data_ptr = aligned_allocator_t<int8_t>::aligned_alloc(elem_num);
+      data_ptr = aligned_allocator_t<int8_t>::allocate(elem_num);
       init_vector(static_cast<int8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
     }
   }
 
-  void* data_ptr_copy = aligned_allocator_t<char>::aligned_alloc(bytes_size);
+  void* data_ptr_copy = aligned_allocator_t<char>::allocate(bytes_size);
   memcpy(data_ptr_copy, data_ptr, bytes_size);
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }

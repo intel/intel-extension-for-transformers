@@ -65,7 +65,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   auto dst_fp32 = static_cast<float*>(const_cast<void*>(rt_data[ssd::DST]));
 
   // Computing the kernel
-  assert(dims == 2);
+  SPARSE_LOG_IF(FATAL, dims != 2) << "Weight must be 2D!";
   for (int i = 0; i < M; ++i) {
 #pragma omp parallel for
     for (int j = 0; j < N; ++j) {

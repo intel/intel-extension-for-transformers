@@ -168,10 +168,12 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
             dst_fp32[dst_idx] = value;
           } else if (dst_dt == dt::u8) {
             jd::postop_attr quantize{
-                dt::u8, postop_type::eltwise, postop_alg::quantize,
-                zp[0],  // alpha
-                0,      // beta
-                1,      // scale already applied in the previous step
+                dt::u8,
+                postop_type::eltwise,
+                postop_alg::quantize,
+                zp == nullptr ? 0 : zp[0],  // alpha
+                0,                          // beta
+                1,                          // scale already applied in the previous step
             };
             float quantized_value = apply_postop_list(value, {quantize});
             dst_u8[dst_idx] = static_cast<uint8_t>(quantized_value);

@@ -67,7 +67,10 @@ class attention_kd_t : public kernel_desc_t {
  public:
   explicit attention_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::attention), op_desc_(op_desc) {}
-  virtual ~attention_kd_t() {}
+  virtual ~attention_kd_t() {
+    if (fused_bias_addr_ != nullptr) aligned_allocator_t<char>::deallocate(fused_bias_addr_);
+    if (fused_scales_addr_ != nullptr) aligned_allocator_t<char>::deallocate(fused_scales_addr_);
+  }
 
  public:
   bool init() override;
@@ -101,6 +104,8 @@ class attention_kd_t : public kernel_desc_t {
    */
   template <typename T_kd>
   bool add_kernel_desc(const operator_desc& op_desc, const char* name);
+  char* fused_bias_addr_ = nullptr;
+  char* fused_scales_addr_ = nullptr;
 };
 
 class attention_k_t : public kernel_t {

@@ -125,15 +125,15 @@ void softmax_bench::gen_case() {
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
 
-  void* src = aligned_allocator_t<char>::aligned_alloc(get_data_size(in_dt) * num);
-  void* dst = aligned_allocator_t<char>::aligned_alloc(get_data_size(in_dt) * num, true);
-  void* src_ref = aligned_allocator_t<char>::aligned_alloc(get_data_size(out_dt) * num);
-  void* dst_ref = aligned_allocator_t<char>::aligned_alloc(get_data_size(out_dt) * num, true);
+  void* src = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num);
+  void* dst = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num, true);
+  void* src_ref = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num);
+  void* dst_ref = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num, true);
 
   const unsigned int seed = 667095;
   for (int i = 0; i < num; i++) {
     unsigned int seed_tmp = seed + i;
-    float rand_val = rand_r(&seed_tmp) % 256 - 128;
+    float rand_val = std::rand() % 256 - 128;
     assign_val(src, in_dt, rand_val, i);
     assign_val(src_ref, in_dt, rand_val, i);
   }
