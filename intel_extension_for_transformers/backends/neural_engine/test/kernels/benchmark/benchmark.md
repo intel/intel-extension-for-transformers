@@ -1,5 +1,21 @@
+- [Benchmark for Kernels](#benchmark-for-kernels)
+  - [Build](#build)
+  - [Usage](#usage)
+    - [sparse\_matmul](#sparse_matmul)
+      - [spmm\_avx512f](#spmm_avx512f)
+      - [spmm\_vnni](#spmm_vnni)
+      - [spmm\_amx\_bf16\_x16](#spmm_amx_bf16_x16)
+    - [eltwiseop](#eltwiseop)
+    - [layernorm\_ba](#layernorm_ba)
+    - [transpose\_matmul](#transpose_matmul)
+      - [matmul\_avx512f\_p2031\_p2013](#matmul_avx512f_p2031_p2013)
+      - [matmul\_vnni\_noperm\_p2031\_p1302](#matmul_vnni_noperm_p2031_p1302)
+    - [softmax](#softmax)
+    - [attention](#attention)
+- [For developers](#for-developers)
+
 # Benchmark for Kernels
-To perform accuracy test and performance test for kernel in [kernels](../../../kernels).
+This is a tool to perform accuracy test and performance test for kernel in [kernels](../../../kernels).
 
 ## Build
 ```shell
@@ -14,23 +30,22 @@ make -j
 ```shell
 [<environment_variable>...] ./benchmark <mode> <kernel_type> <kernel_configs>
 ```
-+ `mode` values can be `perf` for perfomance test or `acc` for accuracy test.
++ `mode = {perf,acc}`: `perf` for perfomance test, `acc` for accuracy test, and `perf,acc` for both perfomance test and accuracy test.
 + `kernel_type` is one of
     + [sparse_matmul](#sparse_matmul)
     + [transpose_matmul](#transpose_matmul)
     + [eltwiseop](#eltwiseop)
     + [layernorm_ba](#layernorm_ba)
     + [softmax](#softmax)
-+ `kernel_configs` contains information of the test case, for example tensor shapes. Refer to the kernel introduction for detail.
++ `kernel_configs` contains information of the test case, for example tensor shapes. Refer to the kernel introduction for detail.##### Build
 
-### Environment variables
-`BENCHMARK_ITER`: how many iterations to run to calculate kernel execution time. The default value is `100`.
-
-`BENCHMARK_NO_REFRESH`: by default, we refresh data for src tensor in every iteration before executing the kernel. If the value of the variable is set to 1, we use the same src tensor for every iteration.
++ Environment variables
+    + `BENCHMARK_ITER`: how many iterations to run to calculate kernel execution time. The default value is `100`.
+    + `BENCHMARK_NO_REFRESH`: by default, we refresh data for src tensor in every iteration before executing the kernel. If the value of the variable is set to 1, we use the same src tensor for every iteration.
 
 
 ### sparse_matmul
-Currently we done 2D sparse matrix multiplication: A(MxK) x B(KxN) = C(MxN) where weight is a sparse matrix.
+Currently we done 2D sparse matrix multiplication: `A(MxK) x B(KxN) = C(MxN)` where `A` is a sparse matrix.
 
 Current algorithms for sparse_matmul:
 
@@ -72,8 +87,7 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul vnni 10
 ```
 
 #### spmm_amx_bf16_x16
-##### Build
-Please make sure amx instructions are supported on your machine.
+> **Note** Please make sure amx instructions are supported on your machine. You should build a benchmark with amx.
 ```shell
 mkdir build
 cd build
@@ -107,7 +121,7 @@ Eltwiseop is a series of element-wise calculation, and we have appended it to sp
 - `M,N` is the shape of input and output.
 - `ranges` specifies the interval where values of src tensor are located. It has the form of `<lower_bound>,<upper_bound>`.
 - `<data_type>_<algorithm>` describe a kind of element-wise calculation.There can be more than one postop and they should be concatenated by `+`.
-- `data_type = {bf16,fp32}` Please note in each test case, there should be **only one** `data_type`, for example, `fp32_gelu+bf16_exp` is invalid.
+- `data_type = {bf16,fp32}` There should be **only one** `data_type` in each test case, for example, `fp32_gelu+bf16_exp` is invalid.
 -  `algorithm`  Current supported :
     + `exp`
     + `gelu`
@@ -144,7 +158,7 @@ The data type of its inputs and output is fp32. The permutation of both input is
 - `has_binary_add = {0,1}`  set to  `1` to append binary add, otherwise set to 0.
 - `alpha,beta` are coefficients of matmul and binary_add. `beta` will be not effective if `has_binary_add = 0`.
 - `tile_m, tile_n` are optional. They specify the tile shape when calculating matmul.
-#### Examples
+##### Examples
 ```shell
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf transpose_matmul avx512f_p2031_p2013 32 64 32 8 12 1 1 0.25 8 2
 ```
@@ -158,7 +172,7 @@ The data type of its inputs and output is int8. The permutation of the second in
 - `has_binary_add = {0,1}`  set to  `1` to append binary add, otherwise set to 0.
 - `alpha,beta` are coefficients of matmul and binary_add. `beta` will be not effective if `has_binary_add = 0`.
 - `tile_m, tile_n` are optional. They specify the tile shape when calculating matmul.
-#### Examples
+##### Examples
 ```shell
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf transpose_matmul vnni_noperm_p2031_p1302 32 32 64 8 12
 ```

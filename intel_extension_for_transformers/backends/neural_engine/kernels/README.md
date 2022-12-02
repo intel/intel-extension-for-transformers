@@ -1,7 +1,7 @@
-Transformers-accelerated Libraries
+# Transformers-accelerated Libraries
 ===========================================
 
-## Abstract
+## Introduction
 
 Transformers-accelerated Libraries (formerly known as **SparseLib**) is a high-performance operator computing library implemented by assembly. Transformers-accelerated Libraries contains a JIT domain, a kernel domain, and a scheduling proxy framework.
 
@@ -41,7 +41,7 @@ For advanced users, please refer to [profling section](docs/profiling.md).
   std::vector<const void*> rt_data = {data0, data1, data2, data3, data4};
   spmm_kern.execute(rt_data);
 ```
-See test_spmm_vnni_kernel.cpp for details.
+Refer to corresponding [unit test](../test/gtest/kernels/) for examples.
 
 ## Developer guide for developers
 * The jit_domain/ directory, containing different JIT assemblies (Derived class of Xbyak::CodeGenerator).

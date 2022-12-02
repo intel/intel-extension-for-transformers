@@ -1,8 +1,16 @@
-# Design of the transpose matmul kernel
+- [Introduction](#introduction)
+  - [Problem Statements](#problem-statements)
+- [Matmul_p2031_2013](#matmul_p2031_2013)
+  - [Matmul_avx512f_p2031_2013](#matmul_avx512f_p2031_p2013)
+- [Matmul_noperm_p2031_p1302](#matmul_noperm_p2031_p1302)
+  - [Matmul_vnni_noperm_p2013_p1302](#matmul_vnni_noperm_p2013_p1302)
+    - [Reorder beforehand](#reorder-beforehand)
+
+# Introduction
 
 This document introduces our specialized matmul kernels for the special permutations used in transformer models.
 
-## The task
+## Problem Statements
 
 We focus our transpose matmul kernel on accelerating the "attention" of the transformer. Given the equation of dot-product attention,
 
@@ -30,13 +38,13 @@ Attention(Q, K, V): head_nun   head_size batch_size seq_len <===perm1302==== bat
 > - The concept of "perm" is derived from that of the [transpose operator of ONNX](https://github.com/onnx/onnx/blob/rel-1.11.0/docs/Operators.md#transpose). It is used to describe the permutation of tensor axes.
 > - The physical memory format is LHS, and the conceptual layout is RHS (where the last two dimensions perform matrix multiplication, leaving the rest for batching).
 
-## The kernel for the first matmul operation
+# Matmul_p2031_2013
 
-> i.e. matmul_p2031_2013
+> i.e. The kernel for the first matmul operation
 
 Currently, we have only implemented a kernel of these permutations with float32 input and output.
 
-### matmul_avx512f_p2031_p2013
+## Matmul_avx512f_p2031_p2013
 
 The following figure illustrates loops iterated by this kernel:
 
@@ -49,13 +57,13 @@ The inner-most loop body performs computation for each tile, where the results o
 
 where lighter cells indicate values used in following steps along the k-axis.
 
-## The kernel for the second matmul operation
+# Matmul_noperm_p2031_p1302
 
-> i.e. matmul_noperm_p2031_p1302
+> i.e. The kernel for the second matmul operation
 
 Currently, we have only implemented a kernel of these permutations with uint8, int8, and uint8 as left matrix, right matrix, and output matrix respectfully.
 
-## matmul_vnni_noperm_p2013_p1302
+## Matmul_vnni_noperm_p2013_p1302
 
 The following figure illustrates loops iterated by the `vnni_noperm_p2013_p1302` kernel:
 

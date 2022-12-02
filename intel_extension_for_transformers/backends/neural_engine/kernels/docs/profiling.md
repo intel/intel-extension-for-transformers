@@ -1,4 +1,4 @@
-### Performance and Profiling
+# Performance and Profiling
 
 ## Verbose
 We support a brief verbose logger for kernel execution

@@ -1,15 +1,24 @@
+- [Introduction](#introduction)
+- [Framework Features](#framework-features)
+  - [param\_type.hpp](#param_typehpp)
+  - [operator\_desc.hpp](#operator_deschpp)
+  - [jit\_binaryop\_injector.hpp](#jit_binaryop_injectorhpp)
+- [Usage](#usage)
+  - [Developer's Perspective](#developers-perspective)
+  - [User's Perspective](#users-perspective)
+
 <a name="UzSzO"></a>
 # Introduction
 Some DL operators need two changeable source operands `src1` & `src2`, apply a series of computations(e.g. add, horizontal max or combine some ops to a new op like dynamic quantization), and store the result to the dst. We call these operators **binaryop**.<br />In general, the data in `src1` and `src2` can be stored in registers or memory. Binaryop also can apply op-fusion optimization. Take the embedding layer in the bert model as an example, the gather op can be fused with the next op(binaryadd) and reduce the overhead of moving data from memory to the SIMD register in one of the source operands.<br />
 For implementing the binaryop-fusion, we design a new injector, `binaryop_injector`. The source operands `src1` & `src2` are from SIMD register and memory, We will make the binaryop_injector as a component of the postop_injector so users can apply the eltwiseops/binaryops they configured in postop-chain sequentially in the future.<br />
 For kernel developers, the using step of `binaryop_injector` is quite similar to `eltwise_injector`, but more easily. `binaryop_injector` does not need to call the `escape` function because our current binaryops are quite simple and don't need too many SIMD registers to do some computation. kernel developer also doesn't need to prepare LUT because no const value will be used in binaryop now. Please notice that except `compute_vector`, binaryop_injector also exposes some **"simple-arithmetic-op"** to the kernel developer. The purpose is to reduce the time of browsing ISA doc, developers only need to tell the injector op_type and data_type then binaryop_injector can insert appropriate instruction automatically(e.g. dt=s8, op_type=add insert `vpaddb`; dt=fp32, op_type=add insert `vaddps`).<br />
-For Sparselib's user(engine developer), if they want to config binaryop-fusion, they need to config the `binaryop_attr` filed in `operator_desc`. Unlike `eltwise_injector`, the user needs to call the `set_binaryop_list` function to set the `binaryop_attr`, rather than setting it in the construct function. The purpose is to reduce API changing and improve scalability. If more fields need to be added in the future, I suggest using the get/set function set them.
+For Transformers-accelerated Libraries's user(engine developer), if they want to config binaryop-fusion, they need to config the `binaryop_attr` filed in `operator_desc`. Unlike `eltwise_injector`, the user needs to call the `set_binaryop_list` function to set the `binaryop_attr`, rather than setting it in the construct function. The purpose is to reduce API changing and improve scalability. If more fields need to be added in the future, I suggest using the get/set function set them.
 <a name="nC8IX"></a>
-# Framework features
+# Framework Features
 <a name="gGo6C"></a>
 ## param_type.hpp
 Some new classes/structs will be introduced. The most important class is binaryop_attr, which indicates what type of algorithm we want to apply and the ptrs we needed.`static_addr` is used for normal binaryop, `scale` and `zp` are used for per-channel quantization/dequantization.  
-Please notice that SparseLib's users must free the ptrs like static_addr on their own, SparseLib will not free these ptrs.
+Please notice that Transformers-accelerated Libraries's users must free the ptrs like static_addr on their own, Transformers-accelerated Libraries will not free these ptrs.
 ```cpp
 enum class binaryop_alg : uint8_t { undef, add, sub, mul, per_channel_quant, per_channel_dequant };
 
@@ -72,10 +81,10 @@ class jit_binary_injector {
 };
 ```
 <a name="NTo8Z"></a>
-# how to use
+# Usage
 <a name="BVBDX"></a>
-## kernel developer perspective
-Kernel developer only needs two steps to use the `binaryop_injector`.<br />step1. initial the `binaryop_injector` in kernel's construct function.
+## Developer's Perspective
+Transformers-accelerated Libraries developer only needs two steps to use the `binaryop_injector`.<br />step1. initial the `binaryop_injector` in kernel's construct function.
 ```cpp
 binary_injector.binary_injector_init(this);
 ```
@@ -91,8 +100,8 @@ RegExp offset_exp = binaryop_addr + param_.thread_elt_offset * get_data_size(par
 binary_injector.compute_vector(Zmm(k), offset_exp, param_.binaryop_attrs.front(), param_.input_dt);
 ```
 <a name="tJ6bf"></a>
-## Sparselib user's perspective
-For the users of sparselib, they only need to call `set_binaryop_list` to set the `bianryop_attr_list`.<br />And add a new key "binaryop_list" in `op_attrs` for kernel hashing.
+## User's Perspective
+For the users of Transformers-accelerated Libraries, they only need to call `set_binaryop_list` to set the `bianryop_attr_list`.<br />And add a new key "binaryop_list" in `op_attrs` for kernel hashing.
 ```cpp
 layernorm_ba_desc.set_binaryop_list({{append_vec, binaryop_alg::add}});
 op_attrs["binaryop_list"]="binary_add";
