@@ -339,6 +339,7 @@ void MatmulOperator::ForwardwithTransMode(const vector<Tensor*>& input, const ve
                                            dst_->dtype() == "u8" ? &ouput_zp_ : nullptr};
 
   transpose_matmul_.execute(runtime_data);
+  this->unref_tensors(input);
 }
 
 // 1. Create primitive
