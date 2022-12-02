@@ -1,9 +1,17 @@
-# Neural Engine Tuning Mechanism
+# Engine Tuning
+- [Introduction](#introduction)
+- [Pattern Tuning for Dispatching Best Pattern](#pattern-tuning-for-dispatching-best-pattern)
+- [Graph Tuning for Dispatching Best Graph](#graph-tuning-for-dispatching-best-graph)
+- [OP Tuning for Dispatching Best Kernel and Related Runtime Config](#op-tuning-for-dispatching-best-kernel-and-related-runtime-config)
+  - [How to Turn on Op Tuning Mechanism](#how-to-turn-on-op-tuning-mechanism)
+  - [More Tuning Options](#more-tuning-options)
+
+## Introduction
 `Neural Engine` supports tuning mechanisms which will try to find the best pattern, best graph and best kernel implementation and related runtime configurations. It includes graph tuning and op tuning. The whole workflow is as follows:
 ![](imgs/engine_dispatcher.png)
 Just like the picture shown. ONNX model will be compiled to Neural Engine IR first. And then you can use graph dispatcher to tune IR on graph level. For graph level tuning, it includes graph tuning and pattern tuning. And for further performance, op tuning will bring the best recipe of op config.
 
-## Pattern Tuning For Dispatching Best Pattern
+## Pattern Tuning for Dispatching Best Pattern
 For pattern tuning, it is mainly for two big patterns (Super Bert/ Merge QKV). The algorithm will automatically determine the pattern should be off or on according to the performance. You just set tune = True in subgraph_match():
 ```python
 from intel_extension_for_transformers.backends.neural_engine.compile.loaders.loader import Loader
@@ -18,7 +26,7 @@ graph = extract(graph)
 graph = subgraph_match(graph, tune = True)
 output = graph.inference([data])
 ```
-## Graph Tuning For Dispatching Best Graph
+## Graph Tuning for Dispatching Best Graph
 For graph tuning, it is mainly for the sparse graphs or dense graphs. In some cases such as small shapes or devices with ISA, the performance of dense ops maybe perform better than sparse ops. And sparse op will bring other transpose ops. We have an easy-to-use API to tune sparse graphs, dense graphs or mix graphs automatically. You just need add graph_dispatch after `compile`:
 ```python
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
@@ -27,9 +35,9 @@ model = compile(int8_model_path)
 model.graph_dispatch(inputs_shape = [shape_0, shape_1, shape_2])
 output = model.inference([input_0, input_1, input_2])
 ```
->📌 Note: Sparse and dense graph tuning only can be used on int8 models.
+>**Note** Sparse and dense graph tuning only can be used on int8 models.
 
-## OP Tuning For Dispatching Best Kernel And Related Runtime Config 
+## OP Tuning for Dispatching Best Kernel and Related Runtime Config
 `Neural Engine` supports op tuning mechanism for trying to get the best kernel implementation and related runtime configurations. Below are the tuning ways for now (We will consider enlarging the tuning space in subsequent versions). So, before you turn on the tuning mechanism, you need to check if the model can be tuned.
 
 | op type | dtype | default kernel | tuning kernel | kernel config | remark |
@@ -37,11 +45,12 @@ output = model.inference([input_0, input_1, input_2])
 | InnerProduct | fp32 | DNNL InnerProduct | DNNL Convolution | input shape | dense fp32 weight |
 | InnerProduct | int8 | SparseLib InnerProduct | SparseLib InnerProduct | input shape, micro oc, sub func level | sparse int8 structured weight |
 
+>**Note**
 > 1. DNNL InnerProduct (MK x KN) - DNNL Convolution (NHWC, conv kernel size is 1x1), split M into NxHxW, K=C. Tune best N, H, W combinations.
 > 2. SparseLib InnerProduct (NK x KM) - SparseLib InnerProduct (NK x MmKMb), split M into MmxMb. micro oc is a positive integer fulfilling micro oc <= OC && micro oc % 4 == 0 determined the size along the output dimension is processed in each OMP iteration. Tune best MmxMb, micro oc and sub func level (higher sub_func value means more operations are done in sub-function, i.e. less unrolling) combinations.
 > 3. see op_tuning.hpp if you want to know more details.
 
-### How to turn on op tuning mechanism
+### How to Turn on Op Tuning Mechanism
 
 ```python
 # load model from disk
@@ -75,9 +84,9 @@ SparseLib InnerProduct - SparseLib  InnerProduct
 1
 InnerProduct 14124194128933833351 SparseLib 4,1024,384 0 2
 ```
->📌<font color="red">Notice</font>: Do not do other things when tuning your model! Otherwise, the final results may be affected.
+>**Note** Do not do other things when tuning your model! Otherwise, the final results may be affected.
 
-### More tuning options
+### More Tuning Options
 You can set the table file path and tuning warmup iterations if you want to simulate real deployment conditions.
 
 ```python

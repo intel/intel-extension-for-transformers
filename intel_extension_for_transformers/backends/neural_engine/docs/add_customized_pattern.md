@@ -1,5 +1,10 @@
-# Add a Customized Pattern to Neural Engine Compile
+# Add Customized Pattern
+- [Introduction](#introduction)
+- [Register the Nodes' Op Types](#register-the-nodes-op-types)
+- [Set the Pattern Mapping Config and Register the Pattern](#set-the-pattern-mapping-config-and-register-the-pattern)
+- [Fuse Pattern and Set Attributes of New Pattern after Fusion](#fuse-pattern-and-set-attributes-of-new-pattern-after-fusion)
 
+## Introduction
 The `Neural Engine` in `Intel® Extension for Transformers` support user to add customized pattern of model, which means you can compile your own pretrained model to `Neural Engine` IR (Intermediate Representation) just by adding the specific patterns which the [`compile`](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile) does not contain.
 
 The intermediate graph in `Neural Engine` can be treated as a `list` that stores all nodes of the model under control flow. Some certain nodes may compose a pattern which needs to be fused for speeding up inference. For simplifying the network structure, we also design different attributes attached to fused nodes. To aim at adding a customized pattern, there are three steps: **1. register the nodes' op_types; 2. set the pattern mapping config and register the pattern; 3. fuse pattern and set attributes of the new pattern after fusion.**
@@ -8,7 +13,7 @@ The intermediate graph in `Neural Engine` can be treated as a `list` that stores
 
 Above is a `LayerNorm` pattern in the `Distilbert_Base` onnx model. Assume it is a customized pattern in your model that need to be added in [`compile`](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile). Follow the steps below to make `Neural Engine` support this pattern, and fuse these 9 nodes to one node called `LayerNorm`.
 
-## Register the nodes' op_types
+## Register the Nodes' Op Types
 
 First, you should check whether the nodes' op_types in the pattern are registered in `Engine` or not. If not, you need to add the op_type class for [`compile`](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile) loading and extracting the origin model. All the ops can be found from the [`compile.ops`](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile/ops). For quick check, use the commands below.
 
@@ -92,7 +97,7 @@ from intel_extension_for_transformers.backends.neural_engine.compile.ops.op impo
 
 If nothing wrong, the output result should be `True`
 
-## Set the pattern mapping config and register the pattern
+## Set the Pattern Mapping Config and Register the Pattern
 
 In `Neural Engine`, we treat the pattern fusion as the process of pattern mapping: from a group nodes to another group nodes. In this step, you need to provide a config for `pattern_mapping` function and register your pattern, in order to make sure the [`compile`](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile) implements pattern fusion correctly.
 
@@ -204,7 +209,7 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
 
   If nothing wrong, the output result should be `True`.
 
-## Fuse pattern and set attributes of new pattern after fusion
+## Fuse Pattern and Set Attributes of New Pattern after Fusion
 
 - Define the pattern fusion order
 
@@ -332,7 +337,7 @@ class LayerNorm(Pattern):
 
 After finishing these three steps in [`compile`](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile), reinstall `intel_extension_for_transformers` and then use [`compile`](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile) function would compile your model with the customized pattern.
 
->📌 **NOTE**:
+>**Note**:
 >
 >1. The pattern mapping function just supports pattern after fusion is sequence for now, like [a-->b-->c] or [a]. So if the customized pattern after fusion is too complicated, you had better decompose it.
 >2. The `executor` may not support the operators' implementation of the customized pattern after fusion, you need to add them in the `executor` by yourself.

@@ -1,8 +1,14 @@
 # Pattern Recognize
+- [Introduction](#introduction)
+- [Pattern Representation](#pattern-representation)
+- [Parse Pattern Representation List](#parse-pattern-representation-list)
+- [Search Each Straight Chain Pattern](#search-each-straight-chain-pattern)
+- [Splice Sub-chains with the Main Chain and Remove Duplicate Results](#splice-sub-chains-with-the-main-chain-and-remove-duplicate-results)
 
+## Introduction
 Pattern recognition is one of the most important parts of pattern fusion. The corresponding API is `search_pattern` in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py). The main purpose of it is to find all the group nodes' names from the model that satisfy the given pattern representation. The process of it can be divided into three parts: **1. parse the pattern representation list; 2. search each straight chain pattern; 3. splice sub-chains with the main chain and remove duplicate results**.
 
-## Pattern representation
+## Pattern Representation
 
 Our pattern recognition function supports the pattern which is not sequence and has sub-graphs, like the `LayerNorm` pattern below (from TensorFlow bert_large model).
 
@@ -20,7 +26,7 @@ Second, define the main chain by choosing the longest one containing head and ta
 
 Finally, write the index and op_type of each node into a list and form the pattern representation.
 
->📌 **NOTE**:
+>**Note**
 >
 > 1. The main chain representation should always be the first one in the list, while the rest sub-chains have no order requirements.
 >
@@ -32,11 +38,11 @@ Finally, write the index and op_type of each node into a list and form the patte
 
 ![](imgs/layernorm_with_index.png)
 
-## Parse pattern representation list
+## Parse Pattern Representation List
 
 The pattern recognition function would first parse the pattern representation list and separate the main chain, sub-chains patterns and related op_type and index for searching and splicing later. It will also check the sub-chains whether have a head or not.
 
-## Search each straight chain pattern
+## Search Each Straight Chain Pattern
 
 The [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py) has `search_straight_pattern` API for searching sequence patterns. It receives `input_pattern` and `graph` parameters and exploits `DFS` algorithm to find eligible results. The `input_pattern` is a list containing several op_type from the step above. For example, it could be one like this:
 
@@ -71,7 +77,7 @@ If nothing wrong, you can get the output like this:
 
 The pattern recognition function would search each straight chain pattern after parsing it in the graph. It stores the main chain pattern matched results first and implements other sub-chains pattern search and splicing one by one afterwards.
 
-## Splice sub-chains with the main chain and remove duplicate results
+## Splice Sub-chains with the Main Chain and Remove Duplicate Results
 
 Each sub-chain pattern matched results would find their attached main chain by checking the node names with the indexes. They are merged into the last result recursively by inserting node names at certain positions with the help of the indexes. However, due to the volatile and complicated pattern form, there must have other validation ways to avoid duplicated and incorrect outcomes. For example, a pattern may be symmetric, the main chain and sub-chain are totally same. Or a pattern has several exactly the same sub-chains attached at the same location. So when doing splicing, the pattern recognition function would screen the sub-chain pattern matched results by checking if any node name occurs already or not. And before returning the final results, it also removes the duplicate element in the list. For more details, you can see the implementation of `search_pattern` API.
 
