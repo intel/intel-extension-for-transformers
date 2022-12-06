@@ -8,6 +8,8 @@ In this tutorial, we will deploy a TF/ONNX model using Engine inference or throu
 
 [3. Manual customized yaml and weight binary to use Engine inference](#3-manual-customized-yaml-and-weight-binary-to-use-engine-inference)
 
+[4. Integrate Neural Engine as Backend](#4-Integrate-Neural-Engine-as-Backend)
+
 ## 1. Architecture
 Neural Engine support model optimizer, model executor and high performance kernel for multi device.
 
@@ -113,3 +115,44 @@ OMP_NUM_THREADS=4 numactl -C '0-3' ./neural_engine ...
 Same as the previous session, the ***input_data*** should be numpy array data as a list, and ***out*** is a dict which pair the output tensor name and value(numpy array).
 
 If you want to close log information during inference, use the command `export GLOG_minloglevel=2` before run the inference to set log level to ERROR.  `export GLOG_minloglevel=1` set log level to info again.
+
+## 4. Integrate Neural Engine as Backend
+Nerual Engine can also be integrated as a backend into other frameworks. There is a simple example to show the process how to build Neural Engine from source as submodule.  
+Actually, the nlp_executor.cc and the CMakeLists.txt under neural_engine folder are showed how to use C++ Neural Engine. We just reuse them and modify the CMakeLists.txt to use Neural Engine as submodule.
+```
+mkdir engine_integration
+git init
+git submodule add https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit xtransformers
+git submoudle update --init --recursive
+cp xtransformers/intel_extension_for_transformers/backends/neural_engine/CMakeLists.txt .
+cp xtransformers/intel_extension_for_transformers/backends/neural_engine/executor/src/nlp_executor.cc neural_engine_example.cc
+```
+Modify the NE_ROOT in the CmakeLists.txt.
+```
+set(NE_ROOT "${PROJECT_SOURCE_DIR}/xtransformers/intel_extension_for_transformers/backends/neural_engine")
+```
+Compile neural_engine_example.cc as binary named neural_engine_example and link Nerual Engine include/lib into neural_engine_example.
+```
+# build neural_engine_example
+add_executable(neural_engine_example
+    neural_engine_example.cc
+)
+
+target_include_directories(neural_engine_example
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
+        ${BOOST_INC_DIRS}
+)
+
+target_link_libraries(neural_engine_example
+    PRIVATE
+        ${CMAKE_THREAD_LIBS_INIT}
+        gflags
+        neural_engine
+```
+Build and run the neural_engine_example.
+```
+cmake ..
+make -j
+./neural_engine --config=<path to yaml file> --weight=<path to bin file> --batch_size=32 --iterations=20
+```
