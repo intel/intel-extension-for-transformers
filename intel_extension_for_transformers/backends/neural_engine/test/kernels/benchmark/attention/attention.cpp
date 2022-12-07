@@ -344,12 +344,11 @@ void get_true_matmul_noperm_p2013_p1302(const std::vector<jd::tensor_desc>& ts_d
 
 template <typename T>
 void prepare_sparse_data(T* vector_data, jd::dim_t rows, jd::dim_t cols, jd::dim_t blk_row, jd::dim_t blk_col,
-                         float sparsity, uint32_t* seed = nullptr) {
-  uint32_t default_seed = 123;
-  if (seed == nullptr) seed = &default_seed;
+                         float sparsity, uint32_t seed = 123) {
+  std::srand(seed);
   for (int i = 0; i < rows; i += blk_row) {
     for (int j = 0; j < cols; j += blk_col) {
-      bool fill_zero = rand_r(seed) % 100 <= (sparsity * 100);
+      bool fill_zero = std::rand() % 100 <= (sparsity * 100);
       if (fill_zero) {
         for (int bi = i; bi < i + blk_row; ++bi) {
           for (int bj = j; bj < j + blk_col; ++bj) {
@@ -435,11 +434,6 @@ void attention_bench::get_true_data() {
   std::transform(ts_descs.begin(), ts_descs.end(), ts_shapes.begin(), [](tensor_desc d) { return d.shape(); });
   std::vector<data_type> ts_types(ts_descs.size());
   std::transform(ts_descs.begin(), ts_descs.end(), ts_types.begin(), [](tensor_desc d) { return d.dtype(); });
-
-  const jd::dim_t head_num = ts_shapes[jd::ssd::MERGE_DST][0];
-  const jd::dim_t head_size = ts_shapes[jd::ssd::MERGE_DST][1];
-  const jd::dim_t batch_size = ts_shapes[jd::ssd::MERGE_DST][2];
-  const jd::dim_t seq_len = ts_shapes[jd::ssd::MERGE_DST][3];
 
   const void* q_weight_ptr = reinterpret_cast<void*>(str_to_num<uint64_t>(op_attrs["q_weight_ptr"]));
   const void* q_bias_ptr = reinterpret_cast<void*>(str_to_num<uint64_t>(op_attrs["q_bias_ptr"]));
@@ -576,15 +570,24 @@ void attention_bench::get_true_data() {
 bool attention_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
-
   get_true_data();
-
   auto buf1 = p.rt_data[jd::ssd::MERGE_DST];
   auto size1 = p.op_desc.tensor_descs()[jd::ssd::MERGE_DST].size();
   auto buf2 = q.rt_data[jd::ssd::MERGE_DST];
   auto size2 = q.op_desc.tensor_descs()[jd::ssd::MERGE_DST].size();
   // Should compare buffer with different addresses
   const auto& dst_type = p.op_desc.tensor_descs()[jd::ssd::MERGE_DST].dtype();
+  std::unordered_map<std::string, std::string> op_attrs = args.first.op_desc.attrs();
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["q_weight_ptr"])));
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["k_weight_ptr"])));
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["v_weight_ptr"])));
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["q_bias_ptr"])));
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["k_bias_ptr"])));
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["v_bias_ptr"])));
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["q_scales_ptr"])));
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["k_scales_ptr"])));
+  free(reinterpret_cast<void*>(str_to_num<intptr_t>(op_attrs["v_scales_ptr"])));
+
   if (dst_type == jd::data_type::fp32) {
     return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
   } else if (dst_type == jd::data_type::s32) {
@@ -675,9 +678,9 @@ void attention_bench::gen_case() {
 
   // Merge weight
   const size_t wei_bytes = ts_descs[jd::ssd::Q_WEIGHT].size() * type_size[ts_descs[jd::ssd::Q_WEIGHT].dtype()];
-  char* q_weight_addr = new char[wei_bytes];
-  char* k_weight_addr = new char[wei_bytes];
-  char* v_weight_addr = new char[wei_bytes];
+  void* q_weight_addr = malloc(wei_bytes);
+  void* k_weight_addr = malloc(wei_bytes);
+  void* v_weight_addr = malloc(wei_bytes);
   const char* rt_data_qkv_ip_wei = static_cast<const char*>(rt_data_qkv_ip[jd::ssd::WEI]);
   memcpy(q_weight_addr, rt_data_qkv_ip_wei, wei_bytes);
   memcpy(k_weight_addr, rt_data_qkv_ip_wei + wei_bytes, wei_bytes);
@@ -688,9 +691,9 @@ void attention_bench::gen_case() {
 
   // Merge bias
   const size_t bias_bytes = ts_descs[jd::ssd::Q_BIAS].size() * type_size[ts_descs[jd::ssd::Q_BIAS].dtype()];
-  char* q_bias_addr = new char[bias_bytes];
-  char* k_bias_addr = new char[bias_bytes];
-  char* v_bias_addr = new char[bias_bytes];
+  void* q_bias_addr = malloc(bias_bytes);
+  void* k_bias_addr = malloc(bias_bytes);
+  void* v_bias_addr = malloc(bias_bytes);
   const char* rt_data_qkv_ip_bias = static_cast<const char*>(rt_data_qkv_ip[jd::ssd::BIAS]);
   memcpy(q_bias_addr, rt_data_qkv_ip_bias, bias_bytes);
   memcpy(k_bias_addr, rt_data_qkv_ip_bias + bias_bytes, bias_bytes);
@@ -701,9 +704,9 @@ void attention_bench::gen_case() {
 
   // Merge scales
   const size_t scale_bytes = ts_descs[jd::ssd::Q_SCALES].size() * type_size[ts_descs[jd::ssd::Q_SCALES].dtype()];
-  char* q_scales_addr = new char[scale_bytes];
-  char* k_scales_addr = new char[scale_bytes];
-  char* v_scales_addr = new char[scale_bytes];
+  void* q_scales_addr = malloc(scale_bytes);
+  void* k_scales_addr = malloc(scale_bytes);
+  void* v_scales_addr = malloc(scale_bytes);
   const char* rt_data_qkv_ip_scale = static_cast<const char*>(rt_data_qkv_ip[jd::ssd::SCALES]);
   memcpy(q_scales_addr, rt_data_qkv_ip_scale, scale_bytes);
   memcpy(k_scales_addr, rt_data_qkv_ip_scale + scale_bytes, scale_bytes);

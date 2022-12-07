@@ -80,8 +80,8 @@ class matmul_vnni_noperm_p2031_p1302_k_t : public kernel_t {
     safe_delete(jit_ker_Ba4b_Ab4a_ba_);
     safe_delete(jit_trans_src0_);
     safe_delete(jit_trans_src1_);
-    if (src0_tmp_ != nullptr) free(src0_tmp_);
-    if (src1_tmp_ != nullptr) free(src1_tmp_);
+    if (src0_tmp_ != nullptr) aligned_free(src0_tmp_);
+    if (src1_tmp_ != nullptr) aligned_free(src1_tmp_);
   }
 
   // Delete move constructor and move operator

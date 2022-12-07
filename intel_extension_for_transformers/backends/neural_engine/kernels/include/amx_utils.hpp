@@ -30,7 +30,7 @@ class tile_param_t {
   bool is_bf16;
   int K_pack;
 
-  tile_param_t() {}
+  tile_param_t() : M_tile(16), N_tile(16), K_tile(64), is_bf16(false), K_pack(4) {}
   tile_param_t(int m_tile, int n_tile, int k_tile, bool bf16, int k_pack)
       : M_tile(m_tile), N_tile(n_tile), K_tile(k_tile), is_bf16(bf16), K_pack(k_pack) {}
 

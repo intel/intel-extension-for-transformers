@@ -42,7 +42,6 @@ class attention_bench : public kernel_bench {
   int64_t batch_size;
   int64_t seq_len;
   float sparsity;
-  // data_type in_dt;
   data_type dt_dst;
   std::unordered_map<std::string, std::string> op_attrs;
 

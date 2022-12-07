@@ -118,7 +118,10 @@ class binaryop_attr {
     scale = nullptr;
     zp = nullptr;
   }
-  binaryop_attr(void* ptr, binaryop_alg alg, data_type dt) : static_addr(ptr), op_alg(alg), op_dt(dt) {}
+  binaryop_attr(void* ptr, binaryop_alg alg, data_type dt) : static_addr(ptr), op_alg(alg), op_dt(dt) {
+    scale = nullptr;
+    zp = nullptr;
+  }
   void set_scale(float* scale) { this->scale = scale; }
   void set_zp(float* zp) { this->zp = zp; }
 };

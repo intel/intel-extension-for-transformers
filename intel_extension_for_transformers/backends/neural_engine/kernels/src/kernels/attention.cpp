@@ -147,12 +147,13 @@ bool attention_kd_t::init() {
 
   // weight merge
   // TODO(Yi): merge QKV together
-  int8_t* qk_weight_addr = aligned_allocator_t<int8_t>::allocate(ip_chanel * ip_chanel * 2);
+  void* qk_weight_addr = reinterpret_cast<void*>(aligned_allocator_t<int8_t>::allocate(ip_chanel * ip_chanel * 2));
   memcpy(qk_weight_addr, q_weight_addr, wei_bytes);
-  memcpy(qk_weight_addr + wei_bytes, k_weight_addr, wei_bytes);
+  void* qk_weight_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(qk_weight_addr) + wei_bytes);
+  memcpy(qk_weight_addr_offset, k_weight_addr, wei_bytes);
 
-  auto qk_sparse_ptr =
-      new bsr_data_t<int8_t>(spns::reorder_to_bsr_group<int8_t, 4>(ip_chanel * 2, ip_chanel, 4, 1, qk_weight_addr));
+  auto qk_sparse_ptr = new bsr_data_t<int8_t>(
+      spns::reorder_to_bsr_group<int8_t, 4>(ip_chanel * 2, ip_chanel, 4, 1, reinterpret_cast<int8_t*>(qk_weight_addr)));
   aligned_allocator_t<int8_t>::deallocate(qk_weight_addr);
 
   // bias merge
