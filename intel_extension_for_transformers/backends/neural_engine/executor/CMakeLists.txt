@@ -2,10 +2,13 @@ project(neural_engine)
 
 find_library(LIBJEMALLOC jemalloc ${NE_THIRD_PARTY_DIR}/jemalloc/lib)
 if(${LIBJEMALLOC} STREQUAL LIBJEMALLOC-NOTFOUND)
-  execute_process(COMMAND ./autogen.sh --disable-initial-exec-tls
+  MESSAGE(STATUS "Build JEMalloc lib. Please install autoconf in advance: conda/apt install autoconf.")
+  execute_process(COMMAND bash autogen.sh --disable-initial-exec-tls
                   WORKING_DIRECTORY ${NE_THIRD_PARTY_DIR}/jemalloc)
   execute_process(COMMAND make -j
                 WORKING_DIRECTORY ${NE_THIRD_PARTY_DIR}/jemalloc)
+else()
+  MESSAGE(STATUS "JEMalloc lib path = ${NE_THIRD_PARTY_DIR}/jemalloc/lib.")
 endif()
 
 FILE(GLOB COMMON_SRCS "src/*.cpp")

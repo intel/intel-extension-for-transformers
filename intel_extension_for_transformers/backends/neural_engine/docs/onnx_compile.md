@@ -45,7 +45,7 @@ After that, you can get the <fp32/bf16/int8>-model.onnx under model_and_tokenize
 Compiling a model to IR is much easy. You just use compile API in python as follows and IR will be stored in the specified directory path like the following fp32 model example.
 ```python
 # import compile api from neural engine
-from nlp_toolkit.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.backends.neural_engine.compile import compile
 # compile onnx model to neural engine ir
 graph = compile("./model_and_tokenizer/fp32-model.onnx")
 # save the graph and get the final ir

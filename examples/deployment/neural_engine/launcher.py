@@ -318,7 +318,7 @@ def add_instance_num_flag(prefix_list):
 def get_memory_settings(path, args):
     """append memory setting."""
     memory_prefix_list = []
-    jemalloc_prefix = "LD_PRELOAD={}/intel_extension_for_transformers/backends/neural_engine/executor/"\
+    jemalloc_prefix = "LD_PRELOAD={}/intel_extension_for_transformers/backends/neural_engine/"\
                       "third_party/jemalloc/lib/libjemalloc.so:$LD_PRELOAD ".format(path)
     if args.memory_allocator == "jemalloc":
         memory_prefix_list.append(jemalloc_prefix)
