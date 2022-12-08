@@ -85,7 +85,7 @@ we have provided several pruning examples, which are trained on different datase
 ### [SQuAD](https://github.com/intel/neural-compressor/tree/master/examples/pytorch/nlp/huggingface_models/question-answering/pruning)
 We can train a sparse model with NxM (2:4) pattern:
 ```
-python3 ./run_qa_no_trainer.py \
+python3 ./run_glue_no_trainer.py \
             --model_name_or_path "/path/to/dense_finetuned_model/" \
             --pruning_config "./bert_mini_2in4.yaml" \
             --dataset_name "squad" \
@@ -100,7 +100,7 @@ python3 ./run_qa_no_trainer.py \
 ```
 We can also choose 4x1 as our pruning pattern:
 ```
-python ./run_qa_no_trainer.py \
+python ./run_glue_no_trainer.py \
         --model_name_or_path "/path/to/dense_finetuned_model/" \
         --pruning_config "./bert_mini_4x1.yaml" \
         --dataset_name "squad" \
@@ -121,7 +121,7 @@ python ./run_qa_no_trainer.py \
 Dense model training is also supported as following (by setting --do_prune to False):
 ```
 python \
-    ./run_qa_no_trainer.py \
+    ./run_glue_no_trainer.py \
     --model_name_or_path "prajjwal1/bert-mini" \
     --pruning_config "./bert_mini_4x1.yaml" \
     --dataset_name "squad" \
