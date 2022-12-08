@@ -1,0 +1,7 @@
+torch
+datasets
+tqdm
+transformers
+accelerate
+huggingface_hub
+intel_extension_for_transformers
