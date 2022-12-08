@@ -48,7 +48,7 @@ def collate_fn(examples):
     return {"pixel_values": pixel_values, "labels": labels}
 
 class dataloader_wrapper(object):
-    def __init__(self, batch_size, data_dir = './cached-2k-imagenet-1k-datasets'):
+    def __init__(self, batch_size, feature_extractor_name, data_dir = './cached-2k-imagenet-1k-datasets'):
         self.batch_size = batch_size       
 
         dataset = datasets.load_from_disk(data_dir)
@@ -69,14 +69,10 @@ class dataloader_wrapper(object):
             id2label[str(i)] = label
 
         feature_extractor = AutoFeatureExtractor.from_pretrained(
-            'google/vit-large-patch16-224',
-            #model_args.feature_extractor_name or model_args.model_name_or_path,
+            feature_extractor_name,
             cache_dir = None,
             revision='main',
             use_auth_token=False,
-            # cache_dir=model_args.cache_dir,
-            # revision=model_args.model_revision,
-            # use_auth_token=True if model_args.use_auth_token else None,
         )
 
         # Define torchvision transforms to be applied to each image.
@@ -97,15 +93,11 @@ class dataloader_wrapper(object):
 
         if "validation" not in dataset:
             raise ValueError("--do_eval requires a validation dataset")
-        # if data_args.max_eval_samples is not None:
-        #     dataset["validation"] = (
-        #         dataset["validation"].shuffle(seed=training_args.seed).select(range(data_args.max_eval_samples))
-        #     )
         
         dataset["validation"].set_transform(val_transforms)
 
         self.eval_data = DataLoader(
-            dataset["validation"], collate_fn=collate_fn, batch_size=8)
+            dataset["validation"], collate_fn=collate_fn, batch_size=self.batch_size)
 
     def get_eval_data(self):
         return self.eval_data

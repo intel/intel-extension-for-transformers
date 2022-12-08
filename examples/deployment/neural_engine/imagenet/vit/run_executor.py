@@ -26,20 +26,14 @@ def get_args():
                         help="Benchmark mode of performance or accuracy.")
     parser.add_argument("--batch_size", default=8,
                          type=int, help="Batch size.")
-    parser.add_argument("--seq_len", default=128,
-                        type=int, help="Sequence length.")
     parser.add_argument("--warm_up", default=5, type=int,
                         help="Warm up iteration in performance mode.")
     parser.add_argument("--iteration", default=10, type=int,
                         help="Iteration in performance mode.")
-    parser.add_argument("--tokenizer_dir", default="textattack/bert-base-uncased-MRPC", type=str,
-                        help="Pre-trained model tokenizer name or path")
     parser.add_argument("--data_dir", default="./data", type=str,
                         help="Data cache directory.")
-    parser.add_argument("--dataset_name", default="glue", type=str,
-                        help="Name of dataset.")
-    parser.add_argument("--task_name", default="mrpc", type=str,
-                        help="Task name of dataset.")
+    parser.add_argument("--feature_extractor_name", default="google/vit-large-patch16-224", type=str,
+                        help="the feature extractor name")
     parser.add_argument("--log_file", default="executor.log", type=str,
                         help="File path to log information.")
     args = parser.parse_args()
@@ -49,8 +43,7 @@ if __name__ == '__main__':
     args = get_args()
     executor = Neural_Engine(args.input_model, args.log_file)
     if args.mode == "accuracy":
-        executor.accuracy(args.batch_size, args.data_dir, args.seq_len, args.dataset_name,
-                          args.task_name, args.tokenizer_dir)
+        executor.accuracy(args.batch_size, args.feature_extractor_name, args.data_dir)
     elif args.mode == "performance":
         executor.performance(args.batch_size, args.iteration, args.warm_up)
     else:

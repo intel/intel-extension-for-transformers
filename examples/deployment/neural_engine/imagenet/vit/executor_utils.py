@@ -114,11 +114,10 @@ class Neural_Engine(object):
         self.graph = load_graph(model_path)
         self.log_file = log_file
 
-    def accuracy(self, batch_size, data_dir, seq_len, 
-                dataset_name, task_name,tokenizer_dir):
+    def accuracy(self, batch_size, feature_extractor_name, data_dir):
         # load dataset
         log.info("Load dataset ......")
-        eval_dataloader = dataloader_wrapper(batch_size, data_dir).get_eval_data()
+        eval_dataloader = dataloader_wrapper(batch_size, feature_extractor_name, data_dir).get_eval_data()
         def validate(val_loader, graph, print_freq=10):
             batch_time = AverageMeter('Time', ':6.3f')
             top1 = AverageMeter('Acc@1', ':6.2f')
