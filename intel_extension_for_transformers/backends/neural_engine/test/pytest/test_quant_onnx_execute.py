@@ -16,10 +16,14 @@
 # limitations under the License.
 
 import os
+import sys
 import unittest
 import numpy as np
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 
+
+def is_win():
+    return sys.platform.startswith('win')
 class TestQuantOnnxExecute(unittest.TestCase):
     @classmethod
     def setUpClass(self):
@@ -36,6 +40,8 @@ class TestQuantOnnxExecute(unittest.TestCase):
         input_2 = np.random.uniform(low=0, high=1, size=[1, 128]).astype('int32')
         # compile and execute qlinear model
         qlinear_model_path = "/tf_dataset2/models/nlp_toolkit/qlinear/bert_mini_sst2_qlinear.onnx"
+        if is_win():
+            qlinear_model_path = "D:\\dataset\\nlptoolkit_ut_model\\qlinear\\bert_mini_sst2_qlinear.onnx"
         os.environ['GLOG_minloglevel'] = '2'
         self.assertTrue(os.path.exists(qlinear_model_path),
             'ONNX QLinear model is not found, please set your own model path!')
@@ -44,6 +50,8 @@ class TestQuantOnnxExecute(unittest.TestCase):
         qlinear_output = list(qlinear_output_dict.values())[0]        
         # compile and execute qdq model
         qdq_model_path = "/tf_dataset2/models/nlp_toolkit/qlinear/bert_mini_sst2_qdq.onnx"
+        if is_win():
+            qdq_model_path = "D:\\dataset\\nlptoolkit_ut_model\\qlinear\\bert_mini_sst2_qdq.onnx"
         self.assertTrue(os.path.exists(qdq_model_path),
             'ONNX QDQ model is not found, please set your own model path!')
         qdq_model = compile(qdq_model_path)
