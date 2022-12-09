@@ -15,4 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine version file."""
+
 __version__ = "1.0b"

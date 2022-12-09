@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine onnx utils."""
 
 import numpy as np
 import re
@@ -24,6 +25,7 @@ from .ops.tensor import Tensor
 from . import graph_utils as util
 
 def get_children(node, input_name_to_nodes=None):
+    """Get the node's output nodes in the graph."""
     if input_name_to_nodes is None:
         input_name_to_nodes = {}
 
@@ -35,24 +37,27 @@ def get_children(node, input_name_to_nodes=None):
     return children
 
 def get_node_children_names(model, node):
-    """Get the node's output nodes' name in the graph
+    """Get the node's output nodes' name in the graph.
+
     Args:
         model: ONNXModel
         node: NodeProto in onnx model
+
     Returns:
         outputs: names list
     """
-
     output_nodes = get_children(node)
     outputs = [node.name for node in output_nodes]
     return outputs
 
 
 def get_initializer_children_names(model, initializer):
-    """Get the initializer's output nodes' name in the graph
+    """Get the initializer's output nodes' name in the graph.
+
     Args:
         model: ONNXModel
         initializer: initializer in onnx model
+
     Returns:
         outputs: names list
     """
@@ -67,17 +72,18 @@ def get_initializer_children_names(model, initializer):
 
 def graph_node_names_details(model):
     """Parse the graph nodes ans get the graph_nodes_dict.
+
     Be used for Grpah class with cerating a new graph.
     The node_name is the key, node in value is for getting the Const
     tensor value and the input_tensor source op; output_names in value
     is the node ouput name list; outputs in value is for output_tensor dest op
     Args:
         model: ONNXModel
+        
     Returns:
         node_names_details: the graph node info dict
 
     """
-
     node_details = namedtuple('node_details', ['node', 'outputs'])
     node_names_details = {}
     for initializer in model.graph.initializer:
@@ -115,12 +121,14 @@ def graph_node_names_details(model):
     return node_names_details
 
 def is_supported_onnx_graph(graph):
+    """Check if the onnx graph supported."""
     for node in graph.node:
         if not is_supported_onnx_node(node.op_type):
             return False
     return True
 
 def is_supported_onnx_node(node_name):
+    """Check if the node type is supported."""
     supported_ops_type = ["Add", "Softmax", "Slice", "ReduceMean", "Reshape",
                         "Concat", "Gather", "QuantizeLinear", "Transpose", "MatMul",
                         "Sqrt", "Unsqueeze", "Shape", "Erf", "Pow", "DequantizeLinear",
@@ -132,7 +140,7 @@ def is_supported_onnx_node(node_name):
         return False
 
 def change_num_name(tensor_name):
-    # for number string
+    """For number string."""
     try:
         if str(int(tensor_name)) == tensor_name:
             tensor_name += '_tensor'
@@ -142,12 +150,14 @@ def change_num_name(tensor_name):
 
 
 def bias_to_int32(bias_node, a_scale, b_scale):
-    """convert the int8 bias to int32 bias
+    """Convert the int8 bias to int32 bias.
+
     Args:
         bias_node: bias_add in graph (from onnx framework)
         a_scale: matmul node input matrice a scale tensor
         b_scale: matmul node input matrice b scale tensor
         model: Grpah class
+
     Returns:
         int32 bias numpy array
 
@@ -177,7 +187,8 @@ def bias_to_int32(bias_node, a_scale, b_scale):
 
 
 def onnx_extract_operator(node, model, nodes_dict):
-    """decorate the operator in onnx
+    """Decorate the operator in onnx.
+
     Args:
         node: NodeProto
         model: ONNXModel
@@ -195,9 +206,11 @@ def onnx_extract_operator(node, model, nodes_dict):
     input_tensors = []
     output_tensors = []
 
-    """ input_tensors
-    each input_tensor has its own soure op, but same dest op
-    so both have single string
+    """Input_tensors
+
+    Note:
+        each input_tensor has its own soure op, but same dest op
+        so both have single string
     """
     input_names = []
     # name list
@@ -240,8 +253,10 @@ def onnx_extract_operator(node, model, nodes_dict):
             input_tensors.append(input_tensor)
         input_names.append(node.name)
 
-    """ output_tensors
-    in onnx, NodeProto has the output attribute
+    """Output_tensors.
+    
+    Note:
+        in onnx, NodeProto has the output attribute
     """
     output_tensor_names = node.output
     for output_tensor_name in output_tensor_names:

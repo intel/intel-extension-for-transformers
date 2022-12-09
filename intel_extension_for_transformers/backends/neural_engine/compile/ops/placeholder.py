@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
@@ -22,10 +24,13 @@ from .tensor import Tensor
 # tf.placeholder(dtype, shape=None, name=None)
 @operator_registry(operator_type='Placeholder')
 class Placeholder(Operator):
+    """Parse the Placeholder operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             from ..tf_utils import TF_DTYPE_ID
             try:

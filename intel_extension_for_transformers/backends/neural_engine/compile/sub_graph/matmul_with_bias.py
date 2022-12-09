@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The MatMulWithBias pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
@@ -24,8 +26,13 @@ import copy
 
 @pattern_registry(pattern_type='MatMulWithBias')
 class MatMulWithBias(Pattern):
-    def __call__(self, model):
+    """The MatMulWithBias pattern.
 
+    Fuse the original sub-graph into the custom acceleration 'MatMulWithBias' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
+    def __call__(self, model):
+        """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'MatMulWithBias': [
                 {

@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine onnx extractor file."""
 
 from .. import logger
 from ..graph.graph import Graph
@@ -25,18 +26,21 @@ from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor 
 
 
 class ONNXExtractor(object):
-    """
+    """The ONNXExtractor class.
+
     Decorate the node in model.graph_def, and the new node has the attributes like input_tensors
     and output_tensors, these tensors record the source/dest op name. All of these nodes 
     (in a list) will compose a graph, which is Graph class, as the return object.
+
     Args:
         model: ONNXModel
+
     Return:
         Graph: Graph class, the new graph object
-
     """
     @classmethod
     def __call__(self, model):
+        """The __call__ function of the extractor."""
         # onnx_consts = model.initializer()
         graph_nodes_dict = graph_node_names_details(model)
         logger.info('Start to extarct onnx model ops...')

@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine graph utils."""
+
 from . import logger 
 import copy
 import re
@@ -37,8 +39,10 @@ DTYPES_DICT = {"float16": "fp16",
 
 def names_from_input(name):
     """Static method that get the valid node / tensor name from input name.
+
     Args:
         name (string): name defined in the input field.
+
     Returns:
         string tuple: (node's name, tensor's name)
 
@@ -62,9 +66,11 @@ def names_from_input(name):
 
 
 def get_data_dtype(data):
-    """Get the const data dtype
+    """Get the const data dtype.
+
     Args:
        data (numpy data): a const data to model
+
     Returns:
        dtype (String): the value in DTYPES_DICT
     """
@@ -78,20 +84,25 @@ def get_data_dtype(data):
     return dtype
 
 def quant_info_init(): 
+    """Initialize the quant info."""
     global _quant_info
     _quant_info = {}
 
 def insert_quant_info(key, value):
+    """Modify the quant info."""
     _quant_info[key] = value
  
 def get_quant_info():
+    """Get the quant info."""
     return _quant_info
 
 def search_straight_pattern(input_pattern, graph):
-    """search user specified patterns on internal grpah structure.
+    """Search user specified patterns on internal grpah structure.
+
     Attention: the input computation chain in the graph which can be called pattern, there must be
                 straight (or sequence). It means it has not any subgraph nodes. Otherwise this
                 function returns []
+
     Args:
         input_pattern (list): Contains the op_type of the nodes in pattern. The element of the
         list could be string/list/tuple, string or list means the specified op_type are mandatory
@@ -101,6 +112,7 @@ def search_straight_pattern(input_pattern, graph):
         'Mul' + 'Mul' + 'Add'
         'Mul' + 'Mul' + 'AddV2'
         graph: Graph Class, the new graph generated from extractor.
+
     Returns: [string list]. The length is the matched pattern results in the graph, for example,
             the graph has 24 layers and each layer has a 'LayerNorm' pattern, then the length is
             24. Each match pattern result is still a list contains the node names, and the last
@@ -121,6 +133,7 @@ def search_straight_pattern(input_pattern, graph):
             ]
     """
     def _validate_input(data, creteria):
+        """Validation of input data."""
         if isinstance(creteria, str) and data == creteria:
             return True
 
@@ -131,11 +144,13 @@ def search_straight_pattern(input_pattern, graph):
 
     def _compare_list(list_a, list_b):
         """Check list a is a subset of list b.
+
         e.g, list a is ['a', 'b', 'c'] while list b is ['a', 'b', 'c', 'd'],
         then list a is subset of list b.
         Args:
             list_a ([Any]): list A
             list_b ([Any]): list B
+
         Returns:
             [bool]: list a is a subset of list b or not.
         """
@@ -149,6 +164,7 @@ def search_straight_pattern(input_pattern, graph):
         return is_subset
 
     def _dfs(op_names, op_types, node, pattern):
+        """Use depth-first algorithm to search for patterns according to node types."""
         if pattern == []:
             return
         start_index = 0
@@ -252,6 +268,7 @@ def search_straight_pattern(input_pattern, graph):
 
 def search_pattern(pattern_list, graph):
     """Search the complete pattern in the graph.
+
     Args:
         pattern_list: a list contains  pattern representation. The pattern representation is also
                       a list and each node in the list is a tuple, its form is like "(op_idx,
@@ -269,7 +286,7 @@ def search_pattern(pattern_list, graph):
 
     Returns: [string list], as same as search_straight_pattern func.
 
-    NOTE:
+    Note:
         1. The op_idx follows the order in the original frozen model, which means you had better
            not identify them on your own casually.
         2. the main top-down computation flow follows the "tf control flow". It's a straight chain
@@ -317,16 +334,15 @@ def search_pattern(pattern_list, graph):
         connection with the main computation flow. The idx would make the returned string list
         with right order.
     """
-    # parse the pattern_list and match sub-graph
     def _search_subgraph(subgraph):
+        """Parse the pattern_list and match sub-graph."""
         p_subgraph = [c[1] for c in subgraph]
         subgraph_idx = [c[0] for c in subgraph]
         m_subgraph = search_straight_pattern(p_subgraph, graph)
         return (m_subgraph, subgraph_idx)
 
-    # avoid splicing error when sub_graphs with totally same op types and tail node (#7)
-    # double check node idx and name
     def _has_duplicated_names_in_main_chain(sub_chain, main_chain, sub_chain_node_idx, has_head):
+        """Avoid splicing error when sub_graphs with totally same op types and tail node."""
         main_chain_node_names = [main_chain[i][0] for i in main_chain.keys()]
         ret_flag = False
         if has_head:
@@ -349,8 +365,8 @@ def search_pattern(pattern_list, graph):
 
         return ret_flag
 
-    # splicing the main_chain and sub_chain
     def _check_subgraph(iter_ret, m_subgraph, sub_graph_idx, has_head):
+        """Splicing the main_chain and sub_chain."""
         flag = [0] * len(iter_ret)
         for each_sub in m_subgraph:
             for i in range(len(iter_ret)):
@@ -388,11 +404,14 @@ def search_pattern(pattern_list, graph):
                     continue
         return iter_ret
 
-    # remove the duplicated results due to the complicated symmetric issues (#6)
-    # lists may have same nodes names between each other
-    # if has symmetric chains, they must appear consecutively
-    # just keep the first one
     def _rm_duplicated_rets(results):
+        """Remove the duplicated results due to the complicated symmetric issues.
+        
+        Note:
+            lists may have same nodes names between each other
+            if has symmetric chains, they must appear consecutively
+            just keep the first one
+        """
         if len(results) <= 1:
             return results
         keep_index = []
@@ -485,12 +504,14 @@ def search_pattern(pattern_list, graph):
 
 
 def construct_node(node_name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict()):
-    """construct node with engine op_type
+    """Construct node with engine op_type.
+
     Args:
         node_name: string, name of the node
         op_type: string, type of the node
         input_tensors: list, contains the input tensors of the node
         output_tensors: list, contains the output tensors of the node
+
     Returns:
         new_node: Operator class
     """
@@ -507,6 +528,7 @@ def construct_node(node_name, op_type, input_tensors=[], output_tensors=[], attr
 
 def insert_pattern(target_node_names, new_nodes, graph):
     """Replace the specific pattern matched from the new constructed graph with new pattern.
+
     Args:
         target_node_names: A string list ccontains the names of nodes that will be replaced
         new_nodes: a list contains nodes with Operator class
@@ -575,11 +597,13 @@ def insert_pattern(target_node_names, new_nodes, graph):
 
 
 def pattern_mapping(pattern_name, mapping_dict, graph):
-    """
+    """The pattern mapping function.
+
     Args:
         pattern_name:  the name of the customized pattern representation, for example, 'LayerNorm'
         mapping_dict: a element in mapping_config[pattern_name], config for pattern mapping.
         graph: Graph class.
+
     Returns:
         tuple, the first element is the new nodes insert start idx, the second element is a new
         node list, the third is a list contains required old nodes need to be returned from origin
@@ -635,8 +659,8 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
 
     """
 
-    # search pattern and get the in_pattern match_result and info for out_pattern
     def _get_pattern_info():
+        """Search pattern and get the in_pattern match_result and info for out_pattern."""
         in_pattern = mapping_dict['patterns']['in']
         search_mode = mapping_dict['search_mode']
         assert search_mode in ['op_type', 'node_name'], 'Unsupported mode'
@@ -763,8 +787,8 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
 
         return (in_match_result, new_node_names, input_tensors, output_tensors, ret_old_nodes)
 
-    # created the new nodes in out_pattern
     def _create_out_pattern(new_node_names, input_tensors_list, output_tensors_list):
+        """Created the new nodes in out_pattern."""
         from .ops.tensor import Tensor
         out_pattern = mapping_dict['patterns']['out']
         # sequence = mapping_dict['sequence']
@@ -829,8 +853,8 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
 
         return new_nodes
 
-    # replace the in_pattern with out_pattern
     def _replace_pattern(in_match_result, new_nodes, graph):
+        """Replace the in_pattern with out_pattern."""
         assert len(in_match_result) == len(
             new_nodes), 'out_pattern should have as some num as in_pattern in graph.'
         for i in range(len(in_match_result)):
@@ -854,9 +878,11 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
 
 
 def list2str(src_perm):
-    """convert the shape list to str for emitting yaml
+    """Convert the shape list to str for emitting yaml.
+
     Args:
         src_perm: list, for example [1,2,3,4]
+
     Returns:
         ret: str, for example '1,2,3,4'
     """
@@ -865,9 +891,11 @@ def list2str(src_perm):
 
 
 def str2list(src_str):
-    """convert the str to shape list
+    """Convert the str to shape list.
+
     Args:
         src_str: for example '1,2,3,4'
+
     Returns:
         ret: list, for example [1,2,3,4]
     """
@@ -877,6 +905,7 @@ def str2list(src_str):
     return ret
 
 def pattern_mapping_conf_validation(conf_dict):
+    """The validation of the pattern mapping config."""
     dict_schema = Schema({
     'patterns' : Schema({
         'in' : And(
@@ -945,15 +974,18 @@ def pattern_mapping_conf_validation(conf_dict):
     return dict_schema.validate(conf_dict)
 
 class LazyImport(object):
-    """Lazy import python module till use
-       Args:
-           module_name (string): The name of module imported later
+    """Lazy import python module till use.
+
+    Args:
+        module_name (string): The name of module imported later
     """
     def __init__(self, module_name):
+        """The module name initialization."""
         self.module_name = module_name
         self.module = None
 
     def __getattr__(self, name):
+        """The __getattr__ function."""
         try:
             self.module = importlib.import_module(self.module_name)
             mod = getattr(self.module, name)
@@ -964,6 +996,7 @@ class LazyImport(object):
         return mod
 
     def __call__(self, *args, **kwargs):
+        """The __call__ function."""
         function_name = self.module_name.split('.')[-1]
         module_name = self.module_name.split(f'.{function_name}')[0]
         self.module = importlib.import_module(module_name)
@@ -971,7 +1004,8 @@ class LazyImport(object):
         return function(*args, **kwargs)
 
 def get_model_fwk_name(model):
-    """Detect the input model belongs to which framework
+    """Detect the input model belongs to which framework.
+
     Args:
         model (string): framework name that supported by Neural Engine, 
                         if there's no available fwk info, then return 'NA'.
@@ -979,6 +1013,7 @@ def get_model_fwk_name(model):
     onnx = LazyImport('onnx')
     tf = LazyImport('tensorflow')
     def _is_onnxruntime(model):
+        """Check if the model is onnxruntime."""
         try:
             if isinstance(model, str):
                 graph = onnx.load(model)
@@ -992,6 +1027,7 @@ def get_model_fwk_name(model):
         return 'NA'
 
     def _is_tensorflow(model):
+        """Check if the model is tensorflow."""
         try:
             if isinstance(model, str):
                 graph_def = tf.compat.v1.GraphDef()
@@ -1006,6 +1042,7 @@ def get_model_fwk_name(model):
         return 'NA'
 
     def _is_neural_engine(model):
+        """Check if the model is neural engine."""
         if model and os.path.isdir(model):
             file_list = os.listdir(model)
             is_engine = True

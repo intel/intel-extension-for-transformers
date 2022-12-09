@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine sub_graph module."""
+
 from .pattern import PATTERNS, Pattern, pattern_registry
 from .subgraph_matcher import SubGraphMatcher
 

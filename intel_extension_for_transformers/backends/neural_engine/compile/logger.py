@@ -15,14 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine logger file."""
+
 import os
 import logging
 
 
 class Logger(object):
+    """The logger class."""
     __instance = None
 
     def __new__(cls):
+        """The __new__ function."""
         if Logger.__instance is None:
             Logger.__instance = object.__new__(cls)
             Logger.__instance._log()
@@ -42,6 +46,7 @@ class Logger(object):
         self._logger.propagate = False
 
     def get_logger(self):
+        """Get logger."""
         return self._logger
 
 
@@ -74,6 +79,7 @@ DEBUG = logging.DEBUG
 
 
 def log(level, msg, *args, **kwargs):
+    """The format for the log level."""
     if isinstance(msg, dict):
         for _, line in enumerate(_pretty_dict(msg).split('\n')):
             Logger().get_logger().log(level, line, *args, **kwargs)
@@ -82,6 +88,7 @@ def log(level, msg, *args, **kwargs):
 
 
 def debug(msg, *args, **kwargs):
+    """The format for the debug level."""
     if isinstance(msg, dict):
         for _, line in enumerate(_pretty_dict(msg).split('\n')):
             Logger().get_logger().debug(line, *args, **kwargs)
@@ -90,6 +97,7 @@ def debug(msg, *args, **kwargs):
 
 
 def error(msg, *args, **kwargs):
+    """The format for the error level."""
     if isinstance(msg, dict):
         for _, line in enumerate(_pretty_dict(msg).split('\n')):
             Logger().get_logger().error(line, *args, **kwargs)
@@ -98,6 +106,7 @@ def error(msg, *args, **kwargs):
 
 
 def fatal(msg, *args, **kwargs):
+    """The format for the fatal level."""
     if isinstance(msg, dict):
         for _, line in enumerate(_pretty_dict(msg).split('\n')):
             Logger().get_logger().fatal(line, *args, **kwargs)
@@ -106,6 +115,7 @@ def fatal(msg, *args, **kwargs):
 
 
 def info(msg, *args, **kwargs):
+    """The format for the info level."""
     if isinstance(msg, dict):
         for _, line in enumerate(_pretty_dict(msg).split('\n')):
             Logger().get_logger().info(line, *args, **kwargs)
@@ -114,6 +124,7 @@ def info(msg, *args, **kwargs):
 
 
 def warn(msg, *args, **kwargs):
+    """The format for the warn level."""
     if isinstance(msg, dict):
         for _, line in enumerate(_pretty_dict(msg).split('\n')):
             Logger().get_logger().warning(line, *args, **kwargs)
@@ -122,6 +133,7 @@ def warn(msg, *args, **kwargs):
 
 
 def warning(msg, *args, **kwargs):
+    """The format for the warning level."""
     if isinstance(msg, dict):
         for _, line in enumerate(_pretty_dict(msg).split('\n')):
             Logger().get_logger().warning(line, *args, **kwargs)

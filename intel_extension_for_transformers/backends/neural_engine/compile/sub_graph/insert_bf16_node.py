@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The InsertBF16Node Pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
@@ -25,9 +27,14 @@ import numpy as np
 
 @pattern_registry(pattern_type='InsertBF16Node')
 class InsertBF16Node(Pattern):
+    """The InsertBF16Node pattern.
+
+    Fuse the original sub-graph into the custom acceleration 'InsertBF16Node' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
 
     def __call__(self, model):
-
+        """The __call__ function of this pattern class."""
         def fp32_to_bf16(fp32_np):
             assert(fp32_np.dtype==np.float32)
             int32_np = fp32_np.view(dtype=np.int32)

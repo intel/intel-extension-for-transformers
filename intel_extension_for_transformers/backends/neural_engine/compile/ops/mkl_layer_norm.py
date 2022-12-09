@@ -15,13 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
 
 @operator_registry(operator_type='_MklLayerNorm')
 class _MklLayerNorm(Operator):
+    """Parse the _MklLayerNorm operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
@@ -31,5 +35,6 @@ class _MklLayerNorm(Operator):
             if axis != -1:
                 self._attr['axis'] = axis
             self._attr['epsilon'] = node.attribute[2].f
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             self._attr['epsilon'] = node.attr['epsilon'].f

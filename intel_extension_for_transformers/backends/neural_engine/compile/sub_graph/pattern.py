@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The supported pattern file."""
+
 from abc import abstractmethod
 
 # for complicated pattern, use a several lists and tuple to represent the main computation flow
@@ -87,8 +89,8 @@ def pattern_registry(pattern_type):
     Returns:
         cls: The class of register.
     """
-
     def decorator_pattern(cls):
+        """The pattern decorator."""
         if pattern_type in PATTERNS:
             raise ValueError('Cannot have two patterns with the same name')
         PATTERNS[pattern_type] = cls
@@ -98,7 +100,8 @@ def pattern_registry(pattern_type):
 
 
 class Pattern(object):
-
+    """The bass pattern class."""
     @abstractmethod
     def __call__(self, model, *args, **kwargs):
+        """The __call__ function of the pattern class."""
         raise NotImplementedError

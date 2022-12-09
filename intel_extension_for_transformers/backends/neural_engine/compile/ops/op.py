@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator file."""
+
 from abc import abstractmethod
 from collections import namedtuple, OrderedDict
 from .tensor import Tensor
@@ -43,7 +45,9 @@ def operator_registry(operator_type):
 
 
 class Operator(object):
+    """The class of neural engine operator."""
     def __init__(self):
+        """The init function of this operator."""
         self._name = ''
         self._op_type = ''
         self._input_tensors = []
@@ -52,49 +56,60 @@ class Operator(object):
 
     @property
     def name(self):
+        """Get the operator name."""
         return self._name
 
     @name.setter
     def name(self, name):
+        """Name assignment."""
         self._name = name
 
     @property
     def op_type(self):
+        """Get op_type."""
         return self._op_type
 
     @op_type.setter
     def op_type(self, op_type):
+        """Op_type assignment."""
         self._op_type = op_type
 
     @property
     def input_tensors(self):
+        """Get input_tensors."""
         return self._input_tensors
 
     @input_tensors.setter
     def input_tensors(self, input_tensors):
+        """Input tensor assignment."""
         self._input_tensors = input_tensors
 
     @property
     def output_tensors(self):
+        """Get output tensor."""
         return self._output_tensors
 
     @output_tensors.setter
     def output_tensors(self, output_tensors):
+        """Output_tensor assignment."""
         self._output_tensors = output_tensors
 
     @property
     def attr(self):
+        """Get attr."""
         return self._attr
 
     @attr.setter
     def attr(self, attr):
+        """Attr assignment."""
         self._attr = attr
 
     def set_attr(self, framework, node):
+        """Attr initialization."""
         self._attr = OrderedDict()
 
-    # extract the op from framework
     def extract(self, framework, node, model, nodes_dict):
+        """Extract the op from framework."""
         from ..tf_utils import tf_extract_operator
         from ..onnx_utils import onnx_extract_operator
 
@@ -108,17 +123,17 @@ class Operator(object):
             node, model, nodes_dict)
         self.set_attr(framework, node)
 
-    # make the op by set the attributes
     def construct(self, name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict()):
+        """Make the op by set the attributes."""
         self._name = name
         self._op_type = op_type
         self._input_tensors = input_tensors
         self._output_tensors = output_tensors
         self._attr = attr
 
-    # get the op config in graph
     @property
     def config(self):
+        """Get the op config in the graph."""
         conf_dict = OrderedDict()
         # conf_dict['type'] = self._op_type
         conf_dict['type'] = self._op_type

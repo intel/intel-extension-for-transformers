@@ -14,14 +14,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-1. First use model loader to get the computation graph with corresponding framework.
-   The graph contains nodes and edges, the node is op and the edge is the tensor.
-2. Then extract the ops in the graph and pack them to our form.
-3. Next exploit these above ops to consist sub-graph, which can see as "a new big op", like
-   LayerNorm. Note that there may have different computation flow in one subgraph.
-4. Finally, convert them to .yaml file and .bin file for model configuration and inference.
-"""
+
+"""The neural engine compile module."""
 
 from collections import OrderedDict
 from .loaders.loader import Loader
@@ -37,6 +31,7 @@ COMPILES = OrderedDict({
 
 
 def _config_validation(config):
+    """The validation of the input config."""
     if config == None:
         return None
 
@@ -53,6 +48,7 @@ def _config_validation(config):
 
 
 def start_pipeline(model, config=None):
+    """The compile pipeline."""
     compile_list = []
     # initialize the compile
     for compile_type in COMPILES.keys():
@@ -65,6 +61,17 @@ def start_pipeline(model, config=None):
 
 
 def compile(model, config=None):
+    """The compile interface.
+
+    Firstly, use model loader to get the computation graph with corresponding framework. 
+    The graph contains nodes and edges, the node is op and the edge is the tensor.
+    Then extract the ops in the graph and pack them to our form.
+    Next exploit these above ops to consist sub-graph, which can see as "a new big op", like LayerNorm.
+
+    Note:
+        There may have different computation flow in one subgraph.
+    Finally, convert them to .yaml file and .bin file for model configuration and inference.
+    """
     if get_model_fwk_name(model) == 'neural engine':
         from .graph import Graph
         graph = Graph()

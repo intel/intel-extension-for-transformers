@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The QKVMerge Pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
@@ -24,7 +26,13 @@ import numpy as np
 
 @pattern_registry(pattern_type="QKVMerge")
 class QKVMerge(Pattern):
+    """The QKVMerge pattern.
+
+    Fuse the original sub-graph into the custom acceleration 'QKVMerge' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
     def __call__(self, model):
+        """The __call__ function of this pattern class."""
         def get_zero_ratio(matrix, block):
             sparse_ratio = -1
             if matrix.ndim == 2 and len(block) == 2:

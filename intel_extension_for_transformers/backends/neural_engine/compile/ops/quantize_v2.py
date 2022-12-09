@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
@@ -24,10 +26,13 @@ from .tensor import Tensor
 # so just keep the first one as the output_tensor
 @operator_registry(operator_type='QuantizeV2')
 class QuantizeV2(Operator):
+    """Parse the QuantizeV2 operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from tensorflow."""
         self._op_type = 'Quantize'
         if framework == 'tensorflow':
             self._attr['output_dtype'] = 'u8'

@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
@@ -23,16 +25,19 @@ from .tensor import Tensor
 # input dtype -> dest stype
 @operator_registry(operator_type='Cast')
 class Cast(Operator):
+    """Parse the Cast operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
-
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             from ..tf_utils import TF_DTYPE_ID
             self._attr['SrcT'] = TF_DTYPE_ID[node.attr['SrcT'].type]
             self._attr['DstT'] = TF_DTYPE_ID[node.attr['DstT'].type]
             self._attr['Truncate'] = node.attr['Truncate'].b
+        """Extract the node attr from onnxruntime."""
         if framework == 'onnxruntime':
             from ..onnx_utils import ONNX_DTYPE_ID
             self._attr['DstT'] = ONNX_DTYPE_ID[node.attribute[0].i]

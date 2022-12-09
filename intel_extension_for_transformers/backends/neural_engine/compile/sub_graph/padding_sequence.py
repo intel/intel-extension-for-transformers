@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The PaddingSequence pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 import copy
@@ -24,9 +26,13 @@ from ..ops.tensor import Tensor
 
 @pattern_registry(pattern_type='PaddingSequence')
 class PaddingSequence(Pattern):
+    """The PaddingSequence pattern.
 
+    Fuse the original sub-graph into the custom acceleration 'PaddingSequence' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
     def __call__(self, model):
-
+        """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'PaddingSequence': [
                 {

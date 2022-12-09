@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 from ..graph_utils import list2str
@@ -22,10 +24,13 @@ from ..graph_utils import list2str
 
 @operator_registry(operator_type='ReduceSum')
 class ReduceSum(Operator):
+    """Parse the ReduceSum operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from onnxruntime."""
         if framework == 'onnxruntime':
             for attribute in node.attribute:
                 if attribute.name == 'axes':

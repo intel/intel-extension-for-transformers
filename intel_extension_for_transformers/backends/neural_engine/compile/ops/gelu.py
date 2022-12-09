@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
@@ -25,9 +27,12 @@ from .tensor import Tensor
 # approximate=False: return x * 0.5 * (1.0 + math_ops.erf(x / math.sqrt(2.0)))
 @operator_registry(operator_type='Gelu')
 class Gelu(Operator):
+    """Parse the Gelu operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             self._attr['approximate'] = node.attr['approximate'].b

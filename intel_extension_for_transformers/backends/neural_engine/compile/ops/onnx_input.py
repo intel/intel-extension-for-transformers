@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 from ..graph_utils import names_from_input
@@ -23,10 +25,13 @@ from ..graph_utils import names_from_input
 # graph.input
 @operator_registry(operator_type='ONNXINPUT')
 class ONNXINPUT(Operator):
+    """Parse the ONNXINPUT operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def extract(self, framework, node, model, nodes_dict):
+        """Extract operators to the neural engine."""
         from ..onnx_utils import ONNX_DTYPE_ID
         self._name = node.name
         self._op_type = 'ONNXINPUT'

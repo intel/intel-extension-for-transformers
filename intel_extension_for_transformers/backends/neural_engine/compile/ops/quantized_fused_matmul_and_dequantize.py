@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
@@ -22,7 +24,9 @@ from .tensor import Tensor
 # The inputs must be two-dimensional matrices
 @operator_registry(operator_type='_QuantizedFusedMatMulAndDequantize')
 class _QuantizedFusedMatMulAndDequantize(Operator):
+    """Parse the _QuantizedFusedMatMulAndDequantize operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
@@ -30,6 +34,7 @@ class _QuantizedFusedMatMulAndDequantize(Operator):
         # for baremetal, if QuantizedMatMulWithBiasAndDequantize has post op
         # its output_dtype maybe the origin dtype in attributes, float32
         # but if it has not, use int8 (s8) for performance consideration
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             self._attr['output_dtype'] = 'fp32'  # 's8'
             transpose_a = node.attr['transpose_a'].b

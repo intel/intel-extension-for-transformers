@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The loader file."""
+
 from ..graph_utils import LazyImport, get_model_fwk_name
 
 onnx = LazyImport('onnx')
@@ -22,8 +24,11 @@ tf = LazyImport('tensorflow')
 
 
 class Loader(object):
+    """Load the model into the frontend of different inference frameworks."""
     def __call__(self, model, pattern_config=None):
+        """Chceck if the model is the tensorflow or onnxruntime."""
         framework = get_model_fwk_name(model)
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             if isinstance(model, str):
                 graph = tf.Graph()
@@ -34,6 +39,7 @@ class Loader(object):
                         tf.import_graph_def(graph_def, name='')
                 config = tf.compat.v1.ConfigProto()
                 model = tf.compat.v1.Session(graph=graph, config=config)
+        """Extract the node attr from onnxruntime."""
         if framework == 'onnxruntime':
             if isinstance(model, str):
                 model = onnx.load(model)

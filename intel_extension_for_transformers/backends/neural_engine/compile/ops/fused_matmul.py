@@ -15,16 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
 
 @operator_registry(operator_type='FusedMatMul')
 class FusedMatMul(Operator):
+    """Parse the FusedMatMul operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from onnxruntime."""
         if framework == 'onnxruntime':
             self._attr['transpose_a'] = bool(node.attribute[0].i)
             self._attr['transpose_b'] = bool(node.attribute[1].i)
@@ -34,10 +39,13 @@ class FusedMatMul(Operator):
 # The inputs must be two-dimensional matrices
 @operator_registry(operator_type='_FusedMatMul')
 class _FusedMatMul(Operator):
+    """Parse the _FusedMatMul operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             transpose_a = node.attr['transpose_a'].b
             transpose_b = node.attr['transpose_b'].b

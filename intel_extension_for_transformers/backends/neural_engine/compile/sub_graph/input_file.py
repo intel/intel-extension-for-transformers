@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The InputFile Pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
@@ -23,8 +25,13 @@ from .. import graph_utils as util
 # remove the input_file patterns in tensorflow model if it has
 @pattern_registry(pattern_type='InputFile')
 class InputFile(Pattern):
-    def __call__(self, model):
+    """The InputFile pattern.
 
+    Fuse the original sub-graph into the custom acceleration 'InputFile' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
+    def __call__(self, model):
+        """The __call__ function of this pattern class."""
         patterns = {
             'InputFile': [
                 [[(0, 'Placeholder'), (2, 'Reshape'), (3, 'TensorSliceDataset'),

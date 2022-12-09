@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 import copy
@@ -25,10 +27,13 @@ import copy
 @operator_registry(operator_type='Softmax')
 @operator_registry(operator_type='SoftmaxGraph')
 class Softmax(Operator):
+    """Parse the Softmax operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from frameworks."""
         if framework == "tensorflow":
             # last_dim = len(self._input_tensors[0].shape) - 1
             try:

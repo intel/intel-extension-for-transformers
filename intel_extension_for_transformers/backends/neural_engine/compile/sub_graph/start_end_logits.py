@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The StartEndLogits pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 import copy
@@ -24,8 +26,13 @@ from ..ops.tensor import Tensor
 
 @pattern_registry(pattern_type='StartEndLogits')
 class StartEndLogits(Pattern):
-    def __call__(self, model):
+    """The StartEndLogits pattern.
 
+    Fuse the original sub-graph into the custom acceleration 'StartEndLogits' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
+    def __call__(self, model):
+        """The __call__ function of this pattern class."""
         patterns = {
             'StartEndLogits': [
                 # bert_large_sparse_model in squadv1 dataset

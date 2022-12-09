@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The LayerNorm Pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
@@ -22,6 +24,11 @@ from .. import graph_utils as util
 
 @pattern_registry(pattern_type='LayerNorm')
 class LayerNorm(Pattern):
+    """The LayerNorm pattern.
+
+    Fuse the original sub-graph into the custom acceleration 'LayerNorm' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
     """
     Different model has the different layer_norm pattern,
     which means they have differrnt nodes order even though they all follow the formula.
@@ -32,7 +39,7 @@ class LayerNorm(Pattern):
         = src * gamma / sqrt(variance+c) + (beta-mean*gamma/sqrt(variance+c)) # 2, like bert_large
     """
     def __call__(self, model):
-
+        """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'LayerNorm': [
 

@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine tensorflow utils."""
 
 import numpy as np
 import re
@@ -25,11 +26,13 @@ from . import graph_utils as util
 
 
 def create_tf_node(op, name, inputs):
-    """Create a nodedef object
+    """Create a nodedef object.
+
     Args:
         op (string): op type
         name (string): op name
         inputs (string list): op's inputs name
+
     Returns:
         nodedef: the created nodedef object
     """
@@ -45,12 +48,14 @@ def create_tf_node(op, name, inputs):
 
 def graph_node_names_details(nodes):
     """Parse the graph nodes ans get the graph_nodes_dict.
+
     Be used for Grpah class with cerating a new graph.
     The node_name is the key, node in value is for getting the Const
     tensor value and the input_tensor source op; outputs in value is for
     output_tensor dest op.
     Args:
         nodes (tendorflow graph_def.node): NodeDef list
+
     Returns:
         node_names_details: the graph node info dict
 
@@ -79,12 +84,14 @@ def graph_node_names_details(nodes):
 
 
 def get_tensor_dest_op(node_name, tensor_name, nodes_dict):
-    """get the tensor dest op name
-       Args:
+    """Get the tensor dest op name.
+
+    Args:
         node_name: string, the source node name of tensor
         tensor_name: string, with ':0' or something like it
         nodes_dict: dict returned by the graph_node_names_details function
-       Returns:
+
+    Returns:
         dest_op_names: list, store the tensor's dest op names
     """
     dest_op_names = []
@@ -99,7 +106,8 @@ def get_tensor_dest_op(node_name, tensor_name, nodes_dict):
 
 
 def tf_extract_operator(node, model, nodes_dict):
-    """decorate the operator in tensorflow
+    """Decorate the operator in tensorflow.
+
     Args:
         node: NodeDef
         model: TensorflowModel

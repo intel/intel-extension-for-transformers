@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 from ..graph_utils import list2str
@@ -29,11 +31,13 @@ from ..graph_utils import list2str
 # normally, we don't need the param 'conjugate'
 @operator_registry(operator_type='Transpose')
 class Transpose(Operator):
+    """Parse the Transpose operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
-
+        """Extract the node attr from onnxruntime."""
         if framework == "tensorflow":
             if self._input_tensors[1].source_op == []:
                 dst_perm = list(self._input_tensors[1].data)

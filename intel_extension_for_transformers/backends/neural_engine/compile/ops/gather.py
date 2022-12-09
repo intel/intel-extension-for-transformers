@@ -15,16 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
 
 @operator_registry(operator_type='Gather')
 class Gather(Operator):
+    """Parse the Gather operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from frameworks."""
         self._op_type = 'Gather'
         if framework == 'tensorflow':
             self._attr['batch_dims'] = node.attr['batch_dims'].i
@@ -50,10 +55,13 @@ class Gather(Operator):
 # see: https://www.tensorflow.org/api_docs/python/tf/gather
 @operator_registry(operator_type='GatherV2')
 class GatherV2(Operator):
+    """Parse the GatherV2 operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from frameworks."""
         self._op_type = 'Gather'
         if framework == 'tensorflow':
             self._attr['batch_dims'] = node.attr['batch_dims'].i

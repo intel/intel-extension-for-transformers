@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine subgraph matcher file."""
+
 import time
 import copy
 import numpy as np
@@ -53,7 +55,9 @@ EXECUTOR_TYPE = {
 }
 
 class SubGraphMatcher(object):
+    """The SubGraphMatcher class."""
     def __call__(self, model, tune = False, pattern_config = None):
+        """The __call__ function of SubGraphMatcher class."""
         logger.info('Start to implement Sub-Graph matching and replacing...') 
         if tune:
             self._tune_patterns(model)

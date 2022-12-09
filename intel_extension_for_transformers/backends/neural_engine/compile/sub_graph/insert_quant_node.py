@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The InsertQuantNode Pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
@@ -25,9 +27,14 @@ import numpy as np
 
 @pattern_registry(pattern_type='InsertQuantNode')
 class InsertQuantNode(Pattern):
+    """The InsertQuantNode pattern.
+
+    Fuse the original sub-graph into the custom acceleration 'InsertQuantNode' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
 
     def __call__(self, model):
-
+        """The __call__ function of this pattern class."""
         def get_scale_zp(tensor_min_data, tensor_max_data, dtype):
             # for asym quant
             if (dtype == 'u8'):

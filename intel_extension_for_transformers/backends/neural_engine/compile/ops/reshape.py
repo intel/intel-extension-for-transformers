@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 import numpy as np
@@ -26,11 +28,14 @@ from ..graph_utils import list2str
 # defines the shape of the output tensor.
 @operator_registry(operator_type='Reshape')
 class Reshape(Operator):
+    """Parse the Reshape operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
-        # if framework == 'tensorflow':
+        """Extract the node attr from tensorflow."""
+        #if framework == 'tensorflow':
         if self.input_tensors[1].source_op == []:
             dst_shape = list2str(self._input_tensors[1].data)
             self._attr['dst_shape'] = dst_shape

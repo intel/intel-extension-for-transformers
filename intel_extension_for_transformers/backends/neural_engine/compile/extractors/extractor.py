@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine base extractor file."""
+
 from .tf_extractor import TensorflowExtractor
 from .onnx_extractor import ONNXExtractor
 from .. import logger
@@ -27,12 +29,14 @@ EXTRACTORS = {
 
 
 class Extractor(object):
-    """
+    """Extractor base class.
+
     A super class for an operation extractor.
     Do additional extraction of operation attributes without modifying of graph topology.
     """
 
     def __call__(self, model, pattern_config = None):
+        """The __call__ funtion of the base extractor class."""
         framework = model[1]
         extractor = EXTRACTORS[framework]()
         model = extractor(model[0])

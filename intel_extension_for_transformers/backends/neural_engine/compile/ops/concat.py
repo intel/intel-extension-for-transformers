@@ -15,17 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
 
 @operator_registry(operator_type='Concat')
 class Concat(Operator):
+    """Parse the Concat operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
-
+        """Extract the node attr from onnxruntime."""
         if framework == "onnxruntime":
             if node.attribute[0].type == 2:
                 self._attr['axis'] = node.attribute[0].i

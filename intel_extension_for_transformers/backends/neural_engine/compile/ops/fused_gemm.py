@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
@@ -22,10 +24,13 @@ from .tensor import Tensor
 # The inputs must be two-dimensional matrices
 @operator_registry(operator_type='FusedGemm')
 class FusedGemm(Operator):
+    """Parse the FusedGemm operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from frameworks."""
         activation_dict = {'Tanh': 'tanh'}
         self._op_type = 'InnerProduct'
         if framework == 'onnxruntime':

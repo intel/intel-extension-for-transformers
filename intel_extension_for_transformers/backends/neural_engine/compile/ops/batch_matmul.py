@@ -15,16 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
 
 @operator_registry(operator_type='BatchMatMul')
 class BatchMatMul(Operator):
+    """Parse the BatchMatMul operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             self._attr['transpose_a'] = node.attr['adj_x'].b
             self._attr['transpose_b'] = node.attr['adj_y'].b

@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 from ..graph_utils import list2str
@@ -24,12 +26,16 @@ from ..graph_utils import list2str
 # tf.fill(dims, value, name=None)
 @operator_registry(operator_type='Squeeze')
 class Squeeze(Operator):
+    """Parse the Squeeze operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             self._attr['squeeze_dims'] = node.attr['squeeze_dims'].list.i
+        """Extract the node attr from onnxruntime."""
         if framework == 'onnxruntime':
             # ai.onnx v11
             if len(node.attribute):

@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The module of the neural engine operators."""
+
 from .op import OPERATORS, Operator, operator_registry
 from .tensor import Tensor
 from os.path import dirname, basename, isfile, join

@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The AddEmbeddings Pattern."""
+
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
@@ -22,8 +24,13 @@ from .. import graph_utils as util
 
 @pattern_registry(pattern_type='AddEmbeddings')
 class AddEmbeddings(Pattern):
-    def __call__(self, model):
+    """The AddEmbeddings pattern.
 
+    Fuse the original sub-graph into the custom acceleration 'AddEmbeddings' graph.
+    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    """
+    def __call__(self, model):
+        """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'AddEmbeddings': [
                 {

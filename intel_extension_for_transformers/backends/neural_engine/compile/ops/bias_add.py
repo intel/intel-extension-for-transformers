@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine operator mapping file."""
+
 from .op import Operator, operator_registry
 from .tensor import Tensor
 
@@ -24,10 +26,12 @@ from .tensor import Tensor
 # This is a special case of tf.add where bias is restricted to be 1-D
 @operator_registry(operator_type='BiasAdd')
 class BiasAdd(Operator):
+    """Parse the BiasAdd operator to the neural engine."""
     def __init__(self):
+        """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
-
+        """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             self._attr['data_format'] = str(node.attr['data_format'].s, encoding="utf-8")

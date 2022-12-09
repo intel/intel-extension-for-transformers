@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine tensorflow extractor file."""
 
 from .. import logger
 from ..graph.graph import Graph
@@ -24,18 +25,21 @@ from ..graph_utils import names_from_input
 
 
 class TensorflowExtractor(object):
-    """
+    """The tensorflowExtractor Class.
+
     Decorate the node in model.graph_def, and the new node has the attributes like input_tensors
     and output_tensors, these tensors record the source/dest op name. All of these nodes
     (in a list) will compose a graph, which is Graph class, as the return object.
+    
     Args:
         model: TensorflowModel
+
     Return:
         Graph: Graph class, the new graph object
-
     """
     @classmethod
     def __call__(self, model):
+        """The __call__ function of the extractor."""
         nodes = model.graph_def.node
         graph_nodes_dict = graph_node_names_details(nodes)
         logger.info('Start to extarct tensorflow model ops...')

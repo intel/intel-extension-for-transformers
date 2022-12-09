@@ -15,11 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine tensor file."""
+
 from collections import OrderedDict
 import numpy as np
 
 
 class Tensor(object):
+    """The definition of the neural engine."""
     def __init__(self,
                  name='',
                  source_op=None,
@@ -28,6 +31,7 @@ class Tensor(object):
                  data=None,
                  dtype=None,
                  location=None):
+        """The __init__ function."""
         self._name = name
         # assume data in tensor should be numpy array
         # however, we don't assign the data diretly if the tensor is
@@ -50,62 +54,77 @@ class Tensor(object):
 
     @property
     def name(self):
+        """Get the tensor name."""
         return self._name
 
     @name.setter
     def name(self, name):
+        """Name Assignment."""
         self._name = name
 
     @property
     def data(self):
+        """Get the tensor data."""
         return self._data
 
     @data.setter
     def data(self, data):
+        """Data assignment."""
         self._data = data
 
     @property
     def shape(self):
+        """Get the tensor shape."""
         return self._shape
 
     @shape.setter
     def shape(self, shape):
+        """Shape assignment."""
         self._shape = shape
 
     @property
     def dtype(self):
+        """Get the tensor dtype."""
         return self._dtype
 
     @dtype.setter
     def dtype(self, dtype):
+        """Dtype assignment."""
         self._dtype = dtype
 
     @property
     def location(self):
+        """Get the tensor location."""
         return self._location
 
     @location.setter
     def location(self, location):
+        """Location assignment."""
         self._location = location
 
     @property
     def source_op(self):
+        """Get source_op."""
         return self._source_op
 
     @source_op.setter
     def source_op(self, source_op):
+        """Source_op assignment."""
         self._source_op = source_op
 
     @property
     def dest_op(self):
+        """Get dest_op."""
         return self._dest_op
 
     @dest_op.setter
     def dest_op(self, dest_op):
+        """Dest_op assignment."""
         self._dest_op = dest_op
 
     @property
     def config(self):
+        """Get the config dict in the graph."""
         conf_dict = OrderedDict()
         if self._dtype is not None:
             conf_dict['dtype'] = self._dtype

@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The neural engine graph file."""
+
 import re
 from collections import OrderedDict, namedtuple
 from .. import logger
@@ -26,7 +28,9 @@ import time
 
 
 class Graph(object):
+    """The defintion of the neural engine graph."""
     def __init__(self):
+        """The graph initialization."""
         self._nodes = []
         self._node_id = {}
         self._engine = None
@@ -35,14 +39,17 @@ class Graph(object):
 
     @property
     def nodes(self):
+        """Get nodes."""
         return self._nodes
 
     @nodes.setter
     def nodes(self, new_nodes):
+        """Nodes assignment."""
         self._nodes = new_nodes
 
     @property
     def execution_options(self):
+        """The options for execution."""
         logger.warning("execution_options' option values are constants. " \
                     "Please reset the execution_option property if you want change some " \
                     "options when inference, like 'graph.execution_options = your_new_options'. " \
@@ -63,6 +70,7 @@ class Graph(object):
         self._refresh_execution_options = True
 
     def insert_nodes(self, index, nodes):
+        """Insert nodes to neural engine IR."""
         idx = index
         for node in nodes:
             node = self.modify_node_connections(node, mode='insert')
@@ -74,6 +82,7 @@ class Graph(object):
         self._engine = None
 
     def remove_nodes(self, node_names):
+        """Remove nodes from neural engine IR."""
         for node_name in node_names:
             if node_name not in self._node_id.keys():
                 continue
@@ -87,6 +96,7 @@ class Graph(object):
         self._engine = None
 
     def get_node_id(self, node_name):
+        """Get the node id according to the node name."""
         try:
             index = self._node_id[node_name]
             return index
@@ -94,6 +104,7 @@ class Graph(object):
             raise ValueError('There is no node named {}, please check the input name.'.format(node_name))
 
     def get_node_by_name(self, node_name):
+        """Get the node according to the node name."""
         index = self.get_node_id(node_name)
         if index is not None:
             return self._nodes[index]
@@ -101,6 +112,7 @@ class Graph(object):
             return None
 
     def rename_node(self, old_name, new_name):
+        """Modify the node name."""
         index = self.get_node_id(old_name)
         for i in range(len(self._nodes[index].input_tensors)):
             self._nodes[index].input_tensors[i].dest_op = [new_name]
@@ -124,6 +136,7 @@ class Graph(object):
         self._engine = None
 
     def change_node_input_tensors(self, node_name, index, tensor=None, mode='modify'):
+        """Modify the input tensors of the node."""
         assert mode in ['insert', 'remove', 'modify'], 'Wrong mode'
         node = self.get_node_by_name(node_name)
         index = index if index >= 0 else len(node.input_tensors) + index
@@ -155,6 +168,7 @@ class Graph(object):
         self._engine = None
 
     def change_node_output_tensors(self, node_name, index, tensor=None, mode='modify'):
+        """Modify the output tensors of the node."""
         assert mode in ['insert', 'remove', 'modify'], 'Wrong mode'
         node = self.get_node_by_name(node_name)
         index = index if index >= 0 else len(node.input_tensors) + index
@@ -173,6 +187,7 @@ class Graph(object):
         self._engine = None
 
     def get_pre_node_names(self, node_name):
+        """Get the previous node name."""
         pre_node_names = []
         node = self.get_node_by_name(node_name)
         for input_tensor in node.input_tensors:
@@ -182,6 +197,7 @@ class Graph(object):
         return pre_node_names
 
     def get_next_node_names(self, node_name):
+        """Get the next node name."""
         next_node_names = []
         node = self.get_node_by_name(node_name)
         for output_tensor in node.output_tensors:
@@ -191,6 +207,7 @@ class Graph(object):
         return next_node_names
 
     def get_tensor_idx(self, node_name, tensor_name, from_output=True):
+        """Get the index of tensor."""
         target_node = self.get_node_by_name(node_name)
         tensor_idx = -1
         if from_output:
@@ -209,6 +226,7 @@ class Graph(object):
         return tensor_idx
 
     def modify_node_connections(self, node, mode='insert'):
+        """Modify the order of nodes."""
         assert mode in ['insert', 'remove'], 'Wrong mode {}'.format(mode)
         # modify the input_tensors' source_op
         for i in range(len(node.input_tensors)):
@@ -245,9 +263,9 @@ class Graph(object):
 
         return node
 
-    # get the weight_bytes to bin file
     @property
     def weight_data(self):
+        """Get the weight_bytes to bin file."""
         consts_info = OrderedDict()
         weight_bytes = bytearray()
         non_consts_len = 0
@@ -271,10 +289,10 @@ class Graph(object):
                     self._nodes[0].output_tensors.append(self._nodes[i].input_tensors[j])
         weight_bytes = bytes(weight_bytes)
         return weight_bytes
-
-    # get the network config dict to yaml file
+ 
     @property
     def net_config(self):
+        """Get the network config dict to yaml file."""
         net_info = OrderedDict()
         net_info['model'] = OrderedDict()
         net_info['model']['name'] = 'model'
@@ -285,6 +303,7 @@ class Graph(object):
         return net_info
 
     def dump_tensor(self, tensor_list=[]):
+        """Dump tensors to the bin and yaml file."""
         weight_data = self.weight_data
         net_info = self.net_config
         if tensor_list == []:
@@ -308,8 +327,8 @@ class Graph(object):
 
         return net_info
 
-    # pybind engine executor
     def engine_init(self, net_info={}, weight_data=b""):
+        """Pybind engine executor."""
         import neural_engine_py as dp
         if not weight_data:
             weight_data = self.weight_data
@@ -372,6 +391,7 @@ class Graph(object):
         self._engine = [model, output_list, op_configs, tensor_output, tensor_input, attr_map_list]
 
     def inference(self, input_data):
+        """The inference API of the neural engine."""
         if self._refresh_execution_options or self._engine is None:
             self.engine_init()
             self._refresh_execution_options = False
@@ -385,13 +405,14 @@ class Graph(object):
         return output_dict
 
     def graph_init(self, config, weight_data=None):
-        '''
-        example:
+        """The initialization of the neural engine graph.
+
+        for example:
                 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
                 newgraph = Graph()
                 newgraph.graph_init('./ir/conf.yaml', './ir/model.bin')
                 out = newgraph.inference([input_0, input_1, input_2])
-        '''
+        """
         from ..ops import Tensor
         import yaml
         from .. import graph_utils as util
@@ -477,6 +498,7 @@ class Graph(object):
             self.insert_nodes(len(self.nodes), [op])
 
     def save(self, output_dir=None):
+        """Save the model IR to the bin and ymal file."""
         logger.info("Start to emit the intermediate representation of model...")
         if output_dir is None:
             dir_name = os.getcwd()
@@ -513,6 +535,7 @@ class Graph(object):
         logger.info("Emit done...")
 
     def graph_dispatch(self, tune=True, inputs_shape=[]):
+        """The graph dispatch for difference nodes."""
         sparse_nodes_name = self.get_sparse_nodes_name()
         if tune:
             logger.info("Tuning graph start ...")
@@ -524,6 +547,7 @@ class Graph(object):
             self.transpose_mode_int8(sparse_nodes_name)
 
     def _tune_onednn_graph(self, inputs_shape=[]):
+        """The onednn graph tuning."""
         onednn_graph_nodes_map = self._get_onednn_graph_nodes()
         if onednn_graph_nodes_map == {"InnerProduct": [], "Softmax": []}:
             pass
@@ -546,7 +570,7 @@ class Graph(object):
             self._generate_onednn_graph_nodes(golden_onednn_graph_nodes_name)
 
     def _get_onednn_graph_nodes(self):
-        # onednn graph only support fp32 inner_product and softmax
+        """Onednn graph only support fp32 inner_product and softmax."""
         onednn_graph_nodes_map = {"InnerProduct": [], "Softmax": []}
         for node in self.nodes:
             if node.op_type == "InnerProduct":
@@ -560,9 +584,11 @@ class Graph(object):
         return onednn_graph_nodes_map
 
     def _generate_onednn_graph_nodes_name_list(self, onednn_graph_nodes_map):
-        # strategy:
-        # 1.softmax: all nodes map to onednn graph or not
-        # 2.innerproduct: tune accorording weight shape
+        """Strategy.
+
+        1.softmax: all nodes map to onednn graph or not
+        2.innerproduct: tune accorording weight shape
+        """
         ip_nodes_name_list = self._generate_transpose_nodes_name_list(onednn_graph_nodes_map["InnerProduct"])
         onednn_graph_nodes_name_list = []
         for ip_nodes_name in ip_nodes_name_list:
@@ -571,6 +597,7 @@ class Graph(object):
         return onednn_graph_nodes_name_list
 
     def _generate_onednn_graph_nodes(self, onednn_graph_nodes_name):
+        """The onednn graph ndoes generation."""
         for node in self.nodes:
             if node.name in onednn_graph_nodes_name:
                 if node.op_type == "InnerProduct":
@@ -579,6 +606,7 @@ class Graph(object):
                     node.op_type = "SoftmaxGraph"
 
     def _tune_sparse_graph(self, inputs_shape=[], sparse_nodes_name=[]):
+        """The sparse graph tuning."""
         if sparse_nodes_name == []:
             pass
         else:
@@ -600,6 +628,7 @@ class Graph(object):
             self.transpose_mode_int8(golden_trans_nodes_name)
 
     def get_sparse_nodes_name(self, threshold=0.7):
+        """According to the sparsity threshold to list all sparse nodes."""
         def get_zero_ratio(matrix, block):
             sparse_ratio = -1
             if matrix.ndim == 2 and len(block) == 2:
@@ -644,6 +673,7 @@ class Graph(object):
         return sparse_nodes_name
 
     def _generate_transpose_nodes_name_list(self, sparse_nodes_name):
+        """The name list of transpose nodes generation."""
         transpose_nodes_list = []
         if sparse_nodes_name == []:
             return transpose_nodes_list
@@ -658,8 +688,8 @@ class Graph(object):
                 else:
                     weight_shape_map[weight_shape] = [node.name]
 
-        # binary reflected gray code to generate the all combinations fo the n elements
         def brgd(n):
+            """Binary reflected gray code to generate the all combinations fo the n elements."""
             if n == 1:
                 return ["0", "1"]
             L1 = brgd(n - 1)
@@ -681,6 +711,7 @@ class Graph(object):
         return transpose_nodes_list
 
     def _generate_inputs(self, inputs_shape=[]):
+        """The input of nodes generation."""
         dtype_map = {
             "float32": np.float32,
             "int8": np.int8,
@@ -705,6 +736,7 @@ class Graph(object):
         return inputs
 
     def _get_latency(self, inputs_shape=[], iterations=10, warm_up=5):
+        """Calculate the latency."""
         inputs = self._generate_inputs(inputs_shape)
         iter_latency = []
         for _ in range(iterations):
@@ -716,6 +748,7 @@ class Graph(object):
         return result, latency
 
     def transpose_mode_int8(self, node_name_list=None):
+        """Transpose innerproduct nodes to the sparse mode by inserting reorder nodes."""
         from ..ops import Tensor
         from .. import graph_utils as util
         import copy
@@ -723,6 +756,7 @@ class Graph(object):
         reorder_dict = {}
 
         def _modify_attr_perm(node):
+            """Transpose the node attr perm."""
             if node.attr.get("src0_perm") == '0,2,1,3' and node.attr.get("src1_perm") == '0,2,3,1':
                 node.attr["src0_perm"] = '2,0,3,1'
                 node.attr["src1_perm"] = '2,0,1,3'
@@ -733,6 +767,7 @@ class Graph(object):
                 _reorder_shape_list(node, 'reshape')
 
         def _innerproduct_type_check(node):
+            """Check the innerproduct node type."""
             innerproduct_type = {
                 # general_node
                 "general": "general",
@@ -760,9 +795,7 @@ class Graph(object):
                 return innerproduct_type['general']
 
         def _create_new_attr(node, mode=None):
-            '''
-                If there is a dtype, the output_dtype of the inserted reorder node is the same as the input node dtype
-            '''
+            """The output_dtype of the inserted reorder node is the same as the input node dtype if dtype exists."""
             if mode == 'Reorder_Post':
                 new_attr = OrderedDict({'src_perm': '0,1', 'dst_perm': '1,0'})
                 if 'output_dtype' in node.attr:
@@ -787,6 +820,7 @@ class Graph(object):
             return False
 
         def _dfs_search(node, target_node_type):
+            """Use the deep-first algorithm to search the node accroding to the its type."""
             target_node = []
 
             def dfs(node):
@@ -810,6 +844,7 @@ class Graph(object):
                 return target_node[0]
 
         def _reorder_shape_list(node, attr_name='dst_shape'):
+            """Transpose the shape attribute."""
             value_list = node.attr[attr_name].split(',')
             if len(value_list) == 4:
                 value = value_list[2] + ',' + value_list[3] + ',' + value_list[0] + ', ' + value_list[1]
@@ -820,10 +855,13 @@ class Graph(object):
             node.attr[attr_name] = value
 
         def _reorder_node_insert(node, idx, insert_pos=None):
-            '''
-                idx: the position of variables that need to be transposed in node.input_tensors
-                insert_pos: the position of insert
-            '''
+            """Reorder node insert.
+            
+            Args:
+                node: the current innerproduct node.
+                idx: the position of variables that need to be transposed in node.input_tensors.
+                insert_pos: the position of insert.
+            """
             # check the node whether has been reordered
             for index_node, reorder_node in reorder_dict.items():
                 if node.input_tensors[idx].name == reorder_node.input_tensors[0].name:
@@ -857,9 +895,7 @@ class Graph(object):
             return reorder_node
 
         def _swap_innertproduct_input(node, data_swap_list=[0, 1], swap_list_2=[], swap_list_3=[]):
-            '''
-                modify innertproduct nodes and the folloing reshape nodes.
-            '''
+            """Modify innertproduct nodes and the folloing reshape nodes."""
             input_0 = data_swap_list[0]
             input_1 = data_swap_list[1]
             # swap(input_0, input1)
@@ -886,6 +922,7 @@ class Graph(object):
                 _reorder_shape_list(node, 'reshape')
 
         def _modify_post_node_attr(post_node, attr_name='axis'):
+            """Modify the post node attribute."""
             if attr_name in post_node.attr:
                 if post_node.attr[attr_name] == 0:
                     post_node.attr[attr_name] = 1
@@ -893,9 +930,12 @@ class Graph(object):
                     post_node.attr[attr_name] = 0
 
         def _reorder_recover_node_insert(node, pre_node=None):
-            '''
-                pre_node: the first predecessor node of the reorder_recover node
-            '''
+            """Reorder_recover node insert.
+            
+            Args:
+                node: the current innerproduct node.
+                pre_node: the first predecessor node of the reorder_recover node.
+            """
             post_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
             if len(node.output_tensors[0].dest_op) != 1:
                 logger.info("the post node is not only one.")
@@ -935,11 +975,13 @@ class Graph(object):
             return reorder_recover_node
 
         def _modify_post_node_input_tensor(post_node, node, node_input_tensors_idx=0):
-            '''
+            """Modify the input tensors of the post node.
+
+            Args:
                 post_node: the post node of the second parameter
                 node: the source of input_tensors
                 node_input_tensors_idx: assign the index of node.input_tensors to post_node.input_tensors
-            '''
+            """
             idx = 0
             for _ in post_node.input_tensors:
                 if node.output_tensors[0].name == _.name:
@@ -950,6 +992,7 @@ class Graph(object):
             return
 
         def _del_current_node_and_modify_post_node(node):
+            """Delete the current node and then modify input tensors of the post node."""
             pre_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
             for post_node_name in node.output_tensors[0].dest_op:
                 post_node = self.get_node_by_name(post_node_name)
@@ -961,6 +1004,7 @@ class Graph(object):
                 pre_node.output_tensors[0].dest_op.append(post_node.name)
 
         def _node_name_list_convert(node_name_list):
+            """List all innerproduct node types."""
             merge_matmul_node_name_list = []
             innerproduct_type = []
             for node_name in node_name_list:
@@ -974,6 +1018,7 @@ class Graph(object):
             return innerproduct_type, merge_matmul_node_name_list
 
         def _pattern_matching(innerproduct_type_list, pattern):
+            """Matching the pattern accroding to innerproduct node types."""
             matched_idx = []
             pattern_length = len(pattern)
 
@@ -993,6 +1038,7 @@ class Graph(object):
             return matched_idx
 
         def _matched_node_name_list(node_name_list, matched_idx, range=4):
+            """The list of matched nodes."""
             tmp_node_name_list = []
             for node_idx in matched_idx:
                 tmp_node_name_list.append(node_name_list[node_idx:node_idx + range])
@@ -1000,6 +1046,7 @@ class Graph(object):
             return node_name_list
 
         def _search_layernorm_fusion_node(ffn_lin_node_name_list, start_idx, range, node_name_list=[]):
+            """Search nodes related to layernorm that can be fused."""
             layernorm_node = []
             # pcik all add_innerproduct_1 nodes from ffn_lin_node_name_list
             for node_name in ffn_lin_node_name_list[start_idx:][::range]:
@@ -1023,10 +1070,10 @@ class Graph(object):
             return layernorm_node
 
         def _consecutive_reorder_fusion():
-            '''
-                Fusion 1: 
-                eliminate the two reorder nodes if a tensor passes through reorder_recover + reorder_post consecutively
-            '''
+            """Fusion 1.
+            
+            eliminate the two reorder nodes if a tensor passes through reorder_recover + reorder_post consecutively
+            """
             for node in self._nodes:
                 if node.op_type == 'Reorder' and 'recover_reorder' in node.output_tensors[0].name:
                     if 'Reorder_Post' in node.name:
@@ -1044,17 +1091,16 @@ class Graph(object):
                             pre_node.input_tensors[0].dest_op.append(post_node.name)
 
         def _reorder_post_fusion():
-            '''
-                Fusion 2: 
-                    This fusion is used to place reorder_post nodes before the quantize node.
-                Conditions:
-                    Only fusion if all QKV nodes meet the sparsity ratio
+            """Fusion 2.
+            
+            This fusion is used to place reorder_post nodes before the quantize node.
+            Conditions:
+                Only fusion if all QKV nodes meet the sparsity ratio
 
-                E.g.
-                    original: quantize + reorder_post + innerproduct: K + innerproduct: Q + innerproduct: v
-                    fusion: reorder_post + quantize + innerproduct: K + innerproduct: Q + innerproduct: v
-            '''
-
+            E.g.
+                original: quantize + reorder_post + innerproduct: K + innerproduct: Q + innerproduct: v
+                fusion: reorder_post + quantize + innerproduct: K + innerproduct: Q + innerproduct: v
+            """
             # check the current reorder_post_node whether need place reorder_post nodes before the quantize node
             def _check_QKV_fusion(reorder_post_node):
                 innerproduct_node = self.get_node_by_name(reorder_post_node.output_tensors[0].dest_op[0])
@@ -1074,6 +1120,7 @@ class Graph(object):
                 return True
 
             def _check_merged_matmul(reorder_post_node):
+                """Check if the node is in the merged matmul node name list."""
                 innerproduct_node = self.get_node_by_name(reorder_post_node.output_tensors[0].dest_op[0])
                 if innerproduct_node.name not in merge_matmul_node_name_list:
                     return False
@@ -1115,13 +1162,11 @@ class Graph(object):
                 self.insert_nodes(insert_idx, [reorder_dict[node_name]])
 
         def _reorder_recover_fusion():
-            '''
-                Fusion 3: place the reorder_recover nodes after reshape and matmul nodes
+            """Fusion 3: place the reorder_recover nodes after reshape and matmul nodes.
 
-                This fusion deletes the reorder_recover nodes that follow Q, K, V and attention out nodes
-                and the post modify add_matmul and transpose_matmul nodes.
-
-            '''
+            This fusion deletes the reorder_recover nodes that follow Q, K, V and attention out nodes
+            and the post modify add_matmul and transpose_matmul nodes.
+            """
             for node in self._nodes:
                 # step1: delte all recover nodes of innerProduct nodes and modify reshape inputs
                 node_type = _innerproduct_type_check(node)
@@ -1157,6 +1202,7 @@ class Graph(object):
                         logger.warning('The node op_type == {} is not expected.'.format(post_node.name))
 
         def _layernorm_reorder_fusion():
+            """The fusion of layernorm reorder."""
             for node in self._nodes:
                 if node.op_type == 'LayerNorm' and node.name in layernorm_fusion_node:
                     reorder_recover_node = self.get_node_by_name(node.input_tensors[0].source_op[0])
@@ -1168,6 +1214,7 @@ class Graph(object):
                         _del_current_node_and_modify_post_node(reorder_post_node)
 
         def _merged_matmul_fusion():
+            """The fusition of merged matmul."""
             def _transpose_matmul_modification(node):
                 reorder_node = self.get_node_by_name(node.output_tensors[0].dest_op[0])
                 attention_out_node = self.get_node_by_name(reorder_node.output_tensors[0].dest_op[0])
