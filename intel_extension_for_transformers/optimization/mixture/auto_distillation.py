@@ -34,7 +34,7 @@ from intel_extension_for_transformers.optimization.utils.utility import LazyImpo
 torch = LazyImport("torch")
 
 def distributed_log_wrapper(func, msg):
-    if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+    if self.framework != "pytorch" or not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
         func(msg)
 
 
@@ -58,7 +58,7 @@ class AutoDistillation(object):
         self.search_results = {}
         self.best_model_archs = None
         self.seed = None
-        self.framework = framework
+        self.framework = framework.lower()
         self.init_by_cfg(conf_fname_or_obj)
 
     def model_arch_proposition(self):
@@ -135,7 +135,7 @@ class AutoDistillation(object):
                 "Metrics of model architecture {} is {}.".format(model_arch_paras, metrics)
             )
             self.search_results[tuple(model_arch_paras.values())] = metrics
-            if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+            if self.framework != "pytorch" or not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
                 self.advisor.feedback(sum(self.metrics_conversion(metrics)))
                 print(f'res_save_path: {res_save_path}, save_path = {save_path}')
                 os.makedirs(save_path, exist_ok=True)
@@ -143,7 +143,7 @@ class AutoDistillation(object):
                     os.path.join(save_path, 'Trial_{}_results.txt'.format(i+1))
                 )
 
-        if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+        if self.framework != "pytorch" or not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
             for model_arch_vec in self.resumed_search_results:
                 if model_arch_vec not in self.search_results:
                     self.search_results[model_arch_vec] = \
@@ -175,12 +175,13 @@ class AutoDistillation(object):
         return self._eval_func(model)
 
     def count_model_parameters(self, model):
-        if isinstance(model, torch.nn.Module):
-            return sum(p.numel() for p in model.parameters())
+        if self.framework == 'pytorch':
+            if isinstance(model, torch.nn.Module):
+                return sum(p.numel() for p in model.parameters())
+            else: # pragma: no cover
+                raise NotImplementedError("Only support torch model now.")
         elif self.framework == 'tensorflow':
             return model.num_parameters()
-        else: # pragma: no cover
-            raise NotImplementedError("Only support torch model now.")
 
     def load_search_results(self, path):
         self.resumed_search_results = {}
@@ -188,9 +189,9 @@ class AutoDistillation(object):
         if not os.path.exists(path) or not os.path.exists(lastest_results_record):
             return
         self.resumed_search_results = np.load(lastest_results_record, allow_pickle=True).item()
-        if torch.distributed.is_initialized():
+        if self.framework == "pytorch" and torch.distributed.is_initialized():
             torch.distributed.barrier()
-        if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+        if self.framework != "pytorch" or not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
             os.makedirs(os.path.join(path, 'previous_results'), exist_ok=True)
             for f in os.listdir(path):
                 if os.path.isfile(os.path.join(path, f)):
