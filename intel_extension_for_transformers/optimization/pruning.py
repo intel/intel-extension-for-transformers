@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Pruning: specify the supported pruning mode."""
+
 from enum import Enum
 from neural_compressor.conf.config import Pruner as INCPruner
 from neural_compressor.pruners import PRUNERS
@@ -22,6 +24,7 @@ from typing import Dict, List
 
 
 class PruningMode(Enum):
+    """Currently support three pruning modes."""
     BASICMAGNITUDE = "basic_magnitude"
     PATTERNLOCK = "pattern_lock"
     GROUPLASSO = "group_lasso"
@@ -31,10 +34,24 @@ SUPPORTED_PRUNING_MODE = set([approach.name for approach in PruningMode])
 
 
 class PrunerConfig(INCPruner):
+    """Pruner configuration."""
     def __init__(self, epoch_range: List=[0, 4], initial_sparsity_ratio: float=0.0,
                  target_sparsity_ratio: float=0.97, update_frequency: int=1,
                  prune_type: str='BasicMagnitude', method: str='per_tensor',
                  names: List=[], parameters: Dict=None):
+        """Init the pruner config.
+
+        Args:
+            epoch_range: A list with length of 2. The first element is the start epoch and the second element
+                is the end epoch. Pruning will be done from the start epoch to the end epoch.
+            initial_sparsity_ratio: Initial sparsity goal
+            target_sparsity_ratio: Target sparsity goal
+            update_frequency: How many epochs to update once
+            prune_type: "BasicMagnitude", "PatternLock", or "GroupLasso"
+            method: TODO (Remove this parameter)
+            names: A list of layer names that need to be pruned
+            parameters: A dictionary of extra parameters
+        """
         if epoch_range is not None:
             assert len(epoch_range) == 2, "Please set the epoch_range as [start_epoch, end_epoch]"
             self.start_epoch = epoch_range[0]

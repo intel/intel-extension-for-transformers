@@ -1,3 +1,4 @@
+"""Setup and install modules."""
 from io import open
 from setuptools import find_packages, setup, Extension
 from setuptools.command.build_ext import build_ext
@@ -19,6 +20,7 @@ except Exception as error:
 
 
 def which(thefile):
+    """Get the path where the file is located."""
     path = os.environ.get("PATH", os.defpath).split(os.pathsep)
     if path == None:
         return None
@@ -37,7 +39,7 @@ def which(thefile):
 
 
 def get_version(cmd):
-    "Returns cmake version."
+    """Returns cmake version."""
     try:
         for line in check_output([cmd, '--version']).decode('utf-8').split('\n'):
             if 'version' in line:
@@ -48,8 +50,7 @@ def get_version(cmd):
 
 
 def get_cmake_command():
-    "Returns cmake command."
-
+    """Returns cmake command."""
     cmake_command = 'cmake'
     if sys.platform == 'win32':
         return cmake_command
@@ -68,7 +69,9 @@ def get_cmake_command():
 
 
 class build_ext(build_ext):
+    """Extension builder."""
     def build_extension(self, ext):
+        """Build the neural engine extension."""
         if not sys.platform.startswith("win"):
             import pathlib
             cwd = pathlib.Path().absolute()
@@ -136,12 +139,15 @@ class build_ext(build_ext):
 
 
 class CMakeExtension(Extension):
+    """CMakeExtension class."""
     def __init__(self, name, sourcedir=""):
+        """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
 
 
 def check_submodules():
+    """Check submodules information."""
     def check_for_files(folder, files):
         if not any(os.path.exists(os.path.join(folder, f)) for f in files):
             report("Could not find any of {} in {}".format(", ".join(files), folder))

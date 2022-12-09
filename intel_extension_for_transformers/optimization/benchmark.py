@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Benchmark: provide the inference functions for PyTorchBenchmark and ExecutorBenchmark."""
+
 import os
 from transformers import PyTorchBenchmark
 from transformers.benchmark.benchmark import *
@@ -23,6 +25,7 @@ from .model import OptimizedModel
 
 
 def _prepare_inference_func(self, model_name: str, batch_size: int, sequence_length: int) -> Callable[[], None]:
+    """Prepare the inference function."""
     config = self.config_dict[model_name]
 
     if self.args.torchscript:
@@ -90,6 +93,7 @@ PyTorchBenchmark._prepare_inference_func = _prepare_inference_func
 
 origin_func = PyTorchBenchmark.run
 def run(self):
+    """Print the table headers and run the Pytorch benchmark."""
     output = origin_func(self)
     self.print_fn("\n" + 20 * "=" + ("INFERENCE - MODEL SIZE - RESULT").center(40) + 20 * "=")
     self.print_fn(80 * "-")
@@ -108,7 +112,7 @@ ExecutorBenchmarkArguments = PyTorchBenchmarkArguments
 
 
 class ExecutorBenchmark(PyTorchBenchmark):
-
+    """ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor."""
     args: ExecutorBenchmarkArguments
     configs: PretrainedConfig
     framework: str = "Executor"

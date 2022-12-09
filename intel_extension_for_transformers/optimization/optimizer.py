@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Optimization: provides the orchestrate optimizer for Pytorch."""
+
 import logging
 import os
 
@@ -42,6 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 class Orchestrate_optimizer:
+    """Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation."""
     def __init__(
         self,
         model,
@@ -49,20 +52,14 @@ class Orchestrate_optimizer:
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
-        """
+        """Init an orchestrate optimizer.
+
         Args:
-            model (:obj:`Union[PreTrainedModel, torch.nn.Module]`):
-                Model to quantize and/or prune.
-            components (List[:obj:`Component`], `optional`):
-                List of Component objects which contains Quantization, 
-                Pruning, Distillation objects.
-            eval_func (:obj:`Callable`, `optional`):
-                Evaluation function to evaluate the tuning objective.
-            train_func (:obj:`Callable`, `optional`):
-                Training function which will be combined with pruning.
+            model: Model to quantize and/or prune.
+            components: List of Component objects which contains Quantization, Pruning, Distillation objects.
+            eval_func: Evaluation function to evaluate the tuning objective.
+            train_func: Training function which will be combined with pruning.
         """
-
-
         if len(components) == 0:
             raise RuntimeError("`NLPOptimizer` requires at least one `Quantization`, "
                                "`Pruning` or `Distillation` object")
@@ -83,25 +80,25 @@ class Orchestrate_optimizer:
             self.scheduler.append(*components)
 
     def fit(self):
+        """Run the scheduler."""
         opt_model = self.scheduler()
         return opt_model
 
 
 
 class NoTrainerOptimizer:   # pragma: no cover
+    """Optimizer without using Trainer."""
     def __init__(
         self,
         model,
         output_dir: Optional[str] = "saved_results",
     ):
-        """
-        Args:
-            model (:obj:`Union[PreTrainedModel, torch.nn.Module]`):
-                FP32 model specified for low precision tuning.
-            output_dir (:obj:`string`, `optional`):
-                The folder for saving the results.
-        """
+        """Init a NoTrainerOptimizer object.
 
+        Args:
+            model: FP32 model specified for low precision tuning.
+            output_dir: The folder for saving the results.
+        """
         self.model = model
         self.teacher_model = None
         self._eval_func = None
@@ -120,38 +117,47 @@ class NoTrainerOptimizer:   # pragma: no cover
 
     @property
     def eval_func(self):
+        """Get the evaluation function."""
         return self._eval_func
 
     @property
     def train_func(self):
+        """Get the train function."""
         return self._train_func
 
     @property
     def calib_func(self):
+        """Get the calib function."""
         return self._calib_func
 
     @property
     def provider(self):
+        """Get the provider."""
         return self._provider
 
     @property
     def calib_dataloader(self):
+        """Get the calibration dataloader."""
         return self._calib_dataloader
 
     @eval_func.setter
     def eval_func(self, func: Callable):
+        """Set the evaluation function."""
         self._eval_func = func
 
     @train_func.setter
     def train_func(self, func: Callable):
+        """Set the train function."""
         self._train_func = func
 
     @provider.setter
     def provider(self, provider):
+        """Set the provider."""
         self._provider = provider
 
     @calib_dataloader.setter
     def calib_dataloader(self, dataloader):
+        """Set the calibration dataloader."""
         self._calib_dataloader = dataloader
 
     def init_quantizer(
@@ -159,6 +165,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         quant_config,
         provider: str = Provider.INC.value,
     ):
+        """Init a Quantization object with config."""
         from neural_compressor.experimental import Quantization
 
         assert isinstance(quant_config, QuantizationConfig), \
@@ -185,6 +192,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         quant_config,
         provider: str = Provider.INC.value,
     ):
+        """Do the quantization."""
         if self.quantizer is None:
             self.init_quantizer(quant_config=quant_config, provider=provider)
         if self._eval_func is not None:
@@ -216,6 +224,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         calib_func: Optional[Callable] = None,
         calib_dataloader=None,
     ):
+        """Prepare for invoking the _inc_quantize function."""
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:
@@ -238,6 +247,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         pruning_config = None,
         provider: str = Provider.INC.value,
     ):
+        """Init a Pruning object with config."""
         from neural_compressor.experimental import Pruning
         self.pruning_config = pruning_config
         self.metrics = self.pruning_config.metrics
@@ -259,6 +269,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
+        """Do the pruning."""
         if self.pruner is None:
             self.init_pruner(pruning_config=pruning_config, provider=provider)
         if eval_func is not None:
@@ -280,6 +291,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         teacher_model,
         provider: str = Provider.INC.value,
     ):
+        """Init a Distillation object with config and the teacher model."""
         from neural_compressor.experimental import Distillation, common
         assert isinstance(distillation_config, DistillationConfig), \
             "please pass a instance of PruningConfig to trainer.prune!"
@@ -303,6 +315,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
+        """Do the distillation."""
         if self.distiller is None:
             self.init_distiller(
                 distillation_config=distillation_config,
@@ -323,6 +336,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         return self.opt_model
 
     def _save_inc_int8(self, opt_model, output_dir):
+        """Save the optimized model in the output directory."""
         os.makedirs(output_dir, exist_ok=True)
         self.model.config.architectures = [self.model.__class__.__name__]
         self.model.config.torch_dtype = "int8"

@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Pipeline: import transformers.pipelines and support int8 model loading based on infer_framework_load_model."""
+
 import importlib
 from transformers import AutoConfig, pipeline
 from transformers.pipelines import *
@@ -34,8 +36,7 @@ def infer_framework_load_model(
     framework: Optional[str] = None,
     **model_kwargs
 ):
-    """
-    Support int8 model loading based on infer_framework_load_model
+    """Support int8 model loading based on infer_framework_load_model.
 
     Returns:
         `Tuple`: A tuple framework, model.

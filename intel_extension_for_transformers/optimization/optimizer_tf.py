@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""TFOptimization: provides the optimization class for Tensorflow."""
+
 import logging
 import pstats
 import numpy as np
@@ -41,6 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 class TFOptimization:
+    """TFOptimization is the entry class for Tensorflow to use the optimization techniques in neural compressor."""
     def __init__(self,
                  model: PreTrainedModel,
                  args: TFTrainingArguments,
@@ -52,14 +55,22 @@ class TFOptimization:
                  task_type=None,
                  task_id=None,
                  strategy=None):
-        """
-        Args:
-            model (:obj:`PreTrainedModel`):
-                FP32 model specified for low precision tuning.
-            output_dir (:obj:`string`, `optional`):
-                The folder for saving the results.
-        """
+        """Init a TFOptimziation object.
 
+        Args:
+            model: FP32 model specified for low precision tuning
+            args: Training arguments for TF
+            train_dataset: Training datas
+            eval_dataset: Evaluation data
+            compute_metrics: Metrics computing function during the evaluation process
+            criterion: Tuning criterion
+            optimizer: The optimizer you used
+            task_type: Used for distributed multi-node settings. Default set as "worker"
+            task_id: Used for distributed multi-node settings.
+                Set as 0 on the leader node and 1, 2, 3... on the followers
+            strategy: Equals to MultiWorkerMirroredStrategy if use distributed distributed multi-node settings,
+                otherwise None
+        """
         self.model = model
         self.teacher_model = None
         self.component = None
@@ -93,67 +104,80 @@ class TFOptimization:
 
     @property
     def inputs(self):
+        """Get the inputs."""
         return self._inputs
 
     @inputs.setter
     def inputs(self, inputs: dict):
+        """Set the inputs."""
         self._inputs = inputs
 
     @property
     def input_names(self):
+        """Get the input names."""
         return self._input_names
 
     @input_names.setter
     def input_names(self, input_names: List):
+        """Set the input names."""
         self._input_names = input_names
 
     @property
     def output_names(self):
+        """Get the output names."""
         return self._output_names
 
     @output_names.setter
     def output_names(self, output_names: List):
+        """Set the output names."""
         self._output_names = output_names
 
     @property
     def eval_func(self):
+        """Get the evaluation function."""
         return self._eval_func
 
     @eval_func.setter
     def eval_func(self, func: Callable):
+        """Set the evaluation function."""
         self._eval_func = func
 
     @property
     def train_func(self):
+        """Get the training function."""
         return self._train_func
 
     @train_func.setter
     def train_func(self, func: Callable):
+        """Set the training function."""
         self._train_func = func
 
     @property
     def train_dataset(self):
+        """Get the training dataset."""
         return self._train_dataset
 
     @train_dataset.setter
     def train_dataset(self, train_dataset):
+        """Set the training dataset."""
         assert isinstance(train_dataset, tf.data.Dataset) or train_dataset is None, \
             "train_dataset should be obj of tf.data.Dataset"
         self._train_dataset = train_dataset
 
     @property
     def eval_dataset(self):
+        """Get the evaluation dataset."""
         return self._eval_dataset
 
     @eval_dataset.setter
     def eval_dataset(self, eval_dataset):
+        """Set the evaluation dataset."""
         assert isinstance(eval_dataset, tf.data.Dataset) or eval_dataset is None, \
             "eval_dataset should be obj of tf.data.Dataset"
         self._eval_dataset = eval_dataset
 
     def builtin_eval_func(self, model):
-        """
-        Custom Evaluate function to inference the model for specified metric on validation dataset.
+        """Customize Evaluate function to inference the model for specified metric on the validation dataset.
 
         Args:
             model ([tf.saved_model.load]): The model will be the class of tf.saved_model.load(quantized_model_path).
@@ -320,6 +344,7 @@ class TFOptimization:
         self,
         quant_config,
     ):
+        """Init a Quantization object with config."""
         from neural_compressor.experimental import Quantization
 
         self.quant_config = QuantizationConfig() if quant_config is None else quant_config
@@ -337,6 +362,7 @@ class TFOptimization:
         self,
         quant_config,
     ):
+        """Do the quantization."""
         if self.quantizer is None:
             self.init_quantizer(quant_config=quant_config)
         if self._eval_func is not None:
@@ -376,6 +402,7 @@ class TFOptimization:
         train_dataset=None,
         eval_dataset=None,
     ):
+        """Prepare for invoking INC quantize function."""
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:
@@ -392,6 +419,7 @@ class TFOptimization:
         self,
         pruning_config=None,
     ):
+        """Init a Pruning object with config."""
         from neural_compressor.experimental import Pruning
         if pruning_config.framework != 'tensorflow':
             logger.warning('pruning_config.framework is {}, should be tensorflow'.format(pruning_config.framework))
@@ -418,6 +446,7 @@ class TFOptimization:
         train_dataset=None,
         eval_dataset=None,
     ):
+        """Do the pruning."""
         if self.pruner is None:
             self.init_pruner(pruning_config=pruning_config)
         if eval_func is not None:
@@ -462,6 +491,7 @@ class TFOptimization:
         distillation_config,
         teacher_model: PreTrainedModel,
     ):
+        """Init a Distillation object with config and the teacher model."""
         from neural_compressor.experimental import Distillation
         assert isinstance(distillation_config, DistillationConfig), \
             "please pass a instance of DistillationConfig to trainer.distill!"
@@ -524,6 +554,7 @@ class TFOptimization:
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
+        """Do the distillation."""
         if self.distiller is None:
             self.init_distiller(
                 distillation_config=distillation_config,
@@ -549,6 +580,7 @@ class TFOptimization:
         return opt_model.model
 
     def model_builder_builtin(self, arch_paras=None, model_cls=None):
+        """Specify model_cls to use the built-in model builder."""
         config = self.model.config
         if arch_paras is not None:
             assert isinstance(arch_paras, dict), "Expect arch_paras to be a dict."
@@ -571,6 +603,7 @@ class TFOptimization:
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None
         ):
+        """Do the auto distillation."""
         self.autodistillation_config = autodistillation_config
         if model_builder is None:
             assert model_cls is not None, "Must specify model_cls to use the built-in " + \
@@ -701,6 +734,7 @@ class TFOptimization:
         return agent.search(self.args.output_dir, model_cls)
 
     def build_train_func(self, model):
+        """Build the training function for pruning or distillation."""
         tf.random.set_seed(1)
         epochs = 1
         if 'distillation' in self.component.cfg:

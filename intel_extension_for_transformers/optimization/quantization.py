@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Quantization: specify the supported quantization mode."""
+
 from enum import Enum
 from transformers.utils.versions import require_version
 
@@ -25,7 +27,7 @@ except:
 
 
 class QuantizationMode(Enum):
-
+    """Currently support three quantization modes."""
     POSTTRAININGSTATIC = "post_training_static_quant"
     POSTTRAININGDYNAMIC = "post_training_dynamic_quant"
     QUANTIZATIONAWARETRAINING = "quant_aware_training"

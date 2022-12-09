@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""OptimizedModel: provides the from_pretrained function."""
+
 import copy
 import os
 import transformers
@@ -28,15 +30,17 @@ torch = LazyImport("torch")
 
 
 class OptimizedModel:
+    """Provide the from_pretrained function."""
     def __init__(self, *args, **kwargs):  # pragma: no cover
+        """Only use from_pretrained to instantiate a model."""
         raise EnvironmentError(
             f"{self.__class__.__name__} is designed to be instantiated using the"
             f"`{self.__class__.__name__}.from_pretrained(model_name_or_path)` method.")
 
     @classmethod
     def from_pretrained(cls, model_name_or_path: str, **kwargs):
-        """
-        Instantiate a quantized pytorch model from a given Intel Neural Compressor (INC) configuration file.
+        """Instantiate a quantized pytorch model from a given Intel Neural Compressor (INC) configuration file.
+
         Args:
             model_name_or_path (:obj:`str`):
                 Repository name in the Hugging Face Hub or path to a local directory hosting the model.
@@ -53,6 +57,7 @@ class OptimizedModel:
                 The specific model version to use. It can be a branch name, a tag name, or a commit id, since we use a
                 git-based system for storing models and other artifacts on huggingface.co, so ``revision`` can be any
                 identifier allowed by git.
+
         Returns:
             q_model: Quantized model.
         """
