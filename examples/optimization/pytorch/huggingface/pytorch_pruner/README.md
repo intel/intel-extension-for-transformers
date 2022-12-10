@@ -85,27 +85,22 @@ we have provided several pruning examples, which are trained on different datase
 ### [SQuAD](https://github.com/intel/neural-compressor/tree/master/examples/pytorch/nlp/huggingface_models/question-answering/pruning)
 We can train a sparse model with NxM (2:4) pattern:
 ```
-python3 ./run_qa_no_trainer.py \
+python3 ./run_glue_no_trainer.py \
             --model_name_or_path "/path/to/dense_finetuned_model/" \
-            --pruning_config "./bert_mini_2in4.yaml" \
-            --dataset_name "squad" \
-            --max_seq_length "384" \
-            --doc_stride "128" \
+            --pruning_config "./bert_mini_mrpc_4x1.yaml" \
+            --task_name "mrpc" \
             --per_device_train_batch_size "8" \
             --weight_decay "1e-7" \
             --learning_rate "1e-4" \
             --num_train_epochs 10 \
-            --teacher_model_name_or_path "/path/to/dense_finetuned_model/" \
             --distill_loss_weight "8.0"
 ```
 We can also choose 4x1 as our pruning pattern:
 ```
-python ./run_qa_no_trainer.py \
+python ./run_glue_no_trainer.py \
         --model_name_or_path "/path/to/dense_finetuned_model/" \
-        --pruning_config "./bert_mini_4x1.yaml" \
-        --dataset_name "squad" \
-        --max_seq_length "384" \
-        --doc_stride "128" \
+        --pruning_config "./bert_mini_mrpc_4x1.yaml" \
+        --task_name "mrpc" \
         --per_device_train_batch_size "16" \
         --per_device_eval_batch_size "16" \
         --num_warmup_steps "1000" \
@@ -115,18 +110,15 @@ python ./run_qa_no_trainer.py \
         --num_train_epochs 10 \
         --weight_decay  "1e-7" \
         --output_dir "pruned_squad_bert-mini" \
-        --teacher_model_name_or_path "/path/to/dense_finetuned_model/" \
         --distill_loss_weight "4.5"
 ```
 Dense model training is also supported as following (by setting --do_prune to False):
 ```
 python \
-    ./run_qa_no_trainer.py \
+    ./run_glue_no_trainer.py \
     --model_name_or_path "prajjwal1/bert-mini" \
-    --pruning_config "./bert_mini_4x1.yaml" \
-    --dataset_name "squad" \
-    --max_seq_length "384" \
-    --doc_stride "128" \
+    --task_name "mrpc" \
+    --pruning_config "./bert_mini_mrpc_4x1.yaml" \
     --per_device_train_batch_size "8" \
     --per_device_eval_batch_size "16" \
     --num_warmup_steps "1000" \

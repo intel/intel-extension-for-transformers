@@ -34,7 +34,7 @@ from intel_extension_for_transformers.optimization.utils.utility import LazyImpo
 torch = LazyImport("torch")
 
 def distributed_log_wrapper(func, msg):
-    if self.framework != "pytorch" or not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+    if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
         func(msg)
 
 
@@ -135,7 +135,8 @@ class AutoDistillation(object):
                 "Metrics of model architecture {} is {}.".format(model_arch_paras, metrics)
             )
             self.search_results[tuple(model_arch_paras.values())] = metrics
-            if self.framework != "pytorch" or not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+            if (self.framework != "pytorch" or not torch.distributed.is_initialized() 
+              or torch.distributed.get_rank() == 0):
                 self.advisor.feedback(sum(self.metrics_conversion(metrics)))
                 print(f'res_save_path: {res_save_path}, save_path = {save_path}')
                 os.makedirs(save_path, exist_ok=True)

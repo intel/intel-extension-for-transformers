@@ -1,6 +1,6 @@
 datasets>=1.17
 mlflow
-neural-compressor
+git+https://github.com/intel/neural-compressor.git@old_api_examples
 nlpaug
 sacremoses
 onnx>=1.10
@@ -9,5 +9,5 @@ onnxruntime-extensions
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=1.10.0
 transformers<=4.19.2
-tensorflow>=2.0.0
+tensorflow==2.10.0
 torchprofile

@@ -36,8 +36,8 @@ class TestQKVMerge(unittest.TestCase):
         model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
         pattern_config = "/home/tensorflow/localfile/nlptoolkit_ut_model/qkv_merge_pattern_config"
         if is_win():
-            model_path = "C:/Users/sdp/Documents/models/localfile/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
-            pattern_config = "C:/Users/sdp/Documents/models/localfile/nlptoolkit_ut_model/qkv_merge_pattern_config"
+            model_path = "D:\\dataset\\nlptoolkit_ut_model\\onnx_best_acc_distilbert.onnx"
+            pattern_config = "D:\\dataset\\nlptoolkit_ut_model\\qkv_merge_pattern_config"
         graph = compile(model_path, config=pattern_config)
         self.assertEqual(100, len(graph.nodes))
 

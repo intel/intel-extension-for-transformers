@@ -20,7 +20,7 @@ import random
 from pathlib import Path
 import sys
 
-from nlp_toolkit.optimization.pytorch_pruner.pruning import Pruning
+from intel_extension_for_transformers.optimization.pytorch_pruner.pruning import Pruning
 
 sys.path.insert(0, './')
 import datasets
