@@ -39,7 +39,7 @@ class TestQuantOnnxExecute(unittest.TestCase):
         input_1 = np.random.uniform(low=0, high=1, size=[1, 128]).astype('int32')
         input_2 = np.random.uniform(low=0, high=1, size=[1, 128]).astype('int32')
         # compile and execute qlinear model
-        qlinear_model_path = "/tf_dataset2/models/nlp_toolkit/qlinear/bert_mini_sst2_qlinear.onnx"
+        qlinear_model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/qlinear/bert_mini_sst2_qlinear.onnx"
         if is_win():
             qlinear_model_path = "D:\\dataset\\nlptoolkit_ut_model\\qlinear\\bert_mini_sst2_qlinear.onnx"
         os.environ['GLOG_minloglevel'] = '2'
@@ -49,7 +49,7 @@ class TestQuantOnnxExecute(unittest.TestCase):
         qlinear_output_dict = qlinear_model.inference([input_0, input_1, input_2])
         qlinear_output = list(qlinear_output_dict.values())[0]        
         # compile and execute qdq model
-        qdq_model_path = "/tf_dataset2/models/nlp_toolkit/qlinear/bert_mini_sst2_qdq.onnx"
+        qdq_model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/qlinear/bert_mini_sst2_qdq.onnx"
         if is_win():
             qdq_model_path = "D:\\dataset\\nlptoolkit_ut_model\\qlinear\\bert_mini_sst2_qdq.onnx"
         self.assertTrue(os.path.exists(qdq_model_path),

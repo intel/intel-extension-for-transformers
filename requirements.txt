@@ -1,4 +1,4 @@
-git+https://github.com/intel/neural-compressor.git@old_api_examples
+neural-compressor==1.14.2
 numpy
 packaging
 protobuf --no-binary=protobuf
