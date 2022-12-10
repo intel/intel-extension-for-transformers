@@ -46,7 +46,7 @@ class TestPatternDispatch(unittest.TestCase):
         # validate pattern tuning
         fp32_model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/bert_mini_sst2_1x4_fp32.onnx"
         if is_win():
-            fp32_model_path = "C:/Users/sdp/Documents/models/localfile/nlptoolkit_ut_model/bert_mini_sst2_1x4_fp32.onnx"
+            fp32_model_path = "D:\\dataset\\nlptoolkit_ut_model\\bert_mini_sst2_1x4_fp32.onnx"
         self.assertTrue(os.path.exists(fp32_model_path),
             'FP32 ONNX model is not found, please set your own model path!')
         fp32_model = compile(fp32_model_path)

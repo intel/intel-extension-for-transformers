@@ -38,7 +38,7 @@ class TestTranspose(unittest.TestCase):
         os.environ['GLOG_minloglevel'] = '2'
         root_dir = '/home/tensorflow/localfile/nlptoolkit_ut_model/'
         if is_win():
-            root_dir = 'C:/Users/sdp/Documents/models/localfile/nlptoolkit_ut_model/'
+            root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
         model_dir = root_dir + 'onnx_best_acc_distilbert.merged.untransposed'
         pattern_config = root_dir + 'pattern_config'
         self.assertTrue(os.path.exists(model_dir),
