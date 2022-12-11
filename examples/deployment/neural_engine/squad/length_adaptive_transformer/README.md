@@ -1,7 +1,8 @@
 # Quantized Length Adaptive Transformer
 
 The implementation is based on [Length Adaptive Transformer](https://github.com/clovaai/length-adaptive-transformer)'s work.
-Currently, it supports BERT and RoBERTa based transformers.
+Currently, it supports BERT based transformers.
+This example support FP32 precision.
 
 [QuaLA-MiniLM: A Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) has been accepted by NeurIPS 2022. Our quantized length-adaptive MiniLM model (QuaLA-MiniLM) is trained only once, dynamically fits any inference scenario, and achieves an accuracy-efficiency trade-off superior to any other efficient approaches per any computational budget on the SQuAD1.1 dataset (up to x8.8 speedup with <1% accuracy loss). The following shows how to reproduce this work and we also provide the [jupyter notebook tutorials](../../../../../../docs/tutorials/pytorch/question-answering/Dynamic_MiniLM_SQuAD.ipynb).
 
@@ -28,7 +29,7 @@ cmake --version
 conda install cmake
 sudo apt install autoconf
 ```
-Install NLPTookit from source code
+Install Intel Extension for Transformers from Source Code
 ```shell
 cd <intel_extension_for_transformers_folder>
 git submodule update --init --recursive
@@ -39,6 +40,9 @@ Install package for examples
 cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/squad/length_adaptive_transformer
 pip install -r requirements.txt
 ```
+>**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
+
+
 1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instance.
 ```
 export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so

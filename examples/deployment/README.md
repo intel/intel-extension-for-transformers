@@ -22,10 +22,10 @@ conda install absl-py --yes
 
 ##### 1. Install neural-compressor
 
-Install Intel Neural Compressor as a pre-condition
+Install Intel Neural Compressor as a pre-condition, recommend version is 1.14.2
 
 ```
-pip install neural-compressor
+pip install neural-compressor==1.14.2
 ```
 
 ##### 2. Build neural engine

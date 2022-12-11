@@ -11,6 +11,9 @@ conda create -n <env name> python=3.7
 conda activate <env name>
 pip install -r requirements.txt
 ```
+**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
+
+
 ### Prepare Dataset
 ```python
 python prepare_dataset.py --tasks='MRPC' --output_dir=./data

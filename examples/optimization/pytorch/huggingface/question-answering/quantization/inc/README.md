@@ -29,9 +29,16 @@ python run_qa.py \
     --overwrite_output_dir
     --framework ipex
 ```
-**Note**: support IPEX version >= 1.12
-### Validated model list
+**Note**: support IPEX version > 1.12
+###  Stock PyTorch Validated model list
 
-|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
+|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining 
 |---|------------------------------------|---|---|---
 |squad|distilbert-base-uncased-distilled-squad| ✅| ✅| ✅
+
+
+###  Intel Extension for PyTorch (IPEX) Validated model list
+|Dataset|Pretrained model|Supportted IPEX Version 
+|---|------------------------------------|---
+|squad|distilbert-base-uncased-distilled-squad| == 1.13
+|squad|bert-large| >= 1.12

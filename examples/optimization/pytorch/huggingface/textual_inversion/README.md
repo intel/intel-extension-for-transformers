@@ -12,6 +12,7 @@ Before running the scripts, make sure to install the library's training dependen
 ```bash
 pip install -r requirements.txt
 ```
+>**Note**: intel_extension_for_pytorch (IPEX) version should match PyTorch version
 
 ### Nezha cartoon example
 

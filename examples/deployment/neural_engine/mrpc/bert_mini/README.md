@@ -20,7 +20,7 @@ cmake --version
 conda install cmake
 sudo apt install autoconf
 ```
-Install NLPTookit from source code
+Install Intel Extension for Transformers from Source Code
 ```shell
 cd <intel_extension_for_transformers_folder>
 git submodule update --init --recursive
@@ -31,6 +31,9 @@ Install package for examples
 cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/mrpc/bert_mini
 pip install -r requirements.txt
 ```
+>**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
+
+
 1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instance.
 ```
 export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so

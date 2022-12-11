@@ -1,7 +1,7 @@
 # Quantized Length Adaptive Transformer
 
 The implementation is based on [Length Adaptive Transformer](https://github.com/clovaai/length-adaptive-transformer)'s work.
-Currently, it supports BERT and RoBERTa based transformers.
+Currently, it supports BERT based transformers.
 
 [QuaLA-MiniLM: A Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) has been accepted by NeurIPS 2022. Our quantized length-adaptive MiniLM model (QuaLA-MiniLM) is trained only once, dynamically fits any inference scenario, and achieves an accuracy-efficiency trade-off superior to any other efficient approaches per any computational budget on the SQuAD1.1 dataset (up to x8.8 speedup with <1% accuracy loss). The following shows how to reproduce this work and we also provide the [jupyter notebook tutorials](../../../../../../docs/tutorials/pytorch/question-answering/Dynamic_MiniLM_SQuAD.ipynb).
 
@@ -74,7 +74,8 @@ python run_qa.py \
 --tune \
 --output_dir output/quantized-dynamic-minilmv \
 --overwrite_cache \
---per_device_eval_batch_size 32
+--per_device_eval_batch_size 32 \
+--overwrite_output_dir
 ```
 
 
