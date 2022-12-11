@@ -74,7 +74,7 @@ class TestBenchmark(unittest.TestCase):
         TestBenchmark.check_results_dict_not_empty(results.time_inference_result)
 
 
-@unittest.skipIf(PT_VERSION >= Version("1.12.0"),
+@unittest.skipIf(PT_VERSION.release >= Version("1.12.0").release,
     "Please use PyTroch 1.11 or lower version for executor backend")
 class TestExecutorBenchmark(unittest.TestCase):
     @classmethod
@@ -85,7 +85,7 @@ class TestExecutorBenchmark(unittest.TestCase):
         # By default, the onnx model is saved in tmp_trainer dir
         cls.trainer.export_to_onnx()
         tune_metric = metrics.Metric(
-                name="eval_loss", greater_is_better=False, 
+                name="eval_loss", greater_is_better=False,
                 is_relative=False, criterion=0.5
             )
         quantization_config = QuantizationConfig(
