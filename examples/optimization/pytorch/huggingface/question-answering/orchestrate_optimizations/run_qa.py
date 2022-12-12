@@ -31,7 +31,7 @@ import functools
 import numpy as np
 import torch
 import transformers
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     metrics,
     PrunerConfig,
     PruningConfig,

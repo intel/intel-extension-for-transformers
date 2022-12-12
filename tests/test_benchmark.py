@@ -2,7 +2,7 @@ import os
 import shutil
 import unittest
 import neural_compressor.adaptor.pytorch as nc_torch
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     metrics,
     objectives,
     QuantizationConfig,

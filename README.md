@@ -115,7 +115,7 @@ python setup.py install
 ## Getting Started
 ### Quantization
 ```python
-from intel_extension_for_transformers import QuantizationConfig, metric, objectives
+from intel_extension_for_transformers.optimization import QuantizationConfig, metric, objectives
 from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
@@ -134,7 +134,7 @@ Please refer to [quantization document](docs/quantization.md) for more details.
 
 ### Pruning
 ```python
-from intel_extension_for_transformers import PrunerConfig, PruningConfig
+from intel_extension_for_transformers.optimization import PrunerConfig, PruningConfig
 from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
@@ -150,7 +150,7 @@ Please refer to [pruning document](docs/pruning.md) for more details.
 
 ### Distillation
 ```python
-from intel_extension_for_transformers import DistillationConfig, Criterion
+from intel_extension_for_transformers.optimization import DistillationConfig, Criterion
 from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
@@ -196,7 +196,7 @@ Please refer to [Neural Engine](examples/deployment/) for more details.
 ### Quantized Length Adaptive Transformer
 Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.
 ```python
-from intel_extension_for_transformers import QuantizationConfig, DynamicLengthConfig, metric, objectives
+from intel_extension_for_transformers.optimization import QuantizationConfig, DynamicLengthConfig, metric, objectives
 from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer

@@ -628,7 +628,7 @@ def main():
         # endregion
     if optim_args.distill:
         logger.info('*** start distillation... ***')
-        from intel_extension_for_transformers import metrics, DistillationConfig, TFOptimization
+        from intel_extension_for_transformers.optimization import metrics, DistillationConfig, TFOptimization
         from intel_extension_for_transformers.optimization.distillation import Criterion
         optimization = TFOptimization(
             model=model,

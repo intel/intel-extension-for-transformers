@@ -3,7 +3,7 @@ import shutil
 import torch
 import torch.utils.data as data
 import unittest
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     AutoDistillationConfig,
     FlashDistillationConfig,
     metrics,

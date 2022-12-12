@@ -30,7 +30,7 @@ from transformers import (
     TrainingArguments,
 )
 
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     DynamicLengthConfig,
 )
 

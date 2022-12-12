@@ -578,7 +578,7 @@ def main():
         # endregion
 
     if optim_args.tune:
-        from intel_extension_for_transformers import metrics, objectives, QuantizationConfig, TFOptimization
+        from intel_extension_for_transformers.optimization import metrics, objectives, QuantizationConfig, TFOptimization
         optimization = TFOptimization(
             model=model,
             args=training_args,

@@ -28,7 +28,7 @@ import torch
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     metrics,
     PrunerConfig,
     PruningConfig,

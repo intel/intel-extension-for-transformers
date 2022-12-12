@@ -32,7 +32,7 @@ import numpy as np
 import time
 import torch
 import transformers
-from intel_extension_for_transformers import metrics, OptimizedModel, DistillationConfig
+from intel_extension_for_transformers.optimization import metrics, OptimizedModel, DistillationConfig
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from trainer_qa import QuestionAnsweringTrainer

@@ -7,7 +7,7 @@ import torch.utils.data as data
 import unittest
 import neural_compressor
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     PrunerConfig,
     PruningConfig,
     DistillationConfig,

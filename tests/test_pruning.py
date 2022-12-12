@@ -3,7 +3,7 @@ import os
 import shutil
 import torch.utils.data as data
 import unittest
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     metrics,
     OptimizedModel,
     PrunerConfig,

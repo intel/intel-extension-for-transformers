@@ -46,7 +46,7 @@ import transformers
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     AutoDistillationConfig,
     FlashDistillationConfig,
     metrics

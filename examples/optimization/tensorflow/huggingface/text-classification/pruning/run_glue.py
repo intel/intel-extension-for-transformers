@@ -513,7 +513,7 @@ def main():
 
     # region Pruning
     if optim_args.prune:
-        from intel_extension_for_transformers import metrics, PrunerConfig, PruningConfig, TFOptimization
+        from intel_extension_for_transformers.optimization import metrics, PrunerConfig, PruningConfig, TFOptimization
         optimization = TFOptimization(
             model=model,
             args=training_args,

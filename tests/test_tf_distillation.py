@@ -6,7 +6,7 @@ from datasets import load_dataset, load_metric
 from transformers import (TFAutoModelForSequenceClassification, AutoTokenizer,
                           HfArgumentParser, TFTrainingArguments, set_seed,
                           DefaultDataCollator)
-from intel_extension_for_transformers import (DistillationConfig, metrics)
+from intel_extension_for_transformers.optimization import (DistillationConfig, metrics)
 from intel_extension_for_transformers.optimization.distillation import Criterion
 from intel_extension_for_transformers.optimization.optimizer_tf import TFOptimization
 

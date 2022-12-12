@@ -6,7 +6,7 @@ import shutil
 import torch.utils.data as data
 import unittest
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     DistillationConfig,
     DistillationCriterionMode,
     metrics,

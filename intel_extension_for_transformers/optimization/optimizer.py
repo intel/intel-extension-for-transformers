@@ -26,7 +26,7 @@ from neural_compressor.experimental import(
     Distillation,
 )
 from neural_compressor.experimental.scheduler import Scheduler
-from intel_extension_for_transformers import(
+from intel_extension_for_transformers.optimization import(
     DistillationConfig,
     Provider,
     QuantizationConfig,

@@ -29,7 +29,7 @@ from neural_compressor import __version__ as nc_version
 from neural_compressor.experimental import Component
 from neural_compressor.model.torch_model import PyTorchIpexModel
 from neural_compressor.utils import logger
-from intel_extension_for_transformers import (
+from intel_extension_for_transformers.optimization import (
     AutoDistillation,
     DistillationConfig,
     Provider,
