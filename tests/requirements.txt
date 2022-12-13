@@ -1,6 +1,5 @@
 datasets>=1.17
 mlflow
-git+https://github.com/intel/neural-compressor.git@old_api_examples
 nlpaug
 sacremoses
 onnx>=1.10
