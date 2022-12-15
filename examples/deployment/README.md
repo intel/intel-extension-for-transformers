@@ -34,10 +34,11 @@ pip install neural-compressor==1.14.2
 cd <project folder/intel_extension_for_transformers/>
 python setup.py install/develop
 ```
-If only use backends, just add "--backends" while installing. And Intel Neural Compressor isn't necessary.
+If you only use backends, just add "--backends" while installing. The new package is named intel_extension_for_transformers_backends. And the Intel Neural Compressor isn't necessary.
 ```
 python3 setup.py install/develop --backends
 ```
+>**Note**: Please check either intel_extension_for_transformers or intel_extension_for_transformers_backends installed in env to prevent possible confilcts. You can pip uninstall intel_extension_for_transformers/intel_extension_for_transformers_backends before installing.
 
 ##### 3. Generate optimal BERT model
 

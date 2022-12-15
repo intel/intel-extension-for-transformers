@@ -25,7 +25,8 @@ package_data_dict = {
         }
 
 # define install requirements
-install_requires_list = ['packaging', 'pyyaml', 'numpy', 'schema']
+install_requires_list = ['packaging', 'numpy', 'schema']
+bac_install_requires_list = ['pyyaml', 'tqdm']
 opt_install_requires_list = ['transformers>=4.12.0']
 
 # define scripts
@@ -41,6 +42,7 @@ if only_install_backends:
     project_name = "intel_extension_for_transformers_backends"
     packages_list = find_packages("intel_extension_for_transformers/backends")
     packages_list = ["intel_extension_for_transformers.backends." + i for i in packages_list]
+    install_requires_list.extend(bac_install_requires_list)
 else:
     project_name = "intel_extension_for_transformers"
     packages_list = find_packages()
