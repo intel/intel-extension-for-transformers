@@ -18,6 +18,33 @@ try:
 except Exception as error:
     assert False, "Error: Could not open '%s' due %s\n" % (filepath, error)
 
+# define package data
+package_data_dict = {
+            '': ['*.py', '*.yaml'],
+            'executor': ['*.py'],
+        }
+
+# define install requirements
+install_requires_list = ['packaging', 'pyyaml', 'numpy', 'schema']
+opt_install_requires_list = ['transformers>=4.12.0']
+
+# define scripts
+scripts_list = ['intel_extension_for_transformers/backends/neural_engine/bin/neural_engine']
+
+# --develop: only install backends
+only_install_backends = False
+if "--backends" in sys.argv:
+    only_install_backends = True
+    sys.argv.remove("--backends")
+
+if only_install_backends:
+    project_name = "intel_extension_for_transformers_backends"
+    packages_list = find_packages("intel_extension_for_transformers/backends")
+    packages_list = ["intel_extension_for_transformers.backends." + i for i in packages_list]
+else:
+    project_name = "intel_extension_for_transformers"
+    packages_list = find_packages()
+    install_requires_list.extend(opt_install_requires_list)
 
 def which(thefile):
     """Get the path where the file is located."""
@@ -185,33 +212,30 @@ if __name__ == '__main__':
     check_submodules()
 
     setup(
-        name="intel_extension_for_transformers",
-        version=__version__,
-        author="Intel AIA/AIPC Team",
-        author_email=
+        name = project_name,
+        version = __version__,
+        author = "Intel AIA/AIPC Team",
+        author_email =
         "feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
-        description="Repository of Intel® Intel Extension for Transformers",
-        long_description=open("README.md", "r", encoding='utf-8').read(),
-        long_description_content_type="text/markdown",
-        keywords=
+        description = "Repository of Intel® Intel Extension for Transformers",
+        long_description = open("README.md", "r", encoding='utf-8').read(),
+        long_description_content_type =" text/markdown",
+        keywords =
         'quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
-        license='Apache 2.0',
+        license = 'Apache 2.0',
         url="https://github.com/intel/",
-        ext_modules=[CMakeExtension("neural_engine_py", str(cwd) + '/intel_extension_for_transformers/backends/neural_engine/')],
-        packages = find_packages(),
+        ext_modules = [CMakeExtension("neural_engine_py", str(cwd) + '/intel_extension_for_transformers/backends/neural_engine/')],
+        packages = packages_list,
         include_package_data = True,
         package_dir = {'':'.'},
-        package_data={
-            '': ['*.py', '*.yaml'],
-            'executor': ['*.py'],
-        },
-        cmdclass={
+        package_data = package_data_dict,
+        cmdclass = {
             'build_ext': build_ext,
         },
-        install_requires=['numpy', 'transformers>=4.12.0', 'packaging'],
-        scripts=['intel_extension_for_transformers/backends/neural_engine/bin/neural_engine'],
-        python_requires='>=3.7.0',
-        classifiers=[
+        install_requires = install_requires_list,
+        scripts = scripts_list,
+        python_requires = '>=3.7.0',
+        classifiers = [
             'Intended Audience :: Science/Research',
             'Programming Language :: Python :: 3',
             'Topic :: Scientific/Engineering :: Artificial Intelligence',

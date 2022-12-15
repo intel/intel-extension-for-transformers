@@ -31,4 +31,7 @@ pip install auditwheel==5.1.2
 auditwheel repair dist/intel_extension_for_transformers*.whl
 cp wheelhouse/intel_extension_for_transformers*.whl ./
 ```
-
+If only use backends, just add "--backends" while installing.
+```
+python3 setup.py sdist bdist_wheel --backends 
+```
