@@ -40,8 +40,10 @@ if "--backends" in sys.argv:
 
 if only_install_backends:
     project_name = "intel_extension_for_transformers_backends"
-    packages_list = find_packages("intel_extension_for_transformers/backends")
-    packages_list = ["intel_extension_for_transformers.backends." + i for i in packages_list]
+    packages_list = ["intel_extension_for_transformers", "intel_extension_for_transformers.backends"]
+    bac_packages_list = find_packages("intel_extension_for_transformers/backends")
+    bac_packages_list = ["intel_extension_for_transformers.backends." + i for i in bac_packages_list]
+    packages_list.extend(bac_packages_list)
     install_requires_list.extend(bac_install_requires_list)
 else:
     project_name = "intel_extension_for_transformers"
