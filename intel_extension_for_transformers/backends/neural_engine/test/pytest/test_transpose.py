@@ -36,7 +36,7 @@ class TestTranspose(unittest.TestCase):
 
     def test_transpose(self):
         os.environ['GLOG_minloglevel'] = '2'
-        root_dir = '/home/tensorflow/localfile/nlptoolkit_ut_model/'
+        root_dir = '/tf_dataset2/inc-ut/nlptoolkit_ut_model/'
         if is_win():
             root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
         model_dir = root_dir + 'onnx_best_acc_distilbert.merged.untransposed'

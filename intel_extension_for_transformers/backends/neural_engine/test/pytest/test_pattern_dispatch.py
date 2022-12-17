@@ -44,7 +44,7 @@ class TestPatternDispatch(unittest.TestCase):
         input_2 = np.random.uniform(low=0, high=1, size=shape).astype('int32')
     
         # validate pattern tuning
-        fp32_model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/bert_mini_sst2_1x4_fp32.onnx"
+        fp32_model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/bert_mini_sst2_1x4_fp32.onnx"
         if is_win():
             fp32_model_path = "D:\\dataset\\nlptoolkit_ut_model\\bert_mini_sst2_1x4_fp32.onnx"
         self.assertTrue(os.path.exists(fp32_model_path),

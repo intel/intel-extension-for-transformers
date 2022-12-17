@@ -33,8 +33,8 @@ class TestQKVMerge(unittest.TestCase):
         pass
 
     def test_qkv_merge_1(self):
-        model_path = "/home/tensorflow/localfile/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
-        pattern_config = "/home/tensorflow/localfile/nlptoolkit_ut_model/qkv_merge_pattern_config"
+        model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
+        pattern_config = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/qkv_merge_pattern_config"
         if is_win():
             model_path = "D:\\dataset\\nlptoolkit_ut_model\\onnx_best_acc_distilbert.onnx"
             pattern_config = "D:\\dataset\\nlptoolkit_ut_model\\qkv_merge_pattern_config"
