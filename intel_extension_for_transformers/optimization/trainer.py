@@ -213,7 +213,7 @@ class BaseTrainer():
         quant_config,
         provider: str = Provider.INC.value,
     ):
-        from neural_compressor.experimental import Quantization, common
+        from neural_compressor.experimental import Quantization
 
         assert isinstance(quant_config, QuantizationConfig), \
             "Please pass QuantizationConfig instance to trainer.quantize!"
@@ -229,7 +229,7 @@ class BaseTrainer():
                 self.quant_config.framework = "pytorch_fx"
 
         quantizer = Quantization(self.quant_config.inc_config)
-        quantizer.model = common.Model(self.model)
+        quantizer.model = self.model
 
         self.quantizer = quantizer
         return quantizer
@@ -307,7 +307,7 @@ class BaseTrainer():
         pruning_config=None,
         provider: str = Provider.INC.value,
     ):
-        from neural_compressor.experimental import Pruning, common
+        from neural_compressor.experimental import Pruning
         self.pruning_config = pruning_config
         self.metrics = self.pruning_config.metrics
         self._provider = Provider[provider.upper()].value
@@ -331,7 +331,7 @@ class BaseTrainer():
                 f"{self.args.num_train_epochs}. The target sparsity will not be reached.")
 
         pruner = Pruning(self.pruning_config.inc_config)
-        pruner.model = common.Model(self.model)
+        pruner.model = self.model
 
         self.pruner = pruner
         return pruner
@@ -376,7 +376,7 @@ class BaseTrainer():
         teacher_model: Union[PreTrainedModel, torch.nn.Module],
         provider: str = Provider.INC.value,
     ):
-        from neural_compressor.experimental import Distillation, common
+        from neural_compressor.experimental import Distillation
         assert isinstance(distillation_config, DistillationConfig), \
             "please pass a instance of PruningConfig to trainer.prune!"
         self.distillation_config = distillation_config
@@ -385,8 +385,8 @@ class BaseTrainer():
         self.teacher_model = teacher_model
 
         distiller = Distillation(self.distillation_config.inc_config)
-        distiller.model = common.Model(self.model)
-        distiller.teacher_model = common.Model(self.teacher_model)
+        distiller.model = self.model
+        distiller.teacher_model = self.teacher_model
 
         self.distiller = distiller
         return distiller

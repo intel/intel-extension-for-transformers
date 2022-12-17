@@ -50,7 +50,7 @@ class TestAutoDistillation(unittest.TestCase):
 
         raw_datasets = raw_datasets.map(preprocess_function,
                                         batched=True,
-                                        load_from_cache_file=True)
+                                        load_from_cache_file=False)
         data_collator = DefaultDataCollator(return_tensors="tf")
         dataset = raw_datasets.select(range(10))
         self.dummy_dataset = dataset.to_tf_dataset(

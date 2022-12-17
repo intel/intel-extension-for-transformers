@@ -114,7 +114,7 @@ class AutoDistillation(object):
             model = self.model_builder(model_arch_paras)
             if self.framework == 'tensorflow':
                 model = reload_tf_model(model)
-                
+
             model_paras = self.count_model_parameters(model)
             logger.info(
                 "***** Number of model parameters: {:.2f}M *****".format(model_paras / 10**6)
@@ -141,8 +141,7 @@ class AutoDistillation(object):
                 print(f'res_save_path: {res_save_path}, save_path = {save_path}')
                 os.makedirs(save_path, exist_ok=True)
                 self.dump_search_results(
-                    os.path.join(save_path, 'Trial_{}_results.txt'.format(i+1))
-                )
+                    os.path.join(save_path, 'Trial_{}_results.txt'.format(i + 1)))
 
         if self.framework != "pytorch" or not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
             for model_arch_vec in self.resumed_search_results:
@@ -243,7 +242,7 @@ class AutoDistillation(object):
                 self.metrics = list(metrics.keys())
             assert list(metrics.keys()) == list(self.metrics), \
                 "Keys of metrics not match with metrics in the configuration."
-            metrics = list(metrics.values()) 
+            metrics = list(metrics.values())
         if self.higher_is_better is None:
             self.higher_is_better = [True,] * len(metrics)
             logger.warning("higher_is_better not set in the configuration, " + \
@@ -408,7 +407,7 @@ class AutoDistillation(object):
     @property
     def advisor(self):
         return self._advisor
-    
+
     @advisor.setter
     def advisor(self, advisor):
         self._advisor = advisor
@@ -428,7 +427,7 @@ class AutoDistillation(object):
     @eval_func.setter
     def eval_func(self, eval_func):
         self._eval_func = eval_func
-    
+
     def __repr__(self): # pragma: no cover
         return 'AutoDistillation'
 

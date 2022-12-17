@@ -24,14 +24,14 @@ import os
 import time
 from neural_compressor import __version__
 from neural_compressor.experimental import common
-from neural_compressor.model.model import saved_model_session
-from neural_compressor.model.model import get_model_type
-from intel_extension_for_transformers.optimization import (
-    DistillationConfig,
-    QuantizationConfig,
-    PruningConfig,
-    AutoDistillation
-)
+try:
+    from neural_compressor.model.model import saved_model_session, get_model_type
+except ImportError:
+    from neural_compressor.model.tensorflow_model import saved_model_session, get_model_type
+from intel_extension_for_transformers.optimization import (DistillationConfig,
+                                                           QuantizationConfig,
+                                                           PruningConfig,
+                                                           AutoDistillation)
 from intel_extension_for_transformers.optimization.quantization import QuantizationMode
 from intel_extension_for_transformers.optimization.utils.metrics import Metric
 from intel_extension_for_transformers.optimization.utils.utility import LazyImport
