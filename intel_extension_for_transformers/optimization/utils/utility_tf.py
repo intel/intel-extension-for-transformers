@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Utils for tensorflow framework."""
+
 import os
 import json
 from collections import OrderedDict, UserDict
@@ -23,16 +25,19 @@ from neural_compressor.experimental import common
 TMPPATH = os.path.join('tmp', 'model')
 TEACHERPATH = os.path.join('tmp', 'teacher_model')
 class TFDataloader(object):
-    """
-       Args:
-           dataset (string): Dataset
+    """Tensorflow dataloader.
+
+    Args:
+        dataset (string): Dataset
     """
 
     def __init__(self, dataset, batch_size=None):
+        """Init an instance."""
         self.dataset = dataset
         self.batch_size = batch_size
 
     def __iter__(self):
+        """Get the iteration of dataset."""
         for inputs, labels in self.dataset:
             if isinstance(inputs, dict) or isinstance(inputs, OrderedDict) \
                   or isinstance(inputs, UserDict):
@@ -54,10 +59,18 @@ class TFDataloader(object):
             yield inputs, labels
 
     def __len__(self):
+        """Return the length of dataset."""
         return len(self.dataset)
 
 
 def distributed_init(worker_addresses, type='worker', index=0):
+    """Init distribute environment.
+
+    Args:
+        worker_addresses: Addresses of all nodes.
+        type: The type of node, such as worker.
+        index: When index is 0, the node treat as a chief.
+    """
     tf_config = {
         'cluster': {
             'worker': worker_addresses
@@ -73,6 +86,13 @@ def _is_chief(task_type, task_id):
 
 # get model folder path for the distributed environment
 def get_filepath(base_dirpath, task_type, task_id):
+    """Get model folder path for the distributed environment.
+
+    Args:
+        base_dirpath: The basic folder path.
+        task_type: Task_type is set as worker.
+        task_id: Task id. When task_id=0, the node treat as a chief.
+    """
     if task_type is None:    # single node
         return base_dirpath
     elif _is_chief(task_type, task_id):
@@ -83,5 +103,6 @@ def get_filepath(base_dirpath, task_type, task_id):
 
 # convert a Keras model to SavedModel
 def keras2SavedModel(model):   # pragma: no cover
+    """Transfer keras model into save_model."""
     model = common.Model(model)
     return model.model

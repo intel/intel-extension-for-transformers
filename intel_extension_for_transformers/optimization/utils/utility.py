@@ -15,12 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Utils for pytorch framework."""
+
 import importlib
 import os
 from neural_compressor.utils.utility import LazyImport
 
 def distributed_init(backend="gloo", world_size=1, rank=-1, init_method=None,
                      master_addr='127.0.0.1', master_port='12345'):
+    """Init the distibute environment."""
     torch = LazyImport("torch")
     rank = int(os.environ.get("RANK", rank))
     world_size = int(os.environ.get("WORLD_SIZE", world_size))

@@ -15,9 +15,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The class of metric for optimization."""
+
 class Metric(object):
+    """Metric for optimization."""
     def __init__(self, name: str, greater_is_better: bool = True, is_relative: bool = True,
                  criterion: float = 0.01, weight_ratio: float = None):
+        """Init an instance.
+
+        Args:
+            name: Metric name which evaluates function returns, like:"eval_f1", "eval_accuracy"...
+            greater_is_better: Used to describe the usage of the metric, like: greater is better for f1, 
+                this parameter is only used for quantization.
+            is_relative: Used in conjunction with "criterion". If "criterion" is 0.01, and "is_relative" 
+                is True, it means that we want to get an optimized model which metric drop <1% relative, 
+                if "is_relative" is False, means metric drop <1% absolute, this parameter is only used 
+                for quantization.
+            criterion: Used in conjunction with "is_relative". If "criterion" is 0.01, and "is_relative" 
+                is True, it means that we want to get an optimized model which metric drop <1% relative, 
+                if "criterion" is 0.02, means metric drop <2% relative, this parameter is only used for 
+                quantization.
+            weight_ratio: Used when there are multiple metrics, for example: you want to focus on both 
+                f1 and accuracy, then you will create f1 instance and accuracy instance, and indicate 
+                their weight proportion. If weight_ratio of f1 is 0.3, and weight ratio of accuracy 
+                is 0.7, then the final metric to tune is f1*0.3 + accuracy*0.7, this parameter is only 
+                used for quantization.
+        """
         self.name = name
         self.is_relative = is_relative
         self.criterion = criterion

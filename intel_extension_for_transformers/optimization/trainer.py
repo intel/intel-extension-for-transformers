@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""The trainer class for pytorch framework, to easily train or finetune a model."""
+
 import collections
 import inspect
 import math
@@ -101,7 +103,9 @@ timeit = LazyImport('timeit')
 
 
 class BaseTrainer():
+    """The base class of trainer."""
     def __init__(self, *args, **kwargs):
+        """Initialization function."""
         super().__init__(*args, **kwargs)
         self.in_training = False
         self._provider = "inc"
@@ -123,8 +127,10 @@ class BaseTrainer():
         self.orchestrate_opt = False
         self.dynamic_config = None
 
+
     @property
     def resuming_checkpoint(self):
+        """Getter of the resuming checkpoint."""
         return self._resuming_checkpoint
 
     @resuming_checkpoint.setter
@@ -133,18 +139,22 @@ class BaseTrainer():
 
     @property
     def provider(self):
+        """Getter of the provider."""
         return self._provider
 
     @property
     def eval_func(self):
+        """Getter of the evaluation function."""
         return self._eval_func
 
     @property
     def train_func(self):
+        """Getter of the training function."""
         return self._train_func
 
     @property
     def calib_dataloader(self):
+        """Getter of the calibration dataloader."""
         return self._calib_dataloader
 
     @provider.setter
@@ -164,6 +174,14 @@ class BaseTrainer():
         self._calib_dataloader = dataloader
 
     def builtin_eval_func(self, model):
+        """Custom Evaluate function to inference the model for specified metric on validation dataset.
+
+        Args:
+            model: The model to evaluate.
+
+        Returns:
+            [float]: evaluation result, the larger is better.
+        """
         self.model = model
         # pylint: disable=E1101
         if self.args.seed:
@@ -196,6 +214,14 @@ class BaseTrainer():
 
     # pylint: disable=E1101
     def builtin_train_func(self, model):
+        """Custom training function to train the model on training dataset.
+
+        Args:
+            model: The model to train.
+
+        Returns:
+            [float]: evaluation result, the larger is better.
+        """
         self.model_wrapped = model
         self.model = model
         train_result = self.train(component=self.component,
@@ -213,6 +239,18 @@ class BaseTrainer():
         quant_config,
         provider: str = Provider.INC.value,
     ):
+        """Initialize the quantizer.
+        
+        Args:
+            quant_config: The path to the YAML configuration file or QuantizationConfig class containing 
+            accuracy goal, quantization objective and related dataloaders etc.
+            provider: The provider used to quantize.
+        
+        Returns:
+            An objective of neural_compressor Quantization class, which can automativally searches for 
+            optimal quantization recipes for low precision model inference and achieving best tuning 
+            objectives.
+        """
         from neural_compressor.experimental import Quantization
 
         assert isinstance(quant_config, QuantizationConfig), \
@@ -278,6 +316,21 @@ class BaseTrainer():
         train_func: Optional[Callable] = None,
         calib_dataloader=None,
     ):
+        """The main entry point of automatic quantization tuning.
+
+        Args:
+            quant_config: The path to the YAML configuration file or QuantizationConfig class containing 
+            accuracy goal, quantization objective and related dataloaders etc.
+            provider: The provider used to quantize.
+            eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
+            train_func (:obj:`Callable`, optional: The function used to train the model.
+            calib_dataloader: The dataloader for calibration dataset.
+        
+        Returns:
+            An objective of neural_compressor Quantization class, which can automativally searches for 
+            optimal quantization recipes for low precision model inference and achieving best tuning 
+            objectives.
+        """
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
         self._train_func = self.builtin_train_func if train_func is None else train_func
         if calib_dataloader is not None:
@@ -307,6 +360,17 @@ class BaseTrainer():
         pruning_config=None,
         provider: str = Provider.INC.value,
     ):
+        """Initialize the pruner.
+        
+        Args:
+            pruning_config: The path to the YAML configuration file or PruningConf class containing
+            accuracy goal, pruning objective and related dataloaders etc.
+            provider: The provider used to quantize.
+        
+        Returns:
+            An objective of neural_compressor Pruning class.
+        """
+
         from neural_compressor.experimental import Pruning
         self.pruning_config = pruning_config
         self.metrics = self.pruning_config.metrics
@@ -343,6 +407,18 @@ class BaseTrainer():
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
+        """The main entry point of automatic quantization tuning.
+
+        Args:
+            pruning_config: The path to the YAML configuration file or PruningConf class containing
+            accuracy goal, pruning objective and related dataloaders etc.
+            provider (str): The provider used to quantize.
+            eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
+            train_func (:obj:`Callable`, optional: The function used to train the model.
+        
+        Returns:
+            An objective of neural_compressor Pruning class.
+        """
         if self.pruner is None:
             self.init_pruner(pruning_config=pruning_config, provider=provider)
         if eval_func is not None:
@@ -376,6 +452,17 @@ class BaseTrainer():
         teacher_model: Union[PreTrainedModel, torch.nn.Module],
         provider: str = Provider.INC.value,
     ):
+        """The main entry point of automatic distillation tuning.
+
+        Args:
+            quant_config: The path to the YAML configuration file or DistillationConfig class containing.
+            accuracy goal, distillation objective and related dataloaders etc.
+            teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
+            provider (str): The provider used to quantize.
+        
+        Returns:
+            An objective of neural_compressor Distillation class.
+        """
         from neural_compressor.experimental import Distillation
         assert isinstance(distillation_config, DistillationConfig), \
             "please pass a instance of PruningConfig to trainer.prune!"
@@ -399,6 +486,19 @@ class BaseTrainer():
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
+        """The main entry point of automatic distillation tuning.
+
+        Args:
+            quant_config: The path to the YAML configuration file or DistillationConfig class containing 
+            accuracy goal, distillation objective and related dataloaders etc.
+            teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
+            provider (str): The provider used to quantize.
+            eval_func (:obj:`Callable`, optional: The function to evaluate the model.
+            train_func (:obj:`Callable`, optional: The function to train the model.
+        
+        Returns:
+            An objective of neural_compressor Distillation class.
+        """
         if self.distiller is None:
             self.init_distiller(distillation_config=distillation_config,
                                 teacher_model=teacher_model,
@@ -430,6 +530,15 @@ class BaseTrainer():
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
+        """Main entry point for orchestrate optimiztions.
+
+        Args:
+            config_list: The list of configs.
+            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge 
+                to a smaller model.
+            eval_func (:obj:`Callable`, optional): Evaluation function to evaluate the tuning objective.
+            train_func (:obj:`Callable`, optional): Training function which will be combined with pruning.
+        """
         from intel_extension_for_transformers.optimization.optimizer import Orchestrate_optimizer
         self.orchestrate_opt = True
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
@@ -446,6 +555,7 @@ class BaseTrainer():
         return self.opt_model
 
     def create_optimizer_builtin(self, config_list, teacher_model=None):
+        """The function to create optimizer."""
         components = []
         for config in config_list:
             if isinstance(config, QuantizationConfig):
@@ -478,24 +588,21 @@ class BaseTrainer():
         ignore_keys_for_eval: Optional[List[str]] = None,
         **kwargs,
     ):  # pragma: no cover
-        """
-        Main training entry point.
+        """The main entry point tor train model.
 
         Args:
-            component (:obj:`Component`, `optional`):
-                Component object handling the training process.
-            resume_from_checkpoint (:obj:`str` or :obj:`bool`, `optional`):
-                If a :obj:`str`, local path to a saved checkpoint as saved by a previous instance of
-                :class:`~transformers.Trainer`. If a :obj:`bool` and equals `True`, load the last checkpoint in
-                `args.output_dir` as saved by a previous instance of :class:`~transformers.Trainer`. If present,
-                training will resume from the model/optimizer/scheduler states loaded here.
-            trial (:obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`):
-                The trial run or the hyperparameter dictionary for hyperparameter search.
-            ignore_keys_for_eval (:obj:`List[str]`, `optional`)
-                A list of keys in the output of your model (if it is a dictionary) that should be ignored when
-                gathering predictions for evaluation during the training.
-            kwargs:
-                Additional keyword arguments used to hide deprecated arguments
+            component (:obj:`Component`, `optional`): Component object handling the training process.
+            resume_from_checkpoint (:obj:`str` or :obj:`bool`, `optional`): If a :obj:`str`, local path
+                to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`. 
+                If a :obj:`bool` and equals `True`, load the last checkpoint in `args.output_dir` as saved
+                by a previous instance of :class:`~transformers.Trainer`. If present, training will resume
+                from the model/optimizer/scheduler states loaded here.
+            trial (:obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`): The trial run or the 
+                hyperparameter dictionary for hyperparameter search.
+            ignore_keys_for_eval (:obj:`List[str]`, `optional`): A list of keys in the output of your model
+                (if it is a dictionary) that should be ignored when gathering predictions for evaluation
+                during the training.
+            kwargs: Additional keyword arguments used to hide deprecated arguments
         """
         resume_from_checkpoint = None if not resume_from_checkpoint else resume_from_checkpoint
 
@@ -971,16 +1078,17 @@ class BaseTrainer():
     def training_step(
             self, model: torch.nn.Module,
             inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:  # pragma: no cover
-        """
-        Perform a training step on a batch of inputs.
+        """Perform a training step on a batch of inputs.
+
         Subclass and override to inject custom behavior.
+
         Args:
-            model (:obj:`nn.Module`):
-                The model to train.
-            inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`):
-                The inputs and targets of the model.
-                The dictionary will be unpacked before being fed to the model. Most models expect the targets under the
-                argument :obj:`labels`. Check your model's documentation for all accepted arguments.
+            model (:obj:`nn.Module`): The model to train.
+            inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`): The inputs and targets of the model.
+                The dictionary will be unpacked before being fed to the model. Most models expect 
+                the targets under the argument :obj:`labels`. Check your model's documentation for 
+                all accepted arguments.
+
         Return:
             :obj:`torch.Tensor`: The tensor with training loss on this batch.
         """
@@ -1057,16 +1165,16 @@ class BaseTrainer():
         inputs: Dict[str, Union[torch.Tensor, Any]]
 
     ) -> torch.Tensor:  # pragma: no cover
-        """
-        Perform a training step on a batch of inputs.
+        """Perform a training step on a batch of inputs.
+
         Subclass and override to inject custom behavior.
+
         Args:
-            model (:obj:`nn.Module`):
-                The model to train.
-            inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`):
-                The inputs and targets of the model.
+            model (:obj:`nn.Module`): The model to train.
+            inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`): The inputs and targets of the model.
                 The dictionary will be unpacked before being fed to the model. Most models expect the targets under the
                 argument :obj:`labels`. Check your model's documentation for all accepted arguments.
+
         Return:
             :obj:`torch.Tensor`: The tensor with training loss on this batch.
         """
@@ -1229,8 +1337,9 @@ class BaseTrainer():
 
     # pylint: disable=E1101
     def compute_loss(self, model, inputs, return_outputs=False):  # pragma: no cover
-        """
-        How the loss is computed by Trainer. By default, all models return the loss in the first element.
+        """How the loss is computed by Trainer.
+        
+        By default, all models return the loss in the first element.
 
         Subclass and override for custom behavior.
         """
@@ -1361,6 +1470,30 @@ class BaseTrainer():
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
+        """The main entry point of automatic distillation tuning.
+
+        AutoDistillation is composed of three major stages, Model Exploration, Flash Distillation, and Evaluation.
+
+        In Model Exploration, a search engine will search for a better compressed model from the architecture 
+        design space in each iteration.
+
+        Flash Distillation is the stage for training the searched model to discover its potential.
+
+        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction 
+        accuracy, the hardware performance etc.) in order to select the best model architecture.
+
+        Args:
+            autodistillation_config: The path to the YAML configuration file or a configuration 
+                object containing search setting, flash distillation settings, etc.
+            teacher_model: The model(torch.nn.Module or PreTrainedModel) transfers knowledge to 
+                a smaller model.
+            provider (str): Provide the baseic function. Default set to INC.
+            model_builder (:obj:`Callabel`, optional): A function to build model instance with 
+                the specified model architecture parameters.
+            model_cls (:obj:`Callabel`, optional): Class of the model.
+            eval_func (:obj:`Callabel`, optional): The function to evaluate the model.
+            train_func (:obj:`Callabel`, optional): The function to train the model.
+        """
         self.autodistillation_config = autodistillation_config
         self._provider = Provider[provider.upper()].value
         self.evaluation_loop = self.auto_distil_evaluation_loop
@@ -1490,6 +1623,12 @@ class BaseTrainer():
         return agent.search(self.args.output_dir)
 
     def model_builder_builtin(self, arch_paras=None, model_cls=None):
+        """The function to use specified method to build model.
+        
+        Args:
+            arch_paras: Parameters of the architecture to build a new model.
+            model_cls: Class for the model.
+        """
         config = self.model.config
         if arch_paras is not None:
             assert isinstance(arch_paras, dict), "Expect arch_paras to be a dict."
@@ -1510,8 +1649,7 @@ class BaseTrainer():
         ignore_keys: Optional[List[str]] = None,
         metric_key_prefix: str = "eval",
     ) -> EvalLoopOutput:  # pragma: no cover
-        """
-        Prediction/evaluation loop, shared by :obj:`Trainer.evaluate()` and :obj:`Trainer.predict()`.
+        """Prediction/evaluation loop, shared by :obj:`Trainer.evaluate()` and :obj:`Trainer.predict()`.
 
         Works both with or without labels.
         Does not save all predictions and labels to avoid out of memory when predictions is huge.
@@ -1695,6 +1833,7 @@ class BaseTrainer():
         torch.save(self.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
 
     def export_to_onnx(self, *args, **kwargs):
+        """The function to tranfer model into onnx model."""
         if self.enable_bf16:
             self.export_to_bf16_onnx(*args, **kwargs)
         elif not self.enable_inc_quant:
@@ -1709,6 +1848,7 @@ class BaseTrainer():
         do_constant_folding=True,
         verbose=True,
     ):
+        """The function to tranfer model into fp32 onnx model."""
         if self.fp32_model is None:
             model = self.model.eval()
         else:
@@ -1753,6 +1893,7 @@ class BaseTrainer():
         do_constant_folding=True,
         verbose=True,
     ):
+        """The function to tranfer model into bf16 onnx model."""
         fp32_path = save_path + '.tmp' if save_path \
           else os.path.join(self.args.output_dir, 'bf16-model.onnx.tmp')
         onnx_save_path = save_path if save_path \
@@ -1807,6 +1948,7 @@ class BaseTrainer():
         calibrate_method='minmax',
         scale_mapping=False,
     ):
+        """The function to tranfer model into int8 onnx model."""
         if self.provider != 'inc':  # pragma: no cover
             logger.error("export_to_onnx API only supports INC model right now.")
             sys.exit(0)
@@ -1850,7 +1992,7 @@ class BaseTrainer():
                                  opset_version=opset_version,
                                  do_constant_folding=False,
                                  verbose=False)
-        # Fix onnx accuracy drop when trasformers > 4.21.0 
+        # Fix onnx accuracy drop when trasformers > 4.21.0
         if version.parse(__version__) > version.parse("4.21.0"):
             from onnx import TensorProto
             model = onnx.load(fp32_path)
@@ -2114,6 +2256,7 @@ class BaseTrainer():
 
     # pylint: disable=E1101
     def export_to_jit(self):
+        """The function to tranfer model into jit model."""
         self.model.eval()
         eval_dataloader = self.get_eval_dataloader()
         it = iter(eval_dataloader)
@@ -2141,7 +2284,7 @@ class BaseTrainer():
         self,
         dynamic_config: DynamicLengthConfig,
     ):
-
+        """The function to set dynamic config."""
         self.dynamic_config = dynamic_config
         lc = None
 
@@ -2174,7 +2317,9 @@ class BaseTrainer():
             bert.set_length_config(lc)
             bert.set_output_attentions(True)
 
+
     def run_evolutionary_search(self):
+        """Do evolutionary search."""
         assert self.dynamic_config is not None, \
             """
             Please set a DynamicLengthConfig to run evo-search
@@ -2234,18 +2379,23 @@ class BaseTrainer():
 
 
 class NLPTrainer(BaseTrainer, Trainer):
+    """Trainer for nlp base on class BaseTrainer and Trainer form Transformers."""
     def __init__(self, *args, **kwargs):
+        """Initialization function."""
         super().__init__(*args, **kwargs)
 
 
 class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
+    """Trainer for seq2seq model."""
     def __init__(self, *args, **kwargs):
+        """Initialization function."""
         super().__init__(*args, **kwargs)
         self._max_length = None
         self._num_beams = None
 
     @property
     def max_length(self):
+        """Getter of the max lenght."""
         return self._max_length
 
     @max_length.setter
@@ -2254,6 +2404,7 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
 
     @property
     def num_beams(self):
+        """Getter of the numbert of beams."""
         return self._num_beams
 
     @num_beams.setter
@@ -2261,6 +2412,14 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
         self._num_beams = num_beams
 
     def builtin_eval_func(self, model):
+        """Custom Evaluate function to inference the model for specified metric on validation dataset.
+
+        Args:
+            model: The model to evaluate.
+
+        Returns:
+            evaluation result, the larger is better.
+        """
         assert self.max_length is not None, \
             """
             Please set max_length in trainer, like as:

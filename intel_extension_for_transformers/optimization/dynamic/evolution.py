@@ -19,6 +19,8 @@
 # Copyright (c) 2020-present NAVER Corp.
 # Apache License v2.0
 
+"""Evolustion: Provide the evolustionary search for pytorch."""
+
 import csv
 import logging
 import os
@@ -32,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 def approx_ratio(x, n=12, l=384):
+    """Get the approximation ratio."""
     s = 0
     i = l
     for _ in range(n):
@@ -39,8 +42,8 @@ def approx_ratio(x, n=12, l=384):
         s += i
     return s / (n * l)
 
-
 def inverse(x):
+    """Get the inverse number."""
     l, r = 0, 1
     while r - l > 1e-12:
         c = (l + r) / 2
@@ -50,6 +53,7 @@ def inverse(x):
 
 
 def store2str(gene, macs, score, method, parents=None):
+    """Store the parmaters into string."""
     store_str = f"({', '.join(f'{x:3d}' for x in gene)}):"
     store_str += f" {macs} MACs/latency"
     store_str += f" | score {score}"
@@ -59,6 +63,7 @@ def store2str(gene, macs, score, method, parents=None):
     return store_str
 
 class Evolution(object):
+    """Class of Evolution supports for evolutionary searching."""
     def __init__(
         self,
         model,
@@ -69,6 +74,7 @@ class Evolution(object):
         upper_constraint=None,
         eval_metric='eval_f1'
     ):
+        """Init an Evolution instance."""
         self.model = model
         self.max_seq_length = max_seq_length
         self.device = device
@@ -91,6 +97,7 @@ class Evolution(object):
         self.eval_metric=eval_metric
 
     def load_store(self, store_file):
+        """Load from a store file."""
         if not os.path.isfile(store_file):
             return
         with open(store_file, 'r') as f:
@@ -99,6 +106,7 @@ class Evolution(object):
                 self.store[row[0]] = row[1:3] + (0, None)
 
     def save_store(self, store_file):
+        """Save into a store file."""
         store_keys = sorted(self.store.keys(), key=lambda x: self.store[x][0])
         with open(store_file, 'w') as f:
             writer = csv.writer(f, delimiter='\t')
@@ -106,37 +114,43 @@ class Evolution(object):
                 writer.writerow([str(gene)] + [str(x) for x in self.store[gene]])
 
     def get_store(self):
+        """Get store."""
         return self.store
 
     def set_lower_constraint(self, constraint):
+        """Setter of lower constraint."""
         self.lower_constraint = constraint
 
     def set_upper_constraint(self, constraint):
+        """Setter of upper constraint."""
         self.upper_constraint = constraint
 
     def save_population(self, population_file, population):
+        """Save population into a file."""
         with open(population_file, 'w') as f:
             writer = csv.writer(f, delimiter='\t')
             for gene in population:
                 writer.writerow([str(gene)] + [str(x) for x in self.store[gene]])
 
-    def ccw(self, gene0, gene1, gene2):
+    def _ccw(self, gene0, gene1, gene2):
         x0, y0 = self.store[gene0][:2]
         x1, y1 = self.store[gene1][:2]
         x2, y2 = self.store[gene2][:2]
         return (x0 * y1 + x1 * y2 + x2 * y0) - (x0 * y2 + x1 * y0 + x2 * y1)
 
     def convex_hull(self):
+        """The function to calculate convex_hull."""
         hull = self.population[:2]
         for gene in self.population[2:]:
             if self.store[hull[-1]][1] >= self.store[gene][1]:
                 continue
-            while len(hull) >= 2 and self.ccw(hull[-2], hull[-1], gene) >= 0:
+            while len(hull) >= 2 and self._ccw(hull[-2], hull[-1], gene) >= 0:
                 del hull[-1]
             hull.append(gene)
         return hull
 
     def pareto_frontier(self):
+        """The function to calculate population and are."""
         self.population = sorted(self.population, key=lambda x: self.store[x][:2])
 
         frontier = [self.population[0]]
@@ -157,6 +171,7 @@ class Evolution(object):
         return self.population, area
 
     def add_gene(self, gene, macs=None, score=None, method=0, parents=None):
+        """Add gene to evolution."""
         if gene not in self.store:
             self.model.eval()
             if self.model.config.model_type == "distilbert":
@@ -187,6 +202,7 @@ class Evolution(object):
         return False
 
     def mutate(self, mutation_prob, ray=False):
+        """Do the mutate."""
         gene = random.choice(self.population)
         mutated_gene = ()
         for i in range(self.model.config.num_hidden_layers):
@@ -199,6 +215,7 @@ class Evolution(object):
         return self.add_gene(mutated_gene, method=1, parents=(gene,)) if not ray else mutated_gene, (gene,)
 
     def crossover(self, ray=False):
+        """Do the crossover."""
         gene0, gene1 = random.sample(self.population, 2)
         crossovered_gene = tuple((g0 + g1 + 1) // 2 for g0, g1 in zip(gene0, gene1))
         return self.add_gene(crossovered_gene, method=2, parents=(gene0, gene1)) if not ray else \
