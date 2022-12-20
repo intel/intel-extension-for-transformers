@@ -43,10 +43,10 @@ function init_params {
 # run_tuning
 function run_tuning {
 
-    if [ "${topology}" = "pokemon_diffusers_static" ]; then
+    if [ "${topology}" = "sd_pokemon_diffusers_static" ]; then
         model_name_or_path="lambdalabs/sd-pokemon-diffusers"
         approach="PostTrainingStatic"
-    elif [ "${topology}" = "pokemon_diffusers_dynamic" ]; then
+    elif [ "${topology}" = "sd_pokemon_diffusers_dynamic" ]; then
         model_name_or_path="lambdalabs/sd-pokemon-diffusers"
         approach="PostTrainingDynamic"
     fi
