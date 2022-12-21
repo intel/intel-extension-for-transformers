@@ -126,10 +126,15 @@ class build_ext(build_ext):
             self.spawn(['make'] + build_args)
 
             import glob
+            import shlex
+            import subprocess
             bin_lists=glob.glob('bin/neural_engine*')
             bin_lists.extend(glob.glob('lib/*.so*'))
             for path in bin_lists:
-                shutil.copy(path, executable_path, follow_symlinks=False)
+                command = f'cp -d {path} {executable_path}'
+                args = shlex.split(command)
+                p=subprocess.Popen(args)
+                p.wait()
                 print(path)
             os.chdir(str(cwd))
         else:
