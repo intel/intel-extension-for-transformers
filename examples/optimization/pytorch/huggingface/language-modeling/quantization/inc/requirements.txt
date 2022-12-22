@@ -1,7 +1,0 @@
-accelerate
-datasets >= 1.8.0
-protobuf
-sentencepiece != 0.1.92
-torch >= 1.10.0
-transformers>=4.12.0
-wandb
