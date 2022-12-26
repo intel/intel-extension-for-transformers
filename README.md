@@ -33,9 +33,9 @@ This toolkit helps developers to improve the productivity of inference deploymen
 </thead>
 <tbody>
   <tr>
-    <td align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs">Model&nbsp;&nbsp;&nbsp;Compression</a></td>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/docs">Transformers-accelerated&nbsp;&nbsp;&nbsp;Neural Engine</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.md">Transformers-accelerated&nbsp;&nbsp;&nbsp;Libraries</a></td>
+    <td align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs">Model Compression</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.md">Kernel Libraries</a></td>
     <td align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples">Examples</a></td>
   </tr>
   <tr>
@@ -63,7 +63,7 @@ This toolkit helps developers to improve the productivity of inference deploymen
     <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
   </tr>
   <tr>
-    <td align="center" colspan="3"><a href="intel_extension_for_transformers/backends/neural_engine">Transformers-accelerated&nbsp;Neural Engine</a></td>
+    <td align="center" colspan="3"><a href="intel_extension_for_transformers/backends/neural_engine">Neural Engine</a></td>
     <td align="center" colspan="3"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Kernels (AMX/AVX/VNNI)</a></td>
   </tr>
   <tr>
@@ -80,8 +80,8 @@ This toolkit helps developers to improve the productivity of inference deploymen
   </tr>
   <tr>
     <td align="center"><a href="docs/benchmark.md">Model Compression</a></td>
-    <td align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/profiling.md">Transformers-accelerated&nbsp;Neural Engine</a></td>
-    <td align="center">Transformers-accelerated&nbsp;Libraries <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/  intel_extension_for_transformers/backends/neural_engine/kernels/docs/">Profiling</a>/ <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/  intel_extension_for_transformers/backends/neural_engine/kernels/docs/">Benchmark</  a></td>
+    <td align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.md">Neural Engine</a></td>
+    <td align="center">Kernel Libraries <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/  intel_extension_for_transformers/backends/neural_engine/kernels/docs/">Profiling</a>/ <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/  intel_extension_for_transformers/backends/neural_engine/kernels/docs/">Benchmark</  a></td>
     <td align="center"><a href="docs/examples.md">Supported Models</a></td>
     <td align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.md">Sparse Aware Inference</a></td>
     <td align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.md">Sparse Kernel Data</a></td>
