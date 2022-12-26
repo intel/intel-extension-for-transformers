@@ -44,7 +44,7 @@ This toolkit helps developers to improve the productivity of inference deploymen
   <tr>
     <td align="center"><a href="docs/export.md">Export</a></td>
     <td align="center"><a href="docs/metrics.md">Metric</a></td>
-    <td align="center"><a href="docs/pipeline.md">Pipeline</a></td>
+    <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
     <td align="center" colspan="2"><a href="docs/objectives.md">Objective</a></td>
     <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>
   </tr>
@@ -66,9 +66,8 @@ This toolkit helps developers to improve the productivity of inference deploymen
     <th colspan="8" align="center">ADVANCED ALGORITHM</th>
   </tr>
   <tr>
-    <td align="center" colspan="3"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/question-answering/dynamic/README.md">Length Adaptive</a></td>
-    <td align="center" colspan="3"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/auto_distillation">NAS (Auto Distillation)</a></td>
-    <td align="center" colspan="2"><a href="">Set Fit</a></td>
+    <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/question-answering/dynamic/README.md">Length Adaptive</a></td>
+    <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/auto_distillation">NAS (Auto Distillation)</a></td>
   </tr>
   <tr>
     <th colspan="4" align="center">PROFILING AND BENCHMARK</a></th>
@@ -77,7 +76,7 @@ This toolkit helps developers to improve the productivity of inference deploymen
   <tr>
     <td align="center"><a href="docs/benchmark.md">Model Compression</a></td>
     <td align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.md">Neural Engine</a></td>
-    <td colspan="2" align="center">Kernel Libraries <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/  intel_extension_for_transformers/backends/neural_engine/kernels/docs/">Profiling</a>/ <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/  intel_extension_for_transformers/backends/neural_engine/kernels/docs/">Benchmark</  a></td>
+    <td colspan="2" align="center">Kernel Libraries <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.md">Profiling</a>/ <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/benchmark.md">Benchmark</  a></td>
     <td align="center"><a href="docs/examples.md">Supported Models</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.md">Sparse Aware Inference Data</a></td>
     <td align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.md">Sparse Kernel Data</a></td>
