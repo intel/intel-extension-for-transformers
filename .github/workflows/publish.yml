@@ -1,0 +1,19 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build Online Document
+      run: |
+        git config --local --get remote.origin.url
+        cd build_docs
+        bash build.sh

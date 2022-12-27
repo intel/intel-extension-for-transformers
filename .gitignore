@@ -26,3 +26,4 @@ intel_extension_for_transformers.egg-info/
 /examples/**/data/
 /examples/**/model_and_tokenizer/
 /examples/**/*ir*/
+version.txt
