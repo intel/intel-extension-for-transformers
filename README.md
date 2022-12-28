@@ -74,7 +74,7 @@ This toolkit helps developers to improve the productivity of inference deploymen
   </tr>
   <tr>
     <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/question-answering/dynamic/README.md">Length Adaptive</a></td>
-    <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/auto_distillation">NAS (Auto Distillation)</a></td>
+    <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/auto_distillation">Neural Architecture Search</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">TUTORIALS AND RESULTS</a></th>
@@ -82,8 +82,8 @@ This toolkit helps developers to improve the productivity of inference deploymen
   <tr>
     <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs/tutorials/pytorch">Tutorials</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">Supported Models</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.md">Sparse Aware Inference Data</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.md">Sparse Kernel Data</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.md">Model Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.md">Kernel Performance</a></td>
   </tr>
 </tbody>
 </table>
