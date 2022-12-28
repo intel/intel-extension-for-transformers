@@ -39,22 +39,7 @@ This toolkit helps developers to improve the productivity of inference deploymen
     <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples">Examples</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">BASIC API</th>
-  </tr>
-  <tr>
-    <td align="center"><a href="docs/export.md">Export</a></td>
-    <td align="center"><a href="docs/metrics.md">Metric</a></td>
-    <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
-    <td align="center" colspan="2"><a href="docs/objectives.md">Objective</a></td>
-    <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.md">Compile</a></td>
-    <td colspan="3" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/Deploy and Integration.md">Deploy and Integration</a></td>
-    <td colspan="3" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.md">Add Customize pattern</a></td>
-  </tr>
-  <tr>
-    <th colspan="8" align="center">DEEP DIVE</th>
+    <th colspan="8" align="center">MODEL COMPRESSION</th>
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="docs/quantization.md">Quantization</a></td>
@@ -63,26 +48,42 @@ This toolkit helps developers to improve the productivity of inference deploymen
     <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">ADVANCED ALGORITHM</th>
+    <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>
+    <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
+    <td align="center" colspan="2"><a href="docs/metrics.md">Metric</a>/<a href="docs/objectives.md">Objective</a></td>
+    <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">NEURAL ENGINE</th>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.md">Model Compilation</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.md">Custom pattern</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/Deploy and Integration.md">Deployment</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.md">Profiling</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">KERNEL LIBRARIES</th>
+  </tr>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Custom INT8 Kernel</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.md">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
+  <tr>
+    <th colspan="8" align="center">ALGORITHMS</th>
   </tr>
   <tr>
     <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/question-answering/dynamic/README.md">Length Adaptive</a></td>
     <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/auto_distillation">NAS (Auto Distillation)</a></td>
   </tr>
   <tr>
-    <th colspan="4" align="center">PROFILING AND BENCHMARK</a></th>
-    <th colspan="4" align="center">VALIDATED MODELS AND DATA</th>
+    <th colspan="8" align="center">TUTORIALS AND RESULTS</a></th>
   </tr>
   <tr>
-    <td align="center"><a href="docs/benchmark.md">Model Compression</a></td>
-    <td align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.md">Neural Engine</a></td>
-    <td colspan="2" align="center">Kernel Libraries <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.md">Profiling</a>/ <a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/benchmark.md">Benchmark</  a></td>
-    <td align="center"><a href="docs/examples.md">Supported Models</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs/tutorials/pytorch">Tutorials</a></td>
+    <td colspan="2" align="center"><a href="docs/examples.md">Supported Models</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.md">Sparse Aware Inference Data</a></td>
-    <td align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.md">Sparse Kernel Data</a></td>
-  </tr>
-  <tr>
-    <td colspan="8" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs/tutorials/pytorch">TUTORIALS</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.md">Sparse Kernel Data</a></td>
   </tr>
 </tbody>
 </table>
@@ -297,8 +298,9 @@ Intel® Extension for Transformers supports systems based on [Intel 64 architect
 </table>
 
 ## Selected Publications/Events
-* NeurIPS'2022: [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (Nov 2022)
-* NeurIPS'2022: [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) (Nov 2022)
-* Blog published by Cohere: [Top NLP Papers—November 2022](https://txt.cohere.ai/top-nlp-papers-november-2022/) (Nov 2022)
-* Blog published by Alibaba: [Deep learning inference optimization for Address Purification](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
-* NeurIPS'2021: [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754) (Nov 2021)
+* [MLefficiency — Optimizing transformer models for efficiency](https://medium.com/@kawapanion/mlefficiency-optimizing-transformer-models-for-efficiency-a9e230cff051) (Dec 2022)
+* [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (NeurIPS'2022)
+* [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) (NeurIPS'2022)
+* [Top NLP Papers—November 2022](https://txt.cohere.ai/top-nlp-papers-november-2022/) (Nov 2022)
+* [Deep learning inference optimization for Address Purification](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
+* [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754) (NeurIPS'2021)
