@@ -50,7 +50,7 @@ This toolkit helps developers to improve the productivity of inference deploymen
   <tr>
     <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>
     <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
-    <td align="center" colspan="2"><a href="docs/metrics.md">Metric</a>/<a href="docs/objectives.md">Objective</a></td>
+    <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a>/<a href="docs/objectives.md">Objectives</a></td>
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
   </tr>
   <tr>
@@ -66,7 +66,7 @@ This toolkit helps developers to improve the productivity of inference deploymen
     <th colspan="8" align="center">KERNEL LIBRARIES</th>
   </tr>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Custom INT8 Kernel</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.md">Profiling</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
   <tr>
