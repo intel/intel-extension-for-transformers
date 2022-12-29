@@ -39,8 +39,11 @@ file(GLOB HEADERS
   ${PROJECT_SOURCE_DIR}/include/jit_domain/*.hpp
 )
 
-
-add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
+if (NE_DYNAMIC_LINK)
+    add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
+else()
+    add_library(${HOST_LIBRARY_NAME} STATIC ${SOURCES} ${HEADERS})
+endif()
 
 install(TARGETS ${HOST_LIBRARY_NAME})
 

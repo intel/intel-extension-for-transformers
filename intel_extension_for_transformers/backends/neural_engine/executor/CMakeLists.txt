@@ -37,10 +37,8 @@ if(NE_WITH_ONEDNN_GRAPH)
   )
 endif()
 
-add_library(neural_engine SHARED
-    ${SRC_SET}
-)
 
+add_library(neural_engine SHARED ${SRC_SET})
 target_compile_definitions(neural_engine PRIVATE NEURALENGINE_SHARED_LIB_)
 
 if(WIN32)
@@ -86,6 +84,7 @@ if(WIN32)
 else()
 list(APPEND LINK_LIBS rt)
 endif()
+
 target_link_libraries(neural_engine
     PUBLIC
         ${CMAKE_THREAD_LIBS_INIT}
