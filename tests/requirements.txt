@@ -7,6 +7,8 @@ onnxruntime>=1.11
 onnxruntime-extensions
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=1.10.0
-transformers<=4.19.2
+transformers
 intel-tensorflow==2.10.0
 torchprofile
+intel-extension-for-pytorch
+tokenizers<=0.12.1
