@@ -12,7 +12,7 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-if(SPARSE_LIB_USE_VTUNE)
+if( NE_WITH_SPARSELIB_VTUNE )
   if( UNIX )
     if( CMAKE_VTUNE_HOME )
       set( VTUNE_HOME ${CMAKE_VTUNE_HOME} )
@@ -35,12 +35,19 @@ if(SPARSE_LIB_USE_VTUNE)
 
         get_filename_component( VTUNE_LIBRARY_PATH ${VTUNE_LIBRARY} PATH )
 
-        set(EXTERNAL_INCLUDE_PAYH "${VTUNE_HOME}/include ${EXTERNAL_INCLUDE_PAYH}")
-        set(EXTERNAL_LIBRARY_PAYH "${VTUNE_HOME}/lib${arch}/libittnotify.a ${EXTERNAL_LIBRARY_PAYH}")
+        target_include_directories(${HOST_LIBRARY_NAME}
+            PUBLIC
+                "${VTUNE_HOME}/include"
+        )
+        target_link_libraries(${HOST_LIBRARY_NAME}
+            PUBLIC
+                "${VTUNE_HOME}/lib${arch}/libittnotify.a"
+                dl
+        )
 
         set(CMAKE_C_FLAGS "-DSPARSE_LIB_USE_VTUNE ${CMAKE_C_FLAGS}" )
         set(CMAKE_CXX_FLAGS "-DSPARSE_LIB_USE_VTUNE ${CMAKE_CXX_FLAGS}" )
-        set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS}" ) # better to provide debug symbol to vtune
+        set(CMAKE_CXX_FLAGS "-g -ldl ${CMAKE_CXX_FLAGS}" ) # better to provide debug symbol to vtune
 
         set( ITT_CFLAGS "-I${VTUNE_INCLUDE} -DITT_SUPPORT" )
         set( ITT_LIBRARY_DIRS "${VTUNE_LIBRARY_PATH}" )

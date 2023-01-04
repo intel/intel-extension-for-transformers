@@ -15,9 +15,9 @@ For advanced users we also support vtune profling for kernels execution through 
 ```shell
 mkdir build
 cd build
-cmake .. -DSPARSE_LIB_USE_VTUNE=True
+cmake .. -DNE_WITH_SPARSELIB_VTUNE=True
 # if the path to vtune is not the default /opt/intel/oneapi/vtune/latest, you can determine the path manually like
-# cmake .. -DSPARSE_LIB_USE_VTUNE=True -DCMAKE_VTUNE_HOME=/path/to/vtune
+# cmake .. -DNE_WITH_SPARSELIB_VTUNE=True -DCMAKE_VTUNE_HOME=/path/to/vtune
 make -j
 ...
 SPARSE_LIB_VTUNE=1 ./{executable}

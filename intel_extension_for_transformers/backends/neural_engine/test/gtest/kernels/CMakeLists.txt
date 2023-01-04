@@ -2,12 +2,10 @@ cmake_minimum_required(VERSION 3.11)
 
 project(sparselib_ut)
 
-option(SPARSE_LIB_USE_VTUNE OFF)
-option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
-
+option(NE_WITH_SPARSELIB_VTUNE "Enable VTune profiling in kernels" OFF)
+set(CMAKE_VTUNE_HOME)
 
 set(MAIN_SRC_GTEST "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
-
 
 if(OpenMP_FOUND)
     #message(${CMAKE_CXX_FLAGS})

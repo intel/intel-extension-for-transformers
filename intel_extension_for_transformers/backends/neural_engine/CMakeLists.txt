@@ -100,7 +100,6 @@ else()
     message(FATAL_ERROR "Cannot find OpenMP")
 endif()
 
-
 set(BOOST_INC_DIRS
         ${NE_THIRD_PARTY_DIR}/boost/libs/assert/include
         ${NE_THIRD_PARTY_DIR}/boost/libs/core/include
@@ -148,4 +147,3 @@ endif()
 if(NE_WITH_SPARSELIB_BENCHMARK)
   add_subdirectory(${NE_ROOT}/test/kernels/benchmark)
 endif()
-
