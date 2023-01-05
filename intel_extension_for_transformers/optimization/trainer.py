@@ -121,6 +121,7 @@ class BaseTrainer():
         self.quantizer = None
         self.distiller = None
         self.fp32_model = None
+        self.opt_model = None
         # This flag is set for the engine in the export_to_int8_onnx API.
         self.enable_executor = False
         self.enable_bf16 = False
@@ -1821,7 +1822,7 @@ class BaseTrainer():
                 torch.save(state_dict, os.path.join(output_dir, WEIGHTS_NAME))
         else:
             # overwrite `pytorch_model.bin` with inc int8 format.
-            if self.enable_inc_quant:
+            if self.enable_inc_quant and self.opt_model:
                 self._save_inc_int8(self.opt_model, output_dir)
             else:
                 self.model.save_pretrained(output_dir, state_dict=state_dict)
