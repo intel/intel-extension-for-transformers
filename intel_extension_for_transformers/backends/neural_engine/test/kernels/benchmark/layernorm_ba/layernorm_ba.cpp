@@ -143,7 +143,6 @@ void layernorm_ba_bench::gen_case() {
   std::srand(seed);
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j++) {
-      unsigned int seed_tmp = seed + i;
       float rand_val = std::rand() % 256 - 128 + rand_float_postfix();
       assign_val(src, in_dt, rand_val, i * col + j);
       assign_val(src_ref, in_dt, rand_val, i * col + j);

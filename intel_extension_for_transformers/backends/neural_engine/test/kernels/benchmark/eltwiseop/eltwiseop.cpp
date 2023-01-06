@@ -87,7 +87,6 @@ void eltwiseop_bench::gen_case() {
   const unsigned int seed = 667095;
   std::srand(seed);
   for (int i = 0; i < num; i++) {
-    unsigned int seed_tmp = seed + i;
     float rand_val = std::rand() % 256 - 128;
     assign_val(src, in_dt, rand_val, i);
     assign_val(src_ref, in_dt, rand_val, i);

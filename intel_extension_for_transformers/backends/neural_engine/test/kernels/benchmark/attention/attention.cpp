@@ -27,9 +27,6 @@ void get_true_ip(const std::vector<jd::tensor_desc>& ts_descs, const std::vector
   const auto& src_type = ts_descs[jd::ssd::SRC].dtype();
   const auto& src_shape = ts_descs[jd::ssd::SRC].shape();
   const auto& dst_type = ts_descs[jd::ssd::DST].dtype();
-  const auto& dst_shape = ts_descs[jd::ssd::DST].shape();
-  SPARSE_LOG_IF(FATAL, src_shape.size() != 2 && src_shape.size() != 3 || src_shape.size() != dst_shape.size())
-      << "Invalid shape";
 
   int oc = wei_shape[0];
   int ic = wei_shape[1];
@@ -394,18 +391,6 @@ const void* make_data_obj(const std::vector<int64_t>& a_shape, const jd::data_ty
   return data_ptr;
 }
 
-std::vector<float> make_output_scale(jd::dim_t size, const std::vector<float>& ranges = {0, 10}) {
-  std::vector<float> output_scale(size, 0);
-  jd::init_vector(output_scale.data(), size, ranges[0], ranges[1]);
-  return output_scale;
-}
-
-std::vector<float> make_output_zo(jd::dim_t size, const std::vector<float>& ranges = {-100, -1}) {
-  std::vector<float> output_zo(size, 0);
-  jd::init_vector(output_zo.data(), size, ranges[0], ranges[1]);
-  return output_zo;
-}
-
 }  // namespace
 namespace jd {
 
@@ -715,8 +700,6 @@ void attention_bench::gen_case() {
   op_attrs["k_scales_ptr"] = std::to_string(reinterpret_cast<uint64_t>(k_scales_addr));
   op_attrs["v_scales_ptr"] = std::to_string(reinterpret_cast<uint64_t>(v_scales_addr));
 
-  float scale = make_output_scale(1)[0];
-  float zero_point = make_output_zo(1)[0];
   operator_desc op_desc(kernel_kind::attention, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs);
 
   // Step 3: op_args_t testcase pair
