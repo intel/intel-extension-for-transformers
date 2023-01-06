@@ -6,18 +6,18 @@ This toolkit helps developers to improve the productivity of inference deploymen
 
 - Model Compression
 
-    |Framework          |Quantization |Pruning/Sparsity |Distillation |Neural Architecture Search |
-    |-------------------|:-----------:|:---------------:|:-----------:|:-------------------------:|
-    |PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;                   |
-    |TensorFlow         |&#10004;     |&#10004;         |&#10004;     |Stay tuned :star:          |
+|Framework          |Quantization |Pruning/Sparsity |Distillation |Neural Architecture Search |
+|-------------------|:-----------:|:---------------:|:-----------:|:-------------------------:|
+|PyTorch            |&#10004;     |&#10004;         |&#10004;     |&#10004;                   |
+|TensorFlow         |&#10004;     |&#10004;         |&#10004;     |Stay tuned :star:          |
 
 - Data Augmentation for NLP Datasets
 - Transformers-accelerated Neural Engine
 - Transformers-accelerated Libraries
 - Domain Algorithms
-    |Length Adaptive Transformer |
-    |:--------------------------:|
-    |PyTorch &#10004;            |
+|Length Adaptive Transformer |
+|-|
+|PyTorch &#10004;            |
 
 - Architecture of Intel® Extension for Transformers
 <img src="docs/imgs/arch.png" width=691 height=444 alt="arch">

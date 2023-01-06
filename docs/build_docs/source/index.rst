@@ -1,11 +1,15 @@
 Welcome to Intel® Extension for Transformers' documentation!
 ============================================
 
+Sections
+********
+
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
 
-   feature.rst
+   xtransformers.rst
+   neural_engine.rst
+   kernel.rst
    docs/examples.md
    docs/api_doc/api.rst
 
