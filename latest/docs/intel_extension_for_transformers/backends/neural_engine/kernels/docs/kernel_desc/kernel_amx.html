@@ -1,0 +1,255 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Design of AMX Kernel &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../../" src="../../../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../../_static/doctools.js"></script>
+        <script src="../../../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Design of AMX Kernel</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_amx.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="design-of-amx-kernel">
+<h1>Design of AMX Kernel<a class="headerlink" href="#design-of-amx-kernel" title="Permalink to this heading">¶</a></h1>
+<section id="brief-introduction-for-isas">
+<h2>Brief introduction for ISAs<a class="headerlink" href="#brief-introduction-for-isas" title="Permalink to this heading">¶</a></h2>
+<p>As we all know, AMX ISA introduces the <code class="docutils literal notranslate"><span class="pre">tdpbf16ps</span></code>, which does <strong>16x32</strong> matrix times <strong>32x16</strong> matrix as the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FOR</span> <span class="n">m</span> <span class="o">:=</span> <span class="mi">0</span> <span class="n">TO</span> <span class="n">dst</span><span class="o">.</span><span class="n">rows</span> <span class="o">-</span> <span class="mi">1</span>
+	<span class="n">tmp</span> <span class="o">:=</span> <span class="n">dst</span><span class="o">.</span><span class="n">row</span><span class="p">[</span><span class="n">m</span><span class="p">]</span>
+	<span class="n">FOR</span> <span class="n">k</span> <span class="o">:=</span> <span class="mi">0</span> <span class="n">TO</span> <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">colsb</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>                                                 <span class="o">//</span> <span class="n">colsb</span> <span class="o">=&gt;</span> <span class="nb">bytes</span> <span class="n">per</span> <span class="n">col</span><span class="p">,</span> <span class="ow">in</span> <span class="n">BF16</span> <span class="n">case</span> <span class="n">k</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+		<span class="n">FOR</span> <span class="n">n</span> <span class="o">:=</span> <span class="mi">0</span> <span class="n">TO</span> <span class="p">(</span><span class="n">dst</span><span class="o">.</span><span class="n">colsb</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>                                           <span class="o">//</span> <span class="n">colsb</span> <span class="o">=&gt;</span> <span class="nb">bytes</span> <span class="n">per</span> <span class="n">col</span><span class="p">,</span> <span class="ow">in</span> <span class="n">BF16</span> <span class="n">case</span> <span class="n">n</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+			<span class="n">tmp</span><span class="o">.</span><span class="n">fp32</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+=</span> <span class="n">FP32</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">row</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">bf16</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="o">+</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">FP32</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">row</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">bf16</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">+</span><span class="mi">0</span><span class="p">])</span>
+			<span class="n">tmp</span><span class="o">.</span><span class="n">fp32</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+=</span> <span class="n">FP32</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">row</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">bf16</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">FP32</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">row</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">bf16</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+		<span class="n">ENDFOR</span>
+	<span class="n">ENDFOR</span>
+	<span class="n">write_row_and_zero</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">dst</span><span class="o">.</span><span class="n">colsb</span><span class="p">)</span>
+<span class="n">ENDFOR</span>
+<span class="n">zero_upper_rows</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">dst</span><span class="o">.</span><span class="n">rows</span><span class="p">)</span>
+<span class="n">zero_tileconfig_start</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Like the <strong>VNNI</strong>, <strong>AMX-BF16</strong> needs re-layout the right matrix as following:</p>
+<p><img alt="image" src="../../../../../../../_images/kernel_amx_bf16x16_relayout.png" /></p>
+<p>As a successor to <strong>AVX512</strong> series sparse pattern, <strong>AMX</strong> pattern split the matrix into many <strong>1x16</strong> blocks and then concatenate them to meet AMX 32x16 requirements.
+You can refer to <a class="reference external" href="https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ig_expand=159,653,1854,5965,5461,1742,2774,4964,4916,4925,4944,1745,1589,4089,4120,5390,5389,5388,2782,4541,6243,6255,4541,1510,2244,6836,7263,2250,5360,5388,5389,5390,5352,5353,5324,5381,4626,7264,6172,649,6159,6897,7264,7267,2795,2782,2913,1431,1385,5381,574,572,5381,5380,5379,5378,5377,5376,5375,5374,5373,5390,5389,5388,5360,5359,6897,6905,6830,6897,6903,6857,7265,6501,6519,6582,488,4506,5240,5459,5478,5489,5488,5487,5480,5463,640,6206,640,2808,4469,4470,4471,4463,4472,4469,2801,2759,2782,2787,640,2949,2949,2890,2913,2912,2585,2585,2585,7041,7043,572,640,4369,6903,6903,2756,1827,6529,572,7264,2749,5645,2808,2795,2782,7260,4469,7267,7266,2139,1998,2756,2750,2753,7439,7259,7259,7439,4376,6172,6255,6252,7498,7400,7343,6410,6951,5289,4087,4111,4107,2250,6951,6947,6944,4374,4107,707,4107,4108,1753,6955,4107,4108,4114,4111,607,4123,4114,4111,6955,6923,6937,4111,607,581,572,4111,2244,1595,2579,2585,2585,1998,2008,5446,7263,7263,2769,2782,2808,2782,2769,2782,2769,2782&amp;techs=AMX">intrinsics guide</a> for ISA details.</p>
+</section>
+<section id="pattern">
+<h2>Pattern<a class="headerlink" href="#pattern" title="Permalink to this heading">¶</a></h2>
+<p><img alt="image" src="../../../../../../../_images/kernel_amx_bf16x16_calc.png" /></p>
+<p>Let the left matrix in the above image be A and the right be B. In our case, A is transposed weight(sparse), B is transposed activation. A can be compressed offline or before the inference, so we could directly use <code class="docutils literal notranslate"><span class="pre">tileloadd</span></code> instruction for 32 nonzero blocks in A (they’re stored consecutively in memory). For B, We need 32 rows of 16 consecutive values for one <code class="docutils literal notranslate"><span class="pre">tdpbf16ps</span></code>. This may be good because 16 values in one row are consecutive and can be loaded via <code class="docutils literal notranslate"><span class="pre">vmovdqu32</span></code> (through we are handling BF16). However, there are two tradeoff. The first is that the 32x16 tiles of B need to be reordered to AMX layout as the images shows. The second is that the activation matrix needs to be transposed, which may be more time-consuming</p>
+<p>Alternatively, considering A as activation and B as weight can save a lot of time because weight is fixed and can be compressed, concatenated and reordered offline. However, the loading of activation is a disaster because all 32 <strong>16x1</strong> blocks are not consecutive can will greatly impact performance, related experiments WIP.</p>
+</section>
+<section id="reorder">
+<h2>Reorder<a class="headerlink" href="#reorder" title="Permalink to this heading">¶</a></h2>
+<p>The key to the question is how to re-layout activation on the fly. We use <a class="reference external" href="./kernel_vnni.md#on-the-fly-activation-reordering">a similar method with the VNNI kernel</a> but saving two load instructions. The related code is as follows:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">__m512i</span><span class="w"> </span><span class="n">mask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_mm512_set_epi16</span><span class="p">(</span><span class="mi">31</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">14</span><span class="p">,</span><span class="mi">29</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">28</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">27</span><span class="p">,</span><span class="mi">11</span><span class="p">,</span><span class="mi">26</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">22</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">19</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">18</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+<span class="n">__m256i</span><span class="w"> </span><span class="n">lo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_mm256_loadu_epi</span><span class="p">(...);</span>
+<span class="n">__m256i</span><span class="w"> </span><span class="n">li</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_mm256_loadu_epi</span><span class="p">(...);</span>
+<span class="n">__m512i</span><span class="w"> </span><span class="n">vec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_mm512_inserti32x8</span><span class="p">(</span><span class="n">_mm512_castsi256_si512</span><span class="p">(</span><span class="n">lo</span><span class="p">),</span><span class="w"> </span><span class="n">li</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="n">__m512i</span><span class="w"> </span><span class="n">permuted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_mm512_permutexvar_epi16</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span><span class="w"> </span><span class="n">vec</span><span class="p">);</span>
+<span class="n">_mm512_storeu_epi32</span><span class="p">(...,</span><span class="w"> </span><span class="n">permuted</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,456 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Profiling &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/doctools.js"></script>
+        <script src="../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Profiling</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="profiling">
+<h1>Profiling<a class="headerlink" href="#profiling" title="Permalink to this heading">¶</a></h1>
+<ol class="simple">
+<li><p><a class="reference external" href="#Introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#Profling-API">Profling API</a></p></li>
+<li><p><a class="reference external" href="#Profiling-Examples">Profiling Examples</a><br />3.1 <a class="reference external" href="#Parts-of-CSV-Profiling">Parts of CSV Profiling</a><br />  3.1.1 <a class="reference external" href="#Sparse-Ratio-Setting-Part">Sparse Ratio Setting Part</a><br />  3.1.2 <a class="reference external" href="#Operator-Profiling-Part">Operator Profiling Part</a><br />  3.1.3 <a class="reference external" href="#Total-Profiling-Part">Total Profiling Part</a><br />3.2 <a class="reference external" href="#Levels-of-JSON-Profiling">Levels of JSON Profiling</a><br />  3.2.1 <a class="reference external" href="#Model-Level">Model Level</a><br />  3.2.2 <a class="reference external" href="#Iteration-Level">Iteration Level</a><br />  3.2.3 <a class="reference external" href="#Operator-Level">Operator Level</a></p></li>
+</ol>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>In order to better analyze the performance of the model, we could evaluate the performance of each operator in inference. There is a profling tool in Neural Engine to collect the latency of operators.</p>
+</section>
+<section id="profling-api">
+<h2>Profling API<a class="headerlink" href="#profling-api" title="Permalink to this heading">¶</a></h2>
+<section id="you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api">
+<h3>You can get profile only with ENGINE_PROFILING=1 before running model by python/c++ API.<a class="headerlink" href="#you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api" title="Permalink to this heading">¶</a></h3>
+<p>Let’s take <a class="reference external" href="../../../../examples/deployment/neural_engine/sst2/bert_mini">bert_mini_sst2</a> for example. You can follow the steps in example README.md and just add ENGINE_PROFILING=1 before run executor like this:
+run python</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">ENGINE_PROFILING</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>run_executor.py<span class="w"> </span>--input_model<span class="o">=</span>./model_and_tokenizer/int8-model.onnx<span class="w"> </span>--mode<span class="o">=</span>performance<span class="w"> </span>--batch_size<span class="o">=</span><span class="m">8</span><span class="w"> </span>--seq_len<span class="o">=</span><span class="m">128</span>
+</pre></div>
+</div>
+<p>or run C++</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">ENGINE_PROFILING</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>neural_engine<span class="w"> </span>--batch_size<span class="o">=</span>&lt;batch_size&gt;<span class="w"> </span>--iterations<span class="o">=</span><span class="m">10</span><span class="w"> </span>--w<span class="o">=</span><span class="m">5</span><span class="w"> </span>--seq_len<span class="o">=</span><span class="m">128</span><span class="w"> </span>--config<span class="o">=</span>./ir/conf.yaml<span class="w"> </span>--weight<span class="o">=</span>./ir/model.bin
+</pre></div>
+</div>
+<p>Of course, you can also <strong>export ENGINE_PROFILING=1</strong> before running. After that, there will be a folder named engine_profliling including profiling_csv and profiling_trace under your current path. The profiling_csv records average latancy of each operator and the whole model. You can also set perf ratio to estimate perfromance improvement automatically. The profiling_trace records the latency of each iteration and more operate details. You can just load it on <strong>chrome://tracing/</strong> and view. If you want to analyze more of performance, you can deal with it as a json format file on your way.</p>
+<blockquote>
+<div><p><strong>Note</strong>: In multiple instances case, you need to tell how many instances will run, just <strong>export INST_NUM=<inst num></strong>. And as for multiple instances, we will get profiling_<time>_&lt;inst_count&gt;.csv/.json of each instance.</p>
+</div></blockquote>
+</section>
+</section>
+<section id="profiling-examples">
+<h2>Profiling Examples<a class="headerlink" href="#profiling-examples" title="Permalink to this heading">¶</a></h2>
+<section id="parts-of-csv-profiling">
+<h3>Parts of CSV Profiling<a class="headerlink" href="#parts-of-csv-profiling" title="Permalink to this heading">¶</a></h3>
+<section id="sparse-ratio-setting-part">
+<h4>Sparse Ratio Setting Part<a class="headerlink" href="#sparse-ratio-setting-part" title="Permalink to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>Some arguments for sparse include weight shape, sparse ratio and target performance ratio.</p></li>
+<li><p>Users can set the parameter pref ratio to estimate sparse operator performance improvement semi-automatically.</p></li>
+</ul>
+<p>| Arguments  | Weight shape   |  90% 4x1 perf ratio  |80% 4x1 perf ratio|70% 4x1 Perf ratio|
+| ——–   | :—–:  | :—-:  | :—-:  | :—-:  |
+|   value    |  256x256   |<strong>4(settable)</strong>|<strong>2.5(settable)</strong>|<strong>2(settable)</strong>|
+|   value    |  256x1024  |<strong>4.5(settable)</strong>|<strong>3(settable)</strong>|<strong>2.5(settable)</strong>|
+|   value    |  1024x256  |<strong>5(settable)</strong>|<strong>3.5(settable)</strong>|<strong>3(settable)</strong>|
+|description       |  Shape of weight for “matmul” or “innerproduct”  |The op’s sparse ratio is 90%, and the performance ratio is “dense op latency”/ “sparse op latency” , representing the performance improvement of the op after sparse. This parameter can be set by the user.|Same as 90% 4x1 perf ratio |Same as 90% 4x1 perf ratio|</p>
+</section>
+<section id="operator-profiling-part">
+<h4>Operator Profiling Part<a class="headerlink" href="#operator-profiling-part" title="Permalink to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>All operator’s profiling, such as operator type, input tensor, output tensor and latency. Let’s take “innerproduct” as an example.</p></li>
+<li><p>In this form, we can auto calculate the sparse op performance by customized sparse ratio.</p></li>
+</ul>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: center;">Argument</th>
+<th style="text-align: center;">Value</th>
+<th style="text-align: center;">Additional description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">operator type</td>
+<td style="text-align: center;">InnerProduct</td>
+<td style="text-align: center;">None</td>
+</tr>
+<tr>
+<td style="text-align: center;">post op</td>
+<td style="text-align: center;">gelu_tanh</td>
+<td style="text-align: center;">In order to improve the performance of inference, we use multiple ops as one op for inference</td>
+</tr>
+<tr>
+<td style="text-align: center;">operator name</td>
+<td style="text-align: center;">Add_37</td>
+<td style="text-align: center;">None</td>
+</tr>
+<tr>
+<td style="text-align: center;">input tensor name</td>
+<td style="text-align: center;">116:0;641:0;bert.encoder.layer.0.attention.self.key.bias:0</td>
+<td style="text-align: center;">The name of input tensor(include multi inputs)</td>
+</tr>
+<tr>
+<td style="text-align: center;">input shape</td>
+<td style="text-align: center;">1024x256;256x256;256</td>
+<td style="text-align: center;">The shape of input tensor(include multi inputs)</td>
+</tr>
+<tr>
+<td style="text-align: center;">input dtype</td>
+<td style="text-align: center;">fp32;fp32;fp32</td>
+<td style="text-align: center;">None</td>
+</tr>
+<tr>
+<td style="text-align: center;">output tensor name</td>
+<td style="text-align: center;">Add_37:0</td>
+<td style="text-align: center;">None</td>
+</tr>
+<tr>
+<td style="text-align: center;">output shape</td>
+<td style="text-align: center;">1024x256</td>
+<td style="text-align: center;">The shape of output tensor</td>
+</tr>
+<tr>
+<td style="text-align: center;">output dtype</td>
+<td style="text-align: center;">fp32</td>
+<td style="text-align: center;">None</td>
+</tr>
+<tr>
+<td style="text-align: center;">weight shape</td>
+<td style="text-align: center;">256x256</td>
+<td style="text-align: center;">Shape of weight for "matmul" or "innerproduct"</td>
+</tr>
+<tr>
+<td style="text-align: center;">weight sparse ratio</td>
+<td style="text-align: center;">0.00%</td>
+<td style="text-align: center;">The current sparse ratio for weight</td>
+</tr>
+<tr>
+<td style="text-align: center;">sparse support</td>
+<td style="text-align: center;">TRUE</td>
+<td style="text-align: center;">Whether to support sparse</td>
+</tr>
+<tr>
+<td style="text-align: center;">operator latency (ms)</td>
+<td style="text-align: center;">0.075</td>
+<td style="text-align: center;">The latency before sparse</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>aim to weight sparse ratio</strong></td>
+<td style="text-align: center;"><strong>70%(settable)</strong></td>
+<td style="text-align: center;"><strong>Target weight sparse ratio, option: 90%,80%,70%,etc</strong></td>
+</tr>
+<tr>
+<td style="text-align: center;">pref ratio</td>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">Auto look up part 1 form</td>
+</tr>
+<tr>
+<td style="text-align: center;">aim to sparse latency(ms)</td>
+<td style="text-align: center;">0.0375</td>
+<td style="text-align: center;">Target sparse latency = "operator latency(0.075)"/"perf ratio(2)"(auto calculate)</td>
+</tr>
+</tbody>
+</table></section>
+<section id="total-profiling-part">
+<h4>Total Profiling Part<a class="headerlink" href="#total-profiling-part" title="Permalink to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>Performance comparison of dense and sparse networks.</p></li>
+</ul>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Arguments</th>
+<th style="text-align: center;">Value</th>
+<th style="text-align: center;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>total latency(ms)</td>
+<td style="text-align: center;">4.512</td>
+<td style="text-align: center;">The latency for the entire network to inference once before sparse</td>
+</tr>
+<tr>
+<td>total aim to sparse latency(ms)</td>
+<td style="text-align: center;">2.185</td>
+<td style="text-align: center;">The latency for the entire network to inference once after sparse</td>
+</tr>
+<tr>
+<td>sparse support latency(ms)</td>
+<td style="text-align: center;">3.127</td>
+<td style="text-align: center;">The latency for all operators that support sparse to inference once before sparse</td>
+</tr>
+<tr>
+<td>aim to sparse support latency(ms)</td>
+<td style="text-align: center;">0.801</td>
+<td style="text-align: center;">The latency for all operators that support sparse to inference once after sparse</td>
+</tr>
+<tr>
+<td>sparse support latency ratio</td>
+<td style="text-align: center;">0.693</td>
+<td style="text-align: center;">The ratio of the latency of the operator before sparse to the latency for the entire network to inference once</td>
+</tr>
+<tr>
+<td>aim to sparse support latency ratio</td>
+<td style="text-align: center;">0.366</td>
+<td style="text-align: center;">The ratio of latency of the operator after sparse to the latency for the entire network to inference once</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note</strong>: We have obtained a form in csv format, and we can modify the form content of part1 to obtain the desired performance, but after modification, we need to save the form format as "xlsx".</p>
+</blockquote></section>
+</section>
+<section id="levels-of-json-profiling">
+<h3>Levels of JSON Profiling<a class="headerlink" href="#levels-of-json-profiling" title="Permalink to this heading">¶</a></h3>
+<section id="model-level">
+<h4>Model Level<a class="headerlink" href="#model-level" title="Permalink to this heading">¶</a></h4>
+<p>The model_inference level records the latency of model from start to end.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>Title<span class="w">    </span>model_inference
+Category<span class="w">    </span>inference
+User<span class="w"> </span>Friendly<span class="w"> </span>Category<span class="w">    </span>other
+Start<span class="w">    </span><span class="m">0</span>.000<span class="w"> </span>ms
+Wall<span class="w"> </span>Duration<span class="w">    </span><span class="m">17</span>.138<span class="w"> </span>ms
+</pre></div>
+</div>
+</section>
+<section id="iteration-level">
+<h4>Iteration Level<a class="headerlink" href="#iteration-level" title="Permalink to this heading">¶</a></h4>
+<p>The iteration level records the latency of each iteration from start to end.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>Title<span class="w">    </span>Iteration4
+Category<span class="w">    </span>iteration
+User<span class="w"> </span>Friendly<span class="w"> </span>Category<span class="w">    </span>other
+Start<span class="w">    </span><span class="m">0</span>.000<span class="w"> </span>ms
+Wall<span class="w"> </span>Duration<span class="w">    </span><span class="m">8</span>.726<span class="w"> </span>ms
+</pre></div>
+</div>
+</section>
+<section id="operator-level">
+<h4>Operator Level<a class="headerlink" href="#operator-level" title="Permalink to this heading">¶</a></h4>
+<p>The operator level records the latency of per operator in per iteration from start to end. And there are also details in Args. The reshape_time means the latency happened to prepare tensor shape phrase. It will be 0ms in iteration more than 0 static shape case. The forward_time means latency of kernel calculation. And you can also see input/output tensor_name, tensor_type, tensor_shape. As for attributes, it will include some parameters in this operator such as padding in conv, post op such as sum and permutation information such src1_perm:1,0 meaning that input tensor 1 transposes 0 and 1 axis.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>Title<span class="w">    </span>Add_284
+Category<span class="w">    </span>InnerProduct
+User<span class="w"> </span>Friendly<span class="w"> </span>Category<span class="w">    </span>other
+Start<span class="w">    </span><span class="m">12</span>.028<span class="w"> </span>ms
+Wall<span class="w"> </span>Duration<span class="w">    </span><span class="m">0</span>.044<span class="w"> </span>ms
+Args
+reshape_time<span class="w">    </span><span class="s2">&quot;0.004ms&quot;</span>
+forward_time<span class="w">    </span><span class="s2">&quot;0.044ms&quot;</span>
+input_tensor_name<span class="w">    </span><span class="s2">&quot;onnx::MatMul_357:0,onnx::MatMul_358:0,</span>
+<span class="s2">                    bert.encoder.layer.1.output.dense.bias:0,</span>
+<span class="s2">                    onnx::MatMul_346:0&quot;</span>
+input_type<span class="w">    </span><span class="s2">&quot;fp32,fp32,f32,&quot;</span>
+input_shape<span class="w">    </span><span class="s2">&quot;64*1024,256*1024,256&quot;</span>
+output_tensor_name<span class="w">    </span><span class="s2">&quot;input.44:0&quot;</span>
+output_type<span class="w">    </span><span class="s2">&quot;fp32&quot;</span>
+output_shape<span class="w">    </span><span class="s2">&quot;64*256&quot;</span>
+attributes<span class="w">    </span><span class="s2">&quot;append_op:sum;src1_perm:1,0&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

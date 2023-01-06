@@ -1,0 +1,23 @@
+:py:mod:`intel_extension_for_transformers.optimization.utils`
+=============================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.utils
+
+.. autoapi-nested-parse::
+
+   Utils for optimization.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   metrics/index.rst
+   objectives/index.rst
+   utility/index.rst
+   utility_tf/index.rst
+
+

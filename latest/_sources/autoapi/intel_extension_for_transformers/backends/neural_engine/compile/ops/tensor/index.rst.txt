@@ -1,0 +1,63 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor`
+====================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor
+
+.. autoapi-nested-parse::
+
+   The neural engine tensor file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor
+
+
+
+
+.. py:class:: Tensor(name='', source_op=None, dest_op=None, shape=None, data=None, dtype=None, location=None)
+
+   Bases: :py:obj:`object`
+
+   The definition of the neural engine.
+
+   .. py:property:: name
+
+      Get the tensor name.
+
+   .. py:property:: data
+
+      Get the tensor data.
+
+   .. py:property:: shape
+
+      Get the tensor shape.
+
+   .. py:property:: dtype
+
+      Get the tensor dtype.
+
+   .. py:property:: location
+
+      Get the tensor location.
+
+   .. py:property:: source_op
+
+      Get source_op.
+
+   .. py:property:: dest_op
+
+      Get dest_op.
+
+   .. py:property:: config
+
+      Get the config dict in the graph.
+
+

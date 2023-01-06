@@ -1,0 +1,45 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.extractors`
+====================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.extractors
+
+.. autoapi-nested-parse::
+
+   The module of the neural engine extractor.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   extractor/index.rst
+   onnx_extractor/index.rst
+   tf_extractor/index.rst
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.extractors.Extractor
+
+
+
+
+.. py:class:: Extractor
+
+   Bases: :py:obj:`object`
+
+   Extractor base class.
+
+   A super class for an operation extractor.
+   Do additional extraction of operation attributes without modifying of graph topology.
+
+

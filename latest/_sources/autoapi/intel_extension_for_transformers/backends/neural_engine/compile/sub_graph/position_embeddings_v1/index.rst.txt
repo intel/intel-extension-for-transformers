@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.position_embeddings_v1`
+==========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.position_embeddings_v1
+
+.. autoapi-nested-parse::
+
+   The PositionEmbeddingsV1 pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.position_embeddings_v1.PositionEmbeddingsV1
+
+
+
+
+.. py:class:: PositionEmbeddingsV1
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern.Pattern`
+
+   The PositionEmbeddingsV1 pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'PositionEmbeddingsV1' graph.
+   The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+
+

@@ -1,0 +1,18 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.optimization.utils.models`
+====================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.utils.models
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   modeling_bert_dynamic/index.rst
+   modeling_roberta_dynamic/index.rst
+
+

@@ -1,0 +1,589 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Features" href="../feature.html" />
+    <link rel="prev" title="Intel® Extension for Transformers" href="../xtransformers.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../xtransformers.html">Intel® Extension for Transformers</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#what-does-intel-extension-for-transformers-offer">What does Intel® Extension for Transformers offer?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#release-binary-install">Release Binary Install</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#install-from-source">Install From Source</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#quantization">Quantization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pruning">Pruning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#distillation">Distillation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#data-augmentation">Data Augmentation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#neural-engine">Neural Engine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#quantized-length-adaptive-transformer">Quantized Length Adaptive Transformer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#transformers-accelerated-neural-engine">Transformers-accelerated Neural Engine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#transformers-accelerated-libraries">Transformers-accelerated Libraries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#system-requirements">System Requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#validated-hardware-environment">Validated Hardware Environment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#validated-software-environment">Validated Software Environment</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#selected-publications-events">Selected Publications/Events</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../feature.html">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../xtransformers.html">Intel® Extension for Transformers</a> &raquo;</li>
+        
+      <li>Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/docs/Welcome.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="intel-extension-for-transformers-accelerating-transformer-based-models-on-intel-platforms">
+<h1>Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms<a class="headerlink" href="#intel-extension-for-transformers-accelerating-transformer-based-models-on-intel-platforms" title="Permalink to this heading">¶</a></h1>
+<p>Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms. The toolkit helps developers to improve the productivity through ease-of-use model compression APIs by extending Hugging Face transformers APIs. The compression infrastructure leverages Intel® Neural Compressor which provides a rich set of model compression techniques: quantization, pruning, distillation and so on. The toolkit provides Transformers-accelerated Libraries and Neural Engine to demonstrate the performance of extremely compressed models, and therefore significantly improve the inference efficiency on Intel platforms. Some of the key features have been published in NeurIPS 2021 and 2022.</p>
+<section id="what-does-intel-extension-for-transformers-offer">
+<h2>What does Intel® Extension for Transformers offer?<a class="headerlink" href="#what-does-intel-extension-for-transformers-offer" title="Permalink to this heading">¶</a></h2>
+<p>This toolkit helps developers to improve the productivity of inference deployment by extending Hugging Face transformers APIs for Transformer-based models in natural language processing (NLP) domain. With extremely compressed models, the toolkit can greatly improve the inference efficiency on Intel platforms.</p>
+<ul class="simple">
+<li><p>Model Compression</p></li>
+</ul>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Framework</th>
+<th style="text-align: center;">Quantization</th>
+<th style="text-align: center;">Pruning/Sparsity</th>
+<th style="text-align: center;">Distillation</th>
+<th style="text-align: center;">Neural Architecture Search</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PyTorch</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
+</tr>
+<tr>
+<td>TensorFlow</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">&#10004;</td>
+<td style="text-align: center;">Stay tuned :star:</td>
+</tr>
+</tbody>
+</table><ul class="simple">
+<li><p>Data Augmentation for NLP Datasets</p></li>
+<li><p>Transformers-accelerated Neural Engine</p></li>
+<li><p>Transformers-accelerated Libraries</p></li>
+<li><p>Domain Algorithms
+|Length Adaptive Transformer |
+|-|
+|PyTorch ✔            |</p></li>
+<li><p>Architecture of Intel® Extension for Transformers</p></li>
+</ul>
+<img src="./imgs/arch.png" width=691 height=444 alt="arch">
+</br></section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading">¶</a></h2>
+<table>
+<thead>
+  <tr>
+    <th colspan="8" align="center">OVERVIEW</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs">Model Compression</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Kernel Libraries</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples">Examples</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">MODEL COMPRESSION</th>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><a href="quantization.html">Quantization</a></td>
+    <td colspan="2" align="center"><a href="pruning.html">Pruning</a></td>
+    <td colspan="2" align="center" colspan="2"><a href="distillation.html">Distillation</a></td>
+    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/text-classification/orchestrate_optimizations/README.html">Orchestration</a></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/auto_distillation">Neural Architecture Search</a></td>
+    <td align="center" colspan="2"><a href="export.html">Export</a></td>
+    <td align="center" colspan="2"><a href="metrics.html">Metrics</a>/<a href="objectives.html">Objectives</a></td>
+    <td align="center" colspan="2"><a href="pipeline.html">Pipeline</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">NEURAL ENGINE</th>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.html">Model Compilation</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.html">Custom Pattern</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/Deploy and Integration.html">Deployment</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.html">Profiling</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">KERNEL LIBRARIES</th>
+  </tr>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.html">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/benchmark.html">Benchmark</a></td>
+  <tr>
+    <th colspan="8" align="center">ALGORITHMS</th>
+  </tr>
+  <tr>
+    <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/question-answering/dynamic/README.html">Length Adaptive</a></td>
+    <td align="center" colspan="4"><a href="data_augmentation.html">Data Augmentation</a></td>    
+  </tr>
+  <tr>
+    <th colspan="8" align="center">TUTORIALS AND RESULTS</a></th>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs/tutorials/pytorch">Tutorials</a></td>
+    <td colspan="2" align="center"><a href="examples.html">Supported Models</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.html">Model Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.html">Kernel Performance</a></td>
+  </tr>
+</tbody>
+</table></section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
+<section id="release-binary-install">
+<h3>Release Binary Install<a class="headerlink" href="#release-binary-install" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
+</pre></div>
+</div>
+</section>
+<section id="install-from-source">
+<h3>Install From Source<a class="headerlink" href="#install-from-source" title="Permalink to this heading">¶</a></h3>
+<section id="install-intel-extension-for-transformers">
+<h4>Install Intel® Extension for Transformers<a class="headerlink" href="#install-intel-extension-for-transformers" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>intel_extension_for_transformers
+<span class="nb">cd</span><span class="w"> </span>intel_extension_for_transformers
+<span class="c1"># Install Dependency</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+<span class="c1"># Install intel_extension_for_transformers</span>
+python<span class="w"> </span>setup.py<span class="w"> </span>install
+</pre></div>
+</div>
+<blockquote>
+<div><p><strong>Note</strong>: Recommend install protobuf &lt;= 3.20.0 if use onnxruntime &lt;= 1.11</p>
+</div></blockquote>
+</section>
+</section>
+</section>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading">¶</a></h2>
+<section id="quantization">
+<h3>Quantization<a class="headerlink" href="#quantization" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+
+<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
+<span class="c1"># trainer = transformers.Trainer(...)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span>
+    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;PostTrainingStatic&quot;</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
+    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="n">objectives</span><span class="o">.</span><span class="n">performance</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">quant_config</span><span class="o">=</span><span class="n">q_config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="quantization.html">quantization document</a> for more details.</p>
+</section>
+<section id="pruning">
+<h3>Pruning<a class="headerlink" href="#pruning" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">PrunerConfig</span><span class="p">,</span> <span class="n">PruningConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+
+<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
+<span class="c1"># trainer = transformers.Trainer(...)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
+<span class="n">pruner_config</span> <span class="o">=</span> <span class="n">PrunerConfig</span><span class="p">(</span><span class="n">prune_type</span><span class="o">=</span><span class="s1">&#39;BasicMagnitude&#39;</span><span class="p">,</span> <span class="n">target_sparsity_ratio</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="n">p_conf</span> <span class="o">=</span> <span class="n">PruningConfig</span><span class="p">(</span><span class="n">pruner_config</span><span class="o">=</span><span class="p">[</span><span class="n">pruner_config</span><span class="p">],</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">prune</span><span class="p">(</span><span class="n">pruning_config</span><span class="o">=</span><span class="n">p_conf</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="pruning.html">pruning document</a> for more details.</p>
+</section>
+<section id="distillation">
+<h3>Distillation<a class="headerlink" href="#distillation" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">DistillationConfig</span><span class="p">,</span> <span class="n">Criterion</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+
+<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
+<span class="c1"># trainer = transformers.Trainer(...)</span>
+<span class="n">teacher_model</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># exist model</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
+<span class="n">d_conf</span> <span class="o">=</span> <span class="n">DistillationConfig</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">distill</span><span class="p">(</span><span class="n">distillation_config</span><span class="o">=</span><span class="n">d_conf</span><span class="p">,</span> <span class="n">teacher_model</span><span class="o">=</span><span class="n">teacher_model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="distillation.html">distillation document</a> for more details.</p>
+</section>
+<section id="data-augmentation">
+<h3>Data Augmentation<a class="headerlink" href="#data-augmentation" title="Permalink to this heading">¶</a></h3>
+<p>Data augmentation provides the facilities to generate synthesized NLP dataset for further model optimization. The data augmentation supports text generation on popular fine-tuned models like GPT, GPT2, and other text synthesis approaches from <a class="reference external" href="https://github.com/makcedward/nlpaug">nlpaug</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.preprocessing.data_augmentation</span> <span class="kn">import</span> <span class="n">DataAugmentation</span>
+<span class="n">aug</span> <span class="o">=</span> <span class="n">DataAugmentation</span><span class="p">(</span><span class="n">augmenter_type</span><span class="o">=</span><span class="s2">&quot;TextGenerationAug&quot;</span><span class="p">)</span>
+<span class="n">aug</span><span class="o">.</span><span class="n">input_dataset</span> <span class="o">=</span> <span class="s2">&quot;original_dataset.csv&quot;</span> <span class="c1"># example: https://huggingface.co/datasets/glue/viewer/sst2/train</span>
+<span class="n">aug</span><span class="o">.</span><span class="n">column_names</span> <span class="o">=</span> <span class="s2">&quot;sentence&quot;</span>
+<span class="n">aug</span><span class="o">.</span><span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">result_path</span><span class="p">,</span> <span class="s2">&quot;test2.cvs&quot;</span><span class="p">)</span>
+<span class="n">aug</span><span class="o">.</span><span class="n">augmenter_arguments</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;model_name_or_path&#39;</span><span class="p">:</span> <span class="s1">&#39;gpt2-medium&#39;</span><span class="p">}</span>
+<span class="n">aug</span><span class="o">.</span><span class="n">data_augment</span><span class="p">()</span>
+<span class="n">raw_datasets</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="n">aug</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="data_augmentation.html">data augmentation document</a> for more details.</p>
+</section>
+<section id="neural-engine">
+<h3>Neural Engine<a class="headerlink" href="#neural-engine" title="Permalink to this heading">¶</a></h3>
+<p>Neural Engine is one of reference deployments that Intel Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.backends.neural_engine.compile</span> <span class="kn">import</span> <span class="nb">compile</span>
+<span class="c1"># /path/to/your/model is a TensorFlow pb model or ONNX model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="s1">&#39;/path/to/your/model&#39;</span><span class="p">)</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># [input_ids, segment_ids, input_mask]</span>
+<span class="n">model</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="examples/deployment/">Neural Engine</a> for more details.</p>
+</section>
+<section id="quantized-length-adaptive-transformer">
+<h3>Quantized Length Adaptive Transformer<a class="headerlink" href="#quantized-length-adaptive-transformer" title="Permalink to this heading">¶</a></h3>
+<p>Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">DynamicLengthConfig</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+
+<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
+<span class="c1"># trainer = transformers.Trainer(...)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span>
+    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;PostTrainingStatic&quot;</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
+    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="n">objectives</span><span class="o">.</span><span class="n">performance</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="c1"># Apply the length config</span>
+<span class="n">dynamic_length_config</span> <span class="o">=</span> <span class="n">DynamicLengthConfig</span><span class="p">(</span><span class="n">length_config</span><span class="o">=</span><span class="n">length_config</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">set_dynamic_config</span><span class="p">(</span><span class="n">dynamic_config</span><span class="o">=</span><span class="n">dynamic_length_config</span><span class="p">)</span>
+<span class="c1"># Quantization</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">quant_config</span><span class="o">=</span><span class="n">q_config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to paper <a class="reference external" href="https://arxiv.org/pdf/2210.17114.pdf">QuaLA-MiniLM</a> and <a class="reference external" href="examples/optimization/pytorch/huggingface/question-answering/dynamic">code</a> for details</p>
+</section>
+<section id="transformers-accelerated-neural-engine">
+<h3>Transformers-accelerated Neural Engine<a class="headerlink" href="#transformers-accelerated-neural-engine" title="Permalink to this heading">¶</a></h3>
+<p>Transformers-accelerated Neural Engine is one of reference deployments that Intel® Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.backends.neural_engine.compile</span> <span class="kn">import</span> <span class="nb">compile</span>
+<span class="c1"># /path/to/your/model is a TensorFlow pb model or ONNX model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="s1">&#39;/path/to/your/model&#39;</span><span class="p">)</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># [input_ids, segment_ids, input_mask]</span>
+<span class="n">model</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="examples/deployment/neural_engine/sparse/distilbert_base_uncased/">example</a> in <a class="reference external" href="examples/deployment/">Transformers-accelerated Neural Engine</a> and paper <a class="reference external" href="https://arxiv.org/abs/2211.07715">Fast Distilbert on CPUs</a> for more details.</p>
+</section>
+<section id="transformers-accelerated-libraries">
+<h3>Transformers-accelerated Libraries<a class="headerlink" href="#transformers-accelerated-libraries" title="Permalink to this heading">¶</a></h3>
+<p>Transformers-accelerated Libraries is a high-performance operator computing library implemented by assembly. Transformers-accelerated Libraries contains a JIT domain, a kernel domain, and a scheduling proxy framework.</p>
+<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;interface.hpp&quot;</span>
+<span class="w">  </span><span class="p">...</span>
+<span class="w">  </span><span class="n">operator_desc</span><span class="w"> </span><span class="n">op_desc</span><span class="p">(</span><span class="n">ker_kind</span><span class="p">,</span><span class="w"> </span><span class="n">ker_prop</span><span class="p">,</span><span class="w"> </span><span class="n">eng_kind</span><span class="p">,</span><span class="w"> </span><span class="n">ts_descs</span><span class="p">,</span><span class="w"> </span><span class="n">op_attrs</span><span class="p">);</span>
+<span class="w">  </span><span class="n">sparse_matmul_desc</span><span class="w"> </span><span class="nf">spmm_desc</span><span class="p">(</span><span class="n">op_desc</span><span class="p">);</span>
+<span class="w">  </span><span class="n">sparse_matmul</span><span class="w"> </span><span class="nf">spmm_kern</span><span class="p">(</span><span class="n">spmm_desc</span><span class="p">);</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*&gt;</span><span class="w"> </span><span class="n">rt_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">data0</span><span class="p">,</span><span class="w"> </span><span class="n">data1</span><span class="p">,</span><span class="w"> </span><span class="n">data2</span><span class="p">,</span><span class="w"> </span><span class="n">data3</span><span class="p">,</span><span class="w"> </span><span class="n">data4</span><span class="p">};</span>
+<span class="w">  </span><span class="n">spmm_kern</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="n">rt_data</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Transformers-accelerated Libraries</a> for more details.</p>
+</section>
+</section>
+<section id="system-requirements">
+<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this heading">¶</a></h2>
+<section id="validated-hardware-environment">
+<h3>Validated Hardware Environment<a class="headerlink" href="#validated-hardware-environment" title="Permalink to this heading">¶</a></h3>
+<p>Intel® Extension for Transformers supports systems based on <a class="reference external" href="https://en.wikipedia.org/wiki/X86-64">Intel 64 architecture or compatible processors</a> that are specifically optimized for the following CPUs:</p>
+<ul class="simple">
+<li><p>Intel Xeon Scalable processor (formerly Cascade Lake, Icelake)</p></li>
+<li><p>Future Intel Xeon Scalable processor (code name Sapphire Rapids)</p></li>
+</ul>
+</section>
+<section id="validated-software-environment">
+<h3>Validated Software Environment<a class="headerlink" href="#validated-software-environment" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>OS version: CentOS 8.4, Ubuntu 20.04</p></li>
+<li><p>Python version: 3.7, 3.8, 3.9</p></li>
+</ul>
+<table class="docutils">
+<thead>
+  <tr>
+    <th>Framework</th>
+    <th>Intel TensorFlow</th>
+    <th>PyTorch</th>
+    <th>IPEX</th>
+  </tr>
+</thead>
+<tbody>
+  <tr align="center">
+    <th>Version</th>
+    <td class="tg-7zrl"><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.10.0>2.10.0</a><br>
+    <a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.9.1>2.9.1</a><br>
+    <td class="tg-7zrl"><a href=https://download.pytorch.org/whl/torch_stable.html>1.13.0+cpu</a><br>
+    <a href=https://download.pytorch.org/whl/torch_stable.html>1.12.0+cpu</a><br>
+    <a href=https://download.pytorch.org/whl/torch_stable.html>1.11.0+cpu</a><br>
+    <td class="tg-7zrl"><a href=https://github.com/intel/intel-extension-for-pytorch/tree/1.11.0>1.13.0</a><br>
+    <a href=https://github.com/intel/intel-extension-for-pytorch/tree/v1.10.0>1.12.0</a></td>
+  </tr>
+</tbody>
+</table><ul class="simple">
+<li><p>OS version: Windows 10</p></li>
+<li><p>Python version: 3.7, 3.8, 3.9</p></li>
+</ul>
+<table class="docutils">
+<thead>
+  <tr>
+    <th>Framework</th>
+    <th>Intel TensorFlow</th>
+    <th>PyTorch</th>
+  </tr>
+</thead>
+<tbody>
+  <tr align="center">
+    <th>Version</th>
+    <td><a href=https://github.com/Intel-tensorflow/tensorflow/tree/v2.9.1>2.9.1</a><br>
+    <td><a href=https://download.pytorch.org/whl/torch_stable.html>1.13.0+cpu</a><br>
+  </tr>
+</tbody>
+</table></section>
+</section>
+<section id="selected-publications-events">
+<h2>Selected Publications/Events<a class="headerlink" href="#selected-publications-events" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Blog published on Medium: <a class="reference external" href="https://medium.com/&#64;kawapanion/mlefficiency-optimizing-transformer-models-for-efficiency-a9e230cff051">MLefficiency — Optimizing transformer models for efficiency</a> (Dec 2022)</p></li>
+<li><p>NeurIPS’2022: <a class="reference external" href="https://arxiv.org/abs/2211.07715">Fast Distilbert on CPUs</a> (Nov 2022)</p></li>
+<li><p>NeurIPS’2022: <a class="reference external" href="https://arxiv.org/abs/2210.17114">QuaLA-MiniLM: a Quantized Length Adaptive MiniLM</a> (Nov 2022)</p></li>
+<li><p>Blog published by Cohere: <a class="reference external" href="https://txt.cohere.ai/top-nlp-papers-november-2022/">Top NLP Papers—November 2022</a> (Nov 2022)</p></li>
+<li><p>Blog published by Alibaba: <a class="reference external" href="https://zhuanlan.zhihu.com/p/552484413">Deep learning inference optimization for Address Purification</a> (Aug 2022)</p></li>
+<li><p>NeurIPS’2021: <a class="reference external" href="https://arxiv.org/abs/2111.05754">Prune Once for All: Sparse Pre-Trained Language Models</a> (Nov 2021)</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../feature.html" class="btn btn-neutral float-right" title="Features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../xtransformers.html" class="btn btn-neutral float-left" title="Intel® Extension for Transformers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

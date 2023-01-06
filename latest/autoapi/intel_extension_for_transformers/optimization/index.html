@@ -1,0 +1,892 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>intel_extension_for_transformers.optimization &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../_sources/autoapi/intel_extension_for_transformers/optimization/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="module-intel_extension_for_transformers.optimization">
+<span id="intel-extension-for-transformers-optimization"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.optimization" title="intel_extension_for_transformers.optimization"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.optimization" title="Permalink to this heading">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dynamic/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.dynamic</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dynamic/drop_and_restore_utils/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.dynamic.drop_and_restore_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamic/evolution/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.dynamic.evolution</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mixture/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.mixture</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mixture/auto_distillation/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.utils</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils/metrics/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.utils.metrics</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils/objectives/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.utils.objectives</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils/utility/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.utils.utility</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils/utility_tf/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.utils.utility_tf</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="benchmark/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.benchmark</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="config/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.config</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="model/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.model</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.optimizer</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizer_tf/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.optimizer_tf</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.pipeline</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="pruning/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.pruning</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantization/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.quantization</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="trainer/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.trainer</span></code></a></li>
+</ul>
+</div>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Permalink to this heading">¶</a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig" title="intel_extension_for_transformers.optimization.AutoDistillationConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AutoDistillationConfig</span></code></a></p></td>
+<td><p>Configure the auto disillation process.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.DistillationConfig" title="intel_extension_for_transformers.optimization.DistillationConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistillationConfig</span></code></a></p></td>
+<td><p>Configure the distillation process.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.FlashDistillationConfig" title="intel_extension_for_transformers.optimization.FlashDistillationConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FlashDistillationConfig</span></code></a></p></td>
+<td><p>The flash distillation configuration used by AutoDistillationConfig.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.TFDistillationConfig" title="intel_extension_for_transformers.optimization.TFDistillationConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFDistillationConfig</span></code></a></p></td>
+<td><p>Configure the distillation process for Tensorflow.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.Provider" title="intel_extension_for_transformers.optimization.Provider"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Provider</span></code></a></p></td>
+<td><p>Optimization functionalities provider: INC or NNCF.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.PruningConfig" title="intel_extension_for_transformers.optimization.PruningConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PruningConfig</span></code></a></p></td>
+<td><p>Configure the pruning process.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.QuantizationConfig" title="intel_extension_for_transformers.optimization.QuantizationConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QuantizationConfig</span></code></a></p></td>
+<td><p>Configure the quantization process.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.DynamicLengthConfig" title="intel_extension_for_transformers.optimization.DynamicLengthConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DynamicLengthConfig</span></code></a></p></td>
+<td><p>Configure the dynamic length config for Quantized Length Adaptive Transformer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.DistillationCriterionMode" title="intel_extension_for_transformers.optimization.DistillationCriterionMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistillationCriterionMode</span></code></a></p></td>
+<td><p>Generic enumeration.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.AutoDistillation" title="intel_extension_for_transformers.optimization.AutoDistillation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AutoDistillation</span></code></a></p></td>
+<td><p>The framework class is designed for handling the whole pipeline of AutoDistillation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.OptimizedModel" title="intel_extension_for_transformers.optimization.OptimizedModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OptimizedModel</span></code></a></p></td>
+<td><p>Provide the from_pretrained function.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.TFOptimization" title="intel_extension_for_transformers.optimization.TFOptimization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFOptimization</span></code></a></p></td>
+<td><p>TFOptimization is the entry class for Tensorflow to use the optimization techniques in neural compressor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.PrunerConfig" title="intel_extension_for_transformers.optimization.PrunerConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PrunerConfig</span></code></a></p></td>
+<td><p>Pruner configuration.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.PruningMode" title="intel_extension_for_transformers.optimization.PruningMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PruningMode</span></code></a></p></td>
+<td><p>Currently support three pruning modes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.QuantizationMode" title="intel_extension_for_transformers.optimization.QuantizationMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QuantizationMode</span></code></a></p></td>
+<td><p>Currently support three quantization modes.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">AutoDistillationConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'pytorch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search_space</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search_algorithm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'BO'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="utils/metrics/index.html#intel_extension_for_transformers.optimization.utils.metrics.Metric" title="intel_extension_for_transformers.optimization.utils.metrics.Metric"><span class="pre">intel_extension_for_transformers.optimization.utils.metrics.Metric</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_trials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">knowledge_transfer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#intel_extension_for_transformers.optimization.FlashDistillationConfig" title="intel_extension_for_transformers.optimization.FlashDistillationConfig"><span class="pre">FlashDistillationConfig</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regular_distillation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#intel_extension_for_transformers.optimization.FlashDistillationConfig" title="intel_extension_for_transformers.optimization.FlashDistillationConfig"><span class="pre">FlashDistillationConfig</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configure the auto disillation process.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig.knowledge_transfer">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">knowledge_transfer</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig.knowledge_transfer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the knowledge transfer.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig.regular_distillation">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">regular_distillation</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig.regular_distillation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the regular distillation.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig.framework">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">framework</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig.framework" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the framework.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig.search_space">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">search_space</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig.search_space" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the search space.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig.search_algorithm">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">search_algorithm</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig.search_algorithm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the search algorithm.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig.max_trials">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_trials</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig.max_trials" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the max trials.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig.seed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">seed</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig.seed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the seed.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillationConfig.metrics">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metrics</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillationConfig.metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the metrics.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.DistillationConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">DistillationConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'pytorch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">criterion</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">intel_extension_for_transformers.optimization.distillation.Criterion</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="utils/metrics/index.html#intel_extension_for_transformers.optimization.utils.metrics.Metric" title="intel_extension_for_transformers.optimization.utils.metrics.Metric"><span class="pre">intel_extension_for_transformers.optimization.utils.metrics.Metric</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inc_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.DistillationConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configure the distillation process.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.DistillationConfig.framework">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">framework</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.DistillationConfig.framework" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the framework.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.DistillationConfig.criterion">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">criterion</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.DistillationConfig.criterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the criterion.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.DistillationConfig.metrics">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metrics</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.DistillationConfig.metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the metrics.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.FlashDistillationConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">FlashDistillationConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">block_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_mappings_for_knowledge_transfer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_origin_loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.FlashDistillationConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The flash distillation configuration used by AutoDistillationConfig.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFDistillationConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">TFDistillationConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFDistillationConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configure the distillation process for Tensorflow.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.Provider">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">Provider</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.Provider" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Optimization functionalities provider: INC or NNCF.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">PruningConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'pytorch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[0,</span> <span class="pre">4]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_sparsity_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_sparsity_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.97</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="utils/metrics/index.html#intel_extension_for_transformers.optimization.utils.metrics.Metric" title="intel_extension_for_transformers.optimization.utils.metrics.Metric"><span class="pre">intel_extension_for_transformers.optimization.utils.metrics.Metric</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pruner_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">neural_compressor.conf.config.Pruner</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configure the pruning process.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig.pruner_config">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pruner_config</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig.pruner_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the pruner config.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig.target_sparsity_ratio">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">target_sparsity_ratio</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig.target_sparsity_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the target sparsity ratio.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig.initial_sparsity_ratio">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initial_sparsity_ratio</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig.initial_sparsity_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the initial sparsity ratio.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig.epoch_range">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">epoch_range</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig.epoch_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the epoch range.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig.epochs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">epochs</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig.epochs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the epochs.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig.framework">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">framework</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig.framework" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the framework.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig.metrics">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metrics</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig.metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the metrics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningConfig.init_prune_config">
+<span class="sig-name descname"><span class="pre">init_prune_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningConfig.init_prune_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init the pruning config.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">QuantizationConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'pytorch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approach</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'PostTrainingStatic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_trials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="utils/metrics/index.html#intel_extension_for_transformers.optimization.utils.metrics.Metric" title="intel_extension_for_transformers.optimization.utils.metrics.Metric"><span class="pre">intel_extension_for_transformers.optimization.utils.metrics.Metric</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objectives</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="utils/objectives/index.html#intel_extension_for_transformers.optimization.utils.objectives.Objective" title="intel_extension_for_transformers.optimization.utils.objectives.Objective"><span class="pre">intel_extension_for_transformers.optimization.utils.objectives.Objective</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">performance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_bf16</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configure the quantization process.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.approach">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">approach</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.approach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the quantization approach.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.input_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_names</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.input_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the input names.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.output_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_names</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.output_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the output names.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.metrics">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metrics</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the metrics.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.framework">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">framework</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.framework" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the framework.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.objectives">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">objectives</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.objectives" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the objectives.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.strategy">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">strategy</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the strategy.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.timeout">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">timeout</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the timeout.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.op_wise">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">op_wise</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.op_wise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the op_wise dict.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.max_trials">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_trials</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.max_trials" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of maximum trials.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.performance_only">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">performance_only</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.performance_only" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the boolean whether to use performance only.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.random_seed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">random_seed</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.random_seed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the random seed.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.tensorboard">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tensorboard</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.tensorboard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the boolean whether to use tensorboard.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.output_dir">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_dir</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.output_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the output directory.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.resume_path">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">resume_path</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.resume_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the resume path.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationConfig.sampling_size">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sampling_size</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationConfig.sampling_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the sampling size.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.DynamicLengthConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">DynamicLengthConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">const_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sandwich</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_drop_ratio_bound</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_dropout_prob</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_dropout_bound</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamic_training</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_store_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evo_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">population_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutation_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mutation_prob</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crossover_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">48</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distributed_world_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latency_constraint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evo_eval_metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eval_f1'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.DynamicLengthConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configure the dynamic length config for Quantized Length Adaptive Transformer.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.DistillationCriterionMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">DistillationCriterionMode</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.DistillationCriterionMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Generic enumeration.</p>
+<p>Derive from this class to define new enumerations.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">AutoDistillation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_fname_or_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pytorch'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The framework class is designed for handling the whole pipeline of AutoDistillation.</p>
+<p>AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation,
+and Evaluation.
+In Model Exploration, a search engine will search for a better compressed model from the architecture
+design space in each iteration.
+Flash Distillation is the stage for training the searched model to discover its potential.
+In Evaluation stage, the trained model will be evaluated to measure its performances (e.g.
+the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.teacher_model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">teacher_model</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.teacher_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of teacher model.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.student_model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">student_model</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.student_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of student model.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.advisor">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">advisor</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.advisor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of advisor.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.train_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.train_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of train function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.eval_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">eval_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.eval_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of evaluation function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.model_arch_proposition">
+<span class="sig-name descname"><span class="pre">model_arch_proposition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.model_arch_proposition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propose architecture of the model based on search algorithm for next search iteration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Model architecture description.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.search">
+<span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">res_save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auto distillation search process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Best model architecture found in search process.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train and evaluate the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Evaluated metrics of the model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.load_search_results">
+<span class="sig-name descname"><span class="pre">load_search_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.load_search_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load previous search results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – The file path which stores the previous results.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.dump_search_results">
+<span class="sig-name descname"><span class="pre">dump_search_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.dump_search_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump current search results into a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – The file path to store the results.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.params_vec2params_dict">
+<span class="sig-name descname"><span class="pre">params_vec2params_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paras_vec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.params_vec2params_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfer the vector into dict to hold the paramaters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.find_best_model_archs">
+<span class="sig-name descname"><span class="pre">find_best_model_archs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.find_best_model_archs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the model architecture with best performance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.metrics_conversion">
+<span class="sig-name descname"><span class="pre">metrics_conversion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.metrics_conversion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the metrics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.init_by_cfg">
+<span class="sig-name descname"><span class="pre">init_by_cfg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_fname_or_obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.init_by_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use auto distillation config to init the instance of autodistillation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.init_search_cfg">
+<span class="sig-name descname"><span class="pre">init_search_cfg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.init_search_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init advisor base on config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.AutoDistillation.create_distillers">
+<span class="sig-name descname"><span class="pre">create_distillers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.AutoDistillation.create_distillers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create flash and regular distillers.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.OptimizedModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">OptimizedModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.OptimizedModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide the from_pretrained function.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.OptimizedModel.from_pretrained">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_pretrained</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.OptimizedModel.from_pretrained" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a quantized pytorch model from a given Intel Neural Compressor (INC) configuration file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_name_or_path</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>) – Repository name in the Hugging Face Hub or path to a local directory hosting the model.</p></li>
+<li><p><strong>cache_dir</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, <cite>optional</cite>) – Path to a directory in which a downloaded configuration should be cached if the standard cache should
+not be used.</p></li>
+<li><p><strong>force_download</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, <cite>optional</cite>, defaults to <code class="xref py py-obj docutils literal notranslate"><span class="pre">False</span></code>) – Whether or not to force to (re-)download the configuration files and override the cached versions if
+they exist.</p></li>
+<li><p><strong>resume_download</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, <cite>optional</cite>, defaults to <code class="xref py py-obj docutils literal notranslate"><span class="pre">False</span></code>) – Whether or not to delete incompletely received file. Attempts to resume the download if such a file
+exists.</p></li>
+<li><p><strong>revision</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, <cite>optional</cite>) – The specific model version to use. It can be a branch name, a tag name, or a commit id, since we use a
+git-based system for storing models and other artifacts on huggingface.co, so <code class="docutils literal notranslate"><span class="pre">revision</span></code> can be any
+identifier allowed by git.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Quantized model.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>q_model</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">TFOptimization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.PreTrainedModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.training_args_tf.TFTrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">criterion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization" title="Permalink to this definition">¶</a></dt>
+<dd><p>TFOptimization is the entry class for Tensorflow to use the optimization techniques in neural compressor.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.inputs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inputs</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the inputs.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.input_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_names</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.input_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the input names.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.output_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_names</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.output_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the output names.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.eval_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">eval_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.eval_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the evaluation function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.train_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.train_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the training function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.train_dataset">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_dataset</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.train_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the training dataset.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.eval_dataset">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">eval_dataset</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.eval_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the evaluation dataset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.builtin_eval_func">
+<span class="sig-name descname"><span class="pre">builtin_eval_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.builtin_eval_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Customize Evaluate function to inference the model for specified metric on the validation dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<em>[</em><em>tf.saved_model.load</em><em>]</em>) – The model will be the class of tf.saved_model.load(quantized_model_path).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>evaluation result, the larger is better.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.init_quantizer">
+<span class="sig-name descname"><span class="pre">init_quantizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quant_config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.init_quantizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init a Quantization object with config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.quantize">
+<span class="sig-name descname"><span class="pre">quantize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quant_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#intel_extension_for_transformers.optimization.QuantizationConfig" title="intel_extension_for_transformers.optimization.QuantizationConfig"><span class="pre">intel_extension_for_transformers.optimization.QuantizationConfig</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.quantize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare for invoking INC quantize function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.init_pruner">
+<span class="sig-name descname"><span class="pre">init_pruner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pruning_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.init_pruner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init a Pruning object with config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.prune">
+<span class="sig-name descname"><span class="pre">prune</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pruning_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.prune" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do the pruning.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.init_distiller">
+<span class="sig-name descname"><span class="pre">init_distiller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distillation_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">teacher_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.PreTrainedModel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.init_distiller" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init a Distillation object with config and the teacher model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.distill">
+<span class="sig-name descname"><span class="pre">distill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distillation_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">teacher_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.PreTrainedModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.distill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do the distillation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.model_builder_builtin">
+<span class="sig-name descname"><span class="pre">model_builder_builtin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arch_paras</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.model_builder_builtin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify model_cls to use the built-in model builder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.autodistill">
+<span class="sig-name descname"><span class="pre">autodistill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">autodistillation_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">teacher_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.PreTrainedModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_builder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_cls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.autodistill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do the auto distillation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.TFOptimization.build_train_func">
+<span class="sig-name descname"><span class="pre">build_train_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.TFOptimization.build_train_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build the training function for pruning or distillation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PrunerConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">PrunerConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[0,</span> <span class="pre">4]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_sparsity_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_sparsity_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.97</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prune_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'BasicMagnitude'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'per_tensor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PrunerConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">neural_compressor.conf.config.Pruner</span></code></p>
+<p>Pruner configuration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.PruningMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">PruningMode</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.PruningMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Currently support three pruning modes.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.QuantizationMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">QuantizationMode</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.QuantizationMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Currently support three quantization modes.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

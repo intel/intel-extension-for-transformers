@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.quantize_fusion`
+===================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.quantize_fusion
+
+.. autoapi-nested-parse::
+
+   The QunatizeFusion Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.quantize_fusion.QunatizeFusion
+
+
+
+
+.. py:class:: QunatizeFusion
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern.Pattern`
+
+   The QunatizeFusion pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'QunatizeFusion' graph.
+   The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+
+

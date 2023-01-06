@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.output_data`
+===============================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.output_data
+
+.. autoapi-nested-parse::
+
+   The OutputData Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.output_data.OutputData
+
+
+
+
+.. py:class:: OutputData
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern.Pattern`
+
+   The OutputData pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'OutputData' graph.
+   The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+
+

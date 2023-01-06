@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.start_end_logits`
+====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.start_end_logits
+
+.. autoapi-nested-parse::
+
+   The StartEndLogits pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.start_end_logits.StartEndLogits
+
+
+
+
+.. py:class:: StartEndLogits
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern.Pattern`
+
+   The StartEndLogits pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'StartEndLogits' graph.
+   The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+
+

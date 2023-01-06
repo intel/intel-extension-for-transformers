@@ -1,0 +1,337 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>intel_extension_for_transformers.backends.neural_engine.compile.sub_graph &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../" src="../../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../_static/doctools.js"></script>
+        <script src="../../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../../_sources/autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="module-intel_extension_for_transformers.backends.neural_engine.compile.sub_graph">
+<span id="intel-extension-for-transformers-backends-neural-engine-compile-sub-graph"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.backends.neural_engine.compile.sub_graph" title="intel_extension_for_transformers.backends.neural_engine.compile.sub_graph"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.backends.neural_engine.compile.sub_graph" title="Permalink to this heading">¶</a></h1>
+<p>The neural engine sub_graph module.</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="add_cls_token/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.add_cls_token</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="add_embeddings/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.add_embeddings</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="attention_mask_length_adaptive_keep_indices/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.attention_mask_length_adaptive_keep_indices</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="attention_output_layer_norm_length_adaptive_keep_indices/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="attention_reshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.attention_reshape</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="collect_quant_info/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.collect_quant_info</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="conv_reshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.conv_reshape</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="embeddingbag/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.embeddingbag</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="gelu/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.gelu</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="generate_sequence/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.generate_sequence</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="input_data/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.input_data</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="input_file/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.input_file</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="insert_bf16_node/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.insert_bf16_node</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="insert_quant_node/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.insert_quant_node</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="interact_features/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.interact_features</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="last_layer_shape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.last_layer_shape</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="layer_norm/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.layer_norm</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="layer_norm_with_reduce_mean/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.layer_norm_with_reduce_mean</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_bias</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_add/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_bias_add</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_gelu/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_bias_gelu</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_relu/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_bias_relu</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_sigmoid/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_bias_sigmoid</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="matmul_with_bias_tanh/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_bias_tanh</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="merged_embeddingbag/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.merged_embeddingbag</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="output_data/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.output_data</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="padding_sequence/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.padding_sequence</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="pattern/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="position_embeddings/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.position_embeddings</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="position_embeddings_v1/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.position_embeddings_v1</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="qkv_merge/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.qkv_merge</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="qkv_reshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.qkv_reshape</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantize_fusion/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.quantize_fusion</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="reshape_after_restore_hidden_states/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_after_restore_hidden_states</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="reshape_before_and_after_attention_out_layer_norm_gather_elements/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="reshape_before_restore_hidden_states/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_before_restore_hidden_states</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="reshape_fusion/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_fusion</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="restore_hidden_states_in_length_adaptive_update_indices/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="start_end_logits/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.start_end_logits</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="subgraph_matcher/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.subgraph_matcher</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="token_type_embeddings/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.token_type_embeddings</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="token_type_embeddings_v1/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.token_type_embeddings_v1</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="transpose_batch_matmul/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transpose_batch_matmul</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="word_embeddings/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.word_embeddings</span></code></a></li>
+</ul>
+</div>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Permalink to this heading">¶</a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.Pattern" title="intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.Pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pattern</span></code></a></p></td>
+<td><p>The bass pattern class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.SubGraphMatcher" title="intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.SubGraphMatcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SubGraphMatcher</span></code></a></p></td>
+<td><p>The SubGraphMatcher class.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern_registry" title="intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern_registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pattern_registry</span></code></a>(pattern_type)</p></td>
+<td><p>The class decorator used to register all Algorithm subclasses.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">PATTERNS</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.Pattern">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.</span></span><span class="sig-name descname"><span class="pre">Pattern</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.Pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The bass pattern class.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern_registry">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.</span></span><span class="sig-name descname"><span class="pre">pattern_registry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern_type</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern_registry" title="Permalink to this definition">¶</a></dt>
+<dd><p>The class decorator used to register all Algorithm subclasses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cls</strong> (<em>class</em>) – The class of register.</p></li>
+<li><p><strong>pattern_type</strong> (<em>str</em>) – The pattern registration name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The class of register.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>cls</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.SubGraphMatcher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.</span></span><span class="sig-name descname"><span class="pre">SubGraphMatcher</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.SubGraphMatcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The SubGraphMatcher class.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

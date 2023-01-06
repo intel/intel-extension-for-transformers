@@ -1,0 +1,121 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph`
+===================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph
+
+.. autoapi-nested-parse::
+
+   The neural engine sub_graph module.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   add_cls_token/index.rst
+   add_embeddings/index.rst
+   attention_mask_length_adaptive_keep_indices/index.rst
+   attention_output_layer_norm_length_adaptive_keep_indices/index.rst
+   attention_reshape/index.rst
+   collect_quant_info/index.rst
+   conv_reshape/index.rst
+   embeddingbag/index.rst
+   gelu/index.rst
+   generate_sequence/index.rst
+   input_data/index.rst
+   input_file/index.rst
+   insert_bf16_node/index.rst
+   insert_quant_node/index.rst
+   interact_features/index.rst
+   last_layer_shape/index.rst
+   layer_norm/index.rst
+   layer_norm_with_reduce_mean/index.rst
+   matmul_with_bias/index.rst
+   matmul_with_bias_add/index.rst
+   matmul_with_bias_gelu/index.rst
+   matmul_with_bias_relu/index.rst
+   matmul_with_bias_sigmoid/index.rst
+   matmul_with_bias_tanh/index.rst
+   merged_embeddingbag/index.rst
+   output_data/index.rst
+   padding_sequence/index.rst
+   pattern/index.rst
+   position_embeddings/index.rst
+   position_embeddings_v1/index.rst
+   qkv_merge/index.rst
+   qkv_reshape/index.rst
+   quantize_fusion/index.rst
+   reshape_after_restore_hidden_states/index.rst
+   reshape_before_and_after_attention_out_layer_norm_gather_elements/index.rst
+   reshape_before_restore_hidden_states/index.rst
+   reshape_fusion/index.rst
+   restore_hidden_states_in_length_adaptive_update_indices/index.rst
+   start_end_logits/index.rst
+   subgraph_matcher/index.rst
+   token_type_embeddings/index.rst
+   token_type_embeddings_v1/index.rst
+   transpose_batch_matmul/index.rst
+   word_embeddings/index.rst
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.Pattern
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.SubGraphMatcher
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern_registry
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.PATTERNS
+
+
+
+.. py:class:: Pattern
+
+   Bases: :py:obj:`object`
+
+   The bass pattern class.
+
+
+.. py:function:: pattern_registry(pattern_type)
+
+   The class decorator used to register all Algorithm subclasses.
+
+   :param cls: The class of register.
+   :type cls: class
+   :param pattern_type: The pattern registration name
+   :type pattern_type: str
+
+   :returns: The class of register.
+   :rtype: cls
+
+
+.. py:class:: SubGraphMatcher
+
+   Bases: :py:obj:`object`
+
+   The SubGraphMatcher class.
+
+

@@ -1,0 +1,283 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Compile an ONNX model to Engine IR &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/doctools.js"></script>
+        <script src="../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <link rel="next" title="Installation" href="Installation.html" />
+    <link rel="prev" title="Neural Engine" href="../../../../../neural_engine.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Compile an ONNX model to Engine IR</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supported-onnx-format">Supported ONNX Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compile-examples">Compile Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prepare-onnx-model">Prepare ONNX Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#compile-to-ir">Compile to IR</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Installation.html">Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../../../neural_engine.html">Neural Engine</a> &raquo;</li>
+        
+      <li>Compile an ONNX model to Engine IR</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="compile-an-onnx-model-to-engine-ir">
+<h1>Compile an ONNX model to Engine IR<a class="headerlink" href="#compile-an-onnx-model-to-engine-ir" title="Permalink to this heading">¶</a></h1>
+<ol class="simple">
+<li><p><a class="reference external" href="#Introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#Supported-ONNX-Format">Supported ONNX Format</a></p></li>
+<li><p><a class="reference external" href="#Compile-Examples">Compile Examples</a><br />3.1 <a class="reference external" href="#Prepare-ONNX-Model">Prepare ONNX Model</a><br />3.2 <a class="reference external" href="#Compile-to-IR">Compile to IR</a></p></li>
+</ol>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>The Neural Engine as a backend supports frozen static graph models from ONNX deep learning framework. The image below shows the workflow of how it compiles framework model to its own intermediate representation (IR). The <code class="docutils literal notranslate"><span class="pre">Loader</span></code> is used to load models from different frameworks. Then the <code class="docutils literal notranslate"><span class="pre">Extractors</span></code> would extract operations of the original model and compose the Neural Engine graph. Next, the <code class="docutils literal notranslate"><span class="pre">Subgraph</span> <span class="pre">matcher</span></code> fuse pattern to accelerate inference. In the end, the <code class="docutils literal notranslate"><span class="pre">Emitter</span></code> saves the final intermediate graph on the disk as the format of <code class="docutils literal notranslate"><span class="pre">.yaml</span></code> and <code class="docutils literal notranslate"><span class="pre">.bin</span></code> files.</p>
+<p><img alt="../../../../../_images/compile_workflow.png" src="../../../../../_images/compile_workflow.png" /></p>
+</section>
+<section id="supported-onnx-format">
+<h2>Supported ONNX Format<a class="headerlink" href="#supported-onnx-format" title="Permalink to this heading">¶</a></h2>
+<p>Neural Engine could compile several ONNX format models like fp32, bf16, int8(qlinear/qdq). Here are the respective QKV MatMul graphs opened by netron.<br />Notice: As for int8 model, Neural Engine only supports int8 matmul with s8 weight and u8 activation now. And we will support more int8 operators in the future.</p>
+<p>And We will support more operators in the features. The fp32 and bf16 models use the same graph, just different in data type of tensors.<br /><img alt="../../../../../_images/onnx_fp32_bf16.png" src="../../../../../_images/onnx_fp32_bf16.png" /></p>
+<p>The qdq model will insert QuantizeLinear and DequantizeLinear before int8 operator. You can see there’s QuantizeLinear and DequantizeLinear before matmul.<br /><img alt="../../../../../_images/onnx_qdq.png" src="../../../../../_images/onnx_qdq.png" /></p>
+<p>The qdq model will insert QuantizeLinear before int8 operator and modify MatMul to QLinearMatMul. If you want to get fp32 output and you also need to insert DequantizeLinear. You can see there are QuantizeLinear before QLinearMatMul and DequantizeLinear after it.<br /><img alt="../../../../../_images/onnx_qlinear.png" src="../../../../../_images/onnx_qlinear.png" /></p>
+</section>
+<section id="compile-examples">
+<h2>Compile Examples<a class="headerlink" href="#compile-examples" title="Permalink to this heading">¶</a></h2>
+<p>Here is the example <a class="reference external" href="../../../../examples/deployment/neural_engine/mrpc/distilbert_base_uncased">distilbert_base_mrpc</a> to show how to compile ONNX model to Neural Engine IR.</p>
+<section id="prepare-onnx-model">
+<h3>Prepare ONNX Model<a class="headerlink" href="#prepare-onnx-model" title="Permalink to this heading">¶</a></h3>
+<p>We have prepared a script to get the model from <a class="reference external" href="https://huggingface.co/">Hugging Face</a> and exported it following steps in example README.md. You can get FP32 ONNX model from optimization module by setting precision=fp32. The command is as follows:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>prepare_model.sh<span class="w"> </span>--input_model<span class="o">=</span>textattack/distilbert-base-uncased-MRPC<span class="w">  </span>--task_name<span class="o">=</span>mrpc<span class="w"> </span>--output_dir<span class="o">=</span>./model_and_tokenizer<span class="w"> </span>--precision<span class="o">=</span>fp32
+</pre></div>
+</div>
+<p>And by setting precision=int8/bf16, you could get int8(PTQ, qdq)/bf16 onnx model.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>prepare_model.sh<span class="w"> </span>--input_model<span class="o">=</span>textattack/distilbert-base-uncased-MRPC<span class="w">  </span>--task_name<span class="o">=</span>mrpc<span class="w"> </span>--output_dir<span class="o">=</span>./model_and_tokenizer<span class="w"> </span>--precision<span class="o">=</span>int8
+bash<span class="w"> </span>prepare_model.sh<span class="w"> </span>--input_model<span class="o">=</span>textattack/distilbert-base-uncased-MRPC<span class="w">  </span>--task_name<span class="o">=</span>mrpc<span class="w"> </span>--output_dir<span class="o">=</span>./model_and_tokenizer<span class="w"> </span>--precision<span class="o">=</span>bf16
+</pre></div>
+</div>
+<p>After that, you can get the &lt;fp32/bf16/int8&gt;-model.onnx under model_and_tokenizer folder.</p>
+</section>
+<section id="compile-to-ir">
+<h3>Compile to IR<a class="headerlink" href="#compile-to-ir" title="Permalink to this heading">¶</a></h3>
+<p>Compiling a model to IR is much easy. You just use compile API in python as follows and IR will be stored in the specified directory path like the following fp32 model example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># import compile api from neural engine</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.backends.neural_engine.compile</span> <span class="kn">import</span> <span class="nb">compile</span>
+<span class="c1"># compile onnx model to neural engine ir</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="s2">&quot;./model_and_tokenizer/fp32-model.onnx&quot;</span><span class="p">)</span>
+<span class="c1"># save the graph and get the final ir</span>
+<span class="c1"># the yaml and bin file will stored in &lt;ir_path&gt; folder</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;ir_path&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="Installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../../../../../neural_engine.html" class="btn btn-neutral float-left" title="Neural Engine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.optimization.distillation`
+====================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.distillation
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.distillation.DistillationCriterionMode
+
+
+
+
+.. py:class:: DistillationCriterionMode
+
+   Bases: :py:obj:`enum.Enum`
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+

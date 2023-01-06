@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Memory Layout in SPMM_VNNI &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../../" src="../../../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../../_static/doctools.js"></script>
+        <script src="../../../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Memory Layout in SPMM_VNNI</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/3D_inference.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <ul class="simple">
+<li><p><a class="reference external" href="#memory-layout-in-spmm_vnni">Memory Layout in SPMM_VNNI</a></p></li>
+<li><p><a class="reference external" href="#cache-issues">Cache Issues</a></p></li>
+<li><p><a class="reference external" href="#spmm_vnni-3d-inference">SPMM_VNNI 3D Inference</a></p></li>
+</ul>
+<section id="memory-layout-in-spmm-vnni">
+<h1>Memory Layout in SPMM_VNNI<a class="headerlink" href="#memory-layout-in-spmm-vnni" title="Permalink to this heading">¶</a></h1>
+<p>In DeepLearning, GEMM is usually represented an as activation matrix multiplied by a weight matrix.
+$$A\times W= D$$
+However in <code class="docutils literal notranslate"><span class="pre">spmm_vnni</span></code> <code class="docutils literal notranslate"><span class="pre">4x1</span></code>sparse pattern, in order to more easily implement micro_kernel and better storing performance, we adopted the transposed compressed sparse weight matrix multiplied by the transposed activation matrix.
+$$W^{T}\times A^{T}= D^{T}$$</p>
+</section>
+<section id="cache-issues">
+<h1>Cache Issues<a class="headerlink" href="#cache-issues" title="Permalink to this heading">¶</a></h1>
+<p>In modern computer architecture, in order to make better use of the spatial locality of the program, the CPU will fetch the data blocks near the fetched data into the cache-line. In the Intel Xeon CPU, the size of a cache-line is 64Byte. A cache organization form is called <code class="docutils literal notranslate"><span class="pre">N-way</span> <span class="pre">set</span> <span class="pre">associative</span> <span class="pre">cache</span></code>. The entire cache is divided into several cache-sets, and each cache-set has cache-lines with the number of the <code class="docutils literal notranslate"><span class="pre">way</span></code>.</p>
+<p>Consider that we want to access several 64Byte-aligned memory blocks <code class="docutils literal notranslate"><span class="pre">B1</span></code>, <code class="docutils literal notranslate"><span class="pre">B2</span></code>…, each memory block size is 64Byte (AVX512 SIMD register bit-width, and also the cache-line size), if these memory blocks are accessed continuously at this time , they can be evenly mapped to different cache-sets. But if the access behavior is discontinuous, the cache set cannot be fully utilized. In the worst case of access stride(<code class="docutils literal notranslate"><span class="pre">cache-line</span></code> size * <code class="docutils literal notranslate"><span class="pre">cache-set</span></code> num), even every memory access will be mapped to the same cache-set. Therefore cache utilization is very low and cache misses will occur very frequently.</p>
+<p><img alt="cache_mapping" src="../../../../../../../_images/cache_mapping.png" /></p>
+<p>In <code class="docutils literal notranslate"><span class="pre">spmm_vnni</span></code>algorithm, when we load the activation matrix in column-major, it must introduce the accessing memory behavior with stride and the stride is equal to the last dim of the activation matrix. A specific CPU core will build a specific tile in the destination matrix and the L1/L2 cache is private to the core. When the size of the activation matrix is too large, perhaps the L2 cache can’t fully cache the activation matrix that the core needs to compute the tile. Therefore, we should reduce the size of the tile calculated by each core to reduce the size of the activation matrix in the cache and make the access stride  configurable to avoid frequent L2 cache miss due to the large size of the cached data.</p>
+</section>
+<section id="spmm-vnni-3d-inference">
+<h1>SPMM_VNNI 3D Inference<a class="headerlink" href="#spmm-vnni-3d-inference" title="Permalink to this heading">¶</a></h1>
+<p>We propose a <code class="docutils literal notranslate"><span class="pre">3D</span> <span class="pre">inference</span></code> feature in the <code class="docutils literal notranslate"><span class="pre">spmm_vnni</span></code> kernel for reducing the size of the activation matrix accessed by each core when building tiles meanwhile make the access stride configurable.<br />Considering the shape of the activation matrix is <code class="docutils literal notranslate"><span class="pre">MxK</span></code>, we can split the <code class="docutils literal notranslate"><span class="pre">M-dim</span></code> and give the activation matrix 3D view which means <code class="docutils literal notranslate"><span class="pre">BxM'xK</span></code> where $B\times M^{’}=M$. Please see the below picture.</p>
+<p><img alt="2D_to_3D" src="../../../../../../../_images/2D_to_3D.png" /></p>
+<p>After enabling <code class="docutils literal notranslate"><span class="pre">3D</span> <span class="pre">inference</span></code> feature, the shape of transposed activation matrix processed by each core changes to <code class="docutils literal notranslate"><span class="pre">BxKxM'</span></code> and each core will build B <code class="docutils literal notranslate"><span class="pre">NxM'</span></code> tiles. Compared with 2D inference, the cache space required for the activation matrix that each core is responsible for caching when build <code class="docutils literal notranslate"><span class="pre">NxM'</span></code> block is reduced to $\frac{1}{B}$, meanwhile, the access stride is change to M’ which is configurable.</p>
+<p><img alt="3D_spmm" src="../../../../../../../_images/3D_spmm.png" /></p>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

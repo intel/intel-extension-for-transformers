@@ -1,0 +1,64 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile`
+=========================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile
+
+.. autoapi-nested-parse::
+
+   The module of compile.
+
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   extractors/index.rst
+   graph/index.rst
+   loaders/index.rst
+   ops/index.rst
+   sub_graph/index.rst
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   compile/index.rst
+   graph_utils/index.rst
+   logger/index.rst
+   onnx_utils/index.rst
+   tf_utils/index.rst
+
+
+Package Contents
+----------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.compile
+
+
+
+.. py:function:: compile(model, config=None)
+
+   The compile interface.
+
+   Firstly, use model loader to get the computation graph with corresponding framework.
+   The graph contains nodes and edges, the node is op and the edge is the tensor.
+   Then extract the ops in the graph and pack them to our form.
+   Next exploit these above ops to consist sub-graph, which can see as "a new big op", like LayerNorm.
+
+   .. note:: There may have different computation flow in one subgraph.
+
+   Finally, convert them to .yaml file and .bin file for model configuration and inference.
+
+

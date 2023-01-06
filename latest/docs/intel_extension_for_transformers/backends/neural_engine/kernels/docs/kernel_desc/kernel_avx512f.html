@@ -1,0 +1,252 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Design of AVX512F Kernel &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../../" src="../../../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../../_static/doctools.js"></script>
+        <script src="../../../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Design of AVX512F Kernel</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_avx512f.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="design-of-avx512f-kernel">
+<h1>Design of AVX512F Kernel<a class="headerlink" href="#design-of-avx512f-kernel" title="Permalink to this heading">¶</a></h1>
+<section id="key-instruction">
+<h2>Key Instruction<a class="headerlink" href="#key-instruction" title="Permalink to this heading">¶</a></h2>
+<p>In this kernel, we use the <code class="docutils literal notranslate"><span class="pre">vfmadd</span></code> instruction from AVX512F for matrix multiplication. Specifically, <code class="docutils literal notranslate"><span class="pre">vfmadd231ps</span></code> does the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FOR</span> <span class="n">j</span> <span class="o">:=</span> <span class="mi">0</span> <span class="n">to</span> <span class="mi">15</span>
+    <span class="n">i</span> <span class="o">:=</span> <span class="n">j</span><span class="o">*</span><span class="mi">32</span>
+    <span class="n">dst</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">31</span><span class="p">:</span><span class="n">i</span><span class="p">]</span> <span class="o">:=</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">31</span><span class="p">:</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">31</span><span class="p">:</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="n">dst</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">31</span><span class="p">:</span><span class="n">i</span><span class="p">]</span>
+<span class="n">ENDFOR</span>
+<span class="n">dst</span><span class="p">[</span><span class="n">MAX</span><span class="p">:</span><span class="mi">512</span><span class="p">]</span> <span class="o">:=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+</section>
+<section id="sparse-pattern-data-format">
+<h2>Sparse Pattern &amp; Data Format<a class="headerlink" href="#sparse-pattern-data-format" title="Permalink to this heading">¶</a></h2>
+<p>Based on <code class="docutils literal notranslate"><span class="pre">vfmadd231ps</span></code>, the sparse pattern is set to 1 x 16, where 1 is the degree of reduction and 16 is the degree of the parallelization. In terms of neural network, 1 for input channel and 16 is for output channel. Therefore, for each <code class="docutils literal notranslate"><span class="pre">vfmadd231ps</span></code>, 1 element of activation is broadcasted 16 times for its second operand and 16 contingent elements of weight are loaded for its third operands (its first operand act as destination register).</p>
+<p><img alt="AVX512F Base Pattern" src="../../../../../../../_images/kernel_avx512f_pattern_base.png" /></p>
+<p>Given the sparse pattern, Block Sparse Column format (BSC, a column variant of <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.bsr_matrix.html">BSR</a>) is adopted to optimize memory access so that non-zero elements of weight are accessed sequentially along K-dimension.</p>
+</section>
+<section id="loops">
+<h2>Loops<a class="headerlink" href="#loops" title="Permalink to this heading">¶</a></h2>
+<p>The first 2 levels of loop are C++ loops and their iterations can be paralleled with OpenMP.</p>
+<ul class="simple">
+<li><p>We first iterate blocks over the m-dimension, which is the dimension of batch size in terms of linear layer in NN.</p></li>
+<li><p>(Not implemented) Similar to the top-level loop, n-dimension is divided into blocks and iterated through. This blocking may bring enhancement as it reduces the size of assembly code for each iteration thus relief frontend bottleneck.</p></li>
+</ul>
+<p>The next 2 levels of loop are assembly loop in JIT generated code.</p>
+<ul class="simple">
+<li><p>The m-blocks created in the first loop are further divided into the m-blocks of microkernels. We unroll <code class="docutils literal notranslate"><span class="pre">vfmadd231ps</span></code> and its peripheral a few times (within the limit of available vector registers) to improve the performance. Currently it is unrolled 4 times to form a 4 <em>K</em> 16 micro kernel (see the graph below). It is promising to make it configurable to find or dynamically decide the optimal size of microkernel.</p></li>
+<li><p>The n-blocks in the second loop (or the whole output channel) are iterated by blocks of 16, which matches the width of ZMM registers when handling fp32.</p></li>
+</ul>
+<p>The last 3 levels of loop are inside the microkernel.</p>
+<ul class="simple">
+<li><p>The k-dimension of microkernel are implemented as C++ JIT loop that generates a sequence of operations with the information of the sparse structure.</p></li>
+<li><p>The m-loop of microkernel is described in the third loop and is implemented as unrolled assembly code (as shown below).</p></li>
+<li><p>The n-loop of microkernel is implicit as the parallelism of SIMD instructions.</p></li>
+</ul>
+<p><img alt="AVX512F Pattern with unrolling" src="../../../../../../../_images/kernel_avx512f_pattern_unroll4.png" /></p>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

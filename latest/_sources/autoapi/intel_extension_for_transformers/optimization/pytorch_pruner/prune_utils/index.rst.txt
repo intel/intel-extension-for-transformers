@@ -1,0 +1,32 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils`
+==================================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils.parse_to_prune
+   intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils.parse_not_to_prune
+
+
+
+.. py:function:: parse_to_prune(model, config)
+
+   keep target pruned layers
+
+
+.. py:function:: parse_not_to_prune(modules, config)
+
+   drop non pruned layers
+
+

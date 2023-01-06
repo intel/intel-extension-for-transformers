@@ -1,0 +1,36 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.ops.softmax`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.ops.softmax
+
+.. autoapi-nested-parse::
+
+   The neural engine operator mapping file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.softmax.Softmax
+
+
+
+
+.. py:class:: Softmax
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
+   Parse the Softmax operator to the neural engine.
+
+   .. py:method:: set_attr(framework, node)
+
+      Extract the node attr from frameworks.
+
+
+

@@ -1,0 +1,32 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.optimization.pytorch_pruner.patterns`
+===============================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.pytorch_pruner.patterns
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.pytorch_pruner.patterns.register_pattern
+   intel_extension_for_transformers.optimization.pytorch_pruner.patterns.get_pattern
+
+
+
+.. py:function:: register_pattern(name)
+
+   Register a pattern to the registry
+
+
+.. py:function:: get_pattern(config)
+
+   Get registered pattern class
+
+

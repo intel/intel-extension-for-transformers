@@ -1,0 +1,338 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Introduction &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../../" src="../../../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../../_static/doctools.js"></script>
+        <script src="../../../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Introduction</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/binaryop_injector.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <ul class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#framework-features">Framework Features</a></p>
+<ul>
+<li><p><a class="reference external" href="#param_typehpp">param_type.hpp</a></p></li>
+<li><p><a class="reference external" href="#operator_deschpp">operator_desc.hpp</a></p></li>
+<li><p><a class="reference external" href="#jit_binaryop_injectorhpp">jit_binaryop_injector.hpp</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#usage">Usage</a></p>
+<ul>
+<li><p><a class="reference external" href="#developers-perspective">Developer’s Perspective</a></p></li>
+<li><p><a class="reference external" href="#users-perspective">User’s Perspective</a></p></li>
+</ul>
+</li>
+</ul>
+<p><a name="UzSzO"></a></p>
+<section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h1>
+<p>Some DL operators need two changeable source operands <code class="docutils literal notranslate"><span class="pre">src1</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">src2</span></code>, apply a series of computations(e.g. add, horizontal max or combine some ops to a new op like dynamic quantization), and store the result to the dst. We call these operators <strong>binaryop</strong>.<br />In general, the data in <code class="docutils literal notranslate"><span class="pre">src1</span></code> and <code class="docutils literal notranslate"><span class="pre">src2</span></code> can be stored in registers or memory. Binaryop also can apply op-fusion optimization. Take the embedding layer in the bert model as an example, the gather op can be fused with the next op(binaryadd) and reduce the overhead of moving data from memory to the SIMD register in one of the source operands.<br />
+For implementing the binaryop-fusion, we design a new injector, <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code>. The source operands <code class="docutils literal notranslate"><span class="pre">src1</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">src2</span></code> are from SIMD register and memory, We will make the binaryop_injector as a component of the postop_injector so users can apply the eltwiseops/binaryops they configured in postop-chain sequentially in the future.<br />
+For kernel developers, the using step of <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> is quite similar to <code class="docutils literal notranslate"><span class="pre">eltwise_injector</span></code>, but more easily. <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> does not need to call the <code class="docutils literal notranslate"><span class="pre">escape</span></code> function because our current binaryops are quite simple and don’t need too many SIMD registers to do some computation. kernel developer also doesn’t need to prepare LUT because no const value will be used in binaryop now. Please notice that except <code class="docutils literal notranslate"><span class="pre">compute_vector</span></code>, binaryop_injector also exposes some <strong>“simple-arithmetic-op”</strong> to the kernel developer. The purpose is to reduce the time of browsing ISA doc, developers only need to tell the injector op_type and data_type then binaryop_injector can insert appropriate instruction automatically(e.g. dt=s8, op_type=add insert <code class="docutils literal notranslate"><span class="pre">vpaddb</span></code>; dt=fp32, op_type=add insert <code class="docutils literal notranslate"><span class="pre">vaddps</span></code>).<br />
+For Transformers-accelerated Libraries’s user(engine developer), if they want to config binaryop-fusion, they need to config the <code class="docutils literal notranslate"><span class="pre">binaryop_attr</span></code> filed in <code class="docutils literal notranslate"><span class="pre">operator_desc</span></code>. Unlike <code class="docutils literal notranslate"><span class="pre">eltwise_injector</span></code>, the user needs to call the <code class="docutils literal notranslate"><span class="pre">set_binaryop_list</span></code> function to set the <code class="docutils literal notranslate"><span class="pre">binaryop_attr</span></code>, rather than setting it in the construct function. The purpose is to reduce API changing and improve scalability. If more fields need to be added in the future, I suggest using the get/set function set them.
+<a name="nC8IX"></a></p>
+</section>
+<section id="framework-features">
+<h1>Framework Features<a class="headerlink" href="#framework-features" title="Permalink to this heading">¶</a></h1>
+<p><a name="gGo6C"></a></p>
+<section id="param-type-hpp">
+<h2>param_type.hpp<a class="headerlink" href="#param-type-hpp" title="Permalink to this heading">¶</a></h2>
+<p>Some new classes/structs will be introduced. The most important class is binaryop_attr, which indicates what type of algorithm we want to apply and the ptrs we needed.<code class="docutils literal notranslate"><span class="pre">static_addr</span></code> is used for normal binaryop, <code class="docutils literal notranslate"><span class="pre">scale</span></code> and <code class="docutils literal notranslate"><span class="pre">zp</span></code> are used for per-channel quantization/dequantization.<br />Please notice that Transformers-accelerated Libraries’s users must free the ptrs like static_addr on their own, Transformers-accelerated Libraries will not free these ptrs.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">binaryop_alg</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">undef</span><span class="p">,</span><span class="w"> </span><span class="n">add</span><span class="p">,</span><span class="w"> </span><span class="n">sub</span><span class="p">,</span><span class="w"> </span><span class="n">mul</span><span class="p">,</span><span class="w"> </span><span class="n">per_channel_quant</span><span class="p">,</span><span class="w"> </span><span class="n">per_channel_dequant</span><span class="w"> </span><span class="p">};</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">binaryop_attr</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">static_addr</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">scale</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">zp</span><span class="p">;</span>
+<span class="w">  </span><span class="n">binaryop_alg</span><span class="w"> </span><span class="n">op_alg</span><span class="p">;</span>
+<span class="w">  </span><span class="n">data_type</span><span class="w"> </span><span class="n">op_dt</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">binaryop_attr</span><span class="p">(</span><span class="n">binaryop_alg</span><span class="w"> </span><span class="n">alg</span><span class="p">,</span><span class="w"> </span><span class="n">data_type</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">op_alg</span><span class="p">(</span><span class="n">alg</span><span class="p">),</span><span class="w"> </span><span class="n">op_dt</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">static_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="w">    </span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="w">    </span><span class="n">zp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">binaryop_attr</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="n">binaryop_alg</span><span class="w"> </span><span class="n">alg</span><span class="p">,</span><span class="w"> </span><span class="n">data_type</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">static_addr</span><span class="p">(</span><span class="n">ptr</span><span class="p">),</span><span class="w"> </span><span class="n">op_alg</span><span class="p">(</span><span class="n">alg</span><span class="p">),</span><span class="w"> </span><span class="n">op_dt</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">set_scale</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">scale</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scale</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">set_zp</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">zp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">zp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zp</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p><a name="JzRdj"></a></p>
+</section>
+<section id="operator-desc-hpp">
+<h2>operator_desc.hpp<a class="headerlink" href="#operator-desc-hpp" title="Permalink to this heading">¶</a></h2>
+<p>The member <code class="docutils literal notranslate"><span class="pre">binaryop_list_</span></code> store the binaryop_attr which user wants to apply.<br />Add two new methods to get/set <code class="docutils literal notranslate"><span class="pre">binaryop_list_</span></code>.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">set_binaryop_list</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">binaryop_attr</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">binaryop_list</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">binaryop_list_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binaryop_list</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">binaryop_attr</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">get_binaryop_list</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">binaryop_list_</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">binaryop_attr</span><span class="o">&gt;</span><span class="w"> </span><span class="n">binaryop_list_</span><span class="p">;</span>
+</pre></div>
+</div>
+<p><a name="aUhwk"></a></p>
+</section>
+<section id="jit-binaryop-injector-hpp">
+<h2>jit_binaryop_injector.hpp<a class="headerlink" href="#jit-binaryop-injector-hpp" title="Permalink to this heading">¶</a></h2>
+<p>The APIs <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> exposes to users are as follows:<br /><code class="docutils literal notranslate"><span class="pre">binary_injector_init</span></code> used to initial the <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">set_mask</span></code> help kernel developer set the mask register that they need(will be used in compute_vector or simple-arithmetic-binaryop)</p>
+<p><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">init_quantization</span></code> if your binary-alg contains <code class="docutils literal notranslate"><span class="pre">per-channel-quantization/dequantization</span></code>, you should call this function, passing a free <code class="docutils literal notranslate"><span class="pre">Reg64</span></code> and a free <code class="docutils literal notranslate"><span class="pre">Zmm</span></code>  before executing <code class="docutils literal notranslate"><span class="pre">compute_vector</span></code> to process the scale &amp; zp.</p>
+<p><code class="docutils literal notranslate"><span class="pre">get_addr</span> </code>will move the address in binaryop_attr to the register.</p>
+<p><code class="docutils literal notranslate"><span class="pre">compute_vector</span></code> the most important function. The behavior is to get the data stored in <code class="docutils literal notranslate"><span class="pre">src2</span></code>, if the bool value <code class="docutils literal notranslate"><span class="pre">broadcast</span> </code> is equal to true, then broadcast the scalar pointed by the <code class="docutils literal notranslate"><span class="pre">src2</span></code>, if equal to false then get the vector which begins address is <code class="docutils literal notranslate"><span class="pre">src2</span></code> and length equal to SIMD register’s bit-width.<br />If <code class="docutils literal notranslate"><span class="pre">enable_mask</span></code> is equal to true, then before the computation results are stored to the <code class="docutils literal notranslate"><span class="pre">src1</span></code>, we apply the mask op and the mask register is set by set_mask function.Unlike <code class="docutils literal notranslate"><span class="pre">eltwise_injector</span></code>, <code class="docutils literal notranslate"><span class="pre">vector_compute</span></code> in <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> can only compute one binaryop_attr at a time. Users need to iterate through all bianryop_attr in a loop to apply all binaryop.
+<code class="docutils literal notranslate"><span class="pre">add</span></code>/<code class="docutils literal notranslate"><span class="pre">sub</span></code>/<code class="docutils literal notranslate"><span class="pre">mul</span></code> is simple-arithmetic-binaryop function, the meaning of the params are similar to the <code class="docutils literal notranslate"><span class="pre">compute_vector</span></code>.<code class="docutils literal notranslate"><span class="pre">comput_vector</span></code> is the wrapper of the <code class="docutils literal notranslate"><span class="pre">add</span></code>/<code class="docutils literal notranslate"><span class="pre">sub</span></code>/<code class="docutils literal notranslate"><span class="pre">mul</span></code>.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">jit_binary_injector</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="nc">addr_type</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">normal</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="p">,</span><span class="w"> </span><span class="n">zp</span><span class="w"> </span><span class="p">};</span>
+<span class="w">  </span><span class="n">jit_binary_injector</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">jit_binary_injector</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">binary_injector_init</span><span class="p">(</span><span class="n">jit_generator</span><span class="o">*</span><span class="w"> </span><span class="n">ptr</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_mask</span><span class="p">(</span><span class="n">Opmask</span><span class="w"> </span><span class="n">mask</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">init_quantization</span><span class="p">(</span><span class="n">Zmm</span><span class="w"> </span><span class="n">zmm</span><span class="p">,</span><span class="w"> </span><span class="n">Reg64</span><span class="w"> </span><span class="n">reg</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">get_addr</span><span class="p">(</span><span class="n">Reg64</span><span class="w"> </span><span class="n">reg</span><span class="p">,</span><span class="w"> </span><span class="n">binaryop_attr</span><span class="w"> </span><span class="n">op_attr</span><span class="p">,</span>
+<span class="w">                </span><span class="n">addr_type</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">addr_type</span><span class="o">::</span><span class="n">normal</span><span class="p">);</span><span class="w">  </span><span class="c1">// mov addr_ptr from op_attr to reg64.</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">compute_vector</span><span class="p">(</span><span class="n">Zmm</span><span class="w"> </span><span class="n">zmm_src1</span><span class="p">,</span><span class="w"> </span><span class="n">RegExp</span><span class="w"> </span><span class="n">src2</span><span class="p">,</span><span class="w"> </span><span class="n">binaryop_attr</span><span class="w"> </span><span class="n">op_attr</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">enable_mask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span>
+<span class="w">                      </span><span class="kt">bool</span><span class="w"> </span><span class="n">broadcast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">Zmm</span><span class="w"> </span><span class="n">src1</span><span class="p">,</span><span class="w"> </span><span class="n">RegExp</span><span class="w"> </span><span class="n">src2</span><span class="p">,</span><span class="w"> </span><span class="n">data_type</span><span class="w"> </span><span class="n">op_dt</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">enable_mask</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">broadcast</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">sub</span><span class="p">(</span><span class="n">Zmm</span><span class="w"> </span><span class="n">src1</span><span class="p">,</span><span class="w"> </span><span class="n">RegExp</span><span class="w"> </span><span class="n">src2</span><span class="p">,</span><span class="w"> </span><span class="n">data_type</span><span class="w"> </span><span class="n">op_dt</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">enable_mask</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">broadcast</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">mul</span><span class="p">(</span><span class="n">Zmm</span><span class="w"> </span><span class="n">src1</span><span class="p">,</span><span class="w"> </span><span class="n">RegExp</span><span class="w"> </span><span class="n">src2</span><span class="p">,</span><span class="w"> </span><span class="n">data_type</span><span class="w"> </span><span class="n">op_dt</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">enable_mask</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">broadcast</span><span class="p">);</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p><a name="NTo8Z"></a></p>
+</section>
+</section>
+<section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h1>
+<p><a name="BVBDX"></a></p>
+<section id="developer-s-perspective">
+<h2>Developer’s Perspective<a class="headerlink" href="#developer-s-perspective" title="Permalink to this heading">¶</a></h2>
+<p>Transformers-accelerated Libraries developer only needs two steps to use the <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code>.<br />step1. initial the <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> in kernel’s construct function.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">binary_injector</span><span class="p">.</span><span class="n">binary_injector_init</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>step2.config the address and mask(optional) and apply the binaryop which you want via <code class="docutils literal notranslate"><span class="pre">compute_vector</span> </code>function.
+Note that users can also pass binaryop’s address directly from their <code class="docutils literal notranslate"><span class="pre">data_param</span></code> to binaryop_addr <code class="docutils literal notranslate"><span class="pre">Reg64</span></code>.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// get binaryop addr</span>
+<span class="n">binary_injector</span><span class="p">.</span><span class="n">get_addr</span><span class="p">(</span><span class="n">binaryop_addr</span><span class="p">,</span><span class="w"> </span><span class="n">param_</span><span class="p">.</span><span class="n">binaryop_attrs</span><span class="p">.</span><span class="n">front</span><span class="p">());</span>
+<span class="c1">// prepare RegExp</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">append_loop_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">param_</span><span class="p">.</span><span class="n">process_col</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">zmm_byte_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">get_data_size</span><span class="p">(</span><span class="n">param_</span><span class="p">.</span><span class="n">input_dt</span><span class="p">));</span>
+<span class="n">RegExp</span><span class="w"> </span><span class="n">offset_exp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binaryop_addr</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">param_</span><span class="p">.</span><span class="n">thread_elt_offset</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">get_data_size</span><span class="p">(</span><span class="n">param_</span><span class="p">.</span><span class="n">input_dt</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">append_loop_len</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">zmm_byte_size</span><span class="p">;</span>
+<span class="c1">// apply binaryop</span>
+<span class="n">binary_injector</span><span class="p">.</span><span class="n">compute_vector</span><span class="p">(</span><span class="n">Zmm</span><span class="p">(</span><span class="n">k</span><span class="p">),</span><span class="w"> </span><span class="n">offset_exp</span><span class="p">,</span><span class="w"> </span><span class="n">param_</span><span class="p">.</span><span class="n">binaryop_attrs</span><span class="p">.</span><span class="n">front</span><span class="p">(),</span><span class="w"> </span><span class="n">param_</span><span class="p">.</span><span class="n">input_dt</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><a name="tJ6bf"></a></p>
+</section>
+<section id="user-s-perspective">
+<h2>User’s Perspective<a class="headerlink" href="#user-s-perspective" title="Permalink to this heading">¶</a></h2>
+<p>For the users of Transformers-accelerated Libraries, they only need to call <code class="docutils literal notranslate"><span class="pre">set_binaryop_list</span></code> to set the <code class="docutils literal notranslate"><span class="pre">bianryop_attr_list</span></code>.<br />And add a new key “binaryop_list” in <code class="docutils literal notranslate"><span class="pre">op_attrs</span></code> for kernel hashing.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">layernorm_ba_desc</span><span class="p">.</span><span class="n">set_binaryop_list</span><span class="p">({{</span><span class="n">append_vec</span><span class="p">,</span><span class="w"> </span><span class="n">binaryop_alg</span><span class="o">::</span><span class="n">add</span><span class="p">}});</span>
+<span class="n">op_attrs</span><span class="p">[</span><span class="s">&quot;binaryop_list&quot;</span><span class="p">]</span><span class="o">=</span><span class="s">&quot;binary_add&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

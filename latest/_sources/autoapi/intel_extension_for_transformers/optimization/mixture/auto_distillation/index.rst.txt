@@ -1,0 +1,227 @@
+:py:mod:`intel_extension_for_transformers.optimization.mixture.auto_distillation`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.mixture.auto_distillation
+
+.. autoapi-nested-parse::
+
+   AutoDistillation: handling the whole pipeline of AutoDistillation for both pytorch and tensorflow framework.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation
+   intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher
+   intel_extension_for_transformers.optimization.mixture.auto_distillation.GridSearcher
+   intel_extension_for_transformers.optimization.mixture.auto_distillation.RandomSearcher
+   intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.mixture.auto_distillation.create_search_space_pool
+   intel_extension_for_transformers.optimization.mixture.auto_distillation.find_pareto_front
+
+
+
+.. py:class:: AutoDistillation(model_builder, conf_fname_or_obj, framework='pytorch')
+
+   Bases: :py:obj:`object`
+
+   The framework class is designed for handling the whole pipeline of AutoDistillation.
+
+   AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation,
+   and Evaluation.
+   In Model Exploration, a search engine will search for a better compressed model from the architecture
+   design space in each iteration.
+   Flash Distillation is the stage for training the searched model to discover its potential.
+   In Evaluation stage, the trained model will be evaluated to measure its performances (e.g.
+   the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.
+
+   .. py:property:: teacher_model
+
+      Getter of teacher model.
+
+   .. py:property:: student_model
+
+      Getter of student model.
+
+   .. py:property:: advisor
+
+      Getter of advisor.
+
+   .. py:property:: train_func
+
+      Getter of train function.
+
+   .. py:property:: eval_func
+
+      Getter of evaluation function.
+
+   .. py:method:: model_arch_proposition()
+
+      Propose architecture of the model based on search algorithm for next search iteration.
+
+      :returns: Model architecture description.
+
+
+   .. py:method:: search(res_save_path=None, model_cls=None)
+
+      Auto distillation search process.
+
+      :returns: Best model architecture found in search process.
+
+
+   .. py:method:: estimate(model)
+
+      Train and evaluate the model.
+
+      :returns: Evaluated metrics of the model.
+
+
+   .. py:method:: load_search_results(path)
+
+      Load previous search results.
+
+      :param path: The file path which stores the previous results.
+
+
+   .. py:method:: dump_search_results(path)
+
+      Dump current search results into a file.
+
+      :param path: The file path to store the results.
+
+
+   .. py:method:: params_vec2params_dict(paras_vec)
+
+      Transfer the vector into dict to hold the paramaters.
+
+
+   .. py:method:: find_best_model_archs()
+
+      Find the model architecture with best performance.
+
+
+   .. py:method:: metrics_conversion(metrics)
+
+      Convert the metrics.
+
+
+   .. py:method:: init_by_cfg(conf_fname_or_obj)
+
+      Use auto distillation config to init the instance of autodistillation.
+
+
+   .. py:method:: init_search_cfg(config)
+
+      Init advisor base on config.
+
+
+   .. py:method:: create_distillers()
+
+      Create flash and regular distillers.
+
+
+
+.. py:function:: create_search_space_pool(search_space, idx=0)
+
+   Create the pool of search space.
+
+
+.. py:class:: Searcher(search_space)
+
+   Bases: :py:obj:`object`
+
+   The basic class of searchers, search the model architecture for auto distillation.
+
+   .. py:method:: suggestion()
+      :abstractmethod:
+
+      Main entry point of searcher. Depends on specific search algorithm.
+
+
+   .. py:method:: feedback(metric)
+
+      Depends on specific search algorithm.
+
+
+   .. py:method:: params_vec2params_dict(para_vec)
+
+      Transfer the vector into dict to hold the paramaters.
+
+
+
+.. py:class:: GridSearcher(search_space)
+
+   Bases: :py:obj:`Searcher`
+
+   Searcher implement grid algorithm to search model architecture.
+
+   .. py:method:: suggestion()
+
+      Main entry point of searcher.
+
+      Search the model architecture from the search space pool.
+
+
+
+.. py:class:: RandomSearcher(search_space, seed=42)
+
+   Bases: :py:obj:`Searcher`
+
+   Searcher implement random algorithm to search model architecture.
+
+   .. py:method:: suggestion()
+
+      Main entry point of searcher.
+
+      Search the model architecture from the search space pool.
+
+
+
+.. py:class:: BayesianOptimizationSearcher(search_space, seed=42)
+
+   Bases: :py:obj:`Searcher`
+
+   Searcher implement bayesian algorithm to search model architecture.
+
+   .. py:method:: suggestion()
+
+      Main entry point of searcher.
+
+      Search the model architecture from the search space pool.
+
+
+   .. py:method:: feedback(metric)
+
+      Append param_indices and its metric value to the known data.
+
+
+   .. py:method:: indices2params_vec(indices)
+
+      Transfer indices into pramaters vector.
+
+
+
+.. py:function:: find_pareto_front(metrics)
+
+   Find the pareto front points, assuming all metrics are "higher is better".
+
+   :param metrics: An (n_points, n_metrics) array
+
+   :returns: An array of indices of pareto front points.
+             It is a (n_pareto_points, ) integer array of indices.
+
+

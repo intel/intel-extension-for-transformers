@@ -1,0 +1,335 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Customized Operators Register &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/doctools.js"></script>
+        <script src="../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Customized Operators Register</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/docs/operator_register.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="customized-operators-register">
+<h1>Customized Operators Register<a class="headerlink" href="#customized-operators-register" title="Permalink to this heading">¶</a></h1>
+<p>It only takes two steps for developers to register a customized operator:</p>
+<p><a class="reference external" href="#1-add-h-of-the-customized-operator-to-executorincludeoperators">1. Add *.h of the customized operator to executor/include/operators</a></p>
+<p><a class="reference external" href="#2-add-cpp-of-the-customized-operator-to-executorsrcoperators">2. Add *.cpp of the customized operator to executor/src/operators</a></p>
+<p>Let’s register a Gelu operator to engine executor as an example.</p>
+<section id="add-h-of-the-customized-operator-to-executor-include-operators">
+<h2>1. Add *.h of the customized operator to executor/include/operators<a class="headerlink" href="#add-h-of-the-customized-operator-to-executor-include-operators" title="Permalink to this heading">¶</a></h2>
+<p>The *.h is a file to define member variables and functions. The GeluOperator class inherits from the Operator base class. The GeluOperator has a basic constructor, destructor, Reshape function and Forward function, and it also has some member variables used inside the class.</p>
+<p>The example uses oneDNN API, so we define some variables for onednn primitives. The details about oneDNN can refer the following link https://oneapi-src.github.io/oneDNN/index.html.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">GeluOperator</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Operator</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">GeluOperator</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">OperatorConfig</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">conf</span><span class="p">);</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">GeluOperator</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">Reshape</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">output</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">Forward</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">output</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">Prepare</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">output</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+
+<span class="w"> </span><span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="n">string</span><span class="w"> </span><span class="n">algorithm_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">dnnl</span><span class="o">::</span><span class="n">engine</span><span class="w"> </span><span class="n">eng_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">engine</span><span class="p">(</span><span class="n">engine</span><span class="o">::</span><span class="n">kind</span><span class="o">::</span><span class="n">cpu</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">dnnl</span><span class="o">::</span><span class="n">eltwise_forward</span><span class="w"> </span><span class="n">gelu_p_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">memory</span><span class="w"> </span><span class="n">src_m_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">memory</span><span class="w"> </span><span class="n">dst_m_</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+</section>
+<section id="add-cpp-of-the-customized-operator-to-executor-src-operators">
+<h2>2. Add *.cpp of the customized operator to executor/src/operators<a class="headerlink" href="#add-cpp-of-the-customized-operator-to-executor-src-operators" title="Permalink to this heading">¶</a></h2>
+<p>The following function is a constructor to parse the operator config. Gelu has two algorithm gelu_erf and gelu_tanh, and the attribute “algorithm” is parsed here.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">GeluOperator</span><span class="o">::</span><span class="n">GeluOperator</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">OperatorConfig</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">conf</span><span class="p">)</span><span class="w"> </span><span class="o">:</span>
+<span class="w">  </span><span class="n">Operator</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">attrs_map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">operator_conf_</span><span class="o">-&gt;</span><span class="n">attributes</span><span class="p">();</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">attrs_map</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;algorithm&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iter</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">attrs_map</span><span class="p">.</span><span class="n">end</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">algorithm_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iter</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The output shape can be dynamic, so we can adjust the shape of the output tensor in the reshape function. We also prepare primitives here, becuase the Gelu operator is based on oneDNN.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">GeluOperator::Reshape</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">output</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">//// Part1: Prepare tensors shape and memory descriptors</span>
+<span class="w">  </span><span class="c1">// 1.1: Prepare src tensor shape</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">memory</span><span class="o">::</span><span class="n">dims</span><span class="o">&amp;</span><span class="w"> </span><span class="n">src_shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">shape</span><span class="p">();</span>
+
+<span class="w">  </span><span class="c1">// 1.2 Set dst tensor shape</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">memory</span><span class="o">::</span><span class="n">dims</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst_shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">src_shape</span><span class="p">;</span>
+<span class="w">  </span><span class="n">Tensor</span><span class="o">*</span><span class="w"> </span><span class="n">dst_tensor_ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">  </span><span class="n">dst_tensor_ptr</span><span class="o">-&gt;</span><span class="n">set_shape</span><span class="p">(</span><span class="n">dst_shape</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// 1.3 Get tensor&#39;s strides</span>
+<span class="w">  </span><span class="n">memory</span><span class="o">::</span><span class="n">dims</span><span class="w"> </span><span class="n">src_stride</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetStrides</span><span class="p">(</span><span class="n">src_shape</span><span class="p">);</span>
+<span class="w">  </span><span class="n">memory</span><span class="o">::</span><span class="n">dims</span><span class="w"> </span><span class="n">dst_stride</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetStrides</span><span class="p">(</span><span class="n">dst_shape</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// 1.4 Prepare memory descriptors</span>
+<span class="w">  </span><span class="n">memory</span><span class="o">::</span><span class="n">desc</span><span class="w"> </span><span class="n">src_md</span><span class="p">(</span><span class="n">src_shape</span><span class="p">,</span><span class="w"> </span><span class="n">memory</span><span class="o">::</span><span class="n">data_type</span><span class="o">::</span><span class="n">f32</span><span class="p">,</span><span class="w"> </span><span class="n">src_stride</span><span class="p">);</span>
+<span class="w">  </span><span class="n">memory</span><span class="o">::</span><span class="n">desc</span><span class="w"> </span><span class="n">dst_md</span><span class="p">(</span><span class="n">dst_shape</span><span class="p">,</span><span class="w"> </span><span class="n">memory</span><span class="o">::</span><span class="n">data_type</span><span class="o">::</span><span class="n">f32</span><span class="p">,</span><span class="w"> </span><span class="n">dst_stride</span><span class="p">);</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1">// 1.5 Prepare memory objects (cached)</span>
+<span class="w">  </span><span class="n">src_m_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">memory</span><span class="p">(</span><span class="n">src_md</span><span class="p">,</span><span class="w"> </span><span class="n">eng_</span><span class="p">);</span>
+<span class="w">  </span><span class="n">dst_m_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">memory</span><span class="p">(</span><span class="n">dst_md</span><span class="p">,</span><span class="w"> </span><span class="n">eng_</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">//// Part2: Prepare primitive</span>
+<span class="w">  </span><span class="c1">// 2.1 Prepare op descriptors</span>
+<span class="w">  </span><span class="n">algorithm</span><span class="w"> </span><span class="n">gelu_algorithm</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">algorithm_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;gelu_erf&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">gelu_algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_gelu_erf</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">algorithm_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;gelu_tanh&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">gelu_algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">algorithm</span><span class="o">::</span><span class="n">eltwise_gelu_tanh</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">LOG</span><span class="p">(</span><span class="n">ERROR</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Gelu algorithm is: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">algorithm_</span>
+<span class="w">               </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, not supported. Only gelu_erf or gelu_tanh is supported.&quot;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">gelu_d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dnnl</span><span class="o">::</span><span class="n">eltwise_forward</span><span class="o">::</span><span class="n">desc</span><span class="p">(</span><span class="n">prop_kind</span><span class="o">::</span><span class="n">forward_inference</span><span class="p">,</span>
+<span class="w">                </span><span class="n">gelu_algorithm</span><span class="p">,</span><span class="w"> </span><span class="n">src_md</span><span class="p">,</span><span class="w"> </span><span class="mf">0.f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.f</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// 2.2 Prepare primitive descriptors</span>
+<span class="w">  </span><span class="n">dnnl</span><span class="o">::</span><span class="n">eltwise_forward</span><span class="o">::</span><span class="n">primitive_desc</span><span class="w"> </span><span class="n">gelu_pd</span><span class="p">(</span><span class="n">gelu_d</span><span class="p">,</span><span class="w"> </span><span class="n">eng_</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// 2.3 Prepare primitive objects (cached)</span>
+<span class="w">  </span><span class="n">gelu_p_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dnnl</span><span class="o">::</span><span class="n">eltwise_forward</span><span class="p">(</span><span class="n">gelu_pd</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The forward function executes the operator. Using oneDNN, we set input and output to data_handle, and execute the primitive.</p>
+<p>Notes: Please don’t forget to unrefernce the input tensors after executing the primitive. The reason is to reduce the reference count of tensors and manage memory more strictly.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">GeluOperator::Forward</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">output</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="c1">// 1. Alias variables part</span>
+<span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">src_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">();</span>
+<span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">dst_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">mutable_data</span><span class="p">();</span>
+
+<span class="c1">// 2. Prepare memory objects with data_ptr</span>
+<span class="n">dnnl</span><span class="o">::</span><span class="n">stream</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">eng_</span><span class="p">);</span>
+<span class="n">src_m_</span><span class="p">.</span><span class="n">set_data_handle</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">src_data</span><span class="p">),</span><span class="w"> </span><span class="n">s</span><span class="p">);</span>
+<span class="n">dst_m_</span><span class="p">.</span><span class="n">set_data_handle</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dst_data</span><span class="p">),</span><span class="w"> </span><span class="n">s</span><span class="p">);</span>
+
+<span class="c1">// 3. Insert memory args</span>
+<span class="n">memory_args_</span><span class="p">[</span><span class="n">DNNL_ARG_SRC</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">src_m_</span><span class="p">;</span>
+<span class="n">memory_args_</span><span class="p">[</span><span class="n">DNNL_ARG_DST</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dst_m_</span><span class="p">;</span>
+
+<span class="c1">// 4. Execute the primitive</span>
+<span class="n">gelu_p_</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">memory_args_</span><span class="p">);</span>
+
+<span class="c1">// 5. unref tensors</span>
+<span class="k">this</span><span class="o">-&gt;</span><span class="n">unref_tensors</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The prepare fusion is necessary for some kernels. Developers should set the dtype of output in prepare function especially when output is not fp32.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">GeluOperator::Prepare</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">output</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">int8_lut_optimize</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">int8_lut_acc_test</span><span class="p">)</span><span class="w"> </span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">set_dtype</span><span class="p">(</span><span class="s">&quot;u8&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>After creating the customized operator, finally register it to operator class as follow:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">REGISTER_OPERATOR_CLASS</span><span class="p">(</span><span class="n">Gelu</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

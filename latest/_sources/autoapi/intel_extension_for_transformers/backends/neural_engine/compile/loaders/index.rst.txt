@@ -1,0 +1,40 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.loaders`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.loaders
+
+.. autoapi-nested-parse::
+
+   The module of the neural engine graph loader.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   loader/index.rst
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.loaders.Loader
+
+
+
+
+.. py:class:: Loader
+
+   Bases: :py:obj:`object`
+
+   Load the model into the frontend of different inference frameworks.
+
+

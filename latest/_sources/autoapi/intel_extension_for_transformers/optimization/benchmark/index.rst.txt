@@ -1,0 +1,44 @@
+:py:mod:`intel_extension_for_transformers.optimization.benchmark`
+=================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.benchmark
+
+.. autoapi-nested-parse::
+
+   Benchmark: provide the inference functions for PyTorchBenchmark and ExecutorBenchmark.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.benchmark.ExecutorBenchmark
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.benchmark.run
+
+
+
+.. py:function:: run(self)
+
+   Print the table headers and run the Pytorch benchmark.
+
+
+.. py:class:: ExecutorBenchmark
+
+   Bases: :py:obj:`transformers.PyTorchBenchmark`
+
+   ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor.
+
+

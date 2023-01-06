@@ -1,0 +1,36 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.ops.mean`
+==================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.ops.mean
+
+.. autoapi-nested-parse::
+
+   The neural engine operator mapping file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.mean.Mean
+
+
+
+
+.. py:class:: Mean
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
+   Parse the Mean operator to the neural engine.
+
+   .. py:method:: set_attr(framework, node)
+
+      Extract the node attr from tensorflow.
+
+
+

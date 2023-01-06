@@ -1,0 +1,31 @@
+:py:mod:`intel_extension_for_transformers.optimization.utils.metrics`
+=====================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.utils.metrics
+
+.. autoapi-nested-parse::
+
+   The class of metric for optimization.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.utils.metrics.Metric
+
+
+
+
+.. py:class:: Metric(name: str, greater_is_better: bool = True, is_relative: bool = True, criterion: float = 0.01, weight_ratio: float = None)
+
+   Bases: :py:obj:`object`
+
+   Metric for optimization.
+
+

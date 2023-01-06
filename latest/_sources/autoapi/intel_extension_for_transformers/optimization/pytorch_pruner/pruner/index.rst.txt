@@ -1,0 +1,48 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.optimization.pytorch_pruner.pruner`
+=============================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.pytorch_pruner.pruner
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.pytorch_pruner.pruner.SnipPruner
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.pytorch_pruner.pruner.register_pruners
+   intel_extension_for_transformers.optimization.pytorch_pruner.pruner.get_pruner
+
+
+
+.. py:function:: register_pruners(name)
+
+   Register a pruner to the registry
+
+
+.. py:function:: get_pruner(modules, config)
+
+   Get registered pruner class
+
+
+.. py:class:: SnipPruner(modules, config)
+
+   Bases: :py:obj:`Pruner`
+
+   please refer to SNIP: Single-shot Network Pruning based on Connection Sensitivity
+   (https://arxiv.org/abs/1810.02340)
+
+

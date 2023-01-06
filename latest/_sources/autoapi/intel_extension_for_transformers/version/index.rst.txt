@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.version`
+==================================================
+
+.. py:module:: intel_extension_for_transformers.version
+
+.. autoapi-nested-parse::
+
+   The neural engine version file.
+
+
+

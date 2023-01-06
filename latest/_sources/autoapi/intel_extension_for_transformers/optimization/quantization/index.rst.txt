@@ -1,0 +1,31 @@
+:py:mod:`intel_extension_for_transformers.optimization.quantization`
+====================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.quantization
+
+.. autoapi-nested-parse::
+
+   Quantization: specify the supported quantization mode.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.quantization.QuantizationMode
+
+
+
+
+.. py:class:: QuantizationMode
+
+   Bases: :py:obj:`enum.Enum`
+
+   Currently support three quantization modes.
+
+

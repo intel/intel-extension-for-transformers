@@ -1,0 +1,30 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.preprocessing.utils`
+==============================================================
+
+.. py:module:: intel_extension_for_transformers.preprocessing.utils
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.preprocessing.utils.AugmenterType
+
+
+
+
+.. py:class:: AugmenterType
+
+   Bases: :py:obj:`enum.Enum`
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+

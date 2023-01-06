@@ -1,0 +1,489 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>intel_extension_for_transformers.optimization.mixture.auto_distillation &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/doctools.js"></script>
+        <script src="../../../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../../_sources/autoapi/intel_extension_for_transformers/optimization/mixture/auto_distillation/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="module-intel_extension_for_transformers.optimization.mixture.auto_distillation">
+<span id="intel-extension-for-transformers-optimization-mixture-auto-distillation"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.optimization.mixture.auto_distillation" title="intel_extension_for_transformers.optimization.mixture.auto_distillation"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.optimization.mixture.auto_distillation" title="Permalink to this heading">¶</a></h1>
+<p>AutoDistillation: handling the whole pipeline of AutoDistillation for both pytorch and tensorflow framework.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading">¶</a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AutoDistillation</span></code></a></p></td>
+<td><p>The framework class is designed for handling the whole pipeline of AutoDistillation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Searcher</span></code></a></p></td>
+<td><p>The basic class of searchers, search the model architecture for auto distillation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.GridSearcher" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.GridSearcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridSearcher</span></code></a></p></td>
+<td><p>Searcher implement grid algorithm to search model architecture.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.RandomSearcher" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.RandomSearcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RandomSearcher</span></code></a></p></td>
+<td><p>Searcher implement random algorithm to search model architecture.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BayesianOptimizationSearcher</span></code></a></p></td>
+<td><p>Searcher implement bayesian algorithm to search model architecture.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.create_search_space_pool" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.create_search_space_pool"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_search_space_pool</span></code></a>(search_space[, idx])</p></td>
+<td><p>Create the pool of search space.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.find_pareto_front" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.find_pareto_front"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_pareto_front</span></code></a>(metrics)</p></td>
+<td><p>Find the pareto front points, assuming all metrics are &quot;higher is better&quot;.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation.</span></span><span class="sig-name descname"><span class="pre">AutoDistillation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_fname_or_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pytorch'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The framework class is designed for handling the whole pipeline of AutoDistillation.</p>
+<p>AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation,
+and Evaluation.
+In Model Exploration, a search engine will search for a better compressed model from the architecture
+design space in each iteration.
+Flash Distillation is the stage for training the searched model to discover its potential.
+In Evaluation stage, the trained model will be evaluated to measure its performances (e.g.
+the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.teacher_model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">teacher_model</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.teacher_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of teacher model.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.student_model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">student_model</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.student_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of student model.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.advisor">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">advisor</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.advisor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of advisor.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.train_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.train_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of train function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.eval_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">eval_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.eval_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of evaluation function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.model_arch_proposition">
+<span class="sig-name descname"><span class="pre">model_arch_proposition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.model_arch_proposition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propose architecture of the model based on search algorithm for next search iteration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Model architecture description.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.search">
+<span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">res_save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auto distillation search process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Best model architecture found in search process.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train and evaluate the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Evaluated metrics of the model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.load_search_results">
+<span class="sig-name descname"><span class="pre">load_search_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.load_search_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load previous search results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – The file path which stores the previous results.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.dump_search_results">
+<span class="sig-name descname"><span class="pre">dump_search_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.dump_search_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump current search results into a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – The file path to store the results.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.params_vec2params_dict">
+<span class="sig-name descname"><span class="pre">params_vec2params_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paras_vec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.params_vec2params_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfer the vector into dict to hold the paramaters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.find_best_model_archs">
+<span class="sig-name descname"><span class="pre">find_best_model_archs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.find_best_model_archs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the model architecture with best performance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.metrics_conversion">
+<span class="sig-name descname"><span class="pre">metrics_conversion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.metrics_conversion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the metrics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.init_by_cfg">
+<span class="sig-name descname"><span class="pre">init_by_cfg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_fname_or_obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.init_by_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use auto distillation config to init the instance of autodistillation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.init_search_cfg">
+<span class="sig-name descname"><span class="pre">init_search_cfg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.init_search_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init advisor base on config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.create_distillers">
+<span class="sig-name descname"><span class="pre">create_distillers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.create_distillers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create flash and regular distillers.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.create_search_space_pool">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation.</span></span><span class="sig-name descname"><span class="pre">create_search_space_pool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.create_search_space_pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the pool of search space.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation.</span></span><span class="sig-name descname"><span class="pre">Searcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_space</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The basic class of searchers, search the model architecture for auto distillation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher.suggestion">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">suggestion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher.suggestion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entry point of searcher. Depends on specific search algorithm.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher.feedback">
+<span class="sig-name descname"><span class="pre">feedback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metric</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher.feedback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Depends on specific search algorithm.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher.params_vec2params_dict">
+<span class="sig-name descname"><span class="pre">params_vec2params_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">para_vec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher.params_vec2params_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfer the vector into dict to hold the paramaters.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.GridSearcher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation.</span></span><span class="sig-name descname"><span class="pre">GridSearcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_space</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.GridSearcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Searcher</span></code></a></p>
+<p>Searcher implement grid algorithm to search model architecture.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.GridSearcher.suggestion">
+<span class="sig-name descname"><span class="pre">suggestion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.GridSearcher.suggestion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entry point of searcher.</p>
+<p>Search the model architecture from the search space pool.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.RandomSearcher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation.</span></span><span class="sig-name descname"><span class="pre">RandomSearcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.RandomSearcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Searcher</span></code></a></p>
+<p>Searcher implement random algorithm to search model architecture.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.RandomSearcher.suggestion">
+<span class="sig-name descname"><span class="pre">suggestion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.RandomSearcher.suggestion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entry point of searcher.</p>
+<p>Search the model architecture from the search space pool.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation.</span></span><span class="sig-name descname"><span class="pre">BayesianOptimizationSearcher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher" title="intel_extension_for_transformers.optimization.mixture.auto_distillation.Searcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Searcher</span></code></a></p>
+<p>Searcher implement bayesian algorithm to search model architecture.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher.suggestion">
+<span class="sig-name descname"><span class="pre">suggestion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher.suggestion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entry point of searcher.</p>
+<p>Search the model architecture from the search space pool.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher.feedback">
+<span class="sig-name descname"><span class="pre">feedback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metric</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher.feedback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append param_indices and its metric value to the known data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher.indices2params_vec">
+<span class="sig-name descname"><span class="pre">indices2params_vec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.BayesianOptimizationSearcher.indices2params_vec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transfer indices into pramaters vector.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.mixture.auto_distillation.find_pareto_front">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.mixture.auto_distillation.</span></span><span class="sig-name descname"><span class="pre">find_pareto_front</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.mixture.auto_distillation.find_pareto_front" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the pareto front points, assuming all metrics are “higher is better”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>metrics</strong> – An (n_points, n_metrics) array</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An array of indices of pareto front points.
+It is a (n_pareto_points, ) integer array of indices.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

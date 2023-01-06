@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_before_restore_hidden_states`
+========================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_before_restore_hidden_states
+
+.. autoapi-nested-parse::
+
+   The ReshapeBeforeRestoreHiddenStates Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_before_restore_hidden_states.ReshapeBeforeRestoreHiddenStates
+
+
+
+
+.. py:class:: ReshapeBeforeRestoreHiddenStates
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern.Pattern`
+
+   The ReshapeBeforeRestoreHiddenStates pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'ReshapeBeforeRestoreHiddenStates' graph.
+   The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+
+

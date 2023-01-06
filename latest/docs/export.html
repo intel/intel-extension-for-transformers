@@ -1,0 +1,316 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Export to ONNX &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Intel® Extension for Transformers
+          
+
+          
+          </a>
+
+          
+            
+            
+            <div class="version">
+              <a href="../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Export to ONNX</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/docs/export.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="export-to-onnx">
+<h1>Export to ONNX<a class="headerlink" href="#export-to-onnx" title="Permalink to this heading">¶</a></h1>
+<ol>
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#supported-model-export-matrix">Supported Model Export Matrix</a></p></li>
+<li><p><a class="reference external" href="#examples">Examples</a></p>
+<p>3.1. <a class="reference external" href="#export-to-fp32-onnx-model">Export to FP32 ONNX Model</a></p>
+<p>3.2. <a class="reference external" href="#export-to-bf16-onnx-model">Export to BF16 ONNX Model</a></p>
+<p>3.3. <a class="reference external" href="#export-to-int8-onnx-model">Export to INT8 ONNX Model</a></p>
+</li>
+</ol>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>We support exporting PyTorch models into ONNX models with our well-desighed API <code class="docutils literal notranslate"><span class="pre">trainer.export_to_onnx</span></code>. Users can get FP32 (Float precision 32 bit), BF16 (Bfloat 16 bit) and INT8 (Integer 8 bit) ONNX model with the same interface.</p>
+</section>
+<section id="supported-model-export-matrix">
+<h2>Supported Model Export Matrix<a class="headerlink" href="#supported-model-export-matrix" title="Permalink to this heading">¶</a></h2>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Input Model</th>
+<th>Export FP32</th>
+<th>Export BF16</th>
+<th>Export INT8</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FP32 PyTorch Model</td>
+<td>&#10004;</td>
+<td>&#10004;</td>
+<td>/</td>
+</tr>
+<tr>
+<td>INT8 PyTorch Model <br> (PostTrainingDynamic)</td>
+<td>/</td>
+<td>/</td>
+<td>&#10004;</td>
+</tr>
+<tr>
+<td>INT8 PyTorch Model <br> (PostTrainingStatic)</td>
+<td>/</td>
+<td>/</td>
+<td>&#10004;</td>
+</tr>
+<tr>
+<td>INT8 PyTorch Model <br> (QuantizationAwareTraining)</td>
+<td>/</td>
+<td>/</td>
+<td>&#10004;</td>
+</tr>
+</tbody>
+</table></section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<section id="export-to-fp32-onnx-model">
+<h3>Export to FP32 ONNX Model<a class="headerlink" href="#export-to-fp32-onnx-model" title="Permalink to this heading">¶</a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">export_to_onnx</span></code> is called before quantization, we will fetch the FP32 model and export it into a ONNX model.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">export_to_onnx</span><span class="p">(</span>
+    <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+    <span class="p">[</span><span class="n">opset_version</span><span class="o">=</span><span class="mi">14</span><span class="p">,]</span>
+    <span class="p">[</span><span class="n">do_constant_folding</span><span class="o">=</span><span class="kc">True</span><span class="p">,]</span>
+    <span class="p">[</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="export-to-bf16-onnx-model">
+<h3>Export to BF16 ONNX Model<a class="headerlink" href="#export-to-bf16-onnx-model" title="Permalink to this heading">¶</a></h3>
+<p>If the flag: <code class="docutils literal notranslate"><span class="pre">enable_bf16</span></code> is True, you will get an ONNX model with BFloat16 weights for [’MatMul’, ‘Gemm’] node type. This FP32 + BF16 ONNX model can be accelerated by our <a class="reference external" href="../intel_extension_for_transformers/backends/neural_engine/">executor</a> backend.</p>
+</section>
+<section id="api-usage">
+<h3>API usage<a class="headerlink" href="#api-usage" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">enable_bf16</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">export_to_onnx</span><span class="p">(</span>
+    <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+    <span class="p">[</span><span class="n">opset_version</span><span class="o">=</span><span class="mi">14</span><span class="p">,]</span>
+    <span class="p">[</span><span class="n">do_constant_folding</span><span class="o">=</span><span class="kc">True</span><span class="p">,]</span>
+    <span class="p">[</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="export-to-int8-onnx-model">
+<h3>Export to INT8 ONNX Model<a class="headerlink" href="#export-to-int8-onnx-model" title="Permalink to this heading">¶</a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">export_to_onnx</span></code> is called after quantization, we will fetch the FP32 PyTorch model, convert it into ONNX model and do onnxruntime quantization based on pytorch quantization configuration.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">export_to_onnx</span><span class="p">(</span>
+    <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">[</span><span class="n">quant_format</span><span class="o">=</span><span class="s1">&#39;QDQ&#39;</span><span class="o">/</span><span class="s1">&#39;Qlinear&#39;</span><span class="p">,]</span>
+    <span class="p">[</span><span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;S8S8&#39;</span><span class="o">/</span><span class="s1">&#39;U8S8&#39;</span><span class="o">/</span><span class="s1">&#39;U8U8&#39;</span><span class="p">,]</span>
+    <span class="p">[</span><span class="n">opset_version</span><span class="o">=</span><span class="mi">14</span><span class="p">,]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="for-executor-backend">
+<h3><strong>For executor backend</strong><a class="headerlink" href="#for-executor-backend" title="Permalink to this heading">¶</a></h3>
+<p>Our executor backend provides highly optimized performance for INT8 <code class="docutils literal notranslate"><span class="pre">MatMul</span></code> node type and <code class="docutils literal notranslate"><span class="pre">U8S8</span></code> datatype. Therefore, we suggest users to enable the flag <code class="docutils literal notranslate"><span class="pre">enable_executor</span></code> before export int8 ONNX model for executor backend.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">enable_executor</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

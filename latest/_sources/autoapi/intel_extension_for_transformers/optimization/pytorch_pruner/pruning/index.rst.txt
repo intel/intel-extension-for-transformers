@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.optimization.pytorch_pruner.pruning`
+==============================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.pytorch_pruner.pruning
+
+
