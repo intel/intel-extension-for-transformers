@@ -29,7 +29,6 @@ import warnings
 from functools import partial
 from neural_compressor import __version__ as nc_version
 from neural_compressor.experimental import Component
-from neural_compressor.model.torch_model import PyTorchIpexModel
 from neural_compressor.utils import logger
 from intel_extension_for_transformers.optimization import (
     AutoDistillation,
@@ -48,7 +47,6 @@ from tqdm.auto import tqdm
 from transformers import __version__, Seq2SeqTrainer, Trainer, PreTrainedModel
 from transformers.configuration_utils import PretrainedConfig
 from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
-from neural_compressor.model.torch_model import PyTorchIpexModel
 from transformers.file_utils import (
     CONFIG_NAME,
     WEIGHTS_NAME,
@@ -87,6 +85,11 @@ from .dynamic.evolution import (
 
 from torch.nn import KLDivLoss
 import torch.nn.functional as F
+
+if version.parse(nc_version).release < version.parse("2.0").release:
+    from neural_compressor.model.torch_model import PyTorchIpexModel as IPEXModel
+else:
+    from neural_compressor.model.torch_model import IPEXModel
 
 amp = LazyImport('apex.amp')
 datasets = LazyImport('datasets')
@@ -346,7 +349,7 @@ class BaseTrainer():
             assert False, "Unsupport provider:{}".format(self._provider)
 
     def _save_inc_int8(self, opt_model, output_dir):
-        if isinstance(opt_model, PyTorchIpexModel):
+        if isinstance(opt_model, IPEXModel):
             opt_model.save(output_dir)
             return
         self.model.config.architectures = [self.model.__class__.__name__]
