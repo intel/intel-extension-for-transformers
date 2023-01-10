@@ -1,0 +1,86 @@
+{
+    "bert_large_squad_ipex": {
+      "working_dir": "deployment/ipex/squad/bert_large",
+      "data_dir": "/tf_dataset2/models/deep-engine/bert_large",
+      "hf_model_name": "bert-large-uncased-whole-word-masking-finetuned-squad",
+      "prepare": {
+        "cmd": "bash prepare_model.sh",
+        "params": {
+           "input_model": "bert-large-uncased-whole-word-masking-finetuned-squad",
+           "task_name": "squad",
+           "dataset_name": "squad",
+           "precision": "int8/fp32",
+           "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/bert_large_squad_ipex",
+           "output_dir": "model_and_tokenizer"
+        }
+      },
+      "benchmark": {
+        "cmd": "python run_executor.py",
+        "params": {
+          "batch_size": 8,
+          "seq_len": 128,
+          "warm_up": 8,
+          "iteration": 100,
+          "input_model": "model_and_tokenizer",
+          "mode": "accuracy/throughput"       
+        }
+      },
+      "launcher":{}
+    },
+    "distilbert_base_squad_ipex": {
+      "working_dir": "deployment/ipex/squad/distillbert_base_uncased",
+      "data_dir": "/tf_dataset2/models/deep-engine/bert_large",
+      "hf_model_name": "distilbert-base-uncased-distilled-squad",
+      "prepare": {
+        "cmd": "bash prepare_model.sh",
+        "params": {
+           "input_model": "distilbert-base-uncased-distilled-squad",
+           "task_name": "squad",
+           "dataset_name": "squad",
+           "precision": "int8/fp32",
+           "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/distil_base_squad_ipex",
+           "output_dir": "model_and_tokenizer"
+        }
+      },
+      "benchmark": {
+        "cmd": "python run_executor.py",
+        "params": {
+          "batch_size": 8,
+          "seq_len": 128,
+          "warm_up": 8,
+          "iteration": 100,
+          "input_model": "model_and_tokenizer",
+          "mode": "accuracy/throughput"        
+        }
+      },
+      "launcher":{}
+    },
+    "distilbert_base_squad_sparse_ipex": {
+      "working_dir": "deployment/ipex/squad/distillbert_base_uncased_sparse",
+      "data_dir": "/tf_dataset2/models/deep-engine/bert_large",
+      "hf_model_name": "distilbert-base-uncased-distilled-squad",
+      "prepare": {
+        "cmd": "bash prepare_model.sh",
+        "params": {
+           "input_model": "Intel/distilbert-base-uncased-squadv1.1-sparse-80-1X4-block",
+           "task_name": "squad",
+           "dataset_name": "squad",
+           "precision": "int8/fp32",
+           "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/distilbert_ipex_sparse",
+           "output_dir": "model_and_tokenizer"
+        }
+      },
+      "benchmark": {
+        "cmd": "python run_executor.py",
+        "params": {
+          "batch_size": 8,
+          "seq_len": 128,
+          "warm_up": 8,
+          "iteration": 100,
+          "input_model": "model_and_tokenizer",
+          "mode": "accuracy/throughput"   
+        }
+      },
+      "launcher":{}
+    }
+}
