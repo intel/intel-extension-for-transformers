@@ -86,6 +86,7 @@ from .dynamic.evolution import (
 from torch.nn import KLDivLoss
 import torch.nn.functional as F
 
+# pylint: disable=E0611
 if version.parse(nc_version).release < version.parse("2.0").release:
     from neural_compressor.model.torch_model import PyTorchIpexModel as IPEXModel
 else:
@@ -2085,9 +2086,9 @@ class BaseTrainer():
                 node_name = new_name_mapping[tmp_name]
                 int8_model_dict[node_name].update(value_dict)
 
-        from neural_compressor.adaptor.onnxrt import ONNXRTAdaptor
+        from neural_compressor.adaptor.onnxrt import ONNXRUNTIMEAdaptor
         # pylint: disable=E1120
-        inc_model = ONNXRTAdaptor._replace_gemm_with_matmul(model)
+        inc_model = ONNXRUNTIMEAdaptor._replace_gemm_with_matmul(model)
         model = inc_model.model
         onnx.save(model, fp32_path)
 

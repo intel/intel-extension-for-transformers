@@ -159,7 +159,7 @@
   "bert_large_squad": {
     "working_dir": "deployment/neural_engine/squad/bert_large",
     "data_dir": "/tf_dataset2/models/deep-engine/bert_large",
-    "hf_model_name": "bhadresh-savani/distilbert-base-uncased-emotion",
+    "hf_model_name": "bert-large-uncased-whole-word-masking-finetuned-squad",
     "prepare": {
       "cmd": "bash prepare_model.sh",
       "params": {

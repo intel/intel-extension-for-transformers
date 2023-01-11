@@ -108,7 +108,7 @@ python setup.py install
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
-## Getting Starteds
+## Getting Started
 ### Quantization
 ```python
 from intel_extension_for_transformers.optimization import QuantizationConfig, metrics, objectives
