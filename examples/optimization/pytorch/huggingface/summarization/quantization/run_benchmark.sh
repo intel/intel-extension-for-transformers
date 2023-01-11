@@ -70,7 +70,9 @@ function run_benchmark {
     elif [ "${topology}" == "t5_base_cnn_dynamic" ]; then
         DATASET_NAME="cnn_dailymail"
         model_name_or_path="flax-community/t5-base-cnn-dm"
-        extra_cmd=`--dataset_config "3.0.0" --source_prefix "summarize: "`
+    elif [ "${topology}" == "t5_large_cnn_dynamic" ]; then
+        DATASET_NAME="cnn_dailymail"
+        model_name_or_path="sysresearch101/t5-large-finetuned-xsum-cnn"
     else
         echo "unsupport topology: ${topology}"
         exit 1
