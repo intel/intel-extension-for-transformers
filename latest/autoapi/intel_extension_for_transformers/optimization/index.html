@@ -244,6 +244,12 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.OptimizedModel" title="intel_extension_for_transformers.optimization.OptimizedModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OptimizedModel</span></code></a></p></td>
 <td><p>Provide the from_pretrained function.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer" title="intel_extension_for_transformers.optimization.NoTrainerOptimizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NoTrainerOptimizer</span></code></a></p></td>
+<td><p>Optimizer without using Trainer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.Orchestrate_optimizer" title="intel_extension_for_transformers.optimization.Orchestrate_optimizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Orchestrate_optimizer</span></code></a></p></td>
+<td><p>Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.TFOptimization" title="intel_extension_for_transformers.optimization.TFOptimization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TFOptimization</span></code></a></p></td>
 <td><p>TFOptimization is the entry class for Tensorflow to use the optimization techniques in neural compressor.</p></td>
 </tr>
@@ -697,6 +703,90 @@ identifier allowed by git.</p></li>
 <dd class="field-odd"><p>q_model</p>
 </dd>
 </dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">NoTrainerOptimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'saved_results'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optimizer without using Trainer.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.eval_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">eval_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.eval_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the evaluation function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.train_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.train_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the train function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.calib_func">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calib_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.calib_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the calib function.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.provider">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">provider</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.provider" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the provider.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.calib_dataloader">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calib_dataloader</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.calib_dataloader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the calibration dataloader.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.init_quantizer">
+<span class="sig-name descname"><span class="pre">init_quantizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quant_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.init_quantizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init a Quantization object with config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.quantize">
+<span class="sig-name descname"><span class="pre">quantize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quant_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#intel_extension_for_transformers.optimization.QuantizationConfig" title="intel_extension_for_transformers.optimization.QuantizationConfig"><span class="pre">intel_extension_for_transformers.optimization.QuantizationConfig</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calib_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calib_dataloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.quantize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare for invoking the _inc_quantize function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.init_pruner">
+<span class="sig-name descname"><span class="pre">init_pruner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pruning_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.init_pruner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init a Pruning object with config.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.prune">
+<span class="sig-name descname"><span class="pre">prune</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pruning_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.prune" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do the pruning.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.init_distiller">
+<span class="sig-name descname"><span class="pre">init_distiller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distillation_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">teacher_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.init_distiller" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init a Distillation object with config and the teacher model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.NoTrainerOptimizer.distill">
+<span class="sig-name descname"><span class="pre">distill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distillation_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">teacher_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.NoTrainerOptimizer.distill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do the distillation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.Orchestrate_optimizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.</span></span><span class="sig-name descname"><span class="pre">Orchestrate_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">neural_compressor.experimental.Component</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.Orchestrate_optimizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.Orchestrate_optimizer.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.Orchestrate_optimizer.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the scheduler.</p>
 </dd></dl>
 
 </dd></dl>

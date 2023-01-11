@@ -53,6 +53,8 @@ Classes
    intel_extension_for_transformers.optimization.DistillationCriterionMode
    intel_extension_for_transformers.optimization.AutoDistillation
    intel_extension_for_transformers.optimization.OptimizedModel
+   intel_extension_for_transformers.optimization.NoTrainerOptimizer
+   intel_extension_for_transformers.optimization.Orchestrate_optimizer
    intel_extension_for_transformers.optimization.TFOptimization
    intel_extension_for_transformers.optimization.PrunerConfig
    intel_extension_for_transformers.optimization.PruningMode
@@ -394,6 +396,71 @@ Classes
 
       :returns: Quantized model.
       :rtype: q_model
+
+
+
+.. py:class:: NoTrainerOptimizer(model, output_dir: Optional[str] = 'saved_results')
+
+   Optimizer without using Trainer.
+
+   .. py:property:: eval_func
+
+      Get the evaluation function.
+
+   .. py:property:: train_func
+
+      Get the train function.
+
+   .. py:property:: calib_func
+
+      Get the calib function.
+
+   .. py:property:: provider
+
+      Get the provider.
+
+   .. py:property:: calib_dataloader
+
+      Get the calibration dataloader.
+
+   .. py:method:: init_quantizer(quant_config, provider: str = Provider.INC.value)
+
+      Init a Quantization object with config.
+
+
+   .. py:method:: quantize(quant_config: intel_extension_for_transformers.optimization.QuantizationConfig = None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, calib_func: Optional[Callable] = None, calib_dataloader=None)
+
+      Prepare for invoking the _inc_quantize function.
+
+
+   .. py:method:: init_pruner(pruning_config=None, provider: str = Provider.INC.value)
+
+      Init a Pruning object with config.
+
+
+   .. py:method:: prune(pruning_config=None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      Do the pruning.
+
+
+   .. py:method:: init_distiller(distillation_config, teacher_model, provider: str = Provider.INC.value)
+
+      Init a Distillation object with config and the teacher model.
+
+
+   .. py:method:: distill(distillation_config, teacher_model, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      Do the distillation.
+
+
+
+.. py:class:: Orchestrate_optimizer(model, components: Optional[List[neural_compressor.experimental.Component]] = [], eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+   Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation.
+
+   .. py:method:: fit()
+
+      Run the scheduler.
 
 
 

@@ -107,11 +107,8 @@
 <li class="toctree-l4"><a class="reference internal" href="#quantization">Quantization</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#pruning">Pruning</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#distillation">Distillation</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#data-augmentation">Data Augmentation</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#neural-engine">Neural Engine</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#quantized-length-adaptive-transformer">Quantized Length Adaptive Transformer</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#transformers-accelerated-neural-engine">Transformers-accelerated Neural Engine</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#transformers-accelerated-libraries">Transformers-accelerated Libraries</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#system-requirements">System Requirements</a><ul>
@@ -340,7 +337,7 @@ python<span class="w"> </span>setup.py<span class="w"> </span>install
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading">¶</a></h2>
 <section id="quantization">
 <h3>Quantization<a class="headerlink" href="#quantization" title="Permalink to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">objectives</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
 
 <span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
@@ -389,33 +386,6 @@ python<span class="w"> </span>setup.py<span class="w"> </span>install
 </div>
 <p>Please refer to <a class="reference external" href="distillation.html">distillation document</a> for more details.</p>
 </section>
-<section id="data-augmentation">
-<h3>Data Augmentation<a class="headerlink" href="#data-augmentation" title="Permalink to this heading">¶</a></h3>
-<p>Data augmentation provides the facilities to generate synthesized NLP dataset for further model optimization. The data augmentation supports text generation on popular fine-tuned models like GPT, GPT2, and other text synthesis approaches from <a class="reference external" href="https://github.com/makcedward/nlpaug">nlpaug</a>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.preprocessing.data_augmentation</span> <span class="kn">import</span> <span class="n">DataAugmentation</span>
-<span class="n">aug</span> <span class="o">=</span> <span class="n">DataAugmentation</span><span class="p">(</span><span class="n">augmenter_type</span><span class="o">=</span><span class="s2">&quot;TextGenerationAug&quot;</span><span class="p">)</span>
-<span class="n">aug</span><span class="o">.</span><span class="n">input_dataset</span> <span class="o">=</span> <span class="s2">&quot;original_dataset.csv&quot;</span> <span class="c1"># example: https://huggingface.co/datasets/glue/viewer/sst2/train</span>
-<span class="n">aug</span><span class="o">.</span><span class="n">column_names</span> <span class="o">=</span> <span class="s2">&quot;sentence&quot;</span>
-<span class="n">aug</span><span class="o">.</span><span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">result_path</span><span class="p">,</span> <span class="s2">&quot;test2.cvs&quot;</span><span class="p">)</span>
-<span class="n">aug</span><span class="o">.</span><span class="n">augmenter_arguments</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;model_name_or_path&#39;</span><span class="p">:</span> <span class="s1">&#39;gpt2-medium&#39;</span><span class="p">}</span>
-<span class="n">aug</span><span class="o">.</span><span class="n">data_augment</span><span class="p">()</span>
-<span class="n">raw_datasets</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="n">aug</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Please refer to <a class="reference external" href="data_augmentation.html">data augmentation document</a> for more details.</p>
-</section>
-<section id="neural-engine">
-<h3>Neural Engine<a class="headerlink" href="#neural-engine" title="Permalink to this heading">¶</a></h3>
-<p>Neural Engine is one of reference deployments that Intel Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.backends.neural_engine.compile</span> <span class="kn">import</span> <span class="nb">compile</span>
-<span class="c1"># /path/to/your/model is a TensorFlow pb model or ONNX model</span>
-<span class="n">model</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="s1">&#39;/path/to/your/model&#39;</span><span class="p">)</span>
-<span class="n">inputs</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># [input_ids, segment_ids, input_mask]</span>
-<span class="n">model</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Please refer to <a class="reference external" href="examples/deployment/">Neural Engine</a> for more details.</p>
-</section>
 <section id="quantized-length-adaptive-transformer">
 <h3>Quantized Length Adaptive Transformer<a class="headerlink" href="#quantized-length-adaptive-transformer" title="Permalink to this heading">¶</a></h3>
 <p>Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.</p>
@@ -451,20 +421,6 @@ python<span class="w"> </span>setup.py<span class="w"> </span>install
 </pre></div>
 </div>
 <p>Please refer to <a class="reference external" href="examples/deployment/neural_engine/sparse/distilbert_base_uncased/">example</a> in <a class="reference external" href="examples/deployment/">Transformers-accelerated Neural Engine</a> and paper <a class="reference external" href="https://arxiv.org/abs/2211.07715">Fast Distilbert on CPUs</a> for more details.</p>
-</section>
-<section id="transformers-accelerated-libraries">
-<h3>Transformers-accelerated Libraries<a class="headerlink" href="#transformers-accelerated-libraries" title="Permalink to this heading">¶</a></h3>
-<p>Transformers-accelerated Libraries is a high-performance operator computing library implemented by assembly. Transformers-accelerated Libraries contains a JIT domain, a kernel domain, and a scheduling proxy framework.</p>
-<div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;interface.hpp&quot;</span>
-<span class="w">  </span><span class="p">...</span>
-<span class="w">  </span><span class="n">operator_desc</span><span class="w"> </span><span class="n">op_desc</span><span class="p">(</span><span class="n">ker_kind</span><span class="p">,</span><span class="w"> </span><span class="n">ker_prop</span><span class="p">,</span><span class="w"> </span><span class="n">eng_kind</span><span class="p">,</span><span class="w"> </span><span class="n">ts_descs</span><span class="p">,</span><span class="w"> </span><span class="n">op_attrs</span><span class="p">);</span>
-<span class="w">  </span><span class="n">sparse_matmul_desc</span><span class="w"> </span><span class="nf">spmm_desc</span><span class="p">(</span><span class="n">op_desc</span><span class="p">);</span>
-<span class="w">  </span><span class="n">sparse_matmul</span><span class="w"> </span><span class="nf">spmm_kern</span><span class="p">(</span><span class="n">spmm_desc</span><span class="p">);</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*&gt;</span><span class="w"> </span><span class="n">rt_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">data0</span><span class="p">,</span><span class="w"> </span><span class="n">data1</span><span class="p">,</span><span class="w"> </span><span class="n">data2</span><span class="p">,</span><span class="w"> </span><span class="n">data3</span><span class="p">,</span><span class="w"> </span><span class="n">data4</span><span class="p">};</span>
-<span class="w">  </span><span class="n">spmm_kern</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="n">rt_data</span><span class="p">);</span>
-</pre></div>
-</div>
-<p>Please refer to <a class="reference external" href="intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Transformers-accelerated Libraries</a> for more details.</p>
 </section>
 </section>
 <section id="system-requirements">
