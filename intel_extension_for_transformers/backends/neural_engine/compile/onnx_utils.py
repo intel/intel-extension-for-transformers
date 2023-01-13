@@ -17,6 +17,7 @@
 
 """The neural engine onnx utils."""
 
+import sys
 import numpy as np
 import re
 from collections import namedtuple, OrderedDict
@@ -185,6 +186,53 @@ def bias_to_int32(bias_node, a_scale, b_scale):
 
     return int32_bias
 
+def _bf16_tensor_to_array(tensor, base_dir: str = "") -> np.ndarray:
+    """Converts a tensor def object to a numpy array.
+
+    Inputs:
+        tensor: a TensorProto object.
+        base_dir: if external tensor exists, base_dir can help to find the path to it
+    Returns:
+        arr: the converted array.
+    """
+    onnx = util.LazyImport('onnx')
+    from onnx import TensorProto
+    from onnx.external_data_helper import load_external_data_for_tensor, uses_external_data
+    from onnx.numpy_helper import convert_endian
+
+    if tensor.HasField("segment"):
+        raise ValueError("Currently not supporting loading segments.")
+    if tensor.data_type == TensorProto.UNDEFINED:
+        raise TypeError("The element type in the input tensor is not defined.")
+
+    tensor_dtype = tensor.data_type
+    np_dtype = np.dtype('float16')
+    storage_np_dtype = np.dtype('uint16')
+    storage_field = 'int32_data'
+    dims = tensor.dims
+
+    # Load raw data from external tensor if it exists
+    if uses_external_data(tensor):
+        load_external_data_for_tensor(tensor, base_dir)
+
+    if tensor.HasField("raw_data"):
+        # Raw_bytes support: using frombuffer.
+        if sys.byteorder == 'big':
+            # Convert endian from little to big
+            convert_endian(tensor)
+
+        return np.frombuffer(
+            tensor.raw_data,
+            dtype=np_dtype).reshape(dims)
+    else:
+        # float16/bfloat16 is stored as int32 (uint16 type); Need view to get the original value
+        return (
+            np.asarray(
+                tensor.int32_data,
+                dtype=np.uint16)
+            .reshape(dims)
+            .view(np.float16))
+
 
 def onnx_extract_operator(node, model, nodes_dict):
     """Decorate the operator in onnx.
@@ -200,8 +248,9 @@ def onnx_extract_operator(node, model, nodes_dict):
         input_tensors: Tensor list, contains the node input tensors info
         output_tensors: Tensor list, contains the node output tensor info
     """
+    onnx = util.LazyImport('onnx')
+    from onnx import TensorProto
     from onnx.numpy_helper import to_array
-
     op_type = node.op_type
     input_tensors = []
     output_tensors = []
@@ -224,7 +273,10 @@ def onnx_extract_operator(node, model, nodes_dict):
         
         data = None
         if pre_node in model.graph.initializer:
-            data = to_array(pre_node)
+            if pre_node.data_type == TensorProto.BFLOAT16:
+                data = _bf16_tensor_to_array(pre_node)
+            else:
+                data = to_array(pre_node)
         else:
             if (pre_node not in model.graph.input) and (pre_node.op_type == 'Constant'):
                 data = to_array(pre_node.attribute[0].t)

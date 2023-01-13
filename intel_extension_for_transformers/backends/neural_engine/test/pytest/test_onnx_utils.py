@@ -18,6 +18,7 @@
 import unittest
 import intel_extension_for_transformers.backends.neural_engine.compile as compile
 import numpy as np
+import onnx
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS, Operator
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
 
@@ -85,7 +86,22 @@ class TestOnnxUtils(unittest.TestCase):
                                     input_tensors=fake_input_tensors)
         out = compile.onnx_utils.bias_to_int32(fake_bias_node, 0.3, 0.4)
         self.assertEqual(None, out)
-        
+
+    def test_bf16_tensor_to_array(self):
+        numpy_array = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float16)
+        print(f"Original Numpy array:\n{numpy_array}\n")
+        # Convert the Numpy array to a TensorProto    
+        tensor = onnx.helper.make_tensor('bf16_tensor', onnx.TensorProto.BFLOAT16, [2, 3], [1.0,2.0,3.0,4.0,5.0,6.0], False)
+        print(f"TensorProto:\n{tensor}")
+        out = compile.onnx_utils._bf16_tensor_to_array(tensor)
+        print(f"Output Numpy array:\n{out}\n")
+        self.assertEqual(numpy_array.all(), out.all())
+
+        tensor_2 = onnx.helper.make_tensor('bf16_tensor', onnx.TensorProto.BFLOAT16, [2, 3], numpy_array.tobytes(), True)
+        out_2 = compile.onnx_utils._bf16_tensor_to_array(tensor_2)
+        print(f"Output_2 Numpy array:\n{out_2}\n")
+
+        self.assertEqual(numpy_array.all(), out_2.all())
 
 
 if __name__ == "__main__":
