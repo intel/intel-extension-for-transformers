@@ -33,21 +33,27 @@ class transpose_matmul_bench : public kernel_bench {
   transpose_matmul_bench() {}
   virtual ~transpose_matmul_bench() {
     if (smb == nullptr) {  // for a finally derived class
-      for (auto op_args : {args.first, args.second})
-        for (auto rt_data : op_args.rt_data)
-          if (rt_data != nullptr) {
-            aligned_allocator_t<char>::deallocate(const_cast<void*>(rt_data));
+      for (auto rt_data : {args.first.rt_data, args.second.rt_data}) {
+        for (size_t idx = 0; idx < rt_data.size(); idx++) {
+          if (rt_data[idx] != nullptr) {
+            if (idx <= ssd::SRC2) {
+              aligned_allocator_t<uint8_t, 64>::deallocate(const_cast<void*>(rt_data[idx]));
+            } else {
+              delete reinterpret_cast<const float*>(rt_data[idx]);
+            }
           }
+        }
+      }
     }
   }
 
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return smb->calc_flop(); };
   std::vector<int> get_refresh_data_idx() const override {
-    return std::vector<int>{ssd::SRC0, ssd::SRC1, ssd::DST0, ssd::SRC2};
+    return smb->get_refresh_data_idx();
   }
   // Just like that in gtest file
-  void get_true_data() override { smb->get_true_data(); }
+  void get_true_data() final;
   // Just like that in gtest file
   bool check_result() override { return smb->check_result(); }
   // Just like that in gtest file

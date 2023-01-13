@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "transpose_matmul/matmul_avx512f_p2031_p2013.hpp"
+#include "transpose_matmul/matmul_vnni_p2031_p2013.hpp"
 
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
@@ -23,7 +23,7 @@ namespace jd {
 using dt = jd::data_type;
 using ft = jd::format_type;
 
-bool matmul_avx512f_p2031_p2013_bench::check_result() {
+bool matmul_vnni_p2031_p2013_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
 
@@ -38,16 +38,17 @@ bool matmul_avx512f_p2031_p2013_bench::check_result() {
   } else if (dst_type == dt::s32) {
     return compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
   } else if (dst_type == dt::u8) {
-    return compare_data<uint8_t>(buf1, size1, buf2, size2, 5e-3);
+    return compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
   } else if (dst_type == dt::s8) {
-    return compare_data<int8_t>(buf1, size1, buf2, size2, 5e-3);
+    return compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
   }
   return false;
 }
 
-std::pair<const void*, const void*> make_data_obj_matmul_avx512f_p2031_p2013(  //
+std::pair<const void*, const void*> make_data_obj_matmul_vnni_p2031_p2013(  //
     const std::vector<int64_t>& a_shape, const dt& a_dt, bool is_clear = false,
     const std::vector<float>& ranges = {-10, 10}) {
+  if (a_shape.size() == 0) return {nullptr, nullptr};
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<dim_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
@@ -74,36 +75,31 @@ std::pair<const void*, const void*> make_data_obj_matmul_avx512f_p2031_p2013(  /
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
-void matmul_avx512f_p2031_p2013_bench::gen_case() {
+void matmul_vnni_p2031_p2013_bench::gen_case() {
   // Step 1: Construct operator config
-  tensor_desc src0_desc = {{bs1, K, bs0, M}, dt::fp32, ft::ab};
-  tensor_desc src1_desc = {{bs1, K, bs0, N}, dt::fp32, ft::ab};
-  tensor_desc dst_desc = {{bs0, bs1, M, N}, dt::fp32, ft::ab};
-  tensor_desc src2_desc = {{bs0, bs1, M, N}, dt::fp32, ft::ab};
-  if (!has_binary_add) src2_desc = {{}, dt::fp32, ft::ab};
-  ts_descs = {src0_desc, src1_desc, dst_desc, src2_desc};
+  const data_type dst_type = post_ops.size() != 0 ? post_ops.back().dt : data_type::fp32;
+
+  const tensor_desc src0_desc{{bs1, K, bs0, M}, dt::s8, ft::ab};
+  const tensor_desc src1_desc{{bs1, K, bs0, N}, dt::s8, ft::ab};
+  const tensor_desc dst_desc{{bs0, bs1, M, N}, dst_type, ft::ab};
+  const tensor_desc src2_desc = has_binary_add ? tensor_desc{{bs0, bs1, M, N}, dt::fp32, ft::ab} : tensor_desc();
+  const std::vector<tensor_desc> ts_descs{src0_desc, src1_desc, dst_desc, src2_desc};
 
   // Step 2: Construct runtime data
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
-    if (index == ssd::SRC2 && !has_binary_add) {
-      // insert nullptr as placeholder
-      rt_data1.emplace_back(nullptr);
-      rt_data2.emplace_back(nullptr);
-      continue;
-    }
     auto& tsd = ts_descs[index];
-    bool is_clear = (index == ssd::DST0);
-    auto ranges = std::vector<float>{-10, 10};
-    auto data_pair = make_data_obj_matmul_avx512f_p2031_p2013(tsd.shape(), tsd.dtype(), is_clear, ranges);
+    const bool is_clear = (index == ssd::DST0);
+    const auto ranges = std::vector<float>{-10, 10};
+    const auto data_pair = make_data_obj_matmul_vnni_p2031_p2013(tsd.shape(), tsd.dtype(), is_clear, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
 
   operator_desc op_desc(kernel_kind::transpose_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                        op_attrs);
+                        op_attrs, post_ops);
 
   // Step 3: op_args_t testcase pair
   op_args_t op_args = {op_desc, rt_data1};
@@ -112,22 +108,30 @@ void matmul_avx512f_p2031_p2013_bench::gen_case() {
   args = {op_args, op_args_copy};
 }
 
-bench_res_t matmul_avx512f_p2031_p2013_bench::set_config(int argc, char** argv) {
-  LOG(INFO) << "matmul_avx512f_p2031_p2013\n";
-  if (argc < MATMUL_AVX512F_P2031_P2013_ARG_NUM) {
+bench_res_t matmul_vnni_p2031_p2013_bench::set_config(int argc, char** argv) {
+  LOG(INFO) << "matmul_vnni_p2031_p2013\n";
+  if (argc < MATMUL_VNNI_P2031_P2013_ARG_NUM) {
     LOG(ERROR) << "Not enough arguments passed";
     return {bench_status::wrong_input};
   }
-  M = str_to_num<int64_t>(argv[0]);                                      // M
-  K = str_to_num<int64_t>(argv[1]);                                      // K
-  N = str_to_num<int64_t>(argv[2]);                                      // N
-  bs0 = str_to_num<int64_t>(argv[3]);                                    // bs0
-  bs1 = str_to_num<int64_t>(argv[4]);                                    // bs1
-  has_binary_add = strcmp(argv[5], "1") == 0;                            // has_binary_add
-  op_attrs["alpha"] = argc > 6 ? argv[6] : "1";                          // alpha
-  op_attrs["beta"] = argc > 7 ? argv[7] : (has_binary_add ? "1" : "0");  // beta
-  op_attrs["tile_m"] = argc > 8 ? argv[8] : "";                          // tile_m
-  op_attrs["tile_n"] = argc > 9 ? argv[9] : "";                          // tile_n
+  M = str_to_num<int64_t>(argv[0]);                        // M
+  K = str_to_num<int64_t>(argv[1]);                        // K
+  N = str_to_num<int64_t>(argv[2]);                        // N
+  bs0 = str_to_num<int64_t>(argv[3]);                      // bs0
+  bs1 = str_to_num<int64_t>(argv[4]);                      // bs1
+  has_binary_add = argc > 5 && strcmp(argv[5], "1") == 0;  // has_binary_add
+  op_attrs["src0_scale"] = argc > 6 ? argv[6] : "1";       // src0_scale
+  op_attrs["src1_scale"] = argc > 7 ? argv[7] : "1";       // src1_scale
+  op_attrs["out_scale"] = argc > 8 ? argv[8] : "1";        // out_scale
+  if (argc > 9 && strlen(argv[9]) != 0) {                  // post_quant
+    if (strcmp(argv[9], "s8quant") == 0) {
+      post_ops.emplace_back(dt::s8, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.0001);
+    } else if (strcmp(argv[9], "u8quant") == 0) {
+      post_ops.emplace_back(dt::u8, postop_type::eltwise, postop_alg::quantize, 121, 0, 0.0001);
+    } else {
+      SPARSE_LOG(ERROR) << "Unexpected postop!";
+    }
+  }
 
   return {bench_status::success};
 }

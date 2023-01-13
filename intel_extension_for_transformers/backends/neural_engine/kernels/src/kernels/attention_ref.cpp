@@ -12,17 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "kernels/attention.hpp"
+#include "kernels/attention_ref.hpp"
 #include "kernels/attention_types.hpp"
 #include "interface.hpp"
 
 #include "kernel_desc.hpp"
 #include "kernel.hpp"
-#include "kernels/spmm_vnni.hpp"
-#include "kernels/softmax.hpp"
+#include "kernels/spmm_ref.hpp"
 #include "kernels/softmax_ref.hpp"
-#include "kernels/matmul_vnni_noperm_p2031_p1302.hpp"
-#include "kernels/matmul_vnni_p2031_p2013.hpp"
+#include "kernels/matmul_ref.hpp"
 
 #define KERNEL_INIT_CHECK(f)                                         \
   if (!(f)) {                                                        \
@@ -64,17 +62,17 @@ enum SubKernel {
 
 namespace jd {
 template <typename T_kd>
-inline bool attention_kd_t::add_kernel_desc(const operator_desc& op_desc, const char* name) {
+inline bool attention_ref_kd_t::add_kernel_desc(const operator_desc& op_desc, const char* name) {
   std::shared_ptr<const kernel_desc_t> kd;
   if (!jd::kernel_desc_t::create<T_kd>(kd, op_desc)) {
-    SPARSE_LOG(ERROR) << "Attention failed to create sub-kernel: " << name;
+    SPARSE_LOG(WARNING) << "Attention failed to create sub-kernel: " << name;
     return false;
   }
   kernel_descs_.push_back(kd);
   return true;
 }
 
-bool attention_kd_t::init() {
+bool attention_ref_kd_t::init() {
   if (!isa_available(avx512_core)) return false;  // deatiled check are left to sub-kernels
   // part 0
   const auto& src_desc = op_desc_.tensor_descs()[attention_io::MERGE_SRC];
@@ -154,7 +152,6 @@ bool attention_kd_t::init() {
 
   auto qk_sparse_ptr = new bsr_data_t<int8_t>(
       spns::reorder_to_bsr_group<int8_t, 4>(ip_chanel * 2, ip_chanel, 4, 1, reinterpret_cast<int8_t*>(qk_weight_addr)));
-  aligned_allocator_t<int8_t>::deallocate(qk_weight_addr);
 
   // bias merge
   fused_bias_addr_ = aligned_allocator_t<char>::allocate(bias_bytes * 3);
@@ -177,10 +174,11 @@ bool attention_kd_t::init() {
   operator_desc spmm_qk_desc =
       operator_desc(kernel_kind::sparse_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
                     {qk_weight_desc, src_desc, qk_bias_desc, qk_dst_desc_s8, qk_scales_desc},
-                    {{"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(qk_sparse_ptr))},
+                    {{"weight_ptr", std::to_string(reinterpret_cast<uint64_t>(qk_weight_addr))},
+                     {"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(qk_sparse_ptr))},
                      {"bias_addr", std::to_string(reinterpret_cast<uint64_t>(fused_bias_addr_))},
                      {"scales_addr", std::to_string(reinterpret_cast<uint64_t>(fused_scales_addr_))}});
-  if (!add_kernel_desc<spmm_vnni_kd_t>(spmm_qk_desc, "spmm_qk")) return false;
+  if (!add_kernel_desc<spmm_ref_kd_t>(spmm_qk_desc, "spmm_qk")) return false;
 
   // sub-kernel 1 transmatmul for Q x K & eltwise
   const tensor_desc q_out_desc({head_num, head_size, batch_size, seq_len}, data_type::s8, format_type::ab);
@@ -192,12 +190,9 @@ bool attention_kd_t::init() {
 
   const operator_desc matmul_qk_desc(kernel_kind::transpose_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
                                      {q_out_desc, k_out_desc, qk_out_desc, q_k_src2_desc},
-                                     {{"out_scale", op_attrs["out_scale"]},
-                                      {"src0_scale", op_attrs["src0_scale"]},
-                                      {"src1_scale", op_attrs["src1_scale"]}},
-                                     {quant_s8_attr});
+                                     {{"alpha", op_attrs["out_scale"]}}, {quant_s8_attr});
 
-  if (!add_kernel_desc<matmul_vnni_p2031_p2013_kd_t>(matmul_qk_desc, "matmul_qk")) return false;
+  if (!add_kernel_desc<matmul_ref_kd_t>(matmul_qk_desc, "matmul_qk")) return false;
 
   // sub-kernel 2: softmax(s8->BF16(LUT)->u8)
   postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, softmax_in_zero_point, 0,
@@ -209,9 +204,7 @@ bool attention_kd_t::init() {
       kernel_kind::softmax, op_desc_.kernel_prop(), op_desc_.engine_kind(), {qk_out_desc, softmax_output},
       {{"spec_type", "lut"}, {"vec_len", std::to_string(seq_len)}, {"postop_list", "attention_dequantize+quantize"}},
       {dequantize_s8_attr, quant_u8_attr});
-  if (!add_kernel_desc<softmax_kd_t>(softmax_desc, "softmax")) {
-    if (!add_kernel_desc<softmax_ref_kd_t>(softmax_desc, "softmax_ref")) return false;
-  }
+  if (!add_kernel_desc<softmax_ref_kd_t>(softmax_desc, "softmax")) return false;
 
   // sub-kernel 3: spmm for V
   auto v_sparse_ptr = new bsr_data_t<int8_t>(spns::reorder_to_bsr_group<int8_t, 4>(
@@ -220,10 +213,11 @@ bool attention_kd_t::init() {
   jd::operator_desc spmm_v_desc =
       jd::operator_desc(kernel_kind::sparse_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
                         {v_weight_desc, src_desc, v_bias_desc, v_out_desc, v_scales_desc},
-                        {{"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(v_sparse_ptr))},
+                        {{"weight_ptr", std::to_string(reinterpret_cast<uint64_t>(v_weight_addr))},
+                         {"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(v_sparse_ptr))},
                          {"bias_addr", std::to_string(reinterpret_cast<uint64_t>(v_bias_addr))},
                          {"scales_addr", std::to_string(reinterpret_cast<uint64_t>(v_scales_addr))}});
-  if (!add_kernel_desc<spmm_vnni_kd_t>(spmm_v_desc, "spmm_v")) return false;
+  if (!add_kernel_desc<spmm_ref_kd_t>(spmm_v_desc, "spmm_v")) return false;
 
   // sub-kernel 4: transpose matmul for QK x V
   tensor_desc src2_desc = tensor_desc({}, data_type::fp32, format_type::ab);  // binary postop not supported
@@ -233,14 +227,15 @@ bool attention_kd_t::init() {
   jd::operator_desc qk_v_desc =
       jd::operator_desc(kernel_kind::transpose_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
                         {softmax_output, v_out_desc, dst_desc, src2_desc, scale_desc, zp_desc}, {});
-  if (!add_kernel_desc<matmul_vnni_noperm_p2031_p1302_kd_t>(qk_v_desc, "qk_matmul_v")) return false;
+  if (!add_kernel_desc<matmul_ref_kd_t>(qk_v_desc, "qk_matmul_v")) return false;
   return true;
 }
 
-attention_k_t::~attention_k_t() {
+attention_ref_k_t::~attention_ref_k_t() {
   if (kernels_[SubKernel::QK_SPMM] != nullptr) {
     const auto& ker_attr = ker_opdesc(SubKernel::QK_SPMM).attrs();
     delete reinterpret_cast<bsr_data_t<int8_t>*>(str_to_num<intptr_t>(ker_attr.at("sparse_ptr")));
+    aligned_allocator_t<int8_t>::deallocate(reinterpret_cast<int8_t*>(str_to_num<intptr_t>(ker_attr.at("weight_ptr"))));
   }
   if (kernels_[SubKernel::V_SPMM] != nullptr) {
     const auto& ker_attr = ker_opdesc(SubKernel::V_SPMM).attrs();
@@ -251,36 +246,29 @@ attention_k_t::~attention_k_t() {
   }
 }
 
-bool attention_k_t::setup_kernel() {
+bool attention_ref_k_t::setup_kernel() {
   kernels_.resize(SubKernel::NUM);
   // QK
   const auto& qk_spmm_desc = derived_kd()->get_kernel_desc(SubKernel::QK_SPMM);
-  if (!create<spmm_vnni_k_t, spmm_vnni_kd_t>(kernels_[SubKernel::QK_SPMM], qk_spmm_desc)) return false;
+  if (!create<spmm_ref_k_t, spmm_ref_kd_t>(kernels_[SubKernel::QK_SPMM], qk_spmm_desc)) return false;
 
   // Q X K
   const auto& q_k_gemm_desc = derived_kd()->get_kernel_desc(SubKernel::Q_K_GEMM);
-  if (!create<matmul_vnni_p2031_p2013_k_t, matmul_vnni_p2031_p2013_kd_t>(kernels_[SubKernel::Q_K_GEMM], q_k_gemm_desc))
-    return false;
+  if (!create<matmul_ref_k_t, matmul_ref_kd_t>(kernels_[SubKernel::Q_K_GEMM], q_k_gemm_desc)) return false;
 
   // Softmax
   const auto& softmax_desc = derived_kd()->get_kernel_desc(SubKernel::SOFTMAX);
-  if (dynamic_cast<const softmax_kd_t*>(softmax_desc.get()) != nullptr) {
-    if (!create<softmax_k_t, softmax_kd_t>(kernels_[SubKernel::SOFTMAX], softmax_desc)) return false;
-  } else {
-    if (!create<softmax_ref_k_t, softmax_ref_kd_t>(kernels_[SubKernel::SOFTMAX], softmax_desc)) return false;
-  }
+  if (!create<softmax_ref_k_t, softmax_ref_kd_t>(kernels_[SubKernel::SOFTMAX], softmax_desc)) return false;
   // V
   const auto& v_spmm_desc = derived_kd()->get_kernel_desc(SubKernel::V_SPMM);
-  if (!create<spmm_vnni_k_t, spmm_vnni_kd_t>(kernels_[SubKernel::V_SPMM], v_spmm_desc)) return false;
+  if (!create<spmm_ref_k_t, spmm_ref_kd_t>(kernels_[SubKernel::V_SPMM], v_spmm_desc)) return false;
 
   // QK X V
   const auto& qk_v_matmul = derived_kd()->get_kernel_desc(SubKernel::QK_V_MATMUL);
-  if (!create<matmul_vnni_noperm_p2031_p1302_k_t, matmul_vnni_noperm_p2031_p1302_kd_t>(kernels_[SubKernel::QK_V_MATMUL],
-                                                                                       qk_v_matmul))
-    return false;
+  if (!create<matmul_ref_k_t, matmul_ref_kd_t>(kernels_[SubKernel::QK_V_MATMUL], qk_v_matmul)) return false;
   return true;
 }
-void attention_k_t::setup_memory() {
+void attention_ref_k_t::setup_memory() {
   mem_.resize(SubKernel::NUM);
   std::vector<size_t> offset;  // sizes in bytes for intermediate results
   const auto tensor_bytes = [](const jd::tensor_desc& d) { return d.size() * type2bytes[d.dtype()]; };
@@ -295,7 +283,8 @@ void attention_k_t::setup_memory() {
 
   // part0 QK merged inner product with spmm_vnni
   mem_[SubKernel::QK_SPMM].resize(ssd::SCALES + 1);
-  mem_[SubKernel::QK_SPMM][ssd::WEI] = nullptr;
+  mem_[SubKernel::QK_SPMM][ssd::WEI] =
+      reinterpret_cast<char*>(str_to_num<intptr_t>(ker_opdesc(SubKernel::QK_SPMM).attrs().at("weight_ptr")));
   mem_[SubKernel::QK_SPMM][ssd::BIAS] =
       reinterpret_cast<char*>(str_to_num<intptr_t>(ker_opdesc(SubKernel::QK_SPMM).attrs().at("bias_addr")));
   mem_[SubKernel::QK_SPMM][ssd::SCALES] =
@@ -316,7 +305,8 @@ void attention_k_t::setup_memory() {
 
   // part5 spmm for V
   mem_[SubKernel::V_SPMM].resize(ssd::SCALES + 1);
-  mem_[SubKernel::V_SPMM][ssd::WEI] = nullptr;
+  mem_[SubKernel::V_SPMM][ssd::WEI] =
+      reinterpret_cast<char*>(str_to_num<intptr_t>(ker_opdesc(SubKernel::V_SPMM).attrs().at("weight_ptr")));
   mem_[SubKernel::V_SPMM][ssd::BIAS] =
       reinterpret_cast<char*>(str_to_num<intptr_t>(ker_opdesc(SubKernel::V_SPMM).attrs().at("bias_addr")));
   mem_[SubKernel::V_SPMM][ssd::SCALES] =
@@ -332,7 +322,7 @@ void attention_k_t::setup_memory() {
   mem_[SubKernel::QK_V_MATMUL][ssd::SCALE0] = nullptr;
   mem_[SubKernel::QK_V_MATMUL][ssd::ZP0] = nullptr;
 }
-bool attention_k_t::init() {
+bool attention_ref_k_t::init() {
   // Create kernel
   if (!setup_kernel()) return false;
 
@@ -341,19 +331,15 @@ bool attention_k_t::init() {
   return true;
 }
 
-bool attention_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool attention_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   for (size_t i = 0; i < kernels_.size(); i++) {
-    // auto begin = std::chrono::high_resolution_clock::now();
     std::vector<const void*> data = set_input_output(i, rt_data);
     kernels_[i]->execute(data);
-    // auto end = std::chrono::high_resolution_clock::now();
-    // double exec_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
-    // std::cout << "kernel " << i << "-time : " << exec_time << std::endl;
   }
   return true;
 }
 
-std::vector<const void*> attention_k_t::set_input_output(int index, const std::vector<const void*>& rt_data) const {
+std::vector<const void*> attention_ref_k_t::set_input_output(int index, const std::vector<const void*>& rt_data) const {
   std::vector<const void*> data;
   data.assign(mem_[index].begin(), mem_[index].end());
   if (index == SubKernel::QK_SPMM || index == SubKernel::V_SPMM) {

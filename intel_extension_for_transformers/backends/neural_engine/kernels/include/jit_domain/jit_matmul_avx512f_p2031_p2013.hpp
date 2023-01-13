@@ -63,7 +63,6 @@ class jit_matmul_avx512f_p2031_p2013_t : public jit_generator {
   static constexpr int VREG_NUMS = 32;
   static constexpr int USED_VREGS = 1;
   static constexpr int UNROLL_K = 8;
-  static constexpr int BYTES_ZMM = 64;
 #ifdef _WIN32
   const Xbyak::Reg64& parambase = rcx;
   const Xbyak::Reg64& reg_src2 = rdi;

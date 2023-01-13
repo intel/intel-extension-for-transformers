@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_APPENTION_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_KERNELS_APPENTION_HPP_
+#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_APPENTION_REF_HPP_
+#define ENGINE_SPARSELIB_INCLUDE_KERNELS_APPENTION_REF_HPP_
 #include <vector>
 #include <memory>
 #include "operator_desc.hpp"
@@ -54,27 +54,20 @@ namespace jd {
  *                         |
  *                      Output
  */
-class attention_k_t;
+class attention_ref_k_t;
 
-template <typename dst_t>
-struct attention_data_t {
-  const uint8_t* ptr_act;
-  dst_t* ptr_dst;
-  // std::vector<dst_t*> ptr_dst;
-};
-
-class attention_kd_t : public kernel_desc_t {
+class attention_ref_kd_t : public kernel_desc_t {
  public:
-  explicit attention_kd_t(const jd::operator_desc& op_desc)
+  explicit attention_ref_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::attention), op_desc_(op_desc) {}
-  virtual ~attention_kd_t() {
+  virtual ~attention_ref_kd_t() {
     if (fused_bias_addr_ != nullptr) aligned_allocator_t<char>::deallocate(fused_bias_addr_);
     if (fused_scales_addr_ != nullptr) aligned_allocator_t<char>::deallocate(fused_scales_addr_);
   }
 
  public:
   bool init() override;
-  DECLARE_COMMON_PD_T(attention_k_t, attention_kd_t);
+  DECLARE_COMMON_PD_T(attention_ref_k_t, attention_ref_kd_t);
 
  public:
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
@@ -106,11 +99,11 @@ class attention_kd_t : public kernel_desc_t {
   char* fused_scales_addr_ = nullptr;
 };
 
-class attention_k_t : public kernel_t {
+class attention_ref_k_t : public kernel_t {
  public:
-  using kd_t = attention_kd_t;
-  explicit attention_k_t(const std::shared_ptr<const kernel_desc_t>& kd) : kernel_t(kd) {}
-  virtual ~attention_k_t();
+  using kd_t = attention_ref_kd_t;
+  explicit attention_ref_k_t(const std::shared_ptr<const kernel_desc_t>& kd) : kernel_t(kd) {}
+  virtual ~attention_ref_k_t();
 
  public:
   bool init() override;
@@ -133,4 +126,4 @@ class attention_k_t : public kernel_t {
 };
 
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_APPENTION_HPP_
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_APPENTION_REF_HPP_

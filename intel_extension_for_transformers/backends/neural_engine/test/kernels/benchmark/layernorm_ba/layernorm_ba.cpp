@@ -128,8 +128,8 @@ void layernorm_ba_bench::gen_case() {
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
   src = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num);
-  dst = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num, true);
-  src_ref = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num);
+  dst = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num, true);
+  src_ref = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num);
   dst_ref = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num, true);
   float* alpha = aligned_allocator_t<float>::allocate(row);
   float* beta = aligned_allocator_t<float>::allocate(row);

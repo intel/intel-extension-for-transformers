@@ -269,12 +269,6 @@ static auto case_func = []() {
   return ::testing::ValuesIn(cases);
 };
 
-std::string num_to_valid(std::string s) {
-  std::replace(s.begin(), s.end(), '.', 'D');  // replace all decimal sep
-  std::replace(s.begin(), s.end(), '-', 'M');  // replace all minus sign
-  return s;
-}
-
 std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   auto& descs = tpi.param.args.first.op_desc.tensor_descs();
   auto attrs = tpi.param.args.first.op_desc.attrs();
@@ -295,10 +289,10 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back(std::to_string(K));
   params.push_back(std::to_string(N));
   if (attrs["alpha"] != "" && str_to_num<float>(attrs["alpha"]) != 1.f)
-    params.push_back(std::string("alpha") + num_to_valid(attrs["alpha"]));
+    params.push_back(std::string("alpha") + num2id(attrs["alpha"]));
   if (has_binary_add) {
     if (attrs["beta"] == "") attrs["beta"] = "1";
-    params.push_back(std::string("beta") + num_to_valid(attrs["beta"]));
+    params.push_back(std::string("beta") + num2id(attrs["beta"]));
   }
   return join_str(params, "_");
 }

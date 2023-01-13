@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB ATTENTIOM_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-set(SRCS ${SRCS} ${ATTENTIOM_SRCS} PARENT_SCOPE)
+file(GLOB ATTENTION_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+set(SRCS ${SRCS} ${ATTENTION_SRCS} PARENT_SCOPE)
 

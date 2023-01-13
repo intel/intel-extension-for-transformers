@@ -91,7 +91,10 @@ bool spmm_ref_k_t::execute_s8_(const std::vector<const void*>& rt_data) const {
 
   // TODO(zhe1wang): add per channel support for post-op;
   auto postop_list = derived_kd()->get_operator_desc().apply_postops_list();
-
+  if ((dst_dt == dt::s8 || dst_dt == dt::u8) && (postop_list.size() == 0)) {
+    if (postop_list.size() == 0 || postop_list.back().op_alg != postop_alg::quantize)
+      postop_list.emplace_back(dst_dt, postop_type::eltwise, postop_alg::quantize, 0., 0., 1.);
+  }
 // Computing the kernel
 #pragma omp parallel for collapse(3)
   for (dim_t idx_mbs = 0; idx_mbs < num_BN; ++idx_mbs) {

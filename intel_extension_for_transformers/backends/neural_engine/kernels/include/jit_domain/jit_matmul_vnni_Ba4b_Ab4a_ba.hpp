@@ -57,7 +57,6 @@ class jit_matmul_vnni_Ba4b_Ab4a_ba_t : public jit_generator {
   const Xbyak::Zmm vreg_temp[2] = {zmm31, zmm30};
   static constexpr int VREG_NUMS = 32;
   static constexpr int USED_VREGS = 2;
-  static constexpr int BYTES_ZMM = 64;
   static constexpr int VNNI_ADJ = 4;                        // reduction dim of VPDPBUSD
   static constexpr int VNNI_GROUPS = BYTES_ZMM / VNNI_ADJ;  // spacial dim of VPDPBUSD
 #ifdef _WIN32

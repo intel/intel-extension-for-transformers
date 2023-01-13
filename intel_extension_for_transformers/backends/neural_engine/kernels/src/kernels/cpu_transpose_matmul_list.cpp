@@ -19,6 +19,7 @@
 #include "impl_list_item.hpp"
 #include "kernels/matmul_avx512f_p2031_p2013.hpp"
 #include "kernels/matmul_vnni_noperm_p2031_p1302.hpp"
+#include "kernels/matmul_vnni_p2031_p2013.hpp"
 #include "kernels/matmul_ref.hpp"
 #include "param_types.hpp"
 
@@ -40,6 +41,12 @@ static const std::map<map_key_t, std::vector<impl_list_item_t>> impl_list_map = 
      {CPU_INSTANCE(matmul_avx512f_p2031_p2013_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
     {{kernel_prop::forward_inference, dt::u8, dt::s8, dt::u8},
      {CPU_INSTANCE(matmul_vnni_noperm_p2031_p1302_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::s8, dt::s8, dt::fp32},
+     {CPU_INSTANCE(matmul_vnni_p2031_p2013_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::s8, dt::s8, dt::u8},
+     {CPU_INSTANCE(matmul_vnni_p2031_p2013_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::s8, dt::s8, dt::s8},
+     {CPU_INSTANCE(matmul_vnni_p2031_p2013_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
 };
 
 const std::vector<impl_list_item_t>* get_transpose_matmul_impl_list(const operator_desc& op_desc) {
@@ -50,6 +57,5 @@ const std::vector<impl_list_item_t>* get_transpose_matmul_impl_list(const operat
   map_key_t key{op_desc.kernel_prop(), src0_dtype, src1_dtype, dst_dtype};
   const auto impl_list_it = impl_list_map.find(key);
   return (impl_list_it != impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine::empty_list;
-  return {};
 }
 }  // namespace jd

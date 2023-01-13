@@ -36,10 +36,13 @@ source $script_dir/benchmark.sh --modes=acc,perf --op=eltwiseop --medium_n=$medi
     tee "$log_dir/eltwiseop.log"
 source $script_dir/benchmark.sh --modes=acc,perf --op=transpose_matmul --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_matmul_avx512f_p2031_p2013_input" |
-    tee "$log_dir/matmul_avx512f_p2031_p2013_input.log"
+    tee "$log_dir/matmul_avx512f_p2031_p2013.log"
+source $script_dir/benchmark.sh --modes=acc,perf --op=transpose_matmul --medium_n=$medium_n --it_per_core=300 \
+    --batch="$script_dir/inputs/ci_matmul_vnni_p2031_p2013_input" |
+    tee "$log_dir/matmul_vnni_p2031_p2013.log"
 source $script_dir/benchmark.sh --modes=acc,perf --op=transpose_matmul --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_matmul_vnni_noperm_p2031_p1302_input" |
-    tee "$log_dir/matmul_vnni_noperm_p2031_p1302_input.log"
+    tee "$log_dir/matmul_vnni_noperm_p2031_p1302.log"
 source $script_dir/benchmark.sh --modes=acc,perf --op=softmax --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_softmax_input" |
     tee "$log_dir/softmax.log"

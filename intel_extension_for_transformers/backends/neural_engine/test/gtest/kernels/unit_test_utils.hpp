@@ -83,10 +83,20 @@ int get_element_num(const jd::operator_desc& op_desc) {
   return num;
 }
 
+/**
+ * @brief Convert to string in the form of a valid c++ identifier (but may start with a number)
+ */
+inline std::string num2id(std::string s) {
+  std::replace(s.begin(), s.end(), '.', 'D');  // replace all decimal sep
+  std::replace(s.begin(), s.end(), '-', 'M');  // replace all minus sign
+  return s;
+}
+inline std::string num2id(float n) { return num2id(std::to_string(n)); }
+
 class n_thread_t {
  public:
-  explicit n_thread_t(int nthr) : prev_nthr(omp_get_max_threads()) {
-    if (nthr > 0 && nthr != prev_nthr) omp_set_num_threads(nthr);
+  explicit n_thread_t(int nthr, bool cap = false) : prev_nthr(omp_get_max_threads()) {
+    if (nthr > 0 && nthr != prev_nthr && (!cap || nthr < prev_nthr)) omp_set_num_threads(nthr);
   }
   ~n_thread_t() { omp_set_num_threads(prev_nthr); }
 

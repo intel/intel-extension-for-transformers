@@ -186,8 +186,8 @@ void jit_eltwise_injector::linear_compute_vector_fwd(const Zmm& zmm_src) {
 
 void jit_eltwise_injector::quantize_compute_vector_fwd(const Zmm& zmm_src) {
   auto key = get_attr_idx_key(cur_postop_attr_);
-  h->vmulps(zmm_src, zmm_src, table_val(scale, scale_idx_map[key]));
-  h->vaddps(zmm_src, zmm_src, table_val(alpha, alpha_idx_map[key]));
+  h->vmovups(zmm_aux0, table_val(scale, scale_idx_map[key]));
+  h->vfmadd213ps(zmm_src, zmm_aux0, table_val(alpha, alpha_idx_map[key]));
   if (cur_postop_attr_.dt == data_type::u8) {
     h->vcvtps2udq(zmm_src, zmm_src);  // fp32->u32
     h->vpmaxsd(zmm_src, zmm_src, table_val(zero));
@@ -413,6 +413,10 @@ void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& 
     }
 
     if (i.op_alg == postop_alg::linear) {
+      zmm_tb_allocate.insert(&zmm_aux0);
+    }
+
+    if (i.op_alg == postop_alg::quantize) {
       zmm_tb_allocate.insert(&zmm_aux0);
     }
 
