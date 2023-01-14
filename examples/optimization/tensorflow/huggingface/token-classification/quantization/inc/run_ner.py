@@ -311,6 +311,7 @@ def main():
             data_args.dataset_name,
             data_args.dataset_config_name,
             use_auth_token=True if model_args.use_auth_token else None,
+            cache_dir=model_args.cache_dir,
         )
     else:
         data_files = {}
@@ -323,6 +324,7 @@ def main():
             extension,
             data_files=data_files,
             use_auth_token=True if model_args.use_auth_token else None,
+            cache_dir=model_args.cache_dir,
         )
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
@@ -380,6 +382,7 @@ def main():
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        _commit_hash="main",
     )
 
     tokenizer_name_or_path = model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path
@@ -391,9 +394,10 @@ def main():
 
     if config.model_type in {"gpt2", "roberta"}:
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, cache_dir=model_args.cache_dir, use_fast=True,
-         add_prefix_space=True)
+         add_prefix_space=True, _commit_hash="main",)
     else:
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, cache_dir=model_args.cache_dir, use_fast=True)
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, cache_dir=model_args.cache_dir, use_fast=True,
+         _commit_hash="main",)
     # endregion
     
     # region Preprocessing the raw datasets
@@ -629,7 +633,6 @@ def main():
         tf_datasets = [tf_eval_dataset]
         raw_datasets = [processed_raw_datasets["validation"]]
 
-        total_time = 0
         num_examples = 0
 
         if optim_args.int8:
@@ -648,27 +651,44 @@ def main():
             preds: np.ndarray = None
             label_ids: np.ndarray = None
             infer = model.signatures[list(model.signatures.keys())[0]]
-            for i, (inputs, labels) in enumerate(tf_dataset):
-                for name in inputs:
-                    inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
-                start = time.time()
-                results = infer(**inputs)
-                total_time += time.time() - start
-                for val in results:
-                    if preds is None:
-                        preds = results[val].numpy()
-                    else:
-                        preds = np.append(preds, results[val].numpy(), axis=0)
-                if label_ids is None:
-                    label_ids = labels.numpy()
-                else:
-                    label_ids = np.append(label_ids, labels.numpy(), axis=0)
-            eval_metrics = compute_metrics({"logits": preds}, label_ids)
 
+            if optim_args.accuracy_only:
+                iterations = 1
+                warmup = 0
+            else:
+                iterations = 10
+                warmup = 5
+            latency_list = []
+
+            for idx in range(iterations):
+                iteration_time = 0
+                for i, (inputs, labels) in enumerate(tf_dataset):
+                    for name in inputs:
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
+                    start = time.time()
+                    results = infer(**inputs)
+                    iteration_time += time.time() - start
+                    if idx == 0:    # only accumulate once all the preds and labels
+                        for val in results:
+                            if preds is None:
+                                preds = results[val].numpy()
+                            else:
+                                preds = np.append(preds, results[val].numpy(), axis=0)
+                        if label_ids is None:
+                            label_ids = labels.numpy()
+                        else:
+                            label_ids = np.append(label_ids, labels.numpy(), axis=0)
+
+                latency_list.append(iteration_time)
+                logger.info("Iteration {} time: {} sec".format(idx, iteration_time))
+            eval_metrics = compute_metrics({"logits": preds}, label_ids)
+            logger.info("\nEvaluation result: ")
             logger.info("metric ({}) Accuracy: {}".format(task, eval_metrics["accuracy"]))
+
+            average_iteration_time = np.array(latency_list[warmup:]).mean()
             logger.info(
                 "Throughput: {} samples/sec".format(
-                    num_examples / total_time)
+                    num_examples / average_iteration_time)
             )
     # endregion
 

@@ -66,6 +66,15 @@ function run_benchmark {
     extra_cmd=''
     MAX_SEQ_LENGTH=128
 
+    if [[ ${mode} == "accuracy" ]]; then
+        mode_cmd=" --accuracy_only"
+    elif [[ ${mode} == "benchmark" ]]; then
+        mode_cmd=" --benchmark "
+    else
+        echo "Error: No such mode: ${mode}"
+        exit 1
+    fi
+
     if [ "${topology}" = "distilgpt2_clm" ]; then
         script="run_clm.py"
         dataset_name="wikitext"
@@ -103,6 +112,7 @@ function run_benchmark {
         --output_dir ${tuned_checkpoint} \
         --overwrite_output_dir \
         --cache_dir ${cache_dir} \
+        ${mode_cmd} \
         ${extra_cmd}
 }
 

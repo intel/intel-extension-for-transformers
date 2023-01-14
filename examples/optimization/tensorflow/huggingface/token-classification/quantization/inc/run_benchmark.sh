@@ -65,7 +65,7 @@ function init_params {
 function run_benchmark {
     extra_cmd=''
     MAX_SEQ_LENGTH=128
-    batch_size=64
+    batch_size=1
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy_only"
@@ -98,6 +98,7 @@ function run_benchmark {
             --do_eval \
             --max_length ${MAX_SEQ_LENGTH} \
             --per_device_eval_batch_size ${batch_size} \
+            --max_eval_samples 408 \
             --output_dir ${tuned_checkpoint} \
             --overwrite_output_dir \
             --cache_dir ${cache_dir} \
@@ -113,6 +114,7 @@ function run_benchmark {
             --do_eval \
             --max_length ${MAX_SEQ_LENGTH} \
             --per_device_eval_batch_size ${batch_size} \
+            --max_eval_samples 408 \
             --output_dir ${tuned_checkpoint} \
             --overwrite_output_dir \
             --cache_dir ${cache_dir} \

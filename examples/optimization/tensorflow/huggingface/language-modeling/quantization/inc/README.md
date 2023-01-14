@@ -22,7 +22,7 @@ bash run_tuning.sh  --topology=distilgpt2_clm
 
 ```
 cd ptq
-bash run_benchmark.sh --topology=distilgpt2_clm --int8=true
+bash run_benchmark.sh --topology=distilgpt2_clm --mode=benchmark --int8=true
 ```
 
 ### MLM
@@ -40,7 +40,7 @@ bash run_tuning.sh  --topology=distilbert_mlm
 
 ```
 cd ptq
-bash run_benchmark.sh --topology=distilbert_mlm --int8=true
+bash run_benchmark.sh --topology=distilbert_mlm --mode=benchmark --int8=true
 ```
 
 2. distilroberta
@@ -56,5 +56,5 @@ bash run_tuning.sh  --topology=distilroberta_mlm
 
 ```
 cd ptq
-bash run_benchmark.sh --topology=distilroberta_mlm --int8=true
+bash run_benchmark.sh --topology=distilroberta_mlm --mode=benchmark --int8=true
 ```

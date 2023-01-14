@@ -5,7 +5,8 @@
       "cmd": "bash run_tuning.sh",
       "params": {
         "topology": "bert_base_mrpc_static",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
       }
     },
     "benchmark": {
@@ -16,7 +17,8 @@
         "batch_size": "64",
         "iters": "100",
         "int8": "false",
-        "config": "saved_results"
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
       }
     }
   },
