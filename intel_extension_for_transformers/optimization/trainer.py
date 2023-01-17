@@ -1524,11 +1524,6 @@ class BaseTrainer():
         self.args.lr_scheduler_type = 'constant'
 
         def take_train_steps(model, trainer):
-            """Take a train step with NAS.
-
-            Args:
-
-            """
             trainer.model_wrapped = model
             trainer.model = model
             train_result = trainer.train()
