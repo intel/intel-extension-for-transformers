@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include "inner_product.hpp"
+#include "model.hpp"
 
 namespace executor {
 
@@ -335,7 +336,7 @@ void InnerProductOperator::DstReshapeFusion(const vector<Tensor*>& input, const 
     vector<int64_t> reshape(reshape_);
     if (output[0]->shape().size() == 3 && output[0]->tensor_format() == TensorFormat::MmKMb) {
       int64_t micro_bs = output[0]->shape()[0];
-      int64_t model_input_bs = InputShapeRecorder::GetInstance().GetShape()[0];
+      int64_t model_input_bs = model_->input_shape()[0];
       reshape.insert(reshape.begin(), micro_bs);
       // replace batch size of ref_shape
       ref_shape[0] = model_input_bs / micro_bs;

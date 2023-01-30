@@ -382,21 +382,6 @@ class ConvolutionPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::convolu
                        const vector<int64_t>& strides, const dnnl::engine* eng);
 };
 
-// Singleton, record model input shape
-class InputShapeRecorder {
- public:
-  static InputShapeRecorder& GetInstance();
-  void RecordShape(const vector<int64_t>& shape);
-  const vector<int64_t>& GetShape();
-
- private:
-  InputShapeRecorder() {}
-  ~InputShapeRecorder() {}
-  // just record one input
-  // assume shapes of all input data should be same
-  vector<int64_t> input_shape_;
-};
-
 }  // namespace executor
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_COMMON_HPP_

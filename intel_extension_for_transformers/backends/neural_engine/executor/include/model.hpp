@@ -113,6 +113,8 @@ class NEURALENGINE_API_ Model {
     return output_tensors_;
   }
 
+  inline const vector<int64_t>& input_shape() const { return input_shape_; }
+
  protected:
   string name_;
   shared_ptr<ModelConfig> model_conf_;
@@ -146,6 +148,9 @@ class NEURALENGINE_API_ Model {
   shared_ptr<Operator> CreateLLGAKernel(const vector<shared_ptr<OperatorConfig>>& op_configs,
                                         const dnnl::graph::partition& partition);
   void ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs);
+  // just record one input
+  // assume shapes of all input data should be same
+  vector<int64_t> input_shape_;
 };
 
 }  // namespace executor
