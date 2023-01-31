@@ -4,4 +4,3 @@ torch >= 1.10.0
 transformers>=4.12.0
 accelerate
 huggingface_hub
-intel_extension_for_transformers
