@@ -174,12 +174,15 @@ class CollectQuantInfo(Pattern):
                                            [quant_min, quant_max, dtype, old_quant_min, old_quant_max])
                 for dst_op in dquant_output.dest_op:
                     matmul_node = model.get_node_by_name(dst_op)
+                    # fall back int8 weight matmul op_type
+                    if matmul_node.op_type == "BatchMatMul":
+                        matmul_node.op_type = "MatMul"
                     for idx, input_tensor in enumerate(matmul_node.input_tensors):
                         if input_tensor.name == dquant_output.name:
                             matmul_node.input_tensors[idx] = dquant_node.input_tensors[0]
                 model.remove_nodes([pattern_nodes_name[0]])
-        
-        def RemoveQuantDequant(model): 
+
+        def RemoveQuantDequant(model):
             # Remove quant/dequant
             remove_nodes_list = []
             for qpattern_info in pattern_mapping_config['RemoveQuantDequant']:
@@ -257,7 +260,7 @@ class CollectQuantInfo(Pattern):
                 # weight_s8 -> weight_fp32
                 if type(weight.data) == np.ndarray :
                     weight.data = (weight.data-weight_zp.data) * weight_scale.data
-                # output 
+                # output
                 output = qmatmul_node.output_tensors[0]
                 output_scale = qmatmul_node.input_tensors[6]
                 output_zp = qmatmul_node.input_tensors[7]
@@ -273,7 +276,7 @@ class CollectQuantInfo(Pattern):
                     for pre_op_name in qmatmul_node.input_tensors[id].source_op:
                         pre_op = model.get_node_by_name(pre_op_name)
                         pre_out_tensor_name = pre_op.output_tensors[0].name
-                        qmatmul_in_tensor_name = qmatmul_node.input_tensors[id].name 
+                        qmatmul_in_tensor_name = qmatmul_node.input_tensors[id].name
                         if pre_out_tensor_name == qmatmul_in_tensor_name:
                             # trick: collect softmax output min/max(fp32 in, int8 out in neural engine)
                             if pre_op.op_type == "Softmax":
@@ -286,10 +289,10 @@ class CollectQuantInfo(Pattern):
                                 output_min, output_max = scale2minmax(output_zp.data.dtype,
                                                             output_scale.data, output_zp.data)
                                 output_zp_dtype = "s8" if output_zp.data.dtype == 'int8' else "u8"
-                                output_dtype = "output_" + output_zp_dtype + "_insert"   
+                                output_dtype = "output_" + output_zp_dtype + "_insert"
                                 util.insert_quant_info(pre_out_tensor_name,
                                     [origin_min, origin_max, output_dtype, output_min, output_max])
-                            # trick: pre transpose has the same min/max as matmul, 
+                            # trick: pre transpose has the same min/max as matmul,
                             elif pre_op.op_type == "Transpose":
                                 qmatmul_in_scale = qmatmul_node.input_tensors[id+1]
                                 qmatmul_in_zp = qmatmul_node.input_tensors[id+2]
@@ -297,12 +300,12 @@ class CollectQuantInfo(Pattern):
                                                             qmatmul_in_scale.data, qmatmul_in_zp.data)
                                 trans_in_tensor_name = pre_op.input_tensors[0].name
                                 qmatmul_in_zp_dtype = "s8" if qmatmul_in_zp.data.dtype == 'int8' else "u8"
-                                qmatmul_in_dtype = qmatmul_in_zp_dtype + "_insert"   
+                                qmatmul_in_dtype = qmatmul_in_zp_dtype + "_insert"
                                 util.insert_quant_info(trans_in_tensor_name,
                                     [qmatmul_in_min, qmatmul_in_max, qmatmul_in_dtype])
-                # matmul has tranpose attr, but qlinear matmul has not 
+                # matmul has tranpose attr, but qlinear matmul has not
                 set_attr(matmul_nodes_name, model)
-        
+
         # if ONNX QDQ model, only CollectQDQInfo
         # if ONNX QLinear model, RemoveQuantDequant and QLinearMatMul
         is_qlinear_graph = False
