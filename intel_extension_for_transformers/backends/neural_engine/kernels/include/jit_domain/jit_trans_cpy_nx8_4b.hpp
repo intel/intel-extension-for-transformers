@@ -41,7 +41,9 @@ class jit_transpose_nx8_4b : public jit_generator {
     void* dst;
   };
   explicit jit_transpose_nx8_4b(const jit_transpose_nx8_4b::params& param) : jit_generator(), param_(param) {
-    static_assert(tile_m % dim_transpose == 0);
+    if (tile_m % dim_transpose != 0) {
+      SPARSE_LOG(ERROR) << "tile_m must ve divided by dim_transpose" << std::endl;
+    }
   }
   virtual ~jit_transpose_nx8_4b() {}
 

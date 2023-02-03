@@ -188,7 +188,7 @@ class SPARSE_API_ softmax : public kernel_proxy {
   virtual ~softmax() {}
 };
 
-class attention : public kernel_proxy {
+class SPARSE_API_ attention : public kernel_proxy {
  public:
   attention() {}
   explicit attention(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}

@@ -56,7 +56,8 @@ namespace jd {
  */
 class attention_ref_k_t;
 
-class attention_ref_kd_t : public kernel_desc_t {
+// TODO(hengyu): hide reference implementation from users
+class SPARSE_API_ attention_ref_kd_t : public kernel_desc_t {
  public:
   explicit attention_ref_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::attention), op_desc_(op_desc) {}
@@ -99,7 +100,7 @@ class attention_ref_kd_t : public kernel_desc_t {
   char* fused_scales_addr_ = nullptr;
 };
 
-class attention_ref_k_t : public kernel_t {
+class SPARSE_API_ attention_ref_k_t : public kernel_t {
  public:
   using kd_t = attention_ref_kd_t;
   explicit attention_ref_k_t(const std::shared_ptr<const kernel_desc_t>& kd) : kernel_t(kd) {}
