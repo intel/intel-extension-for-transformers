@@ -1,4 +1,4 @@
-python3 ./run_glue_no_trainer.py \
+python ./run_glue_no_trainer.py \
         --model_name_or_path "prajjwal1/bert-mini" \
         --pruning_config "./bert_mini_sst2_2in4.yaml" \
         --task_name "sst2" \
@@ -9,6 +9,7 @@ python3 ./run_glue_no_trainer.py \
         --num_train_epochs 15 \
         --weight_decay 5e-5   \
         --cooldown_epochs 5 \
-        --sparsity_warm_epochs 0\
-        --lr_scheduler_type "constant"\
-        --do_prune
+        --sparsity_warm_epochs 0 \
+        --lr_scheduler_type "constant" \
+        --do_prune \
+        --output_dir "pruned_sst2_bert-mini"

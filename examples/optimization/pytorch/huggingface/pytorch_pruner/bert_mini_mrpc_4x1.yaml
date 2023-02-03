@@ -1,5 +1,3 @@
-version: 1.0
-
 model:
   name: "bert-mini"
   framework: "pytorch"
