@@ -147,12 +147,12 @@ bool attention_kd_t::init() {
 
   // weight merge
   // TODO(Yi): merge QKV together
-  void* qk_weight_addr = reinterpret_cast<void*>(aligned_allocator_t<int8_t>::allocate(ip_chanel * ip_chanel * 2));
+  auto qk_weight_addr = reinterpret_cast<void*>(aligned_allocator_t<int8_t>::allocate(ip_chanel * ip_chanel * 2));
   memcpy(qk_weight_addr, q_weight_addr, wei_bytes);
   void* qk_weight_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(qk_weight_addr) + wei_bytes);
   memcpy(qk_weight_addr_offset, k_weight_addr, wei_bytes);
 
-  auto qk_sparse_ptr = new bsr_data_t<int8_t>(
+  qk_sparse_ptr_ = new bsr_data_t<int8_t>(
       spns::reorder_to_bsr_group<int8_t, 4>(ip_chanel * 2, ip_chanel, 4, 1, reinterpret_cast<int8_t*>(qk_weight_addr)));
   aligned_allocator_t<int8_t>::deallocate(qk_weight_addr);
 
@@ -177,7 +177,7 @@ bool attention_kd_t::init() {
   operator_desc spmm_qk_desc =
       operator_desc(kernel_kind::sparse_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
                     {qk_weight_desc, src_desc, qk_bias_desc, qk_dst_desc_s8, qk_scales_desc},
-                    {{"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(qk_sparse_ptr))},
+                    {{"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(qk_sparse_ptr_))},
                      {"bias_addr", std::to_string(reinterpret_cast<uint64_t>(fused_bias_addr_))},
                      {"scales_addr", std::to_string(reinterpret_cast<uint64_t>(fused_scales_addr_))}});
   if (!add_kernel_desc<spmm_vnni_kd_t>(spmm_qk_desc, "spmm_qk")) return false;
@@ -214,13 +214,13 @@ bool attention_kd_t::init() {
   }
 
   // sub-kernel 3: spmm for V
-  auto v_sparse_ptr = new bsr_data_t<int8_t>(spns::reorder_to_bsr_group<int8_t, 4>(
+  v_sparse_ptr_ = new bsr_data_t<int8_t>(spns::reorder_to_bsr_group<int8_t, 4>(
       ip_chanel, ip_chanel, 4, 1, reinterpret_cast<const int8_t*>(v_weight_addr)));
   tensor_desc v_out_desc = tensor_desc({head_num, head_size, batch_size, seq_len}, data_type::s8, format_type::ab);
   jd::operator_desc spmm_v_desc =
       jd::operator_desc(kernel_kind::sparse_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
                         {v_weight_desc, src_desc, v_bias_desc, v_out_desc, v_scales_desc},
-                        {{"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(v_sparse_ptr))},
+                        {{"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(v_sparse_ptr_))},
                          {"bias_addr", std::to_string(reinterpret_cast<uint64_t>(v_bias_addr))},
                          {"scales_addr", std::to_string(reinterpret_cast<uint64_t>(v_scales_addr))}});
   if (!add_kernel_desc<spmm_vnni_kd_t>(spmm_v_desc, "spmm_v")) return false;
@@ -238,14 +238,6 @@ bool attention_kd_t::init() {
 }
 
 attention_k_t::~attention_k_t() {
-  if (kernels_[SubKernel::QK_SPMM] != nullptr) {
-    const auto& ker_attr = ker_opdesc(SubKernel::QK_SPMM).attrs();
-    delete reinterpret_cast<bsr_data_t<int8_t>*>(str_to_num<intptr_t>(ker_attr.at("sparse_ptr")));
-  }
-  if (kernels_[SubKernel::V_SPMM] != nullptr) {
-    const auto& ker_attr = ker_opdesc(SubKernel::V_SPMM).attrs();
-    delete reinterpret_cast<bsr_data_t<int8_t>*>(str_to_num<intptr_t>(ker_attr.at("sparse_ptr")));
-  }
   if (!mem_.empty()) {
     aligned_allocator_t<char>::deallocate(mem_[SubKernel::QK_SPMM][ssd::DST]);
   }
