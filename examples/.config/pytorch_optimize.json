@@ -41,6 +41,48 @@
       }
     }
   },
+  "gptj_clm_static": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gptj_clm_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gptj_clm_static",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "gptj_clm_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gptj_clm_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gptj_clm_dynamic",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "bert_mlm_static": {
     "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
     "tune": {
