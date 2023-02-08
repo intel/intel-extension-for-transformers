@@ -75,7 +75,7 @@ fi
 
 if [ ! -d env_sphinx ]; then
   echo "create env_sphinx"
-  bash pip_set_env.sh
+  bash setup_env.sh
 fi
 
 source env_sphinx/bin/activate
@@ -91,6 +91,11 @@ sed -i 's/docs\/imgs/.\/imgs/g' ./source/docs/Welcome.md
 sed -i 's/.md/.html/g; s/.\/docs\/source\//.\/docs/g' ./source/docs/Welcome.md
 sed -i 's/href=\"docs\//href=\"/g' ./source/docs/Welcome.md
 sed -i 's/(docs\//(/g' ./source/docs/Welcome.md
+
+echo "run doxygen to create document for C++ code"
+rm -rf _build_doxygen
+doxygen Doxyfile.in
+echo "doxygen is done!"
 
 make clean
 make html

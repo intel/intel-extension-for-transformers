@@ -1,4 +1,4 @@
-Python APIs
+C++ APIs
 ####
 
 The following API information is available:
@@ -6,4 +6,6 @@ The following API information is available:
 .. toctree::
    :maxdepth: 1
 
-   optimization/benchmark.rst
+   kernel/kernel.rst
+   kernel/engine.rst
+
