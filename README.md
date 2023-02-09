@@ -1,5 +1,9 @@
 # Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms
+<<<<<<< HEAD
  Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the key features and examples as below:
+=======
+ Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [SapphireRapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerate4th-gen-xeon-scalable-processors.html)). The toolkit aims to provide the key features and examples as below:
+>>>>>>> 6bbef46c (Simplize readme (#564))
 
 
 *  Seamless user experience of model compressions on Transformers-based models by extending [Hugging Face transformers](https://github.com/huggingface/transformers) APIs and leveraging [Intel® Neural Compressor](https://github.com/intel/neural-compressor)
@@ -19,7 +23,11 @@ pip install intel-extension-for-transformers
 > For more installation method, please refer to [Installation Page](docs/installation.md)
 
 ## Getting Started
+<<<<<<< HEAD
 ### Sentiment Analysis with Quantization
+=======
+### Semantics Analysis with Quantization
+>>>>>>> 6bbef46c (Simplize readme (#564))
 #### Prepare Dataset
 ```python
 from datasets import load_dataset, load_metric
