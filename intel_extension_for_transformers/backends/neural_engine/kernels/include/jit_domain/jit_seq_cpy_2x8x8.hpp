@@ -20,7 +20,21 @@
 #include "utils.hpp"
 #include "jit_generator.hpp"
 
-/**
+namespace jd {
+class jit_seq_cpy_2x8x8 : public jit_generator {
+ public:
+  struct param_t {
+    int M;               //  outer dim of src: use to calculate dst stride
+    int N;               //  inner dim of src: loop dimention
+    int ld_src;          // leading dim / bytes of src
+    uint8_t val_offset;  // add an offset to every elements
+  };
+
+  struct rt_data_t {
+    const void* src;
+    void* dst;
+  };
+ /**
  * jit_seq_cpy_2x8x8 reorders matrix in the following way:
  *  src(8xN) ==> dst((n/8)x2x8x4)
  *
@@ -48,21 +62,7 @@
  * +---------+
  */
 
-namespace jd {
-class jit_seq_cpy_2x8x8 : public jit_generator {
- public:
-  struct param_t {
-    int M;               //  outer dim of src: use to calculate dst stride
-    int N;               //  inner dim of src: loop dimention
-    int ld_src;          // leading dim / bytes of src
-    uint8_t val_offset;  // add an offset to every elements
-  };
-
-  struct rt_data_t {
-    const void* src;
-    void* dst;
-  };
-  explicit jit_seq_cpy_2x8x8(const jit_seq_cpy_2x8x8::param_t& param)
+ explicit jit_seq_cpy_2x8x8(const jit_seq_cpy_2x8x8::param_t& param)
       : jit_generator(),
         M(param.M),
         N(param.N),

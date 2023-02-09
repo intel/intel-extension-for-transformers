@@ -21,7 +21,7 @@ python run_summarization.py \
     --predict_with_generate
 ```
 
-T5 model `t5-base` must use an additional argument: `--source_prefix "summarize: "`.
+T5 model `t5-base` `t5-large` must use an additional argument: `--source_prefix "summarize: "`.
 
 We used CNN/DailyMail dataset in this example as `t5-small` was trained on it and one can get good scores even when pre-training with a very small sample.
 

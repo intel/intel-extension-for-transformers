@@ -673,7 +673,7 @@ def main():
             search_algorithm='Grid',
             max_trials=3,
             metrics=[
-                metrics.Metric(name="eval_loss", greater_is_better=False)
+                metrics.Metric(name="metric", greater_is_better=False)
             ],
             knowledge_transfer=TFDistillationConfig(
                 train_steps=[3],

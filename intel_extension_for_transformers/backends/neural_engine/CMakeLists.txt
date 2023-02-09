@@ -12,7 +12,7 @@ option(NE_WITH_SPARSELIB_ONLY "Only for sparselib" OFF)
 option(NE_WITH_SPARSELIB_BENCHMARK "Enable sparselib sparse benchmark" OFF)
 option(NE_WITH_TESTS "Build GTests" OFF)
 option(NE_WITH_ONEDNN_GRAPH "Build oneDNNGraph" ON)
-option(NE_DYNAMIC_LINK "Whether third party libs dynamic link to neural engine" OFF)
+option(NE_DYNAMIC_LINK "Whether third party libs dynamic link to neural engine" ON)
 message(STATUS "NE_DYNAMIC_LINK: ${NE_DYNAMIC_LINK}")
 
 if(NE_WITH_SPARSELIB_ONLY AND NOT NE_WITH_SPARSELIB)

@@ -32,7 +32,8 @@ extensions = [
         'sphinx_md',
         'autoapi.extension',
         'sphinx.ext.napoleon',
-        'sphinx.ext.githubpages'
+        'sphinx.ext.githubpages',
+        'breathe'
         ]
 
 autoapi_dirs = ['../../intel_extension_for_transformers']
@@ -46,12 +47,14 @@ autoapi_ignore = []
 
 templates_path = ['_templates']
 
+highlight_language = 'c++'
+
 source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
 
-exclude_patterns = []
+exclude_patterns = ['_build_doxygen']
 
 pygments_style = 'sphinx'
 
@@ -63,3 +66,9 @@ html_theme = 'sphinx_rtd_theme'
 
 html_static_path = ['_static']
 
+# -- Breathe configuration -------------------------------------------------
+breathe_projects = {
+	"Intel® Extension for Transformers": "../_build_doxygen/xml/"
+}
+breathe_default_project = "Intel® Extension for Transformers"
+breathe_default_members = ('members', 'undoc-members')

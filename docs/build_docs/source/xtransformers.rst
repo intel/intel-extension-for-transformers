@@ -6,5 +6,7 @@ Intel® Extension for Transformers
 
    docs/Welcome.md
    feature.rst
+   docs/api_doc/api.rst
+
 
 

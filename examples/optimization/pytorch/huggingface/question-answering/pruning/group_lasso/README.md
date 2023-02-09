@@ -27,7 +27,7 @@ pip3 install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu
 #### Install BERT dependency
 
 ```bash
-cd examples/pytorch/eager/language_translation/BERT_sparse
+cd examples/pytorch/huggingface/question-answering/pruning/group_lasso
 pip3 install -r requirements.txt --ignore-installed PyYAML
 ```
 ```bash

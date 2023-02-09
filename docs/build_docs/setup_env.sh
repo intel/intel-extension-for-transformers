@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo apt install doxygen
+
 ENV_NAME=env_sphinx
 deactivate
 rm -rf $ENV_NAME

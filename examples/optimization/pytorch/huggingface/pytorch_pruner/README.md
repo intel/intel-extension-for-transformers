@@ -82,23 +82,24 @@ For more usage, please refer to our example codes below.
 
 ## Examples
 we have provided several pruning examples, which are trained on different datasets/tasks, use different sparsity patterns, etc. We are working on sharing our sparse models on HuggingFace.
-### [SQuAD](https://github.com/intel/neural-compressor/tree/master/examples/pytorch/nlp/huggingface_models/question-answering/pruning)
+
 We can train a sparse model with NxM (2:4) pattern:
 ```
 python3 ./run_glue_no_trainer.py \
-            --model_name_or_path "/path/to/dense_finetuned_model/" \
-            --pruning_config "./bert_mini_mrpc_4x1.yaml" \
-            --task_name "mrpc" \
+            --model_name_or_path "prajjwal1/bert-mini" \
+            --pruning_config "./bert_mini_sst2_2in4.yaml" \
+            --task_name "sst2" \
             --per_device_train_batch_size "8" \
             --weight_decay "1e-7" \
             --learning_rate "1e-4" \
             --num_train_epochs 10 \
-            --distill_loss_weight "8.0"
+            --distill_loss_weight "8.0" \
+            --output_dir "pruned_sst2_bert-mini"
 ```
 We can also choose 4x1 as our pruning pattern:
 ```
 python ./run_glue_no_trainer.py \
-        --model_name_or_path "/path/to/dense_finetuned_model/" \
+        --model_name_or_path "prajjwal1/bert-mini" \
         --pruning_config "./bert_mini_mrpc_4x1.yaml" \
         --task_name "mrpc" \
         --per_device_train_batch_size "16" \
@@ -109,7 +110,7 @@ python ./run_glue_no_trainer.py \
         --learning_rate "4.5e-4" \
         --num_train_epochs 10 \
         --weight_decay  "1e-7" \
-        --output_dir "pruned_squad_bert-mini" \
+        --output_dir "pruned_mrpc_bert-mini" \
         --distill_loss_weight "4.5"
 ```
 Dense model training is also supported as following (by setting --do_prune to False):

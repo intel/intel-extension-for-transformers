@@ -39,6 +39,7 @@ from intel_extension_for_transformers.optimization import (
     QuantizationMode,
     PruningConfig,
     DynamicLengthConfig,
+    NAS,
 )
 from intel_extension_for_transformers.optimization.utils.metrics import Metric
 from intel_extension_for_transformers.optimization.utils.utility import LazyImport
@@ -1464,6 +1465,89 @@ class BaseTrainer():
             return dataset
         else:
             return dataset.remove_columns(ignored_columns)
+
+    def nas(
+        self,
+        nas_config,
+        provider: str = Provider.INC.value,
+        model_builder: Optional[Callable] = None,
+        model_cls: Optional[Callable] = None,
+        eval_func: Optional[Callable] = None,
+        train_func: Optional[Callable] = None,
+    ):
+        """The main entry point of NAS.
+
+        NAS is composed of two major stages, Model Exploration and Evaluation.
+
+        In Model Exploration, a search engine will search for a better compressed model from the architecture 
+        design space in each iteration.
+
+        In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction 
+        accuracy, the hardware performance etc.) in order to select the best model architecture.
+
+        Args:
+            nas_config: The path to the YAML configuration file or a configuration 
+                object containing settings for NAS, etc.
+            provider (str): Provide the baseic function. Default set to INC.
+            model_builder (:obj:`Callabel`, optional): A function to build model instance with 
+                the specified model architecture parameters.
+            model_cls (:obj:`Callabel`, optional): Class of the model.
+            eval_func (:obj:`Callabel`, optional): The function to evaluate the model.
+            train_func (:obj:`Callabel`, optional): The function to train the model.
+        """
+        self.nas_config = nas_config
+        self._provider = Provider[provider.upper()].value
+
+        if model_builder is None:
+            assert model_cls is not None, "Must specify model_cls to use the built-in " + \
+                "model_builder, e.g. model_cls=AutoModelForPreTraining, or you can use " + \
+                "the customized model_builder."
+            model_builder = partial(self.model_builder_builtin, model_cls=model_cls)
+        agent = NAS(self.nas_config)
+        agent.model_builder = model_builder
+        # pylint: disable=E1101
+        self.args.lr_scheduler_type = 'constant'
+
+        def take_train_steps(model, trainer):
+            trainer.model_wrapped = model
+            trainer.model = model
+            train_result = trainer.train()
+            metrics = train_result.metrics
+            trainer.save_model()  # Saves the tokenizer too for easy upload
+            trainer.log_metrics("train", metrics)
+            trainer.save_metrics("train", metrics)
+            trainer.save_state()
+            return trainer.model
+
+        def take_eval_steps(model, trainer, metric_names, save_metrics=False):
+            trainer.model = model
+            metrics = trainer.evaluate()
+            if save_metrics:
+                trainer.save_metrics("eval", metrics)
+            metrics['latency'] = 1000.0 / metrics.get("eval_samples_per_second")
+            metric_names = ['eval_loss', 'latency'] if metric_names is None else metric_names
+            for metric_name in metric_names:
+                logger.info("{}: {}".format(metric_name, metrics.get(metric_name)))
+            logger.info("Throughput: {} samples/sec".format(
+                metrics.get("eval_samples_per_second")))
+            return {metric_name: metrics.get(metric_name) for metric_name in metric_names}
+
+        def train_func_builtin(model):
+            return take_train_steps(model,
+                                    trainer=self)
+
+        def eval_func_builtin(model):
+            return take_eval_steps(model,
+                                   trainer=self,
+                                   metric_names=agent.metrics,
+                                   save_metrics=True)
+
+        agent.train_func = train_func \
+            if train_func else train_func_builtin
+        agent.eval_func = eval_func \
+            if eval_func else eval_func_builtin
+        # pylint: disable=E1101
+        return agent.execute(self.args.output_dir)
 
     def autodistillation(
         self,
