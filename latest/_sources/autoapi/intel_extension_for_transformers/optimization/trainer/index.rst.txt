@@ -247,6 +247,33 @@ Classes
       Subclass and override for custom behavior.
 
 
+   .. py:method:: nas(nas_config, provider: str = Provider.INC.value, model_builder: Optional[Callable] = None, model_cls: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      The main entry point of NAS.
+
+      NAS is composed of two major stages, Model Exploration and Evaluation.
+
+      In Model Exploration, a search engine will search for a better compressed model from the architecture
+      design space in each iteration.
+
+      In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction
+      accuracy, the hardware performance etc.) in order to select the best model architecture.
+
+      :param nas_config: The path to the YAML configuration file or a configuration
+                         object containing settings for NAS, etc.
+      :param provider: Provide the baseic function. Default set to INC.
+      :type provider: str
+      :param model_builder: A function to build model instance with
+                            the specified model architecture parameters.
+      :type model_builder: :obj:`Callabel`, optional
+      :param model_cls: Class of the model.
+      :type model_cls: :obj:`Callabel`, optional
+      :param eval_func: The function to evaluate the model.
+      :type eval_func: :obj:`Callabel`, optional
+      :param train_func: The function to train the model.
+      :type train_func: :obj:`Callabel`, optional
+
+
    .. py:method:: autodistillation(autodistillation_config, teacher_model: Union[transformers.PreTrainedModel, torch], provider: str = Provider.INC.value, model_builder: Optional[Callable] = None, model_cls: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
 
       The main entry point of automatic distillation tuning.

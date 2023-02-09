@@ -1,98 +1,52 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Examples &mdash; Intel® Extension for Transformers 1.0b documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/sphinx_highlight.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="APIs" href="api_doc/api.html" />
-    <link rel="prev" title="Validation Performance Data" href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.html" /> 
+    <link rel="prev" title="Class engine" href="api_doc/kernel/engine.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="../index.html" class="icon icon-home"> Intel® Extension for Transformers
           
-
-          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
           </a>
-
-          
-            
-            
             <div class="version">
               <a href="../../versions.html">latest▼</a>
               <p>Click link above to switch version</p>
             </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
@@ -119,88 +73,45 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">APIs</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">Intel® Extension for Transformers</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-      <li>Examples</li>
-    
-    
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Examples</li>
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../_sources/docs/examples.md.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <section id="examples">
-<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h1>
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h1>
 <ol>
 <li><p><a class="reference external" href="#Quantization">Quantization</a></p>
-<p>1.1 <a class="reference external" href="#Stock-PyTorch">Stock PyTorch Examples</a></p>
-<p>1.2 <a class="reference external" href="#Intel-Extension-for-Pytorch">Intel Extension for Pytorch (IPEX) Examples</a></p>
-<p>1.3 <a class="reference external" href="#Intel-TensorFlow">Intel TensorFlow Examples</a></p>
+<p>1.1 <a class="reference external" href="#Stock-PyTorch-Examples">Stock PyTorch Examples</a></p>
+<p>1.2 <a class="reference external" href="#Intel-Extension-for-Pytorch-IPEX-Examples">Intel Extension for Pytorch (IPEX) Examples</a></p>
+<p>1.3 <a class="reference external" href="#Intel-TensorFlow-Examples">Intel TensorFlow Examples</a></p>
 </li>
-<li><p><a class="reference external" href="#Length-Adaptive-Transformers">Length Adaptive Transformers</a>
-E</p></li>
+<li><p><a class="reference external" href="#Length-Adaptive-Transformers">Length Adaptive Transformers</a></p></li>
 <li><p><a class="reference external" href="#Pruning">Pruning</a></p></li>
 <li><p><a class="reference external" href="#Distillation">Distillation</a></p>
 <p>4.1 <a class="reference external" href="#Knowledge-Distillation">Knowledge Distillation</a></p>
-<p>4.2 <a class="reference external" href="#Auto-Distillation">Auto Distillation (NAS Based)</a></p>
+<p>4.2 <a class="reference external" href="#Auto-Distillation-NAS-Based">Auto Distillation (NAS Based)</a></p>
 </li>
 <li><p><a class="reference external" href="#Orchestrate">Orchestrate</a></p></li>
 <li><p><a class="reference external" href="#Reference-Deployment-Neural-Engine">Reference Deployment on Neural Engine</a></p>
@@ -210,9 +121,9 @@ E</p></li>
 </ol>
 <p>Intel Extension for Transformers is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile Intel Extension for Transformers provides Transformers-accelerated Neural Engine, an optimized backend for NLP models to demonstrate the deployment.</p>
 <section id="quantization">
-<h2>Quantization<a class="headerlink" href="#quantization" title="Permalink to this heading">¶</a></h2>
+<h2>Quantization<a class="headerlink" href="#quantization" title="Permalink to this heading"></a></h2>
 <section id="stock-pytorch-examples">
-<h3>Stock PyTorch Examples<a class="headerlink" href="#stock-pytorch-examples" title="Permalink to this heading">¶</a></h3>
+<h3>Stock PyTorch Examples<a class="headerlink" href="#stock-pytorch-examples" title="Permalink to this heading"></a></h3>
 <table>
 <thead>
   <tr>
@@ -224,6 +135,34 @@ E</p></li>
   </tr>
 </thead>
 <tbody align="center">
+  <tr>
+    <td><a href="https://huggingface.co/EleutherAI/gpt-j-6B">gpt-j-6B</a></td>
+    <td>language-modeling(CLM)</td>
+    <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
+    <td>&#10004;</td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/sysresearch101/t5-large-finetuned-xsum-cnn">t5-large-finetuned-xsum-cnn</a></td>
+    <td>summarization</td>
+    <td><a href="https://huggingface.co/datasets/cnn_dailymail">cnn_dailymail</a></td>
+    <td>&#10004;</td>
+    <td> </td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/flax-community/t5-base-cnn-dm">t5-base-cnn-dm</a></td>
+    <td>summarization</td>
+    <td><a href="https://huggingface.co/datasets/cnn_dailymail">cnn_dailymail</a></td>
+    <td>&#10004;</td>
+    <td> </td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">lambdalabs/sd-pokemon-diffusers</a></td>
+    <td>text-to-image</td>
+    <td>image</td>
+    <td>&#10004;</td>
+    <td>&#10004;</td>
+  </tr>
   <tr>
     <td><a href="https://huggingface.co/bert-base-uncased">bert-base-uncased</a></td>
     <td>language-modeling(MLM)</td>
@@ -344,7 +283,7 @@ E</p></li>
 </tbody>
 </table></section>
 <section id="intel-extension-for-pytorch-ipex-examples">
-<h3>Intel Extension for Pytorch (IPEX) examples<a class="headerlink" href="#intel-extension-for-pytorch-ipex-examples" title="Permalink to this heading">¶</a></h3>
+<h3>Intel Extension for Pytorch (IPEX) examples<a class="headerlink" href="#intel-extension-for-pytorch-ipex-examples" title="Permalink to this heading"></a></h3>
 <table>
 <thead>
   <tr>
@@ -373,7 +312,7 @@ E</p></li>
 </tbody>
 </table></section>
 <section id="intel-tensorflow-examples">
-<h3>Intel TensorFlow Examples<a class="headerlink" href="#intel-tensorflow-examples" title="Permalink to this heading">¶</a></h3>
+<h3>Intel TensorFlow Examples<a class="headerlink" href="#intel-tensorflow-examples" title="Permalink to this heading"></a></h3>
 <table>
 <thead>
   <tr>
@@ -396,7 +335,7 @@ E</p></li>
 </table></section>
 </section>
 <section id="length-adaptive-transformers">
-<h2>Length Adaptive Transformers<a class="headerlink" href="#length-adaptive-transformers" title="Permalink to this heading">¶</a></h2>
+<h2>Length Adaptive Transformers<a class="headerlink" href="#length-adaptive-transformers" title="Permalink to this heading"></a></h2>
 <table>
 <thead>
   <tr>
@@ -474,7 +413,7 @@ E</p></li>
 <p>Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration detail please refer to <a class="reference external" href="../examples/optimization/pytorch/huggingface/question-answering/dynamic/README">examples</a></p>
 </section>
 <section id="pruning">
-<h2>Pruning<a class="headerlink" href="#pruning" title="Permalink to this heading">¶</a></h2>
+<h2>Pruning<a class="headerlink" href="#pruning" title="Permalink to this heading"></a></h2>
 <table>
 <thead>
   <tr>
@@ -514,9 +453,9 @@ E</p></li>
 </tbody>
 </table></section>
 <section id="distillation">
-<h2>Distillation<a class="headerlink" href="#distillation" title="Permalink to this heading">¶</a></h2>
+<h2>Distillation<a class="headerlink" href="#distillation" title="Permalink to this heading"></a></h2>
 <section id="knowledge-distillation">
-<h3>Knowledge Distillation<a class="headerlink" href="#knowledge-distillation" title="Permalink to this heading">¶</a></h3>
+<h3>Knowledge Distillation<a class="headerlink" href="#knowledge-distillation" title="Permalink to this heading"></a></h3>
 <table>
 <thead>
   <tr>
@@ -541,7 +480,7 @@ E</p></li>
 </tbody>
 </table></section>
 <section id="auto-distillation-nas-based">
-<h3>Auto Distillation (NAS Based)<a class="headerlink" href="#auto-distillation-nas-based" title="Permalink to this heading">¶</a></h3>
+<h3>Auto Distillation (NAS Based)<a class="headerlink" href="#auto-distillation-nas-based" title="Permalink to this heading"></a></h3>
 <table>
 <thead>
   <tr>
@@ -568,7 +507,7 @@ E</p></li>
 </table></section>
 </section>
 <section id="orchestrate">
-<h2>Orchestrate<a class="headerlink" href="#orchestrate" title="Permalink to this heading">¶</a></h2>
+<h2>Orchestrate<a class="headerlink" href="#orchestrate" title="Permalink to this heading"></a></h2>
 <table>
 <thead>
   <tr>
@@ -607,9 +546,9 @@ E</p></li>
 </tbody>
 </table></section>
 <section id="reference-deployment-on-neural-engine">
-<h2>Reference Deployment on Neural Engine<a class="headerlink" href="#reference-deployment-on-neural-engine" title="Permalink to this heading">¶</a></h2>
+<h2>Reference Deployment on Neural Engine<a class="headerlink" href="#reference-deployment-on-neural-engine" title="Permalink to this heading"></a></h2>
 <section id="dense-reference-deployment-on-neural-engine">
-<h3>Dense Reference Deployment on Neural Engine<a class="headerlink" href="#dense-reference-deployment-on-neural-engine" title="Permalink to this heading">¶</a></h3>
+<h3>Dense Reference Deployment on Neural Engine<a class="headerlink" href="#dense-reference-deployment-on-neural-engine" title="Permalink to this heading"></a></h3>
 <table>
 <thead>
   <tr>
@@ -697,7 +636,7 @@ E</p></li>
 </tbody>
 </table></section>
 <section id="sparse-reference-deployment-on-neural-engine">
-<h3>Sparse Reference Deployment on Neural Engine<a class="headerlink" href="#sparse-reference-deployment-on-neural-engine" title="Permalink to this heading">¶</a></h3>
+<h3>Sparse Reference Deployment on Neural Engine<a class="headerlink" href="#sparse-reference-deployment-on-neural-engine" title="Permalink to this heading"></a></h3>
 <table>
 <thead>
   <tr>
@@ -733,50 +672,32 @@ E</p></li>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="api_doc/api.html" class="btn btn-neutral float-right" title="APIs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.html" class="btn btn-neutral float-left" title="Validation Performance Data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api_doc/kernel/engine.html" class="btn btn-neutral float-left" title="Class engine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
-
-    </p>
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

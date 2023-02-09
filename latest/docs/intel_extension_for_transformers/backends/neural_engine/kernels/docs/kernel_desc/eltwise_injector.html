@@ -1,169 +1,82 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Introduction &mdash; Intel® Extension for Transformers 1.0b documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../../" src="../../../../../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../../_static/sphinx_highlight.js"></script>
-    
-    <script type="text/javascript" src="../../../../../../../_static/js/theme.js"></script>
-
-    
+    <script src="../../../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="../../../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
           
-
-          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
           </a>
-
-          
-            
-            
             <div class="version">
               <a href="../../../../../../../../versions.html">latest▼</a>
               <p>Click link above to switch version</p>
             </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">APIs</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-      <li>Introduction</li>
-    
-    
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/eltwise_injector.md.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <ul class="simple">
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
 <li><p><a class="reference external" href="#framework-features">Framework Features</a></p>
@@ -186,17 +99,17 @@
 </ul>
 <p><a name="VRz3S"></a></p>
 <section id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h1>
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h1>
 <p>op-fusion is a very widely used optimization approach in Deep-Learning. Considering we have two ops, Conv and Relu, in traditional way, we apply Conv op first, then store the value in the memory, after that we load the value and apply Relu. Obviously there have a useless load&amp;store operations, we can fuse the Conv&amp;Relu to remove the useless I/O, this is the key idea about op-fusion.<br />
 In Transformers-accelerated Libraries, we will provide a new class named injector for the op-fusion. From the perspective of the developers who want to apply the op-fusion optimization, they can make the injector a member of their jit_kernel class and initialize it in the kernel class’s construct function, when they want to apply postop, just need to call <strong>eltwise_injector-&gt;vector_compute</strong> and tell injector what registers has been used by <strong>eltwise_injector-&gt;escape_regs</strong>. Besides, the upper-level users also should call <strong>eltwise_injector-&gt;prepare_table</strong> to prepare the LUT which element-wise-op needs at the end of their xbyak kernel.<br />
 <strong>eltwise-injector</strong> supports 8 operators currently, there are exp, tanh, gelu, relu, linear, quantize(fp32-&gt;u8/s8), dequantize(u8/s8-&gt;fp32) and look-up result from LUT(as experimental API now). <strong>eltwise_injector</strong> also supports a postop-chain for applying multiple postops(pure-eltwise op now, will support binary-op in the future) sequentially.
 <a name="vY7m9"></a></p>
 </section>
 <section id="framework-features">
-<h1>Framework Features<a class="headerlink" href="#framework-features" title="Permalink to this heading">¶</a></h1>
+<h1>Framework Features<a class="headerlink" href="#framework-features" title="Permalink to this heading"></a></h1>
 <p><a name="Bu07F"></a></p>
 <section id="param-types-hpp">
-<h2>param_types.hpp<a class="headerlink" href="#param-types-hpp" title="Permalink to this heading">¶</a></h2>
+<h2>param_types.hpp<a class="headerlink" href="#param-types-hpp" title="Permalink to this heading"></a></h2>
 <p>Follow classes/structs will be introduced. The most important class is <code class="docutils literal notranslate"><span class="pre">postop_attr</span></code>, which indicate the postop’s attribute developer wants to apply, including data_type(e.g. fp32/bf16), op_type(only support eltwise now), algo_type(e.g. Gelu/Relu), aplha(zero points for quantization), beta, sacle for some operators such as linear&amp;quantize.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">postop_alg</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">exp</span><span class="p">,</span><span class="w"> </span><span class="n">gelu</span><span class="p">,</span><span class="w"> </span><span class="n">tanh</span><span class="p">,</span><span class="w"> </span><span class="n">gelu</span><span class="p">,</span><span class="w"> </span><span class="n">relu</span><span class="p">,</span><span class="w"> </span><span class="n">quantize</span><span class="p">,</span><span class="w"> </span><span class="n">dequantize</span><span class="p">,</span><span class="w"> </span><span class="n">linear</span><span class="p">,</span><span class="w"> </span><span class="n">int8_lut</span><span class="w"> </span><span class="p">};</span>
 
@@ -221,7 +134,7 @@ In Transformers-accelerated Libraries, we will provide a new class named injecto
 </pre></div>
 </div>
 <section id="alpha-beta-scale-meaning">
-<h3>alpha,beta,scale meaning<a class="headerlink" href="#alpha-beta-scale-meaning" title="Permalink to this heading">¶</a></h3>
+<h3>alpha,beta,scale meaning<a class="headerlink" href="#alpha-beta-scale-meaning" title="Permalink to this heading"></a></h3>
 <p>these 3 params are only used in quantize, dequantize, linear, relu.<br />The quantize’s mathematical definition is fp32=saturate(round(int8/scale+zero_point)) and the dequantize’s mathematical definition is int8=(fp32-zero_point)*scale. In these two operators,alpha represents zero_point, scale represents scale and beta is unused.<br />The mathematical definition of linear is y=αx+β. attr’s alpha represents alpha, beta represents beta and scale is unused.<br />The relu’s mathematical definition is as follow, attr’s alpha represents alpha, beta and scale are unused.</p>
 <p>$$
 \begin{align}
@@ -235,7 +148,7 @@ $$</p>
 </section>
 </section>
 <section id="operator-desc-hpp">
-<h2>operator_desc.hpp<a class="headerlink" href="#operator-desc-hpp" title="Permalink to this heading">¶</a></h2>
+<h2>operator_desc.hpp<a class="headerlink" href="#operator-desc-hpp" title="Permalink to this heading"></a></h2>
 <p>The member <code class="docutils literal notranslate"><span class="pre">apply_postops_list_</span></code>store the <code class="docutils literal notranslate"><span class="pre">postop_attr</span></code> which user want to apply.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">operator_desc</span><span class="w"> </span><span class="p">{</span>
 <span class="w"> </span><span class="k">public</span><span class="o">:</span>
@@ -266,7 +179,7 @@ $$</p>
 <p><a name="hZaPk"></a></p>
 </section>
 <section id="jit-eltwise-injector-hpp">
-<h2>jit_eltwise_injector.hpp<a class="headerlink" href="#jit-eltwise-injector-hpp" title="Permalink to this heading">¶</a></h2>
+<h2>jit_eltwise_injector.hpp<a class="headerlink" href="#jit-eltwise-injector-hpp" title="Permalink to this heading"></a></h2>
 <p>We design an element-wise injector named eltwise_injector which can apply eltwise-ops. We will combine the injectors like eltwise_injector, binary_injector into a new injector named postop-injector in the future.<br />Here are the APIs which eltwise_injector expose to the developer:<br /><code class="docutils literal notranslate"><span class="pre">eltwise_injector_init</span></code> is used for injector initialization.<br /><code class="docutils literal notranslate"><span class="pre">vector_compute</span></code> is used for executing the postop calculate, users can indicate the eltwiseop’s idx to select the op which they want to apply, if the idx list is empty, the injector will apply all ops in postop-chian.<br /><code class="docutils literal notranslate"><span class="pre">escape_regs</span></code> is used for telling injector which registers have been used in upper-level kernel.All dst zmm registers should be registered.<br />
 <code class="docutils literal notranslate"><span class="pre">escape_erase</span></code> is used for removing the specified type register ID from used_regs set, if reg_idx is not given,this function will erase all IDs by default.<br /><code class="docutils literal notranslate"><span class="pre">prepare_table</span></code> is used for inserting the LUT which injected code needed at the end of the upper-level kernel.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">jit_eltwise_injector</span><span class="w"> </span><span class="p">{</span>
@@ -286,9 +199,9 @@ $$</p>
 </section>
 </section>
 <section id="usage">
-<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h1>
+<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h1>
 <section id="developer-s-perspective">
-<h2>Developer’s Perspective.<a class="headerlink" href="#developer-s-perspective" title="Permalink to this heading">¶</a></h2>
+<h2>Developer’s Perspective.<a class="headerlink" href="#developer-s-perspective" title="Permalink to this heading"></a></h2>
 <p><a name="EibWR"></a>
 step0. Add a postop_attrs vector member in your params for pass the postop_attrs to the jit_kernel</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">eltwiseop_param_t</span><span class="w"> </span><span class="p">{</span>
@@ -362,7 +275,7 @@ step3. Apply the postops where you want and then prepare the LUT at the end of t
 <a name="rV6bL"></a></p>
 </section>
 <section id="user-s-perspective">
-<h2>User’s Perspective<a class="headerlink" href="#user-s-perspective" title="Permalink to this heading">¶</a></h2>
+<h2>User’s Perspective<a class="headerlink" href="#user-s-perspective" title="Permalink to this heading"></a></h2>
 <p>This is the guide about how to set op-fusion in UT in user’s perspective.
 <a name="IqCA0"></a>
 step0. Prepare the postop_attr</p>
@@ -407,46 +320,30 @@ step2. Check result</p>
 
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
-
-    </p>
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

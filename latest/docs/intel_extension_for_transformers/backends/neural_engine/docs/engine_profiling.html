@@ -1,184 +1,97 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Profiling &mdash; Intel® Extension for Transformers 1.0b documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/jquery.js"></script>
+        <script src="../../../../../_static/underscore.js"></script>
+        <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
         <script src="../../../../../_static/sphinx_highlight.js"></script>
-    
-    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
-
-    
+    <script src="../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
           
-
-          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
           </a>
-
-          
-            
-            
             <div class="version">
               <a href="../../../../../../versions.html">latest▼</a>
               <p>Click link above to switch version</p>
             </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">APIs</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../../../index.html">Intel® Extension for Transformers</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-      <li>Profiling</li>
-    
-    
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Profiling</li>
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.md.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <section id="profiling">
-<h1>Profiling<a class="headerlink" href="#profiling" title="Permalink to this heading">¶</a></h1>
+<h1>Profiling<a class="headerlink" href="#profiling" title="Permalink to this heading"></a></h1>
 <ol class="simple">
 <li><p><a class="reference external" href="#Introduction">Introduction</a></p></li>
 <li><p><a class="reference external" href="#Profling-API">Profling API</a></p></li>
 <li><p><a class="reference external" href="#Profiling-Examples">Profiling Examples</a><br />3.1 <a class="reference external" href="#Parts-of-CSV-Profiling">Parts of CSV Profiling</a><br />  3.1.1 <a class="reference external" href="#Sparse-Ratio-Setting-Part">Sparse Ratio Setting Part</a><br />  3.1.2 <a class="reference external" href="#Operator-Profiling-Part">Operator Profiling Part</a><br />  3.1.3 <a class="reference external" href="#Total-Profiling-Part">Total Profiling Part</a><br />3.2 <a class="reference external" href="#Levels-of-JSON-Profiling">Levels of JSON Profiling</a><br />  3.2.1 <a class="reference external" href="#Model-Level">Model Level</a><br />  3.2.2 <a class="reference external" href="#Iteration-Level">Iteration Level</a><br />  3.2.3 <a class="reference external" href="#Operator-Level">Operator Level</a></p></li>
 </ol>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>In order to better analyze the performance of the model, we could evaluate the performance of each operator in inference. There is a profling tool in Neural Engine to collect the latency of operators.</p>
 </section>
 <section id="profling-api">
-<h2>Profling API<a class="headerlink" href="#profling-api" title="Permalink to this heading">¶</a></h2>
+<h2>Profling API<a class="headerlink" href="#profling-api" title="Permalink to this heading"></a></h2>
 <section id="you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api">
-<h3>You can get profile only with ENGINE_PROFILING=1 before running model by python/c++ API.<a class="headerlink" href="#you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api" title="Permalink to this heading">¶</a></h3>
+<h3>You can get profile only with ENGINE_PROFILING=1 before running model by python/c++ API.<a class="headerlink" href="#you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api" title="Permalink to this heading"></a></h3>
 <p>Let’s take <a class="reference external" href="../../../../examples/deployment/neural_engine/sst2/bert_mini">bert_mini_sst2</a> for example. You can follow the steps in example README.md and just add ENGINE_PROFILING=1 before run executor like this:
 run python</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">ENGINE_PROFILING</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>run_executor.py<span class="w"> </span>--input_model<span class="o">=</span>./model_and_tokenizer/int8-model.onnx<span class="w"> </span>--mode<span class="o">=</span>performance<span class="w"> </span>--batch_size<span class="o">=</span><span class="m">8</span><span class="w"> </span>--seq_len<span class="o">=</span><span class="m">128</span>
@@ -195,11 +108,11 @@ run python</p>
 </section>
 </section>
 <section id="profiling-examples">
-<h2>Profiling Examples<a class="headerlink" href="#profiling-examples" title="Permalink to this heading">¶</a></h2>
+<h2>Profiling Examples<a class="headerlink" href="#profiling-examples" title="Permalink to this heading"></a></h2>
 <section id="parts-of-csv-profiling">
-<h3>Parts of CSV Profiling<a class="headerlink" href="#parts-of-csv-profiling" title="Permalink to this heading">¶</a></h3>
+<h3>Parts of CSV Profiling<a class="headerlink" href="#parts-of-csv-profiling" title="Permalink to this heading"></a></h3>
 <section id="sparse-ratio-setting-part">
-<h4>Sparse Ratio Setting Part<a class="headerlink" href="#sparse-ratio-setting-part" title="Permalink to this heading">¶</a></h4>
+<h4>Sparse Ratio Setting Part<a class="headerlink" href="#sparse-ratio-setting-part" title="Permalink to this heading"></a></h4>
 <ul class="simple">
 <li><p>Some arguments for sparse include weight shape, sparse ratio and target performance ratio.</p></li>
 <li><p>Users can set the parameter pref ratio to estimate sparse operator performance improvement semi-automatically.</p></li>
@@ -212,7 +125,7 @@ run python</p>
 |description       |  Shape of weight for “matmul” or “innerproduct”  |The op’s sparse ratio is 90%, and the performance ratio is “dense op latency”/ “sparse op latency” , representing the performance improvement of the op after sparse. This parameter can be set by the user.|Same as 90% 4x1 perf ratio |Same as 90% 4x1 perf ratio|</p>
 </section>
 <section id="operator-profiling-part">
-<h4>Operator Profiling Part<a class="headerlink" href="#operator-profiling-part" title="Permalink to this heading">¶</a></h4>
+<h4>Operator Profiling Part<a class="headerlink" href="#operator-profiling-part" title="Permalink to this heading"></a></h4>
 <ul class="simple">
 <li><p>All operator’s profiling, such as operator type, input tensor, output tensor and latency. Let’s take “innerproduct” as an example.</p></li>
 <li><p>In this form, we can auto calculate the sparse op performance by customized sparse ratio.</p></li>
@@ -309,7 +222,7 @@ run python</p>
 </tbody>
 </table></section>
 <section id="total-profiling-part">
-<h4>Total Profiling Part<a class="headerlink" href="#total-profiling-part" title="Permalink to this heading">¶</a></h4>
+<h4>Total Profiling Part<a class="headerlink" href="#total-profiling-part" title="Permalink to this heading"></a></h4>
 <ul class="simple">
 <li><p>Performance comparison of dense and sparse networks.</p></li>
 </ul>
@@ -359,9 +272,9 @@ run python</p>
 </blockquote></section>
 </section>
 <section id="levels-of-json-profiling">
-<h3>Levels of JSON Profiling<a class="headerlink" href="#levels-of-json-profiling" title="Permalink to this heading">¶</a></h3>
+<h3>Levels of JSON Profiling<a class="headerlink" href="#levels-of-json-profiling" title="Permalink to this heading"></a></h3>
 <section id="model-level">
-<h4>Model Level<a class="headerlink" href="#model-level" title="Permalink to this heading">¶</a></h4>
+<h4>Model Level<a class="headerlink" href="#model-level" title="Permalink to this heading"></a></h4>
 <p>The model_inference level records the latency of model from start to end.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>Title<span class="w">    </span>model_inference
 Category<span class="w">    </span>inference
@@ -372,7 +285,7 @@ Wall<span class="w"> </span>Duration<span class="w">    </span><span class="m">1
 </div>
 </section>
 <section id="iteration-level">
-<h4>Iteration Level<a class="headerlink" href="#iteration-level" title="Permalink to this heading">¶</a></h4>
+<h4>Iteration Level<a class="headerlink" href="#iteration-level" title="Permalink to this heading"></a></h4>
 <p>The iteration level records the latency of each iteration from start to end.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>Title<span class="w">    </span>Iteration4
 Category<span class="w">    </span>iteration
@@ -383,7 +296,7 @@ Wall<span class="w"> </span>Duration<span class="w">    </span><span class="m">8
 </div>
 </section>
 <section id="operator-level">
-<h4>Operator Level<a class="headerlink" href="#operator-level" title="Permalink to this heading">¶</a></h4>
+<h4>Operator Level<a class="headerlink" href="#operator-level" title="Permalink to this heading"></a></h4>
 <p>The operator level records the latency of per operator in per iteration from start to end. And there are also details in Args. The reshape_time means the latency happened to prepare tensor shape phrase. It will be 0ms in iteration more than 0 static shape case. The forward_time means latency of kernel calculation. And you can also see input/output tensor_name, tensor_type, tensor_shape. As for attributes, it will include some parameters in this operator such as padding in conv, post op such as sum and permutation information such src1_perm:1,0 meaning that input tensor 1 transposes 0 and 1 axis.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>Title<span class="w">    </span>Add_284
 Category<span class="w">    </span>InnerProduct
@@ -411,46 +324,30 @@ attributes<span class="w">    </span><span class="s2">&quot;append_op:sum;src1_p
 
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
-
-    </p>
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

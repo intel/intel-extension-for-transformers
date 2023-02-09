@@ -1,171 +1,84 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Add Customized Pattern &mdash; Intel® Extension for Transformers 1.0b documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/jquery.js"></script>
+        <script src="../../../../../_static/underscore.js"></script>
+        <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
         <script src="../../../../../_static/sphinx_highlight.js"></script>
-    
-    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
-
-    
+    <script src="../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
           
-
-          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
           </a>
-
-          
-            
-            
             <div class="version">
               <a href="../../../../../../versions.html">latest▼</a>
               <p>Click link above to switch version</p>
             </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">APIs</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../../../index.html">Intel® Extension for Transformers</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-      <li>Add Customized Pattern</li>
-    
-    
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Add Customized Pattern</li>
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.md.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <section id="add-customized-pattern">
-<h1>Add Customized Pattern<a class="headerlink" href="#add-customized-pattern" title="Permalink to this heading">¶</a></h1>
+<h1>Add Customized Pattern<a class="headerlink" href="#add-customized-pattern" title="Permalink to this heading"></a></h1>
 <ul class="simple">
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
 <li><p><a class="reference external" href="#register-the-nodes-op-types">Register the Nodes’ Op Types</a></p></li>
@@ -173,14 +86,14 @@
 <li><p><a class="reference external" href="#fuse-pattern-and-set-attributes-of-new-pattern-after-fusion">Fuse Pattern and Set Attributes of New Pattern after Fusion</a></p></li>
 </ul>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> in <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">Transformers</span></code> support user to add customized pattern of model, which means you can compile your own pretrained model to <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> IR (Intermediate Representation) just by adding the specific patterns which the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a> does not contain.</p>
 <p>The intermediate graph in <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> can be treated as a <code class="docutils literal notranslate"><span class="pre">list</span></code> that stores all nodes of the model under control flow. Some certain nodes may compose a pattern which needs to be fused for speeding up inference. For simplifying the network structure, we also design different attributes attached to fused nodes. To aim at adding a customized pattern, there are three steps: <strong>1. register the nodes’ op_types; 2. set the pattern mapping config and register the pattern; 3. fuse pattern and set attributes of the new pattern after fusion.</strong></p>
 <p><img alt="../../../../../_images/layernorm_distilbert_base_onnx.png" src="../../../../../_images/layernorm_distilbert_base_onnx.png" /></p>
 <p>Above is a <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern in the <code class="docutils literal notranslate"><span class="pre">Distilbert_Base</span></code> onnx model. Assume it is a customized pattern in your model that need to be added in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a>. Follow the steps below to make <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> support this pattern, and fuse these 9 nodes to one node called <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code>.</p>
 </section>
 <section id="register-the-nodes-op-types">
-<h2>Register the Nodes’ Op Types<a class="headerlink" href="#register-the-nodes-op-types" title="Permalink to this heading">¶</a></h2>
+<h2>Register the Nodes’ Op Types<a class="headerlink" href="#register-the-nodes-op-types" title="Permalink to this heading"></a></h2>
 <p>First, you should check whether the nodes’ op_types in the pattern are registered in <code class="docutils literal notranslate"><span class="pre">Engine</span></code> or not. If not, you need to add the op_type class for <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a> loading and extracting the origin model. All the ops can be found from the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile/ops"><code class="docutils literal notranslate"><span class="pre">compile.ops</span></code></a>. For quick check, use the commands below.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># make sure you have cloned intel_extension_for_transformers repo and installed intel_extension_for_transformers</span>
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.backends.neural_engine.compile.ops.op</span> <span class="kn">import</span> <span class="n">OPERATORS</span>
@@ -249,7 +162,7 @@ python<span class="w"> </span>setup.py<span class="w"> </span>install
 <p>If nothing wrong, the output result should be <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
 </section>
 <section id="set-the-pattern-mapping-config-and-register-the-pattern">
-<h2>Set the Pattern Mapping Config and Register the Pattern<a class="headerlink" href="#set-the-pattern-mapping-config-and-register-the-pattern" title="Permalink to this heading">¶</a></h2>
+<h2>Set the Pattern Mapping Config and Register the Pattern<a class="headerlink" href="#set-the-pattern-mapping-config-and-register-the-pattern" title="Permalink to this heading"></a></h2>
 <p>In <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code>, we treat the pattern fusion as the process of pattern mapping: from a group nodes to another group nodes. In this step, you need to provide a config for <code class="docutils literal notranslate"><span class="pre">pattern_mapping</span></code> function and register your pattern, in order to make sure the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a> implements pattern fusion correctly.</p>
 <ul>
 <li><p>Create a python file (for example, name can be <code class="docutils literal notranslate"><span class="pre">layer_norm.py</span></code>) in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph"><code class="docutils literal notranslate"><span class="pre">compile.sub_graph</span></code></a> and add the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern mapping config.</p>
@@ -351,7 +264,7 @@ python<span class="w"> </span>setup.py<span class="w"> </span>install
 </ul>
 </section>
 <section id="fuse-pattern-and-set-attributes-of-new-pattern-after-fusion">
-<h2>Fuse Pattern and Set Attributes of New Pattern after Fusion<a class="headerlink" href="#fuse-pattern-and-set-attributes-of-new-pattern-after-fusion" title="Permalink to this heading">¶</a></h2>
+<h2>Fuse Pattern and Set Attributes of New Pattern after Fusion<a class="headerlink" href="#fuse-pattern-and-set-attributes-of-new-pattern-after-fusion" title="Permalink to this heading"></a></h2>
 <ul>
 <li><p>Define the pattern fusion order</p>
 <p>Fusing patterns should follow specific order if a model has multiple patterns. For example, if the model has A pattern (nodes: a–&gt;b) and B pattern (nodes: a–&gt;b–&gt;c), and B pattern is actually equivalent to A pattern + c node. So you should fuse A pattern first, then B pattern (more info and details please see the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/docs/graph_fusion.md">graph_fusion</a>).</p>
@@ -480,46 +393,30 @@ python<span class="w"> </span>setup.py<span class="w"> </span>install
 
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
-
-    </p>
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

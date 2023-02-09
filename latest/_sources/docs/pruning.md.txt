@@ -33,7 +33,7 @@ pruner_config = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=
 p_conf = PruningConfig(pruner_config=[pruner_config], metrics=metric)
 model = trainer.prune(pruning_config=p_conf)
 ```
-Please refer to [example](../examples/optimize/pytorch/huggingface/text-classification/pruning/run_glue.py) for the details.
+Please refer to [example](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/text-classification/pruning) for the details.
 
 ### Create an instance of Metric
 The Metric defines which metric will be used to measure the performance of tuned models.
@@ -57,7 +57,7 @@ PrunerConfig defines which pruning algorithm to use and how to apply it during t
     |prune_type|string|Pruning algorithm                                     |'BasicMagnitude' |
     |method|string|Pruning method                                            |'per_tensor' |
     |names|list of string|List of weight name to be pruned. If no weight is specified, all weights of the model will be pruned|[]|
-    |parameters|dict of string|The hyper-parameters for pruning, refer to [the link](https://github.com/intel/neural-compressor/blob/master/docs/pruning.md)|None|
+    |parameters|dict of string|The hyper-parameters for pruning, refer to [the link](https://github.com/intel/neural-compressor/blob/master/docs/source/pruning.md)|None|
 
 - example:
     ```python

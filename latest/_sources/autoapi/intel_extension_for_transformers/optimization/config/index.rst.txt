@@ -25,6 +25,7 @@ Classes
    intel_extension_for_transformers.optimization.config.TFDistillationConfig
    intel_extension_for_transformers.optimization.config.FlashDistillationConfig
    intel_extension_for_transformers.optimization.config.AutoDistillationConfig
+   intel_extension_for_transformers.optimization.config.NASConfig
 
 
 
@@ -200,6 +201,40 @@ Classes
    .. py:property:: regular_distillation
 
       Get the regular distillation.
+
+   .. py:property:: framework
+
+      Get the framework.
+
+   .. py:property:: search_space
+
+      Get the search space.
+
+   .. py:property:: search_algorithm
+
+      Get the search algorithm.
+
+   .. py:property:: max_trials
+
+      Get the max trials.
+
+   .. py:property:: seed
+
+      Get the seed.
+
+   .. py:property:: metrics
+
+      Get the metrics.
+
+
+.. py:class:: NASConfig(framework: str = 'pytorch', approach: str = 'basic', search_space: dict = {}, search_algorithm: str = 'BO', metrics: Union[List, intel_extension_for_transformers.optimization.utils.metrics.Metric] = None, max_trials: int = None, seed: int = None)
+
+   Bases: :py:obj:`object`
+
+   config parser.
+
+   :param approach: The approach of the NAS.
+   :param search_algorithm: The search algorithm for NAS procedure.
 
    .. py:property:: framework
 

@@ -14,6 +14,7 @@ Subpackages
 
    dynamic/index.rst
    mixture/index.rst
+   nas/index.rst
    utils/index.rst
 
 
@@ -46,6 +47,7 @@ Classes
    intel_extension_for_transformers.optimization.DistillationConfig
    intel_extension_for_transformers.optimization.FlashDistillationConfig
    intel_extension_for_transformers.optimization.TFDistillationConfig
+   intel_extension_for_transformers.optimization.NASConfig
    intel_extension_for_transformers.optimization.Provider
    intel_extension_for_transformers.optimization.PruningConfig
    intel_extension_for_transformers.optimization.QuantizationConfig
@@ -53,8 +55,7 @@ Classes
    intel_extension_for_transformers.optimization.DistillationCriterionMode
    intel_extension_for_transformers.optimization.AutoDistillation
    intel_extension_for_transformers.optimization.OptimizedModel
-   intel_extension_for_transformers.optimization.NoTrainerOptimizer
-   intel_extension_for_transformers.optimization.Orchestrate_optimizer
+   intel_extension_for_transformers.optimization.NAS
    intel_extension_for_transformers.optimization.TFOptimization
    intel_extension_for_transformers.optimization.PrunerConfig
    intel_extension_for_transformers.optimization.PruningMode
@@ -133,6 +134,40 @@ Classes
    Bases: :py:obj:`object`
 
    Configure the distillation process for Tensorflow.
+
+
+.. py:class:: NASConfig(framework: str = 'pytorch', approach: str = 'basic', search_space: dict = {}, search_algorithm: str = 'BO', metrics: Union[List, intel_extension_for_transformers.optimization.utils.metrics.Metric] = None, max_trials: int = None, seed: int = None)
+
+   Bases: :py:obj:`object`
+
+   config parser.
+
+   :param approach: The approach of the NAS.
+   :param search_algorithm: The search algorithm for NAS procedure.
+
+   .. py:property:: framework
+
+      Get the framework.
+
+   .. py:property:: search_space
+
+      Get the search space.
+
+   .. py:property:: search_algorithm
+
+      Get the search algorithm.
+
+   .. py:property:: max_trials
+
+      Get the max trials.
+
+   .. py:property:: seed
+
+      Get the seed.
+
+   .. py:property:: metrics
+
+      Get the metrics.
 
 
 .. py:class:: Provider
@@ -271,7 +306,7 @@ Classes
 
 .. py:class:: AutoDistillation(model_builder, conf_fname_or_obj, framework='pytorch')
 
-   Bases: :py:obj:`object`
+   Bases: :py:obj:`neural_compressor.experimental.nas.nas.NASBase`
 
    The framework class is designed for handling the whole pipeline of AutoDistillation.
 
@@ -291,10 +326,6 @@ Classes
 
       Getter of student model.
 
-   .. py:property:: advisor
-
-      Getter of advisor.
-
    .. py:property:: train_func
 
       Getter of train function.
@@ -302,13 +333,6 @@ Classes
    .. py:property:: eval_func
 
       Getter of evaluation function.
-
-   .. py:method:: model_arch_proposition()
-
-      Propose architecture of the model based on search algorithm for next search iteration.
-
-      :returns: Model architecture description.
-
 
    .. py:method:: search(res_save_path=None, model_cls=None)
 
@@ -331,36 +355,9 @@ Classes
       :param path: The file path which stores the previous results.
 
 
-   .. py:method:: dump_search_results(path)
-
-      Dump current search results into a file.
-
-      :param path: The file path to store the results.
-
-
-   .. py:method:: params_vec2params_dict(paras_vec)
-
-      Transfer the vector into dict to hold the paramaters.
-
-
-   .. py:method:: find_best_model_archs()
-
-      Find the model architecture with best performance.
-
-
-   .. py:method:: metrics_conversion(metrics)
-
-      Convert the metrics.
-
-
    .. py:method:: init_by_cfg(conf_fname_or_obj)
 
       Use auto distillation config to init the instance of autodistillation.
-
-
-   .. py:method:: init_search_cfg(config)
-
-      Init advisor base on config.
 
 
    .. py:method:: create_distillers()
@@ -399,69 +396,16 @@ Classes
 
 
 
-.. py:class:: NoTrainerOptimizer(model, output_dir: Optional[str] = 'saved_results')
+.. py:class:: NAS
 
-   Optimizer without using Trainer.
+   Bases: :py:obj:`object`
 
-   .. py:property:: eval_func
+   Create object of different NAS approaches.
 
-      Get the evaluation function.
+   :param conf_fname_or_obj: The path to the YAML configuration file or the object of NASConfig.
+   :type conf_fname_or_obj: string or obj
 
-   .. py:property:: train_func
-
-      Get the train function.
-
-   .. py:property:: calib_func
-
-      Get the calib function.
-
-   .. py:property:: provider
-
-      Get the provider.
-
-   .. py:property:: calib_dataloader
-
-      Get the calibration dataloader.
-
-   .. py:method:: init_quantizer(quant_config, provider: str = Provider.INC.value)
-
-      Init a Quantization object with config.
-
-
-   .. py:method:: quantize(quant_config: intel_extension_for_transformers.optimization.QuantizationConfig = None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, calib_func: Optional[Callable] = None, calib_dataloader=None)
-
-      Prepare for invoking the _inc_quantize function.
-
-
-   .. py:method:: init_pruner(pruning_config=None, provider: str = Provider.INC.value)
-
-      Init a Pruning object with config.
-
-
-   .. py:method:: prune(pruning_config=None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
-
-      Do the pruning.
-
-
-   .. py:method:: init_distiller(distillation_config, teacher_model, provider: str = Provider.INC.value)
-
-      Init a Distillation object with config and the teacher model.
-
-
-   .. py:method:: distill(distillation_config, teacher_model, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
-
-      Do the distillation.
-
-
-
-.. py:class:: Orchestrate_optimizer(model, components: Optional[List[neural_compressor.experimental.Component]] = [], eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
-
-   Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation.
-
-   .. py:method:: fit()
-
-      Run the scheduler.
-
+   :returns: An object of specified NAS approach.
 
 
 .. py:class:: TFOptimization(model: transformers.PreTrainedModel, args: transformers.training_args_tf.TFTrainingArguments, train_dataset=None, eval_dataset=None, compute_metrics: Optional[Callable] = None, criterion=None, optimizer=None, task_type=None, task_id=None, strategy=None)

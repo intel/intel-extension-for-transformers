@@ -1,169 +1,82 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Benchmark for Kernels &mdash; Intel® Extension for Transformers 1.0b documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../../" src="../../../../../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../../_static/sphinx_highlight.js"></script>
-    
-    <script type="text/javascript" src="../../../../../../../_static/js/theme.js"></script>
-
-    
+    <script src="../../../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="../../../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
           
-
-          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
           </a>
-
-          
-            
-            
             <div class="version">
               <a href="../../../../../../../../versions.html">latest▼</a>
               <p>Click link above to switch version</p>
             </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">APIs</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-      <li>Benchmark for Kernels</li>
-    
-    
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Benchmark for Kernels</li>
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/benchmark.md.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <ul class="simple">
 <li><p><a class="reference external" href="#benchmark-for-kernels">Benchmark for Kernels</a></p>
 <ul>
@@ -194,10 +107,10 @@
 <li><p><a class="reference external" href="#for-developers">For developers</a></p></li>
 </ul>
 <section id="benchmark-for-kernels">
-<h1>Benchmark for Kernels<a class="headerlink" href="#benchmark-for-kernels" title="Permalink to this heading">¶</a></h1>
+<h1>Benchmark for Kernels<a class="headerlink" href="#benchmark-for-kernels" title="Permalink to this heading"></a></h1>
 <p>This is a tool to perform accuracy test and performance test for kernel in <a class="reference external" href="../../../kernels">kernels</a>.</p>
 <section id="build">
-<h2>Build<a class="headerlink" href="#build" title="Permalink to this heading">¶</a></h2>
+<h2>Build<a class="headerlink" href="#build" title="Permalink to this heading"></a></h2>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>&lt;path/to/this/repo&gt;/intel_extension_for_transformers/backends/neural_engine
 mkdir<span class="w"> </span>build
 <span class="nb">cd</span><span class="w"> </span>build
@@ -207,7 +120,7 @@ make<span class="w"> </span>-j
 </div>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>&lt;kernel_type&gt;<span class="w"> </span>&lt;kernel_configs&gt;
 </pre></div>
 </div>
@@ -231,7 +144,7 @@ make<span class="w"> </span>-j
 </li>
 </ul>
 <section id="sparse-matmul">
-<h3>sparse_matmul<a class="headerlink" href="#sparse-matmul" title="Permalink to this heading">¶</a></h3>
+<h3>sparse_matmul<a class="headerlink" href="#sparse-matmul" title="Permalink to this heading"></a></h3>
 <p>Currently we done 2D sparse matrix multiplication: <code class="docutils literal notranslate"><span class="pre">A(MxK)</span> <span class="pre">x</span> <span class="pre">B(KxN)</span> <span class="pre">=</span> <span class="pre">C(MxN)</span></code> where <code class="docutils literal notranslate"><span class="pre">A</span></code> is a sparse matrix.</p>
 <p>Current algorithms for sparse_matmul:</p>
 <ul class="simple">
@@ -240,7 +153,7 @@ make<span class="w"> </span>-j
 <li><p><a class="reference internal" href="../../../kernels/docs/kernel_desc/kernel_amx.html"><span class="doc">spmm_amx_bf16_x16</span></a></p></li>
 </ul>
 <section id="spmm-avx512f">
-<h4>spmm_avx512f<a class="headerlink" href="#spmm-avx512f" title="Permalink to this heading">¶</a></h4>
+<h4>spmm_avx512f<a class="headerlink" href="#spmm-avx512f" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>sparse_matmul<span class="w"> </span>avx512f<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;sparse_ratio&gt;<span class="w"> </span><span class="o">[</span>&lt;post-op&gt;...<span class="o">]</span>
 </pre></div>
 </div>
@@ -248,14 +161,14 @@ make<span class="w"> </span>-j
 <code class="docutils literal notranslate"><span class="pre">sparse_ratio</span></code> is the sparse ratio of weight.
 There can be more than one post-op. Please refer to <a class="reference external" href="#eltwiseop">eltwiseop</a> to see supported <code class="docutils literal notranslate"><span class="pre">algorithm</span></code>.</p>
 <section id="examples">
-<h5>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h5>
+<h5>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h5>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>sparse_matmul<span class="w"> </span>avx512f<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">0</span>.7<span class="w"> </span>gelu<span class="w"> </span>exp
 </pre></div>
 </div>
 </section>
 </section>
 <section id="spmm-vnni">
-<h4>spmm_vnni<a class="headerlink" href="#spmm-vnni" title="Permalink to this heading">¶</a></h4>
+<h4>spmm_vnni<a class="headerlink" href="#spmm-vnni" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>sparse_matmul<span class="w"> </span>vnni<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;sparse_ratio&gt;<span class="w"> </span>&lt;micro_bs&gt;<span class="w"> </span>&lt;output_fp32&gt;<span class="w"> </span>&lt;has_append_sum&gt;<span class="w"> </span>&lt;micro_oc&gt;<span class="w"> </span>&lt;sub_func_level&gt;<span class="w"> </span><span class="o">[</span>&lt;post-op&gt;...<span class="o">]</span>
 </pre></div>
 </div>
@@ -271,14 +184,14 @@ There can be more than one post-op. Please refer to <a class="reference external
 </ul>
 <p>You can use <code class="docutils literal notranslate"><span class="pre">-1</span></code> to use default config for <code class="docutils literal notranslate"><span class="pre">micro_bs</span></code>, <code class="docutils literal notranslate"><span class="pre">micro_oc</span></code>,<code class="docutils literal notranslate"><span class="pre">sub_func_level</span></code>.</p>
 <section id="id1">
-<h5>Examples<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h5>
+<h5>Examples<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h5>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>sparse_matmul<span class="w"> </span>vnni<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">0</span>.7<span class="w"> </span>-1<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">0</span><span class="w"> </span>-1<span class="w"> </span>-1<span class="w"> </span>gelu
 </pre></div>
 </div>
 </section>
 </section>
 <section id="spmm-amx-bf16-x16">
-<h4>spmm_amx_bf16_x16<a class="headerlink" href="#spmm-amx-bf16-x16" title="Permalink to this heading">¶</a></h4>
+<h4>spmm_amx_bf16_x16<a class="headerlink" href="#spmm-amx-bf16-x16" title="Permalink to this heading"></a></h4>
 <blockquote>
 <div><p><strong>Note</strong> Please make sure amx instructions are supported on your machine. You should build a benchmark with amx.</p>
 </div></blockquote>
@@ -302,7 +215,7 @@ make<span class="w"> </span>-j
 </ul>
 <p>You can use <code class="docutils literal notranslate"><span class="pre">-1</span></code> to use default config for <code class="docutils literal notranslate"><span class="pre">micro_bs</span></code>, <code class="docutils literal notranslate"><span class="pre">micro_oc</span></code>.</p>
 <section id="id2">
-<h5>Examples<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h5>
+<h5>Examples<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h5>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>sparse_matmul<span class="w"> </span>amx_bf16_x16<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">0</span>.9<span class="w"> </span><span class="m">64</span><span class="w"> </span>-1<span class="w"> </span>-1<span class="w"> </span><span class="m">1</span><span class="w"> </span>gelu
 </pre></div>
 </div>
@@ -310,7 +223,7 @@ make<span class="w"> </span>-j
 </section>
 </section>
 <section id="eltwiseop">
-<h3>eltwiseop<a class="headerlink" href="#eltwiseop" title="Permalink to this heading">¶</a></h3>
+<h3>eltwiseop<a class="headerlink" href="#eltwiseop" title="Permalink to this heading"></a></h3>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>eltwiseop<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;data_type&gt;_&lt;algorithm&gt;<span class="o">[</span>+&lt;data_type&gt;_&lt;algorithm&gt;<span class="o">[</span>+...<span class="o">]]</span><span class="w"> </span>&lt;ranges&gt;
 </pre></div>
 </div>
@@ -332,14 +245,14 @@ make<span class="w"> </span>-j
 </li>
 </ul>
 <section id="id3">
-<h4>Examples<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h4>
+<h4>Examples<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>eltwiseop<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span>dequantize+fp32_relu+quantize<span class="w"> </span>-10.0,10.0
 </pre></div>
 </div>
 </section>
 </section>
 <section id="layernorm-ba">
-<h3>layernorm_ba<a class="headerlink" href="#layernorm-ba" title="Permalink to this heading">¶</a></h3>
+<h3>layernorm_ba<a class="headerlink" href="#layernorm-ba" title="Permalink to this heading"></a></h3>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>layernorm_ba<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;src_dt&gt;<span class="w"> </span>&lt;dst_dt&gt;
 </pre></div>
 </div>
@@ -350,17 +263,17 @@ make<span class="w"> </span>-j
 <li><p><code class="docutils literal notranslate"><span class="pre">dst_dt={fp32,s8,u8}</span></code>is output data type.</p></li>
 </ul>
 <section id="id4">
-<h4>Examples<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h4>
+<h4>Examples<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>layernorm_ba<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span>fp32<span class="w"> </span>fp32
 </pre></div>
 </div>
 </section>
 </section>
 <section id="transpose-matmul">
-<h3>transpose_matmul<a class="headerlink" href="#transpose-matmul" title="Permalink to this heading">¶</a></h3>
+<h3>transpose_matmul<a class="headerlink" href="#transpose-matmul" title="Permalink to this heading"></a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">transpose_matmul</span></code> are a series 4D matmuls without distinguishing between dense and sparse, they can be calculated with <code class="docutils literal notranslate"><span class="pre">alpha</span> <span class="pre">*</span> <span class="pre">src0(bs0,</span> <span class="pre">bs1,</span> <span class="pre">M,</span> <span class="pre">K)</span> <span class="pre">x</span> <span class="pre">src1(bs0,</span> <span class="pre">bs1,</span> <span class="pre">K,</span> <span class="pre">N)</span> <span class="pre">+</span> <span class="pre">beta</span> <span class="pre">*</span> <span class="pre">scr2(M,</span> <span class="pre">N)</span> <span class="pre">=</span> <span class="pre">dst(bs0,</span> <span class="pre">bs1,</span> <span class="pre">M,</span> <span class="pre">N)</span></code> where <code class="docutils literal notranslate"><span class="pre">alpha,</span> <span class="pre">beta,</span> <span class="pre">src2</span></code> are optional. Refer to <a class="reference internal" href="../../../kernels/docs/kernel_desc/kernel_transpose_matmul.html"><span class="doc">transpose_matmul</span></a> for detail.</p>
 <section id="matmul-avx512f-p2031-p2013">
-<h4>matmul_avx512f_p2031_p2013<a class="headerlink" href="#matmul-avx512f-p2031-p2013" title="Permalink to this heading">¶</a></h4>
+<h4>matmul_avx512f_p2031_p2013<a class="headerlink" href="#matmul-avx512f-p2031-p2013" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>transpose_matmul<span class="w"> </span>avx512f_p2031_p2013<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;bs0&gt;<span class="w"> </span>&lt;bs1&gt;<span class="w"> </span>&lt;has_binary_add&gt;<span class="w"> </span>&lt;alpha&gt;<span class="w"> </span>&lt;beta&gt;<span class="w"> </span><span class="o">[</span>tile_m<span class="o">]</span><span class="w"> </span><span class="o">[</span>tile_n<span class="o">]</span>
 </pre></div>
 </div>
@@ -372,14 +285,14 @@ make<span class="w"> </span>-j
 <li><p><code class="docutils literal notranslate"><span class="pre">tile_m,</span> <span class="pre">tile_n</span></code> are optional. They specify the tile shape when calculating matmul.</p></li>
 </ul>
 <section id="id5">
-<h5>Examples<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h5>
+<h5>Examples<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h5>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>transpose_matmul<span class="w"> </span>avx512f_p2031_p2013<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">12</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">0</span>.25<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">2</span>
 </pre></div>
 </div>
 </section>
 </section>
 <section id="matmul-vnni-noperm-p2031-p1302">
-<h4>matmul_vnni_noperm_p2031_p1302<a class="headerlink" href="#matmul-vnni-noperm-p2031-p1302" title="Permalink to this heading">¶</a></h4>
+<h4>matmul_vnni_noperm_p2031_p1302<a class="headerlink" href="#matmul-vnni-noperm-p2031-p1302" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>transpose_matmul<span class="w"> </span>vnni_noperm_p2031_p1302<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;bs0&gt;<span class="w"> </span>&lt;bs1&gt;
 </pre></div>
 </div>
@@ -391,7 +304,7 @@ make<span class="w"> </span>-j
 <li><p><code class="docutils literal notranslate"><span class="pre">tile_m,</span> <span class="pre">tile_n</span></code> are optional. They specify the tile shape when calculating matmul.</p></li>
 </ul>
 <section id="id6">
-<h5>Examples<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h5>
+<h5>Examples<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h5>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>transpose_matmul<span class="w"> </span>vnni_noperm_p2031_p1302<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">12</span>
 </pre></div>
 </div>
@@ -399,7 +312,7 @@ make<span class="w"> </span>-j
 </section>
 </section>
 <section id="softmax">
-<h3>softmax<a class="headerlink" href="#softmax" title="Permalink to this heading">¶</a></h3>
+<h3>softmax<a class="headerlink" href="#softmax" title="Permalink to this heading"></a></h3>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>softmax<span class="w"> </span>&lt;spec_type&gt;<span class="w"> </span>&lt;input_shape&gt;<span class="w"> </span>&lt;input_dt&gt;<span class="w"> </span>&lt;output_dt&gt;
 </pre></div>
 </div>
@@ -411,19 +324,19 @@ make<span class="w"> </span>-j
 <li><p><code class="docutils literal notranslate"><span class="pre">output_dt</span> <span class="pre">=</span> <span class="pre">{bf16}</span></code>: output data type only support bf16 now.</p></li>
 </ul>
 <section id="id7">
-<h4>Examples<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h4>
+<h4>Examples<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>softmax<span class="w"> </span>lut<span class="w"> </span>256x256<span class="w"> </span>u8<span class="w"> </span>bf16
 </pre></div>
 </div>
 </section>
 </section>
 <section id="attention">
-<h3>attention<a class="headerlink" href="#attention" title="Permalink to this heading">¶</a></h3>
+<h3>attention<a class="headerlink" href="#attention" title="Permalink to this heading"></a></h3>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>attention<span class="w"> </span>&lt;head_num&gt;<span class="w"> </span>&lt;head_size&gt;<span class="w"> </span>&lt;batch_size&gt;<span class="w"> </span>&lt;seq_len&gt;<span class="w"> </span>&lt;sparsity&gt;<span class="w"> </span>&lt;dst_type&gt;
 </pre></div>
 </div>
 <section id="id8">
-<h4>Examples<a class="headerlink" href="#id8" title="Permalink to this heading">¶</a></h4>
+<h4>Examples<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>attention<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">128</span><span class="w"> </span><span class="m">0</span>.5<span class="w"> </span><span class="m">1</span>
 </pre></div>
 </div>
@@ -432,7 +345,7 @@ make<span class="w"> </span>-j
 </section>
 </section>
 <section id="for-developers">
-<h1>For developers<a class="headerlink" href="#for-developers" title="Permalink to this heading">¶</a></h1>
+<h1>For developers<a class="headerlink" href="#for-developers" title="Permalink to this heading"></a></h1>
 <p>To add benchmark support for a newly-added kernel, you may need to follow several steps:</p>
 <ul>
 <li><p>Create a subdir for the kernel under <code class="docutils literal notranslate"><span class="pre">&lt;benchmark_dir&gt;</span></code> and make sure you add files <code class="docutils literal notranslate"><span class="pre">bench_&lt;kernel_name&gt;.hpp</span></code> and <code class="docutils literal notranslate"><span class="pre">bench_&lt;kernel_name&gt;.cpp</span></code>. Implement the <code class="docutils literal notranslate"><span class="pre">test_&lt;kernel_name&gt;</span></code> function as the entrance of benchmark procedure of the kernel. Then Include <code class="docutils literal notranslate"><span class="pre">bench_&lt;kernel_name&gt;.hpp</span></code> in <code class="docutils literal notranslate"><span class="pre">&lt;benchmark_dir&gt;/benchmark.cpp</span></code> and add a branch for the function <code class="docutils literal notranslate"><span class="pre">test_&lt;kernel_name&gt;</span></code> in <code class="docutils literal notranslate"><span class="pre">main</span></code> function.</p></li>
@@ -451,46 +364,30 @@ make<span class="w"> </span>-j
 
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
-
-    </p>
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

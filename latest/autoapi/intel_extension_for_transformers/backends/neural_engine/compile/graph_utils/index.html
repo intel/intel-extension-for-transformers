@@ -1,176 +1,89 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>intel_extension_for_transformers.backends.neural_engine.compile.graph_utils &mdash; Intel® Extension for Transformers 1.0b documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../" src="../../../../../../_static/documentation_options.js"></script>
         <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../_static/sphinx_highlight.js"></script>
-    
-    <script type="text/javascript" src="../../../../../../_static/js/theme.js"></script>
-
-    
+    <script src="../../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="../../../../../../index.html" class="icon icon-home"> Intel® Extension for Transformers
           
-
-          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
           </a>
-
-          
-            
-            
             <div class="version">
               <a href="../../../../../../../versions.html">latest▼</a>
               <p>Click link above to switch version</p>
             </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/api_doc/api.html">APIs</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
-      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils</span></code></li>
-    
-    
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils</span></code></li>
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../../../../../../_sources/autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils/index.rst.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <section id="module-intel_extension_for_transformers.backends.neural_engine.compile.graph_utils">
-<span id="intel-extension-for-transformers-backends-neural-engine-compile-graph-utils"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.backends.neural_engine.compile.graph_utils" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.backends.neural_engine.compile.graph_utils" title="Permalink to this heading">¶</a></h1>
+<span id="intel-extension-for-transformers-backends-neural-engine-compile-graph-utils"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.backends.neural_engine.compile.graph_utils" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.backends.neural_engine.compile.graph_utils" title="Permalink to this heading"></a></h1>
 <p>The neural engine graph utils.</p>
 <section id="module-contents">
-<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading">¶</a></h2>
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
 <section id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading">¶</a></h3>
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.LazyImport" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.LazyImport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LazyImport</span></code></a></p></td>
@@ -180,7 +93,7 @@
 </table>
 </section>
 <section id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading">¶</a></h3>
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.names_from_input" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.names_from_input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">names_from_input</span></code></a>(name)</p></td>
@@ -229,7 +142,7 @@
 </table>
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.names_from_input">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">names_from_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.names_from_input" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">names_from_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.names_from_input" title="Permalink to this definition"></a></dt>
 <dd><p>Static method that get the valid node / tensor name from input name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -251,7 +164,7 @@ it can not also be used for node name in the new Graph class</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_data_dtype">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_data_dtype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_data_dtype" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_data_dtype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_data_dtype" title="Permalink to this definition"></a></dt>
 <dd><p>Get the const data dtype.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -268,25 +181,25 @@ it can not also be used for node name in the new Graph class</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.quant_info_init">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">quant_info_init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.quant_info_init" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">quant_info_init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.quant_info_init" title="Permalink to this definition"></a></dt>
 <dd><p>Initialize the quant info.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_quant_info">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">insert_quant_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_quant_info" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">insert_quant_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_quant_info" title="Permalink to this definition"></a></dt>
 <dd><p>Modify the quant info.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_quant_info">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_quant_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_quant_info" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_quant_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_quant_info" title="Permalink to this definition"></a></dt>
 <dd><p>Get the quant info.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_straight_pattern">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">search_straight_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_pattern</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_straight_pattern" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">search_straight_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_pattern</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_straight_pattern" title="Permalink to this definition"></a></dt>
 <dd><p>Search user specified patterns on internal grpah structure.</p>
 <dl class="simple">
 <dt>Attention: the input computation chain in the graph which can be called pattern, there must be</dt><dd><p>straight (or sequence). It means it has not any subgraph nodes. Otherwise this
@@ -336,7 +249,7 @@ For example, the return result maybe like this:
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_pattern">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">search_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_pattern" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">search_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_pattern" title="Permalink to this definition"></a></dt>
 <dd><p>Search the complete pattern in the graph.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -425,7 +338,7 @@ with right order.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.construct_node">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">construct_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">OrderedDict()</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.construct_node" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">construct_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">OrderedDict()</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.construct_node" title="Permalink to this definition"></a></dt>
 <dd><p>Construct node with engine op_type.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -447,7 +360,7 @@ with right order.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_pattern">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">insert_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_node_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_pattern" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">insert_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_node_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_pattern" title="Permalink to this definition"></a></dt>
 <dd><p>Replace the specific pattern matched from the new constructed graph with new pattern.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -468,7 +381,7 @@ with right order.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">pattern_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapping_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">pattern_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapping_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping" title="Permalink to this definition"></a></dt>
 <dd><p>The pattern mapping function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -541,7 +454,7 @@ fusion is too complicated, you had better decompose it.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.list2str">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">list2str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_perm</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.list2str" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">list2str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_perm</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.list2str" title="Permalink to this definition"></a></dt>
 <dd><p>Convert the shape list to str for emitting yaml.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -558,7 +471,7 @@ fusion is too complicated, you had better decompose it.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.str2list">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">str2list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.str2list" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">str2list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.str2list" title="Permalink to this definition"></a></dt>
 <dd><p>Convert the str to shape list.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -575,13 +488,13 @@ fusion is too complicated, you had better decompose it.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping_conf_validation">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">pattern_mapping_conf_validation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping_conf_validation" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">pattern_mapping_conf_validation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping_conf_validation" title="Permalink to this definition"></a></dt>
 <dd><p>The validation of the pattern mapping config.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.LazyImport">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">LazyImport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.LazyImport" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">LazyImport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.LazyImport" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Lazy import python module till use.</p>
 <dl class="field-list simple">
@@ -593,7 +506,7 @@ fusion is too complicated, you had better decompose it.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_model_fwk_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_model_fwk_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name" title="Permalink to this definition"></a></dt>
 <dd><p>Detect the input model belongs to which framework.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -609,46 +522,30 @@ if there’s no available fwk info, then return ‘NA’.</p>
 
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2022, Intel® Extension for Transformers, Intel.
-
-    </p>
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

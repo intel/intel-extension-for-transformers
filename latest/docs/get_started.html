@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting Started &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Getting Started</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/get_started.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h1>
+<ol class="simple">
+<li><p><a class="reference external" href="#quantization">Quantization</a></p></li>
+<li><p><a class="reference external" href="#pruning">Pruning</a></p></li>
+<li><p><a class="reference external" href="#distillation">Distillation</a></p></li>
+<li><p><a class="reference external" href="#quantized-length-adaptive-transformer">Quantized Length Adaptive Transformer</a></p></li>
+<li><p><a class="reference external" href="#transformers-accelerated-neural-engine">Transformers-accelerated Neural Engine</a></p></li>
+</ol>
+<section id="quantization">
+<h2>Quantization<a class="headerlink" href="#quantization" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">objectives</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+
+<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
+<span class="c1"># trainer = transformers.Trainer(...)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span>
+    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;PostTrainingStatic&quot;</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
+    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="n">objectives</span><span class="o">.</span><span class="n">performance</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">quant_config</span><span class="o">=</span><span class="n">q_config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For other Please refer to <a class="reference external" href="docs/quantization">quantization document</a> for more details.</p>
+</section>
+<section id="pruning">
+<h2>Pruning<a class="headerlink" href="#pruning" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">PrunerConfig</span><span class="p">,</span> <span class="n">PruningConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+
+<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
+<span class="c1"># trainer = transformers.Trainer(...)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
+<span class="n">pruner_config</span> <span class="o">=</span> <span class="n">PrunerConfig</span><span class="p">(</span><span class="n">prune_type</span><span class="o">=</span><span class="s1">&#39;BasicMagnitude&#39;</span><span class="p">,</span> <span class="n">target_sparsity_ratio</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="n">p_conf</span> <span class="o">=</span> <span class="n">PruningConfig</span><span class="p">(</span><span class="n">pruner_config</span><span class="o">=</span><span class="p">[</span><span class="n">pruner_config</span><span class="p">],</span> <span class="n">metrics</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">prune</span><span class="p">(</span><span class="n">pruning_config</span><span class="o">=</span><span class="n">p_conf</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="docs/pruning">pruning document</a> for more details.</p>
+</section>
+<section id="distillation">
+<h2>Distillation<a class="headerlink" href="#distillation" title="Permalink to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">DistillationConfig</span><span class="p">,</span> <span class="n">Criterion</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+
+<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
+<span class="c1"># trainer = transformers.Trainer(...)</span>
+<span class="n">teacher_model</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># exist model</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
+<span class="n">d_conf</span> <span class="o">=</span> <span class="n">DistillationConfig</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">distill</span><span class="p">(</span><span class="n">distillation_config</span><span class="o">=</span><span class="n">d_conf</span><span class="p">,</span> <span class="n">teacher_model</span><span class="o">=</span><span class="n">teacher_model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="docs/distillation">distillation document</a> for more details.</p>
+</section>
+<section id="quantized-length-adaptive-transformer">
+<h2>Quantized Length Adaptive Transformer<a class="headerlink" href="#quantized-length-adaptive-transformer" title="Permalink to this heading"></a></h2>
+<p>Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">DynamicLengthConfig</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+
+<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
+<span class="c1"># trainer = transformers.Trainer(...)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span>
+    <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;PostTrainingStatic&quot;</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span>
+    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="n">objectives</span><span class="o">.</span><span class="n">performance</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="c1"># Apply the length config</span>
+<span class="n">dynamic_length_config</span> <span class="o">=</span> <span class="n">DynamicLengthConfig</span><span class="p">(</span><span class="n">length_config</span><span class="o">=</span><span class="n">length_config</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">set_dynamic_config</span><span class="p">(</span><span class="n">dynamic_config</span><span class="o">=</span><span class="n">dynamic_length_config</span><span class="p">)</span>
+<span class="c1"># Quantization</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">quant_config</span><span class="o">=</span><span class="n">q_config</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to paper <a class="reference external" href="https://arxiv.org/pdf/2210.17114.pdf">QuaLA-MiniLM</a> and <a class="reference external" href="examples/optimization/pytorch/huggingface/question-answering/dynamic">code</a> for details</p>
+</section>
+<section id="transformers-accelerated-neural-engine">
+<h2>Transformers-accelerated Neural Engine<a class="headerlink" href="#transformers-accelerated-neural-engine" title="Permalink to this heading"></a></h2>
+<p>Transformers-accelerated Neural Engine is one of reference deployments that Intel® Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.backends.neural_engine.compile</span> <span class="kn">import</span> <span class="nb">compile</span>
+<span class="c1"># /path/to/your/model is a TensorFlow pb model or ONNX model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="s1">&#39;/path/to/your/model&#39;</span><span class="p">)</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># [input_ids, segment_ids, input_mask]</span>
+<span class="n">model</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="examples/deployment/neural_engine/sparse/distilbert_base_uncased/">example</a> in <a class="reference external" href="examples/deployment/">Transformers-accelerated Neural Engine</a> and paper <a class="reference external" href="https://arxiv.org/abs/2211.07715">Fast Distilbert on CPUs</a> for more details.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

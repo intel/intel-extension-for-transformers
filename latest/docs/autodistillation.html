@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoDistillation Design &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">AutoDistillation Design</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/autodistillation.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="autodistillation-design">
+<h1>AutoDistillation Design<a class="headerlink" href="#autodistillation-design" title="Permalink to this heading"></a></h1>
+<ol class="simple">
+<li><p><a class="reference external" href="#autodistillation-design">AutoDistillation Pipeline</a></p></li>
+<li><p><a class="reference external" href="#framework-class-design">Framework Class Design</a></p></li>
+<li><p><a class="reference external" href="#criterion-class-design">Criterion Class Design</a></p></li>
+<li><p><a class="reference external" href="#usage">Usage</a></p></li>
+</ol>
+<section id="autodistillation-pipeline">
+<h2>AutoDistillation Pipeline<a class="headerlink" href="#autodistillation-pipeline" title="Permalink to this heading"></a></h2>
+<p>AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation, and Evaluation.
+<br></p>
+<p>In Model Exploration, a search engine will search for a better compressed model from the architecture design space in each iteration.
+<br></p>
+<p>Flash Distillation is the stage for training the searched model to discover its potential.
+<br></p>
+<p>In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.
+<br></p>
+<p>For implementing AutoDistillation, a framework class <em><strong>‘AutoDistillation’</strong></em> is designed for executing the total pipeline, and a criterion class <em><strong>‘IntermediateLayersKnowledgeDistillationLoss’</strong></em> is designed for handling Flash Distillation with the existing Distillation class.
+<br></p>
+</section>
+<section id="framework-class-design">
+<h2>Framework Class Design<a class="headerlink" href="#framework-class-design" title="Permalink to this heading"></a></h2>
+<p>The framework class is designed for handling the whole pipeline of AutoDistillation.
+<br></p>
+<p>It contains a <em><strong>search_loop</strong></em> method for processing the whole pipeline of iterations for searching the best model architecture.
+<br></p>
+<p>Within each iteration, <em><strong>model_arch_proposition</strong></em> method will propose a promising model architecture for assessing, and <em><strong>train_evaluate</strong></em> method will train and evaluate this model for measuring its potential.</p>
+<p><strong>Class AutoDistillation</strong></p>
+<p><strong>Attributes</strong></p>
+<p><strong>1. search_space</strong> (e.g. {’hidden_size’:[64, 128], ‘layer_num’:[4, 8]})
+<br></p>
+<p><strong>2. model_builder</strong> (the function for building model instance based on the specific sample point in the search space, <em><strong>need provided by user</strong></em>)
+<br></p>
+<p><strong>3. advisor</strong> (the search algorithm instance e.g. Bayesian Optimization, Random Search)
+<br></p>
+<p><strong>4. train_func</strong> (the train function to train the model)
+<br></p>
+<p><strong>5. eval_func</strong> (the evaluation function to evaluate the model)
+<br></p>
+<p><strong>6. config</strong> (the configuration, <em><strong>need provided by user</strong></em>)
+<br></p>
+<p><strong>7. search_result</strong> (store results of the search process)
+<br></p>
+<p><strong>8. best_model_arch</strong> (the function to record the best model architecture ever find)</p>
+<p><strong>Methods</strong></p>
+<p><strong>1. model_arch_proposition</strong> (propose architecture of the model based on search algorithm for next search iteration)
+<br></p>
+<p><strong>2. search_loop</strong> (begin search iterations)
+<br></p>
+<p><strong>3. train_evaluate</strong> (the process of one search iteration to train and evaluate the model proposed by search algorithm)</p>
+</section>
+<section id="criterion-class-design">
+<h2>Criterion Class Design<a class="headerlink" href="#criterion-class-design" title="Permalink to this heading"></a></h2>
+<section id="knowledgedistillationloss">
+<h3>KnowledgeDistillationLoss<a class="headerlink" href="#knowledgedistillationloss" title="Permalink to this heading"></a></h3>
+<p>Knowledge distillation is proposed in <a class="reference external" href="https://arxiv.org/abs/1503.02531">Distilling the Knowledge in a Neural Network</a>. It leverages the logits (the input of softmax in the classification tasks) of teacher and student model to minimize the the difference between their predicted class distributions, this can be done by minimizing the below loss function.</p>
+<p>$$L_{KD} = D(z_t, z_s)$$</p>
+<p>Where $D$ is a distance measurement, e.g. Euclidean distance and Kullback–Leibler divergence, $z_t$ and $z_s$ are the logits of teacher and student model, or predicted distributions from softmax of the logits in case the distance is measured in terms of distribution.</p>
+<p><strong>Class KnowledgeDistillationLoss</strong></p>
+<p><strong>Attributes</strong></p>
+<p><strong>1. student_model</strong>
+<br></p>
+<p><strong>2. teacher_model</strong>
+<br></p>
+<p><strong>3. temperature</strong> (Hyperparameters that control the entropy of probability distributions. Defaults to 1.0.)
+<br></p>
+<p><strong>4. loss_weights</strong> (weights assigned to each loss term)
+<br></p>
+<p><strong>5. loss_types</strong> (types of each loss term)
+<br></p>
+<p><strong>Methods</strong></p>
+<p><strong>1. teacher_student_loss_cal</strong> (Define parameters for teacher_student_loss_cal function)
+<br></p>
+<p><strong>2. student_targets_loss_cal</strong> (Define parameters for student_targets_loss_cal function)
+<br></p>
+<p><strong>3. teacher_model_forward</strong> (run forward for the teacher_model)
+<br></p>
+<p><strong>4. loss_cal</strong> (calculate loss)
+<br></p>
+<p><strong>4. loss_cal_sloss</strong> (Calculate all losses between student model and teacher model)
+<br></p>
+</section>
+<section id="intermediatelayersknowledgedistillationloss">
+<h3>IntermediateLayersKnowledgeDistillationLoss<a class="headerlink" href="#intermediatelayersknowledgedistillationloss" title="Permalink to this heading"></a></h3>
+<p>IntermediateLayersKnowledgeDistillationLoss is designed for calculating the knowledge distillation loss of the intermediate layer features.
+<br></p>
+<p>To deal the issue of dimension mismatch between the intermediate layer features of the teacher model and the student model, feature_matchers is provided for matching the features dimension.
+<br></p>
+<p>For example, the shape of a feature from the teacher model is (8, 512), and the shape of a corresponding feature from the student model is (8, 128), then the feature_matcher will be a linear transformation layer whose weight has a shape of (128, 512).</p>
+<p><strong>Class IntermediateLayersKnowledgeDistillationLoss</strong></p>
+<p><strong>Attributes</strong></p>
+<p><strong>1. student_model</strong>
+<br></p>
+<p><strong>2. teacher_model</strong>
+<br></p>
+<p><strong>3. student_features</strong> (store features of intermediate layers of student_model)
+<br></p>
+<p><strong>4. teacher_features</strong> (store features of intermediate layers of teacher_model)
+<br></p>
+<p><strong>5. layer_mappings</strong> (intermediate layers mapping info between student_model and teacher_model)
+<br></p>
+<p><strong>6. layer_output_process</strong> (info for processing layer’s output to desired data format)
+<br></p>
+<p><strong>7. loss_weights</strong> (weights assigned to each loss term)
+<br></p>
+<p><strong>8. loss_types</strong> (types of each loss term)
+<br></p>
+<p><strong>9. feature_matchers</strong> (linear transform modules for unmatched features between student_model and teacher_model)</p>
+<p><strong>Methods</strong></p>
+<p><strong>1. init_loss_funcs</strong> (initialize the loss functions)
+<br></p>
+<p><strong>2. init_feature_matcher</strong> (initialize the feature_matcher instance)
+<br></p>
+<p><strong>3. teacher_model_forward</strong> (run forward for the teacher_model)
+<br></p>
+<p><strong>4. loss_cal</strong> (calculate loss)</p>
+</section>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
+<section id="pytorch">
+<h3>Pytorch<a class="headerlink" href="#pytorch" title="Permalink to this heading"></a></h3>
+<section id="autodistillation-api-in-trainer">
+<h4>AutoDistillation API in Trainer<a class="headerlink" href="#autodistillation-api-in-trainer" title="Permalink to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Trainer</span><span class="p">:</span>
+<span class="o">...</span>
+    <span class="k">def</span> <span class="nf">autodistillation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">teacher_model</span><span class="p">,</span> \
+                         <span class="n">model_builder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_cls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> \
+                         <span class="n">train_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eval_func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="n">AutoDistillation</span><span class="p">(</span><span class="n">model_builder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">autodistillation_config</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">train_func_builtin</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+            <span class="c1"># initialize flash_distiller </span>
+            <span class="n">flash_distiller</span> <span class="o">...</span>
+            <span class="c1"># initialize regular_distiller </span>
+            <span class="n">regular_distiller</span> <span class="o">...</span>
+            <span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">()</span>
+            <span class="n">scheduler</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">flash_distiller</span><span class="p">,</span> <span class="n">regular_distiller</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">scheduler</span><span class="p">()</span>
+        <span class="k">def</span> <span class="nf">eval_func_builtin</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+            <span class="o">...</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">train_func</span> <span class="o">=</span> <span class="n">train_func</span> \
+            <span class="k">if</span> <span class="n">train_func</span> <span class="k">else</span> <span class="n">train_func_builtin</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">eval_func</span> <span class="o">=</span> <span class="n">eval_func</span> \
+            <span class="k">if</span> <span class="n">eval_func</span> <span class="k">else</span> <span class="n">eval_func_builtin</span>
+        <span class="k">return</span> <span class="n">agent</span><span class="o">.</span><span class="n">search_loop</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">model_builder_builtin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_arch_paras</span><span class="p">,</span> <span class="n">model_cls</span><span class="p">):</span>
+        <span class="o">...</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+<span class="c1">### Usage for Trainer.autodistillation</span>
+<span class="c1"># OOB mode</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">teacher_model</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">autodistillation_config</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s1">&#39;search&#39;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;search_space&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;hidden_size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">128</span><span class="p">,</span> <span class="mi">246</span><span class="p">,</span> <span class="mi">384</span><span class="p">,</span> <span class="mi">512</span><span class="p">],</span>
+        <span class="s1">&#39;intra_bottleneck_size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">160</span><span class="p">],</span>
+        <span class="s1">&#39;num_attention_heads&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span>
+        <span class="s1">&#39;intermediate_size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">384</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">640</span><span class="p">],</span>
+        <span class="s1">&#39;num_feedforward_networks&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">]</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+  <span class="s1">&#39;flash_distillation&#39;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;knowledge_transfer&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;block_names&#39;</span><span class="p">:</span> 
+        <span class="p">[</span><span class="s1">&#39;mobilebert.encoder.layer.</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)],</span>
+      <span class="s1">&#39;layer_mappings_for_knowledge_transfer&#39;</span><span class="p">:</span> 
+        <span class="p">[</span>
+          <span class="p">[</span>
+            <span class="p">(</span>
+              <span class="s1">&#39;mobilebert.encoder.layer.</span><span class="si">{}</span><span class="s1">.attention.self&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;bert.encoder.layer.</span><span class="si">{}</span><span class="s1">.attention.self&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s1">&#39;1&#39;</span>
+            <span class="p">),</span>
+            <span class="p">(</span>
+              <span class="s1">&#39;mobilebert.encoder.layer.</span><span class="si">{}</span><span class="s1">.output&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> 
+              <span class="s1">&#39;bert.encoder.layer.</span><span class="si">{}</span><span class="s1">.output&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="p">)</span>
+          <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
+        <span class="p">],</span>
+      <span class="s1">&#39;loss_types&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s1">&#39;KL&#39;</span><span class="p">,</span> <span class="s1">&#39;MSE&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)],</span>
+      <span class="p">},</span>
+    <span class="s1">&#39;regular_distillation&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;layer_mappings_for_knowledge_transfer&#39;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="p">[(</span><span class="s1">&#39;cls&#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;cls&#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">)]</span>
+        <span class="p">],</span>
+      <span class="s1">&#39;loss_types&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s1">&#39;KL&#39;</span><span class="p">]],</span>
+      <span class="s1">&#39;add_origin_loss&#39;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">],</span>
+      <span class="p">},</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="n">best_model_arch</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">autodistillation</span><span class="p">(</span><span class="n">teacher_model</span><span class="p">,</span> <span class="n">model_cls</span><span class="o">=</span><span class="n">AutoModelForPreTraining</span><span class="p">)</span>
+
+<span class="c1"># Advanced mode</span>
+<span class="k">def</span> <span class="nf">model_builder</span><span class="p">(</span><span class="n">model_arch_paras</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="k">return</span> <span class="n">model</span>
+<span class="k">def</span> <span class="nf">train_func</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="k">return</span> <span class="n">model</span>
+<span class="k">def</span> <span class="nf">eval_func</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="k">return</span> <span class="n">metrics</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">teacher_model</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">autodistillation_config</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s1">&#39;search&#39;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;search_space&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;hidden_size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">128</span><span class="p">,</span> <span class="mi">246</span><span class="p">,</span> <span class="mi">384</span><span class="p">,</span> <span class="mi">512</span><span class="p">],</span>
+        <span class="s1">&#39;intra_bottleneck_size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">160</span><span class="p">],</span>
+        <span class="s1">&#39;num_attention_heads&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span>
+        <span class="s1">&#39;intermediate_size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">384</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">640</span><span class="p">],</span>
+        <span class="s1">&#39;num_feedforward_networks&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">]</span>
+      <span class="p">},</span>
+    <span class="s1">&#39;search_algorithm&#39;</span><span class="p">:</span> <span class="s1">&#39;BO&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;metrics&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">,</span> <span class="s1">&#39;latency&#39;</span><span class="p">]</span>
+    <span class="s1">&#39;higher_is_better&#39;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+    <span class="s1">&#39;max_trials&#39;</span><span class="p">:</span> <span class="mi">10</span>
+    <span class="s1">&#39;seed&#39;</span><span class="p">:</span> <span class="mi">42</span>
+    <span class="p">},</span>
+  <span class="s1">&#39;flash_distillation&#39;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">&#39;knowledge_transfer&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;block_names&#39;</span><span class="p">:</span> 
+        <span class="p">[</span><span class="s1">&#39;mobilebert.encoder.layer.</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)],</span>
+      <span class="s1">&#39;layer_mappings_for_knowledge_transfer&#39;</span><span class="p">:</span> 
+        <span class="p">[</span>
+          <span class="p">[</span>
+            <span class="p">(</span>
+              <span class="s1">&#39;mobilebert.encoder.layer.</span><span class="si">{}</span><span class="s1">.attention.self&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;bert.encoder.layer.</span><span class="si">{}</span><span class="s1">.attention.self&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s1">&#39;1&#39;</span>
+            <span class="p">),</span>
+            <span class="p">(</span>
+              <span class="s1">&#39;mobilebert.encoder.layer.</span><span class="si">{}</span><span class="s1">.output&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> 
+              <span class="s1">&#39;bert.encoder.layer.</span><span class="si">{}</span><span class="s1">.output&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="p">)</span>
+          <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
+        <span class="p">],</span>
+      <span class="s1">&#39;loss_types&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s1">&#39;KL&#39;</span><span class="p">,</span> <span class="s1">&#39;MSE&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)],</span>
+      <span class="s1">&#39;loss_weights&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)],</span>
+      <span class="s1">&#39;train_steps&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">500</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)]</span>
+      <span class="p">},</span>
+    <span class="s1">&#39;regular_distillation&#39;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s1">&#39;layer_mappings_for_knowledge_transfer&#39;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="p">[(</span><span class="s1">&#39;cls&#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;cls&#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">)]</span>
+        <span class="p">],</span>
+      <span class="s1">&#39;loss_types&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s1">&#39;KL&#39;</span><span class="p">]],</span>
+      <span class="s1">&#39;add_origin_loss&#39;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">],</span>
+      <span class="s1">&#39;train_steps&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">25000</span><span class="p">]</span>
+      <span class="p">},</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="n">best_model_arch</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">autodistillation</span><span class="p">(</span><span class="n">teacher_model</span><span class="p">,</span> <span class="n">model_builder</span><span class="p">,</span> <span class="n">train_func</span><span class="o">=</span><span class="n">train_func</span><span class="p">,</span> <span class="n">eval_func</span><span class="o">=</span><span class="n">eval_func</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="flash-distillation-config-example">
+<h4>Flash distillation config example<a class="headerlink" href="#flash-distillation-config-example" title="Permalink to this heading"></a></h4>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mobilebert_distillation</span>
+<span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytorch</span>
+
+<span class="nt">distillation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">SGD</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">learning_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="w">    </span><span class="nt">criterion</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">IntermediateLayersKnowledgeDistillationLoss</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">layer_mappings_for_knowledge_transfer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">          </span><span class="p p-Indicator">[</span><span class="s">&#39;mobilebert.encoder.layer.0.attention.self&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;1&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;bert.encoder.layer.0.attention.self&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;1&#39;</span><span class="p p-Indicator">],</span>
+<span class="w">          </span><span class="p p-Indicator">[</span><span class="s">&#39;mobilebert.encoder.layer.0.output&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;bert.encoder.layer.0.output&#39;</span><span class="p p-Indicator">],</span>
+<span class="w">                        </span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">loss_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;KL&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;MSE&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">loss_weights</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">add_origin_loss</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+</pre></div>
+</div>
+</section>
+<section id="regular-distillation-config-example">
+<h4>Regular distillation config example<a class="headerlink" href="#regular-distillation-config-example" title="Permalink to this heading"></a></h4>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mobilebert_distillation</span>
+<span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytorch</span>
+
+<span class="nt">distillation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">SGD</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">learning_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="w">    </span><span class="nt">criterion</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">IntermediateLayersKnowledgeDistillationLoss</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">layer_mappings_for_knowledge_transfer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">          </span><span class="p p-Indicator">[</span><span class="s">&#39;mobilebert.output&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;bert.output&#39;</span><span class="p p-Indicator">],</span>
+<span class="w">                        </span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">loss_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;KL&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">loss_weights</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">add_origin_loss</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+</section>
+<section id="autodistillation-config-example">
+<h4>AutoDistillation config example<a class="headerlink" href="#autodistillation-config-example" title="Permalink to this heading"></a></h4>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MobileBERT_NAS</span>
+<span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytorch</span>
+
+<span class="nt">auto_distillation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">search</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">search_space</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
+<span class="w">        </span><span class="s">&#39;hidden_size&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">128</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">246</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">384</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">512</span><span class="p p-Indicator">],</span>
+<span class="w">        </span><span class="s">&#39;intra_bottleneck_size&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">64</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">96</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">128</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">160</span><span class="p p-Indicator">],</span>
+<span class="w">        </span><span class="s">&#39;num_attention_heads&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">4</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">8</span><span class="p p-Indicator">],</span>
+<span class="w">        </span><span class="s">&#39;intermediate_size&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">384</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">512</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">640</span><span class="p p-Indicator">],</span>
+<span class="w">        </span><span class="s">&#39;num_feedforward_networks&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">4</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">6</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">search_algorithm</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;BO&#39;</span>
+<span class="w">    </span><span class="nt">metrics</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;accuracy&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;latency&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">higher_is_better</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">max_trials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">  </span><span class="nt">flash_distillation</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">block_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;mobilebert.encoder.layer.0&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">layer_mappings_for_knowledge_transfer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">        </span><span class="p p-Indicator">[</span>
+<span class="w">          </span><span class="p p-Indicator">[</span><span class="s">&#39;mobilebert.encoder.layer.0.attention.self&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;1&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;bert.encoder.layer.0.attention.self&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;1&#39;</span><span class="p p-Indicator">],</span>
+<span class="w">          </span><span class="p p-Indicator">[</span><span class="s">&#39;mobilebert.encoder.layer.0.output&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;bert.encoder.layer.0.output&#39;</span><span class="p p-Indicator">],</span>
+<span class="w">        </span><span class="p p-Indicator">]</span>
+<span class="w">                        </span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">loss_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[[</span><span class="s">&#39;KL&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;MSE&#39;</span><span class="p p-Indicator">]]</span>
+<span class="w">    </span><span class="nt">train_steps</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">5000</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">regular_distillation</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">layer_mappings_for_knowledge_transfer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">          </span><span class="p p-Indicator">[</span><span class="s">&#39;mobilebert.output&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;bert.output&#39;</span><span class="p p-Indicator">],</span>
+<span class="w">                        </span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">loss_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;KL&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">add_origin_loss</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># optional. required if user doesn&#39;t provide train_func</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="nt">evaluation</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># optional. required if user doesn&#39;t provide eval_func</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="../examples/optimization/pytorch/huggingface/language-modeling/auto_distillation/run_mlm_autodistillation.py">example</a> for the details</p>
+</section>
+</section>
+<section id="tensorflow">
+<h3>Tensorflow<a class="headerlink" href="#tensorflow" title="Permalink to this heading"></a></h3>
+<section id="autodistillation-api-in-optimizer-tf">
+<h4>AutoDistillation API in optimizer_tf<a class="headerlink" href="#autodistillation-api-in-optimizer-tf" title="Permalink to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TFOptimization</span><span class="p">:</span>
+  <span class="o">...</span>
+<span class="k">def</span> <span class="nf">autodistill</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">autodistillation_config</span><span class="p">,</span>
+        <span class="n">teacher_model</span><span class="p">:</span> <span class="n">PreTrainedModel</span><span class="p">,</span>
+        <span class="n">model_builder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model_cls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eval_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">train_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">autodistillation_config</span> <span class="o">=</span> <span class="n">autodistillation_config</span>
+        <span class="k">if</span> <span class="n">model_builder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">model_cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;Must specify model_cls to use the built-in &quot;</span> <span class="o">+</span> \
+                <span class="s2">&quot;model_builder, e.g. model_cls=AutoModelForPreTraining, or you can use &quot;</span> <span class="o">+</span> \
+                <span class="s2">&quot;the customized model_builder.&quot;</span>
+            <span class="n">model_builder</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_builder_builtin</span><span class="p">,</span> <span class="n">model_cls</span><span class="o">=</span><span class="n">model_cls</span><span class="p">)</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="n">AutoDistillation</span><span class="p">(</span><span class="n">model_builder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">autodistillation_config</span><span class="p">,</span> <span class="n">framework</span><span class="o">=</span><span class="s1">&#39;tensorflow&#39;</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">train_func_builtin</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+          <span class="o">...</span>
+        <span class="k">def</span> <span class="nf">eval_func_builtin</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+          <span class="o">...</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">framework</span> <span class="o">=</span> <span class="s1">&#39;tensorflow&#39;</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">train_func</span> <span class="o">=</span> <span class="n">train_func</span> \
+            <span class="k">if</span> <span class="n">train_func</span> <span class="k">else</span> <span class="n">train_func_builtin</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">eval_func</span> <span class="o">=</span> <span class="n">eval_func</span> \
+            <span class="k">if</span> <span class="n">eval_func</span> <span class="k">else</span> <span class="n">eval_func_builtin</span>
+        <span class="c1"># pylint: disable=E1101</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">agent</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">model_cls</span><span class="p">)</span>
+
+<span class="c1">### Usage for TFOptimization.autodistill</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">TFOptimization</span><span class="p">(</span>
+  <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+  <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+  <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
+  <span class="n">eval_dataset</span><span class="o">=</span><span class="n">eval_dataset</span><span class="p">,</span>
+  <span class="n">compute_metrics</span><span class="o">=</span><span class="n">compute_metrics</span><span class="p">)</span>
+<span class="n">autodistillation_config</span> <span class="o">=</span> <span class="n">AutoDistillationConfig</span><span class="p">(</span>
+  <span class="n">search_space</span><span class="o">=</span><span class="p">{</span>
+      <span class="s1">&#39;hidden_size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">120</span><span class="p">,</span> <span class="mi">240</span><span class="p">],</span>
+      <span class="s1">&#39;intermediate_size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">256</span><span class="p">,</span> <span class="mi">512</span><span class="p">]</span>
+  <span class="p">},</span>
+  <span class="n">search_algorithm</span><span class="o">=</span><span class="n">search_algorithm</span><span class="p">,</span>
+  <span class="n">max_trials</span><span class="o">=</span><span class="n">max_trials</span><span class="p">,</span>
+  <span class="n">metrics</span><span class="o">=</span><span class="p">[</span>
+      <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_loss&quot;</span><span class="p">,</span> <span class="n">greater_is_better</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+  <span class="p">],</span>
+  <span class="n">knowledge_transfer</span><span class="o">=</span><span class="n">TFDistillationConfig</span><span class="p">(</span>
+      <span class="n">train_steps</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+      <span class="n">loss_types</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;CE&#39;</span><span class="p">,</span> <span class="s1">&#39;CE&#39;</span><span class="p">],</span>
+      <span class="n">loss_weights</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+      <span class="n">temperature</span><span class="o">=</span><span class="mf">1.0</span>
+  <span class="p">),</span>
+  <span class="n">regular_distillation</span><span class="o">=</span><span class="n">TFDistillationConfig</span><span class="p">(</span>
+      <span class="n">train_steps</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+      <span class="n">loss_types</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;CE&#39;</span><span class="p">,</span> <span class="s1">&#39;CE&#39;</span><span class="p">],</span>
+      <span class="n">loss_weights</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+      <span class="n">temperature</span><span class="o">=</span><span class="mf">1.0</span>
+  <span class="p">)</span>
+  <span class="p">)</span>
+<span class="n">best_model_archs</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">autodistill</span><span class="p">(</span>
+  <span class="n">autodistillation_config</span><span class="p">,</span>
+  <span class="n">teacher_model</span><span class="p">,</span>
+  <span class="n">model_cls</span><span class="o">=</span><span class="n">TFAutoModelForSequenceClassification</span><span class="p">,</span>
+  <span class="n">train_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+  <span class="n">eval_func</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="distillation-config-example">
+<h4>Distillation config example<a class="headerlink" href="#distillation-config-example" title="Permalink to this heading"></a></h4>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mobilebert_distillation</span>
+<span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytorch</span>
+
+<span class="nt">distillation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">SGD</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">learning_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="w">    </span><span class="nt">criterion</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">KnowledgeDistillationLoss</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0,</span>
+<span class="w">        </span><span class="nt">loss_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;CE&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;CE&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">loss_weights</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h4>AutoDistillation config example<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h4>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">distilbert-base-uncased</span>
+<span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tensorflow</span>
+
+<span class="nt">auto_distillation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">search</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">search_space</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
+<span class="w">          </span><span class="s">&#39;hidden_size&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">120</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">240</span><span class="p p-Indicator">],</span>
+<span class="w">          </span><span class="s">&#39;intermediate_size&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">512</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">search_algorithm</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;BO&#39;</span>
+<span class="w">    </span><span class="nt">metrics</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;accuracy&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;latency&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">max_trials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">  </span><span class="nt">flash_distillation</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">    </span><span class="nt">loss_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;CE&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;CE&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">loss_weights</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">train_steps</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">5000</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># optional. required if user doesn&#39;t provide train_func</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="nt">evaluation</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># optional. required if user doesn&#39;t provide eval_func</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="../examples/optimization/tensorflow/huggingface/text-classification/auto_distillation/run_glue.py">example</a> for the details</p>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

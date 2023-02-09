@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Class dispatcher &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Transformers-accelerated Libraries" href="../../../kernel.html" />
+    <link rel="prev" title="C++ APIs" href="../api_c_engine.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../neural_engine.html">Neural Engine</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/docs/Installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api_engine.html">Python APIs</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api_c_engine.html">C++ APIs</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Class dispatcher</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv48executor">namespace executor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../neural_engine.html">Neural Engine</a></li>
+          <li class="breadcrumb-item"><a href="../api_c_engine.html">C++ APIs</a></li>
+      <li class="breadcrumb-item active">Class dispatcher</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/docs/api_doc/engine/dispatcher.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="class-dispatcher">
+<h1>Class dispatcher<a class="headerlink" href="#class-dispatcher" title="Permalink to this heading"></a></h1>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv48executor">
+<span id="_CPPv38executor"></span><span id="_CPPv28executor"></span><span id="executor"></span><span class="target" id="namespaceexecutor"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">executor</span></span></span><a class="headerlink" href="#_CPPv48executor" title="Permalink to this definition"></a><br /></dt>
+<dd><dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10DispatcherE">
+<span id="_CPPv3N8executor10DispatcherE"></span><span id="_CPPv2N8executor10DispatcherE"></span><span id="executor::Dispatcher"></span><span class="target" id="classexecutor_1_1Dispatcher"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dispatcher</span></span></span><a class="headerlink" href="#_CPPv4N8executor10DispatcherE" title="Permalink to this definition"></a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher13KernelHandlerE">
+<span id="_CPPv3N8executor10Dispatcher13KernelHandlerE"></span><span id="_CPPv2N8executor10Dispatcher13KernelHandlerE"></span><span id="executor::Dispatcher::KernelHandler"></span><span class="target" id="classexecutor_1_1Dispatcher_1a51022e5069be6327a01a2c3e09addbfc"></span><span class="k"><span class="pre">typedef</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unordered_map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Operator</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">KernelHandler</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher13KernelHandlerE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher10DispatcherERK10shared_ptrI14OperatorConfigEPK16ExecutionOptionsPK5Model">
+<span id="_CPPv3N8executor10Dispatcher10DispatcherERK10shared_ptrI14OperatorConfigEPK16ExecutionOptionsPK5Model"></span><span id="_CPPv2N8executor10Dispatcher10DispatcherERK10shared_ptrI14OperatorConfigEPK16ExecutionOptionsPK5Model"></span><span id="executor::Dispatcher::Dispatcher__shared_ptr:OperatorConfig:CR.ExecutionOptionsCP.ModelCP"></span><span class="target" id="classexecutor_1_1Dispatcher_1a5929f548ea62039b959ae99791845da1"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dispatcher</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">OperatorConfig</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">conf</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">ExecutionOptions</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">e_ptr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">Model</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">m_ptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher10DispatcherERK10shared_ptrI14OperatorConfigEPK16ExecutionOptionsPK5Model" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher10DispatcherERK10shared_ptrI8OperatorEPK16ExecutionOptionsPK5Model">
+<span id="_CPPv3N8executor10Dispatcher10DispatcherERK10shared_ptrI8OperatorEPK16ExecutionOptionsPK5Model"></span><span id="_CPPv2N8executor10Dispatcher10DispatcherERK10shared_ptrI8OperatorEPK16ExecutionOptionsPK5Model"></span><span id="executor::Dispatcher::Dispatcher__shared_ptr:Operator:CR.ExecutionOptionsCP.ModelCP"></span><span class="target" id="classexecutor_1_1Dispatcher_1a5bff60d57af842b6232ac8a15c2af5c6"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dispatcher</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Operator</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">ExecutionOptions</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">e_ptr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">Model</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">m_ptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher10DispatcherERK10shared_ptrI8OperatorEPK16ExecutionOptionsPK5Model" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10DispatcherD0Ev">
+<span id="_CPPv3N8executor10DispatcherD0Ev"></span><span id="_CPPv2N8executor10DispatcherD0Ev"></span><span id="executor::Dispatcher::~Dispatcher"></span><span class="target" id="classexecutor_1_1Dispatcher_1a601b3862e15f5648f1a91d392c519a52"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~Dispatcher</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10DispatcherD0Ev" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher7PrepareERK6vectorIP6TensorERK6vectorIP6TensorE">
+<span id="_CPPv3N8executor10Dispatcher7PrepareERK6vectorIP6TensorERK6vectorIP6TensorE"></span><span id="_CPPv2N8executor10Dispatcher7PrepareERK6vectorIP6TensorERK6vectorIP6TensorE"></span><span id="executor::Dispatcher::Prepare__vector:TensorP:CR.vector:TensorP:CR"></span><span class="target" id="classexecutor_1_1Dispatcher_1a355d410b76623bb2e09c98d3e47b423f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Prepare</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher7PrepareERK6vectorIP6TensorERK6vectorIP6TensorE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher7ReshapeERK6vectorIP6TensorERK6vectorIP6TensorE">
+<span id="_CPPv3N8executor10Dispatcher7ReshapeERK6vectorIP6TensorERK6vectorIP6TensorE"></span><span id="_CPPv2N8executor10Dispatcher7ReshapeERK6vectorIP6TensorERK6vectorIP6TensorE"></span><span id="executor::Dispatcher::Reshape__vector:TensorP:CR.vector:TensorP:CR"></span><span class="target" id="classexecutor_1_1Dispatcher_1a16248a8cf1fe5652181f9cac2b54aeb1"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Reshape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher7ReshapeERK6vectorIP6TensorERK6vectorIP6TensorE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher7ForwardERK6vectorIP6TensorERK6vectorIP6TensorE">
+<span id="_CPPv3N8executor10Dispatcher7ForwardERK6vectorIP6TensorERK6vectorIP6TensorE"></span><span id="_CPPv2N8executor10Dispatcher7ForwardERK6vectorIP6TensorERK6vectorIP6TensorE"></span><span id="executor::Dispatcher::Forward__vector:TensorP:CR.vector:TensorP:CR"></span><span class="target" id="classexecutor_1_1Dispatcher_1ae248117552632ea6b662aed6ef9e7136"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Forward</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher7ForwardERK6vectorIP6TensorERK6vectorIP6TensorE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher10AdaptAttrsERK6vectorIP6TensorERK6vectorIP6TensorERK6string">
+<span id="_CPPv3N8executor10Dispatcher10AdaptAttrsERK6vectorIP6TensorERK6vectorIP6TensorERK6string"></span><span id="_CPPv2N8executor10Dispatcher10AdaptAttrsERK6vectorIP6TensorERK6vectorIP6TensorERK6string"></span><span id="executor::Dispatcher::AdaptAttrs__vector:TensorP:CR.vector:TensorP:CR.stringCR"></span><span class="target" id="classexecutor_1_1Dispatcher_1a86684e83aa1df9e84cffa68abae0269a"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">AdaptAttrs</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">stage</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher10AdaptAttrsERK6vectorIP6TensorERK6vectorIP6TensorERK6string" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12AdaptTensorsERK6vectorIP6TensorERK6vectorIP6TensorERK6string">
+<span id="_CPPv3N8executor10Dispatcher12AdaptTensorsERK6vectorIP6TensorERK6vectorIP6TensorERK6string"></span><span id="_CPPv2N8executor10Dispatcher12AdaptTensorsERK6vectorIP6TensorERK6vectorIP6TensorERK6string"></span><span id="executor::Dispatcher::AdaptTensors__vector:TensorP:CR.vector:TensorP:CR.stringCR"></span><span class="target" id="classexecutor_1_1Dispatcher_1af2a1e93b47c233c546c2843b0db1203d"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">AdaptTensors</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">stage</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12AdaptTensorsERK6vectorIP6TensorERK6vectorIP6TensorERK6string" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher13ResetOpStatusERK6vectorIP6TensorERK6vectorIP6TensorE">
+<span id="_CPPv3N8executor10Dispatcher13ResetOpStatusERK6vectorIP6TensorERK6vectorIP6TensorE"></span><span id="_CPPv2N8executor10Dispatcher13ResetOpStatusERK6vectorIP6TensorERK6vectorIP6TensorE"></span><span id="executor::Dispatcher::ResetOpStatus__vector:TensorP:CR.vector:TensorP:CR"></span><span class="target" id="classexecutor_1_1Dispatcher_1a4922234b70f911de8e92bfcfff6fa697"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ResetOpStatus</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher13ResetOpStatusERK6vectorIP6TensorERK6vectorIP6TensorE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher16GetExecuteKernelERK6vectorIP6TensorERK6vectorIP6TensorERKbRKb">
+<span id="_CPPv3N8executor10Dispatcher16GetExecuteKernelERK6vectorIP6TensorERK6vectorIP6TensorERKbRKb"></span><span id="_CPPv2N8executor10Dispatcher16GetExecuteKernelERK6vectorIP6TensorERK6vectorIP6TensorERKbRKb"></span><span id="executor::Dispatcher::GetExecuteKernel__vector:TensorP:CR.vector:TensorP:CR.bCR.bCR"></span><span class="target" id="classexecutor_1_1Dispatcher_1acf6bbdfe0910164e06a7235546860051"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetExecuteKernel</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">reshape_model</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">has_dispatch_table_file</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher16GetExecuteKernelERK6vectorIP6TensorERK6vectorIP6TensorERKbRKb" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher15set_tuning_modeERKb">
+<span id="_CPPv3N8executor10Dispatcher15set_tuning_modeERKb"></span><span id="_CPPv2N8executor10Dispatcher15set_tuning_modeERKb"></span><span id="executor::Dispatcher::set_tuning_mode__bCR"></span><span class="target" id="classexecutor_1_1Dispatcher_1ad2650fb617b4c86639e700aa05c9e3f6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_tuning_mode</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">mode</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher15set_tuning_modeERKb" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK8executor10Dispatcher9do_tuningEv">
+<span id="_CPPv3NK8executor10Dispatcher9do_tuningEv"></span><span id="_CPPv2NK8executor10Dispatcher9do_tuningEv"></span><span id="executor::Dispatcher::do_tuningC"></span><span class="target" id="classexecutor_1_1Dispatcher_1a2a760eeca9f1539e5c408699e49a22f0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">do_tuning</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK8executor10Dispatcher9do_tuningEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK8executor10Dispatcher4nameEv">
+<span id="_CPPv3NK8executor10Dispatcher4nameEv"></span><span id="_CPPv2NK8executor10Dispatcher4nameEv"></span><span id="executor::Dispatcher::nameC"></span><span class="target" id="classexecutor_1_1Dispatcher_1ad90d0d9a5638d1b4ea9baff0a68d9b2e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">name</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK8executor10Dispatcher4nameEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK8executor10Dispatcher4typeEv">
+<span id="_CPPv3NK8executor10Dispatcher4typeEv"></span><span id="_CPPv2NK8executor10Dispatcher4typeEv"></span><span id="executor::Dispatcher::typeC"></span><span class="target" id="classexecutor_1_1Dispatcher_1aa5b809e1464dead5f8a5137b52fa9552"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">type</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK8executor10Dispatcher4typeEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK8executor10Dispatcher13operator_confEv">
+<span id="_CPPv3NK8executor10Dispatcher13operator_confEv"></span><span id="_CPPv2NK8executor10Dispatcher13operator_confEv"></span><span id="executor::Dispatcher::operator_confC"></span><span class="target" id="classexecutor_1_1Dispatcher_1adbd09dbff80bb5c13583a84d783a3854"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">OperatorConfig</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">operator_conf</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK8executor10Dispatcher13operator_confEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK8executor10Dispatcher14execute_kernelEv">
+<span id="_CPPv3NK8executor10Dispatcher14execute_kernelEv"></span><span id="_CPPv2NK8executor10Dispatcher14execute_kernelEv"></span><span id="executor::Dispatcher::execute_kernelC"></span><span class="target" id="classexecutor_1_1Dispatcher_1ab2065eba817c92c76a319b097b7407d4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">execute_kernel</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK8executor10Dispatcher14execute_kernelEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK8executor10Dispatcher15no_tuning_spaceEv">
+<span id="_CPPv3NK8executor10Dispatcher15no_tuning_spaceEv"></span><span id="_CPPv2NK8executor10Dispatcher15no_tuning_spaceEv"></span><span id="executor::Dispatcher::no_tuning_spaceC"></span><span class="target" id="classexecutor_1_1Dispatcher_1ae8ef21d36a9243cac51b77748f15a2fa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">no_tuning_space</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK8executor10Dispatcher15no_tuning_spaceEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher11set_post_opERK6string">
+<span id="_CPPv3N8executor10Dispatcher11set_post_opERK6string"></span><span id="_CPPv2N8executor10Dispatcher11set_post_opERK6string"></span><span id="executor::Dispatcher::set_post_op__stringCR"></span><span class="target" id="classexecutor_1_1Dispatcher_1af8a042fb9d66bad4e0e86542179366ef"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_post_op</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">post_op</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher11set_post_opERK6string" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher7post_opEv">
+<span id="_CPPv3N8executor10Dispatcher7post_opEv"></span><span id="_CPPv2N8executor10Dispatcher7post_opEv"></span><span id="executor::Dispatcher::post_op"></span><span class="target" id="classexecutor_1_1Dispatcher_1a629e898d1b0a8ddda55ff71d9fc5a47c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">post_op</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher7post_opEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher11set_latencyEKf">
+<span id="_CPPv3N8executor10Dispatcher11set_latencyEKf"></span><span id="_CPPv2N8executor10Dispatcher11set_latencyEKf"></span><span id="executor::Dispatcher::set_latency__floatC"></span><span class="target" id="classexecutor_1_1Dispatcher_1a6cd7590ba0772327cdf2038e0532a080"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_latency</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">latency</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher11set_latencyEKf" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher7latencyEv">
+<span id="_CPPv3N8executor10Dispatcher7latencyEv"></span><span id="_CPPv2N8executor10Dispatcher7latencyEv"></span><span id="executor::Dispatcher::latency"></span><span class="target" id="classexecutor_1_1Dispatcher_1a31e2126247510f595e7e4b39f5e658da"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">float</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">latency</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher7latencyEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher17set_enable_sparseEKb">
+<span id="_CPPv3N8executor10Dispatcher17set_enable_sparseEKb"></span><span id="_CPPv2N8executor10Dispatcher17set_enable_sparseEKb"></span><span id="executor::Dispatcher::set_enable_sparse__bC"></span><span class="target" id="classexecutor_1_1Dispatcher_1a153a35b3482b5d0a5b95fef2c8099fad"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_enable_sparse</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">enable_sparse</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher17set_enable_sparseEKb" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher13enable_sparseEv">
+<span id="_CPPv3N8executor10Dispatcher13enable_sparseEv"></span><span id="_CPPv2N8executor10Dispatcher13enable_sparseEv"></span><span id="executor::Dispatcher::enable_sparse"></span><span class="target" id="classexecutor_1_1Dispatcher_1a4839a1480eb4ce36839db5af986af98e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">enable_sparse</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher13enable_sparseEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher11kernel_typeEv">
+<span id="_CPPv3N8executor10Dispatcher11kernel_typeEv"></span><span id="_CPPv2N8executor10Dispatcher11kernel_typeEv"></span><span id="executor::Dispatcher::kernel_type"></span><span class="target" id="classexecutor_1_1Dispatcher_1a34d9fc52f86472d59ad3019ecb29fd4d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">KERNEL_TYPE</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">kernel_type</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher11kernel_typeEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher17weight_zero_ratioEv">
+<span id="_CPPv3N8executor10Dispatcher17weight_zero_ratioEv"></span><span id="_CPPv2N8executor10Dispatcher17weight_zero_ratioEv"></span><span id="executor::Dispatcher::weight_zero_ratio"></span><span class="target" id="classexecutor_1_1Dispatcher_1a0d1fea551857404e72341e7aa1b473f1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">weight_zero_ratio</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher17weight_zero_ratioEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher16set_weight_shapeERK6vectorI7int64_tE">
+<span id="_CPPv3N8executor10Dispatcher16set_weight_shapeERK6vectorI7int64_tE"></span><span id="_CPPv2N8executor10Dispatcher16set_weight_shapeERK6vectorI7int64_tE"></span><span id="executor::Dispatcher::set_weight_shape__vector:int64_t:CR"></span><span class="target" id="classexecutor_1_1Dispatcher_1a61ea2c854e255161eccb45b2337a5dd9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_weight_shape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">weight_shape</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher16set_weight_shapeERK6vectorI7int64_tE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12weight_shapeEv">
+<span id="_CPPv3N8executor10Dispatcher12weight_shapeEv"></span><span id="_CPPv2N8executor10Dispatcher12weight_shapeEv"></span><span id="executor::Dispatcher::weight_shape"></span><span class="target" id="classexecutor_1_1Dispatcher_1a4b4c869e32578620d36b005515fc9c1e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">weight_shape</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12weight_shapeEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12set_table_idE6string">
+<span id="_CPPv3N8executor10Dispatcher12set_table_idE6string"></span><span id="_CPPv2N8executor10Dispatcher12set_table_idE6string"></span><span id="executor::Dispatcher::set_table_id__string"></span><span class="target" id="classexecutor_1_1Dispatcher_1aa581ed240fbe38664ed2a8bc2c511d3a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_table_id</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">table_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12set_table_idE6string" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher8table_idEv">
+<span id="_CPPv3N8executor10Dispatcher8table_idEv"></span><span id="_CPPv2N8executor10Dispatcher8table_idEv"></span><span id="executor::Dispatcher::table_id"></span><span class="target" id="classexecutor_1_1Dispatcher_1af487a27112354438486fea634a906b6c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">table_id</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher8table_idEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher17set_perf_ratio_idE6string">
+<span id="_CPPv3N8executor10Dispatcher17set_perf_ratio_idE6string"></span><span id="_CPPv2N8executor10Dispatcher17set_perf_ratio_idE6string"></span><span id="executor::Dispatcher::set_perf_ratio_id__string"></span><span class="target" id="classexecutor_1_1Dispatcher_1a3cb042b16f8450e2be39a6211836ec2f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_perf_ratio_id</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">perf_ratio_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher17set_perf_ratio_idE6string" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher13perf_ratio_idEv">
+<span id="_CPPv3N8executor10Dispatcher13perf_ratio_idEv"></span><span id="_CPPv2N8executor10Dispatcher13perf_ratio_idEv"></span><span id="executor::Dispatcher::perf_ratio_id"></span><span class="target" id="classexecutor_1_1Dispatcher_1adbd8b8d02d1d1d7a1fae578778e3aab0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">perf_ratio_id</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher13perf_ratio_idEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tE">
+<span id="_CPPv3N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tE"></span><span id="_CPPv2N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tE"></span><span id="executor::Dispatcher::set_it_shape__vector:int64_t:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1a3a32b567140d620c161c8858b984bd06"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_it_shape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">input_shape</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12set_ot_shapeEK6vectorI7int64_tE">
+<span id="_CPPv3N8executor10Dispatcher12set_ot_shapeEK6vectorI7int64_tE"></span><span id="_CPPv2N8executor10Dispatcher12set_ot_shapeEK6vectorI7int64_tE"></span><span id="executor::Dispatcher::set_ot_shape__vector:int64_t:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1a36f7387944ba83c09f2e9d12a455bce2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_ot_shape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">output_shape</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12set_ot_shapeEK6vectorI7int64_tE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12get_it_shapeEv">
+<span id="_CPPv3N8executor10Dispatcher12get_it_shapeEv"></span><span id="_CPPv2N8executor10Dispatcher12get_it_shapeEv"></span><span id="executor::Dispatcher::get_it_shape"></span><span class="target" id="classexecutor_1_1Dispatcher_1ae5acc3458ad9cfb745365d8054e02131"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_it_shape</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12get_it_shapeEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12get_ot_shapeEv">
+<span id="_CPPv3N8executor10Dispatcher12get_ot_shapeEv"></span><span id="_CPPv2N8executor10Dispatcher12get_ot_shapeEv"></span><span id="executor::Dispatcher::get_ot_shape"></span><span class="target" id="classexecutor_1_1Dispatcher_1a8e2f221e283cbe5d607039825c70bb0c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_ot_shape</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12get_ot_shapeEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher16set_reshape_timeEKf">
+<span id="_CPPv3N8executor10Dispatcher16set_reshape_timeEKf"></span><span id="_CPPv2N8executor10Dispatcher16set_reshape_timeEKf"></span><span id="executor::Dispatcher::set_reshape_time__floatC"></span><span class="target" id="classexecutor_1_1Dispatcher_1a2ef4ee6b44c77a621d9fc1b5781da57e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_reshape_time</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">reshape_time_</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher16set_reshape_timeEKf" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher16get_reshape_timeEv">
+<span id="_CPPv3N8executor10Dispatcher16get_reshape_timeEv"></span><span id="_CPPv2N8executor10Dispatcher16get_reshape_timeEv"></span><span id="executor::Dispatcher::get_reshape_time"></span><span class="target" id="classexecutor_1_1Dispatcher_1a29a1208bb83ecf3919a21feae9dfaef6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">float</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_reshape_time</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher16get_reshape_timeEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE">
+<span id="_CPPv3N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE"></span><span id="_CPPv2N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE"></span><span id="executor::Dispatcher::set_attrs__std::map:string.string:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1a56f01f47396e7bdb086687382d3c89e9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_attrs</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">input_attrs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher9get_attrsEv">
+<span id="_CPPv3N8executor10Dispatcher9get_attrsEv"></span><span id="_CPPv2N8executor10Dispatcher9get_attrsEv"></span><span id="executor::Dispatcher::get_attrs"></span><span class="target" id="classexecutor_1_1Dispatcher_1aaf616dd1ca07b594900195e7320ad929"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_attrs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher9get_attrsEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-protected-functions">Protected Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher7GetHashERK6vectorIP6TensorE">
+<span id="_CPPv3N8executor10Dispatcher7GetHashERK6vectorIP6TensorE"></span><span id="_CPPv2N8executor10Dispatcher7GetHashERK6vectorIP6TensorE"></span><span id="executor::Dispatcher::GetHash__vector:TensorP:CR"></span><span class="target" id="classexecutor_1_1Dispatcher_1a7ff828483299029e8e3ac5b2b669fa5a"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetHash</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Tensor</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher7GetHashERK6vectorIP6TensorE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-protected-attributes">Protected Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher5name_E">
+<span id="_CPPv3N8executor10Dispatcher5name_E"></span><span id="_CPPv2N8executor10Dispatcher5name_E"></span><span id="executor::Dispatcher::name___string"></span><span class="target" id="classexecutor_1_1Dispatcher_1aad135c79901adca93f4bc8b398832a0d"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">name_</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher5name_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher5type_E">
+<span id="_CPPv3N8executor10Dispatcher5type_E"></span><span id="_CPPv2N8executor10Dispatcher5type_E"></span><span id="executor::Dispatcher::type___string"></span><span class="target" id="classexecutor_1_1Dispatcher_1a383e84f1225be9753f3c0d11402d515e"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">type_</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher5type_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher14operator_conf_E">
+<span id="_CPPv3N8executor10Dispatcher14operator_conf_E"></span><span id="_CPPv2N8executor10Dispatcher14operator_conf_E"></span><span id="executor::Dispatcher::operator_conf___shared_ptr:OperatorConfig:"></span><span class="target" id="classexecutor_1_1Dispatcher_1abbe066b162073f518f352fc7eb89cea3"></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">OperatorConfig</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">operator_conf_</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher14operator_conf_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher8cpu_isa_E">
+<span id="_CPPv3N8executor10Dispatcher8cpu_isa_E"></span><span id="_CPPv2N8executor10Dispatcher8cpu_isa_E"></span><span id="executor::Dispatcher::cpu_isa___isa"></span><span class="target" id="classexecutor_1_1Dispatcher_1a961621bc747f5eeba11e1275b550543e"></span><span class="n"><span class="pre">isa</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cpu_isa_</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher8cpu_isa_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher15kernel_handler_E">
+<span id="_CPPv3N8executor10Dispatcher15kernel_handler_E"></span><span id="_CPPv2N8executor10Dispatcher15kernel_handler_E"></span><span id="executor::Dispatcher::kernel_handler___KernelHandler"></span><span class="target" id="classexecutor_1_1Dispatcher_1aa03f324f211e70032dab7ca6ccdaa4ec"></span><a class="reference internal" href="#_CPPv4N8executor10Dispatcher13KernelHandlerE" title="executor::Dispatcher::KernelHandler"><span class="n"><span class="pre">KernelHandler</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_handler_</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher15kernel_handler_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher15execute_kernel_E">
+<span id="_CPPv3N8executor10Dispatcher15execute_kernel_E"></span><span id="_CPPv2N8executor10Dispatcher15execute_kernel_E"></span><span id="executor::Dispatcher::execute_kernel___string"></span><span class="target" id="classexecutor_1_1Dispatcher_1a23a7854ea68999918214d4c0b0831faf"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">execute_kernel_</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher15execute_kernel_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher10do_tuning_E">
+<span id="_CPPv3N8executor10Dispatcher10do_tuning_E"></span><span id="_CPPv2N8executor10Dispatcher10do_tuning_E"></span><span id="executor::Dispatcher::do_tuning___b"></span><span class="target" id="classexecutor_1_1Dispatcher_1a96649090613a47c932c50e9bf5d3f46c"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">do_tuning_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher10do_tuning_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher16no_tuning_space_E">
+<span id="_CPPv3N8executor10Dispatcher16no_tuning_space_E"></span><span id="_CPPv2N8executor10Dispatcher16no_tuning_space_E"></span><span id="executor::Dispatcher::no_tuning_space___b"></span><span class="target" id="classexecutor_1_1Dispatcher_1af25b53170437b2cc1ab55725b1a4bd8a"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">no_tuning_space_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher16no_tuning_space_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher9iter_cnt_E">
+<span id="_CPPv3N8executor10Dispatcher9iter_cnt_E"></span><span id="_CPPv2N8executor10Dispatcher9iter_cnt_E"></span><span id="executor::Dispatcher::iter_cnt___int64_t"></span><span class="target" id="classexecutor_1_1Dispatcher_1a6ddc925b7313f0bd1634a5cb00652cf8"></span><span class="n"><span class="pre">int64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">iter_cnt_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher9iter_cnt_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher20sparselib_available_E">
+<span id="_CPPv3N8executor10Dispatcher20sparselib_available_E"></span><span id="_CPPv2N8executor10Dispatcher20sparselib_available_E"></span><span id="executor::Dispatcher::sparselib_available___vector:b:"></span><span class="target" id="classexecutor_1_1Dispatcher_1aaace819233a732f3c9df91b66375134e"></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">bool</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sparselib_available_</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher20sparselib_available_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher21tune_dense_in_sparse_E">
+<span id="_CPPv3N8executor10Dispatcher21tune_dense_in_sparse_E"></span><span id="_CPPv2N8executor10Dispatcher21tune_dense_in_sparse_E"></span><span id="executor::Dispatcher::tune_dense_in_sparse___b"></span><span class="target" id="classexecutor_1_1Dispatcher_1ab4dd7e5eacb7a29af1c87008bc88df43"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">tune_dense_in_sparse_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher21tune_dense_in_sparse_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher16monopoly_kernel_E">
+<span id="_CPPv3N8executor10Dispatcher16monopoly_kernel_E"></span><span id="_CPPv2N8executor10Dispatcher16monopoly_kernel_E"></span><span id="executor::Dispatcher::monopoly_kernel___string"></span><span class="target" id="classexecutor_1_1Dispatcher_1a75bbe5c5a4bb3c19242465a3610d023e"></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">monopoly_kernel_</span></span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher16monopoly_kernel_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher27dispatch_table_file_exists_E">
+<span id="_CPPv3N8executor10Dispatcher27dispatch_table_file_exists_E"></span><span id="_CPPv2N8executor10Dispatcher27dispatch_table_file_exists_E"></span><span id="executor::Dispatcher::dispatch_table_file_exists___b"></span><span class="target" id="classexecutor_1_1Dispatcher_1abccb8c4af8e8107974ad4f799c0a7880"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">dispatch_table_file_exists_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher27dispatch_table_file_exists_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher22execution_options_ptr_E">
+<span id="_CPPv3N8executor10Dispatcher22execution_options_ptr_E"></span><span id="_CPPv2N8executor10Dispatcher22execution_options_ptr_E"></span><span id="executor::Dispatcher::execution_options_ptr___ExecutionOptionsCP"></span><span class="target" id="classexecutor_1_1Dispatcher_1abd7096701ccd858ce2fbe886ed660a7e"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">ExecutionOptions</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">execution_options_ptr_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher22execution_options_ptr_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher13adapt_action_E">
+<span id="_CPPv3N8executor10Dispatcher13adapt_action_E"></span><span id="_CPPv2N8executor10Dispatcher13adapt_action_E"></span><span id="executor::Dispatcher::adapt_action___b"></span><span class="target" id="classexecutor_1_1Dispatcher_1a3be6421e41bc4d416e5aef413008dcb8"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">adapt_action_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">true</span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher13adapt_action_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher6model_E">
+<span id="_CPPv3N8executor10Dispatcher6model_E"></span><span id="_CPPv2N8executor10Dispatcher6model_E"></span><span id="executor::Dispatcher::model___ModelCP"></span><span class="target" id="classexecutor_1_1Dispatcher_1a7475aef7ead023e1b0d5f0e2726c51fc"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">Model</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">model_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher6model_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../api_c_engine.html" class="btn btn-neutral float-left" title="C++ APIs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../../kernel.html" class="btn btn-neutral float-right" title="Transformers-accelerated Libraries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -11,6 +11,5 @@ Sections
    neural_engine.rst
    kernel.rst
    docs/examples.md
-   docs/api_doc/api.rst
 
 
