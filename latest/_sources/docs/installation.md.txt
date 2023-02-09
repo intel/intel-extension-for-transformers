@@ -47,7 +47,7 @@ pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers-ba
 ```
 ```Shell
 # install stable basic version from from conda
-conda install intel-extension-for-transformers -c conda-forge -c intel
+conda install -c intel intel-extension-for-transformers
 ```
 
 ### Install from Source
