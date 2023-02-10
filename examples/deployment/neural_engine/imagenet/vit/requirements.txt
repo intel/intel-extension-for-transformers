@@ -6,6 +6,6 @@ sentencepiece != 0.1.92
 protobuf
 torch==1.13.1
 torchvision
-onnx==1.12.0
+onnx>=1.12
 onnxruntime==1.13.1
 onnxruntime-extensions

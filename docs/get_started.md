@@ -28,7 +28,7 @@ q_config = QuantizationConfig(
 model = trainer.quantize(quant_config=q_config)
 ```
 
-For other Please refer to [quantization document](docs/quantization.md) for more details.
+For other Please refer to [quantization document](./quantization.md) for more details.
 
 
 ## Pruning
@@ -45,7 +45,7 @@ p_conf = PruningConfig(pruner_config=[pruner_config], metrics=metric)
 model = trainer.prune(pruning_config=p_conf)
 ```
 
-Please refer to [pruning document](docs/pruning.md) for more details.
+Please refer to [pruning document](./pruning.md) for more details.
 
 
 ## Distillation
@@ -62,7 +62,7 @@ d_conf = DistillationConfig(metrics=metric)
 model = trainer.distill(distillation_config=d_conf, teacher_model=teacher_model)
 ```
 
-Please refer to [distillation document](docs/distillation.md) for more details.
+Please refer to [distillation document](./distillation.md) for more details.
 
 
 ## Quantized Length Adaptive Transformer
@@ -87,7 +87,7 @@ trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
 model = trainer.quantize(quant_config=q_config)
 ```
 
-Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](examples/optimization/pytorch/huggingface/question-answering/dynamic) for details
+Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](../examples/optimization/pytorch/huggingface/question-answering/dynamic) for details
 
 
 ## Transformers-accelerated Neural Engine
@@ -101,4 +101,4 @@ inputs = ... # [input_ids, segment_ids, input_mask]
 model.inference(inputs)
 ```
 
-Please refer to [example](examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.
+Please refer to [example](../examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](../examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.
