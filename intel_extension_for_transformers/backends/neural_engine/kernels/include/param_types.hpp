@@ -38,8 +38,10 @@ enum class binaryop_alg : uint8_t { undef, add, sub, mul, per_channel_quant, per
 enum class postop_type : uint8_t { eltwise };
 
 static std::map<postop_alg, const char*> postop_alg_name = {
-    {postop_alg::exp, "exp"},
-    {postop_alg::gelu, "gelu"},
+    {postop_alg::exp, "exp"},           {postop_alg::tanh, "tanh"},
+    {postop_alg::gelu, "gelu"},         {postop_alg::relu, "relu"},
+    {postop_alg::quantize, "quantize"}, {postop_alg::dequantize, "dequantize"},
+    {postop_alg::linear, "linear"},     {postop_alg::eltop_int_lut, "eltop_int_lut"},
 };
 
 enum class reg_type : uint8_t { mask, zmm, reg64 };
@@ -63,6 +65,10 @@ enum class data_type : uint8_t {
   bf16,
   fp32,
   s32,
+};
+const std::map<data_type, const char*> data_type_name{
+    {data_type::u8, "u8"},     {data_type::s8, "s8"},     {data_type::u16, "u16"},   {data_type::s16, "s16"},
+    {data_type::fp16, "fp16"}, {data_type::bf16, "bf16"}, {data_type::fp32, "fp32"}, {data_type::s32, "s32"},
 };
 
 // Format type.

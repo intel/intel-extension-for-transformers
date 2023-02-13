@@ -18,6 +18,7 @@
 #include "param_types.hpp"
 #include "impl_list_item.hpp"
 #include "kernels/attention.hpp"
+#include "kernels/attention_ref.hpp"
 
 namespace jd {
 static const std::map<kernel_prop, std::vector<impl_list_item_t>> attention_impl_list_map = {

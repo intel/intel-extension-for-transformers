@@ -50,6 +50,10 @@ function run_tuning {
         DATASET_NAME="cnn_dailymail"
         model_name_or_path="flax-community/t5-base-cnn-dm"
         approach="PostTrainingDynamic"
+    elif [ "${topology}" == "t5_large_cnn_dynamic" ]; then
+        DATASET_NAME="cnn_dailymail"
+        model_name_or_path="sysresearch101/t5-large-finetuned-xsum-cnn"
+        approach="PostTrainingDynamic"
     else
         echo "unsupport topology: ${topology}"
         exit 1

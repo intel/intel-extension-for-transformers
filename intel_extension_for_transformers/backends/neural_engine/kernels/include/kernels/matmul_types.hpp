@@ -49,6 +49,7 @@ struct matmul_data_t {
   float* dst;
   const float* src2;
 };
+
 struct matmul_u8_data_t {
   const uint8_t* src0;
   const int8_t* src1;

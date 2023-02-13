@@ -14,7 +14,7 @@ function init_params {
   iters=100
   batch_size=1
   tuned_checkpoint=saved_results
-  cache_dir="cache"
+  cache_dir="/home/tensorflow/.cache/nlp_toolkit/text-classification"
   for var in "$@"
   do
     case $var in

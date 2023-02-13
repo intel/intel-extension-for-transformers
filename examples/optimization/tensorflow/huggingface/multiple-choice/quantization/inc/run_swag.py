@@ -290,8 +290,6 @@ def main():
     # endregion
 
     # region Logging
-    logger = logging.getLogger(__name__)
-    logger.addHandler(logging.StreamHandler())
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
@@ -400,6 +398,7 @@ def main():
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        _commit_hash="main",
     )
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
@@ -407,6 +406,7 @@ def main():
         use_fast=model_args.use_fast_tokenizer,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        _commit_hash="main",
     )
     # endregion
 
@@ -590,9 +590,9 @@ def main():
 
     # region Evaluation
     if training_args.do_eval:
-        total_time = 0
         num_examples = sum(1 for _ in (
             tf_eval_dataset.unbatch() if hasattr(tf_eval_dataset, "unbatch") else tf_eval_dataset))
+
         if optim_args.int8:
             model = tf.saved_model.load(training_args.output_dir)
         else:
@@ -603,37 +603,52 @@ def main():
         logger.info(f"  Num examples in dataset = {num_examples}")
         logger.info(f"  Batch size = {training_args.per_device_eval_batch_size}")
 
-        label_ids: np.ndarray = None
         preds: np.ndarray = None
+        label_ids: np.ndarray = None
         infer = model.signatures["serving_default"]
 
-        for idx, (inputs, labels) in enumerate(tf_eval_dataset):
-            for name in inputs:
-                inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
-            start = time.time()
-            results = infer(**inputs)
-            total_time += time.time() - start
+        if optim_args.accuracy_only:
+            iterations = 1
+            warmup = 0
+        else:
+            iterations = 10
+            warmup = 5
+        latency_list = []
 
-            if preds is None:
-                preds = results["Identity"].numpy()
-            else:
-                preds = np.append(preds, results["Identity"].numpy(), axis=0)
-            
-            if label_ids is None:
-                label_ids = labels[0].numpy() if isinstance(
-                    labels, list) else labels.numpy()
-            else:
-                label_ids = np.append(
-                    label_ids,
-                    labels[0].numpy() if isinstance(labels, list) else labels.numpy(),
-                    axis=0)
+        for idx in range(iterations):
+            iteration_time = 0
+            for i, (inputs, labels) in enumerate(tf_eval_dataset):
+                for name in inputs:
+                    inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
+
+                start = time.time()
+                results = infer(**inputs)
+                iteration_time += time.time() - start
+                if idx == 0:    # only accumulate once all the preds and labels
+                    if preds is None:
+                        preds = results["Identity"].numpy()
+                    else:
+                        preds = np.append(preds, results["Identity"].numpy(), axis=0)
+                    if label_ids is None:
+                        label_ids = labels[0].numpy() if isinstance(
+                            labels, list) else labels.numpy()
+                    else:
+                        label_ids = np.append(
+                            label_ids,
+                            labels[0].numpy() if isinstance(labels, list) else labels.numpy(),
+                            axis=0)
+            latency_list.append(iteration_time)
+            logger.info("Iteration {} time: {} sec".format(idx, iteration_time))
+
         test_predictions = {"logits": preds}
         eval_metrics = compute_metrics(test_predictions, label_ids)
-
+        logger.info("\nEvaluation result: ")
         logger.info("Accuracy: {}".format(eval_metrics["accuracy"]))
+
+        average_iteration_time = np.array(latency_list[warmup:]).mean()
         logger.info(
             "Throughput: {} samples/sec".format(
-                num_examples / total_time)
+                num_examples / average_iteration_time)
         )
 
 if __name__ == "__main__":

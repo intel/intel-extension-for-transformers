@@ -1,0 +1,947 @@
+{
+  "gpt_neo_clm_static": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gpt_neo_clm_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gpt_neo_clm_static",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "gpt_neo_clm_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gpt_neo_clm_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gpt_neo_clm_dynamic",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "gptj_clm_static": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gptj_clm_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gptj_clm_static",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "gptj_clm_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gptj_clm_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gptj_clm_dynamic",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_mlm_static": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_mlm_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_mlm_static",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_mlm_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_mlm_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_mlm_dynamic",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "xlnet_plm_static": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "xlnet_plm_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "xlnet_plm_static",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "xlnet_plm_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "xlnet_plm_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "xlnet_plm_dynamic",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_swag_static": {
+    "working_dir": "optimization/pytorch/huggingface/multiple-choice/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_swag_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_swag_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_swag_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/multiple-choice/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_swag_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_swag_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distilbert_base_squad_static": {
+    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_base_squad_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_base_squad_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distilbert_base_squad_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_base_squad_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_base_squad_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_mrpc_qat": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/qat",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_mrpc",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_mrpc",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_mrpc_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_mrpc_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_mrpc_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_mrpc_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_mrpc_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_mrpc_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_SST-2_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_SST-2_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_SST-2_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_SST-2_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_SST-2_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_SST-2_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_CoLA_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_CoLA_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_CoLA_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_STS-B_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_STS-B_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_STS-B_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_RTE_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_RTE_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_RTE_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_large_CoLA_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_large_CoLA_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_large_CoLA_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_large_MRPC_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_large_MRPC_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_large_MRPC_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_large_QNLI_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_large_QNLI_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_large_QNLI_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "xlnet_base_SST-2_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "xlnet_base_SST-2_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "xlnet_base_SST-2_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_large_SQuAD_static": {
+    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_large_SQuAD_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_large_SQuAD_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "roberta_base_SST-2_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "roberta_base_SST-2_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "roberta_base_SST-2_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "camembert_base_XNLI_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "camembert_base_XNLI_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "camembert_base_XNLI_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "funnel_small_MRPC_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "funnel_small_MRPC_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "funnel_small_MRPC_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "xlm_roberta_large_XNLI_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "xlm_roberta_large_XNLI_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "xlm_roberta_large_XNLI_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distillbert_base_SST-2_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distillbert_base_SST-2_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distillbert_base_SST-2_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distillbert_base_SST-2_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distillbert_base_SST-2_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distillbert_base_SST-2_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distilbert_base_ner_static": {
+    "working_dir": "optimization/pytorch/huggingface/token-classification/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_base_ner_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_base_ner_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distilbert_base_ner_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/token-classification/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_base_ner_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_base_ner_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "ctrl_wikitext_static": {
+    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "ctrl_wikitext_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "ctrl_wikitext_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "pegasus_samsum_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/summarization/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "pegasus_samsum_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "pegasus_samsum_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "t5-small_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/translation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "t5-small_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "t5-small_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "marianmt_WMT_en_ro_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/translation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "marianmt_WMT_en_ro_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "marianmt_WMT_en_ro_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_large_squad_ipex": {
+    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_large_squad_ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_large_squad_ipex",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distilbert_base_squad_ipex": {
+    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_base_squad_ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_base_squad_ipex",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bert_base_SST-2_static_no_trainer": {
+    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_SST-2_static_no_trainer",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_SST-2_static_no_trainer",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "vit-base-patch16-224_static": {
+    "working_dir": "optimization/pytorch/huggingface/image-classification/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "vit-base-patch16-224_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "vit-base-patch16-224_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "sd_pokemon_diffusers_static": {
+    "working_dir": "optimization/pytorch/huggingface/text-to-image/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "sd_pokemon_diffusers_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "sd_pokemon_diffusers_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "sd_pokemon_diffusers_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/text-to-image/quantization/inc",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "sd_pokemon_diffusers_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "sd_pokemon_diffusers_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "t5_base_cnn_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/summarization/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "t5_base_cnn_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "t5_base_cnn_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "t5_large_cnn_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/summarization/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "t5_large_cnn_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "t5_large_cnn_dynamic",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  }
+}

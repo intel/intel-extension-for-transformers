@@ -28,6 +28,10 @@ from functools import partial
 from neural_compressor.conf.config import Conf, schema
 from neural_compressor.conf.dotdict import DotDict
 from neural_compressor.experimental import Distillation
+from neural_compressor.experimental.nas.nas import NASBase
+from neural_compressor.experimental.nas.nas_utils import find_pareto_front, NASMethods
+from neural_compressor.experimental.nas.search_algorithms import \
+    BayesianOptimizationSearcher, GridSearcher, RandomSearcher
 from neural_compressor.strategy.bayesian import BayesianOptimization
 from neural_compressor.utils import logger
 from intel_extension_for_transformers.optimization.config import AutoDistillationConfig
@@ -35,7 +39,7 @@ from intel_extension_for_transformers.optimization.utils.utility import LazyImpo
 
 torch = LazyImport("torch")
 
-class AutoDistillation(object):
+class AutoDistillation(NASBase):
     """The framework class is designed for handling the whole pipeline of AutoDistillation.
 
     AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation, 
@@ -56,28 +60,11 @@ class AutoDistillation(object):
             a configuration object containing search setting, flash distillation settings, etc.
         framework: Specify the framework used as backend.
         """
-        self.search_space = {}
-        self.model_builder = model_builder
-        self._advisor = None
+        NASBase.__init__(self, search_space={}, model_builder=model_builder)
         self._train_func = None
         self._eval_func = None
-        self.search_results = {}
-        self.best_model_archs = None
-        self.seed = None
         self.framework = framework.lower()
         self.init_by_cfg(conf_fname_or_obj)
-
-    def model_arch_proposition(self):
-        """Propose architecture of the model based on search algorithm for next search iteration.
-
-        Returns:
-            Model architecture description.
-        """
-        model_arch_paras = self.advisor.suggestion()
-        assert self.search_space_keys and isinstance(model_arch_paras, dict) and \
-            self.search_space_keys == list(model_arch_paras.keys()), \
-            "Keys of model_arch_paras should be the same with search_space_keys."
-        return model_arch_paras
 
     def search(self, res_save_path=None, model_cls=None):
         """Auto distillation search process.
@@ -108,7 +95,7 @@ class AutoDistillation(object):
             )
             if self.framework == 'pytorch':
                 if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
-                    model_arch_paras = self.model_arch_proposition()
+                    model_arch_paras = self.select_model_arch()
                     logger.info("Model architecture {} proposed.".format(model_arch_paras))
                 if torch.distributed.is_initialized():
                     model_arch_paras_sync = [model_arch_paras] \
@@ -116,8 +103,8 @@ class AutoDistillation(object):
                     torch.distributed.broadcast_object_list(model_arch_paras_sync, src=0)
                     model_arch_paras = model_arch_paras_sync[0]
             else:
-                model_arch_paras = self.model_arch_proposition()
-            model = self.model_builder(model_arch_paras)
+                model_arch_paras = self.select_model_arch()
+            model = self._model_builder(model_arch_paras)
             if self.framework == 'tensorflow':
                 model = reload_tf_model(model)
 
@@ -144,7 +131,7 @@ class AutoDistillation(object):
 
             if (self.framework != "pytorch" or not torch.distributed.is_initialized() 
               or torch.distributed.get_rank() == 0):
-                self.advisor.feedback(sum(self.metrics_conversion(metrics)))
+                self._search_algorithm.get_feedback(sum(self.metrics_conversion(metrics)))
                 print(f'res_save_path: {res_save_path}, save_path = {save_path}')
                 os.makedirs(save_path, exist_ok=True)
                 self.dump_search_results(
@@ -155,7 +142,7 @@ class AutoDistillation(object):
                 if model_arch_vec not in self.search_results:
                     self.search_results[model_arch_vec] = \
                         self.resumed_search_results[model_arch_vec]
-                    model = self.model_builder(self.params_vec2params_dict(model_arch_vec))
+                    model = self._model_builder(self.params_vec2params_dict(model_arch_vec))
                     if self.framework == 'tensorflow':
                         model = reload_tf_model(model)
                     self.model_paras_num[model_arch_vec] = self.count_model_parameters(model)
@@ -210,67 +197,6 @@ class AutoDistillation(object):
                     shutil.move(os.path.join(path, f), os.path.join(path, 'previous_results', f))
         logger.info("Loaded previous results.")
 
-    def dump_search_results(self, path):
-        """Dump current search results into a file.
-        
-        Args:
-            path: The file path to store the results.
-        """
-        lastest_results_record = os.path.join(os.path.dirname(path), 'lastest_results.npy')
-        np.save(lastest_results_record, self.search_results, allow_pickle=True)
-        write_contents = '=' * 30 + ' All Search Results ' + '=' * 30 + '\n\n'
-        for model_arch_vec in self.search_results:
-            tmp = ','.join(['{}_{}'.format(k, v) \
-                for k, v in zip(self.search_space_keys, model_arch_vec)])
-            write_contents += '{}: {} Paras: {}M\n'.format(
-                tmp, self.search_results[model_arch_vec],
-                self.model_paras_num[model_arch_vec] / 10**6
-            )
-        write_contents += '\n\n\n' + '=' * 30 + ' Best Search Results ' + '=' * 30 + '\n\n'
-        self.find_best_model_archs()
-        for i, model_arch in enumerate(self.best_model_archs):
-            model_arch_vec = tuple(model_arch.values())
-            tmp = ','.join(['{}_{}'.format(k, v) \
-                for k, v in zip(self.search_space_keys, model_arch_vec)])
-            write_contents += \
-                '{}. {}: {} Paras: {}M\n'.format(
-                    i+1, tmp, self.search_results[model_arch_vec],
-                    self.model_paras_num[model_arch_vec] / 10**6
-            )
-        with open(path, mode='w') as f:
-            f.write(write_contents)
-
-    def params_vec2params_dict(self, paras_vec):
-        """Transfer the vector into dict to hold the paramaters."""
-        assert len(paras_vec) == len(self.search_space_keys), \
-            "Length of paras_vec and search_space_keys should be the same."
-        return {k:v for k, v in zip(self.search_space_keys, paras_vec)}
-
-    def find_best_model_archs(self):
-        """Find the model architecture with best performance."""
-        assert len(self.search_results) > 0, "Zero result in search_results."
-        model_arches = list(self.search_results.keys())
-        metrics = [self.metrics_conversion(self.search_results[ma]) for ma in model_arches]
-        pareto_front_indices = find_pareto_front(metrics)
-        self.best_model_archs = [self.params_vec2params_dict(model_arches[i]) \
-            for i in pareto_front_indices]
-
-    def metrics_conversion(self, metrics):
-        """Convert the metrics."""
-        if isinstance(metrics, dict):
-            if self.metrics is None:
-                self.metrics = list(metrics.keys())
-            assert list(metrics.keys()) == list(self.metrics), \
-                "Keys of metrics not match with metrics in the configuration."
-            metrics = list(metrics.values())
-        if self.higher_is_better is None:
-            self.higher_is_better = [True,] * len(metrics)
-            logger.warning("higher_is_better not set in the configuration, " + \
-                "set it to all True for every metric entry by default.")
-        converted_metrics = [metric if higher_is_better else -metric \
-            for metric, higher_is_better in zip(metrics, self.higher_is_better)]
-        return converted_metrics
-
     def init_by_cfg(self, conf_fname_or_obj):
         """Use auto distillation config to init the instance of autodistillation."""
         if isinstance(conf_fname_or_obj, str): # pragma: no cover
@@ -294,36 +220,6 @@ class AutoDistillation(object):
         self.init_search_cfg(auto_distillation_cfg)
         # flash distillation related
         self.flash_distillation_config = auto_distillation_cfg.flash_distillation
-
-    def init_search_cfg(self, config):
-        """Init advisor base on config."""
-        self.search_cfg = config.search
-        self.search_space = self.search_cfg.search_space
-        self.search_space_keys = sorted(self.search_space.keys())
-        for k in self.search_space_keys:
-            assert isinstance(self.search_space[k], (list, tuple)), \
-                "Value of key \'{}\' must be a list or tuple".format(k)
-
-        self.metrics = self.search_cfg.metrics \
-            if self.search_cfg.metrics is not None else None
-        self.higher_is_better = self.search_cfg.higher_is_better \
-            if self.search_cfg.higher_is_better is not None else None
-        self.seed = self.search_cfg.seed
-        self.max_trials = self.search_cfg.max_trials \
-            if self.search_cfg.max_trials is not None else 3 # set default 3 for max_trials
-        self.search_algorithm = self.search_cfg.search_algorithm
-        if self.search_algorithm is None:
-            self.advisor = BayesianOptimizationSearcher(self.search_space, self.seed)
-        elif self.search_algorithm.lower() == 'grid':
-            self.advisor = GridSearcher(self.search_space)
-        elif self.search_algorithm.lower() == 'random':
-            self.advisor = RandomSearcher(self.search_space, self.seed)
-        elif self.search_algorithm.lower() == 'bo':
-            self.advisor = BayesianOptimizationSearcher(self.search_space, self.seed)
-        else: # pragma: no cover
-            raise NotImplementedError(
-                'Unsupported \'{}\' search algorithm'.format(self.search_algorithm)
-            )
 
     def create_distillers(self):
         """Create flash and regular distillers."""
@@ -432,16 +328,6 @@ class AutoDistillation(object):
         self._model = user_model
 
     @property
-    def advisor(self):
-        """Getter of advisor."""
-        return self._advisor
-
-    @advisor.setter
-    def advisor(self, advisor):
-        """Setter of advisor."""
-        self._advisor = advisor
-
-    @property
     def train_func(self):
         """Getter of train function."""
         return self._train_func
@@ -464,138 +350,3 @@ class AutoDistillation(object):
     def __repr__(self): # pragma: no cover
         """Return class name."""
         return 'AutoDistillation'
-
-def create_search_space_pool(search_space, idx=0):
-    """Create the pool of search space."""
-    search_space_keys = sorted(search_space.keys())
-    if idx == len(search_space_keys):
-        return [[]]
-    key = search_space_keys[idx]
-    search_space_pool = []
-    for v in search_space[key]:
-        sub_search_space_pool = create_search_space_pool(search_space, idx+1)
-        search_space_pool += [[v] + item for item in sub_search_space_pool]
-    return search_space_pool
-
-class Searcher(object):
-    """The basic class of searchers, search the model architecture for auto distillation."""
-    def __init__(self, search_space) -> None:
-        """Initailization fucntion."""
-        assert isinstance(search_space, dict) and search_space, \
-            "Expect search_space to be a dict."
-        self.search_space = search_space
-        self.search_space_keys = sorted(search_space.keys())
-        for k in self.search_space_keys:
-            assert isinstance(self.search_space[k], (list, tuple)), \
-                "Value of key \'{}\' must be a list or tuple to specify choices".format(k)
-
-    def suggestion(self): # pragma: no cover
-        """Main entry point of searcher. Depends on specific search algorithm."""
-        raise NotImplementedError('Depends on specific search algorithm.')
-
-    def feedback(self, metric):
-        """Depends on specific search algorithm."""
-        pass
-
-    def params_vec2params_dict(self, para_vec):
-        """Transfer the vector into dict to hold the paramaters."""
-        assert len(para_vec) == len(self.search_space_keys), \
-            "Length of para_vec and search_space_keys should be the same."
-        return {k: para_vec[i] for i, k in enumerate(self.search_space_keys)}
-
-class GridSearcher(Searcher):
-    """Searcher implement grid algorithm to search model architecture."""
-    def __init__(self, search_space) -> None:
-        """Initailization fucntion."""
-        super(GridSearcher, self).__init__(search_space)
-        self.search_space_pool = create_search_space_pool(search_space)
-        self.idx = 0
-
-    def suggestion(self):
-        """Main entry point of searcher.
-        
-        Search the model architecture from the search space pool.
-        """
-        res = self.search_space_pool[self.idx]
-        self.idx = (self.idx + 1) % len(self.search_space_pool)
-        return self.params_vec2params_dict(res)
-
-class RandomSearcher(Searcher):
-    """Searcher implement random algorithm to search model architecture."""
-    def __init__(self, search_space, seed=42) -> None:
-        """Initailization fucntion."""
-        super(RandomSearcher, self).__init__(search_space)
-        self.search_space_pool = create_search_space_pool(search_space)
-        self.indices_pool = list(range(len(self.search_space_pool)))
-        random.seed(seed)
-        random.shuffle(self.indices_pool)
-
-    def suggestion(self):
-        """Main entry point of searcher.
-        
-        Search the model architecture from the search space pool.
-        """
-        if not self.indices_pool:
-            self.indices_pool = list(range(len(self.search_space_pool)))
-            random.shuffle(self.indices_pool)
-        idx = self.indices_pool.pop(-1)
-        return self.params_vec2params_dict(self.search_space_pool[idx])
-
-class BayesianOptimizationSearcher(Searcher):
-    """Searcher implement bayesian algorithm to search model architecture."""
-    def __init__(self, search_space, seed=42) -> None:
-        """Initailization fucntion."""
-        super(BayesianOptimizationSearcher, self).__init__(search_space)
-        idx_search_space = {k: (0, len(search_space[k])-1) for k in self.search_space_keys}
-        self.bo_agent = BayesianOptimization(idx_search_space, random_seed=seed)
-        self.last_param_indices = None
-
-    def suggestion(self):
-        """Main entry point of searcher.
-        
-        Search the model architecture from the search space pool.
-        """
-        param_indices = self.bo_agent.gen_next_params()
-        self.last_param_indices = param_indices
-        return self.params_vec2params_dict(self.indices2params_vec(param_indices))
-
-    def feedback(self, metric):
-        """Append param_indices and its metric value to the known data."""
-        assert self.last_param_indices is not None, "Need run suggestion first " + \
-            "to get parameters and the input metric is corresponding to this parameters."
-        try:
-            self.bo_agent._space.register(self.last_param_indices, metric)
-        except KeyError: # pragma: no cover
-            logger.debug("Find registered params, skip it.")
-            pass
-        self.last_param_indices = None
-
-    def indices2params_vec(self, indices):
-        """Transfer indices into pramaters vector."""
-        res = []
-        for key, ind in indices.items():
-            # keep ind within the index range of self.search_space[key]
-            ind = int(min(max(round(ind), 0), len(self.search_space[key])-1))
-            res.append(self.search_space[key][ind])
-        return res
-
-def find_pareto_front(metrics):
-    """Find the pareto front points, assuming all metrics are "higher is better".
-
-    Args:
-        metrics: An (n_points, n_metrics) array
-    Return:
-        An array of indices of pareto front points. 
-        It is a (n_pareto_points, ) integer array of indices.
-    """
-    metrics = np.array(metrics)
-    pareto_front_point_indices = np.arange(metrics.shape[0])
-    next_point_idx = 0
-    while next_point_idx < len(metrics):
-        nondominated_points = np.any(metrics > metrics[next_point_idx], axis=1)
-        nondominated_points[next_point_idx] = True
-        # Remove points being dominated by current point
-        pareto_front_point_indices = pareto_front_point_indices[nondominated_points]
-        metrics = metrics[nondominated_points]
-        next_point_idx = np.sum(nondominated_points[:next_point_idx+1])
-    return pareto_front_point_indices

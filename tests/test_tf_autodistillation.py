@@ -106,7 +106,7 @@ class TestAutoDistillation(unittest.TestCase):
                 search_algorithm=search_algorithm,
                 max_trials=max_trials,
                 metrics=[
-                    metrics.Metric(name="eval_loss", greater_is_better=False)
+                    metrics.Metric(name="metric", greater_is_better=False)
                 ],
                 knowledge_transfer=TFDistillationConfig(
                     train_steps=[3],

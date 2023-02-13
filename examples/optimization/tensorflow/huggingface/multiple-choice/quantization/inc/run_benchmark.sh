@@ -66,6 +66,15 @@ function run_benchmark {
     extra_cmd=''
     MAX_SEQ_LENGTH=128
 
+    if [[ ${mode} == "accuracy" ]]; then
+        mode_cmd=" --accuracy_only"
+    elif [[ ${mode} == "benchmark" ]]; then
+        mode_cmd=" --benchmark "
+    else
+        echo "Error: No such mode: ${mode}"
+        exit 1
+    fi
+
     if [ "${topology}" = "distilbert_swag" ]; then
         script="run_swag.py"
         model_name_or_path="Rocketknight1/bert-base-uncased-finetuned-swag"
@@ -85,6 +94,7 @@ function run_benchmark {
         --output_dir ${tuned_checkpoint} \
         --overwrite_output_dir \
         --cache_dir ${cache_dir} \
+        ${mode_cmd} \
         ${extra_cmd}
 }
 

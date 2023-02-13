@@ -18,6 +18,11 @@ project(sparselib_benchmark)
 
 set(BENCHMARK_EXE "benchmark")
 
+if(UNIX)
+  # Enable warning
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-missing-field-initializers")
+endif()
 
 if(OpenMP_FOUND)
     #message(${CMAKE_CXX_FLAGS})

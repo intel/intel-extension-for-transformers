@@ -105,6 +105,13 @@ DECLARE_COMPARE_DATA(uint16_t)
 #undef DECLARE_COMPARE_DATA
 #endif
 
+template <typename T1, typename T2>
+inline const T2 reinterpret_value(typename std::enable_if<sizeof(T1) == sizeof(T2), const T1>::type i) {
+  T2 o;
+  memcpy(&o, &i, sizeof(T2));
+  return o;
+}
+
 float time(const std::string& state);
 
 template <typename value_type, typename predicate_type>
@@ -113,6 +120,7 @@ inline bool is_any_of(std::initializer_list<value_type> il, predicate_type pred)
 }
 
 #define ceil_div(x, y) (((x) + (y)-1) / (y))
+#define pad_to(x, n) (ceil_div(x, n) * (n))
 
 #define is_nonzero(x) (fabs((x)) > (1e-3))
 
@@ -271,5 +279,28 @@ class aligned_allocator_t {
   bool operator==(const aligned_allocator_t<T, N>& other) const { return true; }
 };
 
+template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+inline std::vector<T> perm_inv(const std::vector<T>& perm) {
+  std::vector<T> ret(perm.size());
+  for (size_t i = 0; i < perm.size(); ++i) ret[perm[i]] = i;
+  return ret;
+}
+
+template <typename T, typename U, typename = typename std::enable_if<std::is_integral<U>::value>::type>
+std::vector<T> apply_perm(const std::vector<T>& vec, const std::vector<U>& perm) {
+  SPARSE_LOG_IF(FATAL, vec.size() != perm.size()) << "Vector must be the same size as perm!";
+  std::vector<T> ret(vec.size());
+  for (size_t i = 0; i < vec.size(); ++i) ret[perm[i]] = vec[i];
+  return ret;
+}
+
+inline std::vector<dim_t> dim2stride(const std::vector<dim_t>& dim) {
+  std::vector<dim_t> stride(dim.size());
+  stride[stride.size() - 1] = 1;
+  for (auto i = stride.size() - 1; i > 0; --i) {
+    stride[i - 1] = stride[i] * dim[i];
+  }
+  return stride;
+}
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_

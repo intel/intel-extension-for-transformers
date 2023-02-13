@@ -16,17 +16,11 @@ cmake_minimum_required(VERSION 3.11)
 project(kernellibs)
 set(HOST_LIBRARY_NAME "kernellibs")
 
-option(SPARSE_LIB_USE_VTUNE OFF)
-option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
+option(NE_WITH_SPARSELIB_VTUNE "Enable VTune profiling in kernels" OFF)
+set(CMAKE_VTUNE_HOME)
 
 set(EXTERNAL_INCLUDE_PATH "")
 set(EXTERNAL_LIBRARY_PAYH "")
-
-# include external cmake
-if (SPARSE_LIB_USE_VTUNE)
-    include(cmake/FindVTune.cmake)
-    message( STATUS "VTune enbled" )
-endif()
 
 file(GLOB SOURCES
   ${PROJECT_SOURCE_DIR}/src/*.cpp
@@ -39,8 +33,15 @@ file(GLOB HEADERS
   ${PROJECT_SOURCE_DIR}/include/jit_domain/*.hpp
 )
 
-
-add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
+if (NE_DYNAMIC_LINK)
+    add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
+    target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_KERNEL_BUILD)
+else()
+    add_library(${HOST_LIBRARY_NAME} STATIC ${SOURCES} ${HEADERS})
+    if (WIN32)
+        target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_API_)
+    endif()
+endif()
 
 install(TARGETS ${HOST_LIBRARY_NAME})
 
@@ -48,6 +49,11 @@ target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_KERNEL_BUILD)
 include(cmake/Common.cmake)
 include(cmake/FindOpenMP.cmake)
 include(cmake/Utility.cmake)
+# include external cmake
+if (NE_WITH_SPARSELIB_VTUNE)
+    include(cmake/FindVTune.cmake)
+    message( STATUS "VTune enbled" )
+endif()
 
 set(GIT_HASH "unknown")
 get_git_hash(GIT_HASH)

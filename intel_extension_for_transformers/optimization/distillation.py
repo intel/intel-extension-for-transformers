@@ -14,12 +14,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Distillation: set criterion mode to distillation."""
 from enum import Enum
 from typing import List
 
 
 class Criterion(object):
+    """Criterion class for distillation."""
     def __init__(
         self,
         name: str = "KNOWLEDGELOSS",
@@ -29,6 +30,7 @@ class Criterion(object):
         layer_mappings: List = None,
         add_origin_loss: bool = False
     ):
+        """Init a Criterion object."""
         self.name = name
         self.temperature = temperature
         self.loss_types = loss_types
@@ -38,6 +40,7 @@ class Criterion(object):
 
 
 class DistillationCriterionMode(Enum):
+    """Criterion mode class for distillation."""
     KNOWLEDGELOSS = "KnowledgeDistillationLoss"
     INTERMEDIATELAYERSLOSS = "IntermediateLayersKnowledgeDistillationLoss"
     

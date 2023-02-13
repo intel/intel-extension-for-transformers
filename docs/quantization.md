@@ -150,7 +150,7 @@ q_config = QuantizationConfig(
 )
 model = trainer.quantize(quant_config=q_config)
 ```
-Please refer to [quantization example](../examples/optimize/pytorch/huggingface/text-classification/quantization/inc/run_glue.py) for the details.
+Please refer to [quantization example](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimize/pytorch/huggingface/text-classification/quantization/inc/run_glue.py) for the details.
 
 ### Create an Instance of Metric
 The Metric defines which metric will be used to measure the performance of tuned models.
@@ -175,14 +175,15 @@ In terms of evaluating the status of a specific model during tuning, we should h
 The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is "performance"), then you can create an instance of QuantizationConfig.
 
 - arguments:
-    |Argument   |Type       |Description                                        |Default value    |
-    |:----------|:----------|:-----------------------------------------------|:----------------|
-    |framework  |string     |Which framework you used                        |"pytorch"        |
-    |approach   |string     |Which quantization approach you used            |"PostTrainingStatic"|
-    |timeout    |integer    |Tuning timeout(seconds), 0 means early stop; combine with max_trials field to decide when to exit|0    |
-    |max_trials |integer    |Max tune times                                  |100              |
-    |metrics    |list of Metric|Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None |
-    |objectives |list of Objective|Objective with accuracy constraint guaranteed|performance|
+
+|Argument   |Type       |Description                                        |Default value    |
+|:----------|:----------|:-----------------------------------------------|:----------------|
+|framework  |string     |Which framework you used                        |"pytorch"        |
+|approach   |string     |Which quantization approach you used            |"PostTrainingStatic"|
+|timeout    |integer    |Tuning timeout(seconds), 0 means early stop; combine with max_trials field to decide when to exit|0    |
+|max_trials |integer    |Max tune times                                  |100              |
+|metrics    |list of Metric|Used to evaluate accuracy of tuning model, no need for NoTrainerOptimizer|None |
+|objectives |list of Objective|Objective with accuracy constraint guaranteed|performance|
 
 - example:
     ```python

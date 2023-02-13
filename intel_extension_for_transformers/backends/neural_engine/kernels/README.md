@@ -8,19 +8,19 @@ Transformers-accelerated Libraries (formerly known as **SparseLib**) is a high-p
 ## Installation
 ### Build
 ```shell
-cd kernels/
+cd %{workdir}/intel_extension_for_transformers/backends/neural_engine
 mkdir build
 cd build
-cmake ..
+cmake .. -DNE_WITH_TESTS=ON                   # if UT needed
+         -DNE_WITH_SPARSELIB_ONLY=ON          # if kernels only
+         -DNE_WITH_SPARSELIB_BENCHMARK=ON     # if benchmark needed
 make -j
 ```
 
 ### Test
 ```shell
-cd test/gtest/kernels/
-mkdir build
 cd build
-cmake ..
+cmake .. -DNE_WITH_TESTS=ON
 make -j
 ./test_spmm_vnni_kernel
 ```

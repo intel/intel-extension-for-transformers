@@ -25,7 +25,7 @@ from typing import Optional
 
 import numpy as np
 import tensorflow as tf
-from datasets import load_dataset, load_metric
+from datasets import load_dataset
 
 import transformers
 from transformers import (
@@ -250,6 +250,22 @@ def main():
         exit("Must specify at least one of --do_train, --do_eval or --do_predict!")
     # endregion
 
+    # region Logging
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+    logger.setLevel(logging.INFO if is_main_process(training_args.local_rank) else logging.WARN)
+
+    # Set the verbosity to info of the Transformers logger (on main process only):
+    if is_main_process(training_args.local_rank):
+        transformers.utils.logging.set_verbosity_info()
+        transformers.utils.logging.enable_default_handler()
+        transformers.utils.logging.enable_explicit_format()
+    logger.info(f"Training/evaluation parameters {training_args}")
+    # endregion
+
     # region Set the multinode environment, the strategy and paths
     strategy = None
     worker_list = None
@@ -282,22 +298,6 @@ def main():
                 f"Checkpoint detected, resuming training at {checkpoint}. To avoid this behavior, change "
                 "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
             )
-    # endregion
-
-    # region Logging
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
-    logger.setLevel(logging.INFO if is_main_process(training_args.local_rank) else logging.WARN)
-
-    # Set the verbosity to info of the Transformers logger (on main process only):
-    if is_main_process(training_args.local_rank):
-        transformers.utils.logging.set_verbosity_info()
-        transformers.utils.logging.enable_default_handler()
-        transformers.utils.logging.enable_explicit_format()
-    logger.info(f"Training/evaluation parameters {training_args}")
     # endregion
 
     # region Dataset and labels
@@ -353,6 +353,7 @@ def main():
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        _commit_hash="main",
     )
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
@@ -360,6 +361,7 @@ def main():
         use_fast=model_args.use_fast_tokenizer,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        _commit_hash="main",
     )
     # endregion
 
@@ -420,7 +422,8 @@ def main():
     # endregion
 
     # region Metric function
-    metric = load_metric("glue", data_args.task_name, cache_dir=model_args.cache_dir)
+    from evaluate import load
+    metric = load("glue", data_args.task_name, cache_dir=model_args.cache_dir)
 
     def compute_metrics(preds, label_ids):
         preds = preds["logits"]
@@ -604,7 +607,6 @@ def main():
             tf_datasets = [tf_data["validation"]]
             raw_datasets = [datasets["validation"]]
 
-        total_time = 0
         num_examples = 0
         if optim_args.int8:
             model = tf.saved_model.load(training_args.output_dir)
@@ -620,26 +622,42 @@ def main():
             preds: np.ndarray = None
             label_ids: np.ndarray = None
             infer = model.signatures[list(model.signatures.keys())[0]]
-            for i, (inputs, labels) in enumerate(tf_dataset):
-                for name in inputs:
-                    inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
-                start = time.time()
-                results = infer(**inputs)
-                total_time += time.time() - start
-                if preds is None:
-                    preds = results["Identity"].numpy()
-                else:
-                    preds = np.append(preds, results["Identity"].numpy(), axis=0)
-                if label_ids is None:
-                    label_ids = labels.numpy()
-                else:
-                    label_ids = np.append(label_ids, labels.numpy(), axis=0)
-            eval_metrics = compute_metrics({"logits": preds}, label_ids)
 
+            if optim_args.accuracy_only:
+                iterations = 1
+                warmup = 0
+            else:
+                iterations = 10
+                warmup = 5
+            latency_list = []
+
+            for idx in range(iterations):
+                iteration_time = 0
+                for i, (inputs, labels) in enumerate(tf_dataset):
+                    for name in inputs:
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
+                    start = time.time()
+                    results = infer(**inputs)
+                    iteration_time += time.time() - start
+                    if idx == 0:    # only accumulate once all the preds and labels
+                        if preds is None:
+                            preds = results["Identity"].numpy()
+                        else:
+                            preds = np.append(preds, results["Identity"].numpy(), axis=0)
+                        if label_ids is None:
+                            label_ids = labels.numpy()
+                        else:
+                            label_ids = np.append(label_ids, labels.numpy(), axis=0)
+                latency_list.append(iteration_time)
+                logger.info("Iteration {} time: {} sec".format(idx, iteration_time))
+            eval_metrics = compute_metrics({"logits": preds}, label_ids)
+        logger.info("\nEvaluation result: ")
         logger.info("metric ({}) Accuracy: {}".format(task, eval_metrics["accuracy"]))
+
+        average_iteration_time = np.array(latency_list[warmup:]).mean()
         logger.info(
             "Throughput: {} samples/sec".format(
-                num_examples / total_time)
+                num_examples / average_iteration_time)
         )
 
     # endregion

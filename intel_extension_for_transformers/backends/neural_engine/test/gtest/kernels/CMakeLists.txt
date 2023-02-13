@@ -2,12 +2,10 @@ cmake_minimum_required(VERSION 3.11)
 
 project(sparselib_ut)
 
-option(SPARSE_LIB_USE_VTUNE OFF)
-option(CMAKE_VTUNE_HOME "whether use vtune" OFF)
-
+option(NE_WITH_SPARSELIB_VTUNE "Enable VTune profiling in kernels" OFF)
+set(CMAKE_VTUNE_HOME)
 
 set(MAIN_SRC_GTEST "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
-
 
 if(OpenMP_FOUND)
     #message(${CMAKE_CXX_FLAGS})
@@ -22,6 +20,7 @@ endif()
 
 if(UNIX)
   # Enable warning
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 endif()
 
@@ -33,6 +32,7 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_layernorm_ba_kernel.cpp
     test_gather_kernel.cpp
     test_matmul_avx512f_p2031_p2013.cpp
+    test_matmul_vnni_p2031_p2013.cpp
     test_matmul_vnni_noperm_p2031_p1302.cpp
     test_softmax_kernel.cpp
 )
@@ -42,6 +42,9 @@ list(APPEND KERNEL_TEST_CASES_SRC test_attention.cpp)
 endif()
 if(UNIX)
 list(APPEND KERNEL_TEST_CASES_SRC test_spmm_amx_bf16_x16_kernel.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_tr_src0.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_tr_src1.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_mm_tile.cpp)
 endif()
 
 function(register_gtest_func exe src)

@@ -15,7 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The neural engine tensorflow extractor file."""
+"""The neural engine tensorflow extractor file.
+
+   Extract all nodes in the input tensorflow model and convert them to engine python operators.
+   All these python operators will compose the engine graph in the order of the original tensorflow
+   calculation graph. Please noticed that the mapping between operators is not one-to-one
+   correspondence. For more related deatils, please refer to 'ops' APIs.
+"""
 
 from .. import logger
 from ..graph.graph import Graph

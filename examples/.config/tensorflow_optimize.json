@@ -1,0 +1,255 @@
+{
+  "bert_base_mrpc_static": {
+    "working_dir": "optimization/tensorflow/huggingface/text-classification/quantization/inc/ptq",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_mrpc_static",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_mrpc_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+      }
+    }
+  },
+  "distilgpt2_clm": {
+    "working_dir": "optimization/tensorflow/huggingface/language-modeling/quantization/inc/ptq",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilgpt2_clm",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilgpt2_clm",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+      }
+    }
+  },
+  "distilbert_mlm": {
+    "working_dir": "optimization/tensorflow/huggingface/language-modeling/quantization/inc/ptq",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_mlm",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_mlm",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+      }
+    }
+  },
+  "bert_base_ner": {
+    "working_dir": "optimization/tensorflow/huggingface/token-classification/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_ner",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/token-classification"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_ner",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/token-classification"
+      }
+    }
+  },
+  "distilbert_qa": {
+    "working_dir": "optimization/tensorflow/huggingface/question-answering/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_qa",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/question-answering"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_qa",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/question-answering"
+      }
+    }
+  },
+  "distilbert_swag": {
+    "working_dir": "optimization/tensorflow/huggingface/multiple-choice/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_swag",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/multiple-choice"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_swag",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/multiple-choice"
+      }
+    }
+  },
+  "roberta_qa": {
+    "working_dir": "optimization/tensorflow/huggingface/question-answering/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "roberta_qa",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/question-answering"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "roberta_qa",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/question-answering"
+      }
+    }
+  },
+  "distilroberta_mlm": {
+    "working_dir": "optimization/tensorflow/huggingface/language-modeling/quantization/inc/ptq",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilroberta_mlm",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilroberta_mlm",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/language-modeling"
+      }
+    }
+  },
+  "legalbert_mrpc": {
+    "working_dir": "optimization/tensorflow/huggingface/text-classification/quantization/inc/ptq",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "legalbert_mrpc",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "legalbert_mrpc",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+      }
+    }
+  },
+  "xlnet_mrpc": {
+    "working_dir": "optimization/tensorflow/huggingface/text-classification/quantization/inc/ptq",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "xlnet_mrpc",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "xlnet_mrpc",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+      }
+    }
+  },
+  "albert_large_mrpc": {
+    "working_dir": "optimization/tensorflow/huggingface/text-classification/quantization/inc/ptq",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "albert_large_mrpc",
+        "output_model": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "albert_large_mrpc",
+        "mode": "accuracy",
+        "batch_size": "16",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results",
+        "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/text-classification"
+      }
+    }
+  }
+}

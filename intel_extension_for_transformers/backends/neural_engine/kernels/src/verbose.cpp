@@ -61,6 +61,20 @@ double get_msec() {
              .count() /
          1e3;
 }
+static std::string init_info_attention(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "attention"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
 
 static std::string init_info_layernorm_ba(std::vector<dim_t> shape) {
   std::stringstream ss;
@@ -116,6 +130,7 @@ void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
     str_ = init_info_##kind(shape); \
     break
     switch (kind) {
+      CASE(attention);
       CASE(sparse_matmul);
       CASE(eltwiseop);
       CASE(layernorm_ba);

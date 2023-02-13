@@ -19,6 +19,7 @@
 #include "operator_desc.hpp"
 #include "kernel_desc.hpp"
 #include "kernel.hpp"
+#include "kernels/sparse_data.hpp"
 
 namespace jd {
 /**
@@ -70,6 +71,8 @@ class attention_kd_t : public kernel_desc_t {
   virtual ~attention_kd_t() {
     if (fused_bias_addr_ != nullptr) aligned_allocator_t<char>::deallocate(fused_bias_addr_);
     if (fused_scales_addr_ != nullptr) aligned_allocator_t<char>::deallocate(fused_scales_addr_);
+    if (qk_sparse_ptr_ != nullptr) delete qk_sparse_ptr_;
+    if (v_sparse_ptr_ != nullptr) delete v_sparse_ptr_;
   }
 
  public:
@@ -88,8 +91,6 @@ class attention_kd_t : public kernel_desc_t {
     return kernel_descs_[index];
   }
 
-  std::shared_ptr<const kernel_desc_t> get_kernel_descs(int index) const { return kernel_descs_.at(index); }
-
  private:
   jd::operator_desc op_desc_;
   std::vector<std::shared_ptr<const kernel_desc_t>> kernel_descs_;
@@ -106,6 +107,8 @@ class attention_kd_t : public kernel_desc_t {
   bool add_kernel_desc(const operator_desc& op_desc, const char* name);
   char* fused_bias_addr_ = nullptr;
   char* fused_scales_addr_ = nullptr;
+  bsr_data_t<int8_t>* qk_sparse_ptr_ = nullptr;
+  bsr_data_t<int8_t>* v_sparse_ptr_ = nullptr;
 };
 
 class attention_k_t : public kernel_t {

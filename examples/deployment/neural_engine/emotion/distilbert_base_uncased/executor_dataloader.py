@@ -23,7 +23,7 @@ from datasets import load_dataset
 class DataLoader(object):
     def __init__(self, batch_size, seq_len, dataset_name, task_name, data_dir, tokenizer_dir):
         self.batch_size = batch_size
-        dataset = load_dataset(dataset_name, task_name, cache_dir=data_dir, split='validation')
+        dataset = load_dataset(dataset_name, cache_dir=data_dir, split='validation')
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_dir)
         self.dataset = dataset.map(lambda e: tokenizer(e['text'], 
                     truncation=True, padding='max_length', max_length=seq_len), batched=True)

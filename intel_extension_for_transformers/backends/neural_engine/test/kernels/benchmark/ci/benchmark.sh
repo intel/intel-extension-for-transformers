@@ -143,7 +143,7 @@ echo "curr_branch=$curr_branch"
 # Rebuild the project if cmake_dir is defined
 if [[ -n $cmake_dir ]]; then
     if [[ -n $vtune_dir ]]; then
-        cmake_args="-DSPARSE_LIB_USE_VTUNE=True -DCMAKE_VTUNE_HOME=${vtune_dir}"
+        cmake_args="-DNE_WITH_SPARSELIB_VTUNE=True -DCMAKE_VTUNE_HOME=${vtune_dir}"
     fi
     cmake $cmake_dir $cmake_args
     make -j

@@ -19,6 +19,7 @@
 
 from .op import Operator, operator_registry
 from .tensor import Tensor
+import numpy as np
 
 
 @operator_registry(operator_type='MatMul')
@@ -37,3 +38,9 @@ class MatMul(Operator):
         if framework == 'onnxruntime':
             self._attr['transpose_a'] = False
             self._attr['transpose_b'] = False
+            if isinstance(self._input_tensors[1].data, np.ndarray):
+                # for onednn inner_product attr
+                self._attr['src1_perm'] = '1,0'
+            else:
+                # int8 weight matmul op_type will be fall back in CollectQuantInfo pattern
+                self._op_type = 'BatchMatMul'

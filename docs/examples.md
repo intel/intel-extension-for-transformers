@@ -1,22 +1,22 @@
-Examples 
+# Examples
 
 1. [Quantization](#Quantization)
 
-    1.1 [Stock PyTorch Examples](#Stock-PyTorch)
+    1.1 [Stock PyTorch Examples](#Stock-PyTorch-Examples)
 
-    1.2 [Intel Extension for Pytorch (IPEX) Examples](#Intel-Extension-for-Pytorch)
+    1.2 [Intel Extension for Pytorch (IPEX) Examples](#Intel-Extension-for-Pytorch-IPEX-Examples)
 
-    1.3 [Intel TensorFlow Examples](#Intel-TensorFlow)
+    1.3 [Intel TensorFlow Examples](#Intel-TensorFlow-Examples)
 
 2. [Length Adaptive Transformers](#Length-Adaptive-Transformers)
-E
+
 3. [Pruning](#Pruning)
 
 4. [Distillation](#Distillation)
 
     4.1 [Knowledge Distillation](#Knowledge-Distillation)
 
-    4.2 [Auto Distillation (NAS Based)](#Auto-Distillation)
+    4.2 [Auto Distillation (NAS Based)](#Auto-Distillation-NAS-Based)
 
 5. [Orchestrate](#Orchestrate)
 
@@ -43,6 +43,34 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
   </tr>
 </thead>
 <tbody align="center">
+  <tr>
+    <td><a href="https://huggingface.co/EleutherAI/gpt-j-6B">gpt-j-6B</a></td>
+    <td>language-modeling(CLM)</td>
+    <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
+    <td>&#10004;</td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/sysresearch101/t5-large-finetuned-xsum-cnn">t5-large-finetuned-xsum-cnn</a></td>
+    <td>summarization</td>
+    <td><a href="https://huggingface.co/datasets/cnn_dailymail">cnn_dailymail</a></td>
+    <td>&#10004;</td>
+    <td> </td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/flax-community/t5-base-cnn-dm">t5-base-cnn-dm</a></td>
+    <td>summarization</td>
+    <td><a href="https://huggingface.co/datasets/cnn_dailymail">cnn_dailymail</a></td>
+    <td>&#10004;</td>
+    <td> </td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">lambdalabs/sd-pokemon-diffusers</a></td>
+    <td>text-to-image</td>
+    <td>image</td>
+    <td>&#10004;</td>
+    <td>&#10004;</td>
+  </tr>
   <tr>
     <td><a href="https://huggingface.co/bert-base-uncased">bert-base-uncased</a></td>
     <td>language-modeling(MLM)</td>
@@ -172,7 +200,6 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <th>Model</th>
     <th>Task</th>
     <th>Dataset</th>
-    <th>PostTrainingDynamic</th>
     <th>PostTrainingStatic</th>
   </tr>
 </thead>
@@ -181,14 +208,12 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <td><a href="https://huggingface.co/distilbert-base-uncased-distilled-squad">distilbert-base-uncased-distilled-squad</a></td>
     <td>question-answering</td>
     <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
-    <td> </td>
     <td>&#10004;</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/bert-large-uncased-whole-word-maskinuned-squad">bert-large-uncased-whole-word-maskinuned-squad</a></td>
     <td>question-answering</td>
     <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
-    <td> </td>
     <td>&#10004;</td>
   </tr>
 </tbody>
@@ -201,7 +226,6 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <th>Model</th>
     <th>Task</th>
     <th>Dataset</th>
-    <th>PostTrainingDynamic</th>
     <th>PostTrainingStatic</th>
   </tr>
 </thead>
@@ -210,7 +234,36 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <td><a href="https://huggingface.co/bert-base-cased-finetuned-mrpc">bert-base-cased-finetuned-mrpc</a></td>
     <td>text-classification</td>
     <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
-    <td>WIP :star:</td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/xlnet-base-cased">xlnet-base-cased</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/mrpc/train">MRPC</a></td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/distilgpt2">distilgpt2</a></td>
+    <td>language-modeling</td>
+    <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/distilbert-base-cased">distilbert-base-cased</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/Rocketknight1/bert-base-uncased-finetuned-swag">Rocketknight1/bert-base-uncased-finetuned-swag</a></td>
+    <td>multiple-choice</td>
+    <td><a href="https://huggingface.co/datasets/swag">swag</a></td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/dslim/bert-base-NER">dslim/bert-base-NER</a></td>
+    <td>token-classification</td>
+    <td><a href="https://huggingface.co/datasets/conll2003">conll2003</a></td>
     <td>&#10004;</td>
   </tr>
 </tbody>

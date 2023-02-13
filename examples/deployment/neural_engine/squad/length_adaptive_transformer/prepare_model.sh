@@ -53,7 +53,7 @@ function prepare_model {
         --cache_dir ${cache} \
         --output_dir ${output_dir} \
         --overwrite_output_dir \
-        --to_onnx fp32-model.onnx \
+        --to_onnx ./model_and_tokenizer/fp32-model.onnx \
         ${mode_cmd}
 
 }

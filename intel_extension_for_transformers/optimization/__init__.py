@@ -21,6 +21,7 @@ from .config import (
     DistillationConfig,
     FlashDistillationConfig,
     TFDistillationConfig,
+    NASConfig,
     Provider,
     PruningConfig,
     QuantizationConfig,
@@ -33,6 +34,7 @@ from .distillation import (
 )
 from .mixture.auto_distillation import AutoDistillation
 from .model import OptimizedModel
+from .nas import NAS
 from .optimizer import NoTrainerOptimizer, Orchestrate_optimizer
 from .optimizer_tf import TFOptimization
 from .pruning import PrunerConfig, PruningMode, SUPPORTED_PRUNING_MODE

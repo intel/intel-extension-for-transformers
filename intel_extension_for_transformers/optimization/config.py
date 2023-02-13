@@ -717,7 +717,7 @@ class AutoDistillationConfig(object):
         if regular_distillation is not None:
             self.regular_distillation = regular_distillation
         if metrics is not None:
-            self._metrics = metrics
+            self.metrics = metrics
 
     @property
     def knowledge_transfer(self):
@@ -815,5 +815,120 @@ class AutoDistillationConfig(object):
         for metric in metrics:
             self.config.auto_distillation.search.metrics.append(metric.name)
             self.config.auto_distillation.search.higher_is_better.append(
+                metric.greater_is_better
+                )
+
+
+class NASConfig(object):
+    """config parser.
+
+    Args:
+        approach: The approach of the NAS.
+        search_algorithm: The search algorithm for NAS procedure.
+
+    """
+
+    def __init__(self,
+        framework: str = "pytorch",
+        approach: str = "basic",
+        search_space: dict = {},
+        search_algorithm: str = "BO",
+        metrics: Union[List, Metric] = None,
+        max_trials: int = None,
+        seed: int = None,
+        ):
+        super().__init__()
+        self.config = DotDict({
+                'model': {'name': 'nas', 'framework': 'NA'},
+                'nas': {
+                    'approach': approach,
+                    'search': {
+                        'search_space': search_space,
+                        'search_algorithm': search_algorithm
+                    }
+                },
+            }
+        )
+        self.framework = framework
+        self.search_space = search_space
+        self.search_algorithm = search_algorithm
+        if max_trials is not None:
+            self.max_trials = max_trials
+        if seed is not None:
+            self.seed = seed
+        if metrics is not None:
+            self.metrics = metrics
+        if approach and approach != 'basic':
+            self.config[approach] = DotDict({})
+            self.__setattr__(approach, self.config[approach])
+
+    @property
+    def framework(self):
+        """Get the framework."""
+        return self.config.model.framework
+
+    @framework.setter
+    def framework(self, framework):
+        """Set the framework."""
+        assert framework in ["pytorch"], \
+            "framework: {} is not support!".format(framework)
+        self.config.model.framework = framework
+
+    @property
+    def search_space(self):
+        """Get the search space."""
+        return self.config.nas.search.search_space
+
+    @search_space.setter
+    def search_space(self, search_space: dict):
+        """Set the search space."""
+        self.config.nas.search.search_space = search_space
+
+    @property
+    def search_algorithm(self):
+        """Get the search algorithm."""
+        return self.config.nas.search.search_algorithm
+
+    @search_algorithm.setter
+    def search_algorithm(self, search_algorithm: str):
+        """Set the search algorithm."""
+        self.config.nas.search.search_algorithm = search_algorithm
+
+    @property
+    def max_trials(self):
+        """Get the max trials."""
+        return self.config.nas.search.max_trials
+
+    @max_trials.setter
+    def max_trials(self, max_trials: int):
+        """Set the max trials."""
+        self.config.nas.search.max_trials = max_trials
+
+    @property
+    def seed(self):
+        """Get the seed."""
+        return self.config.nas.search.seed
+
+    @seed.setter
+    def seed(self, seed: int):
+        """Set the seed."""
+        self.config.nas.search.seed = seed
+
+    @property
+    def metrics(self):
+        """Get the metrics."""
+        return self._metrics
+
+    @metrics.setter
+    def metrics(self, metrics: Union[List, Metric]):
+        """Set the metrics."""
+        self._metrics = metrics
+        if isinstance(metrics, Metric):
+            metrics = [metrics]
+        self.config.nas.search.metrics = []
+        self.config.nas.search.higher_is_better = []
+        for metric in metrics:
+            self.config.nas.search.metrics.append(metric.name)
+            self.config.nas.search.higher_is_better.append(
                 metric.greater_is_better
                 )

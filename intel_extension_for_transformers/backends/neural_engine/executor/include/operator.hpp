@@ -41,6 +41,7 @@ namespace executor {
  */
 
 enum KERNEL_TYPE { Unsupported = 0, Dense = 1, Sparse = 2, SparseLib = 3 };
+class Model;  // forward declaration
 
 class Operator {
  public:
@@ -153,6 +154,7 @@ class Operator {
   vector<float> reshape_time_;
   std::map<string, string> attrs_;
   static std::unordered_map<string, jd::data_type> type2sparsemem_;
+  const Model* model_ = nullptr;
 };  // class Operator
 
 }  // namespace executor

@@ -22,6 +22,13 @@ inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tenso
   return shapes;
 }
 
+static const std::vector<dim_t> perm_plain4{0, 1, 2, 3};
+
+static const std::vector<std::vector<std::vector<dim_t>>> perm_list = {
+    {{2, 0, 3, 1}, {2, 0, 1, 3}, perm_plain4},
+    {perm_plain4, {2, 0, 3, 1}, {1, 3, 0, 2}},
+};
+
 // Part1: class matmul_ref_kd_t
 
 bool matmul_ref_kd_t::init() {
@@ -34,50 +41,76 @@ bool matmul_ref_kd_t::init() {
       return false;
     }
 
-  std::vector<dim_t> src0_perm_shape = {
-      shapes[ssd::SRC0][is_f32() ? 2 : 0],
-      shapes[ssd::SRC0][is_f32() ? 0 : 1],
-      shapes[ssd::SRC0][is_f32() ? 3 : 2],
-      shapes[ssd::SRC0][is_f32() ? 1 : 3],
-  };
-  std::vector<dim_t> src1_perm_shape = {
-      shapes[ssd::SRC1][is_f32() ? 2 : 2],
-      shapes[ssd::SRC1][is_f32() ? 0 : 0],
-      shapes[ssd::SRC1][is_f32() ? 1 : 3],
-      shapes[ssd::SRC1][is_f32() ? 3 : 1],
-  };
-  std::vector<dim_t> dst0_perm_shape = {
-      shapes[ssd::DST0][is_f32() ? 0 : 2],
-      shapes[ssd::DST0][is_f32() ? 1 : 0],
-      shapes[ssd::DST0][is_f32() ? 2 : 3],
-      shapes[ssd::DST0][is_f32() ? 3 : 1],
-  };
-  if (is_f32()) {
-    if (!shapes[ssd::SRC2].empty() && shapes[ssd::SRC2] != dst0_perm_shape) return false;
-  } else {
-    if (shapes[ssd::SCALE0] != std::vector<dim_t>({1})) return false;
-  }
+  for (const std::vector<std::vector<jd::dim_t>>& perm : perm_list) {
+    std::vector<dim_t> src0_perm_shape = {
+        shapes[ssd::SRC0][perm[0][0]],
+        shapes[ssd::SRC0][perm[0][1]],
+        shapes[ssd::SRC0][perm[0][2]],
+        shapes[ssd::SRC0][perm[0][3]],
+    };
+    std::vector<dim_t> src1_perm_shape = {
+        shapes[ssd::SRC1][perm[1][0]],
+        shapes[ssd::SRC1][perm[1][1]],
+        shapes[ssd::SRC1][perm[1][2]],
+        shapes[ssd::SRC1][perm[1][3]],
+    };
+    const std::vector<jd::dim_t> dst0_perm_inv = perm_inv(perm[2]);
+    std::vector<dim_t> dst0_perm_shape = {
+        shapes[ssd::DST0][dst0_perm_inv[0]],
+        shapes[ssd::DST0][dst0_perm_inv[1]],
+        shapes[ssd::DST0][dst0_perm_inv[2]],
+        shapes[ssd::DST0][dst0_perm_inv[3]],
+    };
 
-  for (auto idx : {0, 1}) {  // for bs0 and bs1
-    for (auto shape_perm : {src0_perm_shape, src1_perm_shape}) {
-      if (shape_perm[idx] != dst0_perm_shape[idx]) {
-        SPARSE_LOG(WARNING) << "First 2 dimensions of all tensors after permutation should be the same";
-        return false;
+    // check bs0 and bs1
+    for (auto idx : {0, 1}) {
+      for (auto shape_perm : {src0_perm_shape, src1_perm_shape}) {
+        if (shape_perm[idx] != dst0_perm_shape[idx]) {
+          SPARSE_LOG(WARNING)
+              << "Cannot match perm as first 2 dimensions of all tensors after permutation are different";
+          continue;
+        }
       }
     }
-  }
-  bool mkn_matches = src0_perm_shape[2] == dst0_perm_shape[2] &&  // M
-                     src0_perm_shape[3] == src1_perm_shape[2] &&  // K
-                     src1_perm_shape[3] == dst0_perm_shape[3];    // N
-  if (!mkn_matches) {
-    SPARSE_LOG(WARNING) << "M / K / N from src0 / src1 dst0 should match";
-    return false;
-  }
 
-  return true;
+    bool mkn_matches = src0_perm_shape[2] == dst0_perm_shape[2] &&  // M
+                       src0_perm_shape[3] == src1_perm_shape[2] &&  // K
+                       src1_perm_shape[3] == dst0_perm_shape[3];    // N
+    if (!mkn_matches) {
+      SPARSE_LOG(WARNING) << "Cannot match perm as M / K / N from src0 / src1 dst0 does not match";
+      continue;
+    }
+
+    if (shapes.size() > ssd::SRC2 && !shapes[ssd::SRC2].empty()) {
+      if (shapes[ssd::SRC2] != dst0_perm_shape) return false;
+    }
+    if (shapes.size() > ssd::SCALE0 && !shapes[ssd::SCALE0].empty()) {
+      if (shapes[ssd::SCALE0] != std::vector<dim_t>{1}) return false;
+    }
+    if (shapes.size() > ssd::ZP0 && !shapes[ssd::ZP0].empty()) {
+      if (shapes[ssd::ZP0] != std::vector<dim_t>{1}) return false;
+    }
+
+    perm_ptr_ = &perm;
+    shape_[0] = src0_perm_shape[0];  // bs0
+    shape_[1] = src0_perm_shape[1];  // bs1
+    shape_[2] = src0_perm_shape[2];  // m
+    shape_[3] = src0_perm_shape[3];  // k
+    shape_[4] = src1_perm_shape[3];  // n
+    return true;
+  }
+  return false;
 }
 
-//// Part2: class matmul_ref_k_t
+// Part2: class matmul_ref_k_t
+matmul_ref_k_t::matmul_ref_k_t(const std::shared_ptr<const kd_t>& kd)
+    : kernel_t(kd),
+      bs0_(derived_kd()->bs0()),
+      bs1_(derived_kd()->bs1()),
+      M_(derived_kd()->M()),
+      K_(derived_kd()->K()),
+      N_(derived_kd()->N()) {}
+
 bool matmul_ref_k_t::init() { return true; }
 
 bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
@@ -86,12 +119,12 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   const matmul_ref_kd_t& ref_kd = *derived_kd();
   auto& op_desc = ref_kd.get_operator_desc();
   auto& descs = op_desc.tensor_descs();
-  auto attrs = op_desc.attrs();
+  auto& attrs = op_desc.attrs();
   std::vector<std::vector<dim_t>> shapes(descs.size());
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
   std::vector<jd::data_type> dtypes(descs.size());
   std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
-  bool has_binary_add = ref_kd.is_f32() && !shapes[ssd::SRC2].empty();
+  bool has_binary_add = shapes.size() > ssd::SRC2 && !shapes[ssd::SRC2].empty();
 
   const auto& left_dt = dtypes[ssd::SRC0];
   const auto& right_dt = dtypes[ssd::SRC1];
@@ -99,44 +132,51 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
 
   // alpha * src0 x src1 + beta * src2 = dst.
   // TBD(yi): change naming of matmul variables
-  float alpha = 1.f, beta = 1.f;
-  const float* zp = nullptr;
-  if (attrs["alpha"] != "") alpha = str_to_num<float>(attrs["alpha"]);
-  if (attrs["beta"] != "") beta = str_to_num<float>(attrs["beta"]);
-  if (!ref_kd.is_f32()) {
-    const auto scale_data = rt_data[ssd::SCALE0];
-    auto scale_f32 = static_cast<const float*>(scale_data);
-    auto& scale_value = scale_f32[0];
-    alpha = scale_value;
-    zp = static_cast<const float*>(rt_data[ssd::ZP0]);
-  }
+  float alpha = 1.f, beta = 1.f, zp = 0.f;
+  if (attrs.find("alpha") != attrs.end()) alpha = str_to_num<float>(attrs.at("alpha"));
+  if (attrs.find("beta") != attrs.end()) beta = str_to_num<float>(attrs.at("beta"));
+  if (shapes.size() > ssd::SCALE0 && !shapes[ssd::SCALE0].empty())
+    alpha = static_cast<const float*>(rt_data[ssd::SCALE0])[0];
+  if (shapes.size() > ssd::ZP0 && !shapes[ssd::ZP0].empty()) zp = static_cast<const float*>(rt_data[ssd::ZP0])[0];
+  if (attrs.find("src0_scale") != attrs.end()) alpha /= str_to_num<float>(attrs.at("src0_scale"));
+  if (attrs.find("src1_scale") != attrs.end()) alpha /= str_to_num<float>(attrs.at("src1_scale"));
+  if (attrs.find("out_scale") != attrs.end()) alpha *= str_to_num<float>(attrs.at("out_scale"));
 
   // stride for dims index afte perm. e.g. first elements is always for bs0
-  std::vector<dim_t> left_perm_stride, right_perm_stride, dst_perm_stride;
-  if (ref_kd.is_f32()) {
-    left_perm_stride = {M_, K_ * bs0_ * M_, 1, bs0_ * M_};   // src0:     bs1 k   bs0 m
-    right_perm_stride = {N_, K_ * bs0_ * N_, bs0_ * N_, 1};  // src1:     bs1 k   bs0 n
-    dst_perm_stride = {bs1_ * M_ * N_, M_ * N_, N_, 1};      // src2/dst: bs0 bs1 m   n
-  } else {
-    left_perm_stride = {bs1_ * M_ * K_, M_ * K_, K_, 1};     // src0: bs0 bs1 m   k ===========> bs0 bs1 m k
-    right_perm_stride = {K_, N_ * bs0_ * K_, 1, bs0_ * K_};  // src1: bs1 n   bs0 k ==perm2031=> bs0 bs1 k n
-    dst_perm_stride = {M_, N_ * bs0_ * M_, 1, bs0_ * M_};    // dst:  bs1 n   bs0 m <=perm1302== bs0 bs1 m n
-  }
+  const std::vector<dim_t> left_dim{bs0_, bs1_, M_, K_};
+  const std::vector<dim_t> right_dim{bs0_, bs1_, K_, N_};
+  const std::vector<dim_t> dst_dim{bs0_, bs1_, M_, N_};
+  const auto perm0 = perm()[0];
+  const auto perm0left = apply_perm(left_dim, perm0);
+  const std::vector<dim_t> left_perm_stride = dim2stride(perm0left);
+  const std::vector<dim_t> right_perm_stride = dim2stride(apply_perm(right_dim, perm()[1]));
+  const std::vector<dim_t> dst_perm_stride = dim2stride(apply_perm(dst_dim, perm_inv(perm()[2])));
+  const std::vector<dim_t> left_stride = apply_perm(left_perm_stride, perm_inv(perm()[0]));
+  const std::vector<dim_t> right_stride = apply_perm(right_perm_stride, perm_inv(perm()[1]));
+  const std::vector<dim_t> dst_stride = apply_perm(dst_perm_stride, perm()[2]);
 
   // runtime data alias
   const auto left_data = rt_data[ssd::SRC0];
   const auto right_data = rt_data[ssd::SRC1];
   auto dst_data = const_cast<void*>(rt_data[ssd::DST0]);
-  const auto badd_data = ref_kd.is_f32() ? rt_data[ssd::SRC2] : nullptr;
+  const auto badd_data = rt_data.size() > ssd::SRC2 ? rt_data[ssd::SRC2] : nullptr;
 
   // ptr alias
   auto left_fp32 = static_cast<const float*>(left_data);
   auto left_u8 = static_cast<const uint8_t*>(left_data);
+  auto left_s8 = static_cast<const int8_t*>(left_data);
   auto right_fp32 = static_cast<const float*>(right_data);
+  auto right_u8 = static_cast<const uint8_t*>(right_data);
   auto right_s8 = static_cast<const int8_t*>(right_data);
   auto dst_fp32 = static_cast<float*>(dst_data);
   auto dst_u8 = static_cast<uint8_t*>(dst_data);
+  auto dst_s8 = static_cast<int8_t*>(dst_data);
   auto badd_fp32 = static_cast<const float*>(badd_data);
+
+  std::vector<jd::postop_attr> post_attr = op_desc.apply_postops_list();
+  if (dst_dt != dt::fp32 && (post_attr.size() == 0 || post_attr.back().dt != dst_dt)) {
+    post_attr.emplace_back(dst_dt, postop_type::eltwise, postop_alg::quantize, 0, 0, 1);
+  }
 
 // Computing the kernel
 #pragma omp parallel for collapse(4)
@@ -145,38 +185,34 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
       for (dim_t i = 0; i < M_; ++i)
         for (dim_t j = 0; j < N_; ++j) {
           float value = 0;
-          dim_t dst_idx =
-              ibs0 * dst_perm_stride[0] + ibs1 * dst_perm_stride[1] + i * dst_perm_stride[2] + j * dst_perm_stride[3];
+          dim_t dst_idx = ibs0 * dst_stride[0] + ibs1 * dst_stride[1] + i * dst_stride[2] + j * dst_stride[3];
 #pragma omp simd
           for (dim_t k = 0; k < K_; ++k) {
-            dim_t l_idx = ibs0 * left_perm_stride[0] + ibs1 * left_perm_stride[1] + i * left_perm_stride[2] +
-                          k * left_perm_stride[3];
-            dim_t r_idx = ibs0 * right_perm_stride[0] + ibs1 * right_perm_stride[1] + k * right_perm_stride[2] +
-                          j * right_perm_stride[3];
-            auto l_value = left_dt == dt::fp32 ? left_fp32[l_idx] : left_dt == dt::u8 ? left_u8[l_idx] : 0.f;
-            auto r_value = right_dt == dt::fp32 ? right_fp32[r_idx] : right_dt == dt::s8 ? right_s8[r_idx] : 0.f;
+            dim_t l_idx = ibs0 * left_stride[0] + ibs1 * left_stride[1] + i * left_stride[2] + k * left_stride[3];
+            dim_t r_idx = ibs0 * right_stride[0] + ibs1 * right_stride[1] + k * right_stride[2] + j * right_stride[3];
+
+            auto l_value = left_dt == dt::fp32 ? left_fp32[l_idx]
+                           : left_dt == dt::u8 ? left_u8[l_idx]
+                           : left_dt == dt::s8 ? left_s8[l_idx]
+                                               : 0.f;
+            auto r_value = right_dt == dt::fp32 ? right_fp32[r_idx]
+                           : right_dt == dt::u8 ? right_u8[r_idx]
+                           : right_dt == dt::s8 ? right_s8[r_idx]
+                                                : 0.f;
             value += l_value * r_value;
           }
           float badd_value = 0;
-          if (badd_data != nullptr) {
-            if (has_binary_add) badd_value = dtypes[ssd::SRC2] == dt::fp32 ? badd_fp32[dst_idx] : 0;
-          }
-          value = alpha * value + beta * badd_value;
+          if (badd_data != nullptr && has_binary_add)
+            badd_value = dtypes[ssd::SRC2] == dt::fp32 ? badd_fp32[dst_idx] : 0;
+          value = apply_postop_list(alpha * value + beta * badd_value + zp, post_attr);
 
           // Quantize dst data
           if (dst_dt == dt::fp32) {
             dst_fp32[dst_idx] = value;
           } else if (dst_dt == dt::u8) {
-            jd::postop_attr quantize{
-                dt::u8,
-                postop_type::eltwise,
-                postop_alg::quantize,
-                zp == nullptr ? 0 : zp[0],  // alpha
-                0,                          // beta
-                1,                          // scale already applied in the previous step
-            };
-            float quantized_value = apply_postop_list(value, {quantize});
-            dst_u8[dst_idx] = static_cast<uint8_t>(quantized_value);
+            dst_u8[dst_idx] = static_cast<uint8_t>(value);
+          } else if (dst_dt == dt::s8) {
+            dst_s8[dst_idx] = static_cast<uint8_t>(value);
           } else {
             SPARSE_LOG(FATAL) << "unsupported dst type";
           }

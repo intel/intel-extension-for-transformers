@@ -12,6 +12,8 @@ option(NE_WITH_SPARSELIB_ONLY "Only for sparselib" OFF)
 option(NE_WITH_SPARSELIB_BENCHMARK "Enable sparselib sparse benchmark" OFF)
 option(NE_WITH_TESTS "Build GTests" OFF)
 option(NE_WITH_ONEDNN_GRAPH "Build oneDNNGraph" ON)
+option(NE_DYNAMIC_LINK "Whether third party libs dynamic link to neural engine" ON)
+message(STATUS "NE_DYNAMIC_LINK: ${NE_DYNAMIC_LINK}")
 
 if(NE_WITH_SPARSELIB_ONLY AND NOT NE_WITH_SPARSELIB)
   message(FATAL_ERROR "SPAESELIB is off")
@@ -37,8 +39,23 @@ set(BUILD_SHARED_LIBS ON)
 add_subdirectory(${NE_THIRD_PARTY_DIR}/glog)
 
 if(NOT NE_WITH_SPARSELIB_ONLY)
-  set(DNNL_LIBRARY_TYPE SHARED)
-  set(DNNL_GRAPH_LIBRARY_TYPE SHARED)
+  if(NE_DYNAMIC_LINK)
+    set(DNNL_LIBRARY_TYPE "SHARED" CACHE STRING
+    "specifies whether oneDNN library should be SHARED, STATIC, or
+        SDL (single dynamic library).")
+    set(DNNL_GRAPH_LIBRARY_TYPE "SHARED" CACHE STRING
+    "specifies whether oneDNN Graph library should be SHARED, STATIC, or
+        SDL (single dynamic library).")
+  else()
+    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING
+    "specifies whether oneDNN library should be SHARED, STATIC, or
+        SDL (single dynamic library).")
+    set(DNNL_GRAPH_LIBRARY_TYPE "STATIC" CACHE STRING
+    "specifies whether oneDNN Graph library should be SHARED, STATIC, or
+        SDL (single dynamic library).")
+  endif()
+  message(STATUS "DNNL_LIBRARY_TYPE: ${DNNL_LIBRARY_TYPE}")
+  message(STATUS "DNNL_GRAPH_LIBRARY_TYPE: ${DNNL_GRAPH_LIBRARY_TYPE}")
   if(NE_WITH_ONEDNN_GRAPH)
     add_compile_definitions(WITH_ONEDNN_GRAPH)
     add_subdirectory(${NE_THIRD_PARTY_DIR}/oneDNNGraph)
@@ -82,7 +99,6 @@ if(OpenMP_FOUND)
 else()
     message(FATAL_ERROR "Cannot find OpenMP")
 endif()
-
 
 set(BOOST_INC_DIRS
         ${NE_THIRD_PARTY_DIR}/boost/libs/assert/include

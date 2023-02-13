@@ -73,6 +73,16 @@ function run_benchmark {
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125M"
+    elif [ "${topology}" = "gptj_clm_static" ]; then
+        script="run_clm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    elif [ "${topology}" = "gptj_clm_dynamic" ]; then
+        script="run_clm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "bert_mlm_static" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"

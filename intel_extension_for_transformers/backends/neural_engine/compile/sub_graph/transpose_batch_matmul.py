@@ -29,7 +29,7 @@ class TransposeBatchMatMul(Pattern):
     """The TransposeBatchMatMul pattern.
 
     Fuse the original sub-graph into the custom acceleration 'TransposeBatchMatMul' graph.
-    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    The search strategy is based on the following pattern mapping configs for different models.
     """
     def __call__(self, model):
         """The __call__ function of this pattern class."""
@@ -66,8 +66,9 @@ class TransposeBatchMatMul(Pattern):
             # distil_bert_base
             {
                 'patterns': {
-                    'in': [[(0, 'Transpose'), (1, 'Div'), (3, 'MatMul'), (4, ['AddV2', 'Add'])],
-                           [(), (2, 'Transpose'), (3, 'MatMul')]],
+                    'in': [[(0, 'Transpose'), (1, 'Div'), (3, ['MatMul', 'BatchMatMul']),
+                            (4, ['AddV2', 'Add'])],
+                           [(), (2, 'Transpose'), (3, ['MatMul', 'BatchMatMul'])]],
                     'out': [[(0, 'TransposeBatchMatMul')]]
                 },
                 'search_mode': 'op_type',
@@ -94,8 +95,9 @@ class TransposeBatchMatMul(Pattern):
             # bert_base_sparse
             {
                 'patterns': {
-                    'in': [[(0, 'Transpose'), (2, 'MatMul'), (3, 'Div'), (4, ['AddV2', 'Add'])],
-                           [(), (1, 'Transpose'), (2, 'MatMul')]],
+                    'in': [[(0, 'Transpose'), (2, ['MatMul', 'BatchMatMul']), (3, 'Div'),
+                            (4, ['AddV2', 'Add'])],
+                           [(), (1, 'Transpose'), (2, ['MatMul', 'BatchMatMul'])]],
                     'out': [[(0, 'TransposeBatchMatMul')]]
                 },
                 'search_mode': 'op_type',
@@ -122,8 +124,9 @@ class TransposeBatchMatMul(Pattern):
             # vit
             {
                 'patterns': {
-                    'in': [[(0, 'Transpose'), (2, 'MatMul'), (3, 'Div'), (4, 'Softmax')],
-                           [(), (1, 'Transpose'), (2, 'MatMul')]],
+                    'in': [[(0, 'Transpose'), (2, ['MatMul', 'BatchMatMul']), (3, 'Div'),
+                            (4, 'Softmax')],
+                           [(), (1, 'Transpose'), (2, ['MatMul', 'BatchMatMul'])]],
                     'out': [[(0, 'TransposeBatchMatMul'), (1, 'Softmax')]]
                 },
                 'search_mode': 'op_type',

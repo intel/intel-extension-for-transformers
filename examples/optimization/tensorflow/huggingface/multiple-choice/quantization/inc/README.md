@@ -16,5 +16,5 @@ bash run_tuning.sh  --topology=distilbert_swag
 
 
 ```
-bash run_benchmark.sh --topology=distilbert_swag --int8=true
+bash run_benchmark.sh --topology=distilbert_swag --mode=benchmark --int8=true
 ```
