@@ -244,13 +244,13 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
   </tr>
   <tr>
     <td><a href="https://huggingface.co/distilgpt2">distilgpt2</a></td>
-    <td>language-modeling</td>
+    <td>language-modeling(CLM)</td>
     <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
     <td>&#10004;</td>
   </tr>
   <tr>
     <td><a href="https://huggingface.co/distilbert-base-cased">distilbert-base-cased</a></td>
-    <td>text-classification</td>
+    <td>language-modeling(MLM)</td>
     <td><a href="https://huggingface.co/datasets/wikitext">wikitext</a></td>
     <td>&#10004;</td>
   </tr>
