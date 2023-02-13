@@ -101,4 +101,4 @@ inputs = ... # [input_ids, segment_ids, input_mask]
 model.inference(inputs)
 ```
 
-Please refer to [../example](examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](../examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.
+Please refer to [example](../examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](../examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.

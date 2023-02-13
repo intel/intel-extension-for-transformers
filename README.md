@@ -19,7 +19,7 @@ pip install intel-extension-for-transformers
 > For more installation method, please refer to [Installation Page](docs/installation.md)
 
 ## Getting Started
-### Semantics Analysis with Quantization
+### Sentiment Analysis with Quantization
 #### Prepare Dataset
 ```python
 from datasets import load_dataset, load_metric
