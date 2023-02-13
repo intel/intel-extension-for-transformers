@@ -63,29 +63,35 @@ python prepare_dataset.py --dataset_name=squad --output_dir=./data
 ### 2.2 Get FP32 Model
 You can get FP32 pytorch model from optimization module by setting precision=fp32, command as follows:
 ```shell
-bash prepare_model.sh --input_model=sguskin/dynamic-minilmv2-L6-H384-squad1.1 --dataset_name=squad --task_name=squad --output_dir=./ --precision=fp32
+bash prepare_model.sh --input_model=sguskin/dynamic-minilmv2-L6-H384-squad1.1 --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=fp32
 ```
 or run python
 ```shell
-python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" --dataset_name squad --do_eval --output_dir output/lat-minilm-quant --overwrite_output_dir --length_config "(269, 253, 252, 202, 104, 34)" --overwrite_cache --to_onnx fp32-model.onnx
+python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" --dataset_name squad --do_eval --output_dir model_and_tokenizer --overwrite_output_dir --length_config "(269, 253, 252, 202, 104, 34)" --overwrite_cache --to_onnx ./model_and_tokenizer/fp32-model.onnx
 ```
 
-### Benchmark
-  2.1 accuracy
+### 2.3 Get INT8 Model
+You can get int8 onnx model from optimization module by setting precision=int8, command as follows:
+```shell
+bash prepare_model.sh --input_model=sguskin/dynamic-minilmv2-L6-H384-squad1.1 --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=int8
+```
+
+### 3 Benchmark
+  3.1 accuracy
 
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./fp32-model.onnx --mode=accuracy --data_dir=./data --batch_size=1
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=1
   ```
   if you just want a quick start, you can run only a part of dataset, like this
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./fp32-model.onnx --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
   ```
   but the accuracy of quick start is unauthentic.
 
-  2.2 performance
+  3.2 performance
 
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./fp32-model.onnx --mode=performance --batch_size=1 --seq_len=384
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --seq_len=384
   ```

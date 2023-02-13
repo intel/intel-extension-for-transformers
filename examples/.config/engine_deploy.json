@@ -728,7 +728,7 @@
         "seq_len": 384,
         "warm_up": 100,
         "iteration": 1000,
-        "input_model": "./fp32-model.onnx",
+        "input_model": "model_and_tokenizer",
         "mode": "accuracy/throughput"        
       }
     },
