@@ -28,7 +28,7 @@ class InputFile(Pattern):
     """The InputFile pattern.
 
     Fuse the original sub-graph into the custom acceleration 'InputFile' graph.
-    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    The search strategy is based on the following pattern mapping configs for different models.
     """
     def __call__(self, model):
         """The __call__ function of this pattern class."""
