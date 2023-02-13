@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Benchmark: provide the inference functions for PyTorchBenchmark and ExecutorBenchmark."""
-
 import os
 from transformers import PyTorchBenchmark
 from transformers.benchmark.benchmark import *
@@ -25,7 +23,19 @@ from .model import OptimizedModel
 
 
 def _prepare_inference_func(self, model_name: str, batch_size: int, sequence_length: int) -> Callable[[], None]:
-    """Prepare the inference function."""
+    """Prepare the inference function.
+
+    Args:
+        model_name (str): the input Pytorch model name used
+        batch_size (int): batch size
+        sequence_length (int): the length of the sequence of input data
+
+    Raises:
+        ValueError: Mixed precision is possible only for GPU.
+
+    Returns:
+        An executable or ScriptFunction.
+    """
     config = self.config_dict[model_name]
 
     if self.args.torchscript:
@@ -60,16 +70,34 @@ def _prepare_inference_func(self, model_name: str, batch_size: int, sequence_len
         inference_model = model
 
     def encoder_decoder_forward():   # pragma: no cover 
+        """Forward function for the encoder-decoder.
+
+        Returns:
+            An executable or ScriptFunction with indices of input or decoder input sequence tokens.
+        """
         with torch.no_grad():
             outputs = inference_model(input_ids, decoder_input_ids=input_ids)
         return outputs
 
     def encoder_forward():
+        """Forward function for the encoder.
+
+        Returns:
+            An executable or ScriptFunction with indices of input sequence tokens.
+        """
         with torch.no_grad():
             outputs = inference_model(input_ids)
         return outputs
 
     def get_weight_size(model):
+        """Get the weight size of the input model.
+
+        Args:
+            model (object): the input model
+
+        Returns:
+            Float: weight size
+        """
         if isinstance(model, torch.jit.ScriptModule):
             torch.jit.save(model, "temp.p")
         else:
@@ -93,7 +121,11 @@ PyTorchBenchmark._prepare_inference_func = _prepare_inference_func
 
 origin_func = PyTorchBenchmark.run
 def run(self):
-    """Print the table headers and run the Pytorch benchmark."""
+    """Print the table headers and run the Pytorch benchmark.
+
+    Returns:
+        A PyTorchBenchmark object.
+    """
     output = origin_func(self)
     self.print_fn("\n" + 20 * "=" + ("INFERENCE - MODEL SIZE - RESULT").center(40) + 20 * "=")
     self.print_fn(80 * "-")
@@ -112,10 +144,11 @@ ExecutorBenchmarkArguments = PyTorchBenchmarkArguments
 
 
 class ExecutorBenchmark(PyTorchBenchmark):
-    """ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor."""
+    """ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor.
     args: ExecutorBenchmarkArguments
     configs: PretrainedConfig
-    framework: str = "Executor"
+    framework (str): Executor
+    """
 
     def _prepare_inference_func(self, model_name: str, batch_size: int, sequence_length: int) -> Callable[[], None]:
         config = self.config_dict[model_name]
@@ -144,11 +177,24 @@ class ExecutorBenchmark(PyTorchBenchmark):
             input_data = [input_ids]
 
         def encoder_forward():
+            """Forward function for the encoder.
+
+            Returns:
+                The inference of the model input data.
+            """
             with torch.no_grad():
                 outputs = model.inference(input_data)
             return outputs
 
         def get_weight_size(model_name):
+            """Get the weight size of the input model.
+
+            Args:
+                model_name (str): the input Pytorch model name used
+
+            Returns:
+                float: weight size
+            """
             weight_size = os.path.getsize(model_name) / 1024 / 1024
             return weight_size
 
