@@ -4,6 +4,8 @@ This document describes the step-by-step instructions to run GPT-J on 4th Gen In
 
 The script ```run_gptj.py``` is based on [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) and provides inference benchmarking.
 
+For [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) quantization, please refer to [quantization example](../quantization/inc)
+
 # Prerequisite
 ## Create Environment
 ```
