@@ -38,5 +38,5 @@ with torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
 elapsed = time.time() - elapsed
 
 print(gen_text)
-print("Elapsed Time: %.3f ms." % (elapsed * 1000))
+print("Inference latency: %.3f ms." % (elapsed * 1000))
 
