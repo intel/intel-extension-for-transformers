@@ -1,6 +1,6 @@
 Step-by-Step
 ============
-This document describes the step-by-step instructions to run GPT-J on 4th Gen Intel® Intel® Scalable Processor (SPR) with PyTorch and Intel® Extension for PyTorch.
+This document describes the step-by-step instructions to run GPT-J on 4th Gen Intel® Xeon® Scalable Processor (SPR) with PyTorch and Intel® Extension for PyTorch.
 
 The script ```run_gptj.py``` is based on [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) and provides inference benchmarking.
 
