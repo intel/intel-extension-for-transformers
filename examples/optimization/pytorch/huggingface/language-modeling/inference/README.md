@@ -10,7 +10,7 @@ The script ```run_gptj.py``` is based on [EleutherAI/gpt-j-6B](https://huggingfa
 conda install mkl mkl-include -y
 conda install jemalloc gperftools -c conda-forge -y
 pip install torch==1.13.1 --extra-index-url https://download.pytorch.org/whl/cpu
-pip install intel_extension_for_pytorch=1.13.0
+pip install intel_extension_for_pytorch==1.13.0
 pip install -r requirements.txt
 ```
 ## Setup Environment Variables
