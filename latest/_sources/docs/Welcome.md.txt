@@ -8,7 +8,7 @@
 *  Advanced compression-aware software optimizations and runtime (released with NeurIPS 2022's paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) and [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114), and NeurIPS 2021's paper [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754))
 
 
-*  Accelerated end-to-end Transformer-based applications such as [Stable Diffusion](./examples/optimization/pytorch/huggingface/textual_inversion), [GPT-J-6B](./examples/optimization/pytorch/huggingface/language-modeling/quantization/inc), and [T5](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/summarization/quantization), and [SetFit](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb)       
+*  Accelerated end-to-end Transformer-based applications such as [Stable Diffusion](./examples/optimization/pytorch/huggingface/textual_inversion), [GPT-J-6B](./examples/optimization/pytorch/huggingface/language-modeling/inference), and [T5](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/summarization/quantization), and [SetFit](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb)       
 
 
 ## Installation
