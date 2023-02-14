@@ -1,19 +1,35 @@
-# Token classification with quantization
+Step-by-Step
+=========
 
-The script `run_ner.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+This document describes the step-by-step instructions for reproducing the quantization on models for the token classification (NER) tasks.
 
-You can use the `run_tuning.sh` and `run_benchmark.sh` to run quantization and evaluation on the `bert_base_ner` model.
+# Prerequisite
+## 1. Installation
 
-## Command
+Make sure you have installed Intel® Extension for Transformers and all the dependencies in the current example:
 
- - To get int8 model
-
+```shell
+pip install intel-extension-for-transformers
+pip install -r requirements.txt
 ```
-bash run_tuning.sh  --topology=bert_base_ner
-```
 
- - To evaluate with the int8 model
+# Run
 
-```
-bash run_benchmark.sh --topology=bert_base_ner --mode=benchmark --int8=true
-```
+## 1. Run Command (Shell)
+
+- Topology:
+   - bert_base_ner
+
+- To get the int8 model
+
+   ```
+   cd ptq
+   bash run_tuning.sh  --topology=[topology] --output_model=./saved_int8
+   ```
+
+- To benchmark the int8 model
+
+   ```
+   cd ptq
+   bash run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
+   ```
