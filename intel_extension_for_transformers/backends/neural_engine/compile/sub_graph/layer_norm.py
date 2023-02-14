@@ -27,7 +27,7 @@ class LayerNorm(Pattern):
     """The LayerNorm pattern.
 
     Fuse the original sub-graph into the custom acceleration 'LayerNorm' graph.
-    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    The search strategy is based on the following pattern mapping configs for different models.
     """
     """
     Different model has the different layer_norm pattern,

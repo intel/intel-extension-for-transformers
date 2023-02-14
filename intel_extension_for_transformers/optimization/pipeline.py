@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Pipeline: import transformers.pipelines and support int8 model loading based on infer_framework_load_model."""
-
 import importlib
 from transformers import AutoConfig, pipeline
 from transformers.pipelines import *
@@ -38,8 +36,15 @@ def infer_framework_load_model(
 ):
     """Support int8 model loading based on infer_framework_load_model.
 
+    Args:
+        model (object): the input model
+        config (AutoConfig): AutoConfig object
+        model_classes (Optional[Dict[str, Tuple[type]]], optional): model class. Defaults to None
+        task (Optional[str], optional): task name. Defaults to None
+        framework (Optional[str], optional): framework name. Defaults to None
+
     Returns:
-        `Tuple`: A tuple framework, model.
+        Tuple: A tuple framework, model.
     """
     logger.warning("Function transformers.pipelines.base.infer_framework_load_model is replaced "
                     "by intel_extension_for_transformers.optimization.pipeline.")
@@ -55,16 +60,21 @@ def infer_framework_load_model(
 
             # only support text-classification now
             def forward_executor(self, model_inputs, **forward_params):
+                """Forward function executor.
+
+                Args:
+                    model_inputs (list): model inputs
+                """
                 model_inputs = [v.int() for k, v in model_inputs.items()]
                 model_outputs = model.inference(model_inputs)
                 model_outputs = list(self.model.inference(model_inputs).values())[0]
                 return {"logits": torch.from_numpy(model_outputs)}
 
-            def check_model_type(self, supported_models):
+            def _check_model_type(self, supported_models):
                 pass
 
             Pipeline.forward = forward_executor
-            Pipeline.check_model_type = check_model_type
+            Pipeline.check_model_type = _check_model_type
         else:
             model = OptimizedModel.from_pretrained(model, **model_kwargs)
             if hasattr(model, "eval"):

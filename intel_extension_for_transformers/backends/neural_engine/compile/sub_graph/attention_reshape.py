@@ -28,7 +28,7 @@ class AttentionReshape(Pattern):
     """The AttentionReshape pattern.
 
     Fuse the original sub-graph into the custom acceleration 'AttentionReshape' graph.
-    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    The search strategy is based on the following pattern mapping configs for different models.
     """
     def __call__(self, model):
         """The __call__ function of this pattern class."""
@@ -87,6 +87,42 @@ class AttentionReshape(Pattern):
                         }], [[0], 1]]
                     },
                     'returns': [6, 8]
+                },
+
+                # Lat_int8
+                {
+                    'patterns': {
+                        'in': [ [(0, 'Shape'), (1, 'Gather'), (2, 'Gather'), (3, 'Unsqueeze'), 
+                                (4, 'Concat'), (6, 'Reshape'),(7, 'MatMulWithBias')],
+                                [(),(5, 'Transpose'), (6, 'Reshape')]],
+                        'out': [[(0, 'Transpose'), (1, 'Reshape'), (2, 'MatMulWithBias')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 5,
+                        1: 6,
+                        2: 7,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            5: [0]
+                        }], [[0], 1]],
+                        1: [[], [[],1]],
+                        2: [[
+                        {7: [1]},{7: [2]}
+                        ],[[1, 2],3]],
+                    },
+                    'output_tensors': {
+                        0: [[], [[],1]],
+
+                        1: [[{
+                        6:[0]
+                        }],[[0],1]],
+                        2: [[{
+                            7: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [5,4,7]
                 },
 
                 # Shira new model Reshape_128, 373, 618

@@ -49,7 +49,7 @@ def create_tf_node(op, name, inputs):
 def graph_node_names_details(nodes):
     """Parse the graph nodes ans get the graph_nodes_dict.
 
-    Be used for Grpah class with cerating a new graph.
+    Be used for Grpah class when converting a tensorflow computation graph to an engine graph.
     The node_name is the key, node in value is for getting the Const
     tensor value and the input_tensor source op; outputs in value is for
     output_tensor dest op.
@@ -199,12 +199,13 @@ def tf_extract_operator(node, model, nodes_dict):
 
     return op_type, input_tensors, output_tensors
 
-
+"""Get tensor dtype info when meets its encoded value in a tensorflow node"""
 TF_DTYPE_ID = {3: 'int32',
                1: 'fp32',
                9: 'int64',
                7: 'string', }
 
+"""Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function"""
 MULTI_OUTPUT_OP = {'Unpack': -1,
                    'IteratorGetNext': -1,
                    }

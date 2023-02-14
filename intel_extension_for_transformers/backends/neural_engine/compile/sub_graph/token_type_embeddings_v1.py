@@ -28,7 +28,7 @@ class TokenTypeEmbeddingsV1(Pattern):
     """The TokenTypeEmbeddingsV1 pattern.
 
     Fuse the original sub-graph into the custom acceleration 'TokenTypeEmbeddingsV1' graph.
-    The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+    The search strategy is based on the following pattern mapping configs for different models.
     """
     def __call__(self, model):
         """The __call__ function of this pattern class."""

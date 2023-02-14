@@ -403,6 +403,17 @@ def main():
         do_lower_case=True
     )
 
+    if optim_args.int8:
+    # Load the model obtained after Intel Neural Compressor (INC) quantization
+        model = OptimizedModel.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
+
     # Tokenizer check: this script requires a fast tokenizer.
     if not isinstance(tokenizer, PreTrainedTokenizerFast):
         raise ValueError(
@@ -765,6 +776,7 @@ def main():
     if optim_args.tune:
 
         metric_name = optim_args.metric_name
+        trainer.enable_executor = True
 
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for quantization.")
@@ -792,8 +804,8 @@ def main():
             max_trials=200,
             metrics=[tune_metric],
         )
-        quantization_config.framework = "pytorch_ipex"
         model = trainer.quantize(quant_config=quantization_config)
+        trainer.export_to_onnx()
 
     if optim_args.benchmark or optim_args.accuracy_only:
         if optim_args.int8:
