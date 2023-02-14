@@ -31,16 +31,16 @@ model = model.to(memory_format=torch.channels_last)
 model = ipex.optimize(model, dtype=amp_dtype, inplace=True)
 
 # input prompt
-prompt = "Once upon a time,"
+# prompt = "Once upon a time,"
 # 32 tokens input
-# prompt = "Once upon a time, there existed a little girl, who liked to have adventures." + \
-#          " She wanted to go to places and meet new people, and have fun."
+prompt = "Once upon a time, there existed a little girl, who liked to have adventures." + \
+         " She wanted to go to places and meet new people, and have fun."
 
 # start
 elapsed = time.time()
 with torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-    gen_tokens = model.generate(input_ids, do_sample=True,
+    gen_tokens = model.generate(input_ids, do_sample=False,
                                 temperature=0.9, max_new_tokens=max_new_tokens, num_beams=4)
     gen_text = tokenizer.batch_decode(gen_tokens)[0]
 elapsed = time.time() - elapsed
