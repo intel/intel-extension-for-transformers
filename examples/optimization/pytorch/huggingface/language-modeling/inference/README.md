@@ -22,7 +22,7 @@ export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
 
 # IOMP
-export OMP_NUM_THREADS=< Cores to use >
+export OMP_NUM_THREADS=< Cores number to use >
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
 # Jemalloc
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
@@ -31,7 +31,11 @@ export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:aut
 
 # Performance
 ```bash
-numactl -m <node N> -C <cpu list> python run_gptj.py <fp32/bf16>
+# default is beam search with num_beams=4, if you need to use greedy search for comparison, add "--greedy" in args.
+numactl -m <node N> -C <cpu list> \
+    python run_gptj.py \
+        --precision <fp32/bf16> \
+        --max-new-tokens 32
 ```
 
 >**Note:** Inference performance speedup with Intel DL Boost (VNNI/AMX) on Intel(R) Xeon(R) hardware, Please refer to [Performance Tuning Guide](https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html) for more optimizations.
