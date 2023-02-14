@@ -34,5 +34,13 @@ export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:aut
 numactl -m <node N> -C <cpu list> python run_gptj.py <fp32/bf16>
 ```
 
->**Note:** Inference performance speedup with Intel DL Boost (VNNI/AMX) on Intel(R) Xeon(R) hardware, Please refer to [Performance Tuning Guide](https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html) for more optimizations.
+For bloom case. Jemalloc is not used for the memory issue.
 
+```bash
+numactl -m <node N> -C <cpu list> python3 run_bloom.py --batch_size 1 --benchmark
+```
+default is beam search with num_beams=4, if you need to use greedy search for comparison, add "--greedy" in args.
+
+
+
+>**Note:** Inference performance speedup with Intel DL Boost (VNNI/AMX) on Intel(R) Xeon(R) hardware, Please refer to [Performance Tuning Guide](https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html) for more optimizations.
