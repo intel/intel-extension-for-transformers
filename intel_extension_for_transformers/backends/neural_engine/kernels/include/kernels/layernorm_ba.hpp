@@ -55,7 +55,6 @@ class layernorm_ba_k_t : public kernel_t {
   explicit layernorm_ba_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
   virtual ~layernorm_ba_k_t() {
     for (auto& kernel : jit_kers_) safe_delete(kernel);
-    for (auto& data : td) safe_delete(data);
     aligned_free(one_div_n_);
   }
   // Delete move constructor and move operator
@@ -84,7 +83,6 @@ class layernorm_ba_k_t : public kernel_t {
   int col_num;
   data_type src_dt;
   data_type dst_dt;
-  std::vector<ssd::layernorm_ba_data_t*> td;
 };
 
 }  // namespace jd

@@ -69,8 +69,8 @@ struct vnni_param_t {
   dim_t im_start;  // start m-idx of dest to be calculated; used as the m offset when reading sparse
   // sparse weight related
   dim_t blocksize[2] = {4, 1};
-  std::vector<dim_t> indptr;
-  std::vector<dim_t> indices;
+  const dim_t* indptr;
+  const dim_t* indices;
   const int8_t* weight;
   std::vector<postop_attr> postop_attrs;
 };

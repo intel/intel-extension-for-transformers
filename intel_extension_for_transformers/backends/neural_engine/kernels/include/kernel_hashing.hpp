@@ -98,6 +98,8 @@ class hash_t {
         hash_combine(seed, op_attrs["softmax_out_zero_point"]);
         hash_combine(seed, op_attrs["softmax_out_scale"]);
         break;
+      case kernel_kind::transpose_attention:
+        break;
       case kernel_kind::layernorm_ba:
       case kernel_kind::gather:
         hash_combine(seed, op_attrs["matrix_shape"]);
@@ -113,6 +115,16 @@ class hash_t {
         hash_combine(seed, op_attrs["vec_len"]);
         hash_combine(seed, op_attrs["quant_factor"]);
         break;
+      case kernel_kind::reorder:
+        hash_combine(seed, op_attrs["tile_shape"]);
+        break;
+      case kernel_kind::mha_dense:
+        hash_combine(seed, op_attrs["QK_rescale"]);
+        hash_combine(seed, op_attrs["softmax_rescale"]);
+        hash_combine(seed, op_attrs["QKV_rescale"]);
+        hash_combine(seed, op_attrs["QKV_dstzp"]);
+        hash_combine(seed, op_attrs["merged_QKV"]);
+        hash_combine(seed, op_attrs["is_package"]);
       case kernel_kind::eltwiseop:
       default:
         break;

@@ -13,7 +13,6 @@
 //  limitations under the License.
 
 #include "matmul.hpp"
-#include "model.hpp"
 
 #include "operator_registry.hpp"
 namespace executor {
@@ -825,7 +824,7 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
       vector<int64_t> post_shape = post_->shape();
       int64_t bm = input[0]->shape()[0];
       post_shape.insert(post_shape.begin(), bm);
-      post_shape[1] = model_->input_shape()[0] / bm;
+      post_shape[1] = InputShapeRecorder::GetInstance().GetShape()[0] / bm;
       CHECK_EQ(Product(post_shape), Product(post_->shape())) << "Wrong post shape in operator " << name_
                                                              << " with SparseLib 3D format...";
       post_->set_shape(post_shape);
@@ -837,7 +836,7 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
       ResetPerm(&dst_perm_, "dst_perm");
       if (binary_add_ && post_ != nullptr) {
         vector<int64_t> post_shape(post_->shape().size() - 1, 0);
-        post_shape[0] = model_->input_shape()[0];
+        post_shape[0] = InputShapeRecorder::GetInstance().GetShape()[0];
         for (int i = 1; i < post_shape.size(); ++i) post_shape[i] = post_->shape()[i+1];
         post_->set_shape(post_shape);
       }

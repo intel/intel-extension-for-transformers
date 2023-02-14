@@ -1170,4 +1170,18 @@ ConvolutionPrimitiveFwdFactory& ConvolutionPrimitiveFwdFactory::GetInstance() {
   return instance_;
 }
 
+/************ InputShapeRecorder member function ************/
+InputShapeRecorder& InputShapeRecorder::GetInstance() {
+  static InputShapeRecorder instance_;
+  return instance_;
+}
+
+void InputShapeRecorder::RecordShape(const vector<int64_t>& shape) {
+  input_shape_ = shape;
+}
+
+const vector<int64_t>& InputShapeRecorder::GetShape() {
+  return input_shape_;
+}
+
 }  // namespace executor

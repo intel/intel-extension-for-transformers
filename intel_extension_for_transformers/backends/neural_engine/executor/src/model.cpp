@@ -409,7 +409,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
       }
     }
   }
-  if (reshape_model) input_shape_ = input_data[0].shape();
+  if (reshape_model) InputShapeRecorder::GetInstance().RecordShape(input_data[0].shape());
   for (int i = 0; i < input_data.size(); ++i) {
   // model_input_tesnor_[i]->free_data();
     model_input_tensors_[i]->set_data(input_data[i].mutable_data());
@@ -561,7 +561,7 @@ void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) 
   if (llga_disable) {
     LOG(INFO) << "Constructing original graph...";
     for (int i = 0; i < op_configs.size(); i++) {
-      operators_.push_back(std::make_shared<Dispatcher>(op_configs[i],  &execution_options_, this));
+      operators_.push_back(std::make_shared<Dispatcher>(op_configs[i],  &execution_options_));
     }
     return;
   }
@@ -591,14 +591,14 @@ void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) 
   auto partitions = llga_info_.GetPartitions();
 
   // add Input layer into operators_
-  operators_.push_back(std::make_shared<Dispatcher>(op_configs[0], &execution_options_, this));
+  operators_.push_back(std::make_shared<Dispatcher>(op_configs[0], &execution_options_));
   std::set<int> unique_index;
   for (int i = 0; i < partitions.size(); i++) {
     auto partition = partitions[i];
     if (partition.is_supported()) {
       // create llga kernel and add it into operators_
       auto llgakernel = CreateLLGAKernel(op_configs, partition);
-      operators_.push_back(std::make_shared<Dispatcher>(llgakernel, &execution_options_, this));
+      operators_.push_back(std::make_shared<Dispatcher>(llgakernel, &execution_options_));
     } else {
       // create original kernel and add it into operators_
       for (auto id : partition.get_ops()) {
@@ -607,14 +607,14 @@ void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) 
           continue;
         } else {
           unique_index.insert(idx);
-          operators_.push_back(std::make_shared<Dispatcher>(op_configs[idx], &execution_options_, this));
+          operators_.push_back(std::make_shared<Dispatcher>(op_configs[idx], &execution_options_));
         }
       }
     }
   }
 
   // add Output layer into operators_
-  operators_.push_back(std::make_shared<Dispatcher>(op_configs[op_configs.size() - 1], &execution_options_, this));
+  operators_.push_back(std::make_shared<Dispatcher>(op_configs[op_configs.size() - 1], &execution_options_));
 }
 
 }  // namespace executor

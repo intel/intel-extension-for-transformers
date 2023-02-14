@@ -20,24 +20,7 @@
 #include "utils.hpp"
 #include "jit_generator.hpp"
 
-namespace jd {
-class jit_seq_cpy_48x4 : public jit_generator {
- public:
-  struct param_t {
-    int M;             // outer dim of src: use to calculate dst stride
-    int N;             // inner dim of src: loop dimention
-    int ld_src;        // leading dim / bytes of src
-    bool sum_m;        // calculate sum along the M axis
-    bool is_unsigned;  // datatype of either signed or unsigned; only useful when calculating sum
-  };
-
-  struct rt_data_t {
-    const void* src;
-    void* dst;
-    int32_t* dst_sum;
-    bool sum_append;  // whether the sum should overwrite or accumulate
-  };
- /**
+/**
  * jit_seq_cpy_48x4 reorders matrix in the following way:
  *  src(4xN) ==> dst((N/48)x48x4)
  *
@@ -63,12 +46,30 @@ class jit_seq_cpy_48x4 : public jit_generator {
  * |  .   .   .   . |
  * | 47  95 143 191 |
  * +----------------+
- * ====== sum_4x48(src, dst_sum, ld_src) ======>
- * +------------------------------------ dst_sum ---------------------------------------+
- * | +=0+48+96+144   +=1+49+97+145   +=2+50+98+146   +=3+51+99+147 ...  +=47+95+143+191 |
- * +------------------------------------------------------------------------------------+
++ * ====== sum_4x48(src, dst_sum, ld_src) ======>
++ * +------------------------------------ dst_sum ---------------------------------------+
++ * | +=0+48+96+144   +=1+49+97+145   +=2+50+98+146   +=3+51+99+147 ...  +=47+95+143+191 |
++ * +------------------------------------------------------------------------------------+
  */
- explicit jit_seq_cpy_48x4(const jit_seq_cpy_48x4::param_t& param)
+
+namespace jd {
+class jit_seq_cpy_48x4 : public jit_generator {
+ public:
+  struct param_t {
+    int M;             // outer dim of src: use to calculate dst stride
+    int N;             // inner dim of src: loop dimention
+    int ld_src;        // leading dim / bytes of src
+    bool sum_m;        // calculate sum along the M axis
+    bool is_unsigned;  // datatype of either signed or unsigned; only useful when calculating sum
+  };
+
+  struct rt_data_t {
+    const void* src;
+    void* dst;
+    int32_t* dst_sum;
+    bool sum_append;  // whether the sum should overwrite or accumulate
+  };
+  explicit jit_seq_cpy_48x4(const jit_seq_cpy_48x4::param_t& param)
       : jit_generator(),
         M(param.M),
         N(param.N),

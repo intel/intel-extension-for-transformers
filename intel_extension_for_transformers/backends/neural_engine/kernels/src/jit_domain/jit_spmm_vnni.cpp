@@ -87,7 +87,7 @@ void jit_spmm_vnni_t::tile_product(int tile_height, int tile_width) {
   }
 }
 
-void jit_spmm_vnni_t::load_dense(const std::vector<int64_t>& k_indices) {
+void jit_spmm_vnni_t::load_dense(const dim_t* k_indices, const int64_t size) {
   // e.g.: when tile_shape = {4, 4}, zmm24 = b[[0, 3, 4, 9], 0:16], zmm23 = b[[0, 3, 4, 9], 16:32],
   // ..., zmm21 = b[[0, 3, 4, 9], 48:64]. zmm24 is shared by each row in a TH, so the TH's blocked.
   for (int j = 0; j < TW(); ++j) {
@@ -97,9 +97,9 @@ void jit_spmm_vnni_t::load_dense(const std::vector<int64_t>& k_indices) {
     int vreg_temp_idx = vreg_temp.getIdx();
     Xbyak::Xmm temp_xmm(vreg_temp_idx);
     Xbyak::Ymm temp_ymm = Xbyak::Ymm(vreg_temp_idx) | reg_k1;
-    SPARSE_LOG_IF(FATAL, !(k_indices.size() > 0 && k_indices.size() <= spns::ADJ))
-        << "k_indices.size() > 0 && k_indices.size() <= spns::ADJ";
-    if (k_indices.size() == spns::ADJ) {
+    SPARSE_LOG_IF(FATAL, !(size > 0 && size <= spns::ADJ))
+        << "size > 0 && size <= spns::ADJ";
+    if (size == spns::ADJ) {
       vmovdqu8(TW_xmm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[0] * ld_dst() + j * VEC]);
       vbroadcasti32x4(TW_ymm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[1] * ld_dst() + j * VEC]);
       vmovdqu8(temp_xmm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[2] * ld_dst() + j * VEC]);
@@ -108,13 +108,13 @@ void jit_spmm_vnni_t::load_dense(const std::vector<int64_t>& k_indices) {
       vxorps(vreg_temp, vreg_temp, vreg_temp);
       vxorps(TW_Vmm(j), TW_Vmm(j), TW_Vmm(j));
       vmovdqu8(TW_xmm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[0] * ld_dst() + j * VEC]);
-      if (k_indices.size() > 1) {
+      if (size > 1) {
         vbroadcasti32x4(TW_ymm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[1] * ld_dst() + j * VEC]);
       }
-      if (k_indices.size() > 2) {
+      if (size > 2) {
         vmovdqu8(temp_xmm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[2] * ld_dst() + j * VEC]);
       }
-      if (k_indices.size() > 3) {
+      if (size > 3) {
         vbroadcasti32x4(temp_ymm, ptr[reg_dense + reg_n_idx * BYTE1 + k_indices[3] * ld_dst() + j * VEC]);
       }
     }
@@ -148,8 +148,7 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
   const dim_t indptr_hi = param_.indptr[imb + 1] * spns::ADJ;  // max offset of index pointer
   const dim_t nnz = indptr_hi - indptr_lo;
 
-  auto idx_begin = param_.indices.begin();
-  const std::vector<dim_t> k_indices(idx_begin + indptr_lo, idx_begin + indptr_hi);
+  const dim_t* k_indices = param_.indices + indptr_lo;
 
   switch (param_.sub_func) {
     case ssd::subfunc_level::non_kdims:
@@ -175,7 +174,7 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
         // Min tile calculation: Tile width/height is 1, compute (1, ADJ) x (ADJ, 16) = (1, 16) matmul.
         switch (param_.sub_func) {
           case ssd::subfunc_level::none:
-            load_dense({k_indices.begin() + kp_lo, k_indices.begin() + kp_hi});
+            load_dense(k_indices + kp_lo, kp_hi - kp_lo);
             load_sparse(reg_wei, element_offset * sizeof(decltype(*param_.weight)));
             tile_product(TH(), TW());
             break;
@@ -289,7 +288,7 @@ void jit_spmm_vnni_t::read_params() {
  *  reg_wei - the start of weight matrix, it will be updated after read
  */
 void jit_spmm_vnni_t::load_dense_sparse_prod() {
-  constexpr size_t idx_size = sizeof(decltype(param_.indices)::value_type);
+  constexpr size_t idx_size = sizeof(dim_t);
   mov(reg_addr_tmp[0], qword[reg_seq_indices + 0 * idx_size]);
   mov(reg_addr_tmp[1], qword[reg_seq_indices + 1 * idx_size]);
   mov(reg_addr_tmp[2], qword[reg_seq_indices + 2 * idx_size]);

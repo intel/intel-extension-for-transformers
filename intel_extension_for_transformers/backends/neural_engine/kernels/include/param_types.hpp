@@ -28,7 +28,10 @@ enum class kernel_kind : uint8_t {
   transpose_matmul,
   softmax,
   gather,
-  attention
+  attention,
+  mha_dense,
+  reorder,
+  transpose_attention
 };
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };
@@ -57,6 +60,7 @@ enum class kernel_prop : uint8_t {
 // Data type.
 enum class data_type : uint8_t {
   undef,
+  f8,
   u8,
   s8,
   u16,
@@ -133,8 +137,7 @@ class binaryop_attr {
 };
 
 static std::unordered_map<data_type, const int> type_size = {
-    {data_type::fp32, 4}, {data_type::s32, 4}, {data_type::fp16, 2},
-    {data_type::bf16, 2}, {data_type::u8, 1},  {data_type::s8, 1},
-};
+    {data_type::fp32, 4}, {data_type::s32, 4}, {data_type::fp16, 2}, {data_type::bf16, 2},
+    {data_type::u8, 1},   {data_type::s8, 1},  {data_type::f8, 1}};
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_

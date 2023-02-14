@@ -18,18 +18,13 @@
 #include <fstream>
 #include <string>
 #include <utility>
+#include <array>
 
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
 #include "utils.hpp"
 
-using Zmm = Xbyak::Zmm;
-using Ymm = Xbyak::Ymm;
-using Xmm = Xbyak::Xmm;
-using Reg64 = Xbyak::Reg64;
-using Opmask = Xbyak::Opmask;
-using RegExp = Xbyak::RegExp;
-
+using Tmm = Xbyak::Tmm;
 using Zmm = Xbyak::Zmm;
 using Ymm = Xbyak::Ymm;
 using Xmm = Xbyak::Xmm;
@@ -129,34 +124,60 @@ class jit_generator : public Xbyak::CodeGenerator {
     vpslld(zmm, zmm, 0x10);
   }
 
-  void preamble() {
+  void preserve_xmm() {
     if (xmm_to_preserve) {
       sub(rsp, xmm_to_preserve * VEC);
       for (size_t i = 1; i < xmm_to_preserve + 1; ++i)
         uni_vmovdqu(ptr[rsp + (i - 1) * VEC], Xbyak::Xmm(xmm_to_preserve_start + i - 1));
     }
+  }
+
+  void preamble() {
+    preserve_xmm();
     for (size_t i = 0; i < num_abi_save_gpr_regs; ++i) {
       push(Xbyak::Reg64(abi_save_gpr_regs[i]));
     }
     mov(reg_EVEX_max_8b_offt, 2 * EVEX_max_8b_offt);
   }
 
-  void postamble() {
-    for (size_t i = 0; i < num_abi_save_gpr_regs; ++i)
-      pop(Xbyak::Reg64(abi_save_gpr_regs[num_abi_save_gpr_regs - 1 - i]));
+  void recover_xmm() {
     if (xmm_to_preserve) {
       for (size_t i = 1; i < xmm_to_preserve + 1; ++i)
         uni_vmovdqu(Xbyak::Xmm(xmm_to_preserve_start + i - 1), ptr[rsp + (i - 1) * VEC]);
       add(rsp, xmm_to_preserve * VEC);
     }
+  }
+
+  void postamble() {
+    for (size_t i = 0; i < num_abi_save_gpr_regs; ++i)
+      pop(Xbyak::Reg64(abi_save_gpr_regs[num_abi_save_gpr_regs - 1 - i]));
+    recover_xmm();
     uni_vzeroupper();
     ret();
   }
 
+  /**
+   * @brief Get an array of registers
+   *
+   * @tparam reg_t register type; should be a child type of Xbyak::Reg
+   * @tparam N number of registers
+   * @param start staring index
+   * @return std::array<reg_t, N>
+   */
+  template <typename reg_t, int N, typename = typename std::enable_if<std::is_base_of<Xbyak::Reg, reg_t>::value>::type>
+  inline std::array<reg_t, N> regs(int start = 0) const {
+    std::array<reg_t, N> result;
+    for (int i = 0; i < N; ++i) {
+      result[i] = reg_t(start + i);
+    }
+    return result;
+  }
+
  protected:
   const uint8_t* jit_ker_ = nullptr;
-  static constexpr uint64_t MAX_CODE_SIZE = 128 * 1024;
+  static constexpr uint64_t MAX_CODE_SIZE = 64 * 1024;
   static constexpr uint64_t BYTES_ZMM = 64;
+  static constexpr uint64_t BYTES_TMM = 16 * 64;
   static constexpr int VEC = 16;  // 512 bits of ZMM register divided by S32 bits.
   int callee_functions_code_size_ = 0;
   const size_t num_abi_save_gpr_regs = sizeof(abi_save_gpr_regs) / sizeof(abi_save_gpr_regs[0]);

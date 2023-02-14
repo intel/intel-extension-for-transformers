@@ -27,6 +27,9 @@ DECLARE_IMPL_LIST(transpose_matmul);
 DECLARE_IMPL_LIST(softmax);
 DECLARE_IMPL_LIST(gather);
 DECLARE_IMPL_LIST(attention);
+DECLARE_IMPL_LIST(mha_dense);
+DECLARE_IMPL_LIST(reorder);
+DECLARE_IMPL_LIST(transpose_attention);
 
 #undef DECLARE_IMPL_LIST
 
@@ -44,6 +47,9 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
     CASE(transpose_matmul);
     CASE(softmax);
     CASE(attention);
+    CASE(mha_dense);
+    CASE(reorder);
+    CASE(transpose_attention);
     default:
       return &cpu_engine::empty_list;
   }

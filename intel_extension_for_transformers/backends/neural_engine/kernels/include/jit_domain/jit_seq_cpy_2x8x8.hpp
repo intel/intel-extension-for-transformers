@@ -20,6 +20,34 @@
 #include "utils.hpp"
 #include "jit_generator.hpp"
 
+/**
+ * jit_seq_cpy_2x8x8 reorders matrix in the following way:
+ *  src(8xN) ==> dst((n/8)x2x8x4)
+ *
+ * define jit_seq_cpy_2x8x8(M, N, src, dst, ld_src):
+ *   for (int i=0; i < 8; i+=4)
+ *     for (int j=0; j < N; j+=8)
+ *       reorder_4x8(src + j + i*ld, dst + j*M + i*8, ld_src)
+ *
+ * +------ src ------<ld_src>
+ * | 0 1 2 3 4 5 6 7 <ld_src>
+ * | 8 9 a b c d e f <ld_src>
+ * | g h i j k l m n <ld_src>
+ * | o p q r s t u v <ld_src>
+ * +-----------------<ld_src>
+ * ===== reorder_4x8(src, dst, ld_src) ====>
+ * +-- dst --+
+ * | 0 8 g o |
+ * | 1 9 h p |
+ * | 2 a i q |
+ * | 3 b j r |
+ * | 4 c k s |
+ * | 5 d l t |
+ * | 6 e m u |
+ * | 7 f n v |
+ * +---------+
+ */
+
 namespace jd {
 class jit_seq_cpy_2x8x8 : public jit_generator {
  public:
@@ -34,34 +62,6 @@ class jit_seq_cpy_2x8x8 : public jit_generator {
     const void* src;
     void* dst;
   };
-  
-  /**
-   * jit_seq_cpy_2x8x8 reorders matrix in the following way:
-   *  src(8xN) ==> dst((n/8)x2x8x4)
-   *
-   * define jit_seq_cpy_2x8x8(M, N, src, dst, ld_src):
-   *   for (int i=0; i < 8; i+=4)
-   *     for (int j=0; j < N; j+=8)
-   *       reorder_4x8(src + j + i*ld, dst + j*M + i*8, ld_src)
-   *
-   * +------ src ------<ld_src>
-   * | 0 1 2 3 4 5 6 7 <ld_src>
-   * | 8 9 a b c d e f <ld_src>
-   * | g h i j k l m n <ld_src>
-   * | o p q r s t u v <ld_src>
-   * +-----------------<ld_src>
-   * ===== reorder_4x8(src, dst, ld_src) ====>
-   * +-- dst --+
-   * | 0 8 g o |
-   * | 1 9 h p |
-   * | 2 a i q |
-   * | 3 b j r |
-   * | 4 c k s |
-   * | 5 d l t |
-   * | 6 e m u |
-   * | 7 f n v |
-   * +---------+
-   */
   explicit jit_seq_cpy_2x8x8(const jit_seq_cpy_2x8x8::param_t& param)
       : jit_generator(),
         M(param.M),

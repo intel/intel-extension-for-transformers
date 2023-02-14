@@ -42,8 +42,8 @@ class jit_spmm_vnni_t : public jit_generator {
     const dim_t blk_size = param_.blocksize[0] * param_.blocksize[1];
     dense_load_offsets.resize((indptr_hi - indptr_lo) * blk_size);
 
-    std::transform(param_.indices.begin() + indptr_lo, param_.indices.begin() + indptr_hi, dense_load_offsets.begin(),
-                   [&](decltype(param_.indices)::value_type k) { return k * ld_dst(); });
+    std::transform(param_.indices + indptr_lo, param_.indices + indptr_hi, dense_load_offsets.begin(),
+                   [&](dim_t k) { return k * ld_dst(); });
     eltwise_injector_.eltwise_injector_init(this, param_.postop_attrs);
   }
   virtual ~jit_spmm_vnni_t() {}
@@ -64,7 +64,7 @@ class jit_spmm_vnni_t : public jit_generator {
   void params_alias(const ssd::vnni_param_t& param);
   void read_params();
   void load_bias(dim_t m_start);
-  void load_dense(const std::vector<int64_t>& k_indices);
+  void load_dense(const dim_t* k_indices, const int64_t size);
   void load_sparse(const Xbyak::Reg64& reg_addr, uint64_t offset);
   void tile_product(int tile_height, int tile_width);
   void handle_dst_buffer_init(int kb_idx, dim_t m_start);

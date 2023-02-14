@@ -25,4 +25,5 @@ void jit_amx_release_t::generate() {
   tilerelease();
   ret();
 }
+
 }  // namespace jd

@@ -119,8 +119,8 @@ bool spmm_vnni_kd_t::spmm_params_init() {
     params_[i].tile_w = tile_w;
     params_[i].sub_func = sub_func;
     params_[i].im_start = im_start;
-    params_[i].indptr = bsr_data->indptr();
-    params_[i].indices = bsr_data->indices();
+    params_[i].indptr = bsr_data->indptr().data();
+    params_[i].indices = bsr_data->indices().data();
     params_[i].weight = bsr_data->data().data();
     params_[i].postop_attrs = op_desc_.apply_postops_list();
   }

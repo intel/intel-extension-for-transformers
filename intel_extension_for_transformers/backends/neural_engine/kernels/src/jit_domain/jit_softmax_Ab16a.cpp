@@ -1,0 +1,290 @@
+//  Copyright (c) 2022 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+#include "jit_domain/jit_softmax_Ab16a.hpp"
+
+#define GET_OFF(field) offsetof(jit_softmax_Ab16a::rt_data_t, field)
+#define SHUFFLE(fp3, fp2, fp1, fp0) (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | (fp0))
+namespace jd {
+
+void jit_softmax_Ab16a::exp_ph_0_1(const Zmm& dst, const Zmm& src, const Zmm& tmp, const Zmm& magic_number0,
+                                   const Zmm& magic_number1, const Zmm& magic_number2, const Zmm& magic_number3,
+                                   const Reg64 bd) {
+  vfmadd132ph(src, magic_number3, zword_b[bd]);  // src is x1
+  vcvtph2w(dst, src | T_rd_sae);
+  vcvtw2ph(dst, dst);     // dst is z
+  vsubph(tmp, src, dst);  // tmp is f
+  vmovdqu16(src, tmp);    // src is f
+  vfmadd132ph(src, magic_number1, magic_number0);
+  vfmadd132ph(src, magic_number2, tmp);  // src is y
+  vscalefph(dst, src, dst);
+}
+void jit_softmax_Ab16a::scaleph2i16(const Zmm& zmm1, const Zmm& zmm_scale, const Zmm& zmm_max, const Zmm& zmm_min) {
+  vmulph(zmm1, zmm1, zmm_scale);
+  vrndscaleph(zmm1, zmm1, 0x00);
+  vminph(zmm1, zmm1, zmm_max);
+  vmaxph(zmm1, zmm1, zmm_min);
+  vcvtph2w(zmm1, zmm1);
+}
+
+void jit_softmax_Ab16a::cvtepi16_epi8_shuffle_storeu(RegExp dst, const Zmm& zmm0, const Zmm& zmm1, const Zmm& zmm2,
+                                                     const Zmm& zmm3, const Zmm& tmp0, const Zmm& tmp1, const Zmm& tmp2,
+                                                     const Zmm& tmp3) {
+  vshufi32x4(tmp0, zmm0, zmm1, SHUFFLE(1, 0, 1, 0));
+  vshufi32x4(tmp1, zmm0, zmm1, SHUFFLE(3, 2, 3, 2));
+  vshufi32x4(tmp2, zmm2, zmm3, SHUFFLE(1, 0, 1, 0));
+  vshufi32x4(tmp3, zmm2, zmm3, SHUFFLE(3, 2, 3, 2));
+  vpmovwb(ptr[dst], tmp0);
+  vpmovwb(ptr[dst + 32], tmp2);
+  vpmovwb(ptr[dst + 64], tmp1);
+  vpmovwb(ptr[dst + 96], tmp3);
+}
+
+void jit_softmax_Ab16a::generate() {
+  this->preamble();
+  mov(src_addr, ptr[reg_param + GET_OFF(src)]);         // r8
+  mov(dst_addr, ptr[reg_param + GET_OFF(dst)]);         // r9
+  mov(att_tile, dword[reg_param + GET_OFF(att_tile)]);  // r10d
+  if (param_.att_tail) {
+    mov(r11d, (1 << param_.att_tail) - 1);
+    kmovw(mask, r11d);
+  }
+  // alloc memory temporarily
+  mov(rbp, rsp);  // save rsp
+  mov(r15d, att_tile);
+  add(r15d, 2);
+  sal(r15d, 9);
+  sub(rsp, r15d);
+  and_(rsp, 0xffffffc0);
+
+  // load data from src and calculation max
+  for (int i = 0; i < 16; ++i) vpxorq(Zmm(i), Zmm(i), Zmm(i));  // zmm0~15 is vmax
+  mov(ebx, 0);
+  mov(r13, src_addr);
+  L("load_max_in_softmax");
+  for (int i = 0; i < 16; ++i) {
+    vmovdqu32(Zmm(16 + i), ptr[r13 + i * 16 * 4]);
+    vpmaxsd(Zmm(i), Zmm(i), Zmm(16 + i));
+  }
+  add(r13, 16 * 16 * 4);
+  add(ebx, 1);
+  cmp(ebx, att_tile);
+  jne("load_max_in_softmax");
+  if (param_.att_tail) {
+    mov(r15d, -10000);
+    for (int i = 0; i < 16; ++i) {
+      vpbroadcastd(Zmm(16 + i), r15d);  // todo: can this move out of loop and reuse one zmm
+      vmovdqu32(Zmm(16 + i) | mask, ptr[r13 + i * 16 * 4]);
+      vpmaxsd(Zmm(i), Zmm(i), Zmm(16 + i));
+    }
+  }
+  // convert int32 to fp32 and scale by QK_rescale_
+  mov(r15d, dword[reg_param + GET_OFF(QK_rescale)]);
+  vpbroadcastd(zmm31, r15d);  // zmm31 is vscale
+  for (int i = 0; i < 16; ++i) {
+    vcvtdq2ps(Zmm(i), Zmm(i));
+    vmulps(Zmm(i), Zmm(i), zmm31);
+    vpermilps(zmm30, Zmm(i), SHUFFLE(2, 3, 0, 1));
+    vmaxps(Zmm(i), Zmm(i), zmm30);
+    vpermilps(zmm30, Zmm(i), SHUFFLE(1, 0, 3, 2));
+    vmaxps(Zmm(i), Zmm(i), zmm30);
+    vshuff32x4(zmm30, Zmm(i), Zmm(i), SHUFFLE(2, 3, 0, 1));
+    vmaxps(Zmm(i), Zmm(i), zmm30);
+    vshuff32x4(zmm30, Zmm(i), Zmm(i), SHUFFLE(1, 0, 3, 2));
+    vmaxps(Zmm(i), Zmm(i), zmm30);
+  }
+  // calculation exp and sum
+  for (int i = 16; i < 24; ++i) vpxorq(Zmm(i), Zmm(i), Zmm(i));  // zmm16~23 is vsum
+  mov(r12w, magic_number[1]);
+  vpbroadcastw(zmm27, r12w);  // 0.240226507f
+  mov(r13w, magic_number[2]);
+  vpbroadcastw(zmm28, r13w);  // 0.452920674f
+  mov(r14w, magic_number[3]);
+  vpbroadcastw(zmm29, r14w);  // 0.713483036f
+  mov(r15w, magic_number[4]);
+  vpbroadcastw(zmm30, r15w);               // 0.5f
+  mov(r13, (uint64_t)(&magic_number[0]));  // 1.442695f used by broadcast
+  mov(ebx, 0);
+  mov(r11, src_addr);
+  mov(r12, rsp);
+  L("load_sum_in_softmax");
+  for (int i = 0; i < 16; i += 2) {
+    vmovdqu32(zmm24, ptr[r11 + i * 16 * 4]);
+    vcvtdq2ps(zmm24, zmm24);
+    vfmsub213ps(zmm24, zmm31, Zmm(i));
+    vcvtps2ph(ymm24, zmm24, 0x08);
+
+    vmovdqu32(zmm25, ptr[r11 + (i + 1) * 16 * 4]);
+    vcvtdq2ps(zmm25, zmm25);
+    vfmsub213ps(zmm25, zmm31, Zmm(i + 1));
+    vcvtps2ph(ymm25, zmm25, 0x08);
+
+    vshufi64x2(zmm25, zmm24, zmm25, SHUFFLE(1, 0, 1, 0));
+    exp_ph_0_1(zmm24, zmm25, zmm26, zmm27, zmm28, zmm29, zmm30, r13);
+    vmovaps(ptr[r12 + i * 16 * 2], zmm24);
+    vaddph(Zmm(16 + (i >> 1)), Zmm(16 + (i >> 1)), zmm24);
+  }
+  add(r11, 16 * 16 * 4);
+  add(r12, 16 * 16 * 2);
+  add(ebx, 1);
+  cmp(ebx, att_tile);
+  jne("load_sum_in_softmax");
+
+  if (param_.att_tail) {
+    mov(r15d, -10000);
+    for (int i = 0; i < 16; i += 2) {
+      vpbroadcastd(zmm24, r15d);
+      vmovdqu32(zmm24 | mask, ptr[r11 + i * 16 * 4]);
+      vcvtdq2ps(zmm24, zmm24);
+      vfmsub213ps(zmm24, zmm31, Zmm(i));
+      vcvtps2ph(ymm24, zmm24, 0x08);
+      vpbroadcastd(zmm25, r15d);
+      vmovdqu32(zmm25 | mask, ptr[r11 + (i + 1) * 16 * 4]);
+      vcvtdq2ps(zmm25, zmm25);
+      vfmsub213ps(zmm25, zmm31, Zmm(i + 1));
+      vcvtps2ph(ymm25, zmm25, 0x08);
+      vshufi64x2(zmm25, zmm24, zmm25, SHUFFLE(1, 0, 1, 0));
+      exp_ph_0_1(zmm24, zmm25, zmm26, zmm27, zmm28, zmm29, zmm30, r13);
+      vmovaps(ptr[r12 + i * 16 * 2], zmm24);
+      vaddph(Zmm(16 + (i >> 1)), Zmm(16 + (i >> 1)), zmm24);
+    }
+  }
+  // Zmm0 ~15 is free
+  // calculate div and scale
+  mov(r15w, word[reg_param + GET_OFF(softmax_rescale)]);
+  vpbroadcastw(zmm31, r15w);  // zmm31 is voscale
+
+  mov(r14, reinterpret_cast<int64_t>(reinterpret_cast<const void*>(perm_data)));
+  vmovups(zmm24, ptr[r14]);
+  for (int i = 0; i < 8; ++i) {
+    vpermw(zmm25, zmm24, Zmm(16 + i));
+    vaddph(Zmm(16 + i), Zmm(16 + i), zmm25);
+    vpermilps(zmm25, Zmm(16 + i), SHUFFLE(2, 3, 0, 1));
+    vaddph(Zmm(16 + i), Zmm(16 + i), zmm25);
+    vpermilps(zmm25, Zmm(16 + i), SHUFFLE(1, 0, 3, 2));
+    vaddph(Zmm(16 + i), Zmm(16 + i), zmm25);
+    vshuff32x4(zmm25, Zmm(16 + i), Zmm(16 + i), SHUFFLE(2, 3, 0, 1));
+    vaddph(Zmm(16 + i), Zmm(16 + i), zmm25);
+    vdivph(Zmm(16 + i), zmm31, Zmm(16 + i));
+  }
+  // convert fp16 to int8 and store
+  mov(ebx, 0);
+  mov(r13, dst_addr);
+  mov(r14, rsp);
+  mov(r11w, max);
+  mov(r12w, min);
+  vpbroadcastw(zmm29, r11w);
+  vpbroadcastw(zmm30, r12w);
+  mov(r11d, att_tile);  // r11d is att_tile16_in_tile64
+  sar(r11d, 2);
+  mov(r12d, att_tile);
+  and_(r12d, 0x00000003);  // r12d is att_tile16_in_tile64_tail
+
+  cmp(r11d, 0);
+  je("tail_process", T_NEAR);
+
+  L("store_in_softmax");
+  for (int i = 0; i < 16; i += 2) {
+    for (int j = 0; j < 4; j++) {
+      vmovups(Zmm(j), ptr[r14 + j * 16 * 16 * 2 + i * 16 * 2]);
+      scaleph2i16(Zmm(j), Zmm(16 + (i >> 1)), zmm29, zmm30);
+    }
+    cvtepi16_epi8_shuffle_storeu(r13 + i * 4 * 16, zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7);
+  }
+  add(ebx, 1);
+  add(r13, 16 * 4 * 16);
+  add(r14, 4 * 16 * 16 * 2);
+  cmp(ebx, r11d);
+  jne("store_in_softmax", T_NEAR);
+
+  // Tail process
+  L("tail_process");
+  for (int i = 0; i < 4; ++i) vpxorq(Zmm(i), Zmm(i), Zmm(i));
+
+  Xbyak::Label L_tail_tbl, L_tail_0, L_tail_1, L_tail_2, L_tail_3;
+  mov(r11, L_tail_tbl);
+  jmp(ptr[r11 + r12 * sizeof(void*)]);
+
+  L(L_tail_0);
+  if (param_.att_tail) {
+    for (int i = 0; i < 16; i += 2) {
+      vmovups(zmm0, ptr[r14 + i * 16 * 2]);
+      scaleph2i16(zmm0, Zmm(16 + (i >> 1)), zmm29, zmm30);
+      cvtepi16_epi8_shuffle_storeu(r13 + i * 4 * 16, zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7);
+    }
+  }
+  jmp("tail_process_end", T_NEAR);
+
+  L(L_tail_1);
+  for (int i = 0; i < 16; i += 2) {
+    vmovups(zmm0, ptr[r14 + i * 16 * 2]);
+    scaleph2i16(zmm0, Zmm(16 + (i >> 1)), zmm29, zmm30);
+    if (param_.att_tail) {
+      vmovups(zmm1, ptr[r14 + 1 * 16 * 16 * 2 + i * 16 * 2]);
+      scaleph2i16(zmm1, Zmm(16 + (i >> 1)), zmm29, zmm30);
+    }
+    cvtepi16_epi8_shuffle_storeu(r13 + i * 4 * 16, zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7);
+  }
+  jmp("tail_process_end", T_NEAR);
+
+  L(L_tail_2);
+  for (int i = 0; i < 16; i += 2) {
+    vmovups(zmm0, ptr[r14 + i * 16 * 2]);
+    scaleph2i16(zmm0, Zmm(16 + ((i >> 1))), zmm29, zmm30);
+    vmovups(zmm1, ptr[r14 + 1 * 16 * 16 * 2 + i * 16 * 2]);
+    scaleph2i16(zmm1, Zmm(16 + ((i >> 1))), zmm29, zmm30);
+    if (param_.att_tail) {
+      vmovups(zmm2, ptr[r14 + 2 * 16 * 16 * 2 + i * 16 * 2]);
+      scaleph2i16(zmm2, Zmm(16 + ((i >> 1))), zmm29, zmm30);
+    }
+    cvtepi16_epi8_shuffle_storeu(r13 + i * 4 * 16, zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7);
+  }
+  jmp("tail_process_end", T_NEAR);
+
+  L(L_tail_3);
+  for (int i = 0; i < 16; i += 2) {
+    vmovups(zmm0, ptr[r14 + i * 16 * 2]);
+    scaleph2i16(zmm0, Zmm(16 + ((i >> 1))), zmm29, zmm30);
+    vmovups(zmm1, ptr[r14 + 1 * 16 * 16 * 2 + i * 16 * 2]);
+    scaleph2i16(zmm1, Zmm(16 + ((i >> 1))), zmm29, zmm30);
+    vmovups(zmm2, ptr[r14 + 2 * 16 * 16 * 2 + i * 16 * 2]);
+    scaleph2i16(zmm2, Zmm(16 + ((i >> 1))), zmm29, zmm30);
+    if (param_.att_tail) {
+      vmovups(zmm3, ptr[r14 + 3 * 16 * 16 * 2 + i * 16 * 2]);
+      scaleph2i16(zmm3, Zmm(16 + ((i >> 1))), zmm29, zmm30);
+    }
+    cvtepi16_epi8_shuffle_storeu(r13 + i * 4 * 16, zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7);
+  }
+  jmp("tail_process_end");
+
+  L("tail_process_end");
+  add(ebx, 1);
+  add(r13, 16 * 4 * 16);
+  vpxorq(zmm0, zmm0, zmm0);
+  cmp(ebx, param_.sl_pad64_ / 64);
+  jge("end");
+  for (int i = 0; i < 16; ++i) vmovdqu32(ptr[r13 + i * 4 * 16], zmm0);
+  jmp("tail_process_end");
+  L("end");
+  mov(rsp, rbp);
+  this->postamble();
+
+  align(sizeof(void*));
+  L(L_tail_tbl);
+  putL(L_tail_0);
+  putL(L_tail_1);
+  putL(L_tail_2);
+  putL(L_tail_3);
+}
+
+}  // namespace jd

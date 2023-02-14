@@ -14,6 +14,7 @@ option(NE_WITH_TESTS "Build GTests" OFF)
 option(NE_WITH_ONEDNN_GRAPH "Build oneDNNGraph" ON)
 option(NE_DYNAMIC_LINK "Whether third party libs dynamic link to neural engine" ON)
 message(STATUS "NE_DYNAMIC_LINK: ${NE_DYNAMIC_LINK}")
+option(NE_MARCH_NATIVE "Generate instructions for machine type of the compiling machine for best performance" ON)
 
 if(NE_WITH_SPARSELIB_ONLY AND NOT NE_WITH_SPARSELIB)
   message(FATAL_ERROR "SPAESELIB is off")

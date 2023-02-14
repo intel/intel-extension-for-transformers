@@ -121,6 +121,79 @@ static std::string init_info_sparse_matmul(std::vector<dim_t> shape) {
   return ss.str();
 }
 
+static std::string init_info_transpose_matmul(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "transpose_matmul"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+static std::string init_info_softmax(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "softmax"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+static std::string init_info_gather(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "gather"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+
+static std::string init_info_mha_dense(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "mha_dense"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+
+static std::string init_info_reorder(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "reorder"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+
 void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
   if (is_initialized_) return;
 
@@ -134,6 +207,11 @@ void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
       CASE(sparse_matmul);
       CASE(eltwiseop);
       CASE(layernorm_ba);
+      CASE(transpose_matmul);
+      CASE(softmax);
+      CASE(gather);
+      CASE(mha_dense);
+      CASE(reorder);
       default:
         SPARSE_LOG(FATAL) << "unknown primitive kind";
     }

@@ -143,6 +143,27 @@ class attention_desc : public kernel_desc_proxy {
   virtual ~attention_desc() {}
 };
 
+class mha_dense_desc : public kernel_desc_proxy {
+ public:
+  mha_dense_desc() {}
+  explicit mha_dense_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~mha_dense_desc() {}
+};
+
+class reorder_desc : public kernel_desc_proxy {
+ public:
+  reorder_desc() {}
+  explicit reorder_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~reorder_desc() {}
+};
+
+class SPARSE_API_ transpose_attention_desc : public kernel_desc_proxy {
+ public:
+  transpose_attention_desc() {}
+  explicit transpose_attention_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~transpose_attention_desc() {}
+};
+
 /**
  * @brief Derived proxy class, interfacing to the real/cached sparse_matmul_t.
  */
@@ -188,11 +209,31 @@ class SPARSE_API_ softmax : public kernel_proxy {
   virtual ~softmax() {}
 };
 
-class SPARSE_API_ attention : public kernel_proxy {
+class attention : public kernel_proxy {
  public:
   attention() {}
   explicit attention(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~attention() {}
+};
+
+class mha_dense : public kernel_proxy {
+ public:
+  mha_dense() {}
+  explicit mha_dense(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~mha_dense() {}
+};
+
+class reorder : public kernel_proxy {
+ public:
+  reorder() {}
+  explicit reorder(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~reorder() {}
+};
+class SPARSE_API_ transpose_attention : public kernel_proxy {
+ public:
+  transpose_attention() {}
+  explicit transpose_attention(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~transpose_attention() {}
 };
 
 }  // namespace jd

@@ -65,6 +65,8 @@ namespace jd {
 typedef uint16_t bfloat16_t;  // NOLINT
 typedef int64_t dim_t;
 
+uint16_t fp32_to_fp16(const float x);
+float fp16_to_fp32(const uint16_t x);
 template <typename src_t, typename dst_t>
 dst_t cast_to(src_t x);
 
@@ -120,6 +122,8 @@ inline bool is_any_of(std::initializer_list<value_type> il, predicate_type pred)
 }
 
 #define ceil_div(x, y) (((x) + (y)-1) / (y))
+#define pad_to(x, n) (ceil_div(x, n) * (n))
+
 #define pad_to(x, n) (ceil_div(x, n) * (n))
 
 #define is_nonzero(x) (fabs((x)) > (1e-3))

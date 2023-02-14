@@ -79,7 +79,6 @@ bool layernorm_ba_k_t::init() {
   for (int i = 0; i < col_num; i++) one_div_n_[i] = 1.0 / row_num;
   // TODO(zhe1wang): set most appreciate thread num when fuse with quantize.
   jit_kers_.resize(ker_num);
-  for (int i = 0; i < batch_loop; i++) td.push_back(new ssd::layernorm_ba_data_t());
   for (int i = 0; i < ker_num; i++) {
     jit_layernorm_ba_t* ker = new jit_layernorm_ba_t(derived_kd()->params()[i]);
     if (ker == nullptr) return false;
@@ -96,15 +95,15 @@ bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
   for (int i = 0; i < batch_loop; i++) {
     for (int j = 0; j < ker_num; j++) {
       const jit_layernorm_ba_t* jit_impl = jit_kers_[j];
-      auto data_param = td[i];
-      data_param->src =
+      ssd::layernorm_ba_data_t data_param;
+      data_param.src =
           const_cast<char*>(reinterpret_cast<const char*>(rt_data[0]) + i * row_num * col_num * get_data_size(src_dt));
-      data_param->dst =
+      data_param.dst =
           const_cast<char*>(reinterpret_cast<const char*>(rt_data[1]) + i * row_num * col_num * get_data_size(dst_dt));
-      data_param->alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
-      data_param->beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
-      data_param->one_div_n = one_div_n_ptr();
-      (*jit_impl)(td[i]);
+      data_param.alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
+      data_param.beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
+      data_param.one_div_n = one_div_n_ptr();
+      (*jit_impl)(&data_param);
     }
   }
   return true;
