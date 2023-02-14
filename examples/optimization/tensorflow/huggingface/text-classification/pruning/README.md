@@ -1,10 +1,34 @@
-# Text classification
+Step-by-Step
+=========
 
-## GLUE task
+This document describes the step-by-step instructions for reproducing the pruning on models for the text classification (GLUE) tasks.
 
-The script `run_glue.py` provides the pruning approach (Magnitude) based on [Intel Extension for Transformers].
+# Prerequisite
+## 1. Installation
 
-Here is how to run the script:
+Make sure you have installed Intel® Extension for Transformers and all the dependencies in the current example:
+
+```shell
+pip install intel-extension-for-transformers
+pip install -r requirements.txt
+```
+
+# Run
+
+## 1. Run Command (Shell)
+
+- Topology:
+   - distilbert_base_sst2
+
+```
+bash run_tuning.sh  --topology=[topology]
+```
+
+```
+bash run_benchmark.sh --topology=[topology] --mode=benchmark --use_pruned_model=true
+```
+
+## 2. Run Command (Python)
  
 ```
 python run_glue.py \    
@@ -17,19 +41,7 @@ python run_glue.py \
     --overwrite_output_dir
 ```
 
-### Command
-
-```
-bash run_tuning.sh  --topology=topology
-```
-
-```
-bash run_benchmark.sh --topology=topology --mode=benchmark --use_pruned_model=true
-```
-topology is "distilbert_base_sst2"
-
-
-### Multi-node usage
+# Multi-node Usage
 
 We also supported Distributed Data Parallel training on multi nodes settings for pruning.
 
@@ -39,7 +51,7 @@ The default strategy we used is `MultiWorkerMirroredStrategy` in Tensorflow, and
 
 * `task_index`: 0 should be set on the chief node (leader) and 1, 2, 3... should be set as the rank of other follower nodes
 
-### Multi-node example
+## Multi-node Example
 
 * On leader node
 
