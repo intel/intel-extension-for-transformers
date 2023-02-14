@@ -105,13 +105,21 @@
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.benchmark.run">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.benchmark.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.benchmark.run" title="Permalink to this definition"></a></dt>
 <dd><p>Print the table headers and run the Pytorch benchmark.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A PyTorchBenchmark object.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.benchmark.ExecutorBenchmark">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.benchmark.</span></span><span class="sig-name descname"><span class="pre">ExecutorBenchmark</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.benchmark.ExecutorBenchmark" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">transformers.PyTorchBenchmark</span></code></p>
-<p>ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor.</p>
+<p>ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor.
+args: ExecutorBenchmarkArguments
+configs: PretrainedConfig
+framework (str): Executor</p>
 </dd></dl>
 
 </section>

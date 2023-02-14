@@ -26,7 +26,18 @@ Functions
 
    Support int8 model loading based on infer_framework_load_model.
 
+   :param model: the input model
+   :type model: object
+   :param config: AutoConfig object
+   :type config: AutoConfig
+   :param model_classes: model class. Defaults to None
+   :type model_classes: Optional[Dict[str, Tuple[type]]], optional
+   :param task: task name. Defaults to None
+   :type task: Optional[str], optional
+   :param framework: framework name. Defaults to None
+   :type framework: Optional[str], optional
+
    :returns: A tuple framework, model.
-   :rtype: `Tuple`
+   :rtype: Tuple
 
 

@@ -34,11 +34,16 @@ Functions
 
    Print the table headers and run the Pytorch benchmark.
 
+   :returns: A PyTorchBenchmark object.
+
 
 .. py:class:: ExecutorBenchmark
 
    Bases: :py:obj:`transformers.PyTorchBenchmark`
 
    ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor.
+   args: ExecutorBenchmarkArguments
+   configs: PretrainedConfig
+   framework (str): Executor
 
 

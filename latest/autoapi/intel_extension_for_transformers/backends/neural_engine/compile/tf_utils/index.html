@@ -100,6 +100,16 @@
 </tr>
 </tbody>
 </table>
+</section>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.TF_DTYPE_ID" title="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.TF_DTYPE_ID"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TF_DTYPE_ID</span></code></a></p></td>
+<td><p>Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.create_tf_node">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">create_tf_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.create_tf_node" title="Permalink to this definition"></a></dt>
@@ -125,7 +135,7 @@
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.graph_node_names_details">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">graph_node_names_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.graph_node_names_details" title="Permalink to this definition"></a></dt>
 <dd><p>Parse the graph nodes ans get the graph_nodes_dict.</p>
-<p>Be used for Grpah class with cerating a new graph.
+<p>Be used for Grpah class when converting a tensorflow computation graph to an engine graph.
 The node_name is the key, node in value is for getting the Const
 tensor value and the input_tensor source op; outputs in value is for
 output_tensor dest op.
@@ -184,6 +194,12 @@ output_tensors: Tensor list, contains the node output tensor info</p>
 <dd class="field-odd"><p>op_type</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.TF_DTYPE_ID">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">TF_DTYPE_ID</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.TF_DTYPE_ID" title="Permalink to this definition"></a></dt>
+<dd><p>Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function</p>
 </dd></dl>
 
 </section>

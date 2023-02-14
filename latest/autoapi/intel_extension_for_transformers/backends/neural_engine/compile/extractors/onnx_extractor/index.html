@@ -80,6 +80,10 @@
   <section id="module-intel_extension_for_transformers.backends.neural_engine.compile.extractors.onnx_extractor">
 <span id="intel-extension-for-transformers-backends-neural-engine-compile-extractors-onnx-extractor"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.backends.neural_engine.compile.extractors.onnx_extractor" title="intel_extension_for_transformers.backends.neural_engine.compile.extractors.onnx_extractor"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.extractors.onnx_extractor</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.backends.neural_engine.compile.extractors.onnx_extractor" title="Permalink to this heading"></a></h1>
 <p>The neural engine onnx extractor file.</p>
+<p>Extract all nodes in the input onnx model and convert them to engine python operators.
+All these python operators will compose the engine graph in the order of the original onnx
+calculation graph. Please noticed that the mapping between operators is not one-to-one
+correspondence. For more related deatils, please refer to ‘ops’ APIs.</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
 <section id="classes">

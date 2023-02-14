@@ -26,6 +26,7 @@ Submodules
 
    benchmark/index.rst
    config/index.rst
+   distillation/index.rst
    model/index.rst
    optimizer/index.rst
    optimizer_tf/index.rst
@@ -299,9 +300,7 @@ Classes
 
    Bases: :py:obj:`enum.Enum`
 
-   Generic enumeration.
-
-   Derive from this class to define new enumerations.
+   Criterion mode class for distillation.
 
 
 .. py:class:: AutoDistillation(model_builder, conf_fname_or_obj, framework='pytorch')

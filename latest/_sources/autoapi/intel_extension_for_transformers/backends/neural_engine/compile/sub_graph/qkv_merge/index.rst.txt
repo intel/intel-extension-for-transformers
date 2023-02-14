@@ -29,6 +29,6 @@ Classes
    The QKVMerge pattern.
 
    Fuse the original sub-graph into the custom acceleration 'QKVMerge' graph.
-   The fusion strategy is based on 'AddClsToken' pattern map configurations and different kinds of models.
+   The search strategy is based on the following pattern mapping configs for different models.
 
 

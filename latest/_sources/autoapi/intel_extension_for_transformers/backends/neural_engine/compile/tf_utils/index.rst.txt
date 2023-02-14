@@ -25,6 +25,14 @@ Functions
 
 
 
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.TF_DTYPE_ID
+
+
 .. py:function:: create_tf_node(op, name, inputs)
 
    Create a nodedef object.
@@ -44,7 +52,7 @@ Functions
 
    Parse the graph nodes ans get the graph_nodes_dict.
 
-   Be used for Grpah class with cerating a new graph.
+   Be used for Grpah class when converting a tensorflow computation graph to an engine graph.
    The node_name is the key, node in value is for getting the Const
    tensor value and the input_tensor source op; outputs in value is for
    output_tensor dest op.
@@ -81,4 +89,8 @@ Functions
              output_tensors: Tensor list, contains the node output tensor info
    :rtype: op_type
 
+
+.. py:data:: TF_DTYPE_ID
+
+   Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function
 

@@ -79,23 +79,33 @@
              
   <section id="module-intel_extension_for_transformers.optimization.distillation">
 <span id="intel-extension-for-transformers-optimization-distillation"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.optimization.distillation" title="intel_extension_for_transformers.optimization.distillation"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.distillation</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.optimization.distillation" title="Permalink to this heading"></a></h1>
+<p>Distillation: set criterion mode to distillation.</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
 <section id="classes">
 <h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.distillation.DistillationCriterionMode" title="intel_extension_for_transformers.optimization.distillation.DistillationCriterionMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistillationCriterionMode</span></code></a></p></td>
-<td><p>Generic enumeration.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.distillation.Criterion" title="intel_extension_for_transformers.optimization.distillation.Criterion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Criterion</span></code></a></p></td>
+<td><p>Criterion class for distillation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.distillation.DistillationCriterionMode" title="intel_extension_for_transformers.optimization.distillation.DistillationCriterionMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistillationCriterionMode</span></code></a></p></td>
+<td><p>Criterion mode class for distillation.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.distillation.Criterion">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.distillation.</span></span><span class="sig-name descname"><span class="pre">Criterion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'KNOWLEDGELOSS'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">['CE',</span> <span class="pre">'CE']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_weight_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[0.5,</span> <span class="pre">0.5]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_mappings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_origin_loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.distillation.Criterion" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Criterion class for distillation.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.distillation.DistillationCriterionMode">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.distillation.</span></span><span class="sig-name descname"><span class="pre">DistillationCriterionMode</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.distillation.DistillationCriterionMode" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>Generic enumeration.</p>
-<p>Derive from this class to define new enumerations.</p>
+<p>Criterion mode class for distillation.</p>
 </dd></dl>
 
 </section>
