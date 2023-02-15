@@ -67,24 +67,6 @@ class DequantizeLinear(Operator):
         super().__init__()
 
 
-# Returns x / y element-wise.
-# Div supports broadcasting
-@operator_registry(operator_type='Div')
-class Div(Operator):
-    """Register the Div operator."""
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
-@operator_registry(operator_type='Equal')
-class Equal(Operator):
-    """Register the Equal operator."""
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 # Computes the Gauss error function of x element-wise.
 @operator_registry(operator_type='Erf')
 class Erf(Operator):
@@ -158,14 +140,6 @@ class LayerNorm(Operator):
         super().__init__()
 
 
-@operator_registry(operator_type='LessEqual')
-class LessEqual(Operator):
-    """Register the LessEqual operator."""
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 @operator_registry(operator_type='MakeIterator')
 class MakeIterator(Operator):
     """Register the MakeIterator operator."""
@@ -209,22 +183,6 @@ class MatMulWithBiasTanh(Operator):
 @operator_registry(operator_type='MatMulWithBias')
 class MatMulWithBias(Operator):
     """Register the MatMulWithBias operator."""
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
-@operator_registry(operator_type='Mul')
-class Mul(Operator):
-    """Register the Mul operator."""
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
-@operator_registry(operator_type='NonZero')
-class NonZero(Operator):
-    """Register the NonZero operator."""
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -360,15 +318,6 @@ class StopGradient(Operator):
         super().__init__()
 
 
-# x - y element-wise, supports broadcasting
-@operator_registry(operator_type='Sub')
-class Sub(Operator):
-    """Register the Sub operator."""
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 # Given an input tensor, this function computes hyperbolic tangent of every element in the tensor.
 @operator_registry(operator_type='Tanh')
 class Tanh(Operator):
@@ -438,12 +387,6 @@ class Quantize(Operator):
         """The init function of this operator."""
         super().__init__()
 
-@operator_registry(operator_type='Not')
-class Not(Operator):
-    """Register the Not operator."""
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
 
 @operator_registry(operator_type='CumSum')
 class CumSum(Operator):
@@ -539,6 +482,13 @@ class ExpandIndices(Operator):
 @operator_registry(operator_type='Tile')
 class Tile(Operator):
     """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='OpAny')
+class OpAny(Operator):
+    """Register the OpAny operator."""
     def __init__(self):
         """The init function of this operator."""
         super().__init__()

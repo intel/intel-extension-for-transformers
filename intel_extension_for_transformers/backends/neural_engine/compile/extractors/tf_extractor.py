@@ -57,11 +57,10 @@ class TensorflowExtractor(object):
                 continue
             else:
                 op_type = node.op
-                if op_type in OPERATORS.keys():
-                    new_node = OPERATORS[op_type]()
-                    new_node.extract('tensorflow', node, model, graph_nodes_dict)
-                    new_graph.insert_nodes(len(new_graph.nodes), [new_node])
-                else:
-                    raise ValueError('the {} operation does not support now...'.format(op_type))
+                if op_type not in OPERATORS.keys():
+                    op_type = "OpAny"
+                new_node = OPERATORS[op_type]()
+                new_node.extract('tensorflow', node, model, graph_nodes_dict)
+                new_graph.insert_nodes(len(new_graph.nodes), [new_node])
 
         return new_graph

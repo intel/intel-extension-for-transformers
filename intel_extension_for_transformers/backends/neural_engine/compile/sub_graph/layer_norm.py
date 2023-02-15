@@ -172,6 +172,10 @@ class LayerNorm(Pattern):
             # attr['output_dtype'] = 'fp32'
             ln_node_idx = model.get_node_id(node_names[0])
             model.nodes[ln_node_idx].attr = attr
+            # [src, scale, shift] in fp32 layernorm op
+            if len(model.nodes[ln_node_idx].input_tensors) == 3:
+                hidden_size = model.nodes[ln_node_idx].input_tensors[1].data.shape[0]
+                model.add_config_item("hidden_size", hidden_size)
 
         # bert_base layer_norm patterns
         pattern_dict = pattern_mapping_config['LayerNorm'][0]
