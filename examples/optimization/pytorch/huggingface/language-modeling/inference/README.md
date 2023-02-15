@@ -38,12 +38,34 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
 export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:9000000000,muzzy_decay_ms:9000000000"
 
+# for generation
 # default is beam search with num_beams=4, if you need to use greedy search for comparison, add "--greedy" in args.
 numactl -m <node N> -C <cpu list> \
     python run_gptj.py \
         --precision <fp32/bf16> \
-        --max-new-tokens 32
+        --max-new-tokens 32 \
+        --num_iter 10 \
+        --num-warmup 3 \
+        --generation
 ```
+```bash
+# for casual language modeling accuracy_only benchmark
+numactl -m <node N> -C <cpu list> \
+    python run_gptj.py \
+        --precision <fp32/bf16> \
+        --clm
+
+# for casual language modeling performance benchmark
+numactl -m <node N> -C <cpu list> \
+    python run_gptj.py \
+        --precision <fp32/bf16> \
+        --num_iter 10 \
+        --num-warmup 3 \
+        --batch-size 1 \
+        --clm
+
+```
+
 ## BLOOM-176B
 We don't enable jemalloc here since BLOOM-176B requires lots of memory and will have memory contention w/ jemalloc.
 
