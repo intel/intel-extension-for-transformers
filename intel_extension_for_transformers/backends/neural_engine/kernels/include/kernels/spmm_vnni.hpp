@@ -14,8 +14,12 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_VNNI_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_VNNI_HPP_
+
+#define WORKSPACE
+
 #include <vector>
 #include <memory>
+
 #include "cpu_isa.hpp"
 #include "operator_desc.hpp"
 #include "kernel_desc.hpp"
@@ -24,6 +28,7 @@
 #include "kernels/spmm_types.hpp"
 #include "kernels/sparse_data.hpp"
 #include "jit_domain/jit_spmm_vnni.hpp"
+#include "jit_domain/jit_mean_var_reduce.hpp"
 
 namespace jd {
 // By convention,
@@ -63,6 +68,7 @@ class spmm_vnni_kd_t : public kernel_desc_t {
   inline dim_t BM() const { return BM_; }
   inline bool has_bias() const { return !op_desc_.tensor_descs()[ssd::BIAS].shape().empty(); }
   inline jd::data_type dst_type() const { return op_desc_.tensor_descs()[ssd::DST].dtype(); }
+  inline bool welford() const { return apply_welford_; }
 
  private:
   bool spmm_params_init();
@@ -71,6 +77,7 @@ class spmm_vnni_kd_t : public kernel_desc_t {
   jd::operator_desc op_desc_;
   std::vector<ssd::vnni_param_t> params_;
   dim_t BM_;
+  bool apply_welford_ = false;
 };
 
 /**
@@ -87,7 +94,14 @@ class spmm_vnni_k_t : public kernel_t {
         BM_(derived_kd()->BM()),
         BN_(derived_kd()->BN()) {}
   virtual ~spmm_vnni_k_t() {
-    for (auto& kernel : jit_kers_) safe_delete(kernel);
+    for (auto& kernel : jit_spmm_kers_) safe_delete(kernel);
+    for (auto& kernel : jit_mean_var_reduce_kers_) safe_delete(kernel);
+    if (derived_kd()->welford()) {
+#ifndef WORKSPACE
+      aligned_allocator_t<float>::deallocate(tmp_mem_mean_);
+      aligned_allocator_t<float>::deallocate(tmp_mem_var_);
+#endif
+    }
   }
   // Delete move constructor and move operator
   spmm_vnni_k_t(spmm_vnni_k_t&& other) = delete;
@@ -108,7 +122,10 @@ class spmm_vnni_k_t : public kernel_t {
   bool execute_(const std::vector<const void*>& rt_data) const;
 
  private:
-  std::vector<jit_spmm_vnni_t*> jit_kers_;
+  std::vector<jit_spmm_vnni_t*> jit_spmm_kers_;
+  std::vector<jit_mean_var_reduce_t*> jit_mean_var_reduce_kers_;
+  float* tmp_mem_mean_ = nullptr;
+  float* tmp_mem_var_ = nullptr;
   const dim_t M_;
   const dim_t N_;
   const dim_t K_;

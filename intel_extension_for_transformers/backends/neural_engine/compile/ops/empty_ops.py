@@ -29,6 +29,10 @@ class AddV2(Operator):
         """The init function of this operator."""
         super().__init__()
 
+@operator_registry(operator_type='MultiHeadAttenion')
+class MultiHeadAttenion(Operator):
+    def __init__(self):
+        super().__init__()
 
 # x + y element-wise, supports broadcasting
 @operator_registry(operator_type='Add')

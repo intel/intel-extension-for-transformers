@@ -105,8 +105,8 @@ DECLARE_COMPARE_DATA(uint16_t)
 #undef DECLARE_COMPARE_DATA
 #endif
 
-template <typename T1, typename T2>
-inline const T2 reinterpret_value(typename std::enable_if<sizeof(T1) == sizeof(T2), const T1>::type i) {
+template <typename T2, typename T1>
+inline const T2 bit_cast(typename std::enable_if<sizeof(T1) == sizeof(T2), const T1>::type i) {
   T2 o;
   memcpy(&o, &i, sizeof(T2));
   return o;

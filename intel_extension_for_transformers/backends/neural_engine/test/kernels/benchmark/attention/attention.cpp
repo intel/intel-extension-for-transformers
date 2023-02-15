@@ -221,12 +221,12 @@ void attention_bench::gen_case() {
 
   // Merge bias
   const size_t bias_bytes = ts_descs[attention_io::Q_BIAS].size() * type_size[ts_descs[attention_io::Q_BIAS].dtype()];
-  void* q_bias_addr = const_cast<void*>(
-      make_data_obj(ts_descs[attention_io::Q_BIAS].shape(), ts_descs[attention_io::Q_BIAS].dtype()));
-  void* k_bias_addr = const_cast<void*>(
-      make_data_obj(ts_descs[attention_io::K_BIAS].shape(), ts_descs[attention_io::K_BIAS].dtype()));
-  void* v_bias_addr = const_cast<void*>(
-      make_data_obj(ts_descs[attention_io::V_BIAS].shape(), ts_descs[attention_io::V_BIAS].dtype()));
+  void* q_bias_addr =
+      const_cast<void*>(make_data_obj(ts_descs[attention_io::Q_BIAS].shape(), ts_descs[attention_io::Q_BIAS].dtype()));
+  void* k_bias_addr =
+      const_cast<void*>(make_data_obj(ts_descs[attention_io::K_BIAS].shape(), ts_descs[attention_io::K_BIAS].dtype()));
+  void* v_bias_addr =
+      const_cast<void*>(make_data_obj(ts_descs[attention_io::V_BIAS].shape(), ts_descs[attention_io::V_BIAS].dtype()));
 
   const char* rt_data_qkv_ip_bias = static_cast<const char*>(rt_data_qkv_ip[ssd::BIAS]);
   memcpy(q_bias_addr, rt_data_qkv_ip_bias, bias_bytes);

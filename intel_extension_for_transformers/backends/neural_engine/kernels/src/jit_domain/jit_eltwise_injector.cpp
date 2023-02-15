@@ -191,8 +191,10 @@ void jit_eltwise_injector::quantize_compute_vector_fwd(const Zmm& zmm_src) {
   if (cur_postop_attr_.dt == data_type::u8) {
     h->vcvtps2udq(zmm_src, zmm_src);  // fp32->u32
     h->vpmaxsd(zmm_src, zmm_src, table_val(zero));
-  } else {
+  } else if (cur_postop_attr_.dt == data_type::s8) {
     h->vcvtps2dq(zmm_src, zmm_src);  // fp32->s32
+  } else {
+    SPARSE_LOG(FATAL) << "quant op only support s8/u8 dt";
   }
 }
 
@@ -477,23 +479,6 @@ void jit_eltwise_injector::assign_regs() {
   allocate_regs(reg_type::reg64, max_reg64_idx, used_regs.find(reg_type::reg64), reg64_allocate_vec);
   allocate_regs(reg_type::mask, max_mask_idx, used_regs.find(reg_type::mask), mask_allocate_vec);
   allocate_regs(reg_type::zmm, max_zmm_idx, used_regs.find(reg_type::zmm), zmm_allocate_vec);
-}
-
-// TODO(zhe1wang): move this func to a utils func.
-template <typename T, typename U>
-inline T bit_cast(const U& u) {
-  static_assert(sizeof(T) == sizeof(U), "Bit-casting must preserve size.");
-  static_assert(std::is_trivial<T>::value, "T must be trivially copyable.");
-  static_assert(std::is_trivial<U>::value, "U must be trivially copyable.");
-
-  T t;
-  // Since bit_cast is used in SYCL kernels it cannot use std::memcpy as it
-  // can be implemented as @llvm.objectsize.* + __memcpy_chk for Release
-  // builds which cannot be translated to SPIR-V.
-  uint8_t* t_ptr = reinterpret_cast<uint8_t*>(&t);
-  const uint8_t* u_ptr = reinterpret_cast<const uint8_t*>(&u);
-  for (size_t i = 0; i < sizeof(U); i++) t_ptr[i] = u_ptr[i];
-  return t;
 }
 
 void jit_eltwise_injector::prepare_table() {

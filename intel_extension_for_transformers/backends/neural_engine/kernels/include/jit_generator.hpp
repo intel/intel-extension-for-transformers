@@ -14,6 +14,7 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_GENERATOR_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_GENERATOR_HPP_
+#include <array>
 #include <climits>
 #include <fstream>
 #include <string>
@@ -23,13 +24,7 @@
 #include "xbyak/xbyak_util.h"
 #include "utils.hpp"
 
-using Zmm = Xbyak::Zmm;
-using Ymm = Xbyak::Ymm;
-using Xmm = Xbyak::Xmm;
-using Reg64 = Xbyak::Reg64;
-using Opmask = Xbyak::Opmask;
-using RegExp = Xbyak::RegExp;
-
+using Tmm = Xbyak::Tmm;
 using Zmm = Xbyak::Zmm;
 using Ymm = Xbyak::Ymm;
 using Xmm = Xbyak::Xmm;
@@ -151,6 +146,24 @@ class jit_generator : public Xbyak::CodeGenerator {
     }
     uni_vzeroupper();
     ret();
+  }
+
+  /**
+   * @brief Get an array of registers
+   *
+   * @tparam reg_t register type; should be a child type of Xbyak::Reg
+   * @tparam N number of registers
+   * @param start staring index
+   * @return std::array<reg_t, N>
+   */
+  template <typename reg_t, size_t N,
+            typename = typename std::enable_if<std::is_base_of<Xbyak::Reg, reg_t>::value>::type>
+  static inline std::array<reg_t, N> regs(size_t start = 0) {
+    std::array<reg_t, N> result;
+    for (size_t i = 0; i < N; ++i) {
+      result[i] = reg_t(start + i);
+    }
+    return result;
   }
 
  protected:

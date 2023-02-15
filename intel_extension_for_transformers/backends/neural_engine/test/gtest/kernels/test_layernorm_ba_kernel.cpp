@@ -14,6 +14,7 @@
 #include <map>
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
+#include "kernels/layernorm_ba_ref.hpp"
 
 namespace jd {
 struct op_args_t {
@@ -26,64 +27,23 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
-  auto tensor_desc = op_desc.tensor_descs();
-  int batch = tensor_desc[0].shape().size() == 2 ? 1 : tensor_desc[0].shape()[0];
-  int row = tensor_desc[0].shape().size() == 2 ? tensor_desc[0].shape()[0] : tensor_desc[0].shape()[1];
-  int col = tensor_desc[0].shape().back();
-  auto src_dt = tensor_desc[0].dtype();
-  LOG_IF(FATAL, src_dt != data_type::fp32);
-  auto dst_dt = tensor_desc[1].dtype();
-
-  float* src = reinterpret_cast<float*>(const_cast<void*>(rt_data[0]));
-  float* alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
-  float* beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
-
-  void* dst_data = const_cast<void*>(rt_data[1]);
-  auto dst_fp32 = static_cast<float*>(dst_data);
-  auto dst_u8 = static_cast<uint8_t*>(dst_data);
-  auto dst_s8 = static_cast<int8_t*>(dst_data);
-  for (int k = 0; k < batch; k++) {
-    for (int i = 0; i < col; i++) {
-      // calculate mean.
-      float mean = 0;
-      for (int j = 0; j < row; j++) mean += src[k * col * row + j * col + i];
-      mean /= row;
-      // calculate var
-      float var = 0;
-      for (int j = 0; j < row; j++)
-        var += (src[k * col * row + j * col + i] - mean) * (src[k * col * row + j * col + i] - mean);
-      var /= row;
-      var += 1e-5;
-      var = sqrt(var);
-      var = 1 / var;
-      // calculate layernorm.
-      for (int j = 0; j < row; j++) {
-        int dst_idx = k * row * col + j * col + i;
-        float value = (src[dst_idx] - mean) * var;
-        value = alpha[j] * value + beta[j];
-        value = apply_postop_list(value, op_desc.apply_postops_list());
-        if (dst_dt == data_type::fp32) {
-          dst_fp32[dst_idx] = static_cast<float>(value);
-        } else if (dst_dt == data_type::s8) {
-          dst_s8[dst_idx] = static_cast<int8_t>(value);
-        } else if (dst_dt == data_type::u8) {
-          dst_u8[dst_idx] = static_cast<uint8_t>(value);
-        }
-      }
-    }
-  }
-}
-
 bool check_result(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
+  const auto& op_desc = p.op_desc;
+  auto op_attr = op_desc.attrs();
 
   try {
-    const auto& op_desc = p.op_desc;
     layernorm_ba_desc layernorm_ba_desc(op_desc);
     layernorm_ba layernorm_ba_ker(layernorm_ba_desc);
     layernorm_ba_ker.execute(p.data);
+
+    std::shared_ptr<const kernel_desc_t> lnorm_ba_ref_desc;
+    kernel_desc_t::create<layernorm_ba_ref_kd_t>(lnorm_ba_ref_desc, q.op_desc);
+    std::shared_ptr<const kernel_t> lnorm_ref_ker;
+    kernel_t::create<layernorm_ba_ref_k_t, layernorm_ba_ref_kd_t>(lnorm_ref_ker, lnorm_ba_ref_desc);
+    lnorm_ref_ker->execute(q.data);
+
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;
@@ -91,45 +51,58 @@ bool check_result(const test_params_t& t) {
       return false;
     }
   }
-  auto ans = false;
+  auto binary_list = p.op_desc.get_binaryop_list();
+  auto free_memory = [&] {
+    free(const_cast<void*>(p.data[0]));
+    free(const_cast<void*>(p.data[1]));
+    free(const_cast<void*>(q.data[0]));
+    free(const_cast<void*>(q.data[1]));
+    free(const_cast<void*>(q.data[2]));
+    free(const_cast<void*>(q.data[3]));
+    if (op_attr["spec_type"] == "direct") {
+      free(const_cast<void*>(q.data[4]));
+      free(const_cast<void*>(q.data[5]));
+    }
+    if (op_attr["split_output"] == "true") {
+      free(const_cast<void*>(p.data[p.data.size() - 1]));
+      free(const_cast<void*>(q.data[q.data.size() - 1]));
+    }
+    for (auto&& i : binary_list) {
+      if (i.static_addr) free(i.static_addr);
+      if (i.scale) free(i.scale);
+      if (i.zp) free(i.zp);
+    }
+  };
+
   if (!t.expect_to_fail) {
-    get_true_data(q.op_desc, q.data);
     auto buf1 = p.data[1];
     auto size1 = p.op_desc.tensor_descs()[1].size();
     auto buf2 = q.data[1];
     auto size2 = p.op_desc.tensor_descs()[1].size();
     auto dst_type = p.op_desc.tensor_descs()[1].dtype();
-    auto binary_list = p.op_desc.get_binaryop_list();
     EXPECT_NE(buf1, buf2);
     bool ans = false;
     if (dst_type == data_type::fp32) {
       ans = compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+      if (op_attr["split_output"] == "true" && ans) {
+        auto buf3 = q.data[6];
+        auto buf4 = p.data[6];
+        if (op_desc.apply_postops_list().back().dt == data_type::s8)
+          ans = compare_data<int8_t>(buf4, size1, buf3, size1, 1e-2);
+        else {
+          ans = compare_data<uint8_t>(buf4, size1, buf3, size1, 1e-2);
+        }
+      }
     } else if (dst_type == data_type::u8) {
       ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-2);
     } else if (dst_type == data_type::s8) {
       ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1e-2);
     }
-    aligned_free(const_cast<void*>(p.data[0]));
-    aligned_free(const_cast<void*>(p.data[1]));
-    aligned_free(const_cast<void*>(q.data[0]));
-    aligned_free(const_cast<void*>(q.data[1]));
-    aligned_free(const_cast<void*>(q.data[2]));
-    aligned_free(const_cast<void*>(q.data[3]));
-    for (auto&& i : binary_list) {
-      if (i.static_addr) aligned_free(i.static_addr);
-      if (i.scale) aligned_free(i.scale);
-      if (i.zp) aligned_free(i.zp);
-    }
-
+    free_memory();
     return ans;
   }
-  aligned_free(const_cast<void*>(p.data[0]));
-  aligned_free(const_cast<void*>(p.data[1]));
-  aligned_free(const_cast<void*>(q.data[0]));
-  aligned_free(const_cast<void*>(q.data[1]));
-  aligned_free(const_cast<void*>(q.data[2]));
-  aligned_free(const_cast<void*>(q.data[3]));
-  return ans;
+  free_memory();
+  return false;
 }
 
 class LayernormBaKernelTest : public testing::TestWithParam<test_params_t> {
@@ -150,45 +123,64 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
                                          const std::vector<postop_attr>& postop_attr = {},
                                          bool per_channel_quant = false) {
   // malloc memory
-  int row = ts_descs[0].reduce_rows();
+  auto input_tensor_desc = ts_descs[0].shape();
+  int row = input_tensor_desc.size() == 3 ? input_tensor_desc[1] : input_tensor_desc[0];
   int col = ts_descs[0].shape().back();
-  int num = row * col;
+  int batch = input_tensor_desc.size() == 3 ? input_tensor_desc[0] : 1;
+  int num = batch * row * col;
   void* src = nullptr;
   void* dst = nullptr;
+  void* dst2 = nullptr;
+  void* dst2_ref = nullptr;
   void* src_ref = nullptr;
   void* dst_ref = nullptr;
   memo_mode MALLOC = memo_mode::MALLOC;
   memo_mode MEMSET = memo_mode::MEMSET;
 
-  auto in_dt = ts_descs[0].dtype();
-  auto out_dt = ts_descs[1].dtype();
-
-  src = sparselib_ut_memo(src, num, in_dt, MALLOC, true);
-  dst = sparselib_ut_memo(dst, num, out_dt, MALLOC, true);
-  dst = sparselib_ut_memo(dst, num, out_dt, MEMSET);
-  src_ref = sparselib_ut_memo(src_ref, num, in_dt, MALLOC, true);
-  dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MALLOC, true);
-  dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MEMSET);
-  float* alpha = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
-  float* beta = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
-
   // set rand seed
   unsigned int seed = 456;
   srand(seed);
+
+  auto in_dt = ts_descs[0].dtype();
+  auto out_dt = ts_descs[1].dtype();
+
+  src = sparselib_ut_memo(src, num, in_dt, MALLOC);
+  dst = sparselib_ut_memo(dst, num, out_dt, MALLOC);
+  dst = sparselib_ut_memo(dst, num, out_dt, MEMSET);
+  src_ref = sparselib_ut_memo(src_ref, num, in_dt, MALLOC);
+  dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MALLOC);
+  dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MEMSET);
+  if (op_attrs["split_output"] == "true") {
+    dst2 = sparselib_ut_memo(dst2, num, data_type::s8, MALLOC);
+    dst2_ref = sparselib_ut_memo(dst2_ref, num, data_type::s8, MALLOC);
+  }
+  float* alpha = reinterpret_cast<float*>(malloc(row * sizeof(float)));
+  float* beta = reinterpret_cast<float*>(malloc(row * sizeof(float)));
+  float* mean = nullptr;
+  float* var = nullptr;
+  if (op_attrs["spec_type"] == "direct") {
+    mean = reinterpret_cast<float*>(malloc(batch * col * sizeof(float)));
+    var = reinterpret_cast<float*>(malloc(batch * col * sizeof(float)));
+    for (int i = 0; i < batch * col; i++) {
+      mean[i] = std::rand() % 256 - 128 + rand_float_postfix();    // NOLINT
+      var[i] = std::abs(std::rand() % 10 + rand_float_postfix());  // NOLINT
+    }
+  }
 
   // init alpha&beta
   for (int i = 0; i < row; i++) alpha[i] = 1 + rand_float_postfix();
   for (int i = 0; i < row; i++) beta[i] = 1 + rand_float_postfix();
 
   // init matrix.
-  for (int i = 0; i < row; i++) {
-    for (int j = 0; j < col; j++) {
-      float rand_val = std::rand() % 256 - 128 + rand_float_postfix();  // NOLINT
-      assign_val(src, in_dt, rand_val, i * col + j);
-      assign_val(src_ref, in_dt, rand_val, i * col + j);
+  for (int k = 0; k < batch; k++) {
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        float rand_val = std::rand() % 256 - 128 + rand_float_postfix();  // NOLINT
+        assign_val(src, in_dt, rand_val, i * col + j);
+        assign_val(src_ref, in_dt, rand_val, i * col + j);
+      }
     }
   }
-
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
 
@@ -200,6 +192,16 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   rt_data2.emplace_back(dst_ref);
   rt_data2.push_back(alpha);
   rt_data2.push_back(beta);
+  if (op_attrs["spec_type"] == "direct") {
+    rt_data1.push_back(mean);
+    rt_data1.push_back(var);
+    rt_data2.push_back(mean);
+    rt_data2.push_back(var);
+  }
+  if (op_attrs["split_output"] == "true") {
+    rt_data1.push_back(dst2);
+    rt_data2.push_back(dst2_ref);
+  }
 
   if (per_channel_quant) op_attrs["binaryop_list"] = "u8_perchannel_quant";
 
@@ -210,8 +212,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   if (per_channel_quant) {
     binaryop_attr u8_per_channel_quantize = {binaryop_alg::per_channel_quant, data_type::u8};
     std::vector<binaryop_attr> binaryop_list = {u8_per_channel_quantize};
-    float* scale = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
-    float* zp = reinterpret_cast<float*>(aligned_alloc(64, row * sizeof(float)));
+    float* scale = reinterpret_cast<float*>(malloc(row * sizeof(float)));
+    float* zp = reinterpret_cast<float*>(malloc(row * sizeof(float)));
     for (int i = 0; i < row; i++) {
       scale[i] = 1 + rand_float_postfix();
       zp[i] = rand() % 10;  // NOLINT
@@ -230,36 +232,66 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
 static auto case_func = []() {
   std::vector<test_params_t> cases;
-  tensor_desc data_desc0 = {{768, 32}, jd::data_type::fp32, jd::format_type::ba};
+  tensor_desc data_desc0 = {{768, 300}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc1 = {{768, 256}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc2 = {{8, 768, 256}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc3 = {{1024, 256}, jd::data_type::fp32, jd::format_type::ba};
   tensor_desc data_desc4 = {{768, 256}, jd::data_type::s8, jd::format_type::ba};
-  tensor_desc affine_data_attr = {{}, jd::data_type::fp32, jd::format_type::ba};
+  tensor_desc data_desc5 = {{1024, 1536}, jd::data_type::fp32, jd::format_type::ba};
+  tensor_desc data_desc6 = {{1024, 1536}, jd::data_type::u8, jd::format_type::ba};
 
   postop_attr s8_quantize = {data_type::s8,       postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0,
                              rand_float_postfix()};
   postop_attr u8_quantize = {data_type::u8,       postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0,
                              rand_float_postfix()};
 
-  std::string tensor_shape0 = "728x32";
+  std::string tensor_shape0 = "728x300";
   std::string tensor_shape1 = "768x256";
-  std::string tensor_shape2 = "32x768x256";
+  std::string tensor_shape2 = "8x768x256";
   std::string tensor_shape3 = "1024x256";
+  std::string tensor_shape4 = "1024x1536";
   std::string quantize_attrs8 = "s8quantize";
   std::string quantize_attru8 = "u8quantize";
 
-  cases.push_back({gen_case({data_desc0, data_desc0, affine_data_attr}, {{"matrix_shape", tensor_shape0}}), false});
-  cases.push_back({gen_case({data_desc1, data_desc1, affine_data_attr}, {{"matrix_shape", tensor_shape1}}), false});
-  cases.push_back({gen_case({data_desc2, data_desc2, affine_data_attr}, {{"matrix_shape", tensor_shape2}}), false});
-  cases.push_back({gen_case({data_desc3, data_desc3, affine_data_attr}, {{"matrix_shape", tensor_shape3}}), false});
-  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr},
-                            {{"matrix_shape", tensor_shape1}, {"postop_list", quantize_attrs8}}, {s8_quantize}),
-                   false});
-  cases.push_back({gen_case({data_desc1, data_desc4, affine_data_attr},
-                            {{"matrix_shape", tensor_shape0}, {"postop_list", quantize_attru8}}, {u8_quantize}),
+  cases.push_back(
+      {gen_case({data_desc1, data_desc1}, {{"matrix_shape", tensor_shape1}, {"spec_type", "normal"}}), false});
+  cases.push_back(
+      {gen_case({data_desc2, data_desc2}, {{"matrix_shape", tensor_shape2}, {"spec_type", "normal"}}), false});
+  cases.push_back(
+      {gen_case({data_desc3, data_desc3}, {{"matrix_shape", tensor_shape3}, {"spec_type", "normal"}}), false});
+  cases.push_back(
+      {gen_case({data_desc1, data_desc4},
+                {{"matrix_shape", tensor_shape1}, {"postop_list", quantize_attrs8}, {"spec_type", "normal"}},
+                {s8_quantize}),
+       false});
+  cases.push_back(
+      {gen_case({data_desc1, data_desc4}, {{"matrix_shape", tensor_shape1}, {"spec_type", "normal"}}, {}, true),
+       false});
+
+  cases.push_back({gen_case({data_desc1, data_desc1},
+                            {{"matrix_shape", tensor_shape1},
+                             {"postop_list", quantize_attru8},
+                             {"spec_type", "direct"},
+                             {"split_output", "true"}},
+                            {u8_quantize}),
                    false});
 
+  cases.push_back(
+      {gen_case({data_desc5, data_desc6},
+                {{"matrix_shape", tensor_shape1}, {"postop_list", quantize_attru8}, {"spec_type", "direct"}},
+                {u8_quantize}),
+       false});
+
+  cases.push_back({gen_case({data_desc2, data_desc2},
+                            {{"matrix_shape", tensor_shape2},
+                             {"postop_list", quantize_attru8},
+                             {"spec_type", "direct"},
+                             {"split_output", "true"}},
+                            {u8_quantize}),
+                   false});
+
+  cases.push_back(
+      {gen_case({data_desc0, data_desc0}, {{"matrix_shape", tensor_shape0}, {"spec_type", "direct"}}), false});
   return ::testing::ValuesIn(cases);
 };
 
@@ -271,8 +303,8 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back("shape");
   for (auto&& i : tensor_shape) params.push_back(std::to_string(i));
 
-  auto add_dt_info = [&](const std::string& tensor_dt) {
-    switch (tensor_desc[0].dtype()) {
+  auto add_dt_info = [&](data_type dt, const std::string& tensor_dt) {
+    switch (dt) {
       case data_type::s8:
         params.push_back(tensor_dt + "_s8");
         break;
@@ -287,8 +319,9 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
     }
   };
 
-  add_dt_info("indt");
-  add_dt_info("outdt");
+  add_dt_info(tensor_desc[0].dtype(), "indt");
+  add_dt_info(tensor_desc[1].dtype(), "outdt");
+  params.push_back(attrs_map["spec_type"]);
   if (attrs_map["postop_list"] != "") params.push_back(attrs_map["postop_list"]);
   if (attrs_map["binaryop_list"] != "") params.push_back(attrs_map["binaryop_list"]);
   return join_str(params, "_");

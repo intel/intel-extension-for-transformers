@@ -49,7 +49,7 @@ struct tileconfig_t {
   uint8_t rows[16] = {16};
 };
 
-void sparselib_configure_tiles(tile_param_t param, tileconfig_t* sparselib_tc);
+void configure_tiles(tile_param_t param, tileconfig_t* sparselib_tc);
 
 /**
  * The amx_tile_config_t is in amx_tile_config_t mode to ensure all primitive share the

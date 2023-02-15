@@ -121,6 +121,36 @@ static std::string init_info_sparse_matmul(std::vector<dim_t> shape) {
   return ss.str();
 }
 
+static std::string init_info_transpose_mha(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "transpose_mha"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+
+static std::string init_info_layernormalized_spmm(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "layernormalized_spmm"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+
 void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
   if (is_initialized_) return;
 
@@ -134,6 +164,8 @@ void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
       CASE(sparse_matmul);
       CASE(eltwiseop);
       CASE(layernorm_ba);
+      CASE(transpose_mha);
+      CASE(layernormalized_spmm);
       default:
         SPARSE_LOG(FATAL) << "unknown primitive kind";
     }

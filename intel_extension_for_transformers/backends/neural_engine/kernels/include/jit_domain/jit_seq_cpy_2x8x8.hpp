@@ -24,17 +24,17 @@ namespace jd {
 class jit_seq_cpy_2x8x8 : public jit_generator {
  public:
   struct param_t {
-    int M;               //  outer dim of src: use to calculate dst stride
-    int N;               //  inner dim of src: loop dimention
-    int ld_src;          // leading dim / bytes of src
     uint8_t val_offset;  // add an offset to every elements
   };
 
   struct rt_data_t {
     const void* src;
     void* dst;
+    int N;       // inner dim of src: loop dimention
+    int ld_src;  // leading dim / bytes of src
+    int ld_dst;  // leading dim / bytes of dst
   };
-  
+
   /**
    * jit_seq_cpy_2x8x8 reorders matrix in the following way:
    *  src(8xN) ==> dst((n/8)x2x8x4)
@@ -62,30 +62,32 @@ class jit_seq_cpy_2x8x8 : public jit_generator {
    * | 7 f n v |
    * +---------+
    */
-  explicit jit_seq_cpy_2x8x8(const jit_seq_cpy_2x8x8::param_t& param)
-      : jit_generator(),
-        M(param.M),
-        N(param.N),
-        ld_src(param.ld_src),
-        stride_dst(8 * (ceil_div(M, 4) * 4)),
-        val_offset(param.val_offset) {}
+  explicit jit_seq_cpy_2x8x8(const jit_seq_cpy_2x8x8::param_t& param) : jit_generator(), val_offset(param.val_offset) {}
   virtual ~jit_seq_cpy_2x8x8() {}
+
+  // calculate ld_dst from the M dim (outer dim of src)
+  inline int static dst_step(const int M) { return 8 * (ceil_div(M, 8) * 8); }
 
  private:
   void generate() override;
 
-  const int M, N, ld_src;
-  const int stride_dst;
   const uint8_t val_offset;
 
-  Xbyak::Label k_loop;
-
+#ifdef _WIN32
+  const Xbyak::Reg64& parambase = rcx;
+  const Xbyak::Reg64& reg_nsize = rdi;
+#else
   const Xbyak::Reg64& parambase = rdi;
+  const Xbyak::Reg64& reg_nsize = rcx;
+#endif
   const Xbyak::Reg64& reg_src = rsi;
   const Xbyak::Reg64& reg_dst = rdx;
-  const Xbyak::Reg64& reg_nsize = rcx;
   const Xbyak::Reg64& reg_itern = r8;
   const Xbyak::Reg64& reg_tmp = r9;
+  const Xbyak::Reg64& reg_ld_dst = r10;
+  const Xbyak::Reg64& reg_ld_src = r11;
+  const Xbyak::Reg64& reg_3ld_src = r12;
+
   const Xbyak::Zmm& vpermt2d_arg_idx = zmm31;
   const Xbyak::Zmm& vpshufb_arg_b = zmm30;
   const Xbyak::Zmm& vreg_val_offset = zmm29;
@@ -94,9 +96,12 @@ class jit_seq_cpy_2x8x8 : public jit_generator {
   const Xbyak::Opmask& reg_k = k1;
   const Xbyak::Opmask& reg_k_tail = k2;
 
+  Xbyak::Label k_loop;
   Xbyak::Label l_vpermt2d_control;
   Xbyak::Label l_vpshufb_control;
   Xbyak::Label l_n_loop;
+  Xbyak::Label l_n_loop_end;
+  Xbyak::Label l_ntail_end;
 };
 
 }  // namespace jd

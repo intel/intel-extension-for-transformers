@@ -58,14 +58,11 @@ void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
   }
 }
 
-void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode, bool align = false) {
+void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode) {
   int data_width = get_data_size(dtype);
   switch (mode) {
     case MALLOC:
-      if (align)
-        ptr = aligned_alloc(64, num * data_width); /* code */
-      else
-        ptr = malloc(num * data_width);
+      ptr = malloc(num * data_width);
       break;
     case MEMSET:
       std::memset(ptr, 0, num * data_width);

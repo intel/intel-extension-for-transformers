@@ -70,6 +70,7 @@ supported_patterns = [
     'QunatizeFusion',
     'QKVMerge',
     'ReshapeFusion',
+    #'MultiHeadAttention',
     'OutputData',
 ]
 
