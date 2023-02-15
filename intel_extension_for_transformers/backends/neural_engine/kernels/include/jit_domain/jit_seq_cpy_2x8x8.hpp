@@ -34,7 +34,6 @@ class jit_seq_cpy_2x8x8 : public jit_generator {
     int ld_src;  // leading dim / bytes of src
     int ld_dst;  // leading dim / bytes of dst
   };
-
   /**
    * jit_seq_cpy_2x8x8 reorders matrix in the following way:
    *  src(8xN) ==> dst((n/8)x2x8x4)
