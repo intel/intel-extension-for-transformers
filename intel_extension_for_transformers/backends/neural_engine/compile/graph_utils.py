@@ -202,7 +202,7 @@ def search_straight_pattern(input_pattern, graph):
             is_const = False
             # is_const = (value.source_op == [])
             is_const = (isinstance(value.data, np.ndarray))
-            if not is_const:
+            if not is_const and len(value.source_op) != 0:
                 cur_node = graph.get_node_by_name(value.source_op[0])
                 _dfs(op_names, op_types, cur_node, pattern[:end_index])
             if index == len(node.input_tensors) - 1:
@@ -517,13 +517,13 @@ def construct_node(node_name, op_type, input_tensors=[], output_tensors=[], attr
     """
     from .ops.op import OPERATORS, Operator
     from .ops.tensor import Tensor
-    if op_type in OPERATORS.keys():
-        new_node = OPERATORS[op_type]()
-        new_node.construct(node_name, op_type, input_tensors=input_tensors,
-                           output_tensors=output_tensors, attr=attr)
-        return new_node
+    if op_type not in OPERATORS.keys():
+        new_node = OPERATORS["OpAny"]()
     else:
-        raise ValueError('the {} operation does not support now...'.format(op_type))
+        new_node = OPERATORS[op_type]()
+    new_node.construct(node_name, op_type, input_tensors=input_tensors,
+                           output_tensors=output_tensors, attr=attr)
+    return new_node
 
 
 def insert_pattern(target_node_names, new_nodes, graph):

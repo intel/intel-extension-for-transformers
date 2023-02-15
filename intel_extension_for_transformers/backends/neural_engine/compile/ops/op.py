@@ -30,15 +30,22 @@ def operator_registry(operator_type):
 
     Args:
         cls (class): The class of register.
-        operator_type (str): The operator registration name
+        operator_type (str or str list): The operator registration name(s)
 
     Returns:
         cls: The class of register.
     """
     def decorator_operator(cls):
-        if operator_type in OPERATORS:
-            raise ValueError('Cannot have two operators with the same name')
-        OPERATORS[operator_type] = cls
+        if isinstance(operator_type, str):
+            type_list = [operator_type]
+        else:
+            if not isinstance(operator_type, list):
+                raise TypeError("Wrong input args, should be a string or a string list")
+            type_list = operator_type
+        for type in type_list:
+            if type in OPERATORS:
+                raise ValueError('Cannot have two operators with the same name')
+            OPERATORS[type] = cls
         return cls
 
     return decorator_operator
