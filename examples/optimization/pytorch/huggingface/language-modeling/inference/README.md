@@ -50,7 +50,7 @@ We don't enable jemalloc here since BLOOM-176B requires lots of memory and will 
 ```bash
 numactl -m <node N> -C <cpu list> python3 run_bloom.py --batch_size 1 --benchmark
 ```
-By default searcher is set to beam search with num_beams = 4, if you's like to use greedy search for comparison, add "--greedy" in args.
+By default searcher is set to beam searcher with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
 
 
 
