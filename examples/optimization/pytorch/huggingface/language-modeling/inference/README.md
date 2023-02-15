@@ -1,10 +1,13 @@
 Step-by-Step
 ============
-This document describes the step-by-step instructions to run GPT-J on 4th Gen Intel® Xeon® Scalable Processor (SPR) with PyTorch and Intel® Extension for PyTorch.
+This document describes the step-by-step instructions to run LLMs on 4th Gen Intel® Xeon® Scalable Processor (SPR) with PyTorch and Intel® Extension for PyTorch.
 
-The script ```run_gptj.py``` is based on [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) and provides inference benchmarking.
+We now support 2 models, and we are adding more models and more advanced techniques(distributed inference, model compressions etc.) to better unleash LLM inference on Intel platforms.
 
-For [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) quantization, please refer to [quantization example](../quantization/inc)
+- GPT-J
+  script `run_gptj.py` is based on [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) and provides inference benchmarking. For [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) quantization, please refer to [quantization example](../quantization/inc)
+- BLOOM-176B
+  script `run_bloom.py` is adapted from [HuggingFace/transformers-bloom-inference](https://github.com/huggingface/transformers-bloom-inference/blob/main/bloom-inference-scripts/bloom-accelerate-inference.py). 
 
 # Prerequisite
 ## Create Environment
@@ -24,26 +27,30 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 # IOMP
 export OMP_NUM_THREADS=< Cores number to use >
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
-# Jemalloc
-export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
-export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:9000000000,muzzy_decay_ms:9000000000"
 ```
 
-# Performance
+# Performance Benchmark
+
+## GPT-J
+
 ```bash
+# use jemalloc
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
+export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:9000000000,muzzy_decay_ms:9000000000"
+
 # default is beam search with num_beams=4, if you need to use greedy search for comparison, add "--greedy" in args.
 numactl -m <node N> -C <cpu list> \
     python run_gptj.py \
         --precision <fp32/bf16> \
         --max-new-tokens 32
 ```
-
-For bloom case. Jemalloc is not used for the memory issue.
+## BLOOM-176B
+We don't enable jemalloc here since BLOOM-176B requires lots of memory and will have memory contention w/ jemalloc.
 
 ```bash
 numactl -m <node N> -C <cpu list> python3 run_bloom.py --batch_size 1 --benchmark
 ```
-default is beam search with num_beams=4, if you need to use greedy search for comparison, add "--greedy" in args.
+By default searcher is set to beam search with num_beams = 4, if you's like to use greedy search for comparison, add "--greedy" in args.
 
 
 
