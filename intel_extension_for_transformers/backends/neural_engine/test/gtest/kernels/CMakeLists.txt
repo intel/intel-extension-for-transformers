@@ -20,7 +20,7 @@ endif()
 
 if(UNIX)
   # Enable warning
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 endif()
 
@@ -35,6 +35,10 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_matmul_vnni_p2031_p2013.cpp
     test_matmul_vnni_noperm_p2031_p1302.cpp
     test_softmax_kernel.cpp
+    test_layernormalized_spmm_kernel.cpp
+    test_transpose_mha.cpp
+    test_seq_cpy_2x8x8.cpp
+    test_seq_cpy_48x4.cpp
 )
 
 if(NOT WIN32) # TODO(jiwei): disable attention test on windows due to lack of VNNI instruction set

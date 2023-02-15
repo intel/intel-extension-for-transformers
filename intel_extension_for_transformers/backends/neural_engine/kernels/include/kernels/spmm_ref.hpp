@@ -36,7 +36,7 @@ class spmm_ref_k_t;
 /**
  * @brief a derived kernel descriptor. ref_param_t is its class member.
  */
-class spmm_ref_kd_t : public kernel_desc_t {
+class SPARSE_API_ spmm_ref_kd_t : public kernel_desc_t {
  public:
   explicit spmm_ref_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::sparse_matmul), op_desc_(op_desc) {}
@@ -73,7 +73,7 @@ class spmm_ref_kd_t : public kernel_desc_t {
 /**
  * @brief a derived kernel. kd_t and jit_domain are its class members.
  */
-class spmm_ref_k_t : public kernel_t {
+class SPARSE_API_ spmm_ref_k_t : public kernel_t {
  public:
   using kd_t = spmm_ref_kd_t;
   explicit spmm_ref_k_t(const std::shared_ptr<const kd_t>& kd)

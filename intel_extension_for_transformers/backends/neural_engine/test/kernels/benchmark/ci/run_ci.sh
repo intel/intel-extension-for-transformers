@@ -49,3 +49,6 @@ source $script_dir/benchmark.sh --modes=acc,perf --op=softmax --medium_n=$medium
 source $script_dir/benchmark.sh --modes=acc,perf --op=attention --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_attention_input" |
     tee "$log_dir/attention.log"
+source $script_dir/benchmark.sh --modes=acc,perf --op=transpose_mha --medium_n=$medium_n --it_per_core=300 \
+    --batch="$script_dir/inputs/ci_transpose_mha_input" |
+    tee "$log_dir/transpose_mha.log"

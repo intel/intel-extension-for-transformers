@@ -210,6 +210,7 @@ int get_data_size(jd::data_type dt) {
   return jd::type_size.at(dt);
 }
 
+#pragma GCC push_options
 #pragma GCC optimize "no-strict-aliasing"
 float get_exp(float x) {
   unsigned int max = 0x42b17218;
@@ -223,7 +224,7 @@ float get_exp(float x) {
     return expf(x);
   }
 }
-#pragma GCC optimize "strict-aliasing"
+#pragma GCC pop_options
 
 // todo:add a erf_gelu version.
 float get_gelu(float x) {

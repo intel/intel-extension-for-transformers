@@ -43,14 +43,17 @@ void jit_seq_cpy_48x4::trans_4x16(const Zmm& zreg_res, const Zmm& zreg_sum, cons
 
     cmp(reg_sum_append, 0);  // if append
     je(L_sum_prepare_zero);
-    if (!is_tail_x) {
-      vmovdqa32(zreg_sum, zword[reg_sum]);
-    } else {
-      vmovdqa32(zreg_sum | reg_k_tail | T_z, zword[reg_sum]);
-    }
+    vmovdqa32(zreg_sum, zword[reg_sum]);
     jmp(L_sum_prepare_end);
     L(L_sum_prepare_zero);  // if overwrite
-    vxorps(Xmm(zreg_sum), Xmm(zreg_sum), Xmm(zreg_sum));
+
+    if (sum_pad_val != 0 && is_tail_x) {
+      vmovdqa32(zreg_sum, vreg_sum_pad_val);
+      vxorps(zreg_sum | reg_k_tail, zreg_sum, zreg_sum);
+    } else {
+      vmovdqa32(zreg_sum, vreg_zero);
+    }
+
     L(L_sum_prepare_end);
 
     if (is_unsigned) {
@@ -79,13 +82,19 @@ void jit_seq_cpy_48x4::generate() {
     mov(reg_tmp8, 1);  // "1" in either s8 or u8
     vpbroadcastb(vreg_oneb, reg_tmp8);
   }
+  if (sum_m && sum_pad_val != 0) {
+    mov(temp_r32, sum_pad_val);
+    vpbroadcastd(vreg_sum_pad_val, temp_r32);
+  }
+  vxorps(Xmm(vreg_zero), Xmm(vreg_zero), Xmm(vreg_zero));
 
   mov(reg_src, ptr[parambase + GET_OFF(src)]);
   mov(reg_dst, ptr[parambase + GET_OFF(dst)]);
   if (sum_m) mov(reg_sum_append, byte[parambase + GET_OFF(sum_append)]);
 
-  const int N48 = N / 48 * 48;
-  const int N_tail = N - N48;
+  mov(reg_ld_dst.cvt32(), word[parambase + GET_OFF(ld_dst)]);
+  mov(reg_ld_src.cvt32(), word[parambase + GET_OFF(ld_src)]);
+  imul(reg_3ld_src, reg_ld_src, 3);
 
   const Xbyak::Zmm& v_res0 = zmm0;
   const Xbyak::Zmm& v_res1 = zmm1;
@@ -93,57 +102,104 @@ void jit_seq_cpy_48x4::generate() {
   const Xbyak::Zmm& v_sum0 = zmm3;
   const Xbyak::Zmm& v_sum1 = zmm4;
   const Xbyak::Zmm& v_sum2 = zmm5;
-  if (N48 != 0) {
-    mov(reg_nsize.cvt32(), N48);
+  // if (N > 48)
+  // div: Unsigned divide EDX:EAX by r/m32, with result stored in EAX := Quotient, EDX := Remainder.
+  xor_(edx, edx);
+  mov(eax, ptr[parambase + GET_OFF(N)]);
+  mov(temp_r32, 48U);
+  div(temp_r32);
+  cmp(eax, 0);
+  je(l_n_loop_end, T_NEAR);
+  {
+    imul(reg_nsize.cvt32(), eax, 48);
     xor_(reg_itern, reg_itern);
     L(l_n_loop);
     // first 16x4
     RegExp s_base = reg_src;
-    trans_4x16(v_res0, v_sum0, ptr[s_base], ptr[s_base + ld_src], ptr[s_base + ld_src * 2], ptr[s_base + ld_src * 3]);
+    trans_4x16(v_res0, v_sum0, ptr[s_base], ptr[s_base + reg_ld_src], ptr[s_base + reg_ld_src * 2],
+               ptr[s_base + reg_3ld_src]);
     vmovdqa32(zword[reg_dst + BYTES_ZMM * 0], v_res0);  // store with non-temp mem hint
 
     // second 16x4
     s_base = s_base + 16;
-    trans_4x16(v_res1, v_sum1, ptr[s_base], ptr[s_base + ld_src], ptr[s_base + ld_src * 2], ptr[s_base + ld_src * 3]);
+    trans_4x16(v_res1, v_sum1, ptr[s_base], ptr[s_base + reg_ld_src], ptr[s_base + reg_ld_src * 2],
+               ptr[s_base + reg_3ld_src]);
     vmovdqa32(zword[reg_dst + BYTES_ZMM * 1], v_res1);
 
     // third 16x4
     s_base = s_base + 16;
-    trans_4x16(v_res2, v_sum2, ptr[s_base], ptr[s_base + ld_src], ptr[s_base + ld_src * 2], ptr[s_base + ld_src * 3]);
+    trans_4x16(v_res2, v_sum2, ptr[s_base], ptr[s_base + reg_ld_src], ptr[s_base + reg_ld_src * 2],
+               ptr[s_base + reg_3ld_src]);
     vmovdqa32(zword[reg_dst + BYTES_ZMM * 2], v_res2);
 
     lea(reg_src, ptr[reg_src + 48]);
-    lea(reg_dst, ptr[reg_dst + stride_dst]);
+    lea(reg_dst, ptr[reg_dst + reg_ld_dst]);
     lea(reg_itern, ptr[reg_itern + 48]);
     cmp(reg_itern, reg_nsize);  // k iteration variable
     jb(l_n_loop);
   }
+  L(l_n_loop_end);
 
-  if (N_tail != 0) {
-    if (N_tail % 16 != 0) {
-      uint32_t k_tail = (1 << (N_tail % 16)) - 1;
-      mov(temp_r32, k_tail);
-      kmovw(reg_k_tail, temp_r32);
-    }
+  // if (N % 48 != 0)
+  cmp(edx, 0);
+  je(l_ntail_end[0], T_NEAR);
+  {
+    // prepare reg_k_tail
+    mov(temp_r32, UINT32_MAX);
+    kmovw(reg_k_tail, temp_r32);
+
+    mov(reg_nsize.cvt32(), edx);
+    and_(reg_nsize, 16U - 1);
+    mov(temp_r32, 1U);                            // (1 << (N % 16)) - 1
+    shlx(temp_r32, temp_r32, reg_nsize.cvt32());  // (1 << (N % 16)) - 1
+    sub(temp_r32, 1);                             // (1 << (N % 16)) - 1
+
+    Xbyak::Label l_tail_1, l_tail_2;
+
+    mov(reg_nsize.cvt32(), edx);
     RegExp s_base = reg_src;
-    if (N_tail > 0) {
-      trans_4x16(v_res0, v_sum0, ptr[s_base], ptr[s_base + ld_src], ptr[s_base + ld_src * 2], ptr[s_base + ld_src * 3],
-                 N_tail < 16);
-      vmovdqa32(zword[reg_dst + BYTES_ZMM * 0], v_res0);
-    }
-    if (N_tail > 16) {
-      s_base = s_base + 16;
-      trans_4x16(v_res1, v_sum1, ptr[s_base], ptr[s_base + ld_src], ptr[s_base + ld_src * 2], ptr[s_base + ld_src * 3],
-                 N_tail < 32);
-      vmovdqa32(zword[reg_dst + BYTES_ZMM * 1], v_res1);
-    }
-    if (N_tail > 32) {
-      s_base = s_base + 16;
-      trans_4x16(v_res2, v_sum2, ptr[s_base], ptr[s_base + ld_src], ptr[s_base + ld_src * 2], ptr[s_base + ld_src * 3],
-                 N_tail < 48);
-      vmovdqa32(zword[reg_dst + BYTES_ZMM * 2], v_res2);
-    }
+    // if (N % 48 > 0)
+    cmp(reg_nsize, 0);
+    jle(l_ntail_end[0], T_NEAR);
+    cmp(reg_nsize, 16);
+    jge(l_tail_1);
+    kmovw(reg_k_tail, temp_r32);
+    L(l_tail_1);
+    trans_4x16(v_res0, v_sum0, ptr[s_base], ptr[s_base + reg_ld_src], ptr[s_base + reg_ld_src * 2],
+               ptr[s_base + reg_3ld_src], true);
+    vmovdqa32(zword[reg_dst + BYTES_ZMM * 0], v_res0);
+
+    s_base = s_base + 16;
+    // if (N % 48 > 16)
+    cmp(reg_nsize, 16);
+    jle(l_ntail_end[1], T_NEAR);
+    cmp(reg_nsize, 32);
+    jge(l_tail_2);
+    kmovw(reg_k_tail, temp_r32);
+    L(l_tail_2);
+    trans_4x16(v_res1, v_sum1, ptr[s_base], ptr[s_base + reg_ld_src], ptr[s_base + reg_ld_src * 2],
+               ptr[s_base + reg_3ld_src], true);
+    vmovdqa32(zword[reg_dst + BYTES_ZMM * 1], v_res1);
+
+    s_base = s_base + 16;
+    // if (N % 48 > 32)
+    cmp(reg_nsize, 32);
+    jle(l_ntail_end[2], T_NEAR);
+    kmovw(reg_k_tail, temp_r32);
+    trans_4x16(v_res2, v_sum2, ptr[s_base], ptr[s_base + reg_ld_src], ptr[s_base + reg_ld_src * 2],
+               ptr[s_base + reg_3ld_src], true);
+    vmovdqa32(zword[reg_dst + BYTES_ZMM * 2], v_res2);
+    jmp(l_ntail_end[0]);
   }
+  L(l_ntail_end[1]);  // 1 of 16x processed; 2 to be padded
+  vmovdqa32(zword[reg_dst + BYTES_ZMM * 1], vreg_zero);
+  vmovdqa32(zword[reg_sum], vreg_sum_pad_val);
+  lea(reg_sum, ptr[reg_sum + BYTES_ZMM]);
+  L(l_ntail_end[2]);  // 2 of 16x processed; 1 to be padded
+  vmovdqa32(zword[reg_dst + BYTES_ZMM * 2], vreg_zero);
+  vmovdqa32(zword[reg_sum], vreg_sum_pad_val);
+  // lea(reg_sum, ptr[reg_sum + BYTES_ZMM]);  // update omitted as it will not be used later
+  L(l_ntail_end[0]);  // real end: all of 16x processed
 
   postamble();  // end of function
 

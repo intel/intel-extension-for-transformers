@@ -47,6 +47,12 @@ class layernorm_ba_kd_t : public kernel_desc_t {
  private:
   jd::operator_desc op_desc_;
   std::vector<ssd::layernorm_ba_param_t> params_;
+  int batch_num;
+  int row_num;
+  int col_num;
+  void normal_translnorm_init();
+  void direct_translnorm_init();
+  void handle_3D();
 };
 
 class layernorm_ba_k_t : public kernel_t {
@@ -55,8 +61,6 @@ class layernorm_ba_k_t : public kernel_t {
   explicit layernorm_ba_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
   virtual ~layernorm_ba_k_t() {
     for (auto& kernel : jit_kers_) safe_delete(kernel);
-    for (auto& data : td) safe_delete(data);
-    aligned_free(one_div_n_);
   }
   // Delete move constructor and move operator
   layernorm_ba_k_t(layernorm_ba_k_t&& other) = delete;
@@ -72,19 +76,23 @@ class layernorm_ba_k_t : public kernel_t {
 
  public:
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
-  const float* one_div_n_ptr() const { return one_div_n_; }
 
  private:
-  float* one_div_n_ = nullptr;
   std::vector<jit_layernorm_ba_t*> jit_kers_;
   int64_t per_ker_process_batch;
   int64_t ker_num;
   int batch_loop;
   int row_num;
   int col_num;
+  bool split_output;
   data_type src_dt;
   data_type dst_dt;
-  std::vector<ssd::layernorm_ba_data_t*> td;
+  data_type dst2_dt;
+  std::vector<std::pair<int, int>> direct_row_helper;
+  bool normal_init();
+  bool direct_init();
+  void normal_execute(const std::vector<const void*>& rt_data) const;
+  void direct_execute(const std::vector<const void*>& rt_data) const;
 };
 
 }  // namespace jd

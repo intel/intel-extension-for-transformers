@@ -13,12 +13,19 @@
 //  limitations under the License.
 
 #include "kernels/spmm_vnni.hpp"
+
 #define TH 4
 #define TW 4
 #define VEC 16
 
 #define TILE_SIZE_M 4
 #define TILE_SIZE_N 64
+
+#define KERNEL_INIT_CHECK(f)                                         \
+  if (!(f)) {                                                        \
+    SPARSE_LOG(ERROR) << "Spmm VNNI kernel requires `" << #f << "`"; \
+    return false;                                                    \
+  }
 
 namespace jd {
 //// Part1: class spmm_vnni_kd_t
@@ -81,7 +88,21 @@ bool spmm_vnni_kd_t::init() {
   BM_ = str_to_num<dim_t>(op_attrs["micro_oc"]);  // block m
   auto_blocking(BM_, BN(), M(), N());
   SPARSE_LOG_IF(FATAL, BM_ % TILE_SIZE_M != 0) << "BM must be a multiple of TILE_SIZE_M";
-
+  if (op_attrs["welford"] == "true") {
+    KERNEL_INIT_CHECK(op_desc_.tensor_descs().size() > ssd::DST_M2);
+    for (size_t welford_idx : {ssd::DST_M1, ssd::DST_M2}) {
+      auto& ds_src = op_desc_.tensor_descs()[ssd::SRC].shape();
+      KERNEL_INIT_CHECK(op_desc_.tensor_descs()[welford_idx].dtype() == dt::fp32);
+      if (op_desc_.tensor_descs()[welford_idx].shape().size() != 0) {
+        if (ds_src.size() == 3) {
+          KERNEL_INIT_CHECK((op_desc_.tensor_descs()[welford_idx].shape() == std::vector<dim_t>{ds_src[0], ds_src[2]}));
+        } else {
+          KERNEL_INIT_CHECK(op_desc_.tensor_descs()[welford_idx].shape() == std::vector<dim_t>{N()});
+        }
+      }
+    }
+    apply_welford_ = true;
+  }
   spmm_params_init();
   return true;
 }
@@ -123,6 +144,7 @@ bool spmm_vnni_kd_t::spmm_params_init() {
     params_[i].indices = bsr_data->indices();
     params_[i].weight = bsr_data->data().data();
     params_[i].postop_attrs = op_desc_.apply_postops_list();
+    params_[i].welford = op_attrs["welford"] == "true";
   }
   return true;
 }
@@ -130,28 +152,75 @@ bool spmm_vnni_kd_t::spmm_params_init() {
 // Part2: class spmm_vnni_k_t
 bool spmm_vnni_k_t::init() {
   dim_t num_mblock = ceil_div(M_, BM_);
-  jit_kers_.resize(num_mblock);
+  jit_spmm_kers_.resize(num_mblock);
   for (int i = 0; i < num_mblock; ++i) {
     jit_spmm_vnni_t* ker = new jit_spmm_vnni_t(derived_kd()->params()[i]);
     if (ker == nullptr) return false;
     if (!(ker->create_kernel())) return false;
-    jit_kers_[i] = ker;
+    jit_spmm_kers_[i] = ker;
+  }
+  ssd::mean_var_reduce_param_t param{ceil_div(M_, BM_), M_, N_, BM_, BN_};
+  jit_mean_var_reduce_kers_.resize(ceil_div(N_, 16));
+  for (size_t i = 0; i < jit_mean_var_reduce_kers_.size(); ++i) {
+    jit_mean_var_reduce_t* ker = new jit_mean_var_reduce_t(param);
+    if (ker == nullptr) return false;
+    if (!(ker->create_kernel())) return false;
+    jit_mean_var_reduce_kers_[i] = ker;
+  }
+
+  if (derived_kd()->welford()) {
+// alloc  M/BM x N
+#ifndef WORKSPACE
+    tmp_mem_mean_ = aligned_allocator_t<float>::allocate(ceil_div(M_, BM_) * N_);
+    tmp_mem_var_ = aligned_allocator_t<float>::allocate(ceil_div(M_, BM_) * N_);
+#endif
   }
   return true;
 }
 
 template <typename dst_t>
 bool spmm_vnni_k_t::execute_(const std::vector<const void*>& rt_data) const {
+  float* tmp_mem_mean = nullptr;
+  float* tmp_mem_var = nullptr;
+  if (derived_kd()->welford()) {
+#ifdef WORKSPACE
+    tmp_mem_mean = const_cast<float*>(static_cast<const float*>(rt_data[ssd::WORK_SPACE]));
+    tmp_mem_var = const_cast<float*>(static_cast<const float*>(rt_data[ssd::WORK_SPACE])) + ceil_div(M_, BM_) * N_;
+#else
+    tmp_mem_mean = tmp_mem_mean_;
+    tmp_mem_var = tmp_mem_var_;
+#endif
+  }
 #pragma omp parallel for collapse(2)
   for (dim_t im = 0; im < M_; im += BM_) {
     for (dim_t in = 0; in < N_; in += BN_) {
-      const jit_spmm_vnni_t* jit_impl = jit_kers_[im / BM_];
+      const jit_spmm_vnni_t* jit_impl = jit_spmm_kers_[im / BM_];
       ssd::vnni_data_t<dst_t> data;
       data.ptr_dense = static_cast<const uint8_t*>(rt_data[ssd::SRC]) + in * K_;
       data.ptr_bias = static_cast<const int32_t*>(rt_data[ssd::BIAS]) + im;
       data.ptr_scales = static_cast<const float*>(rt_data[ssd::SCALES]) + im;
       data.ptr_dst = const_cast<dst_t*>(static_cast<const dst_t*>(rt_data[ssd::DST])) + in * M_ + im * BN_;
+      if (derived_kd()->welford()) {
+        data.ptr_dst_m1 = tmp_mem_mean + in * ceil_div(M_, BM_) + im / BM_ * BN_;
+        data.ptr_dst_m2 = tmp_mem_var + in * ceil_div(M_, BM_) + im / BM_ * BN_;
+      }
       (*jit_impl)(&data);
+    }
+  }
+  if (derived_kd()->welford()) {
+    // int index = 0;
+#pragma omp parallel for collapse(2)
+    for (dim_t idx_mbs = 0; idx_mbs < N_ / BN_; ++idx_mbs) {
+      for (dim_t j = 0; j < BN_; j += 16) {
+        size_t index = (idx_mbs * BN_ + j) / 16;
+        const jit_mean_var_reduce_t* jit_impl = jit_mean_var_reduce_kers_[index];
+        ssd::mean_var_reduce_data_t data;
+        data.mean_in = tmp_mem_mean + idx_mbs * BN_ * ceil_div(M_, BM_) + j;
+        data.var_in = tmp_mem_var + idx_mbs * BN_ * ceil_div(M_, BM_) + j;
+        data.mean_out = reinterpret_cast<float*>(const_cast<void*>(rt_data[ssd::DST_M1])) + idx_mbs * BN_ + j;
+        data.var_out = reinterpret_cast<float*>(const_cast<void*>(rt_data[ssd::DST_M2])) + idx_mbs * BN_ + j;
+        (*jit_impl)(&data);
+      }
     }
   }
   return true;

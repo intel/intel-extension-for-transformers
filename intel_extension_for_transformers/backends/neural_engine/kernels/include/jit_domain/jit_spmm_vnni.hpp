@@ -60,6 +60,7 @@ class jit_spmm_vnni_t : public jit_generator {
   // internal API of op kernel
   Xbyak::Zmm TH_Vmm(int i = 0);           // Register allocator of load weight. 1D shape=(TH)
   Xbyak::Zmm TW_Vmm(int i = 0);           // Register allocator of load activation. 1D shape=(TW)
+  Xbyak::Zmm Temp_Vmm(int i = 0);         // Register allocator of load activation. 1D shape=(TW)
   Xbyak::Zmm dst_tile_Vmm(int i, int j);  // Reg alloc of DST tile. 2D shape=(TH,TW), stride=(TW,1)
   void params_alias(const ssd::vnni_param_t& param);
   void read_params();
@@ -68,7 +69,7 @@ class jit_spmm_vnni_t : public jit_generator {
   void load_sparse(const Xbyak::Reg64& reg_addr, uint64_t offset);
   void tile_product(int tile_height, int tile_width);
   void handle_dst_buffer_init(int kb_idx, dim_t m_start);
-  void handle_dst_buffer_epilogue_sub();
+  void handle_dst_buffer_epilogue_sub(bool set_zero);
   void repeat_THx4xTW_matmal(dim_t m_start);
   void clear_dst_tile();
   void load_intermediate_dst(dim_t m_start);
@@ -78,6 +79,7 @@ class jit_spmm_vnni_t : public jit_generator {
   void gen_subfunc_dst_epilogue();
   void handle_postop_escape_vmms();
   void handle_postop_escape_regs();
+  void calc_mean_variance(int i, int j, bool set_zero);
 
   inline int TH() const { return param_.blocksize[0]; }
   inline int TW() const { return param_.tile_w; }
@@ -91,8 +93,13 @@ class jit_spmm_vnni_t : public jit_generator {
  private:
   const int64_t PADDED_NEG_ONE = -1;
   const int64_t PADDED_ZERO = 0;
-  Xbyak::Label func_load_and_prod_;  // subfunction for dense load & sparse load & tile product
-  Xbyak::Label func_dst_epilogue_;   // subfunction for dst handling
+  Xbyak::Label func_load_and_prod_;       // subfunction for dense load & sparse load & tile product
+  Xbyak::Label func_dst_epilogue_;        // subfunction for dst handling
+  Xbyak::Label func_dst_epilogue_start_;  // subfunction for the first iteration of dst handling
+
+  Xbyak::Label L_m512_1f;  // address where 16x 1.f stored
+  Xbyak::Label L_vpermt2d_arg;
+  Xbyak::Label L_vpshufb_arg;
 
  private:
   static constexpr int stack_space_needed_ = 200;
@@ -119,7 +126,7 @@ class jit_spmm_vnni_t : public jit_generator {
   const Xbyak::Reg64& reg_scale = rbx;  // the scale
   const Xbyak::Opmask& reg_k1 = k1;
 
-  const Xbyak::Reg64& reg_k_ptr = param1;
+  const Xbyak::Reg64& reg_k_ptr = reg_dst;
   const Xbyak::Reg64& reg_tmp = r9;
   const Xbyak::Reg64& reg_dst_idx = r8;
   const Xbyak::Reg64& reg_m_idx = reg_tmp;
@@ -127,10 +134,15 @@ class jit_spmm_vnni_t : public jit_generator {
   const Xbyak::Reg64& reg_seq_indices = r11;
   const Xbyak::Reg64 reg_addr_tmp[4] = {r12, r13, r14, r15};
 
-  const Xbyak::Zmm& vpermt2d_arg_idx = zmm31;
-  const Xbyak::Zmm& vpshufb_arg_b = zmm30;
+  const Xbyak::Reg64& reg_dst_m1 = reg_addr_tmp[0];
+  const Xbyak::Reg64& reg_dst_m2 = reg_addr_tmp[1];
+
   const Xbyak::Zmm& vreg_temp = zmm29;
-  const Xbyak::Zmm& vreg_dst_temp = vreg_temp;
+  const Xbyak::Zmm& vpshufb_arg_b = zmm30;
+  const Xbyak::Zmm& vpermt2d_arg_idx = zmm31;
+  const Xbyak::Zmm& vreg_m_idx = vpshufb_arg_b;
+  const Xbyak::Zmm& vreg_temp2 = vpermt2d_arg_idx;
+
   static constexpr int USED_VREGS = 3;
 };
 }  // namespace jd

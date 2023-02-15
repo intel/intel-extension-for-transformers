@@ -49,9 +49,7 @@ class transpose_matmul_bench : public kernel_bench {
 
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return smb->calc_flop(); };
-  std::vector<int> get_refresh_data_idx() const override {
-    return smb->get_refresh_data_idx();
-  }
+  std::vector<int> get_refresh_data_idx() const override { return smb->get_refresh_data_idx(); }
   // Just like that in gtest file
   void get_true_data() final;
   // Just like that in gtest file

@@ -47,50 +47,90 @@ void layernorm_ba_bench::get_true_data() {
   auto& op_desc = args.second.op_desc;
   auto& rt_data = args.second.rt_data;
   auto tensor_desc = op_desc.tensor_descs();
-  int row = tensor_desc[0].reduce_rows();
+  auto op_attr = op_desc.attrs();
+  int batch = tensor_desc[0].shape().size() == 2 ? 1 : tensor_desc[0].shape()[0];
+  int row = tensor_desc[0].shape().size() == 2 ? tensor_desc[0].shape()[0] : tensor_desc[0].shape()[1];
   int col = tensor_desc[0].shape().back();
   auto src_dt = tensor_desc[0].dtype();
-  LOG_IF(FATAL, src_dt != data_type::fp32);
   auto dst_dt = tensor_desc[1].dtype();
-
   float* src = reinterpret_cast<float*>(const_cast<void*>(rt_data[0]));
   float* alpha = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
   float* beta = reinterpret_cast<float*>(const_cast<void*>(rt_data[3]));
-
   void* dst_data = const_cast<void*>(rt_data[1]);
   auto dst_fp32 = static_cast<float*>(dst_data);
   auto dst_u8 = static_cast<uint8_t*>(dst_data);
   auto dst_s8 = static_cast<int8_t*>(dst_data);
 
-  std::vector<float> v_mean, v_var;
-  for (int i = 0; i < col; i++) {
-    // calculate mean.
-    float mean = 0;
-    for (int j = 0; j < row; j++) mean += src[j * col + i];
-    mean /= row;
-    v_mean.push_back(mean);
-    // calculate var
-    float var = 0;
-    for (int j = 0; j < row; j++) var += (src[j * col + i] - mean) * (src[j * col + i] - mean);
-    var /= row;
-    v_var.push_back(var);
-    var += 1e-5;
-    var = sqrt(var);
-    var = 1 / var;
-    // calculate layernorm.
-    for (int j = 0; j < row; j++) {
-      int dst_idx = j * col + i;
-      float value = (src[dst_idx] - mean) * var;
-      value = alpha[j] * value + beta[j];
-      value = apply_postop_list(value, op_desc.apply_postops_list());
-      if (dst_dt == data_type::fp32) {
-        dst_fp32[dst_idx] = static_cast<float>(value);
-      } else if (dst_dt == data_type::s8) {
-        dst_s8[dst_idx] = static_cast<int8_t>(value);
-      } else if (dst_dt == data_type::u8) {
-        dst_u8[dst_idx] = static_cast<uint8_t>(value);
+  auto store_data = [&](int dst_idx, float value) {
+    if (dst_dt == data_type::fp32) {
+      dst_fp32[dst_idx] = static_cast<float>(value);
+    } else if (dst_dt == data_type::s8) {
+      dst_s8[dst_idx] = static_cast<int8_t>(value);
+    } else if (dst_dt == data_type::u8) {
+      dst_u8[dst_idx] = static_cast<uint8_t>(value);
+    }
+  };
+
+  auto normal_translnorm = [&]() {
+    LOG_IF(FATAL, src_dt != data_type::fp32);
+    for (int k = 0; k < batch; k++) {
+      for (int i = 0; i < col; i++) {
+        // calculate mean.
+        float mean = 0;
+        for (int j = 0; j < row; j++) mean += src[k * col * row + j * col + i];
+        mean /= row;
+        // calculate var
+        float var = 0;
+        for (int j = 0; j < row; j++)
+          var += (src[k * col * row + j * col + i] - mean) * (src[k * col * row + j * col + i] - mean);
+        var /= row;
+        var += 1e-5;
+        var = sqrt(var);
+        var = 1 / var;
+        // calculate layernorm.
+        auto binary_op_list = op_desc.get_binaryop_list();
+        for (int j = 0; j < row; j++) {
+          int dst_idx = k * row * col + j * col + i;
+          float value = (src[dst_idx] - mean) * var;
+          value = alpha[j] * value + beta[j];
+          value = apply_postop_list(value, op_desc.apply_postops_list());
+          if (!binary_op_list.empty()) {
+            value =
+                get_quantize(value, binary_op_list[0].zp[j], 1 / binary_op_list[0].scale[j], binary_op_list[0].op_dt);
+          }
+          store_data(dst_idx, value);
+        }
       }
     }
+  };
+
+  auto direct_translnorm = [&]() {
+    LOG_IF(FATAL, src_dt != data_type::fp32 && src_dt != data_type::s32);
+    float* mean_data = reinterpret_cast<float*>(const_cast<void*>(rt_data[4]));
+    float* var_data = reinterpret_cast<float*>(const_cast<void*>(rt_data[5]));
+    for (int i = 0; i < batch; i++) {
+      for (int j = 0; j < row; j++) {
+        for (int k = 0; k < col; k++) {
+          int dst_idx = i * row * col + j * col + k;
+          float value = src[dst_idx];
+          float var = var_data[i * col + k];
+          var += 1e-5;
+          var = sqrt(var);
+          float scale = alpha[j] / var;
+          value = (value - mean_data[i * col + k]) * scale + beta[j];
+          value = apply_postop_list(value, op_desc.apply_postops_list());
+          store_data(dst_idx, value);
+        }
+      }
+    }
+  };
+
+  if (op_attr["spec_type"] == "normal") {
+    normal_translnorm();
+  } else if (op_attr["spec_type"] == "direct") {
+    direct_translnorm();
+  } else {
+    LOG(FATAL) << "unsupported translnorm spec type.";
   }
 }
 

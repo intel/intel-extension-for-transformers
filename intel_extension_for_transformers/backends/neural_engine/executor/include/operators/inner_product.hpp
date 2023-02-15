@@ -122,6 +122,12 @@ class InnerProductOperator : public Operator {
   jd::tensor_desc scales_desc_;
   std::unordered_map<std::string, std::string> op_attrs_;
   jd::sparse_matmul spmm_kern_;
+  jd::layernormalized_spmm layernorm_spmm_kern_;
+  float epsilon_;
+  bool spmm_layernorm_ = false;
+  float* mean_tmpbuf_;
+  float* var_tmpbuf_;
+  float* workspace_tmpbuf_;
 #endif
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream eng_stream_ = dnnl::stream(eng_);
@@ -152,6 +158,7 @@ class InnerProductOperator : public Operator {
   Tensor* bias_ = nullptr;
   Tensor* post_ = nullptr;
   Tensor* dst_ = nullptr;
+  Tensor* dst_fp32_ = nullptr;
 
   Tensor* src0_min_ = nullptr;
   Tensor* src0_max_ = nullptr;
@@ -162,6 +169,9 @@ class InnerProductOperator : public Operator {
   Tensor* dst_min_ = nullptr;
   Tensor* dst_max_ = nullptr;
 
+  Tensor* alpha_ = nullptr;
+  Tensor* beta_ = nullptr;
+
   float sparse_threshold_ = 0.52;
 
   BSCMatrix<float>* sparse_weight_ = nullptr;
@@ -170,6 +180,17 @@ class InnerProductOperator : public Operator {
   // M dimension num of per BLOCK is 4 for sparse kernel algorithm
   int64_t M_NBLK_ = 4;
   string append_op_;
+  template <typename T>
+  void dump_data(string name, int data_len, void* data) {
+    T* data_ = reinterpret_cast<T*>(data);
+    std::ofstream outfile;
+    outfile.open(name);
+    for (int i = 0; i < data_len; i++) {
+      float v = data_[i];
+      outfile << v << std::endl;
+    }
+    outfile.close();
+  }
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_INNER_PRODUCT_HPP_

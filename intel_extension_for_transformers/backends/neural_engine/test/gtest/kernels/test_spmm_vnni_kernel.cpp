@@ -23,8 +23,10 @@
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
 #include "kernels/spmm_types.hpp"
+#include "kernels/spmm_ref.hpp"
 
 #define OMP_NUM_THREADS "OMP_NUM_THREADS"
+#define WORKSPACE
 
 namespace jd {
 using dt = jd::data_type;
@@ -42,113 +44,21 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
-  // shape configure alias
-  const auto& ts_descs = op_desc.tensor_descs();
-  const auto& wei_shape = ts_descs[ssd::WEI].shape();
-  const auto& wei_type = ts_descs[ssd::WEI].dtype();
-  const auto& src_type = ts_descs[ssd::SRC].dtype();
-  const auto& src_shape = ts_descs[ssd::SRC].shape();
-  const auto& dst_type = ts_descs[ssd::DST].dtype();
-  const auto& dst_shape = ts_descs[ssd::DST].shape();
-  SPARSE_LOG_IF(FATAL, (src_shape.size() != 2 && src_shape.size() != 3) || src_shape.size() != dst_shape.size())
-      << "Unsupported src shape!";
-
-  int oc = wei_shape[0];
-  int ic = wei_shape[1];
-  int micro_bs = src_shape.back();
-  int num_mbs = src_shape.size() == 2 ? 1 : src_shape[0];
-
-  const auto& left_dt = wei_type;
-  const auto& right_dt = src_type;
-  const auto& dst_dt = dst_type;
-  bool has_bias = !ts_descs[ssd::BIAS].shape().empty();
-  auto attrs_map = op_desc.attrs();
-  bool append_sum = (attrs_map["append_sum"] == "true");
-  std::vector<dim_t> left_stride = {ic, 1};
-  std::vector<dim_t> right_stride = {micro_bs * ic, micro_bs, 1};
-  std::vector<dim_t> dst_stride = {micro_bs * oc, micro_bs, 1};
-
-  // runtime data alias
-  const auto left_data = rt_data[ssd::WEI];
-  const auto right_data = rt_data[ssd::SRC];
-  const auto bias_data = static_cast<const int32_t*>(rt_data[ssd::BIAS]);
-  auto dst_data = const_cast<void*>(rt_data[ssd::DST]);
-  const auto scales_data = static_cast<const float*>(rt_data[ssd::SCALES]);
-
-  // buffer data
-  auto left_fp32 = static_cast<const float*>(left_data);  // ptr alias
-  auto left_u8 = static_cast<const uint8_t*>(left_data);
-  auto left_s8 = static_cast<const int8_t*>(left_data);
-
-  auto right_fp32 = static_cast<const float*>(right_data);  // ptr alias
-  auto right_u8 = static_cast<const uint8_t*>(right_data);
-  auto right_s8 = static_cast<const int8_t*>(right_data);
-
-  auto dst_fp32 = static_cast<float*>(dst_data);  // ptr alias
-  auto dst_s32 = static_cast<int32_t*>(dst_data);
-  auto dst_s8 = static_cast<int8_t*>(dst_data);
-  auto dst_u8 = static_cast<uint8_t*>(dst_data);
-
-  // TODO(zhe1wang): add per channel support for post-op;
-  auto postop_list = op_desc.apply_postops_list();
-
-// Computing the kernel
-#pragma omp parallel for collapse(3)
-  for (dim_t idx_mbs = 0; idx_mbs < num_mbs; ++idx_mbs) {
-    for (dim_t i = 0; i < oc; ++i) {
-      for (dim_t j = 0; j < micro_bs; ++j) {
-        float value = 0;  // Consistent with the actual precision (float or double) of cpu instructions.
-#pragma omp simd
-        for (dim_t k = 0; k < ic; ++k) {
-          dim_t l_idx = i * left_stride[0] + k * left_stride[1];
-          dim_t r_idx = idx_mbs * right_stride[0] + k * right_stride[1] + j * right_stride[2];
-          auto left_k = (left_dt == dt::fp32)
-                            ? left_fp32[l_idx]
-                            : ((left_dt == dt::u8) ? left_u8[l_idx] : ((left_dt == dt::s8) ? left_s8[l_idx] : 0));
-          auto right_k = (right_dt == dt::fp32)
-                             ? right_fp32[r_idx]
-                             : ((right_dt == dt::u8) ? right_u8[r_idx] : ((right_dt == dt::s8) ? right_s8[r_idx] : 0));
-          value += left_k * right_k;
-        }
-
-        // Accumulate bias or post sum
-        if (has_bias) {
-          value += bias_data[i];
-        }
-        dim_t dst_idx = idx_mbs * dst_stride[0] + i * dst_stride[1] + j * dst_stride[2];
-        dim_t scale_idx = i;
-        if (dst_dt != dt::s32) {
-          value = value * scales_data[scale_idx];
-        }
-        if (append_sum) {
-          value += dst_fp32[dst_idx];
-        }
-        value = apply_postop_list(value, postop_list);
-        // Quantize dst data
-        if (dst_dt == dt::fp32) {
-          dst_fp32[dst_idx] = static_cast<float>(value);
-        } else if (dst_dt == dt::s32) {
-          dst_s32[dst_idx] = static_cast<int32_t>(value);
-        } else if (dst_dt == dt::s8) {
-          dst_s8[dst_idx] = static_cast<int8_t>(value);
-        } else if (dst_dt == dt::u8) {
-          dst_u8[dst_idx] = static_cast<uint8_t>(value);
-        }
-      }
-    }
-  }
-}
-
 bool check_result(const test_params_t& t) {
+  bool result = false;
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   try {
     n_thread_t with_n_thread(p.nthr);
-    const auto& op_desc = p.op_desc;
-    sparse_matmul_desc spmm_desc(op_desc);
+    sparse_matmul_desc spmm_desc(p.op_desc);
     sparse_matmul spmm_kern(spmm_desc);
     spmm_kern.execute(p.rt_data);
+
+    std::shared_ptr<const kernel_desc_t> spmm_ref_desc;
+    kernel_desc_t::create<spmm_ref_kd_t>(spmm_ref_desc, q.op_desc);
+    std::shared_ptr<const kernel_t> spmm_ref_kernel;
+    kernel_t::create<spmm_ref_k_t, spmm_ref_kd_t>(spmm_ref_kernel, spmm_ref_desc);
+    spmm_ref_kernel->execute(q.rt_data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
       return true;
@@ -157,7 +67,6 @@ bool check_result(const test_params_t& t) {
     }
   }
   if (!t.expect_to_fail) {
-    get_true_data(q.op_desc, q.rt_data);
     auto buf1 = p.rt_data[ssd::DST];
     auto size1 = p.op_desc.tensor_descs()[ssd::DST].size();
     auto buf2 = q.rt_data[ssd::DST];
@@ -166,16 +75,35 @@ bool check_result(const test_params_t& t) {
     EXPECT_NE(buf1, buf2);
     const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST].dtype();
     if (dst_type == dt::fp32) {
-      return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+      result = compare_data<float>(buf1, size1, buf2, size2, 5e-3);
     } else if (dst_type == dt::s32) {
-      return compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
+      result = compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
     } else if (dst_type == dt::u8) {
-      return compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
+      result = compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
     } else if (dst_type == dt::s8) {
-      return compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
+      result = compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
+    }
+    if (p.rt_data.size() > ssd::DST_M2) {
+      // Check M1
+      buf1 = p.rt_data[ssd::DST_M1];
+      size1 = p.op_desc.tensor_descs()[ssd::DST_M1].size();
+      buf2 = q.rt_data[ssd::DST_M1];
+      size2 = q.op_desc.tensor_descs()[ssd::DST_M1].size();
+      // Should compare buffer with different addresses
+      EXPECT_NE(buf1, buf2);
+      result &= compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+
+      // Check M2
+      buf1 = p.rt_data[ssd::DST_M2];
+      size1 = p.op_desc.tensor_descs()[ssd::DST_M2].size();
+      buf2 = q.rt_data[ssd::DST_M2];
+      size2 = q.op_desc.tensor_descs()[ssd::DST_M2].size();
+      // Should compare buffer with different addresses
+      EXPECT_NE(buf1, buf2);
+      result &= compare_data<float>(buf1, size1, buf2, size2, 5e-3);
     }
   }
-  return false;
+  return result;
 }
 
 class SpmmVNNIKernelTest : public testing::TestWithParam<test_params_t> {
@@ -275,6 +203,7 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
                                          std::unordered_map<std::string, std::string> op_attrs = {},
                                          std::vector<postop_alg> postop_algs = {}) {
   bool append_sum = (op_attrs["append_sum"] == "true");
+  bool mean_var = (op_attrs["welford"] == "true");
   LOG_IF(FATAL, append_sum && dt_dst != dt::fp32) << "append_sum must be applied with fp32 dst type";
   micro_bs = micro_bs <= 0 ? N : micro_bs;
   LOG_IF(FATAL, N % micro_bs != 0) << "micro_bs must be a multiple of N";
@@ -287,9 +216,20 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   tensor_desc dst_desc = {{num_mbs, M, micro_bs}, dt_dst, ft::ab};
   tensor_desc scales_desc = {{M, 1}, dt::fp32, ft::ab};
   std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
+  if (dt_dst == dt::fp32 && mean_var == true) {
+    tensor_desc mean_desc = {{num_mbs, micro_bs}, dt::fp32, ft::a};
+    tensor_desc var_desc = {{num_mbs, micro_bs}, dt::fp32, ft::a};
+    ts_descs.push_back(mean_desc);
+    ts_descs.push_back(var_desc);
+#ifdef WORKSPACE
+    tensor_desc workspace_desc = {{M * 2, N}, dt::fp32, ft::ab};
+    ts_descs.push_back(workspace_desc);
+#endif
+  }
 
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
+
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
     auto& tsd = ts_descs[index];
@@ -400,6 +340,15 @@ static auto case_func = []() {
       // Append sum with small batch size
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::s8)});
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32)});
+      cases.push_back(
+          {gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}, {"welford", "true"}}, {})});
+      cases.push_back(
+          {gen_case(256, 1024, 384, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}, {"welford", "true"}}, {})});
+      cases.push_back(
+          {gen_case(256, 1024, 1536, .7f, 384, nthr, dt::fp32, {{"append_sum", "true"}, {"welford", "true"}}, {})});
+      cases.push_back(
+          {gen_case(1024, 1024, 1536, .7f, 384, nthr, dt::fp32, {{"append_sum", "true"}, {"welford", "true"}}, {})});
+
       cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
       cases.push_back({gen_case(32, 32, 16, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
       cases.push_back({gen_case(32, 32, 48, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
@@ -479,6 +428,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
     params.push_back(attrs_map["append_sum"]);
   }
   if (attrs_map["postop_list"] != "") params.push_back(attrs_map["postop_list"]);
+  if (tensor_desc.size() == ssd::DST_M2 + 1 || tensor_desc.size() == ssd::WORK_SPACE + 1) params.push_back("mean_var");
   return join_str(params, "_");
 }
 

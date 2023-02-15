@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_REF_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNO_BA_REF_HPP_
+#define ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_REF_HPP_
 
 #include <glog/logging.h>
 #include <memory>
@@ -27,7 +27,7 @@
 namespace jd {
 class layernorm_ba_ref_k_t;
 
-class layernorm_ba_ref_kd_t : public kernel_desc_t {
+class SPARSE_API_ layernorm_ba_ref_kd_t : public kernel_desc_t {
  public:
   explicit layernorm_ba_ref_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::layernorm_ba), op_desc_(op_desc) {}
@@ -35,7 +35,16 @@ class layernorm_ba_ref_kd_t : public kernel_desc_t {
   virtual ~layernorm_ba_ref_kd_t() {}
 
  public:
-  bool init() override { return true; };
+  bool init() override {
+    auto op_attrs = op_desc_.attrs();
+    auto spec_type = op_attrs["spec_type"];
+    if (spec_type == "normal")
+      return true;
+    else if (spec_type == "direct")
+      return true;
+    else
+      return false;
+  };
   DECLARE_COMMON_PD_T(layernorm_ba_ref_k_t, layernorm_ba_ref_kd_t);
 
  public:
@@ -46,7 +55,7 @@ class layernorm_ba_ref_kd_t : public kernel_desc_t {
   jd::operator_desc op_desc_;
 };
 
-class layernorm_ba_ref_k_t : public kernel_t {
+class SPARSE_API_ layernorm_ba_ref_k_t : public kernel_t {
  public:
   using kd_t = layernorm_ba_ref_kd_t;
   explicit layernorm_ba_ref_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}

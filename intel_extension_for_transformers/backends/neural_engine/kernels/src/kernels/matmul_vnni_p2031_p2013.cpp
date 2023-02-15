@@ -165,23 +165,12 @@ bool matmul_vnni_p2031_p2013_k_t::init() {
   auto& dkd = *derived_kd();
   try {
     // The kernel for preprocessing src0
-    add128_2x8x8_ker_ = new jit_seq_cpy_2x8x8(jit_seq_cpy_2x8x8::param_t{
-        static_cast<int>(K_),
-        static_cast<int>(M_),
-        static_cast<int>(M_ * bs0_),
-        128,
-    });
+    add128_2x8x8_ker_ = new jit_seq_cpy_2x8x8(jit_seq_cpy_2x8x8::param_t{128});
     if (!add128_2x8x8_ker_->create_kernel()) return false;
 
     // The kernel for preprocessing src1
     constexpr bool src1_is_unsigned = false;
-    cpy_48x4_ker_ = new jit_seq_cpy_48x4(jit_seq_cpy_48x4::param_t{
-        static_cast<int>(K_),
-        static_cast<int>(N_),
-        static_cast<int>(N_ * bs0_),
-        true,
-        src1_is_unsigned,
-    });
+    cpy_48x4_ker_ = new jit_seq_cpy_48x4(jit_seq_cpy_48x4::param_t{true, src1_is_unsigned, 0});
     if (!cpy_48x4_ker_->create_kernel()) return false;
 
     // The kernel for compute matmul
@@ -241,17 +230,30 @@ inline bool matmul_vnni_p2031_p2013_k_t::thread_exec(const std::vector<const voi
   const auto curr_sum_tmp = reinterpret_cast<int32_t*>(reinterpret_cast<char*>(mem_tmp) + tmp0_bytes + tmp1_bytes);
 
   // reorder src1 and compute sum over K
-  jit_seq_cpy_48x4::rt_data_t rt_cpy_src1;
+  jit_seq_cpy_48x4::rt_data_t rt_cpy_src1{
+      nullptr,                         // src
+      nullptr,                         // dst
+      curr_sum_tmp,                    // dst_sum
+      false,                           // sum_append
+      static_cast<int>(N_),            // N
+      static_cast<int>(N_ * bs0_),     // ld_src
+      jit_seq_cpy_48x4::dst_step(K_),  // ld_dst
+  };
   for (dim_t k = 0; k < K_; k += 4) {
     rt_cpy_src1.src = curr_src1 + k * bs0_ * N_;
     rt_cpy_src1.dst = curr_src1_tmp + k * 48;
-    rt_cpy_src1.dst_sum = curr_sum_tmp;
     rt_cpy_src1.sum_append = (k != 0);
     (*cpy_48x4_ker_)(&rt_cpy_src1);
   }
 
   // reorder src0 + 128
-  jit_seq_cpy_2x8x8::rt_data_t rt_cpy_src0;
+  jit_seq_cpy_2x8x8::rt_data_t rt_cpy_src0{
+      nullptr,                          // src
+      nullptr,                          // dst
+      static_cast<int>(M_),             // N
+      static_cast<int>(M_ * bs0_),      // ld_src
+      jit_seq_cpy_2x8x8::dst_step(K_),  // ld_dst
+  };
   for (dim_t k = 0; k < K_; k += 8) {
     rt_cpy_src0.src = curr_src0 + k * bs0_ * M_;
     rt_cpy_src0.dst = curr_src0_tmp + k * 8;
