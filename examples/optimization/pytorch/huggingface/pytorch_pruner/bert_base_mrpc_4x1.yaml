@@ -1,5 +1,5 @@
 model:
-  name: "bert-mini"
+  name: "bert-base"
   framework: "pytorch"
 
 pruning:
