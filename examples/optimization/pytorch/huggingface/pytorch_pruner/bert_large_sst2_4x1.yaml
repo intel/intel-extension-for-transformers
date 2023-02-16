@@ -1,5 +1,5 @@
 model:
-  name: "bert-mini"
+  name: "bert-large"
   framework: "pytorch"
 
 pruning:
@@ -10,12 +10,14 @@ pruning:
       excluded_names: ["classifier", "pooler", ".*embeddings*"]
       prune_layer_type: ["Linear"]
       target_sparsity: 0.9
-      max_sparsity_ratio_per_layer: 0.9
-
+      update_frequency_on_step: 500
+      max_sparsity_ratio_per_layer: 0.98
+      prune_domain: "global"
+      sparsity_decay_type: "exp"
       pruners:
         - !Pruner
             pattern: "4x1"
-            update_frequency_on_step: 50
+            update_frequency_on_step: 100
             prune_domain: "global"
             prune_type: "snip_momentum"
             sparsity_decay_type: "exp"

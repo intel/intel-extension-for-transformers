@@ -1,3 +1,4 @@
+"""prune utils."""
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -16,25 +17,36 @@
 # limitations under the License.
 
 import re
-import logging
 import yaml
+import logging
 
 from neural_compressor.conf.dotdict import DotDict
 from neural_compressor.conf.config import schema
 
+
 logger = logging.getLogger(__name__)
+logger.setLevel('INFO')
 
 
 def check_config(prune_config):
-    assert prune_config[
-        'start_step'] >= 0, "start_step should be greater than 0"
+    """Functions that check key-value is valid to run Pruning object.
+
+    Args:
+        prune_config: A config dict object. Contains Pruning parameters and configurations.
+
+    Returns:
+        None if everything is correct.
+
+    Raises:
+        AssertionError.
+    """
+    assert prune_config['start_step'] >= 0, "start_step should be greater than 0"
     assert prune_config['end_step'] >= -1, "end_step should be greater than 0"
     assert prune_config['end_step'] >= prune_config['start_step'], \
         "end_step should be greater than start_step"
     assert prune_config['target_sparsity'] >= 0 and prune_config['target_sparsity'] < 1.0, \
         "begin_pruning_step should be in range [0,1)"
-    assert prune_config[
-        'update_frequency_on_step'] > 0, "update_frequency_on_step should be greater than 0"
+    assert prune_config['update_frequency_on_step'] > 0, "update_frequency_on_step should be greater than 0"
     assert prune_config['max_sparsity_ratio_per_layer'] >= 0 and prune_config['max_sparsity_ratio_per_layer'] < 1, \
         "update_frequency_on_step should be greater than 0"
     assert prune_config['prune_domain'] == "global" or prune_config['prune_domain'] == "local", \
@@ -47,7 +59,7 @@ def check_config(prune_config):
             try:
                 N = int(pattern[0])
                 M = int(pattern[1])
-            except:  # pragma: no cover
+            except Exception:
                 assert False, "N or M can't convert to int"
             assert N > 0, "N should be greater than 0"
             assert M > 0, "M should be greater than 0"
@@ -56,82 +68,80 @@ def check_config(prune_config):
         try:
             N = int(pattern[0])
             M = int(pattern[1])
-        except:  # pragma: no cover
+        except Exception:
             assert False, "N or M can't convert to int"
         assert N > 0, "N should be greater than 0"
         assert M > N, "M should be greater than N"
         max_ratio = float(N) / M
         assert prune_config['target_sparsity'] <= max_ratio, \
             "in N:M pattern, the max sparsity is N/M={}".format(max_ratio)
-        prune_config['max_sparsity_ratio_per_layer'] = min(
-            max_ratio, prune_config['max_sparsity_ratio_per_layer'])
+        prune_config['max_sparsity_ratio_per_layer'] = min(max_ratio, prune_config['max_sparsity_ratio_per_layer'])
 
 
 def reset_non_value_to_default(obj, key, default):
+    """Functions that add up undefined configurations.
+
+     If some configurations are not defined in the configuration, set it to a default value.
+
+     Args:
+         obj: A dict{key: value}
+         key: A string. Key in obj.
+         default: When the key is not in obj, Add key: default item in original obj.
+     """
     if isinstance(obj, dict):
-        if (not key in obj.keys()) or obj[key] == None:
+        if (key not in obj.keys()) or obj[key] is None:
             return default
         else:
             return obj[key]
     else:
-        if not hasattr(obj, key) or getattr(obj, key) == None:
+        if not hasattr(obj, key) or getattr(obj, key) is None:
             return default
         else:
             return getattr(obj, key)
 
 
 def process_and_check_config(val):
+    """Functions which converts a initial configuration object to a Pruning configuration.
+
+    Copy parameters and add some non-define parameters to a new Pruning configuration object.
+
+    Args:
+        val: A dict directly read from a config file.
+
+    Returns:
+        A dict whose contents which are regularized for a Pruning obejct.
+    """
     val = val["pruning"]['approach']['weight_compression_pytorch']
     start_step = reset_non_value_to_default(val, "start_step", 0)
     end_step = reset_non_value_to_default(val, "end_step", 0)
     excluded_names = reset_non_value_to_default(val, "excluded_names", [])
-    prune_layer_type = reset_non_value_to_default(val, "prune_layer_type",
-                                                  ['Conv2d', 'Linear'])
-    target_sparsity = reset_non_value_to_default(val, "target_sparsity",
-                                                 0.0)  ## be care of this val
-    update_frequency_on_step = int(
-        reset_non_value_to_default(val, "update_frequency_on_step", 1))
+    prune_layer_type = reset_non_value_to_default(val, "prune_layer_type", ['Conv2d', 'Linear'])
+    target_sparsity = reset_non_value_to_default(val, "target_sparsity", 0.0)  # be care of this val
+    update_frequency_on_step = int(reset_non_value_to_default(val, "update_frequency_on_step", 1))
     prune_domain = reset_non_value_to_default(val, "prune_domain", "global")
     prune_type = reset_non_value_to_default(val, "prune_type", "snip_momentum")
-    sparsity_decay_type = reset_non_value_to_default(val,
-                                                     "sparsity_decay_type",
-                                                     "exp")
-    max_sparsity_ratio_per_layer = reset_non_value_to_default(
-        val, "max_sparsity_ratio_per_layer", 0.98)
+    sparsity_decay_type = reset_non_value_to_default(val, "sparsity_decay_type", "exp")
+    max_sparsity_ratio_per_layer = reset_non_value_to_default(val, "max_sparsity_ratio_per_layer", 0.98)
     names = reset_non_value_to_default(val, "names", [])
-    extra_excluded_names = reset_non_value_to_default(val,
-                                                      "extra_excluded_names",
-                                                      [])
+    extra_excluded_names = reset_non_value_to_default(val, "extra_excluded_names", [])
     pattern = reset_non_value_to_default(val, "pattern", "tile_pattern_4x1")
 
     pruners_info = []
     for info in val['pruners']:
         pruner = {}
-        pruner['start_step'] = reset_non_value_to_default(
-            info, 'start_step', start_step)
-        pruner['end_step'] = reset_non_value_to_default(
-            info, 'end_step', end_step)
-        pruner['excluded_names'] = reset_non_value_to_default(
-            info, 'excluded_names', excluded_names)
-        pruner['prune_layer_type'] = reset_non_value_to_default(
-            info, 'prune_layer_type', prune_layer_type)
-        pruner['target_sparsity'] = reset_non_value_to_default(
-            info, 'target_sparsity', target_sparsity)
-        pruner['update_frequency_on_step'] = reset_non_value_to_default(info, 'update_frequency_on_step', \
-                                                                 update_frequency_on_step)
-        pruner['prune_domain'] = reset_non_value_to_default(
-            info, 'prune_domain', prune_domain)
-        pruner['prune_type'] = reset_non_value_to_default(
-            info, 'prune_type', prune_type)
-        pruner['sparsity_decay_type'] = reset_non_value_to_default(
-            info, 'sparsity_decay_type', sparsity_decay_type)
-        pruner['max_sparsity_ratio_per_layer'] = reset_non_value_to_default(info, 'max_sparsity_ratio_per_layer', \
-                                                                 max_sparsity_ratio_per_layer)
+        pruner['start_step'] = reset_non_value_to_default(info, 'start_step', start_step)
+        pruner['end_step'] = reset_non_value_to_default(info, 'end_step', end_step)
+        pruner['excluded_names'] = reset_non_value_to_default(info, 'excluded_names', excluded_names)
+        pruner['prune_layer_type'] = reset_non_value_to_default(info, 'prune_layer_type', prune_layer_type)
+        pruner['target_sparsity'] = reset_non_value_to_default(info, 'target_sparsity', target_sparsity)
+        pruner['update_frequency_on_step'] = reset_non_value_to_default(info, 'update_frequency_on_step', update_frequency_on_step)
+        pruner['prune_domain'] = reset_non_value_to_default(info, 'prune_domain', prune_domain)
+        pruner['prune_type'] = reset_non_value_to_default(info, 'prune_type', prune_type)
+        pruner['sparsity_decay_type'] = reset_non_value_to_default(info, 'sparsity_decay_type', sparsity_decay_type)
+        pruner['max_sparsity_ratio_per_layer'] = reset_non_value_to_default(info, 'max_sparsity_ratio_per_layer', max_sparsity_ratio_per_layer)
         pruner['names'] = reset_non_value_to_default(info, 'names', names)
-        pruner['extra_excluded_names'] = reset_non_value_to_default(
-            info, 'extra_excluded_names', extra_excluded_names)
-        pruner['pattern'] = reset_non_value_to_default(info, 'pattern',
-                                                       pattern)
+        pruner['extra_excluded_names'] = reset_non_value_to_default(info, 'extra_excluded_names', extra_excluded_names)
+        pruner['pattern'] = reset_non_value_to_default(info, 'pattern', pattern)
         check_config(pruner)
         pruner_info = DotDict(pruner)
         pruners_info.append(pruner_info)
@@ -139,18 +149,26 @@ def process_and_check_config(val):
 
 
 def process_config(config):
+    """Obtain a config dict object from a config file.
+
+    Args:
+        config: A string. The path to configuration file.
+
+    Returns:
+        A config dict object.
+    """
     if isinstance(config, str):
         try:
             with open(config, 'r') as f:
                 content = f.read()
                 val = yaml.safe_load(content)
                 schema.validate(val)
-        except FileNotFoundError as f:  # pragma: no cover
+        except FileNotFoundError as f:
             logger.error("{}.".format(f))
             raise RuntimeError(
                 "The yaml file is not exist. Please check the file name or path."
             )
-        except Exception as e:  # pragma: no cover
+        except Exception as e:
             logger.error("{}.".format(e))
             raise RuntimeError(
                 "The yaml file format is not correct. Please refer to document."
@@ -165,24 +183,23 @@ def process_config(config):
 
 
 def parse_to_prune(model, config):
-    """keep target pruned layers"""
+    """Keep target pruned layers."""
     modules = {}
-    if config["names"] == None or config["names"] == []:
+    if config["names"] is None or config["names"] == []:
         config["names"] = [".*"]
     for raw in config["names"]:
         try:
             pattern = re.compile(raw)
-        except:  # pragma: no cover
+        except Exception:
             assert False, f"regular expression match does not support {raw}"
-        for name, module in filter(lambda t: pattern.search(t[0]),
-                                   model.named_modules()):
+        for name, module in filter(lambda t: pattern.search(t[0]), model.named_modules()):
             if type(module).__name__ in config["prune_layer_type"]:
                 modules[name] = module
     return modules
 
 
 def parse_not_to_prune(modules, config):
-    """drop non pruned layers"""
+    """Drop non pruned layers."""
     exclude_names = config["extra_excluded_names"]
     exclude_names.extend(config["excluded_names"])
 

@@ -1,5 +1,5 @@
 model:
-  name: "bert-mini"
+  name: "bert-large"
   framework: "pytorch"
 
 pruning:
@@ -14,7 +14,7 @@ pruning:
 
       pruners:
         - !Pruner
-            pattern: "4x1"
+            pattern: "2:4"
             update_frequency_on_step: 50
             prune_domain: "global"
             prune_type: "snip_momentum"

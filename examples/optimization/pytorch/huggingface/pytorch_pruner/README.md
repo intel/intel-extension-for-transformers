@@ -1,16 +1,15 @@
 # Pytorch Pruner
-## Intro
+
+## Introdunction
 **Pytorch Pruner** is an build-in API which supports a wide range of pruning algorithms, patterns as well as pruning schedulers. Features below are currently supported:
 > algorithms: magnitude, snip, snip-momentum\
 > patterns: NxM, N:M\
 > pruning schedulers: iterative pruning scheduler, oneshot pruning scheduler.
 
-## Usage
-### Write a config yaml file
+## Getting Started
+### Prepare Config File
 Pytorch pruner is developed based on pruning, therefore most usages are identical. Our API reads in a yaml configuration file to define a Pruning object. Here is an bert-mini example of it:
 ```yaml
-version: 1.0
-
 model:
   name: "bert-mini"
   framework: "pytorch"
@@ -45,7 +44,8 @@ pruning:
             sparsity_decay_type: "exp"
 ```
 Please be awared that when the keywords appear in both global and local settings, we select the **local** settings as priority.
-### Coding template:
+
+### Quick Sample:
 With a settled config file, we provide a template for implementing pytorch_pruner API:
 ```python
 model = Model()
@@ -80,58 +80,109 @@ for epoch in range(epochs):
 ```
 For more usage, please refer to our example codes below.
 
-## Examples
-we have provided several pruning examples, which are trained on different datasets/tasks, use different sparsity patterns, etc. We are working on sharing our sparse models on HuggingFace.
+## Step-by-Step Examples
+### Installation
+Install Intel® Extension for Transformers, please refer to [installation](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/installation.md)
+```shell
+# Install from pypi
+pip install intel-extension-for-transformers
+```
+Install required dependencies for examples
+```shell
+cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/squad/bert_large
+pip install -r requirements.txt
+```
 
-We can train a sparse model with NxM (2:4) pattern:
+### Pruning
+We have provided several pruning examples, which are trained on different datasets/tasks, use different sparsity patterns, etc. 
+
+We can train a sparse model with NxM (2:4) pattern on mrpc and sst2:
 ```
 python3 ./run_glue_no_trainer.py \
             --model_name_or_path "prajjwal1/bert-mini" \
-            --pruning_config "./bert_mini_sst2_2in4.yaml" \
-            --task_name "sst2" \
-            --per_device_train_batch_size "8" \
-            --weight_decay "1e-7" \
-            --learning_rate "1e-4" \
+            --pruning_config "./bert_mini_mrpc_2in4.yaml" \
+            --task_name "mrpc" \
+            --max_length "128" \
+            --per_device_train_batch_size "16" \
+            --learning_rate 5e-5 \
             --num_train_epochs 10 \
-            --distill_loss_weight "8.0" \
-            --output_dir "pruned_sst2_bert-mini"
+            --weight_decay 5e-5   \
+            --lr_scheduler_type "constant" \
+	    --seed 9 \
+	    --sparsity_warm_epochs 1 \
+	    --cooldown_epochs 0 \
+	    --do_prune \
+            --output_dir "pruned_mrpc_bert-mini"
 ```
-We can also choose 4x1 as our pruning pattern:
 ```
 python ./run_glue_no_trainer.py \
         --model_name_or_path "prajjwal1/bert-mini" \
+        --pruning_config "./bert_mini_sst2_2in4.yaml" \
+            --task_name "sst2" \
+            --max_length "128" \
+            --per_device_train_batch_size "16" \
+            --learning_rate 5e-5 \
+	    --weight_decay 1e-4 \
+            --num_train_epochs 6 \
+            --sparsity_warm_epochs 0 \
+	    --seed 12 \
+            --output_dir "pruned_sst2_bert-mini"
+```
+We can also choose a NxM (4x1) pattern:
+```
+python3 ./run_glue_no_trainer.py \
+        --model_name_or_path "prajjwal1/bert-mini" \
         --pruning_config "./bert_mini_mrpc_4x1.yaml" \
         --task_name "mrpc" \
+        --max_length "128" \
         --per_device_train_batch_size "16" \
-        --per_device_eval_batch_size "16" \
-        --num_warmup_steps "1000" \
-        --do_prune \
+        --learning_rate 1e-3 \
+        --num_train_epochs 15 \
+        --weight_decay 1e-3  \
         --cooldown_epochs 5 \
-        --learning_rate "4.5e-4" \
-        --num_train_epochs 10 \
-        --weight_decay  "1e-7" \
-        --output_dir "pruned_mrpc_bert-mini" \
-        --distill_loss_weight "4.5"
+        --sparsity_warm_epochs 1 \
+        --lr_scheduler_type "constant"\
+        --distill_loss_weight 5 \
+        --do_prune \
+        --output_dir "pruned_mrpc_bert-mini"
 ```
-Dense model training is also supported as following (by setting --do_prune to False):
 ```
-python \
-    ./run_glue_no_trainer.py \
-    --model_name_or_path "prajjwal1/bert-mini" \
-    --task_name "mrpc" \
-    --pruning_config "./bert_mini_mrpc_4x1.yaml" \
-    --per_device_train_batch_size "8" \
-    --per_device_eval_batch_size "16" \
-    --num_warmup_steps "1000" \
-    --learning_rate "5e-5" \
-    --num_train_epochs 5 \
-    --output_dir "./output_bert-mini"
+python3 ./run_glue_no_trainer.py \
+        --model_name_or_path ".prajjwal1/bert-mini" \
+        --pruning_config "./bert_mini_sst2_4x1.yaml" \
+        --task_name "sst2" \
+        --max_length "128" \
+        --per_device_train_batch_size "16" \
+        --learning_rate 5e-5 \
+        --distill_loss_weight 2.0 \
+        --num_train_epochs 15 \
+        --weight_decay 5e-5   \
+        --cooldown_epochs 5 \
+        --sparsity_warm_epochs 0 \
+        --lr_scheduler_type "constant" \
+        --do_prune \
+        --output_dir "pruned_sst2_bert-mini"
 ```
-### Results
-|  Model  | Dataset  |  Sparsity pattern |Pruning method |Element-wise/matmul, Gemm, conv ratio | Init model | Dense F1 (mean/max)| Sparse F1 (mean/max)| Relative drop|
-|  :----:  | :----:  | :----: | :----: |:----: |:----:| :----: | :----: | :----: |
-| Bert-Mini  | SQuAD |  4x1  | Snip-momentum |0.7993 | Dense & Finetuned | 0.7662/0.7687 | 0.7617/0.7627 | -0.78% |
-| Bert-Mini  | SQuAD |  2:4  | Snip-momentum |0.4795 | Dense & Finetuned | 0.7662/0.7687 | 0.7645/0.7685 | -0.02% |
+Dense model traing on glue datasets is supportted as well, by setting `--do_prune` to False, for example on sst2:
+```
+python run_glue_no_trainer.py --model_name_or_path ./bert-mini --task_name sst2 --max_length 128 --per_device_train_batch_size 32 --learning_rate 5e-5 --num_train_epochs 10  --output_dir result/ 2>&1 | tee  sst2_orig.log
+```
+or on mrpc,
+```
+python3 run_glue_no_trainer.py  --model_name_or_path ./bert-mini  --task_name mrpc --max_length 128 --per_device_train_batch_size 16  --learning_rate 5e-5 --num_train_epoch 5 --weight_decay 5e-5 --output_dir result/ 2>&1 | tee sst2_snip.log 
+```
+## Results
+### MRPC
+|  Model  | Dataset  | Sparsity pattern | Pruning methods |Element-wise/matmul, Gemm, conv ratio | Init model | Dense F1 (mean/max) | Sparse F1 (mean/max) | Relative drop |
+|  :----:  | :----:  | :----: | :----: |:----:|:----:| :----: | :----: | :----: |
+| Bert-Mini  | MRPC |  4x1  |Snip-momentum| 0.8804 | Dense & Finetuned | 0.8619/0.8752 | 0.8610/0.8722 | -0.34% |
+| Bert-Mini  | MRPC |  2:4  |Snip-momentum| 0.4795 | Dense & Finetuned | 0.8619/0.8752| 0.8562/0.8695 | -0.65% |
+
+### SST-2
+|  Model  | Dataset  |  Sparsity pattern | Pruning methods |Element-wise/matmul, Gemm, conv ratio | Init model | Dense Accuracy (mean/max) | Sparse Accuracy (mean/max)| Relative drop|
+|  :----:  | :----:  | :----: | :----: |:----:|:----:| :----: | :----: | :----: |
+| Bert-Mini  | SST-2 |  4x1  |Snip-momentum| 0.8815 | Dense & Finetuned | 0.8660/0.8761 | 0.8651/0.8692 | -0.79% |
+| Bert-Mini  | SST-2 |  2:4  |Snip-momentum| 0.4795 | Dense & Finetuned | 0.8660/0.8761 | 0.8609/0.8693| -0.78% |
 
 ## References
 * [SNIP: Single-shot Network Pruning based on Connection Sensitivity](https://arxiv.org/abs/1810.02340)
