@@ -33,6 +33,7 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
 
 ## GPT-J
 ### Text Generation
+
 ```bash
 # use jemalloc
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
@@ -69,6 +70,7 @@ numactl -m <node N> -C <cpu list> \
 ```
 
 ## BLOOM-176B
+
 We don't enable jemalloc here since BLOOM-176B requires lots of memory and will have memory contention w/ jemalloc.
 
 ```bash
