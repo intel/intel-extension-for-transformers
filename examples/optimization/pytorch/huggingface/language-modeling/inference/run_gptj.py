@@ -9,7 +9,7 @@ import argparse
 
 # args
 parser = argparse.ArgumentParser('GPT-J inference script', add_help=False)
-parser.add_argument('--precision', default='bf16', type=str, help="fp32 or bf16")
+parser.add_argument('--precision', default='bf16', type=str, help="fp32 or bf16 or int8")
 parser.add_argument('--max-new-tokens', default=32, type=int, help="output max new tokens")
 parser.add_argument('--greedy', action='store_true')
 parser.add_argument("--block-size", type=int, default=None, help=(
@@ -19,15 +19,18 @@ parser.add_argument("--block-size", type=int, default=None, help=(
     ))
 parser.add_argument('--generation', action='store_true', help="inference for text-generation task.")
 parser.add_argument('--clm', action='store_true', help="inference for causal language modeling task.")
-parser.add_argument("--num_iter", type=int, default=0, help="iterations for performance benchmark.")
-parser.add_argument("--num_warmup", type=int, default=0, help="warmup numbers.")
+parser.add_argument("--num-iter", type=int, default=0, help="iterations for performance benchmark.")
+parser.add_argument("--num-warmup", type=int, default=0, help="warmup numbers.")
 parser.add_argument("--batch-size", type=int, default=8, help="Batch size (per device) for the evaluation dataloader.")
+parser.add_argument('--accuracy-only', action='store_true')
+parser.add_argument('--performance', action='store_true')
 
 args = parser.parse_args()
 print(args)
-
-amp_enabled = True if args.precision != "fp32" else False
-amp_dtype = torch.bfloat16 if args.precision != "fp32" else torch.float32
+assert args.precision in ["int8", "bf16", "fp32"], "please set the `--precision` from int8, bf16, fp32."
+int8_enabled = True if args.precision == "int8" else False
+amp_enabled = True if args.precision == "bf16" else False
+amp_dtype = torch.bfloat16 if args.precision == "bf16" else torch.float32
 
 if args.greedy:
     generate_kwargs = dict(do_sample=False, temperature=0.9)
@@ -36,7 +39,7 @@ else:
 
 # load model
 model_id = "EleutherAI/gpt-j-6B"
-model = AutoModelForCausalLM.from_pretrained(model_id, low_cpu_mem_usage=True)
+model = AutoModelForCausalLM.from_pretrained(model_id, low_cpu_mem_usage=True, return_dict=False)
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = model.eval()
 
@@ -121,7 +124,9 @@ if args.clm:
 # to channels last
 model = model.to(memory_format=torch.channels_last)
 # to ipex
-model = ipex.optimize(model, dtype=amp_dtype, inplace=True)
+if amp_enabled:
+    model = ipex.optimize(model, dtype=amp_dtype, inplace=True)
+model.eval()
 
 # for generation.
 if args.generation:
@@ -129,44 +134,113 @@ if args.generation:
     prompt = "Once upon a time, there existed a little girl, who liked to have adventures." + \
             " She wanted to go to places and meet new people, and have fun."
 
-    # start
-    total_time = 0.0
-    with torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
-        for i in range(args.num_iter):
-            tic = time.time()
-            input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-            gen_tokens = model.generate(input_ids, max_new_tokens=args.max_new_tokens, **generate_kwargs)
-            gen_text = tokenizer.batch_decode(gen_tokens)[0]
-            toc = time.time()
-            print(gen_text, flush=True)
-            if i >= args.num_warmup:
-                total_time += (toc - tic)
+    if int8_enabled:
+        from intel_extension_for_pytorch.quantization import prepare, convert
+        from torch.ao.quantization import MinMaxObserver, PerChannelMinMaxObserver, QConfig
+        qconfig = QConfig(activation=MinMaxObserver.with_args(qscheme=torch.per_tensor_affine, dtype=torch.quint8),
+                weight=PerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_channel_symmetric))
+        input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
-    print("Inference latency: %.3f ms." % (total_time / (args.num_iter - args.num_warmup) * 1000))
+        model_kwargs = {'attention_mask': torch.ones(generate_kwargs['num_beams'], args.max_new_tokens)}
+        model_inputs = model.prepare_inputs_for_generation(input_ids.repeat(generate_kwargs['num_beams'], 1), **model_kwargs)
+        example_inputs = []
+        for k,v in model_inputs.items():
+            if v is not None:
+                example_inputs.append(v)
+        example_inputs = tuple(example_inputs)
+        prepared_model = prepare(model, qconfig, example_inputs=example_inputs, inplace=True)
+
+        #calibration
+        for nbatch in range(20):
+            prepared_model(*example_inputs)
+        prepared_model.save_qconf_summary("./int8_ipex.json")
+        convert_model = convert(prepared_model, inplace=True)
+
+        with torch.no_grad():
+            traced_model = torch.jit.trace(convert_model.eval(), example_inputs)
+            traced_model = torch.jit.freeze(traced_model)
+            traced_model(*example_inputs)
+            traced_model(*example_inputs)
+        #save
+        traced_model.save("quantized_model_gen.pt")
+
+    if args.performance:
+        total_time = 0.0
+        with torch.no_grad():
+            with torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
+                for i in range(args.num_iter):
+                    tic = time.time()
+                    input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+                    gen_tokens = model.generate(input_ids, max_new_tokens=args.max_new_tokens, **generate_kwargs)
+                    gen_text = tokenizer.batch_decode(gen_tokens)[0]
+                    toc = time.time()
+                    print(gen_text, flush=True)
+                    if i >= args.num_warmup:
+                        total_time += (toc - tic)
+
+            print("Inference latency: %.3f ms." % (total_time / (args.num_iter - args.num_warmup) * 1000))
 
 # for casual language modeling.
 if args.clm:
-    total_time = 0.0
-    losses = []
-    for step, batch in enumerate(eval_dataloader):
-        if args.num_iter > 0 and step > args.num_iter:
-            break
+    if int8_enabled:
+        from intel_extension_for_pytorch.quantization import prepare, convert
+        from torch.ao.quantization import MinMaxObserver, PerChannelMinMaxObserver, QConfig
+        qconfig = QConfig(activation=MinMaxObserver.with_args(qscheme=torch.per_tensor_affine, dtype=torch.quint8),
+                weight=PerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_channel_symmetric))
+        calibration_data_loader = trainer.get_eval_dataloader()
+        sample = next(iter(calibration_data_loader))
+        example_inputs = tuple(sample.values())
+        prepared_model = prepare(model, qconfig, example_inputs=example_inputs, inplace=True)
+
+        #calibration
+        for nbatch, input in enumerate(calibration_data_loader):
+            if nbatch==100:
+                break
+            prepared_model(**input)
+        prepared_model.save_qconf_summary("./clm_int8_ipex.json")
+        converted_model = convert(prepared_model)
+
+        with torch.no_grad():
+            traced_model = torch.jit.trace(converted_model, example_inputs)
+            traced_model = torch.jit.freeze(traced_model.eval())
+            traced_model(*example_inputs)
+            traced_model(*example_inputs)
+            traced_model.save( "./quantized_model_clm.pt")
+
+    if args.accuracy_only:
+        if int8_enabled:
+            model = torch.jit.load("./quantized_model_clm.pt")
+            model = torch.jit.freeze(model.eval())
+        losses = []
         with torch.no_grad():
             with torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
-                tic = time.time()
-                outputs = model(**batch)
-                toc = time.time()
-                if args.num_warmup > 0 and step >= args.num_warmup:
-                    total_time += (toc - tic)
-        loss = outputs.loss
-        losses.append(loss.repeat(args.batch_size))
+                for step, batch in enumerate(eval_dataloader):
+                    outputs = model(**batch)
+            loss = outputs.loss
+            losses.append(loss.repeat(args.batch_size))
+        losses = torch.cat(losses)
+        try:
+            eval_loss = torch.mean(losses)
+            perplexity = math.exp(eval_loss)
+        except OverflowError:
+            perplexity = float("inf")
+        print("eval_loss: %.3f ms." % eval_loss)
+        print("perplexity: %.3f ms." % perplexity)
 
-    losses = torch.cat(losses)
-    try:
-        eval_loss = torch.mean(losses)
-        perplexity = math.exp(eval_loss)
-    except OverflowError:
-        perplexity = float("inf")
-    print("eval_loss: %.3f ms." % eval_loss)
-    print("perplexity: %.3f ms." % perplexity)
+    if args.performance:
+        if int8_enabled:
+            model = torch.jit.load("./quantized_model_clm.pt")
+            model = torch.jit.freeze(model.eval())
+        total_time = 0.0
+        with torch.no_grad():
+            with torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
+                for step, batch in enumerate(eval_dataloader):
+                    assert args.num_iter == 0, "please set args `--num-iter` "
+                    if step > args.num_iter:
+                        break
+                    tic = time.time()
+                    outputs = model(**batch)
+                    toc = time.time()
+                    if args.num_warmup > 0 and step >= args.num_warmup:
+                        total_time += (toc - tic)
     print("Inference latency: %.3f ms." % (total_time / (args.num_iter * args.batch_size - args.num_warmup) * 1000))

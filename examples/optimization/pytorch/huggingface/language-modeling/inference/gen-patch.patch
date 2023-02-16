@@ -1,0 +1,60 @@
+diff --git a/src/transformers/generation/utils.py b/src/transformers/generation/utils.py
+index 61f6090a9..758b6f276 100644
+--- a/src/transformers/generation/utils.py
++++ b/src/transformers/generation/utils.py
+@@ -2741,19 +2741,29 @@ class GenerationMixin:
+                     break
+ 
+             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
+-
+-            outputs = self(
+-                **model_inputs,
+-                return_dict=True,
+-                output_attentions=output_attentions,
+-                output_hidden_states=output_hidden_states,
+-            )
++            example={}
++            example["input_ids"] = model_inputs["input_ids"]
++            example["position_ids"] = model_inputs["position_ids"]
++            example["attention_mask"] = model_inputs["attention_mask"]
++            if not hasattr(self,"trace_graph"):
++                print("load the int8 model.")
++                self_jit = torch.jit.load("./quantized_model_gen.pt")
++                self_jit = torch.jit.freeze(self_jit.eval())
++                setattr(self, "trace_graph", self_jit)
++            outputs = self.trace_graph(**example)
++            # 
++            #outputs = self(
++            #    **model_inputs,
++            #    return_dict=True,
++            #    output_attentions=output_attentions,
++            #    output_hidden_states=output_hidden_states,
++            #)
+ 
+             if synced_gpus and this_peer_finished:
+                 cur_len = cur_len + 1
+                 continue  # don't waste resources running the code we don't need
+-
+-            next_token_logits = outputs.logits[:, -1, :]
++            next_token_logits = outputs[0][:, -1, :]
++            # next_token_logits = outputs.logits[:, -1, :]
+             # hack: adjust tokens for Marian. For Marian we have to make sure that the `pad_token_id`
+             # cannot be generated both before and after the `nn.functional.log_softmax` operation.
+             next_token_logits = self.adjust_logits_during_generation(next_token_logits, cur_len=cur_len)
+diff --git a/src/transformers/models/gptj/modeling_gptj.py b/src/transformers/models/gptj/modeling_gptj.py
+index b7070fa0a..b3e88612e 100755
+--- a/src/transformers/models/gptj/modeling_gptj.py
++++ b/src/transformers/models/gptj/modeling_gptj.py
+@@ -819,10 +819,10 @@ class GPTJForCausalLM(GPTJPreTrainedModel):
+     def forward(
+         self,
+         input_ids: Optional[torch.LongTensor] = None,
+-        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
++        position_ids: Optional[torch.LongTensor] = None,
+         attention_mask: Optional[torch.FloatTensor] = None,
++        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+         token_type_ids: Optional[torch.LongTensor] = None,
+-        position_ids: Optional[torch.LongTensor] = None,
+         head_mask: Optional[torch.FloatTensor] = None,
+         inputs_embeds: Optional[torch.FloatTensor] = None,
+         labels: Optional[torch.LongTensor] = None,

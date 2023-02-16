@@ -1,0 +1,20 @@
+diff --git a/src/transformers/models/gptj/modeling_gptj.py b/src/transformers/models/gptj/modeling_gptj.py
+index b7070fa0a..1564b4f99 100755
+--- a/src/transformers/models/gptj/modeling_gptj.py
++++ b/src/transformers/models/gptj/modeling_gptj.py
+@@ -819,13 +819,13 @@ class GPTJForCausalLM(GPTJPreTrainedModel):
+     def forward(
+         self,
+         input_ids: Optional[torch.LongTensor] = None,
+-        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+         attention_mask: Optional[torch.FloatTensor] = None,
++        labels: Optional[torch.LongTensor] = None,
++        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+         token_type_ids: Optional[torch.LongTensor] = None,
+         position_ids: Optional[torch.LongTensor] = None,
+         head_mask: Optional[torch.FloatTensor] = None,
+         inputs_embeds: Optional[torch.FloatTensor] = None,
+-        labels: Optional[torch.LongTensor] = None,
+         use_cache: Optional[bool] = None,
+         output_attentions: Optional[bool] = None,
+         output_hidden_states: Optional[bool] = None,

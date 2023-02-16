@@ -32,8 +32,26 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
 # Performance Benchmark
 
 ## GPT-J
+>**Note**: Please apply ipex-patch.patch to intel-extension-for-pytorch as follow if you want to benchmark `int8` performance.
+```bash
+# only need to do when precision is int8
+git clone https://github.com/intel/intel-extension-for-pytorch.git
+git checkout v1.13.0+cpu
+git submodule update --init --recursive
+git apply ipex-patch.patch
+python setup.py develop
+```
 ### Text Generation
-
+>**Note**: Please apply gen-patch.patch to transforms as follow if you want to benchmark `int8` performance.
+```bash
+# only need to do when precision is int8.
+git clone https://github.com/huggingface/transformers.git
+cd transformers
+git checkout 9d1116e9951686f937d17697820117636bfc05a5
+git apply gen-patch.patch
+python setup.py develop
+```
+#### Run
 ```bash
 # use jemalloc
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
@@ -41,22 +59,40 @@ export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:aut
 
 # for generation
 # default is beam search with num_beams=4, if you need to use greedy search for comparison, add "--greedy" in args.
+
+# inference
 numactl -m <node N> -C <cpu list> \
     python run_gptj.py \
-        --precision <fp32/bf16> \
+        --precision <fp32/bf16/int8> \
         --max-new-tokens 32 \
-        --num_iter 10 \
+        --num-iter 10 \
         --num-warmup 3 \
-        --generation
+        --generation \
+        --performance
 ```
 
 ### Language Modeling
+>**Note**: Please apply gen-patch.patch to transforms as follow if you want to benchmark `int8` performance.
 ```bash
+# only need to do when precision is int8.
+git clone https://github.com/huggingface/transformers.git
+cd transformers
+git checkout 9d1116e9951686f937d17697820117636bfc05a5
+git apply clm-patch.patch
+python setup.py develop
+```
+#### Run
+```bash
+# use jemalloc
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
+export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:9000000000,muzzy_decay_ms:9000000000"
+
 # for casual language modeling accuracy_only benchmark
 numactl -m <node N> -C <cpu list> \
     python run_gptj.py \
-        --precision <fp32/bf16> \
-        --clm
+        --precision <fp32/bf16/int8> \
+        --clm \
+        --accuracy_only
 
 # for casual language modeling performance benchmark
 numactl -m <node N> -C <cpu list> \
@@ -65,7 +101,8 @@ numactl -m <node N> -C <cpu list> \
         --num_iter 10 \
         --num-warmup 3 \
         --batch-size 1 \
-        --clm
+        --clm \
+        --performance
 
 ```
 

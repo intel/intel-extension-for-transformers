@@ -1,0 +1,24 @@
+diff --git a/intel_extension_for_pytorch/quantization/_quantization_state_utils.py b/intel_extension_for_pytorch/quantization/_quantization_state_utils.py
+index af99e25d..2e7fce14 100644
+--- a/intel_extension_for_pytorch/quantization/_quantization_state_utils.py
++++ b/intel_extension_for_pytorch/quantization/_quantization_state_utils.py
+@@ -8,8 +8,8 @@ import intel_extension_for_pytorch._C as core
+ 
+ 
+ functions_supported_by_quantization =set([
+-    torch.Tensor.add,
+-    torch.add,
++    #torch.Tensor.add,
++    #torch.add,
+     torch.Tensor.relu,
+     #torch.Tensor.sigmoid,  # TODO
+     torch.flatten,
+@@ -35,7 +35,7 @@ functions_supported_by_quantization =set([
+     #F.gelu, # TODO
+     F.linear,
+     torch._C._nn.linear,
+-    torch.matmul,
++    #torch.matmul,
+     torch.Tensor.matmul,
+     F.embedding_bag,
+     torch.embedding_bag,
