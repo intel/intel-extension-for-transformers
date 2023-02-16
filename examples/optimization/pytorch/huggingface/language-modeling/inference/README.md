@@ -32,6 +32,8 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
 # Performance Benchmark
 
 ## GPT-J
+
+### Performance
 >**Note**: Please apply ipex-patch.patch to intel-extension-for-pytorch as follow if you want to benchmark `int8` performance.
 ```bash
 # only need to do when precision is int8
@@ -41,7 +43,7 @@ git submodule update --init --recursive
 git apply ipex-patch.patch
 python setup.py develop
 ```
-### Text Generation
+#### Text Generation
 >**Note**: Please apply gen-patch.patch to transforms as follow if you want to benchmark `int8` performance.
 ```bash
 # only need to do when precision is int8.
@@ -71,7 +73,7 @@ numactl -m <node N> -C <cpu list> \
         --performance
 ```
 
-### Language Modeling
+#### Language Modeling
 >**Note**: Please apply gen-patch.patch to transforms as follow if you want to benchmark `int8` performance.
 ```bash
 # only need to do when precision is int8.
@@ -97,7 +99,7 @@ numactl -m <node N> -C <cpu list> \
 # for casual language modeling performance benchmark
 numactl -m <node N> -C <cpu list> \
     python run_gptj.py \
-        --precision <fp32/bf16> \
+        --precision <fp32/bf16/int8> \
         --num_iter 10 \
         --num-warmup 3 \
         --batch-size 1 \
@@ -107,7 +109,7 @@ numactl -m <node N> -C <cpu list> \
 ```
 
 ## BLOOM-176B
-
+### Performance
 We don't enable jemalloc here since BLOOM-176B requires lots of memory and will have memory contention w/ jemalloc.
 
 ```bash
