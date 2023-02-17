@@ -39,7 +39,7 @@ bool layernormalized_spmm_ref_kd_t::init() {
   auto wei_desc = ts_desc[0];
   auto src_desc = ts_desc[1];
   auto bia_desc = ts_desc[2];
-  // TODO: when only need int8 output, make dt(dst_desc)=int8.
+  // TODO(zhe1wang): when only need int8 output, make dt(dst_desc)=int8.
   auto dst_desc = ts_desc[3];
   auto scales_desc = ts_desc[4];
   int M = wei_desc.shape()[0];
@@ -51,7 +51,7 @@ bool layernormalized_spmm_ref_kd_t::init() {
   tensor_desc workspace_desc = {{M * 2, micro_bs * num_mbs}, data_type::fp32, format_type::a};
   std::vector<tensor_desc> spmm_ts_desc = {wei_desc,    src_desc,  bia_desc, dst_desc,
                                            scales_desc, mean_desc, var_desc, workspace_desc};
-  // TODO: when only need int8 output, there need to be update.
+  // TODO(zhe1wang): when only need int8 output, there need to be update.
   std::vector<tensor_desc> lnorm_ts_desc = {dst_desc, dst_desc};
   auto op_attrs = op_desc_.attrs();
   std::unordered_map<std::string, std::string> spmm_op_attrs;

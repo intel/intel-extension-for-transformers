@@ -100,11 +100,11 @@ class SPARSE_API_ attention_ref_kd_t : public kernel_desc_t {
    */
   template <typename T_kd>
   bool add_kernel_desc(const operator_desc& op_desc, const char* name);
-  char* fused_bias_addr_ = nullptr;
-  char* fused_scales_addr_ = nullptr;
+  void* fused_bias_addr_ = nullptr;
+  void* fused_scales_addr_ = nullptr;
   bsr_data_t<int8_t>* qk_sparse_ptr_ = nullptr;
   bsr_data_t<int8_t>* v_sparse_ptr_ = nullptr;
-  char* qk_weight_addr_ = nullptr;
+  void* qk_weight_addr_ = nullptr;
 };
 
 class SPARSE_API_ attention_ref_k_t : public kernel_t {

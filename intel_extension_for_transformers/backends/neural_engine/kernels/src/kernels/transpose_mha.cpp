@@ -38,7 +38,7 @@ bool transpose_mha_kd_t::init() {
   KERNEL_INIT_CHECK(matV.dtype() == data_type::s8)
   KERNEL_INIT_CHECK(matRet.dtype() == data_type::u8)
   KERNEL_INIT_CHECK(matMask.dtype() == data_type::fp32)
-  // TODO: checking size
+  // TODO(zhe1wang): checking size
   return true;
 }
 
@@ -311,9 +311,20 @@ bool transpose_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
       auto bptr = reBbuf + j * batchk * k;  // trans_copied Q
       auto cptr = expoutbuf + j;            // bf16 exp sum
       auto dptr = cbatchptr;                // mask
-      ssd::transpose_mha_step1_params p{
-          aptr, bptr,   cptr,       dptr,          expsumbuf + j, (uint8_t*)&(MHA_step1->tc), m,
-          k,    batchk, batchk * k, expout_stride, n * EXPSUM_BW, m * expout_stride,          scaleAB};
+      ssd::transpose_mha_step1_params p{aptr,
+                                        bptr,
+                                        cptr,
+                                        dptr,
+                                        expsumbuf + j,
+                                        reinterpret_cast<uint8_t*>(&(MHA_step1->tc)),
+                                        m,
+                                        k,
+                                        batchk,
+                                        batchk * k,
+                                        expout_stride,
+                                        n * EXPSUM_BW,
+                                        m * expout_stride,
+                                        scaleAB};
       (*MHA_step1)(&p);
     }
 
@@ -326,13 +337,12 @@ bool transpose_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
       auto expsumptr = expsumbuf + i * n;
       auto rbptr = out0buf + i * m * n;
       // reroder and norm to u8
-      for (int in = 0; in < m; in += MHA_step2->NPacked)  // 0.44
-      {
+      for (int in = 0; in < m; in += MHA_step2->NPacked) {  // 0.44
         ssd::transpose_mha_step2_params p{expoutptr + in * n,
                                           rbptr + in * MHA_step2->NTile,
                                           expsumptr,
                                           n * EXP_BW,
-                                          MHA_step2->NTile * m * (int)sizeof(rbptr[0]),
+                                          MHA_step2->NTile * m * static_cast<int>(sizeof(rbptr[0])),
                                           n};
         (*MHA_step2)(&p);
       }
@@ -346,9 +356,10 @@ bool transpose_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
         for (int in = 0; in < n; in += MHA_step3->NTile) {
           auto bptr = rbptr + in * m;
           auto cptr = eptr + im * seq_pad + in;
-          ssd::transpose_mha_step3_params p{aptr,     bptr,        cptr,    (uint8_t*)&(MHA_step3->tc),
-                                            m,        seq_pad,     seq_pad, scaleV * sotmax_scale,
-                                            scaleRet, zeropointRet};
+          ssd::transpose_mha_step3_params p{
+              aptr,     bptr,        cptr,    reinterpret_cast<uint8_t*>(&(MHA_step3->tc)),
+              m,        seq_pad,     seq_pad, scaleV * sotmax_scale,
+              scaleRet, zeropointRet};
           (*MHA_step3)(&p);
         }
       }

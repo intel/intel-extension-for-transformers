@@ -15,6 +15,7 @@
 #include "transpose_mha/transpose_mha.hpp"
 
 #include <algorithm>
+#include <limits>
 
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
@@ -77,7 +78,6 @@ void transpose_mha_bench::gen_case() {
   ts_descs = {src_k_desc, src_q_desc, mask_desc, src_v_desc, dst_desc};
 
   const int spmm_size = std::accumulate(spmm_shape.begin(), spmm_shape.end(), 1LL, std::multiplies<dim_t>());
-  ;
   const int mask_size = batch_size * seq_len;
   const auto src_k = aligned_allocator_t<int8_t>::allocate(spmm_size);
   const auto src_k_f32 = aligned_allocator_t<float>::allocate(spmm_size);

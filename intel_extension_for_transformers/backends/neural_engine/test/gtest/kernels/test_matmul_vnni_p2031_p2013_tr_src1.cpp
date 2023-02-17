@@ -82,7 +82,7 @@ TEST_P(MMVNNIP2031P2013SEQCPYBTest, ) {
         }
 
   // run kernel
-  const n_thread_t with_n_thread(1);  //  TODO
+  const n_thread_t with_n_thread(1);
   uint8_t* const dst = aligned_allocator_t<uint8_t>::allocate(dst_size);
   int32_t* const dst_sum = aligned_allocator_t<int32_t>::allocate(max_sum_size);
   std::fill_n(dst, dst_size, -3);

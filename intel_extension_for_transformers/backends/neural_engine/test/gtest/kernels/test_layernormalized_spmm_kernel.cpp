@@ -78,9 +78,9 @@ bool check_result(const test_params_t& t) {
       if (op_attr["split_output"] == "true" && ans) {
         auto buf3 = q.data[11];
         auto buf4 = p.data[11];
-        if (op_desc.apply_postops_list().back().dt == data_type::s8)
+        if (op_desc.apply_postops_list().back().dt == data_type::s8) {
           ans = compare_data<int8_t>(buf4, size, buf3, size, 1e-2);
-        else {
+        } else {
           ans = compare_data<uint8_t>(buf4, size, buf3, size, 1e-2);
         }
       }
@@ -217,8 +217,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
   int BM = str_to_num<int>(op_attrs["micro_oc"]);
   auto_blocking(BM, micro_bs, M, N);
-  workspace = (float*)malloc(2 * ceil_div(M, BM) * N * sizeof(float));
-  workspace_ref = (float*)malloc(2 * ceil_div(M, BM) * N * sizeof(float));
+  workspace = reinterpret_cast<float*>(malloc(2 * ceil_div(M, BM) * N * sizeof(float)));
+  workspace_ref = reinterpret_cast<float*>(malloc(2 * ceil_div(M, BM) * N * sizeof(float)));
   rt_data1.push_back(workspace);
   rt_data2.push_back(workspace_ref);
 

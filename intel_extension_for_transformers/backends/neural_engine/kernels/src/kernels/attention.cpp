@@ -157,16 +157,21 @@ bool attention_kd_t::init() {
   aligned_allocator_t<int8_t>::deallocate(qk_weight_addr);
 
   // bias merge
-  fused_bias_addr_ = aligned_allocator_t<char>::allocate(bias_bytes * 3);
+  fused_bias_addr_ = reinterpret_cast<void*>(aligned_allocator_t<char>::allocate(bias_bytes * 3));
   memcpy(fused_bias_addr_, q_bias_addr, bias_bytes);
-  memcpy(fused_bias_addr_ + bias_bytes, k_bias_addr, bias_bytes);
-  memcpy(fused_bias_addr_ + bias_bytes * 2, v_bias_addr, bias_bytes);
+  void* fused_bias_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(fused_bias_addr_) + bias_bytes);
+  memcpy(fused_bias_addr_offset, k_bias_addr, bias_bytes);
+  fused_bias_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(fused_bias_addr_) + bias_bytes * 2);
+  memcpy(fused_bias_addr_offset, v_bias_addr, bias_bytes);
 
   // scales merge
-  fused_scales_addr_ = aligned_allocator_t<char>::allocate(scale_bytes * 3);
+  fused_scales_addr_ = reinterpret_cast<void*>(aligned_allocator_t<char>::allocate(scale_bytes * 3));
   memcpy(fused_scales_addr_, q_scales_addr, scale_bytes);
-  memcpy(fused_scales_addr_ + scale_bytes, k_scales_addr, scale_bytes);
-  memcpy(fused_scales_addr_ + scale_bytes * 2, v_scales_addr, scale_bytes);
+  void* fused_scales_addr_offset =
+      reinterpret_cast<void*>(reinterpret_cast<intptr_t>(fused_scales_addr_) + scale_bytes);
+  memcpy(fused_scales_addr_offset, k_scales_addr, scale_bytes);
+  fused_scales_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(fused_scales_addr_) + scale_bytes * 2);
+  memcpy(fused_scales_addr_offset, v_scales_addr, scale_bytes);
 
   const float softmax_in_zero_point = str_to_num<float>(op_attrs["softmax_in_zero_point"]);
   const float softmax_in_scale = str_to_num<float>(op_attrs["softmax_in_scale"]);
