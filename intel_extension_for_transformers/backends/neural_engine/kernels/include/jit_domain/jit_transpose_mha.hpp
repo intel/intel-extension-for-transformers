@@ -15,6 +15,7 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_TRANSPOSE_MHA_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_TRANSPOSE_MHA_HPP_
 
+#include <vector>
 #include "jit_generator.hpp"
 #include "amx_utils.hpp"
 #include "kernels/transpose_mha_types.hpp"
@@ -60,7 +61,7 @@ class MHA_stage2_kernel : public MHA_kernel {
 
  protected:
   void loadbf16_norm_rows(const Zmm& x, const RegExp& load_addr, const Zmm& scale);
-  void loadbf16_norm_rows(int idx, const RegExp& addr, const Zmm& scale) { loadbf16_norm_rows(Zmm(idx), addr, scale); };
+  void loadbf16_norm_rows(int idx, const RegExp& addr, const Zmm& scale) { loadbf16_norm_rows(Zmm(idx), addr, scale); }
   // n=exp/max(sumexp,epsilon)  0~1
   // o=n*255  0~255
   void normalize(const Zmm& idx, const Zmm& scale);
@@ -69,7 +70,7 @@ class MHA_stage2_kernel : public MHA_kernel {
 
 class TransposeCopy8x8_1B_kernel : public MHA_kernel {
  public:
-  TransposeCopy8x8_1B_kernel(size_t size = 16 * 1024) : MHA_kernel(size, 0, 0, 0, 0) {}
+  explicit TransposeCopy8x8_1B_kernel(size_t size = 16 * 1024) : MHA_kernel(size, 0, 0, 0, 0) {}
 
  protected:
   void generate();
@@ -81,7 +82,8 @@ class MHA_s8s8s8_row_amx_32x32_batchk_binary_exp : public MHA_stage1_kernel {
   int const BatchK = 1;
 
  public:
-  MHA_s8s8s8_row_amx_32x32_batchk_binary_exp(int k, size_t size = 32 * 1024) : MHA_stage1_kernel(size, 32, 32, k, 0) {}
+  explicit MHA_s8s8s8_row_amx_32x32_batchk_binary_exp(int k, size_t size = 32 * 1024)
+      : MHA_stage1_kernel(size, 32, 32, k, 0) {}
 
  protected:
   void generate();
@@ -89,7 +91,7 @@ class MHA_s8s8s8_row_amx_32x32_batchk_binary_exp : public MHA_stage1_kernel {
 
 class MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp : public MHA_stage1_kernel {
  public:
-  MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp(size_t size = 32 * 1024) : MHA_stage1_kernel(size, 8, 32, 8, 0) {}
+  explicit MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp(size_t size = 32 * 1024) : MHA_stage1_kernel(size, 8, 32, 8, 0) {}
 
  protected:
   void generate();
@@ -107,7 +109,7 @@ class MHA_norm_quantize_reorder_prescale_packed : public MHA_stage2_kernel {
 
 class MHA_norm_quantize_reorder_vnnib_prescale_packed : public MHA_stage2_kernel {
  public:
-  MHA_norm_quantize_reorder_vnnib_prescale_packed(int NTile, size_t size = 16 * 1024)
+  explicit MHA_norm_quantize_reorder_vnnib_prescale_packed(int NTile, size_t size = 16 * 1024)
       : MHA_stage2_kernel(size, 0, 0, 0, NTile), TW_(NTile / VEC) {
     SPARSE_LOG_IF(FATAL, NTile % 16 != 0) << "Unexpected NTile";
   }
@@ -129,7 +131,7 @@ class MHA_norm_quantize_reorder_vnniw_prescale_packed : public MHA_stage2_kernel
 
 class MHA_Matmul_s8u8u8_amx_32x32 : public MHA_kernel {
  public:
-  MHA_Matmul_s8u8u8_amx_32x32(int k, size_t size = 32 * 1024) : MHA_kernel(size, 32, 32, k, 0) {}
+  explicit MHA_Matmul_s8u8u8_amx_32x32(int k, size_t size = 32 * 1024) : MHA_kernel(size, 32, 32, k, 0) {}
 
  protected:
   void generate();
@@ -159,7 +161,7 @@ class MHA_Matmul_s8u8u8_vnni_byte_8x48 : public jit_generator {
 };
 class MHA_Matmul_s8u8u8_vnni_word_8x32 : public MHA_kernel {
  public:
-  MHA_Matmul_s8u8u8_vnni_word_8x32(size_t size = 32 * 1024) : MHA_kernel(size, 8, 32, 8, 0) {}
+  explicit MHA_Matmul_s8u8u8_vnni_word_8x32(size_t size = 32 * 1024) : MHA_kernel(size, 8, 32, 8, 0) {}
 
  protected:
   void generate();
@@ -167,7 +169,7 @@ class MHA_Matmul_s8u8u8_vnni_word_8x32 : public MHA_kernel {
 
 class SeqCopy_1B_avx512_Nx4_Temp : public MHA_kernel {
  public:
-  SeqCopy_1B_avx512_Nx4_Temp(int N = 32, size_t size = 16 * 1024) : MHA_kernel(size, 0, N, 0, 0) {}
+  explicit SeqCopy_1B_avx512_Nx4_Temp(int N = 32, size_t size = 16 * 1024) : MHA_kernel(size, 0, N, 0, 0) {}
 
  protected:
   void generate();
@@ -176,7 +178,7 @@ class SeqCopy_1B_avx512_Nx4_Temp : public MHA_kernel {
 
 class SeqCopy_1B_avx512_Nx2_Temp : public MHA_kernel {
  public:
-  SeqCopy_1B_avx512_Nx2_Temp(int N = 32, size_t size = 16 * 1024) : MHA_kernel(size, 0, N, 0, 0) {}
+  explicit SeqCopy_1B_avx512_Nx2_Temp(int N = 32, size_t size = 16 * 1024) : MHA_kernel(size, 0, N, 0, 0) {}
 
  protected:
   void generate();

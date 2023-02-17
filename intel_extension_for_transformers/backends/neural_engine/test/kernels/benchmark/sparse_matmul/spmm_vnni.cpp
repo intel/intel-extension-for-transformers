@@ -13,6 +13,9 @@
 //  limitations under the License.
 
 #include "sparse_matmul/spmm_vnni.hpp"
+
+#include <memory>
+
 #include "kernels/spmm_ref.hpp"
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"

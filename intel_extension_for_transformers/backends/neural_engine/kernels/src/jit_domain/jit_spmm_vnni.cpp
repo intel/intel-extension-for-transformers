@@ -218,8 +218,11 @@ void jit_spmm_vnni_t::handle_postop_escape_vmms() {
       eltwise_injector_.escape_regs(reg_type::zmm, dst_tile_Vmm(i, j).getIdx());
     }
   }
-  if (param_.welford)
-    for (int j = 0; j < TW(); ++j) eltwise_injector_.escape_regs(reg_type::zmm, Temp_Vmm(j).getIdx());
+  if (param_.welford) {
+    for (int j = 0; j < TW(); ++j) {
+      eltwise_injector_.escape_regs(reg_type::zmm, Temp_Vmm(j).getIdx());
+    }
+  }
 }
 
 void jit_spmm_vnni_t::handle_postop_escape_regs() {
@@ -331,8 +334,9 @@ void jit_spmm_vnni_t::calc_mean_variance(int i, int j, bool set_zero) {
     } else {
       vaddps(dst_tile_Vmm(0, j), dst_tile_Vmm(i, j), zword_dst_m2);  // update m2
     }
-  } else
+  } else {
     vaddps(dst_tile_Vmm(0, j), dst_tile_Vmm(i, j), dst_tile_Vmm(0, j));  // update m2
+  }
 
   if (i == TH() - 1) {  // move out
     vmovups(zword_dst_m1, Temp_Vmm(j));

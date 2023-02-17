@@ -16,6 +16,7 @@
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORM_BA_HPP_
 
 #include <memory>
+#include <utility>
 #include <vector>
 #include "cpu_isa.hpp"
 #include "operator_desc.hpp"

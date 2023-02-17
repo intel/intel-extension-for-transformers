@@ -470,7 +470,7 @@ void MHA_s8s8s8_row_amx_32x32_batchk_binary_exp::generate() {
   outLocalLabel();  // end of local label
   L(tmpfvariable);
   const float tmparr[] = {1.442695f, 0.693147180f, 0.35815147f, 0.96963238f, 1.0f, 255.f};
-  db((uint8_t*)tmparr, sizeof(tmparr));
+  db(reinterpret_cast<uint8_t*>(const_cast<float*>(tmparr)), sizeof(tmparr));
 }
 
 void MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp::generate() {
@@ -625,7 +625,7 @@ void MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp::generate() {
   outLocalLabel();  // end of local label
   L(tmpfvariable);
   const float tmparr[] = {1.442695f, 0.693147180f, 0.35815147f, 0.96963238f, 1.0f, 255.f};
-  db((uint8_t*)tmparr, sizeof(tmparr));
+  db(reinterpret_cast<uint8_t*>(const_cast<float*>(tmparr)), sizeof(tmparr));
 }
 
 void MHA_norm_quantize_reorder_prescale_packed::generate() {

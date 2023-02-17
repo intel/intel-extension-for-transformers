@@ -77,7 +77,7 @@ class jit_seq_cpy_48x4 : public jit_generator {
   virtual ~jit_seq_cpy_48x4() {}
 
   // calculate ld_dst from the M dim (outer dim of src)
-  inline int static dst_step(const int M) { return 48 * (ceil_div(M, 4) * 4); }
+  static inline int dst_step(const int M) { return 48 * (ceil_div(M, 4) * 4); }
 
  private:
   void generate() override;
