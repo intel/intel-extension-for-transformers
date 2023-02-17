@@ -1,17 +1,26 @@
-# Quantized Length Adaptive Transformer
+Step-by-step
+============
 
-The implementation is based on [Length Adaptive Transformer](https://github.com/clovaai/length-adaptive-transformer)'s work.
-Currently, it supports BERT based transformers.
+Quantized Length Adaptive Transformer is based on [Length Adaptive Transformer](https://github.com/clovaai/length-adaptive-transformer)'s work. Currently, it supports BERT and Reberta based transformers.
 
 [QuaLA-MiniLM: A Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) has been accepted by NeurIPS 2022. Our quantized length-adaptive MiniLM model (QuaLA-MiniLM) is trained only once, dynamically fits any inference scenario, and achieves an accuracy-efficiency trade-off superior to any other efficient approaches per any computational budget on the SQuAD1.1 dataset (up to x8.8 speedup with <1% accuracy loss). The following shows how to reproduce this work and we also provide the [jupyter notebook tutorials](../../../../../../docs/tutorials/pytorch/question-answering/Dynamic_MiniLM_SQuAD.ipynb).
 
-## Training
+# Prerequisite​
+
+## 1. Environment
+```
+pip install intel-extension-for-transformers
+pip install -r requirements.txt
+```
+
+# Run
 
 
-### Step 1: Finetuning Pretrained Transformer
+## Step 1: Finetune
+In this step, `output/finetuning` is a fine-tuned minilm for squad, which uploaded to [sguskin/minilmv2-L6-H384-squad1.1](https://huggingface.co/sguskin/minilmv2-L6-H384-squad1.1)
 ```
 python run_qa.py \
---model_name_or_path bert-base-uncased \
+--model_name_or_path nreimers/MiniLMv2-L6-H384-distilled-from-RoBERTa-Large \
 --dataset_name squad \
 --do_train \
 --do_eval \
@@ -24,7 +33,8 @@ python run_qa.py \
 ```
 
 
-### Step 2: Training with LengthDrop
+## Step 2: Training with LengthDrop
+Train it with length-adaptive training to get the dynamic model `output/finetuning` which uploaded to [sguskin/dynamic-minilmv2-L6-H384-squad1.1](https://huggingface.co/sguskin/dynamic-minilmv2-L6-H384-squad1.1)
 
 ```
 python run_qa.py \
@@ -45,9 +55,10 @@ python run_qa.py \
 
 ```
 
-### Step 3: Evolutionary Search
 
-run search to optimize length configurations for any possible target computational budget.
+## Step 3: Evolutionary Search
+
+Run evolutionary search to optimize length configurations for any possible target computational budget.
 
 ```
 python run_qa.py \
@@ -62,7 +73,7 @@ python run_qa.py \
 
 ```
 
-### Step 4: Quantization
+## Step 4: Quantization
 
 ```
 python run_qa.py \
@@ -79,7 +90,7 @@ python run_qa.py \
 ```
 
 
-### Step 5: Apply Length Config for Quantization
+## Step 5: Apply Length Config for Quantization
 ```
 python run_qa.py \
 --model_name_or_path output/quantized-dynamic-minilmv \
@@ -94,7 +105,7 @@ python run_qa.py \
 ```
 
 
-## Performance Data
+# Performance Data
 Performance results test on ​​07/10/2022 with Intel Xeon Platinum 8280 Scalable processor, batchsize = 32
 Performance varies by use, configuration and other factors. See platform configuration for configuration details. For more complete information about performance and benchmark results, visit www.intel.com/benchmarks
 
@@ -214,7 +225,7 @@ NOTES: * length config apply to LA model
 NOTES: ** the multiplication and addition operation amount when model inference  (GFLOPS is obtained from torchprofile tool)
 
 
-### platform configuration
+# Platform Configuration
 
 <table>
 <tbody>

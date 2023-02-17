@@ -201,6 +201,7 @@ class BertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""
 
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=config.pad_token_id)
         self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.hidden_size)
@@ -228,6 +229,7 @@ class BertEmbeddings(nn.Module):
         inputs_embeds: Optional[torch.FloatTensor] = None,
         past_key_values_length: int = 0,
     ) -> torch.Tensor:
+        """The main entry point for the class."""
         if input_ids is not None:
             input_shape = input_ids.size()
         else: # pragma: no cover
@@ -263,7 +265,9 @@ class BertEmbeddings(nn.Module):
 
 
 class BertSelfAttention(nn.Module):
+    """Bert self attention."""
     def __init__(self, config, position_embedding_type=None):
+        """Init an instance base on config."""
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0 and not hasattr(config, "embedding_size"):
             raise ValueError(
@@ -291,6 +295,7 @@ class BertSelfAttention(nn.Module):
         self.is_decoder = config.is_decoder
 
     def transpose_for_scores(self, x: torch.Tensor) -> torch.Tensor:
+        """Transpose for scores."""
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(new_x_shape)
         return x.permute(0, 2, 1, 3)
@@ -306,8 +311,8 @@ class BertSelfAttention(nn.Module):
         output_attentions: Optional[bool] = False,
 
     ) -> Tuple[torch.Tensor]:
+        """The main entry point for the class."""
         mixed_query_layer = self.query(hidden_states)
-
         # If this is instantiated as a cross-attention module, the keys
         # and values come from an encoder; the attention mask needs to be
         # such that the encoder's padding tokens are not attended to.
@@ -393,13 +398,16 @@ class BertSelfAttention(nn.Module):
 
 
 class BertSelfOutput(nn.Module):
+    """Bert self output."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
+        """The main entry point for the class."""
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
@@ -407,13 +415,16 @@ class BertSelfOutput(nn.Module):
 
 
 class BertAttention(nn.Module):
+    """Bert attention."""
     def __init__(self, config, position_embedding_type=None):
+        """Init an instance base on config."""
         super().__init__()
         self.self = BertSelfAttention(config, position_embedding_type=position_embedding_type)
         self.output = BertSelfOutput(config)
         self.pruned_heads = set()
 
     def prune_heads(self, heads): # pragma: no cover
+        """Pruning for heads."""
         if len(heads) == 0:
             return
         heads, index = find_pruneable_heads_and_indices(
@@ -441,6 +452,7 @@ class BertAttention(nn.Module):
         past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
         output_attentions: Optional[bool] = False,
     ) -> Tuple[torch.Tensor]:
+        """The main entry point for the class."""
         self_outputs = self.self(
             hidden_states,
             attention_mask,
@@ -456,7 +468,9 @@ class BertAttention(nn.Module):
 
 
 class BertIntermediate(nn.Module):
+    """Bert intermediate."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
         if isinstance(config.hidden_act, str):
@@ -465,19 +479,23 @@ class BertIntermediate(nn.Module):
             self.intermediate_act_fn = config.hidden_act
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """The main entry point for the class."""
         hidden_states = self.dense(hidden_states)
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
 
 class BertOutput(nn.Module):
+    """Bert output."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor:
+        """The main entry point for the class."""
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
@@ -485,7 +503,9 @@ class BertOutput(nn.Module):
 
 
 class BertLayer(nn.Module):
+    """Bert layer."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
         self.seq_len_dim = 1
@@ -511,6 +531,7 @@ class BertLayer(nn.Module):
         output_length = None,
 	    always_keep_cls_token: Optional[bool] = True,
     ) -> Tuple[torch.Tensor]:
+        """The main entry point for the class."""
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
         self_attn_past_key_value = past_key_value[:2] if past_key_value is not None else None
         self_attention_outputs = self.attention(
@@ -582,13 +603,16 @@ class BertLayer(nn.Module):
         return outputs, keep_indices
 
     def feed_forward_chunk(self, attention_output):
+        """Feed forward chunk."""
         intermediate_output = self.intermediate(attention_output)
         layer_output = self.output(intermediate_output, attention_output)
         return layer_output
 
 
 class BertEncoder(nn.Module):
+    """Bert encoder."""
     def __init__(self, config):
+        """Init an instance base on config.""" 
         super().__init__()
         self.config = config
         self.layer = nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
@@ -610,7 +634,7 @@ class BertEncoder(nn.Module):
         length_config=None,
         always_keep_cls_token=True,
     ) -> Union[Tuple[torch.Tensor], BaseModelOutputWithPastAndCrossAttentions]:
-
+        """The main entry point for the class."""
         bsz, tsz, dim = hidden_states.size()
         
         if length_config is not None:
@@ -722,12 +746,15 @@ class BertEncoder(nn.Module):
 
 
 class BertPooler(nn.Module): # pragma: no cover
+    """Bert pooler."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """The main entry point for the class."""
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
         first_token_tensor = hidden_states[:, 0]
@@ -737,7 +764,9 @@ class BertPooler(nn.Module): # pragma: no cover
 
 
 class BertPredictionHeadTransform(nn.Module): # pragma: no cover
+    """Bert prediction head transform."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         if isinstance(config.hidden_act, str):
@@ -747,6 +776,7 @@ class BertPredictionHeadTransform(nn.Module): # pragma: no cover
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """The main entry point for the class."""
         hidden_states = self.dense(hidden_states)
         hidden_states = self.transform_act_fn(hidden_states)
         hidden_states = self.LayerNorm(hidden_states)
@@ -754,7 +784,9 @@ class BertPredictionHeadTransform(nn.Module): # pragma: no cover
 
 
 class BertLMPredictionHead(nn.Module): # pragma: no cover
+    """Bert language modeling prediction head."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.transform = BertPredictionHeadTransform(config)
 
@@ -768,38 +800,48 @@ class BertLMPredictionHead(nn.Module): # pragma: no cover
         self.decoder.bias = self.bias
 
     def forward(self, hidden_states):
+        """The main entry point for the class."""
         hidden_states = self.transform(hidden_states)
         hidden_states = self.decoder(hidden_states)
         return hidden_states
 
 
 class BertOnlyMLMHead(nn.Module): # pragma: no cover
+    """Bert only for masked language modeling head."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.predictions = BertLMPredictionHead(config)
 
     def forward(self, sequence_output: torch.Tensor) -> torch.Tensor:
+        """The main entry point for the class."""
         prediction_scores = self.predictions(sequence_output)
         return prediction_scores
 
 
 class BertOnlyNSPHead(nn.Module): # pragma: no cover
+    """Bert only for next sequence prediction head."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.seq_relationship = nn.Linear(config.hidden_size, 2)
 
     def forward(self, pooled_output):
+        """The main entry point for the class."""
         seq_relationship_score = self.seq_relationship(pooled_output)
         return seq_relationship_score
 
 
 class BertPreTrainingHeads(nn.Module): # pragma: no cover
+    """Bert pretraining heads."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__()
         self.predictions = BertLMPredictionHead(config)
         self.seq_relationship = nn.Linear(config.hidden_size, 2)
 
     def forward(self, sequence_output, pooled_output):
+        """The main entry point for the class."""
         prediction_scores = self.predictions(sequence_output)
         seq_relationship_score = self.seq_relationship(pooled_output)
         return prediction_scores, seq_relationship_score
@@ -834,6 +876,7 @@ class BertPreTrainedModel(PreTrainedModel): # pragma: no cover
             module.weight.data.fill_(1.0)
 
     def _set_gradient_checkpointing(self, module, value=False):
+        """Setter of gradient for checkpoint."""
         if isinstance(module, BertEncoder):
             module.gradient_checkpointing = value
 
@@ -958,6 +1001,7 @@ class BertModel(BertPreTrainedModel):
     """
 
     def __init__(self, config, add_pooling_layer=True):
+        """Init an instance base on config."""
         super().__init__(config)
         self.config = config
 
@@ -973,15 +1017,19 @@ class BertModel(BertPreTrainedModel):
         self.output_attentions = self.length_config is not None
 
     def get_input_embeddings(self):
+        """Getter of input embeddings."""
         return self.embeddings.word_embeddings
 
     def set_input_embeddings(self, value):
+        """Setter of input embeddings.""" 
         self.embeddings.word_embeddings = value
     
     def set_length_config(self, length_config):
+        """Setter of length config."""
         self.length_config = length_config
 
     def set_output_attentions(self, value):
+        """Setter of output attentions."""
         self.output_attentions = value
 
     def _prune_heads(self, heads_to_prune):
@@ -1143,6 +1191,7 @@ class BertModel(BertPreTrainedModel):
     BERT_START_DOCSTRING,
 )
 class BertForPreTraining(BertPreTrainedModel): # pragma: no cover
+    """Bert for pretrained model"""
     def __init__(self, config):
         super().__init__(config)
 
@@ -1153,9 +1202,11 @@ class BertForPreTraining(BertPreTrainedModel): # pragma: no cover
         self.post_init()
 
     def get_output_embeddings(self):
+        """Getter of output embeddings."""
         return self.cls.predictions.decoder
 
     def set_output_embeddings(self, new_embeddings):
+        """Setter of output embeddings."""
         self.cls.predictions.decoder = new_embeddings
 
     @add_start_docstrings_to_model_forward(BERT_INPUTS_DOCSTRING.format("batch_size, sequence_length"))
@@ -1247,11 +1298,12 @@ class BertForPreTraining(BertPreTrainedModel): # pragma: no cover
     """Bert Model with a `language modeling` head on top for CLM fine-tuning.""", BERT_START_DOCSTRING
 )
 class BertLMHeadModel(BertPreTrainedModel): # pragma: no cover
-
+    """Bert language modeling head model."""
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
     _keys_to_ignore_on_load_missing = [r"position_ids", r"predictions.decoder.bias"]
 
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__(config)
 
         if not config.is_decoder:
@@ -1264,9 +1316,11 @@ class BertLMHeadModel(BertPreTrainedModel): # pragma: no cover
         self.post_init()
 
     def get_output_embeddings(self):
+        """Getter of output embeddings."""
         return self.cls.predictions.decoder
 
     def set_output_embeddings(self, new_embeddings):
+        """Setter of output embeddings."""
         self.cls.predictions.decoder = new_embeddings
 
     @add_start_docstrings_to_model_forward(BERT_INPUTS_DOCSTRING.format("batch_size, sequence_length"))
@@ -1363,6 +1417,7 @@ class BertLMHeadModel(BertPreTrainedModel): # pragma: no cover
         )
 
     def prepare_inputs_for_generation(self, input_ids, past=None, attention_mask=None, **model_kwargs):
+        """Prepare inputs for generation."""
         input_shape = input_ids.shape
         # if model is used as a decoder in encoder-decoder model, the decoder attention mask is created on the fly
         if attention_mask is None:
@@ -1375,6 +1430,7 @@ class BertLMHeadModel(BertPreTrainedModel): # pragma: no cover
         return {"input_ids": input_ids, "attention_mask": attention_mask, "past_key_values": past}
 
     def _reorder_cache(self, past, beam_idx):
+        """Recorder cache."""
         reordered_past = ()
         for layer_past in past:
             reordered_past += (tuple(past_state.index_select(0, beam_idx) for past_state in layer_past),)
@@ -1383,7 +1439,7 @@ class BertLMHeadModel(BertPreTrainedModel): # pragma: no cover
 
 @add_start_docstrings("""Bert Model with a `language modeling` head on top.""", BERT_START_DOCSTRING)
 class BertForMaskedLM(BertPreTrainedModel): # pragma: no cover
-
+    """Bert for masked language modeling."""
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
     _keys_to_ignore_on_load_missing = [r"position_ids", r"predictions.decoder.bias"]
 
@@ -1403,9 +1459,11 @@ class BertForMaskedLM(BertPreTrainedModel): # pragma: no cover
         self.post_init()
 
     def get_output_embeddings(self):
+        """Getter of output embeddings."""
         return self.cls.predictions.decoder
 
     def set_output_embeddings(self, new_embeddings):
+        """Setter of output embeddings."""
         self.cls.predictions.decoder = new_embeddings
 
     @add_start_docstrings_to_model_forward(BERT_INPUTS_DOCSTRING.format("batch_size, sequence_length"))
@@ -1475,6 +1533,7 @@ class BertForMaskedLM(BertPreTrainedModel): # pragma: no cover
         )
 
     def prepare_inputs_for_generation(self, input_ids, attention_mask=None, **model_kwargs):
+        """Prepare inputs for generation."""
         input_shape = input_ids.shape
         effective_batch_size = input_shape[0]
 
@@ -1496,7 +1555,9 @@ class BertForMaskedLM(BertPreTrainedModel): # pragma: no cover
     BERT_START_DOCSTRING,
 )
 class BertForNextSentencePrediction(BertPreTrainedModel): # pragma: no cover
+    """Bert for next sentence prediction."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__(config)
 
         self.bert = BertModel(config)
@@ -1601,7 +1662,9 @@ class BertForNextSentencePrediction(BertPreTrainedModel): # pragma: no cover
     BERT_START_DOCSTRING,
 )
 class BertForSequenceClassification(BertPreTrainedModel): # pragma: no cover
+    """ Bert for sequence classification."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__(config)
         self.num_labels = config.num_labels
         self.config = config
@@ -1711,7 +1774,9 @@ class BertForSequenceClassification(BertPreTrainedModel): # pragma: no cover
     BERT_START_DOCSTRING,
 )
 class BertForMultipleChoice(BertPreTrainedModel): # pragma: no cover
+    """Bert for multiple choice."""
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__(config)
 
         self.bert = BertModel(config)
@@ -1806,10 +1871,11 @@ class BertForMultipleChoice(BertPreTrainedModel): # pragma: no cover
     BERT_START_DOCSTRING,
 )
 class BertForTokenClassification(BertPreTrainedModel): # pragma: no cover
-
+    """Bert for token classification."""
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
 
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__(config)
         self.num_labels = config.num_labels
 
@@ -1893,10 +1959,11 @@ class BertForTokenClassification(BertPreTrainedModel): # pragma: no cover
     BERT_START_DOCSTRING,
 )
 class BertForQuestionAnswering(BertPreTrainedModel):
-
+    """Bert for question answering."""
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
 
     def __init__(self, config):
+        """Init an instance base on config."""
         super().__init__(config)
         self.num_labels = config.num_labels
 
@@ -1998,6 +2065,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         )
 
 def expand_gather(input, dim, index):
+    """Expand gather."""
     size = list(input.size())
     size[dim] = -1
     return input.gather(dim, index.expand(*size))
