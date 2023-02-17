@@ -12,44 +12,41 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "unsqueeze.hpp"
+#include "squeeze.hpp"
 
 #include "common.hpp"
 
 namespace executor {
 
-void UnsqueezeOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void SqueezeOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   output[0]->set_dtype(input[0]->dtype());
 }
 
-void UnsqueezeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  auto output_rank = input[0]->shape().size() + axes_.size();
-  for (auto item : axes_) {
-    if ((item <= output_rank - 1) && (item >= -1 * output_rank)) {
-      LOG(ERROR) << "Axis out of range. Accepted range is [-r, r-1] where r = rank";
+void SqueezeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  auto in_rank = input[0]->shape().size();
+  vector<int64_t> out_shape = input[0]->shape();
+  if (axes_.empty()) {
+    out_shape.erase(std::remove(out_shape.begin(), out_shape.end(), 1), out_shape.end());
+  } else {
+    for (auto axis : axes_) {
+      if (axis < 0) axis = in_rank + axis;
+      if (axis >= in_rank) {
+        LOG(ERROR) << "Axis out of range. Accepted range is [-r, r-1] where r = rank";
+        return;
+      }
+      if (out_shape[axis] == 1) {
+        out_shape[axis] = -1;
+      } else {
+        LOG(ERROR) << "cannot select an axis to squeeze out which has size not equal to one";
+        return;
+      }
     }
+    out_shape.erase(std::remove(out_shape.begin(), out_shape.end(), -1), out_shape.end());
   }
-  vector<int64_t> out_shape(output_rank, -1);
-  for (auto item : axes_) {
-    if (item < 0) item = output_rank + item;
-    if (out_shape[item] != 1) {
-      LOG(ERROR) << "Axis duplicates";
-    }
-    out_shape[item] = 1;
-  }
-
-  int idx = 0;
-  for (int i = 0; i < out_shape.size(); i++) {
-    if (out_shape[i] == 1) {
-      continue;
-    }
-    out_shape[i] = input[0]->shape()[idx++];
-  }
-
   output[0]->set_shape(out_shape);
 }
 
-void UnsqueezeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void SqueezeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   Tensor* src_ptr = input[0];
   Tensor* dst_ptr = output[0];
   auto src_data = src_ptr->mutable_data();
@@ -63,5 +60,5 @@ void UnsqueezeOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   }
 }
 
-REGISTER_OPERATOR_CLASS(Unsqueeze);
+REGISTER_OPERATOR_CLASS(Squeeze);
 }  // namespace executor
