@@ -330,3 +330,10 @@ ONNX_DTYPE_ID = {1: 'fp32',
                 7: 'int32',
                 9: 'bool',
                 6: 'int32',}
+
+# key is the optimize level (higher means you can use more passes)
+# value is the pass name
+# for more passes, see: https://github.com/onnx/optimizer/blob/master/onnxoptimizer/pass_registry.h
+ONNX_OPTIMIZER_PASS = {1: 'eliminate_identity',
+                       2: 'eliminate_shape_gather',
+                      }

@@ -936,5 +936,43 @@
         }
       }
     }
+  },
+  "tiny-vit-random": {
+    "working_dir": "deployment/neural_engine/imagenet/vit",
+    "data_dir": "/tf_dataset2/models/nlp_toolkit/vit/cached-2k-imagenet-1k-datasets",
+    "hf_model_name": "lysandre/tiny-vit-random",
+    "prepare": {
+      "cmd": "bash prepare_model.sh",
+      "params": {
+         "input_model": "lysandre/tiny-vit-random",
+         "task_name": "imagenet-1k",
+         "precision": "fp32/int8",
+         "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/vit",
+         "output_dir": "/model_and_tokenizer"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_executor.py",
+      "params": {
+        "batch_size": 8,
+        "warm_up": 100,
+        "iteration": 1000,
+        "input_model": "model_and_tokenizer",
+        "mode": "accuracy/throughput"        
+      }
+    },
+    "launcher": {
+      "cmd": "deployment/neural_engine/launcher.py",
+      "params": {
+        "max_throughput": {
+          "mode": "max_throughput",
+          "instance_num": "1,2,4,8"
+        },
+        "min_latency": {
+          "mode": "min_latency",
+          "instance_num": "1"
+        }
+      }
+    }
   }
 }
