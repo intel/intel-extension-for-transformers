@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Optimization: provides the orchestrate optimizer for Pytorch."""
-
 import logging
 import os
 
@@ -142,22 +140,38 @@ class NoTrainerOptimizer:   # pragma: no cover
 
     @eval_func.setter
     def eval_func(self, func: Callable):
-        """Set the evaluation function."""
+        """Set the evaluation function.
+            
+        Args:
+            func: evaluation function.
+        """
         self._eval_func = func
 
     @train_func.setter
     def train_func(self, func: Callable):
-        """Set the train function."""
+        """Set the train function.
+        
+        Args:
+            func: train function.
+        """
         self._train_func = func
 
     @provider.setter
     def provider(self, provider):
-        """Set the provider."""
+        """Set the provider.
+        
+        Args:
+            provider: optimization provider.
+        """
         self._provider = provider
 
     @calib_dataloader.setter
     def calib_dataloader(self, dataloader):
-        """Set the calibration dataloader."""
+        """Set the calibration dataloader.
+        
+        Args:
+            dataloader: calibration dataloader.
+        """
         self._calib_dataloader = dataloader
 
     def init_quantizer(
@@ -165,7 +179,12 @@ class NoTrainerOptimizer:   # pragma: no cover
         quant_config,
         provider: str = Provider.INC.value,
     ):
-        """Init a Quantization object with config."""
+        """Init a Quantization object with config.
+        
+        Args:
+            quant_config: quantization config.
+            provider: define the quantization provider.
+        """
         from neural_compressor.experimental import Quantization
 
         assert isinstance(quant_config, QuantizationConfig), \
@@ -224,7 +243,16 @@ class NoTrainerOptimizer:   # pragma: no cover
         calib_func: Optional[Callable] = None,
         calib_dataloader=None,
     ):
-        """Prepare for invoking the _inc_quantize function."""
+        """Prepare for invoking the _inc_quantize function.
+        
+        Args:
+            quant_config: quantization config.
+            provider: define the quantization provider.
+            eval_func: evaluation function.
+            train_func: train function.
+            calib_func: calibration function.
+            calib_dataloader: calibration dataloader.
+        """
         if eval_func is not None:
             self._eval_func = eval_func
         if train_func is not None:
@@ -247,7 +275,12 @@ class NoTrainerOptimizer:   # pragma: no cover
         pruning_config = None,
         provider: str = Provider.INC.value,
     ):
-        """Init a Pruning object with config."""
+        """Init a Pruning object with config.
+        
+        Args:
+            pruning_config: pruning config.
+            provider: define the pruning provider.
+        """
         from neural_compressor.experimental import Pruning
         self.pruning_config = pruning_config
         self.metrics = self.pruning_config.metrics
@@ -269,7 +302,14 @@ class NoTrainerOptimizer:   # pragma: no cover
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
-        """Do the pruning."""
+        """Do the pruning.
+        
+        Args:
+            pruning_config: pruning config.
+            provider: define the pruning provider.
+            eval_func: evaluation function.
+            train_func: train function.
+        """
         if self.pruner is None:
             self.init_pruner(pruning_config=pruning_config, provider=provider)
         if eval_func is not None:
@@ -291,7 +331,13 @@ class NoTrainerOptimizer:   # pragma: no cover
         teacher_model,
         provider: str = Provider.INC.value,
     ):
-        """Init a Distillation object with config and the teacher model."""
+        """Init a Distillation object with config and the teacher model.
+        
+        Args:
+            distillation_config: distillation config.
+            teacher_model: set the teacher model.
+            provider: define the distillation provider.
+        """
         from neural_compressor.experimental import Distillation, common
         assert isinstance(distillation_config, DistillationConfig), \
             "please pass a instance of PruningConfig to trainer.prune!"
@@ -315,7 +361,15 @@ class NoTrainerOptimizer:   # pragma: no cover
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
     ):
-        """Do the distillation."""
+        """Do the distillation.
+        
+        Args:
+            distillation_config: distillation config.
+            teacher_model: set the teacher model.
+            provider: define the distillation provider.
+            eval_func: evaluation function.
+            train_func: train function.
+        """
         if self.distiller is None:
             self.init_distiller(
                 distillation_config=distillation_config,
@@ -336,7 +390,12 @@ class NoTrainerOptimizer:   # pragma: no cover
         return self.opt_model
 
     def _save_inc_int8(self, opt_model, output_dir):
-        """Save the optimized model in the output directory."""
+        """Save the optimized model in the output directory.
+        
+        Args:
+            opt_model: optimized model.
+            output_dir: output path.
+        """
         os.makedirs(output_dir, exist_ok=True)
         self.model.config.architectures = [self.model.__class__.__name__]
         self.model.config.torch_dtype = "int8"

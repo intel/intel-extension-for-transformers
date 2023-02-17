@@ -9,3 +9,6 @@ The following API information is available:
    optimization/benchmark.rst
    optimization/distillation.rst
    optimization/pipeline.rst
+   optimization/optimizer_tf.rst
+   optimization/optimizer.rst
+   optimization/trainer.rst
