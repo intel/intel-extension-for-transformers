@@ -523,8 +523,8 @@ def main():
         tune_metric = metrics.Metric(name=metric_name)
         prune_type = 'BasicMagnitude' \
             if optim_args.pruning_approach else optim_args.pruning_approach
-        target_sparsity_ratio = None \
-            if optim_args.target_sparsity_ratio else optim_args.target_sparsity_ratio
+        target_sparsity_ratio = optim_args.target_sparsity_ratio \
+            if optim_args.target_sparsity_ratio else None
         pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
         pruning_conf = PruningConfig(pruner_config=pruner_config, metrics=tune_metric)
 
