@@ -18,10 +18,12 @@
 """The loader file."""
 
 from ..graph_utils import LazyImport, get_model_fwk_name
+import os
+from .. import logger
 
 onnx = LazyImport('onnx')
 tf = LazyImport('tensorflow')
-
+onnxoptimizer = LazyImport('onnxoptimizer')
 
 class Loader(object):
     """Load the model into the frontend of different inference frameworks."""
@@ -43,4 +45,17 @@ class Loader(object):
         if framework == 'onnxruntime':
             if isinstance(model, str):
                 model = onnx.load(model)
+                
+                try:
+                    from ..onnx_utils import ONNX_OPTIMIZER_PASS
+                    optimize_level = os.getenv('ONNX_OPTIMIZER_LEVEL', 1)
+                    passes = [v for k, v in ONNX_OPTIMIZER_PASS.items() if k <= optimize_level]
+                    # for usage, see: https://github.com/onnx/optimizer/blob/master/onnxoptimizer/
+                    # __init__.py#L25
+                    model = onnxoptimizer.optimize(model, passes, fixed_point=False)
+                    onnx.save(model, "optmodel.onnx")
+                    logger.info("Try to optimize onnx model use onnxoptimizer and "\
+                                    "optimize passes are {}".format(passes))
+                except BaseException:
+                    pass
         return model, framework
