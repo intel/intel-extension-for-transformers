@@ -14,9 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The trainer class for pytorch framework, to easily train or finetune a model."""
-
 import collections
 import inspect
 import math
@@ -110,7 +108,12 @@ timeit = LazyImport('timeit')
 class BaseTrainer():
     """The base class of trainer."""
     def __init__(self, *args, **kwargs):
-        """Initialization function."""
+        """Initialization function.
+        
+        Args:
+            args: defined paramerts. 
+            kwargs: additional keyword arguments used to hide deprecated arguments.
+        """
         super().__init__(*args, **kwargs)
         self.in_training = False
         self._provider = "inc"
@@ -561,7 +564,13 @@ class BaseTrainer():
         return self.opt_model
 
     def create_optimizer_builtin(self, config_list, teacher_model=None):
-        """The function to create optimizer."""
+        """The function to create optimizer.
+        
+        Args:
+            config_list: The list of configs.
+            teacher_model (:obj:`Callable`, optional): The model(torch.nn.Module) transfers knowledge 
+                to a smaller model.
+        """
         components = []
         for config in config_list:
             if isinstance(config, QuantizationConfig):
@@ -1348,6 +1357,12 @@ class BaseTrainer():
         By default, all models return the loss in the first element.
 
         Subclass and override for custom behavior.
+
+        Args:
+            model (:obj:`nn.Module`): The target model to compute the loss.
+            inputs (:obj:`Dict[str, Union[torch.Tensor, Any]]`): The inputs and targets of the model.
+
+
         """
         labels = inputs.pop("labels") \
             if self.label_smoother is not None and "labels" in inputs else None
@@ -1509,6 +1524,11 @@ class BaseTrainer():
         self.args.lr_scheduler_type = 'constant'
 
         def take_train_steps(model, trainer):
+            """Take a train step with NAS.
+
+            Args:
+
+            """
             trainer.model_wrapped = model
             trainer.model = model
             train_result = trainer.train()
@@ -1602,6 +1622,15 @@ class BaseTrainer():
                              train_steps=None,
                              block_name=None,
                              checkpoint=None):
+            """The a train step with automatic distillation.
+            
+            Args:
+                trainer: define the training and evaluation loop for PyTorch.
+                agent: distillation model.
+                training_steps: max train steps.
+                block_name: the name of blocks that do not involve update.
+                checkout: resume path.
+            """
             trainer.model_wrapped = model
             trainer.model = model
             if train_steps is not None and isinstance(train_steps, int):
@@ -1621,6 +1650,15 @@ class BaseTrainer():
             return trainer.model
 
         def take_eval_steps(model, trainer, metric_names, save_metrics=False):
+            """The a evaluation step with automatic distillation.
+            
+            Args:
+                model: the target model to make evaluation.
+                trainer: define the training and evaluation loop for PyTorch.
+                metric_names: the evaluation metrics.
+                save_metrics: choose save the evaluation results or not.
+            """
+
             trainer.model = model
             metrics = trainer.evaluate()
             if save_metrics:
@@ -1634,6 +1672,11 @@ class BaseTrainer():
             return {metric_name: metrics.get(metric_name) for metric_name in metric_names}
 
         def train_func_builtin(model):
+            """The function to use specified method to train the model.
+            
+            Args:
+                model: input model.
+            """
             from torch.utils.data import Subset
 
             def run_distillers(model,
@@ -1699,6 +1742,11 @@ class BaseTrainer():
             return model
 
         def eval_func_builtin(model):
+            """The function to use specified method to evaluate the model.
+            
+            Args:
+                model: input model.
+            """
             return take_eval_steps(model,
                                    trainer=self,
                                    metric_names=agent.metrics,
@@ -1742,6 +1790,16 @@ class BaseTrainer():
 
         Works both with or without labels.
         Does not save all predictions and labels to avoid out of memory when predictions is huge.
+
+        Args:
+            dataloader: the evaluation dataloader.
+            description: the description of the process.
+            prediction_loss_only: only return the prediction loss.
+            ignore_keys: A list of keys in the output of your model
+            (if it is a dictionary) that should be ignored when gathering predictions for evaluation
+            during the training.
+            metric_key_prefix: the prefix of the evaluation metric.
+
         """
         # pylint: disable=E1101
         prediction_loss_only = (prediction_loss_only if prediction_loss_only is not None else
@@ -1922,7 +1980,12 @@ class BaseTrainer():
         torch.save(self.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
 
     def export_to_onnx(self, *args, **kwargs):
-        """The function to tranfer model into onnx model."""
+        """The function to tranfer model into onnx model.
+        
+        Args:
+            args: defined paramerts. 
+            kwargs: additional keyword arguments used to hide deprecated arguments.
+        """
         if self.enable_bf16:
             self.export_to_bf16_onnx(*args, **kwargs)
         elif not self.enable_inc_quant:
@@ -1937,7 +2000,14 @@ class BaseTrainer():
         do_constant_folding=True,
         verbose=True,
     ):
-        """The function to tranfer model into fp32 onnx model."""
+        """The function to tranfer model into fp32 onnx model.
+        
+        Args:
+            save_path: the save path of the exported model.
+            opset_version: the onnx op version of the exported model.
+            do_constant_folding: select to do constant folding or not.
+            verbose: save onnx model.
+        """
         if self.fp32_model is None:
             model = self.model.eval()
         else:
@@ -1982,7 +2052,14 @@ class BaseTrainer():
         do_constant_folding=True,
         verbose=True,
     ):
-        """The function to tranfer model into bf16 onnx model."""
+        """The function to tranfer model into bf16 onnx model.
+        
+        Args:
+            save_path: the save path of the exported model.
+            opset_version: the onnx op version of the exported model.
+            do_constant_folding: select to do constant folding or not.
+            verbose: save onnx model.
+        """
         fp32_path = save_path + '.tmp' if save_path \
           else os.path.join(self.args.output_dir, 'bf16-model.onnx.tmp')
         onnx_save_path = save_path if save_path \
@@ -2037,7 +2114,17 @@ class BaseTrainer():
         calibrate_method='minmax',
         scale_mapping=False,
     ):
-        """The function to tranfer model into int8 onnx model."""
+        """The function to tranfer model into int8 onnx model.
+        
+        Args:
+            save_path: the save path of the exported model.
+            quant_format: quantization format.
+            dtype: the quantized op type.
+            opset_version: the onnx op version of the exported model.
+            sample_size: the sampling size to calibrate the min-max range of ops.
+            calibrate_method: the calibration method for onnx export.
+            scale_mapping: make scale mapping of pytorch model and onnx model.
+        """
         if self.provider != 'inc':  # pragma: no cover
             logger.error("export_to_onnx API only supports INC model right now.")
             sys.exit(0)
@@ -2373,7 +2460,11 @@ class BaseTrainer():
         self,
         dynamic_config: DynamicLengthConfig,
     ):
-        """The function to set dynamic config."""
+        """The function to set dynamic config.
+        
+        Args:
+            dynamic_config: the settings of the dynamic config. 
+        """
         self.dynamic_config = dynamic_config
         lc = None
 
