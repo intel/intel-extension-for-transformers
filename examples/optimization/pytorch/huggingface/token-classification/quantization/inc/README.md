@@ -1,8 +1,20 @@
-# Token classification
+Step-by-step
+============
 
-The script `run_ner.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+Token classification assigns a label to individual tokens in a sentence. One of the most common token classification tasks is Named Entity Recognition (NER). NER attempts to find a label for each entity in a sentence, such as a person, location, or organization.
 
-Here is how to run the script:
+# Prerequisite​
+
+## 1. Environment
+```
+pip install -r requirements.txt
+```
+
+
+# Run
+
+
+## 1. Quantization
  
 ```
  python run_ner.py \
@@ -17,20 +29,9 @@ Here is how to run the script:
     --overwrite_output_dir
 ```
 
-### Validated model list
+# Performance Data
 
 |Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
 |NER|elastic/distilbert-base-uncased-finetuned-conll03-english| ✅| ✅| ✅
 
-
-
-### Command
-
-```
-bash run_tuning.sh  --topology=topology
-```
-
-```
-bash run_benchmark.sh --topology=topology --mode=benchmark
-```
