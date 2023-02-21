@@ -36,12 +36,12 @@ class Unsqueeze(Operator):
         if framework == 'onnxruntime':
             # ai.onnx v11
             if len(node.attribute):
-                self._attr['axis'] = list2str(node.attribute[0].ints)
+                self._attr['axes'] = list2str(node.attribute[0].ints)
             # ai.onnx v14
             else:
                 if len(self._input_tensors[1].data) == 1:
-                   self._attr['axis'] = int(self._input_tensors[1].data)
+                   self._attr['axes'] = int(self._input_tensors[1].data)
                 else:
-                   self._attr['axis'] = list2str(self._input_tensors[1].data)
+                   self._attr['axes'] = list2str(self._input_tensors[1].data)
                 self._input_tensors.pop()
 
