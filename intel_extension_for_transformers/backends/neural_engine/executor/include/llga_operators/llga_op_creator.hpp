@@ -56,6 +56,7 @@ class NEURALENGINE_API_ LLGAOPCreator {
 
   void CreateWildcardOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
   bool CreateSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
+  bool CreateLogSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
   int CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
                                bool has_bias, bool transpose_a_, bool transpose_b_);
   int CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,

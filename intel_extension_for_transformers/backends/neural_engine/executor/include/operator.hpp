@@ -155,6 +155,7 @@ class Operator {
   std::map<string, string> attrs_;
   static std::unordered_map<string, jd::data_type> type2sparsemem_;
   const Model* model_ = nullptr;
+  static std::unordered_map<string, jd::data_type> type_2_sparsemem;
 };  // class Operator
 
 }  // namespace executor

@@ -75,6 +75,27 @@ bool LLGAOPCreator::CreateSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<Operat
   return true;
 }
 
+bool LLGAOPCreator::CreateLogSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index) {
+  auto attrs_map = op_conf->attributes();
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    string output_dtype_ = attrs_map["output_dtype"];
+    if (output_dtype_ != "fp32") {
+      return false;
+    }
+  }
+  iter = attrs_map.find("axis");
+  vector<logical_tensor> inputs, outputs;
+  llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
+  llga_op logsoftmax_op(llga_info->GetOPIndex(), llga_op::kind::LogSoftmax, inputs, outputs,
+                     "logsoftmax" + to_string(llga_info->GetOPIndex()));
+  iter = attrs_map.find("axis");
+  int64_t axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : -1;
+  logsoftmax_op.set_attr("axis", static_cast<int64_t>(axis_));
+  llga_info->AddLLGAOP(logsoftmax_op, index);
+  return true;
+}
+
 int LLGAOPCreator::CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<logical_tensor>& inputs, int index,
                                             bool has_bias, bool transpose_a_, bool transpose_b_) {
   logical_tensor dst_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};

@@ -28,6 +28,7 @@ enum class kernel_kind : uint8_t {
   layernormalized_spmm,
   transpose_matmul,
   softmax,
+  logsoftmax,
   gather,
   attention,
   transpose_mha

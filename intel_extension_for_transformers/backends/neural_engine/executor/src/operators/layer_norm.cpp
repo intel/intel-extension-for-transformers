@@ -57,7 +57,6 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
   vector<int64_t> src_shape = input[0]->shape();
   src_desc_ = {src_shape, jd::data_type::fp32, jd::format_type::ba};
   jd::tensor_desc affine_desc = {{}, jd::data_type::fp32, jd::format_type::ba};
-  jd::tensor_desc mean_var_desc = {{}, jd::data_type::fp32, jd::format_type::undef};
   jd::data_type dst_dt;
   if (output[0]->dtype() == "fp32") dst_dt = jd::data_type::fp32;
   if (output[0]->dtype() == "s8") dst_dt = jd::data_type::s8;
@@ -66,7 +65,6 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
 
   vector<jd::tensor_desc> ts_descs = {src_desc_, dst_desc_, affine_desc};
   std::unordered_map<std::string, std::string> op_attrs_;
-    op_attrs_["spec_type"] = "normal";
   auto& dst_tensor_ptr = output[0];
   dst_tensor_ptr->set_shape(src_shape);
 
@@ -80,7 +78,6 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
   vector<jd::postop_attr> postops;
   if (quantize_fuse_) {
     float zp = 0, scale = 1;
-    // TODO(Bo): get zp & scale.
     jd::postop_attr u8_quantize = {jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, zp, 0, scale};
     postops.push_back(u8_quantize);
     op_attrs_["postop_list"] = "s8quant+" + std::to_string(zp) + "+" + std::to_string(scale);
