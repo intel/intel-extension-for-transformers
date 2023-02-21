@@ -37,8 +37,10 @@ void amx_tile_config_t::amx_tile_configure(int thread_x, tile_param_t param) {
 
 void amx_tile_config_t::amx_tile_release() { tilerls.tile_release(); }
 
+#ifdef WITH_GCC_FLAGS
 #pragma GCC push_options
 #pragma GCC optimize("O0")
+#endif
 void configure_tiles(tile_param_t param, tileconfig_t* sparselib_tc) {
   // Filling tile configure structure. Could be done offline.
   sparselib_tc->palette_id = 1;
@@ -72,4 +74,6 @@ void configure_tiles(tile_param_t param, tileconfig_t* sparselib_tc) {
     sparselib_tc->colb[t] = 0;
   }
 }
+#ifdef WITH_GCC_FLAGS
 #pragma GCC pop_options
+#endif

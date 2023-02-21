@@ -36,13 +36,13 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_matmul_vnni_noperm_p2031_p1302.cpp
     test_softmax_kernel.cpp
     test_layernormalized_spmm_kernel.cpp
-    test_transpose_mha.cpp
     test_seq_cpy_2x8x8.cpp
     test_seq_cpy_48x4.cpp
 )
 
 if(NOT WIN32) # TODO(jiwei): disable attention test on windows due to lack of VNNI instruction set
 list(APPEND KERNEL_TEST_CASES_SRC test_attention.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_transpose_mha.cpp)    
 endif()
 if(UNIX)
 list(APPEND KERNEL_TEST_CASES_SRC test_spmm_amx_bf16_x16_kernel.cpp)

@@ -70,14 +70,14 @@ string Model::Serialize() {
   std::shared_ptr<char> model_conf_len_c = std::shared_ptr<char>(new char[sizeof(size_t)+1],
                                                              std::default_delete<char[]>());
 #if _WIN32
-  _snprintf(model_conf_len_c.get(), sizeof(size_t)+1, "%ul64", model_conf_len);
+  _snprintf(model_conf_len_c.get(), sizeof(size_t)+1, "%ul64", static_cast<unsigned int>(model_conf_len));
 #else
   snprintf(model_conf_len_c.get(), sizeof(size_t)+1, "%ul64", model_conf_len);
 #endif
   std::shared_ptr<char> weight_len_c = std::shared_ptr<char>(new char[sizeof(size_t)+1],
                                                              std::default_delete<char[]>());
 #if _WIN32
-  _snprintf(weight_len_c.get(), sizeof(size_t)+1, "%ul64", weight_len);
+  _snprintf(weight_len_c.get(), sizeof(size_t)+1, "%ul64", static_cast<unsigned int>(weight_len));
 #else
   snprintf(weight_len_c.get(), sizeof(size_t)+1, "%ul64", weight_len);
 #endif

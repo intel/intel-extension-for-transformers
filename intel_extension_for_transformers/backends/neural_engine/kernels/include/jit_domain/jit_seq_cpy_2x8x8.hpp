@@ -23,6 +23,9 @@
 namespace jd {
 class jit_seq_cpy_2x8x8 : public jit_generator {
  public:
+  // calculate ld_dst from the M dim (outer dim of src)
+  inline int static dst_step(const int M) { return 8 * (ceil_div(M, 8) * 8); }
+
   struct param_t {
     uint8_t val_offset;  // add an offset to every elements
   };
@@ -63,9 +66,6 @@ class jit_seq_cpy_2x8x8 : public jit_generator {
    */
   explicit jit_seq_cpy_2x8x8(const jit_seq_cpy_2x8x8::param_t& param) : jit_generator(), val_offset(param.val_offset) {}
   virtual ~jit_seq_cpy_2x8x8() {}
-
-  // calculate ld_dst from the M dim (outer dim of src)
-  static inline int dst_step(const int M) { return 8 * (ceil_div(M, 8) * 8); }
 
  private:
   void generate() override;

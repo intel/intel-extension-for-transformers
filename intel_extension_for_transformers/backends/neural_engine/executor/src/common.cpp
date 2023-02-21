@@ -114,7 +114,6 @@ vector<int64_t> GetShapes(const vector<int64_t>& origin_shape, const vector<int6
   }
   int shape_size = origin_shape.size();
   vector<int64_t> transed_shape(shape_size, 0);
-#pragma omp parallel for
   for (int i = 0; i < shape_size; ++i) {
     int trans_axis_id = absolute_perm[i];
     transed_shape[i] = origin_shape[trans_axis_id];
@@ -553,7 +552,6 @@ void zero_ker(float* out, size_t len) {
   int64_t i = 0;
 #if __AVX512F__
   __m512 zero_512 = _mm512_setzero_ps();
-#pragma unroll(4)
   for (i = 0; i < len - 15; i += 16) {
     _mm512_storeu_ps(out + i, zero_512);
   }
@@ -570,7 +568,6 @@ void zero_ker(float* out, size_t len) {
 void move_ker(float* out, const float* in, size_t len) {
   int64_t i = 0;
 #if __AVX512F__
-#pragma unroll(4)
   for (i = 0; i < len - 15; i += 16) {
     auto in0 = _mm512_loadu_ps(in + i);
     _mm512_storeu_ps(out + i, in0);
@@ -589,7 +586,6 @@ void move_ker(float* out, const float* in, size_t len) {
 void add_ker(float* inout, float* in, size_t len) {
   int i = 0;
 #if __AVX512F__
-#pragma unroll(2)
   for (i = 0; i < len - 31; i += 32) {
     auto out1 = _mm512_loadu_ps(inout + i);
     auto out2 = _mm512_loadu_ps(inout + i + 16);
@@ -645,7 +641,6 @@ void zero_ker(uint16_t* out, size_t len) {
   int64_t i = 0;
 #if __AVX512F__
   __m512i zero_512 = _mm512_setzero_si512();
-#pragma unroll(4)
   for (i = 0; i < len - 31; i += 32) {
     _mm512_storeu_si512(out + i, zero_512);
   }
@@ -662,7 +657,6 @@ void zero_ker(uint16_t* out, size_t len) {
 void move_ker(uint16_t* out, const uint16_t* in, size_t len) {
   int64_t i = 0;
 #if __AVX512F__
-#pragma unroll(4)
   for (i = 0; i < len - 31; i += 32) {
     auto in0 = _mm512_loadu_si512(in + i);
     _mm512_storeu_si512(out + i, in0);
@@ -681,7 +675,6 @@ void move_ker(uint16_t* out, const uint16_t* in, size_t len) {
 void add_ker(uint16_t* inout, uint16_t* in, size_t len) {
   int i = 0;
 #if __AVX512F__
-#pragma unroll(2)
   for (i = 0; i < len - 31; i += 32) {
     auto inout1 = cvt_bf16_to_fp32(_mm256_loadu_si256(reinterpret_cast<__m256i*>(inout + i)));
     auto inout2 = cvt_bf16_to_fp32(_mm256_loadu_si256(reinterpret_cast<__m256i*>(inout + i + 16)));
@@ -718,7 +711,6 @@ void zero_ker(uint8_t* out, size_t len) {
   int64_t i;
 #if __AVX512F__
   __m512i zero_512 = _mm512_setzero_si512();
-#pragma unroll(4)
   for (i = 0; i < len - 63; i += 64) {
     _mm512_storeu_si512(out + i, zero_512);
   }
@@ -735,7 +727,6 @@ void zero_ker(uint8_t* out, size_t len) {
 void move_ker(uint8_t* out, const uint8_t* in, size_t len) {
   int64_t i;
 #if __AVX512F__
-#pragma unroll(2)
   for (i = 0; i < len - 63; i += 64) {
     auto in0 = _mm512_loadu_si512(in + i);
     _mm512_storeu_si512(out + i, in0);
@@ -754,7 +745,6 @@ void move_ker(uint8_t* out, const uint8_t* in, size_t len) {
 void add_ker(uint8_t* inout, uint8_t* in, size_t len) {
   int64_t i;
 #if __AVX512F__
-#pragma unroll(2)
   for (i = 0; i < len - 63; i += 64) {
     auto in0 = _mm512_loadu_si512(in + i);
     auto out = _mm512_loadu_si512(inout + i);

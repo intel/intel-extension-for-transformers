@@ -80,7 +80,7 @@ output = model(**input).logits.argmax().item()
     <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
   </tr>
   <tr>
-    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/auto_distillation">Neural Architecture Search</a></td>
+    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/nas">Neural Architecture Search</a></td>
     <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
     <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a>/<a href="docs/objectives.md">Objectives</a></td>
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>

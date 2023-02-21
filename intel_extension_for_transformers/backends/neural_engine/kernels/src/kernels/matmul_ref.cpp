@@ -186,7 +186,6 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
         for (dim_t j = 0; j < N_; ++j) {
           float value = 0;
           dim_t dst_idx = ibs0 * dst_stride[0] + ibs1 * dst_stride[1] + i * dst_stride[2] + j * dst_stride[3];
-#pragma omp simd
           for (dim_t k = 0; k < K_; ++k) {
             dim_t l_idx = ibs0 * left_stride[0] + ibs1 * left_stride[1] + i * left_stride[2] + k * left_stride[3];
             dim_t r_idx = ibs0 * right_stride[0] + ibs1 * right_stride[1] + k * right_stride[2] + j * right_stride[3];
