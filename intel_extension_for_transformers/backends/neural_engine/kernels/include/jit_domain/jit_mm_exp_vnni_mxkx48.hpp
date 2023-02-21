@@ -100,4 +100,5 @@ class jit_mm_exp_vnni_mxkx48_t : public jit_generator {
   Xbyak::Label l_log2ef, l_halff, l_poly_c[3];
 };
 }  // namespace jd
+
 #endif  // ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_MM_EXP_VNNI_MXKX48_HPP_

@@ -99,4 +99,5 @@ bool layernormalized_spmm_k_t::execute(const std::vector<const void*>& rt_data) 
   kernels_[1]->execute(lnorm_rt_data);
   return true;
 }
+
 }  // namespace jd

@@ -76,4 +76,5 @@ class layernormalized_spmm_k_t : public kernel_t {
 };
 
 }  // namespace jd
+
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORMALIZED_SPMM_HPP_

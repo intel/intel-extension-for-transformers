@@ -32,6 +32,10 @@
 #include <ittnotify.h>
 #endif
 
+#if __GNUC__ >= 4 || defined(__clang__)
+#define WITH_GCC_FLAGS
+#endif
+
 #ifndef SPARSE_API_
 #ifdef _MSC_VER
 #if SPARSE_KERNEL_BUILD
@@ -51,6 +55,10 @@
 
 #ifdef _WIN32
 #include <malloc.h>
+#ifdef aligned_free
+#undef aligned_free
+#endif
+
 #define aligned_alloc(align, size) _aligned_malloc(size, align)
 #define aligned_free _aligned_free
 #else

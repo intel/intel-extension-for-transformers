@@ -59,7 +59,6 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
   // Actually, no need for alignment
   float* dout = reinterpret_cast<float*>(aligned_alloc(64, N * ld_16 * sizeof(float)));
   __m512 vmax[N];
-#pragma unroll N
   for (int i = 0; i < N; ++i) {
     vmax[i] = _mm512_setzero_ps();
   }
@@ -67,7 +66,6 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
   // 1. get max
   int64_t d;
   for (d = 0; d < ld / 16 * 16; d += 16) {
-#pragma unroll N
     for (int i = 0; i < N; ++i) {
       auto src_f32 = _mm512_loadu_ps(pin + i * ld + d);
       vmax[i] = _mm512_max_ps(src_f32, vmax[i]);
@@ -81,7 +79,6 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
     // Initialize the input to a small value so that the sum of boundary value (e^x) is 0.
     // It fixes the ouput fluctuation in the paddding case.
     auto min_ps = _mm512_set1_ps(-100000.f);
-#pragma unroll N
     for (int i = 0; i < N; ++i) {
       auto src_f32 = _mm512_mask_loadu_ps(min_ps, res_mask, pin + i * ld + d);
       vmax[i] = _mm512_max_ps(src_f32, vmax[i]);
@@ -91,7 +88,6 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
 
   // 2. get exp and exp sum
   __m512 vsum[N];
-#pragma unroll N
   for (int i = 0; i < N; ++i) {
     vmax[i] = _mm512_set1_ps(_mm512_reduce_max_ps(vmax[i]));
     vsum[i] = _mm512_setzero_ps();
@@ -99,7 +95,6 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
 
   float* exp_out = reinterpret_cast<float*>(aligned_alloc(64, N * ld_16 * sizeof(float)));
   for (d = 0; d < ld_16; d += 16) {
-#pragma unroll N
     for (int i = 0; i < N; ++i) {
       auto src_f32 = _mm512_loadu_ps(dout + i * ld_16 + d);
       auto src_sub_max_f32 = _mm512_sub_ps(src_f32, vmax[i]);
@@ -112,7 +107,6 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
 
   // 3. quant
   auto voscale = _mm512_set1_ps(oscale);
-#pragma unroll N
   for (int i = 0; i < N; ++i) {
     vsum[i] = _mm512_div_ps(voscale, _mm512_set1_ps(_mm512_reduce_add_ps(vsum[i])));
   }
@@ -122,7 +116,6 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
 
   auto pout = reinterpret_cast<uint8_t*>(out);
   for (d = 0; d < ld / 16 * 16; d += 16) {
-#pragma unroll N
     for (int i = 0; i < N; ++i) {
       auto exp_src_sub_max_f32 = _mm512_loadu_ps(exp_out + i * ld_16 + d);
       auto softmax_f32 =
@@ -139,7 +132,6 @@ void softmax_u8(void* out, void* in, const float oscale, const int64_t ld) {
   if (d < ld) {
     int res = ld - d;
     __mmask16 res_mask = (1 << res) - 1;
-#pragma unroll N
     for (int i = 0; i < N; ++i) {
       auto exp_src_sub_max_f32 = _mm512_loadu_ps(exp_out + i * ld_16 + d);
       auto softmax_f32 =

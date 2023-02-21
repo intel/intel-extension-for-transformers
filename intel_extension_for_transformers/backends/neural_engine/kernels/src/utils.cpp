@@ -55,8 +55,10 @@ float cast_to<bfloat16_t, float>(bfloat16_t x) {
 //   return tmp.b[1];
 // }
 
+#ifdef WITH_GCC_FLAGS
 #pragma GCC push_options
 #pragma GCC optimize "no-strict-aliasing"
+#endif
 inline float make_fp32(bfloat16_t x) {
   unsigned int y = static_cast<unsigned int>(x);
   y = y << 16;
@@ -69,7 +71,9 @@ inline bfloat16_t make_bf16(float x) {
   *res = *res >> 16;
   return (bfloat16_t)*res;
 }
+#ifdef WITH_GCC_FLAGS
 #pragma GCC pop_options
+#endif
 
 template <typename T>
 void init_vector(T* v, int num_size, float range1, float range2, int seed) {
@@ -210,8 +214,9 @@ int get_data_size(jd::data_type dt) {
   return jd::type_size.at(dt);
 }
 
-#pragma GCC push_options
+#ifdef WITH_GCC_FLAGS
 #pragma GCC optimize "no-strict-aliasing"
+#endif
 float get_exp(float x) {
   unsigned int max = 0x42b17218;
   unsigned int min = 0xc2aeac50;
@@ -224,8 +229,9 @@ float get_exp(float x) {
     return expf(x);
   }
 }
-#pragma GCC pop_options
-
+#ifdef WITH_GCC_FLAGS
+#pragma GCC optimize "strict-aliasing"
+#endif
 // todo:add a erf_gelu version.
 float get_gelu(float x) {
   // an approximate fitting function of GELU(x)

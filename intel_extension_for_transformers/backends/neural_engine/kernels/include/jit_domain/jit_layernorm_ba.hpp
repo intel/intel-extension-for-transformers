@@ -86,7 +86,7 @@ class jit_layernorm_ba_t : public jit_generator {
   int unroll_degree;
   const int zmm_byte_size = 64;
   const int xmm_byte_size = 16;
-  std::vector<int> unroll_reg_idxs;
+  std::vector<bool> unroll_reg_idxs;
   std::map<int, int> src_load_offset;
   std::map<int, int> dst_load_offset;
   std::map<reg_type, std::set<int>> reg_map;

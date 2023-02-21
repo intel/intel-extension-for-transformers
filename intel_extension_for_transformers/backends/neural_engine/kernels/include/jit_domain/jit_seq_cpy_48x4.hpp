@@ -23,6 +23,9 @@
 namespace jd {
 class jit_seq_cpy_48x4 : public jit_generator {
  public:
+  // calculate ld_dst from the M dim (outer dim of src)
+  inline int static dst_step(const int M) { return 48 * (ceil_div(M, 4) * 4); }
+
   struct param_t {
     bool sum_m;           // calculate sum along the M axis
     bool is_unsigned;     // datatype of either signed or unsigned; only useful when calculating sum
@@ -75,9 +78,6 @@ class jit_seq_cpy_48x4 : public jit_generator {
   explicit jit_seq_cpy_48x4(const jit_seq_cpy_48x4::param_t& param)
       : jit_generator(), sum_m(param.sum_m), is_unsigned(param.is_unsigned), sum_pad_val(param.sum_pad_val) {}
   virtual ~jit_seq_cpy_48x4() {}
-
-  // calculate ld_dst from the M dim (outer dim of src)
-  static inline int dst_step(const int M) { return 48 * (ceil_div(M, 4) * 4); }
 
  private:
   void generate() override;

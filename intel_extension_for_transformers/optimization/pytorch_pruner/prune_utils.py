@@ -134,11 +134,13 @@ def process_and_check_config(val):
         pruner['excluded_names'] = reset_non_value_to_default(info, 'excluded_names', excluded_names)
         pruner['prune_layer_type'] = reset_non_value_to_default(info, 'prune_layer_type', prune_layer_type)
         pruner['target_sparsity'] = reset_non_value_to_default(info, 'target_sparsity', target_sparsity)
-        pruner['update_frequency_on_step'] = reset_non_value_to_default(info, 'update_frequency_on_step', update_frequency_on_step)
+        pruner['update_frequency_on_step'] = reset_non_value_to_default(
+            info, 'update_frequency_on_step', update_frequency_on_step)
         pruner['prune_domain'] = reset_non_value_to_default(info, 'prune_domain', prune_domain)
         pruner['prune_type'] = reset_non_value_to_default(info, 'prune_type', prune_type)
         pruner['sparsity_decay_type'] = reset_non_value_to_default(info, 'sparsity_decay_type', sparsity_decay_type)
-        pruner['max_sparsity_ratio_per_layer'] = reset_non_value_to_default(info, 'max_sparsity_ratio_per_layer', max_sparsity_ratio_per_layer)
+        pruner['max_sparsity_ratio_per_layer'] = reset_non_value_to_default(
+            info, 'max_sparsity_ratio_per_layer', max_sparsity_ratio_per_layer)
         pruner['names'] = reset_non_value_to_default(info, 'names', names)
         pruner['extra_excluded_names'] = reset_non_value_to_default(info, 'extra_excluded_names', extra_excluded_names)
         pruner['pattern'] = reset_non_value_to_default(info, 'pattern', pattern)

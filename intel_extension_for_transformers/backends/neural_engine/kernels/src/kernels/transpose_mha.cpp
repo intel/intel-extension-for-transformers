@@ -337,7 +337,7 @@ bool transpose_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
       auto expsumptr = expsumbuf + i * n;
       auto rbptr = out0buf + i * m * n;
       // reroder and norm to u8
-      for (int in = 0; in < m; in += MHA_step2->NPacked) {  // 0.44
+      for (int in = 0; in < m; in += MHA_step2->NPacked) {
         ssd::transpose_mha_step2_params p{expoutptr + in * n,
                                           rbptr + in * MHA_step2->NTile,
                                           expsumptr,

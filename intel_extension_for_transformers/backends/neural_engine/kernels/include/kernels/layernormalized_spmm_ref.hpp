@@ -76,4 +76,5 @@ class SPARSE_API_ layernormalized_spmm_ref_k_t : public kernel_t {
 };
 
 }  // namespace jd
+
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORMALIZED_SPMM_REF_HPP_

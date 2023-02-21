@@ -30,4 +30,5 @@ const std::vector<impl_list_item_t>* get_layernorm_ba_impl_list(const operator_d
   const auto impl_list_it = layernorm_ba_impl_list_map.find(op_desc.kernel_prop());
   return (impl_list_it != layernorm_ba_impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine::empty_list;
 }
+
 }  // namespace jd

@@ -18,6 +18,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <utility>
 #include "cpu_isa.hpp"
 #include "operator_desc.hpp"
 #include "kernel.hpp"
