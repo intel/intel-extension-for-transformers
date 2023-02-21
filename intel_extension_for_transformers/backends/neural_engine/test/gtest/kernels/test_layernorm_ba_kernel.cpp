@@ -86,11 +86,10 @@ bool check_result(const test_params_t& t) {
       if (op_attr["split_output"] == "true" && ans) {
         auto buf3 = q.data[6];
         auto buf4 = p.data[6];
-        if (op_desc.apply_postops_list().back().dt == data_type::s8) {
+        if (op_desc.apply_postops_list().back().dt == data_type::s8)
           ans = compare_data<int8_t>(buf4, size1, buf3, size1, 1e-2);
-        } else {
+        else
           ans = compare_data<uint8_t>(buf4, size1, buf3, size1, 1e-2);
-        }
       }
     } else if (dst_type == data_type::u8) {
       ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-2);

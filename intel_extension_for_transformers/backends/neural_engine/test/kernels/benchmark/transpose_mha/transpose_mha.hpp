@@ -25,6 +25,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <limits>
 
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"

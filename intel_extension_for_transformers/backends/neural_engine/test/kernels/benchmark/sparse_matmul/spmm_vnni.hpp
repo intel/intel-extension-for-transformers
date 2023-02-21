@@ -26,6 +26,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <memory>
 
 #include "benchmark_utils.hpp"
 #include "interface.hpp"
