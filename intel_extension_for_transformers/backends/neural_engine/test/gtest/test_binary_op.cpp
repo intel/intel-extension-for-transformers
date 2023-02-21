@@ -141,7 +141,7 @@ bool CheckResult(const TestParams& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   try {
-    executor::BinaryOPOperator mul(p.conf);
+    executor::BinaryOpOperator mul(p.conf);
     mul.Prepare(p.input, p.output);
     mul.Reshape(p.input, p.output);
     mul.Forward(p.input, p.output);
@@ -192,7 +192,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   std::map<std::string, std::string> attr_map;
   attr_map = {{"algorithm", algo}};
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
-  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("binary_op", "BinaryOP",
+  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("binary_op", "BinaryOp",
                                          input_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
