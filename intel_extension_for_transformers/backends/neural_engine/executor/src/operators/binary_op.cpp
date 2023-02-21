@@ -18,7 +18,7 @@
 
 namespace executor {
 
-BinaryOPOperator::BinaryOPOperator(const shared_ptr<OperatorConfig>& conf) :
+BinaryOpOperator::BinaryOpOperator(const shared_ptr<OperatorConfig>& conf) :
                   Operator(conf), stream_(eng_), eng_(engine::kind::cpu, 0) {
   static unordered_map<string, algorithm> str2algo{
     {"add", algorithm::binary_add}, {"sub", algorithm::binary_sub},
@@ -36,7 +36,7 @@ BinaryOPOperator::BinaryOPOperator(const shared_ptr<OperatorConfig>& conf) :
   }
 }
 
-void BinaryOPOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void BinaryOpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   assert(input[0]->dtype() == input[1]->dtype());
   auto src0_shape = input[0]->shape();
   auto src1_shape = input[1]->shape();
@@ -91,7 +91,7 @@ void BinaryOPOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor
   binary_prim_ = dnnl::binary(binary_pd);
 }
 
-void BinaryOPOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void BinaryOpOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<Tensor*> inputs;
   void* src0_fp32 = nullptr;
   void* src1_fp32 = nullptr;
@@ -144,5 +144,5 @@ void BinaryOPOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
   if (src1_fp32) delete src1_fp32;
 }
 
-REGISTER_OPERATOR_CLASS(BinaryOP);
+REGISTER_OPERATOR_CLASS(BinaryOp);
 }  // namespace executor

@@ -24,7 +24,7 @@ from .. import logger
 @operator_registry(operator_type=['Div', 'Sub', 'Mul', 'Equal', 'Less', 'Greater',
                                   'LessEqual', 'LessOrEqual', 'GreaterOrEqual',
                                   'NonZero', 'Not', 'Neg', 'NotEqual'])
-class BinaryOP(Operator):
+class BinaryOp(Operator):
     def __init__(self):
         super().__init__()
         self._algorithm_dict = {'Addv2': 'add', 'Add': 'add', 'Div': 'div', 'Sub': 'sub',

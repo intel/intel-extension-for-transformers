@@ -28,14 +28,14 @@ using dnnl::memory;
 using dnnl::prop_kind;
 
 /**
- * @brief A BinaryOP operator.
+ * @brief A BinaryOp operator.
  *
  */
 
-class BinaryOPOperator : public Operator {
+class BinaryOpOperator : public Operator {
  public:
-  explicit BinaryOPOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~BinaryOPOperator() {}
+  explicit BinaryOpOperator(const shared_ptr<OperatorConfig>& conf);
+  virtual ~BinaryOpOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
