@@ -112,8 +112,18 @@ function run_benchmark {
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="sshleifer/tiny-ctrl"
+    elif [ "${topology}" = "gpt_neox_clm_static" ]; then
+        script="run_clm.py"
+        DATASET_NAME="oscar"
+        DATASET_CONFIG_NAME="unshuffled_original_ast"
+        model_name_or_path="abeja/gpt-neox-japanese-2.7b"
+    elif [ "${topology}" = "gpt_neox_clm_dynamic" ]; then
+        script="run_clm.py"
+        DATASET_NAME="oscar"
+        DATASET_CONFIG_NAME="unshuffled_original_ast"
+        model_name_or_path="abeja/gpt-neox-japanese-2.7b"
     fi
-
+    
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
         model_name_or_path=${tuned_checkpoint}
