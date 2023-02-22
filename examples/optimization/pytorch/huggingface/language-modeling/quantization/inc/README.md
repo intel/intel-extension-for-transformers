@@ -1,9 +1,20 @@
-# Language modeling
-The scripts `run_clm.py`, `run_mlm.py` and `run_plm.py` provide three quantization approaches (PostTrainingDynamic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+Step-by-Step​
+============
+The scripts `run_clm.py`, `run_mlm.py` and `run_plm.py` provide three quantization approaches respectively (PostTrainingDynamic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
+# Prerequisite​
+## 1. Create Environment​
+Recommend python 3.7 or higher version.
+```shell
+pip install intel-extension-for-transformers
+pip install -r requirements.txt
+```
+
+# Run
+## 1. Quantization
 Here is how to run the scripts:
 
-**Causal Language modeling (CLM)**
+**Causal Language Modeling (CLM)**
 
 ```
 python run_clm.py \
@@ -19,7 +30,7 @@ python run_clm.py \
 
 ```
 
-**Masked Language modeling (MLM)**
+**Masked Language Modeling (MLM)**
 
 ```
 python run_mlm.py \
@@ -34,7 +45,7 @@ python run_mlm.py \
     --overwrite_output_dir
 ```
 
-**Permutation Language modeling (PLM)**
+**Permutation Language Modeling (PLM)**
 
 ```
     python run_plm.py \
@@ -50,7 +61,7 @@ python run_mlm.py \
 
 ```
 
-### Validated model list
+## 2. Validated Model List
 
 |Type|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
@@ -59,7 +70,7 @@ python run_mlm.py \
 |MLM|bert-base-uncased| ✅| ✅| ✅
 |PLM|xlnet-base-cased| ✅| ✅| ✅
 
-### Command
+## 3. Bash Command
 
 ```
 bash run_tuning.sh  --topology=topology
@@ -67,3 +78,7 @@ bash run_tuning.sh  --topology=topology
 
 ```
 bash run_benchmark.sh --topology=topology --mode=benchmark
+```
+> NOTE
+>
+> topology should be one of: {"gpt_neo_clm_static", "gpt_neo_clm_dynamic", "gptj_clm_static", "gptj_clm_dynamic", "bert_mlm_static", "bert_mlm_dynamic", "xlnet_plm_static", "xlnet_plm_dynamic", "reformer_crime_and_punishment_static", "ctrl_wikitext_static"}

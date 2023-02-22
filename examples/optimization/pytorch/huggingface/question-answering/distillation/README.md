@@ -4,7 +4,7 @@ Distillation script [run_qa.py](./run_qa.py) provides the distillation approach 
 
 # Prerequisite​
 
-## Create Environment​
+## 1. Create Environment​
 Recommend python 3.7 or higher version.
 ```shell
 pip install intel-extension-for-transformers
@@ -12,7 +12,7 @@ pip install -r requirements.txt
 ```
 
 # Distillation
-## Single-Node Distillation
+## 1. Single-Node Distillation
 
 Here is how to run the script:
 ```
