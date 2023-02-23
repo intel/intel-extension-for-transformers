@@ -399,23 +399,55 @@ Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration det
 <table>
 <thead>
   <tr>
-    <th>Model</th>
+    <th>Student Model</th>
+    <th>Teacher Model</th>
     <th>Task</th>
     <th>Dataset</th>
-    <th>Distillation Teacher</th>
   </tr>
 </thead>
 <tbody align="center">
   <tr>
-    <td rowspan="2"><a href="https://huggingface.co/Intel/distilbert-base-uncased-sparse-90-unstructured-pruneofa">Intel/distilbert-base-uncased-sparse-90-unstructured-pruneofa</a></td>
+    <td><a href="https://huggingface.co/distilbert-base-uncased">distilbert-base-uncased</a></td>
+    <td><a href="https://huggingface.co/textattack/bert-base-uncased-SST-2">bert-base-uncased-SST-2</a></td>
     <td>text-classification</td>
     <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
-    <td><a href="https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english">distilbert-base-uncased-finetuned-sst-2-english</a></td>
   </tr>
   <tr>
+    <td><a href="https://huggingface.co/distilbert-base-uncased">distilbert-base-uncased</a></td>
+    <td><a href="https://huggingface.co/textattack/bert-base-uncased-QNLI">bert-base-uncased-QNLI</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/qnli/train">QNLI</a></td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/distilbert-base-uncased">distilbert-base-uncased</a></td>
+    <td><a href="https://huggingface.co/textattack/bert-base-uncased-QQP">bert-base-uncased-QQP</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/qqp/train">QQP</a></td>
+  </tr>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/distilbert-base-uncased">distilbert-base-uncased</a></td>
+    <td><a href="https://huggingface.co/blackbird/bert-base-uncased-MNLI-v1">bert-base-uncased-MNLI-v1</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/mnli/train">MNLI</a></td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/distilbert-base-uncased">distilbert-base-uncased</a></td>
+    <td><a href="https://huggingface.co/csarron/bert-base-uncased-squad-v1">bert-base-uncased-squad-v1</a></td>
     <td>question-answering</td>
     <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
-    <td><a href="https://huggingface.co/distilbert-base-uncased-distilled-squad">distilbert-base-uncased-distilled-squad</a></td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/huawei-noah/TinyBERT_General_4L_312D">TinyBERT_General_4L_312D</a></td>
+    <td><a href="https://huggingface.co/blackbird/bert-base-uncased-MNLI-v1">bert-base-uncased-MNLI-v1</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/mnli">MNLI</a></td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/distilroberta-base">distilroberta-base</a></td>
+    <td><a href="https://huggingface.co/cointegrated/roberta-large-cola-krishna2020">roberta-large-cola-krishna2020</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/cola">COLA</a></td>
   </tr>
 </tbody>
 </table>

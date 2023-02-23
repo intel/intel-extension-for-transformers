@@ -1,7 +1,19 @@
-# Question answering
+Step-by-Step​
+============
 The script `run_qa.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
 
-For PyTorch, Here is how to run the script:
+# Prerequisite​
+## 1. Create Environment​
+Recommend python 3.7 or higher version.
+```shell
+pip install intel-extension-for-transformers
+pip install -r requirements.txt
+```
+
+# Run
+## 1. Quantization
+
+For PyTorch, here is how to run the script:
 
 ```
 python run_qa.py \
@@ -15,7 +27,7 @@ python run_qa.py \
     --overwrite_output_dir
 ```
 
-For IPEX, Here is how to run the script:
+For IPEX, here is how to run the script:
 
 ```
 python run_qa.py \
@@ -30,15 +42,15 @@ python run_qa.py \
     --framework ipex
 ```
 **Note**: support IPEX version > 1.12
+## 2. Validated Model List
 ###  Stock PyTorch Validated model list
 
 |Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining 
 |---|------------------------------------|---|---|---
 |squad|distilbert-base-uncased-distilled-squad| ✅| ✅| ✅
 
-
 ###  Intel Extension for PyTorch (IPEX) Validated model list
-|Dataset|Pretrained model|Supportted IPEX Version 
+|Dataset|Pretrained model|Supported IPEX Version 
 |---|------------------------------------|---
 |squad|distilbert-base-uncased-distilled-squad| == 1.13
 |squad|bert-large| >= 1.12

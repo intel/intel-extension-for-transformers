@@ -133,6 +133,7 @@ class Evolution(object):
                 writer.writerow([str(gene)] + [str(x) for x in self.store[gene]])
 
     def _ccw(self, gene0, gene1, gene2):
+        """Counterclockwise."""
         x0, y0 = self.store[gene0][:2]
         x1, y1 = self.store[gene1][:2]
         x2, y2 = self.store[gene2][:2]

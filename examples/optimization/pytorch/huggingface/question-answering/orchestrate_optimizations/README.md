@@ -4,7 +4,8 @@ This document is used to list steps of introducing [Prune Once For All](https://
 
 Note that if your dataset contains samples with no possible answers (like SQuAD version 2), you need to pass along the flag --version_2_with_negative.
 
-The following example fine-tunes DistilBERT model of 90% sparsity on the SQuAD1.0 dataset through applying quantization aware-training, pattern lock pruning and distillation simultaneously.
+The following example fine-tunes the pre-trained [90% sparse DistillBERT](Intel/distilbert-base-uncased-sparse-90-unstructured-pruneofa) on the SQuAD1.0 dataset by applying quantization aware-training, pattern lock pruning and distillation simultaneously.
+ >**Note**: If you want to fine-tune the pre-trained model, you could change [conf_list](./run_qa.py#L832), remove the quantization_conf.
  
 ```
 python run_qa.py \

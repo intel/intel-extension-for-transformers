@@ -1,12 +1,21 @@
-# Translation
+Step-by-step
+============
 
-This directory contains examples for finetuning and evaluating transformers on translation tasks.
+This directory contains the example for quantization models on translation tasks. `run_translation.py` is a lightweight examples about how to download and preprocess a dataset from the [🤗 Datasets](https://github.com/huggingface/datasets) library or use your own files (jsonlines or csv), then quantize the model on it.
 
-`run_translation.py` is a lightweight examples of how to download and preprocess a dataset from the [🤗 Datasets](https://github.com/huggingface/datasets) library or use your own files (jsonlines or csv), then fine-tune one of the architectures above on it.
+# Prerequisite​
 
-## tune a quantized model with intel_extension_for_transformers
+## 1. Environment
+```
+pip install intel-extension-for-transformers
+pip install -r requirements.txt
+```
 
-Here is an example of a translation MarianMT model to tune a quantized model with Intel Extension for Transformers:
+# Run
+
+## Quantization
+
+Following is an example of a translation MarianMT model to tune a quantized model with Intel Extension for Transformers:
 
 ```bash
 python examples/pytorch/translation/run_translation.py \
@@ -46,6 +55,6 @@ python examples/pytorch/translation/run_translation.py \
     --predict_with_generate
 ```
 
-If you get a terrible BLEU score, make sure that you didn't forget to use the `--source_prefix` argument.
+If the final BLEU score is far from satisfication, please check out that you didn't forget to use the `--source_prefix` argument.
 
 For the aforementioned group of T5 models it's important to remember that if you switch to a different language pair, make sure to adjust the source and target values in all 3 language-specific command line argument: `--source_lang`, `--target_lang` and `--source_prefix`.
