@@ -8,6 +8,7 @@
       <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -323,6 +324,15 @@ to a smaller model.</p></li>
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.trainer.BaseTrainer.create_optimizer_builtin">
 <span class="sig-name descname"><span class="pre">create_optimizer_builtin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">teacher_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.trainer.BaseTrainer.create_optimizer_builtin" title="Permalink to this definition"></a></dt>
 <dd><p>The function to create optimizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config_list</strong> – The list of configs.</p></li>
+<li><p><strong>teacher_model</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Callable</span></code>, optional) – The model(torch.nn.Module) transfers knowledge
+to a smaller model.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -402,6 +412,14 @@ argument <code class="xref py py-obj docutils literal notranslate"><span class="
 <dd><p>How the loss is computed by Trainer.</p>
 <p>By default, all models return the loss in the first element.</p>
 <p>Subclass and override for custom behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">nn.Module</span></code>) – The target model to compute the loss.</p></li>
+<li><p><strong>inputs</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Union[torch.Tensor,</span> <span class="pre">Any]]</span></code>) – The inputs and targets of the model.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -477,30 +495,84 @@ the specified model architecture parameters.</p></li>
 <dd><p>Prediction/evaluation loop, shared by <code class="xref py py-obj docutils literal notranslate"><span class="pre">Trainer.evaluate()</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">Trainer.predict()</span></code>.</p>
 <p>Works both with or without labels.
 Does not save all predictions and labels to avoid out of memory when predictions is huge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataloader</strong> – the evaluation dataloader.</p></li>
+<li><p><strong>description</strong> – the description of the process.</p></li>
+<li><p><strong>prediction_loss_only</strong> – only return the prediction loss.</p></li>
+<li><p><strong>ignore_keys</strong> – A list of keys in the output of your model</p></li>
+<li><p><strong>evaluation</strong> (<em>(</em><em>if it is a dictionary</em><em>) </em><em>that should be ignored when gathering predictions for</em>) – </p></li>
+<li><p><strong>training.</strong> (<em>during the</em>) – </p></li>
+<li><p><strong>metric_key_prefix</strong> – the prefix of the evaluation metric.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.trainer.BaseTrainer.export_to_onnx">
 <span class="sig-name descname"><span class="pre">export_to_onnx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.trainer.BaseTrainer.export_to_onnx" title="Permalink to this definition"></a></dt>
 <dd><p>The function to tranfer model into onnx model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – defined paramerts.</p></li>
+<li><p><strong>kwargs</strong> – additional keyword arguments used to hide deprecated arguments.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.trainer.BaseTrainer.export_to_fp32_onnx">
 <span class="sig-name descname"><span class="pre">export_to_fp32_onnx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opset_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_constant_folding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.trainer.BaseTrainer.export_to_fp32_onnx" title="Permalink to this definition"></a></dt>
 <dd><p>The function to tranfer model into fp32 onnx model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>save_path</strong> – the save path of the exported model.</p></li>
+<li><p><strong>opset_version</strong> – the onnx op version of the exported model.</p></li>
+<li><p><strong>do_constant_folding</strong> – select to do constant folding or not.</p></li>
+<li><p><strong>verbose</strong> – save onnx model.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.trainer.BaseTrainer.export_to_bf16_onnx">
 <span class="sig-name descname"><span class="pre">export_to_bf16_onnx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opset_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_constant_folding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.trainer.BaseTrainer.export_to_bf16_onnx" title="Permalink to this definition"></a></dt>
 <dd><p>The function to tranfer model into bf16 onnx model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>save_path</strong> – the save path of the exported model.</p></li>
+<li><p><strong>opset_version</strong> – the onnx op version of the exported model.</p></li>
+<li><p><strong>do_constant_folding</strong> – select to do constant folding or not.</p></li>
+<li><p><strong>verbose</strong> – save onnx model.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.trainer.BaseTrainer.export_to_int8_onnx">
 <span class="sig-name descname"><span class="pre">export_to_int8_onnx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quant_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'QDQ'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'S8S8'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opset_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibrate_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'minmax'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.trainer.BaseTrainer.export_to_int8_onnx" title="Permalink to this definition"></a></dt>
 <dd><p>The function to tranfer model into int8 onnx model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>save_path</strong> – the save path of the exported model.</p></li>
+<li><p><strong>quant_format</strong> – quantization format.</p></li>
+<li><p><strong>dtype</strong> – the quantized op type.</p></li>
+<li><p><strong>opset_version</strong> – the onnx op version of the exported model.</p></li>
+<li><p><strong>sample_size</strong> – the sampling size to calibrate the min-max range of ops.</p></li>
+<li><p><strong>calibrate_method</strong> – the calibration method for onnx export.</p></li>
+<li><p><strong>scale_mapping</strong> – make scale mapping of pytorch model and onnx model.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -513,6 +585,11 @@ Does not save all predictions and labels to avoid out of memory when predictions
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.trainer.BaseTrainer.set_dynamic_config">
 <span class="sig-name descname"><span class="pre">set_dynamic_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dynamic_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../index.html#intel_extension_for_transformers.optimization.DynamicLengthConfig" title="intel_extension_for_transformers.optimization.DynamicLengthConfig"><span class="pre">intel_extension_for_transformers.optimization.DynamicLengthConfig</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.trainer.BaseTrainer.set_dynamic_config" title="Permalink to this definition"></a></dt>
 <dd><p>The function to set dynamic config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dynamic_config</strong> – the settings of the dynamic config.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">

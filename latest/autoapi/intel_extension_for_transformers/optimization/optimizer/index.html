@@ -8,6 +8,7 @@
       <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -144,36 +145,94 @@
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.init_quantizer">
 <span class="sig-name descname"><span class="pre">init_quantizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quant_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.init_quantizer" title="Permalink to this definition"></a></dt>
 <dd><p>Init a Quantization object with config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>quant_config</strong> – quantization config.</p></li>
+<li><p><strong>provider</strong> – define the quantization provider.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.quantize">
 <span class="sig-name descname"><span class="pre">quantize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quant_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../index.html#intel_extension_for_transformers.optimization.QuantizationConfig" title="intel_extension_for_transformers.optimization.QuantizationConfig"><span class="pre">intel_extension_for_transformers.optimization.QuantizationConfig</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calib_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calib_dataloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.quantize" title="Permalink to this definition"></a></dt>
 <dd><p>Prepare for invoking the _inc_quantize function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>quant_config</strong> – quantization config.</p></li>
+<li><p><strong>provider</strong> – define the quantization provider.</p></li>
+<li><p><strong>eval_func</strong> – evaluation function.</p></li>
+<li><p><strong>train_func</strong> – train function.</p></li>
+<li><p><strong>calib_func</strong> – calibration function.</p></li>
+<li><p><strong>calib_dataloader</strong> – calibration dataloader.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.init_pruner">
 <span class="sig-name descname"><span class="pre">init_pruner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pruning_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.init_pruner" title="Permalink to this definition"></a></dt>
 <dd><p>Init a Pruning object with config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pruning_config</strong> – pruning config.</p></li>
+<li><p><strong>provider</strong> – define the pruning provider.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.prune">
 <span class="sig-name descname"><span class="pre">prune</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pruning_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.prune" title="Permalink to this definition"></a></dt>
 <dd><p>Do the pruning.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pruning_config</strong> – pruning config.</p></li>
+<li><p><strong>provider</strong> – define the pruning provider.</p></li>
+<li><p><strong>eval_func</strong> – evaluation function.</p></li>
+<li><p><strong>train_func</strong> – train function.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.init_distiller">
 <span class="sig-name descname"><span class="pre">init_distiller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distillation_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">teacher_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.init_distiller" title="Permalink to this definition"></a></dt>
 <dd><p>Init a Distillation object with config and the teacher model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distillation_config</strong> – distillation config.</p></li>
+<li><p><strong>teacher_model</strong> – set the teacher model.</p></li>
+<li><p><strong>provider</strong> – define the distillation provider.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.distill">
 <span class="sig-name descname"><span class="pre">distill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distillation_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">teacher_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Provider.INC.value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer.distill" title="Permalink to this definition"></a></dt>
 <dd><p>Do the distillation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distillation_config</strong> – distillation config.</p></li>
+<li><p><strong>teacher_model</strong> – set the teacher model.</p></li>
+<li><p><strong>provider</strong> – define the distillation provider.</p></li>
+<li><p><strong>eval_func</strong> – evaluation function.</p></li>
+<li><p><strong>train_func</strong> – train function.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

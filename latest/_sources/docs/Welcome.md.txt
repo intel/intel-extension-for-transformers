@@ -78,7 +78,7 @@ output = model(**input).logits.argmax().item()
     <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/text-classification/orchestrate_optimizations/README.html">Orchestration</a></td>
   </tr>
   <tr>
-    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/auto_distillation">Neural Architecture Search</a></td>
+    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/nas">Neural Architecture Search</a></td>
     <td align="center" colspan="2"><a href="export.html">Export</a></td>
     <td align="center" colspan="2"><a href="metrics.html">Metrics</a>/<a href="objectives.html">Objectives</a></td>
     <td align="center" colspan="2"><a href="pipeline.html">Pipeline</a></td>

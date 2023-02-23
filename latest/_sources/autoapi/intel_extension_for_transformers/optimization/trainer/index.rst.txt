@@ -180,6 +180,11 @@ Classes
 
       The function to create optimizer.
 
+      :param config_list: The list of configs.
+      :param teacher_model: The model(torch.nn.Module) transfers knowledge
+                            to a smaller model.
+      :type teacher_model: :obj:`Callable`, optional
+
 
    .. py:method:: train(component: Optional[neural_compressor.experimental.Component] = None, resume_from_checkpoint: Optional[Union[str, bool]] = None, trial: Union[optuna, Dict[str, Any]] = None, ignore_keys_for_eval: Optional[List[str]] = None, **kwargs)
 
@@ -245,6 +250,11 @@ Classes
       By default, all models return the loss in the first element.
 
       Subclass and override for custom behavior.
+
+      :param model: The target model to compute the loss.
+      :type model: :obj:`nn.Module`
+      :param inputs: The inputs and targets of the model.
+      :type inputs: :obj:`Dict[str, Union[torch.Tensor, Any]]`
 
 
    .. py:method:: nas(nas_config, provider: str = Provider.INC.value, model_builder: Optional[Callable] = None, model_cls: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
@@ -320,25 +330,54 @@ Classes
       Works both with or without labels.
       Does not save all predictions and labels to avoid out of memory when predictions is huge.
 
+      :param dataloader: the evaluation dataloader.
+      :param description: the description of the process.
+      :param prediction_loss_only: only return the prediction loss.
+      :param ignore_keys: A list of keys in the output of your model
+      :param (if it is a dictionary) that should be ignored when gathering predictions for evaluation:
+      :param during the training.:
+      :param metric_key_prefix: the prefix of the evaluation metric.
+
 
    .. py:method:: export_to_onnx(*args, **kwargs)
 
       The function to tranfer model into onnx model.
+
+      :param args: defined paramerts.
+      :param kwargs: additional keyword arguments used to hide deprecated arguments.
 
 
    .. py:method:: export_to_fp32_onnx(save_path=None, opset_version=14, do_constant_folding=True, verbose=True)
 
       The function to tranfer model into fp32 onnx model.
 
+      :param save_path: the save path of the exported model.
+      :param opset_version: the onnx op version of the exported model.
+      :param do_constant_folding: select to do constant folding or not.
+      :param verbose: save onnx model.
+
 
    .. py:method:: export_to_bf16_onnx(save_path=None, opset_version=14, do_constant_folding=True, verbose=True)
 
       The function to tranfer model into bf16 onnx model.
 
+      :param save_path: the save path of the exported model.
+      :param opset_version: the onnx op version of the exported model.
+      :param do_constant_folding: select to do constant folding or not.
+      :param verbose: save onnx model.
+
 
    .. py:method:: export_to_int8_onnx(save_path=None, quant_format='QDQ', dtype='S8S8', opset_version=14, sample_size=100, calibrate_method='minmax', scale_mapping=False)
 
       The function to tranfer model into int8 onnx model.
+
+      :param save_path: the save path of the exported model.
+      :param quant_format: quantization format.
+      :param dtype: the quantized op type.
+      :param opset_version: the onnx op version of the exported model.
+      :param sample_size: the sampling size to calibrate the min-max range of ops.
+      :param calibrate_method: the calibration method for onnx export.
+      :param scale_mapping: make scale mapping of pytorch model and onnx model.
 
 
    .. py:method:: export_to_jit()
@@ -349,6 +388,8 @@ Classes
    .. py:method:: set_dynamic_config(dynamic_config: intel_extension_for_transformers.optimization.DynamicLengthConfig)
 
       The function to set dynamic config.
+
+      :param dynamic_config: the settings of the dynamic config.
 
 
    .. py:method:: run_evolutionary_search()
