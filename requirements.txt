@@ -1,4 +1,4 @@
-neural-compressor==1.14.2
+neural-compressor
 numpy
 packaging
 protobuf --no-binary=protobuf
