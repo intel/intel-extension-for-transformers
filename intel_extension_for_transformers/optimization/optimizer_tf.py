@@ -43,6 +43,7 @@ from functools import partial
 
 tf = LazyImport("tensorflow")
 logger = logging.getLogger(__name__)
+logger.setLevel('INFO')
 
 
 class TFOptimization:
@@ -478,7 +479,7 @@ class TFOptimization:
             "please pass a instance of PruningConfig to trainer.prune!"
 
         pruner = Pruning(self.pruning_config.inc_config)
-        pruner.model = os.path.join(get_filepath(TMPPATH, self.task_type, self.task_id),"saved_model/1")
+        pruner.model = os.path.join(get_filepath(TMPPATH, self.task_type, self.task_id), "saved_model/1")
         pruner.model.model_type = "saved_model"
 
         self.pruner = pruner
@@ -534,6 +535,9 @@ class TFOptimization:
                 self.pruner.train_func = self.build_train_func
 
         opt_model = self.pruner.fit()
+        stats, sparsity = opt_model.report_sparsity()
+        logger.info(stats)
+        logger.info(sparsity)
 
         opt_model.save(self.args.output_dir)
         logger.info(
@@ -840,6 +844,11 @@ class TFOptimization:
         """
         tf.random.set_seed(1)
         epochs = 1
+
+        component = self.component
+        prune_model = self.model
+        model_path = get_filepath(TMPPATH, self.task_type, self.task_id)
+
         if 'distillation' in self.component.cfg:
             epochs = max(epochs, self.component.cfg.distillation.train.get("epoch", 1))
             hooks = self.component.hooks
@@ -867,6 +876,10 @@ class TFOptimization:
                 hooks['on_epoch_begin'](epoch)
 
             def on_epoch_end(self, epoch, logs=None):
+                component.model._session = None
+                prune_model.save_pretrained(model_path, saved_model=True)
+                component.model = os.path.join(model_path, "saved_model/1")
+                component.model.model_type = "saved_model"
                 hooks['on_epoch_end']()
 
             # pylint: disable=E1121
