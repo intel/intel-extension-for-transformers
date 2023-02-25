@@ -21,6 +21,8 @@
 #include "common_utils.hpp"
 #include "utils.hpp"
 
+#define WORKSPACE
+
 namespace jd {
 
 using dt = jd::data_type;
@@ -137,7 +139,10 @@ void spmm_vnni_bench::gen_case() {
     ts_descs.push_back(mean_desc);
     ts_descs.push_back(var_desc);
   }
-
+#ifdef WORKSPACE
+  tensor_desc workspace_desc = {{M * 2, N}, dt::fp32, ft::ab};
+  ts_descs.push_back(workspace_desc);
+#endif
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();

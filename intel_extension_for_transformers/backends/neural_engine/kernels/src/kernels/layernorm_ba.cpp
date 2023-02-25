@@ -19,7 +19,10 @@ namespace jd {
 bool layernorm_ba_kd_t::init() {
   if (!isa_available(avx512_core)) return false;
   auto op_attr = op_desc_.attrs();
-  if (op_attr["spec_type"] == "normal") {
+  if (op_attr.count("spec_type") == 0) {
+    op_attr["spec_type"] = "normal";
+    SPARSE_LOG(INFO) << "layernorm_ba spec_type set to normal by default.";
+  } else if (op_attr["spec_type"] == "normal") {
     normal_translnorm_init();
   } else if (op_attr["spec_type"] == "direct") {
     direct_translnorm_init();
