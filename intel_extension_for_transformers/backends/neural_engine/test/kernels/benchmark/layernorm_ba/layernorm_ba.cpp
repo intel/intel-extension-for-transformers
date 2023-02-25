@@ -125,7 +125,10 @@ void layernorm_ba_bench::get_true_data() {
     }
   };
 
-  if (op_attr["spec_type"] == "normal") {
+  if (op_attr.count("spec_type") == 0) {
+    op_attr["spec_type"] = "normal";
+    SPARSE_LOG(INFO) << "layernorm_ba spec_type set to normal by default.";
+  } else if (op_attr["spec_type"] == "normal") {
     normal_translnorm();
   } else if (op_attr["spec_type"] == "direct") {
     direct_translnorm();
