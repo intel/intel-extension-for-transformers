@@ -888,16 +888,17 @@
       "cmd": "bash run_tuning.sh",
       "params": {
         "topology": "vit-base-patch16-224_static",
-        "output_model": "saved_results"
+        "output_model": "saved_results",
+        "dataset_location": "/tf_dataset2/models/nlp_toolkit/vit/cached-2k-imagenet-1k-datasets"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
         "topology": "vit-base-patch16-224_static",
+        "dataset_location": "/tf_dataset2/models/nlp_toolkit/vit/cached-2k-imagenet-1k-datasets",
         "mode": "accuracy",
         "batch_size": "64",
-        "iters": "100",
         "int8": "false",
         "config": "saved_results"
       }
