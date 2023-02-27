@@ -630,7 +630,6 @@ def main():
 
     metric_name = optim_args.metric_name
     if optim_args.fp32:
-        model.config.save_pretrained(training_args.output_dir)
         trainer.save_model(training_args.output_dir)
         return
 
@@ -639,7 +638,6 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for quantization.")
 
-        model.config.save_pretrained(training_args.output_dir)
         trainer.save_model(training_args.output_dir)
         trainer.calib_dataloader = trainer.get_eval_dataloader()
         if optim_args.quantization_approach != "PostTrainingDynamic":
@@ -647,7 +645,7 @@ def main():
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-            model.config.save_pretrained(training_args.output_dir)
+            
         elif optim_args.quantization_approach == "QuantizationAwareTraining":
             early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional

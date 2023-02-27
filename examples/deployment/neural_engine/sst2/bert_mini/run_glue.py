@@ -518,7 +518,6 @@ def main():
             else "accuracy"
         )
     )
-    model.config.save_pretrained(training_args.output_dir)
     trainer.save_model(training_args.output_dir)
     if optim_args.tune:
 
@@ -530,7 +529,6 @@ def main():
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-            model.config.save_pretrained(training_args.output_dir)
         elif optim_args.quantization_approach == "QuantizationAwareTraining":
             early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional

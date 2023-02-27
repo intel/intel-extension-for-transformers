@@ -683,7 +683,6 @@ def main():
             raise ValueError("do_eval must be set to True for quantization.")
 
 
-        model.config.save_pretrained(training_args.output_dir)
         trainer.save_model(training_args.output_dir)
         if optim_args.quantization_approach != "PostTrainingDynamic":
             if not training_args.do_train:
