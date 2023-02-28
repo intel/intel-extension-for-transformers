@@ -16,6 +16,7 @@
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_MATMUL_REF_HPP_
 
 #include <glog/logging.h>
+#include <algorithm>
 #include <vector>
 #include <memory>
 #include "cpu_isa.hpp"

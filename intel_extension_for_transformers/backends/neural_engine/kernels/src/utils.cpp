@@ -84,11 +84,14 @@ void init_vector(T* v, int num_size, float range1, float range2, int seed) {
     v[i] = cast_to<T, float>(u(gen));
   }
 }
-template void init_vector<float>(float*, int, float, float, int);
-template void init_vector<int32_t>(int32_t*, int, float, float, int);
-template void init_vector<uint8_t>(uint8_t*, int, float, float, int);
-template void init_vector<int8_t>(int8_t*, int, float, float, int);
-template void init_vector<bfloat16_t>(bfloat16_t*, int, float, float, int);
+
+#define DECLARE_INIT_VECTOR(type) template void init_vector<type>(type*, int, float, float, int);
+
+DECLARE_INIT_VECTOR(float)
+DECLARE_INIT_VECTOR(int32_t)
+DECLARE_INIT_VECTOR(uint8_t)
+DECLARE_INIT_VECTOR(uint16_t)
+DECLARE_INIT_VECTOR(int8_t)
 
 template <typename T>
 struct s_is_u8s8 {

@@ -22,8 +22,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../kernels/sparse_data.hpp"
-#include "../kernels/spmm_types.hpp"
+#include "kernels/sparse_data.hpp"
+#include "kernels/spmm_types.hpp"
 #include "jit_generator.hpp"
 #include "utils.hpp"
 #include "jit_eltwise_injector.hpp"

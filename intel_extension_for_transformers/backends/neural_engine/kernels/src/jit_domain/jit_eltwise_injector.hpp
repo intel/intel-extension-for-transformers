@@ -16,6 +16,7 @@
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_ELTWISE_INJECTOR_HPP_
 
 #include <glog/logging.h>
+#include <utility>
 #include <string>
 #include <vector>
 #include <unordered_map>

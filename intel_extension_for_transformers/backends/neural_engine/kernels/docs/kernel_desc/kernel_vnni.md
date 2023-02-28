@@ -1,4 +1,4 @@
-# Design of the VNNI Kernel
+# Sparse GEMM VNNI
 
 Sparse patterns must align with its target ISA, especially GEMM instructions.
 VNNI introduces the following GEMM calculation:

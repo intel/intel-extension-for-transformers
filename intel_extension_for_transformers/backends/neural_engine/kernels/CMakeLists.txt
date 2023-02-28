@@ -28,6 +28,9 @@ file(GLOB SOURCES
   ${PROJECT_SOURCE_DIR}/src/jit_domain/*.cpp
 )
 file(GLOB HEADERS
+  ${PROJECT_SOURCE_DIR}/src/*.hpp
+  ${PROJECT_SOURCE_DIR}/src/kernels/*.hpp
+  ${PROJECT_SOURCE_DIR}/src/jit_domain/*.hpp
   ${PROJECT_SOURCE_DIR}/include/*.hpp
   ${PROJECT_SOURCE_DIR}/include/kernels/*.hpp
   ${PROJECT_SOURCE_DIR}/include/jit_domain/*.hpp
@@ -82,6 +85,7 @@ message( STATUS "EXTERNAL_INCLUDE_PAYH ${EXTERNAL_INCLUDE_PAYH}" )
 target_include_directories(${HOST_LIBRARY_NAME}
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/src
 )
 
 ## link against the third party libraries

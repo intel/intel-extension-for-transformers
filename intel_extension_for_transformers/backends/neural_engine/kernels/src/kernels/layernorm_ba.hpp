@@ -18,13 +18,12 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <utility>
 #include "cpu_isa.hpp"
 #include "operator_desc.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "utils.hpp"
-#include "layernorm_ba_types.hpp"
+#include "kernels/layernorm_ba_types.hpp"
 #include "jit_domain/jit_layernorm_ba.hpp"
 
 namespace jd {

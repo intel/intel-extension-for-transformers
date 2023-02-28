@@ -17,6 +17,7 @@
 
 #define WORKSPACE
 
+#include <algorithm>
 #include <vector>
 #include <memory>
 

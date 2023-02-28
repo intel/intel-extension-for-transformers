@@ -26,7 +26,7 @@
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "operator_desc.hpp"
-#include "transpose_mha_types.hpp"
+#include "kernels/transpose_mha_types.hpp"
 #include "utils.hpp"
 
 namespace jd {
