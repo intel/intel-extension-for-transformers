@@ -22,8 +22,9 @@
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "utils.hpp"
-#include "gather_types.hpp"
+#include "kernels/gather_types.hpp"
 #include "jit_domain/jit_gather.hpp"
+
 namespace jd {
 class gather_k_t;
 

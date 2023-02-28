@@ -16,6 +16,7 @@
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_SPMM_AVX512F_HPP_
 
 #include <glog/logging.h>
+#include <algorithm>
 #include <memory>
 #include <vector>
 

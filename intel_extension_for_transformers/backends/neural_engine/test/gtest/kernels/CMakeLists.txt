@@ -44,6 +44,7 @@ if(NOT WIN32) # TODO(jiwei): disable attention test on windows due to lack of VN
 list(APPEND KERNEL_TEST_CASES_SRC test_attention.cpp)
 list(APPEND KERNEL_TEST_CASES_SRC test_transpose_mha.cpp)    
 endif()
+
 if(UNIX)
 list(APPEND KERNEL_TEST_CASES_SRC test_spmm_amx_bf16_x16_kernel.cpp)
 list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_tr_src0.cpp)

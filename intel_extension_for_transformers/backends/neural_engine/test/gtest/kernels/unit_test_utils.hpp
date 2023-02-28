@@ -25,6 +25,7 @@
 #include <string>
 
 #include "interface.hpp"
+#include "utils.hpp"
 
 enum memo_mode { MALLOC, MEMSET };
 
@@ -59,7 +60,7 @@ void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
 }
 
 void* sparselib_ut_memo(void* ptr, int num, jd::data_type dtype, memo_mode mode) {
-  int data_width = get_data_size(dtype);
+  int data_width = jd::get_data_size(dtype);
   switch (mode) {
     case MALLOC:
       ptr = malloc(num * data_width);

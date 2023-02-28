@@ -14,6 +14,8 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_APPENTION_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_APPENTION_HPP_
+
+#include <unordered_map>
 #include <vector>
 #include <memory>
 #include "operator_desc.hpp"

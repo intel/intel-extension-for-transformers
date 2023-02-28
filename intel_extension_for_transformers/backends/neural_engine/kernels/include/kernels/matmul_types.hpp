@@ -19,7 +19,8 @@
 #include <vector>
 
 #include "param_types.hpp"
-#include "../utils.hpp"
+#include "utils.hpp"
+
 namespace jd {
 namespace ssd {
 /**

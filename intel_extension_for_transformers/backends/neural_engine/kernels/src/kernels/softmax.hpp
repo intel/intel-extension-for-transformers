@@ -22,8 +22,9 @@
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "utils.hpp"
-#include "softmax_types.hpp"
+#include "kernels/softmax_types.hpp"
 #include "jit_domain/jit_softmax.hpp"
+
 namespace jd {
 class softmax_k_t;
 

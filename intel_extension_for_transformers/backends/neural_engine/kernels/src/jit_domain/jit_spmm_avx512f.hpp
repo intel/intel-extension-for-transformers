@@ -16,8 +16,8 @@
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_SPMM_AVX512F_HPP_
 
 #include "jit_generator.hpp"
-#include "../kernels/sparse_data.hpp"
-#include "../kernels/spmm_types.hpp"
+#include "kernels/sparse_data.hpp"
+#include "kernels/spmm_types.hpp"
 #include "utils.hpp"
 #include "jit_eltwise_injector.hpp"
 

@@ -15,8 +15,10 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORMALIZED_SPMM_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_LAYERNORMALIZED_SPMM_HPP_
 
+#include <string>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include "cpu_isa.hpp"
 #include "operator_desc.hpp"
 #include "kernel.hpp"

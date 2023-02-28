@@ -1,4 +1,4 @@
-Class kernel
+Class Kernel
 ####
-.. doxygenfile:: kernel.hpp
+.. doxygenfile:: interface.hpp
    :project: Intel® Extension for Transformers

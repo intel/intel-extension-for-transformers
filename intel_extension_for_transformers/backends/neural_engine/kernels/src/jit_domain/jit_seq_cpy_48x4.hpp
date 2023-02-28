@@ -24,7 +24,7 @@ namespace jd {
 class jit_seq_cpy_48x4 : public jit_generator {
  public:
   // calculate ld_dst from the M dim (outer dim of src)
-  inline int static dst_step(const int M) { return 48 * (ceil_div(M, 4) * 4); }
+  static inline int dst_step(const int M) { return 48 * (ceil_div(M, 4) * 4); }
 
   struct param_t {
     bool sum_m;           // calculate sum along the M axis

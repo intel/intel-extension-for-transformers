@@ -21,7 +21,7 @@
 #include "operator_desc.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
-#include "eltwiseop_types.hpp"
+#include "kernels/eltwiseop_types.hpp"
 #include "jit_domain/jit_eltwiseop.hpp"
 #include "utils.hpp"
 
