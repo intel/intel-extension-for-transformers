@@ -28,11 +28,11 @@ bool matmul_vnni_p2031_p2013_bench::check_result() {
   const auto& q = args.second;
 
   get_true_data();
-  auto buf1 = p.rt_data[ssd::DST0];
-  auto size1 = p.op_desc.tensor_descs()[ssd::DST0].size();
-  auto buf2 = q.rt_data[ssd::DST0];
-  auto size2 = q.op_desc.tensor_descs()[ssd::DST0].size();
-  const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST0].dtype();
+  auto buf1 = p.rt_data[io::DST0];
+  auto size1 = p.op_desc.tensor_descs()[io::DST0].size();
+  auto buf2 = q.rt_data[io::DST0];
+  auto size2 = q.op_desc.tensor_descs()[io::DST0].size();
+  const auto& dst_type = p.op_desc.tensor_descs()[io::DST0].dtype();
   if (dst_type == dt::fp32) {
     return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
   } else if (dst_type == dt::s32) {
@@ -91,7 +91,7 @@ void matmul_vnni_p2031_p2013_bench::gen_case() {
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
     auto& tsd = ts_descs[index];
-    const bool is_clear = (index == ssd::DST0);
+    const bool is_clear = (index == io::DST0);
     const auto ranges = std::vector<float>{-10, 10};
     const auto data_pair = make_data_obj_matmul_vnni_p2031_p2013(tsd.shape(), tsd.dtype(), is_clear, ranges);
     rt_data1.emplace_back(data_pair.first);

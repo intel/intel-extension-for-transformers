@@ -26,6 +26,9 @@
 namespace jd {
 
 class transpose_matmul_bench : public kernel_bench {
+ protected:
+  using io = ssd::matmul_io::io;
+
  private:
   std::shared_ptr<transpose_matmul_bench> smb;
 
@@ -36,7 +39,7 @@ class transpose_matmul_bench : public kernel_bench {
       for (auto rt_data : {args.first.rt_data, args.second.rt_data}) {
         for (size_t idx = 0; idx < rt_data.size(); idx++) {
           if (rt_data[idx] != nullptr) {
-            if (idx <= ssd::SRC2) {
+            if (idx <= io::SRC2) {
               aligned_allocator_t<uint8_t, 64>::deallocate(const_cast<void*>(rt_data[idx]));
             } else {
               delete reinterpret_cast<const float*>(rt_data[idx]);

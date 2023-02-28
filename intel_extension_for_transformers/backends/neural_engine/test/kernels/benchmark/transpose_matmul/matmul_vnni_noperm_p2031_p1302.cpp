@@ -28,11 +28,11 @@ bool matmul_vnni_noperm_p2031_p1302_bench::check_result() {
   const auto& q = args.second;
 
   get_true_data();
-  auto buf1 = p.rt_data[ssd::DST0];
-  auto size1 = p.op_desc.tensor_descs()[ssd::DST0].size();
-  auto buf2 = q.rt_data[ssd::DST0];
-  auto size2 = q.op_desc.tensor_descs()[ssd::DST0].size();
-  const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST0].dtype();
+  auto buf1 = p.rt_data[io::DST0];
+  auto size1 = p.op_desc.tensor_descs()[io::DST0].size();
+  auto buf2 = q.rt_data[io::DST0];
+  auto size2 = q.op_desc.tensor_descs()[io::DST0].size();
+  const auto& dst_type = p.op_desc.tensor_descs()[io::DST0].dtype();
   if (dst_type == dt::u8) {
     return compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);  // tolerance of 2
   } else {
@@ -93,23 +93,23 @@ void matmul_vnni_noperm_p2031_p1302_bench::gen_case() {
   std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
-    if (index >= ssd::SRC2) {
+    if (index >= io::SRC2) {
       // insert nullptr as placeholder
       rt_data1.emplace_back(nullptr);
       rt_data2.emplace_back(nullptr);
       continue;
     }
     auto& tsd = ts_descs[index];
-    bool is_clear = (index == ssd::DST0);
+    bool is_clear = (index == io::DST0);
     auto ranges = std::vector<float>{-10, 10};
     auto data_pair = make_data_obj_matmul_vnni_noperm_p2031_p1302(tsd.shape(), tsd.dtype(), is_clear, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
-  rt_data1[ssd::ZP0] = new float(113);
-  rt_data1[ssd::SCALE0] = new float(.003f);
-  rt_data2[ssd::ZP0] = new float(113);
-  rt_data2[ssd::SCALE0] = new float(.003f);
+  rt_data1[io::ZP0] = new float(113);
+  rt_data1[io::SCALE0] = new float(.003f);
+  rt_data2[io::ZP0] = new float(113);
+  rt_data2[io::SCALE0] = new float(.003f);
 
   operator_desc op_desc(kernel_kind::transpose_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                         op_attrs);

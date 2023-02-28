@@ -29,6 +29,7 @@
 namespace jd {
 using dt = jd::data_type;
 using ft = jd::format_type;
+using io = ssd::matmul_io::io;
 
 struct op_args_t {
   operator_desc op_desc;
@@ -50,31 +51,31 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   std::vector<jd::data_type> dtypes(descs.size());
   std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
 
-  const dim_t M = shapes[ssd::SRC0][3];  // aka src0_perm_shape[2]
-  const dim_t K = shapes[ssd::SRC0][1];  // aka src0_perm_shape[3]
-  const dim_t N = shapes[ssd::SRC1][3];  // aka src1_perm_shape[3]
-  const dim_t bs0 = shapes[ssd::DST0][0];
-  const dim_t bs1 = shapes[ssd::DST0][1];
-  bool has_binary_add = !shapes[ssd::SRC2].empty();
+  const dim_t M = shapes[io::SRC0][3];  // aka src0_perm_shape[2]
+  const dim_t K = shapes[io::SRC0][1];  // aka src0_perm_shape[3]
+  const dim_t N = shapes[io::SRC1][3];  // aka src1_perm_shape[3]
+  const dim_t bs0 = shapes[io::DST0][0];
+  const dim_t bs1 = shapes[io::DST0][1];
+  bool has_binary_add = !shapes[io::SRC2].empty();
 
   // alpha * src0 x src1 + beta * src2 = dst.
   float alpha = 1.f, beta = 1.f;
   if (attrs["alpha"] != "") alpha = str_to_num<float>(attrs["alpha"]);
   if (attrs["beta"] != "") beta = str_to_num<float>(attrs["beta"]);
 
-  const auto& left_dt = dtypes[ssd::SRC0];
-  const auto& right_dt = dtypes[ssd::SRC1];
-  const auto& dst_dt = dtypes[ssd::DST0];
+  const auto& left_dt = dtypes[io::SRC0];
+  const auto& right_dt = dtypes[io::SRC1];
+  const auto& dst_dt = dtypes[io::DST0];
 
   std::vector<dim_t> left_stride = {K * bs0 * M, bs0 * M, M, 1};
   std::vector<dim_t> right_stride = {K * bs0 * N, bs0 * N, N, 1};
   std::vector<dim_t> dst_stride = {bs1 * M * N, M * N, N, 1};
 
   // runtime data alias
-  const auto left_data = rt_data[ssd::SRC0];
-  const auto right_data = rt_data[ssd::SRC1];
-  const auto badd_data = rt_data[ssd::SRC2];
-  auto dst_data = const_cast<void*>(rt_data[ssd::DST0]);
+  const auto left_data = rt_data[io::SRC0];
+  const auto right_data = rt_data[io::SRC1];
+  const auto badd_data = rt_data[io::SRC2];
+  auto dst_data = const_cast<void*>(rt_data[io::DST0]);
 
   // buffer data
   auto left_fp32 = static_cast<const float*>(left_data);  // ptr alias
@@ -105,7 +106,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
             value += l_value * r_value;
           }
           float badd_value = 0;
-          if (has_binary_add) badd_value = dtypes[ssd::SRC2] == dt::fp32 ? badd_fp32[dst_idx] : 0;
+          if (has_binary_add) badd_value = dtypes[io::SRC2] == dt::fp32 ? badd_fp32[dst_idx] : 0;
 
           // Quantize dst data
           if (dst_dt == dt::fp32) {
@@ -134,13 +135,13 @@ bool check_result(const test_params_t& t) {
   }
   if (!t.expect_to_fail) {
     get_true_data(q.op_desc, q.rt_data);
-    auto buf1 = p.rt_data[ssd::DST0];
-    auto size1 = p.op_desc.tensor_descs()[ssd::DST0].size();
-    auto buf2 = q.rt_data[ssd::DST0];
-    auto size2 = q.op_desc.tensor_descs()[ssd::DST0].size();
+    auto buf1 = p.rt_data[io::DST0];
+    auto size1 = p.op_desc.tensor_descs()[io::DST0].size();
+    auto buf2 = q.rt_data[io::DST0];
+    auto size2 = q.op_desc.tensor_descs()[io::DST0].size();
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
-    const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST0].dtype();
+    const auto& dst_type = p.op_desc.tensor_descs()[io::DST0].dtype();
     if (dst_type == dt::fp32) {
       return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
     } else if (dst_type == dt::s32) {
@@ -217,14 +218,14 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, dim_t bs0, d
   std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
-    if (index == ssd::SRC2 && !has_binary_add) {
+    if (index == io::SRC2 && !has_binary_add) {
       // insert nullptr as placeholder
       rt_data1.emplace_back(nullptr);
       rt_data2.emplace_back(nullptr);
       continue;
     }
     auto& tsd = ts_descs[index];
-    bool is_clear = (index == ssd::DST0);
+    bool is_clear = (index == io::DST0);
     auto ranges = std::vector<float>{-10, 10};
     auto data_pair = make_data_obj(tsd.shape(), tsd.dtype(), is_clear, ranges);
     rt_data1.emplace_back(data_pair.first);
@@ -275,12 +276,12 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   std::vector<std::vector<dim_t>> shapes(descs.size());
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
 
-  const dim_t bs0 = shapes[ssd::DST0][0];
-  const dim_t bs1 = shapes[ssd::DST0][1];
-  const dim_t M = shapes[ssd::SRC0][3];  // aka src0_perm_shape[2]
-  const dim_t K = shapes[ssd::SRC0][1];  // aka src0_perm_shape[3]
-  const dim_t N = shapes[ssd::SRC1][3];  // aka src1_perm_shape[3]
-  const bool has_binary_add = shapes[ssd::SRC2].size() != 0;
+  const dim_t bs0 = shapes[io::DST0][0];
+  const dim_t bs1 = shapes[io::DST0][1];
+  const dim_t M = shapes[io::SRC0][3];  // aka src0_perm_shape[2]
+  const dim_t K = shapes[io::SRC0][1];  // aka src0_perm_shape[3]
+  const dim_t N = shapes[io::SRC1][3];  // aka src1_perm_shape[3]
+  const bool has_binary_add = shapes[io::SRC2].size() != 0;
   std::vector<std::string> params;
   params.push_back("c" + std::to_string(static_cast<int>(tpi.param.args.first.nthr)));
   params.push_back(std::to_string(bs0));

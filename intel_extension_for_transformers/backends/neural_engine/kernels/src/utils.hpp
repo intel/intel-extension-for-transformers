@@ -127,6 +127,11 @@ inline bool is_any_of(std::initializer_list<value_type> il, predicate_type pred)
   return std::any_of(il.begin(), il.end(), pred);
 }
 
+template <typename value_type, typename predicate_type>
+inline bool is_all_of(std::initializer_list<value_type> il, predicate_type pred) {
+  return std::all_of(il.begin(), il.end(), pred);
+}
+
 #define ceil_div(x, y) (((x) + (y)-1) / (y))
 #define pad_to(x, n) (ceil_div(x, n) * (n))
 

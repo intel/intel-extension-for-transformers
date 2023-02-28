@@ -26,6 +26,7 @@
 namespace jd {
 using dt = data_type;
 using map_key_t = std::tuple<kernel_prop, dt, dt, dt>;
+using io = ssd::matmul_io::io;
 /**
  * @param kernel_kind point to this file "cpu_transpose_matmul_list.cpp".
  * @param kernel_prop point to [KEY] of impl_list_map. A specific function or
@@ -51,9 +52,9 @@ static const std::map<map_key_t, std::vector<impl_list_item_t>> impl_list_map = 
 
 const std::vector<impl_list_item_t>* get_transpose_matmul_impl_list(const operator_desc& op_desc) {
   const auto& tensor_descs = op_desc.tensor_descs();
-  const auto& src0_dtype = tensor_descs[ssd::SRC0].dtype();
-  const auto& src1_dtype = tensor_descs[ssd::SRC1].dtype();
-  const auto& dst_dtype = tensor_descs[ssd::DST0].dtype();
+  const auto& src0_dtype = tensor_descs[io::SRC0].dtype();
+  const auto& src1_dtype = tensor_descs[io::SRC1].dtype();
+  const auto& dst_dtype = tensor_descs[io::DST0].dtype();
   map_key_t key{op_desc.kernel_prop(), src0_dtype, src1_dtype, dst_dtype};
   const auto impl_list_it = impl_list_map.find(key);
   return (impl_list_it != impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine::empty_list;

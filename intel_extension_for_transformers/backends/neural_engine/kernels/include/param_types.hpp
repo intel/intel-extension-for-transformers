@@ -31,7 +31,8 @@ enum class kernel_kind : uint8_t {
   logsoftmax,
   gather,
   attention,
-  transpose_mha
+  transpose_mha,
+  dyn_quantize_mha,
 };
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };
@@ -82,6 +83,7 @@ enum class format_type : uint8_t {
   ab,  // shape permutation = {0, 1}
   ba,  // shape permutation = {1, 0}
   abc,
+  abcd,
 
   // encoding format of sparse matrix
   uncoded,
