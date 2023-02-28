@@ -88,6 +88,7 @@ class SPARSE_API_ kernel_proxy : public proxy_base<kernel_t, std::shared_ptr<con
  public:
   inline const jd::kernel_kind& kernel_kind() const { return get_sp()->kd()->kernel_kind(); }
   void execute(const std::vector<const void*>& rt_data) const;
+  size_t get_workspace_size() const;
 };
 
 //// The following paragraphs are the various derived kernels and its descriptors.
@@ -164,6 +165,13 @@ class SPARSE_API_ transpose_mha_desc : public kernel_desc_proxy {
   virtual ~transpose_mha_desc() {}
 };
 
+class SPARSE_API_ dyn_quantize_mha_desc : public kernel_desc_proxy {
+ public:
+  dyn_quantize_mha_desc() {}
+  explicit dyn_quantize_mha_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~dyn_quantize_mha_desc() {}
+};
+
 /**
  * @brief Derived proxy class, interfacing to the real/cached sparse_matmul_t.
  */
@@ -235,6 +243,13 @@ class SPARSE_API_ transpose_mha : public kernel_proxy {
   transpose_mha() {}
   explicit transpose_mha(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~transpose_mha() {}
+};
+
+class SPARSE_API_ dyn_quantize_mha : public kernel_proxy {
+ public:
+  dyn_quantize_mha() {}
+  explicit dyn_quantize_mha(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~dyn_quantize_mha() {}
 };
 
 }  // namespace jd

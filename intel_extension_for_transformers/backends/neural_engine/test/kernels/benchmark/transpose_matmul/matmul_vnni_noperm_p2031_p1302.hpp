@@ -55,7 +55,7 @@ class matmul_vnni_noperm_p2031_p1302_bench : public transpose_matmul_bench {
   bool check_result() override;
   // Just like that in gtest file
   void gen_case() override;
-  std::vector<int> get_refresh_data_idx() const override { return std::vector<int>{ssd::SRC0, ssd::SRC1, ssd::DST0}; }
+  std::vector<int> get_refresh_data_idx() const override { return std::vector<int>{io::SRC0, io::SRC1, io::DST0}; }
 };
 }  // namespace jd
 

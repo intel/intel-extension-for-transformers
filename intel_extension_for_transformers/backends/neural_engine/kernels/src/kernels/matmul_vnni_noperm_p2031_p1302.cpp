@@ -14,6 +14,7 @@
 
 #include "kernels/matmul_vnni_noperm_p2031_p1302.hpp"
 namespace jd {
+using io = ssd::matmul_io::io;
 
 /**
  * Dimension details:
@@ -39,36 +40,36 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
   auto& descs = op_desc_.tensor_descs();
   auto shapes = get_tensor_shapes(descs);
 
-  for (auto mat : {ssd::SRC0, ssd::SRC1, ssd::SRC2, ssd::DST0})
+  for (auto mat : {io::SRC0, io::SRC1, io::SRC2, io::DST0})
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
       SPARSE_LOG(WARNING) << "All operand should be 4D matrix";
       return false;
     }
 
-  std::vector<dim_t>& src0_perm_shape = shapes[ssd::SRC0];  // src0 perm none
+  std::vector<dim_t>& src0_perm_shape = shapes[io::SRC0];  // src0 perm none
   std::vector<dim_t> src1_perm_shape = {
-      shapes[ssd::SRC1][2],  // bs0
-      shapes[ssd::SRC1][0],  // bs1
-      shapes[ssd::SRC1][3],  // K
-      shapes[ssd::SRC1][1],  // N
+      shapes[io::SRC1][2],  // bs0
+      shapes[io::SRC1][0],  // bs1
+      shapes[io::SRC1][3],  // K
+      shapes[io::SRC1][1],  // N
   };
   std::vector<dim_t> dst0_perm_shape = {
       // reverse of 1302 is 2031
-      shapes[ssd::DST0][2],  // bs0
-      shapes[ssd::DST0][0],  // bs1
-      shapes[ssd::DST0][3],  // M
-      shapes[ssd::DST0][1],  // N
+      shapes[io::DST0][2],  // bs0
+      shapes[io::DST0][0],  // bs1
+      shapes[io::DST0][3],  // M
+      shapes[io::DST0][1],  // N
   };
-  if (!shapes[ssd::SRC2].empty()) {
+  if (!shapes[io::SRC2].empty()) {
     SPARSE_LOG(WARNING) << "Does not support binary add";
     return false;
   }
-  bool scaler_scale = shapes[ssd::SCALE0] == std::vector<dim_t>({1}) && shapes[ssd::ZP0] == std::vector<dim_t>({1});
+  bool scaler_scale = shapes[io::SCALE0] == std::vector<dim_t>({1}) && shapes[io::ZP0] == std::vector<dim_t>({1});
   bool is_supported = (op_desc_.kernel_prop() == kernel_prop::forward_inference) &&
-                      is_any_of({dt::u8}, [&](const dt& a) { return descs[ssd::SRC0].dtype() == a; }) &&
-                      is_any_of({dt::s8}, [&](const dt& a) { return descs[ssd::SRC1].dtype() == a; }) &&
-                      is_any_of({dt::u8}, [&](const dt& a) { return descs[ssd::DST0].dtype() == a; }) &&  //
-                      scaler_scale && descs[ssd::SCALE0].dtype() == dt::fp32 && descs[ssd::ZP0].dtype() == dt::fp32;
+                      is_any_of({dt::u8}, [&](const dt& a) { return descs[io::SRC0].dtype() == a; }) &&
+                      is_any_of({dt::s8}, [&](const dt& a) { return descs[io::SRC1].dtype() == a; }) &&
+                      is_any_of({dt::u8}, [&](const dt& a) { return descs[io::DST0].dtype() == a; }) &&  //
+                      scaler_scale && descs[io::SCALE0].dtype() == dt::fp32 && descs[io::ZP0].dtype() == dt::fp32;
 
   if (!is_supported) {
     SPARSE_LOG(WARNING) << "Skip as dtype not matched";
@@ -101,10 +102,10 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::matmul_params_init() {
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
   auto attrs = op_desc_.attrs();
 
-  jit_param_.M = shapes[ssd::SRC0][2];      // aka src0_perm_shape[2]
-  jit_param_.K = shapes[ssd::SRC0][3];      // aka src0_perm_shape[3]
-  jit_param_.N = shapes[ssd::SRC1][1];      // aka src1_perm_shape[3]
-  jit_param_.batch = shapes[ssd::SRC0][0];  // bs0
+  jit_param_.M = shapes[io::SRC0][2];      // aka src0_perm_shape[2]
+  jit_param_.K = shapes[io::SRC0][3];      // aka src0_perm_shape[3]
+  jit_param_.N = shapes[io::SRC1][1];      // aka src1_perm_shape[3]
+  jit_param_.batch = shapes[io::SRC0][0];  // bs0
 
   // note that this kernel writes dst in col-major
   jit_param_.m_tile = 1;
@@ -119,19 +120,19 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::matmul_params_init() {
 matmul_vnni_noperm_p2031_p1302_k_t::matmul_vnni_noperm_p2031_p1302_k_t(const std::shared_ptr<const kd_t>& kd)
     : kernel_t(kd),
       t_shapes_(get_tensor_shapes(kd->get_operator_desc().tensor_descs())),
-      src0_perm_shape_(t_shapes_[ssd::SRC0]),  // src0 perm none
+      src0_perm_shape_(t_shapes_[io::SRC0]),  // src0 perm none
       src1_perm_shape_({
-          t_shapes_[ssd::SRC1][2],
-          t_shapes_[ssd::SRC1][0],
-          t_shapes_[ssd::SRC1][3],
-          t_shapes_[ssd::SRC1][1],
+          t_shapes_[io::SRC1][2],
+          t_shapes_[io::SRC1][0],
+          t_shapes_[io::SRC1][3],
+          t_shapes_[io::SRC1][1],
       }),
       dst1_perm_shape_({
           // reverse of 1302 is 2031
-          t_shapes_[ssd::DST0][2],
-          t_shapes_[ssd::DST0][0],
-          t_shapes_[ssd::DST0][3],
-          t_shapes_[ssd::DST0][1],
+          t_shapes_[io::DST0][2],
+          t_shapes_[io::DST0][0],
+          t_shapes_[io::DST0][3],
+          t_shapes_[io::DST0][1],
       }),
       M_(src0_perm_shape_[2]),
       K_(src0_perm_shape_[3]),
@@ -190,11 +191,11 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
   constexpr int n_tile = 8;
   constexpr int m_tile = 32;
   constexpr int mb_size = 4 * m_tile;
-  auto base_src0 = static_cast<const uint8_t*>(rt_data[ssd::SRC0]);
-  auto base_src1 = static_cast<const int8_t*>(rt_data[ssd::SRC1]);
-  auto base_dst = const_cast<uint8_t*>(static_cast<const uint8_t*>(rt_data[ssd::DST0]));
-  auto base_scale = static_cast<const float*>(rt_data[ssd::SCALE0]);
-  auto base_zp = reinterpret_cast<const float*>(rt_data[ssd::ZP0]);
+  auto base_src0 = static_cast<const uint8_t*>(rt_data[io::SRC0]);
+  auto base_src1 = static_cast<const int8_t*>(rt_data[io::SRC1]);
+  auto base_dst = const_cast<uint8_t*>(static_cast<const uint8_t*>(rt_data[io::DST0]));
+  auto base_scale = static_cast<const float*>(rt_data[io::SCALE0]);
+  auto base_zp = reinterpret_cast<const float*>(rt_data[io::ZP0]);
 
   uint8_t* src0_tmp;
   int8_t* src1_tmp;
@@ -243,11 +244,11 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
 }
 
 bool matmul_vnni_noperm_p2031_p1302_k_t::execute(const std::vector<const void*>& rt_data) const {
-  auto base_src0 = reinterpret_cast<const uint8_t*>(rt_data[ssd::SRC0]);
-  auto base_src1 = reinterpret_cast<const int8_t*>(rt_data[ssd::SRC1]);
-  auto base_dst = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(rt_data[ssd::DST0]));
-  auto base_scale = reinterpret_cast<const float*>(rt_data[ssd::SCALE0]);
-  auto base_zp = reinterpret_cast<const float*>(rt_data[ssd::ZP0]);
+  auto base_src0 = reinterpret_cast<const uint8_t*>(rt_data[io::SRC0]);
+  auto base_src1 = reinterpret_cast<const int8_t*>(rt_data[io::SRC1]);
+  auto base_dst = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(rt_data[io::DST0]));
+  auto base_scale = reinterpret_cast<const float*>(rt_data[io::SCALE0]);
+  auto base_zp = reinterpret_cast<const float*>(rt_data[io::ZP0]);
   if (using_unified_kernel_) {
 #pragma omp parallel for collapse(2)
     for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)

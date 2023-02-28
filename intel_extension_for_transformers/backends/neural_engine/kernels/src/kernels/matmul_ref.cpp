@@ -15,6 +15,7 @@
 #include "kernels/matmul_ref.hpp"
 
 namespace jd {
+using io = ssd::matmul_io::io;
 
 inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
   std::vector<std::vector<dim_t>> shapes(descs.size());
@@ -35,7 +36,7 @@ bool matmul_ref_kd_t::init() {
   auto& descs = op_desc_.tensor_descs();
   auto shapes = get_tensor_shapes(descs);
 
-  for (auto mat : {ssd::SRC0, ssd::SRC1, ssd::SRC2, ssd::DST0})
+  for (auto mat : {io::SRC0, io::SRC1, io::SRC2, io::DST0})
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
       SPARSE_LOG(WARNING) << "All operand of transpose matmul op should be 4D matrix";
       return false;
@@ -43,23 +44,23 @@ bool matmul_ref_kd_t::init() {
 
   for (const std::vector<std::vector<jd::dim_t>>& perm : perm_list) {
     std::vector<dim_t> src0_perm_shape = {
-        shapes[ssd::SRC0][perm[0][0]],
-        shapes[ssd::SRC0][perm[0][1]],
-        shapes[ssd::SRC0][perm[0][2]],
-        shapes[ssd::SRC0][perm[0][3]],
+        shapes[io::SRC0][perm[0][0]],
+        shapes[io::SRC0][perm[0][1]],
+        shapes[io::SRC0][perm[0][2]],
+        shapes[io::SRC0][perm[0][3]],
     };
     std::vector<dim_t> src1_perm_shape = {
-        shapes[ssd::SRC1][perm[1][0]],
-        shapes[ssd::SRC1][perm[1][1]],
-        shapes[ssd::SRC1][perm[1][2]],
-        shapes[ssd::SRC1][perm[1][3]],
+        shapes[io::SRC1][perm[1][0]],
+        shapes[io::SRC1][perm[1][1]],
+        shapes[io::SRC1][perm[1][2]],
+        shapes[io::SRC1][perm[1][3]],
     };
     const std::vector<jd::dim_t> dst0_perm_inv = perm_inv(perm[2]);
     std::vector<dim_t> dst0_perm_shape = {
-        shapes[ssd::DST0][dst0_perm_inv[0]],
-        shapes[ssd::DST0][dst0_perm_inv[1]],
-        shapes[ssd::DST0][dst0_perm_inv[2]],
-        shapes[ssd::DST0][dst0_perm_inv[3]],
+        shapes[io::DST0][dst0_perm_inv[0]],
+        shapes[io::DST0][dst0_perm_inv[1]],
+        shapes[io::DST0][dst0_perm_inv[2]],
+        shapes[io::DST0][dst0_perm_inv[3]],
     };
 
     // check bs0 and bs1
@@ -81,14 +82,14 @@ bool matmul_ref_kd_t::init() {
       continue;
     }
 
-    if (shapes.size() > ssd::SRC2 && !shapes[ssd::SRC2].empty()) {
-      if (shapes[ssd::SRC2] != dst0_perm_shape) return false;
+    if (shapes.size() > io::SRC2 && !shapes[io::SRC2].empty()) {
+      if (shapes[io::SRC2] != dst0_perm_shape) return false;
     }
-    if (shapes.size() > ssd::SCALE0 && !shapes[ssd::SCALE0].empty()) {
-      if (shapes[ssd::SCALE0] != std::vector<dim_t>{1}) return false;
+    if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty()) {
+      if (shapes[io::SCALE0] != std::vector<dim_t>{1}) return false;
     }
-    if (shapes.size() > ssd::ZP0 && !shapes[ssd::ZP0].empty()) {
-      if (shapes[ssd::ZP0] != std::vector<dim_t>{1}) return false;
+    if (shapes.size() > io::ZP0 && !shapes[io::ZP0].empty()) {
+      if (shapes[io::ZP0] != std::vector<dim_t>{1}) return false;
     }
 
     perm_ptr_ = &perm;
@@ -124,20 +125,20 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
   std::vector<jd::data_type> dtypes(descs.size());
   std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
-  bool has_binary_add = shapes.size() > ssd::SRC2 && !shapes[ssd::SRC2].empty();
+  bool has_binary_add = shapes.size() > io::SRC2 && !shapes[io::SRC2].empty();
 
-  const auto& left_dt = dtypes[ssd::SRC0];
-  const auto& right_dt = dtypes[ssd::SRC1];
-  const auto& dst_dt = dtypes[ssd::DST0];
+  const auto& left_dt = dtypes[io::SRC0];
+  const auto& right_dt = dtypes[io::SRC1];
+  const auto& dst_dt = dtypes[io::DST0];
 
   // alpha * src0 x src1 + beta * src2 = dst.
   // TBD(yi): change naming of matmul variables
   float alpha = 1.f, beta = 1.f, zp = 0.f;
   if (attrs.find("alpha") != attrs.end()) alpha = str_to_num<float>(attrs.at("alpha"));
   if (attrs.find("beta") != attrs.end()) beta = str_to_num<float>(attrs.at("beta"));
-  if (shapes.size() > ssd::SCALE0 && !shapes[ssd::SCALE0].empty())
-    alpha = static_cast<const float*>(rt_data[ssd::SCALE0])[0];
-  if (shapes.size() > ssd::ZP0 && !shapes[ssd::ZP0].empty()) zp = static_cast<const float*>(rt_data[ssd::ZP0])[0];
+  if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty())
+    alpha = static_cast<const float*>(rt_data[io::SCALE0])[0];
+  if (shapes.size() > io::ZP0 && !shapes[io::ZP0].empty()) zp = static_cast<const float*>(rt_data[io::ZP0])[0];
   if (attrs.find("src0_scale") != attrs.end()) alpha /= str_to_num<float>(attrs.at("src0_scale"));
   if (attrs.find("src1_scale") != attrs.end()) alpha /= str_to_num<float>(attrs.at("src1_scale"));
   if (attrs.find("out_scale") != attrs.end()) alpha *= str_to_num<float>(attrs.at("out_scale"));
@@ -156,10 +157,10 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   const std::vector<dim_t> dst_stride = apply_perm(dst_perm_stride, perm()[2]);
 
   // runtime data alias
-  const auto left_data = rt_data[ssd::SRC0];
-  const auto right_data = rt_data[ssd::SRC1];
-  auto dst_data = const_cast<void*>(rt_data[ssd::DST0]);
-  const auto badd_data = rt_data.size() > ssd::SRC2 ? rt_data[ssd::SRC2] : nullptr;
+  const auto left_data = rt_data[io::SRC0];
+  const auto right_data = rt_data[io::SRC1];
+  auto dst_data = const_cast<void*>(rt_data[io::DST0]);
+  const auto badd_data = rt_data.size() > io::SRC2 ? rt_data[io::SRC2] : nullptr;
 
   // ptr alias
   auto left_fp32 = static_cast<const float*>(left_data);
@@ -202,7 +203,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
           }
           float badd_value = 0;
           if (badd_data != nullptr && has_binary_add)
-            badd_value = dtypes[ssd::SRC2] == dt::fp32 ? badd_fp32[dst_idx] : 0;
+            badd_value = dtypes[io::SRC2] == dt::fp32 ? badd_fp32[dst_idx] : 0;
           value = apply_postop_list(alpha * value + beta * badd_value + zp, post_attr);
 
           // Quantize dst data

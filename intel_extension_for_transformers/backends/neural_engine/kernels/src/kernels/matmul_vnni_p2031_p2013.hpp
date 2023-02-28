@@ -41,6 +41,7 @@ class matmul_vnni_p2031_p2013_k_t;
  */
 class matmul_vnni_p2031_p2013_kd_t : public kernel_desc_t {
  public:
+  using io = ssd::matmul_io::io;
   explicit matmul_vnni_p2031_p2013_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::sparse_matmul), op_desc_(op_desc) {}
   virtual ~matmul_vnni_p2031_p2013_kd_t() {}
@@ -56,8 +57,8 @@ class matmul_vnni_p2031_p2013_kd_t : public kernel_desc_t {
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
 
   inline std::vector<dim_t> shape() const override {
-    std::vector<dim_t> result(op_desc_.tensor_descs()[ssd::SRC0].shape());
-    result.push_back(op_desc_.tensor_descs()[ssd::SRC0].shape().back());
+    std::vector<dim_t> result(op_desc_.tensor_descs()[io::SRC0].shape());
+    result.push_back(op_desc_.tensor_descs()[io::SRC0].shape().back());
     return result;
   }
 
@@ -73,6 +74,7 @@ class matmul_vnni_p2031_p2013_kd_t : public kernel_desc_t {
  */
 class matmul_vnni_p2031_p2013_k_t : public kernel_t {
  public:
+  using io = ssd::matmul_io::io;
   using kd_t = matmul_vnni_p2031_p2013_kd_t;
   explicit matmul_vnni_p2031_p2013_k_t(const std::shared_ptr<const kd_t>& kd);
   virtual ~matmul_vnni_p2031_p2013_k_t() {

@@ -38,6 +38,7 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_layernormalized_spmm_kernel.cpp
     test_seq_cpy_2x8x8.cpp
     test_seq_cpy_48x4.cpp
+    test_dyn_quantize_mha.cpp
 )
 
 if(NOT WIN32) # TODO(jiwei): disable attention test on windows due to lack of VNNI instruction set

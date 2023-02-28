@@ -35,10 +35,10 @@
 #define TRANSPOSE_MHA_ARG_NUM 4
 
 namespace jd {
-
-using io = ssd::transpose_mha_io::io;
-
 class transpose_mha_bench : public kernel_bench {
+ protected:
+  using io = ssd::transpose_mha_io::io;
+
  private:
   int64_t head_num;
   int64_t head_size;

@@ -31,6 +31,7 @@
 namespace jd {
 using dt = jd::data_type;
 using ft = jd::format_type;
+using io = ssd::matmul_io::io;
 
 // test trmm vnni
 struct op_args_t {
@@ -63,13 +64,13 @@ bool check_result(const test_params_t& t) {
     return t.expect_to_fail;
   }
   if (!t.expect_to_fail) {
-    auto buf1 = p.rt_data[ssd::DST0];
-    auto size1 = p.op_desc.tensor_descs()[ssd::DST0].size();
-    auto buf2 = q.rt_data[ssd::DST0];
-    auto size2 = q.op_desc.tensor_descs()[ssd::DST0].size();
+    auto buf1 = p.rt_data[io::DST0];
+    auto size1 = p.op_desc.tensor_descs()[io::DST0].size();
+    auto buf2 = q.rt_data[io::DST0];
+    auto size2 = q.op_desc.tensor_descs()[io::DST0].size();
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
-    const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST0].dtype();
+    const auto& dst_type = p.op_desc.tensor_descs()[io::DST0].dtype();
     if (dst_type == dt::fp32) {
       return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
     } else if (dst_type == dt::s32) {
@@ -150,7 +151,7 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, dim_t bs0, d
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
     auto& tsd = ts_descs[index];
-    const bool is_clear = (index == ssd::DST0);
+    const bool is_clear = (index == io::DST0);
     const auto ranges = std::vector<float>{-10, 10};
     const auto data_pair = make_data_obj(tsd.shape(), tsd.dtype(), is_clear, ranges);
     rt_data1.emplace_back(data_pair.first);
@@ -215,12 +216,12 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   std::vector<std::vector<dim_t>> shapes(descs.size());
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
 
-  const dim_t bs0 = shapes[ssd::DST0][0];
-  const dim_t bs1 = shapes[ssd::DST0][1];
-  const dim_t M = shapes[ssd::SRC0][3];  // aka src0_perm_shape[2]
-  const dim_t K = shapes[ssd::SRC0][1];  // aka src0_perm_shape[3]
-  const dim_t N = shapes[ssd::SRC1][3];  // aka src1_perm_shape[3]
-  const bool has_binary_add = shapes[ssd::SRC2].size() != 0;
+  const dim_t bs0 = shapes[io::DST0][0];
+  const dim_t bs1 = shapes[io::DST0][1];
+  const dim_t M = shapes[io::SRC0][3];  // aka src0_perm_shape[2]
+  const dim_t K = shapes[io::SRC0][1];  // aka src0_perm_shape[3]
+  const dim_t N = shapes[io::SRC1][3];  // aka src1_perm_shape[3]
+  const bool has_binary_add = shapes[io::SRC2].size() != 0;
   std::vector<std::string> params;
   params.push_back("c" + std::to_string(static_cast<int>(tpi.param.args.first.nthr)));
   params.push_back(std::to_string(bs0));

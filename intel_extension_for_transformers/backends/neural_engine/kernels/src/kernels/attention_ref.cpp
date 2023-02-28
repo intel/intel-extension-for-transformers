@@ -61,6 +61,8 @@ enum SubKernel {
 }  // namespace
 
 namespace jd {
+using matmul_io = ssd::matmul_io::io;
+
 template <typename T_kd>
 inline bool attention_ref_kd_t::add_kernel_desc(const operator_desc& op_desc, const char* name) {
   std::shared_ptr<const kernel_desc_t> kd;
@@ -270,7 +272,7 @@ void attention_ref_k_t::setup_memory() {
   const auto tensor_bytes = [](const jd::tensor_desc& d) { return d.size() * type2bytes[d.dtype()]; };
 
   offset.push_back(tensor_bytes(ker_opdesc(SubKernel::QK_SPMM).tensor_descs()[ssd::DST]));
-  offset.push_back(tensor_bytes(ker_opdesc(SubKernel::Q_K_GEMM).tensor_descs()[ssd::DST0]));
+  offset.push_back(tensor_bytes(ker_opdesc(SubKernel::Q_K_GEMM).tensor_descs()[matmul_io::DST0]));
   offset.push_back(tensor_bytes(ker_opdesc(SubKernel::SOFTMAX).tensor_descs()[1]));
   offset.push_back(tensor_bytes(ker_opdesc(SubKernel::V_SPMM).tensor_descs()[ssd::DST]));
   // the last kernel(QK(softmax) * V) don't need alloc memory
@@ -289,15 +291,16 @@ void attention_ref_k_t::setup_memory() {
 
   // part1 Q X K
   mem_[SubKernel::Q_K_GEMM].resize(4);
-  mem_[SubKernel::Q_K_GEMM][ssd::SRC0] = mem_[SubKernel::QK_SPMM][ssd::DST];
-  mem_[SubKernel::Q_K_GEMM][ssd::SRC1] = mem_[SubKernel::QK_SPMM][ssd::DST] + offset[0] / 2;  // split qk out to q and k
-  mem_[SubKernel::Q_K_GEMM][ssd::DST0] = mem_[SubKernel::QK_SPMM][ssd::DST] + offset[0];      // dst
-  mem_[SubKernel::Q_K_GEMM][ssd::SRC2] = nullptr;
+  mem_[SubKernel::Q_K_GEMM][matmul_io::SRC0] = mem_[SubKernel::QK_SPMM][ssd::DST];
+  mem_[SubKernel::Q_K_GEMM][matmul_io::SRC1] =
+      mem_[SubKernel::QK_SPMM][ssd::DST] + offset[0] / 2;  // split qk out to q and k
+  mem_[SubKernel::Q_K_GEMM][matmul_io::DST0] = mem_[SubKernel::QK_SPMM][ssd::DST] + offset[0];  // dst
+  mem_[SubKernel::Q_K_GEMM][matmul_io::SRC2] = nullptr;
 
   // part2 Softmax
   mem_[SubKernel::SOFTMAX].resize(2);
-  mem_[SubKernel::SOFTMAX][0] = mem_[SubKernel::Q_K_GEMM][ssd::DST0];
-  mem_[SubKernel::SOFTMAX][1] = mem_[SubKernel::Q_K_GEMM][ssd::DST0] + offset[1];
+  mem_[SubKernel::SOFTMAX][0] = mem_[SubKernel::Q_K_GEMM][matmul_io::DST0];
+  mem_[SubKernel::SOFTMAX][1] = mem_[SubKernel::Q_K_GEMM][matmul_io::DST0] + offset[1];
 
   // part5 spmm for V
   mem_[SubKernel::V_SPMM].resize(ssd::SCALES + 1);
@@ -310,13 +313,13 @@ void attention_ref_k_t::setup_memory() {
   mem_[SubKernel::V_SPMM][ssd::DST] = mem_[SubKernel::SOFTMAX][1] + offset[2];
 
   // part6  V X QK(softmax out)
-  mem_[SubKernel::QK_V_MATMUL].resize(ssd::ZP0 + 1);
-  mem_[SubKernel::QK_V_MATMUL][ssd::SRC0] = mem_[SubKernel::SOFTMAX][1];
-  mem_[SubKernel::QK_V_MATMUL][ssd::SRC1] = mem_[SubKernel::V_SPMM][ssd::DST];
-  mem_[SubKernel::QK_V_MATMUL][ssd::DST0] = nullptr;
-  mem_[SubKernel::QK_V_MATMUL][ssd::SRC2] = nullptr;
-  mem_[SubKernel::QK_V_MATMUL][ssd::SCALE0] = nullptr;
-  mem_[SubKernel::QK_V_MATMUL][ssd::ZP0] = nullptr;
+  mem_[SubKernel::QK_V_MATMUL].resize(matmul_io::ZP0 + 1);
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::SRC0] = mem_[SubKernel::SOFTMAX][1];
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::SRC1] = mem_[SubKernel::V_SPMM][ssd::DST];
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::DST0] = nullptr;
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::SRC2] = nullptr;
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::SCALE0] = nullptr;
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::ZP0] = nullptr;
 }
 bool attention_ref_k_t::init() {
   // Create kernel
@@ -342,12 +345,12 @@ std::vector<const void*> attention_ref_k_t::set_input_output(int index, const st
     // part0 QK spmm_vnni and part5 V spmm_vnni
     data[ssd::SRC] = rt_data[attention_io::MERGE_SRC];
   } else if (index == SubKernel::Q_K_GEMM) {
-    data[ssd::SRC2] = rt_data[attention_io::Q_K_SRC2];
+    data[matmul_io::SRC2] = rt_data[attention_io::Q_K_SRC2];
   } else if (index == SubKernel::QK_V_MATMUL) {
     // part4 transpose matmul for QK x V
-    data[ssd::DST0] = rt_data[attention_io::MERGE_DST];
-    data[ssd::SCALE0] = rt_data[attention_io::QK_V_OUTPUT_SCALES];
-    data[ssd::ZP0] = rt_data[attention_io::QK_V_OUTPUT_ZERO_POINT];
+    data[matmul_io::DST0] = rt_data[attention_io::MERGE_DST];
+    data[matmul_io::SCALE0] = rt_data[attention_io::QK_V_OUTPUT_SCALES];
+    data[matmul_io::ZP0] = rt_data[attention_io::QK_V_OUTPUT_ZERO_POINT];
   }
   return data;
 }
