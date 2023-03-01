@@ -47,10 +47,13 @@ class MultiHeadAttenionOperator : public Operator {
   // Converting string variables from operators attrs to boolean, or int/float
  protected:
   Tensor *Q_ = nullptr, *K_ = nullptr, *V_ = nullptr, *QKV_ = nullptr;
-  Tensor* att_mask_;
-  Tensor *Q_min_, *Q_max_, *K_min_, *K_max_, *V_min_, *V_max_;  // all scale is per_tensor now
-  Tensor *QK_min_, *QK_max_, *dst_min_, *dst_max_;              // all scale is per_tensor now
-  Tensor* dst_;
+  Tensor* att_mask_ = nullptr;
+  // all scale is per_tensor now
+  Tensor *Q_min_ = nullptr, *Q_max_ = nullptr;
+  Tensor *K_min_ = nullptr, *K_max_ = nullptr;
+  Tensor *V_min_ = nullptr, *V_max_ = nullptr;
+  Tensor *QK_min_ = nullptr, *QK_max_ = nullptr, *dst_min_ = nullptr, *dst_max_ = nullptr;
+  Tensor* dst_ = nullptr;
   uint8_t* trans_mha_tmpbuf;
   const int Size2M = 1 << 21;
   int inf_count = 0;
@@ -59,12 +62,12 @@ class MultiHeadAttenionOperator : public Operator {
   float output_scale_ = 1.f;
   vector<int64_t> dst_reshape_;
   vector<int64_t> src_shape_;
-  float QK_rescale_, softmax_rescale_, QKV_rescale_, QKV_zeropoint_;
+  float QK_rescale_ = 0, softmax_rescale_ = 0, QKV_rescale_ = 0, QKV_zeropoint_ = 0;
 
   vector<float> Q_scales, K_scales, V_scales, QK_scales, dst_scales, QK_rescales;
 
-  float scaleQ, scaleK, scaleV, scaleRet;
-  int bs_, seq_len_, head_num_, head_size_, hidden_size_, zeropointRet;
+  float scaleQ = 0, scaleK = 0, scaleV = 0, scaleRet = 0;
+  int bs_ = 0, seq_len_ = 0, head_num_ = 0, head_size_ = 0, hidden_size_ = 0, zeropointRet = 0;
   //   jd::mha_dense mha_dense_;
   jd::transpose_mha mha_transpose_;
   std::vector<const void*> rt_data_;
