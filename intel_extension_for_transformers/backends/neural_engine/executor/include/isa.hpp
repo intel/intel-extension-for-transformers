@@ -33,6 +33,7 @@ namespace executor {
 */
 
 enum class isa {
+  unspport = 0x0,
   avx512_core = 0x1,
   avx512_core_vnni = 0x3,
   avx512_core_bf16 = 0x7,
@@ -52,6 +53,7 @@ inline isa get_max_isa() {
       return isa::avx512_core_amx;
     default:
       LOG(FATAL) << "Only support device with Intel AVX-512!";
+      return isa::unspport;
   }
 }
 }  // namespace executor

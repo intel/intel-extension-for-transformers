@@ -140,8 +140,8 @@ void BinaryOpOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
   stream_.wait();
 
   this->unref_tensors(inputs);
-  if (src0_fp32) delete src0_fp32;
-  if (src1_fp32) delete src1_fp32;
+  if (src0_fp32) delete[] src0_fp32;
+  if (src1_fp32) delete[] src1_fp32;
 }
 
 REGISTER_OPERATOR_CLASS(BinaryOp);
