@@ -673,10 +673,10 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
       memcpy(dst_data, post_data_ptr, data_size * type2bytes[data_type]);
       LOG(WARNING) << "post tensor will be used by multi node...";
     }
+  }
     std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr,
                                              dst_data, rescales_.data()};
     spmm_kern_.execute(runtime_data);
-  }
 }
 #endif
 

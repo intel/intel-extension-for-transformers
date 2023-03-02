@@ -65,6 +65,7 @@ void LayerNormOperator::ReshapewithTransMode(const vector<Tensor*>& input, const
 
   vector<jd::tensor_desc> ts_descs = {src_desc_, dst_desc_, affine_desc};
   std::unordered_map<std::string, std::string> op_attrs_;
+  op_attrs_["spec_type"] = "normal";
   auto& dst_tensor_ptr = output[0];
   dst_tensor_ptr->set_shape(src_shape);
 
