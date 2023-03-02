@@ -66,8 +66,8 @@ python run_mlm.py \
 |Type|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
 |CLM|EleutherAI/gpt-neo-125M| ✅| ✅| ✅
-|CLM|abeja/gpt-neox-japanese-2.7b| ✅| ✅| ✅
-|CLM|EleutherAI/gpt-j-6B| ✅| ✅| Stay tuning
+|CLM|abeja/gpt-neox-japanese-2.7b| ✅| ✅| Stay tuned
+|CLM|EleutherAI/gpt-j-6B| ✅| ✅| Stay tuned
 |MLM|bert-base-uncased| ✅| ✅| ✅
 |PLM|xlnet-base-cased| ✅| ✅| ✅
 
