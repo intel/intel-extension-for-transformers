@@ -55,6 +55,7 @@ void GatherOperator::MapTensors(const vector<Tensor*>& input, const vector<Tenso
 void GatherOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   MapTensors(input, output);
   rt_data_.resize(input.size() + 1);
+  dst_->set_dtype(src_->dtype());
 }
 
 void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -88,7 +89,6 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
     dst_shape[stoi(src_axis_)] = idx_->shape()[stoi(idx_axis_)];
     dst_->set_shape(dst_shape);
   }
-  dst_->set_dtype(src_->dtype());
 
   std::unordered_map<std::string, std::string> attr_map;
   attr_map["idx_axis"] = idx_axis_;
