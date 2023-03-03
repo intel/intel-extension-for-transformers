@@ -8,5 +8,4 @@ torch==1.13.1
 torchvision
 onnx>=1.12
 onnxruntime==1.13.1
-onnxruntime-extensions
 onnxoptimizer

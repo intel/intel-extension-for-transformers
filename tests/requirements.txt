@@ -4,7 +4,6 @@ nlpaug
 sacremoses
 onnx>=1.10
 onnxruntime>=1.11
-onnxruntime-extensions
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=1.10.0
 transformers
