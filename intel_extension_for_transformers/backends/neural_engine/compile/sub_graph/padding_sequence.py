@@ -168,10 +168,69 @@ class PaddingSequence(Pattern):
                     },
                     'returns': [5]
                 },
+
+                # opennmt encoder
+                {
+                    'patterns': {
+                        'in': [[(0, 'Input'), (1, 'ReduceMax'), (2, 'Cast'), (3, 'Range'),
+                                (5, 'Expand'), (6, 'Tile'), (8, 'Less'), (9, 'Unsqueeze'),
+                                (10, 'Not'), (11, 'Unsqueeze'), (12, 'Cast'), (13, 'Where')],
+                               [(), (4, 'ConstantOfShape'), (5, 'Expand')],
+                               [(0, 'Input'), (7, 'Unsqueeze'), (8, 'Less')]],
+                        'out': [[(0, 'AddV2')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 13
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            13: [2]
+                        }, {
+                            'padding_sequence': [0]
+                        }], [[0, 1], 2]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            13: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [0]
+                },
+
+                # opennmt decoder
+                {
+                    'patterns': {
+                        'in': [[(0, 'Input'), (1, 'Shape'), (2, 'Gather'), (3, 'Cast'),
+                                (4, 'Range'), (6, 'Expand'), (7, 'Tile'), (9, 'Less'),
+                                (10, 'Unsqueeze'), (11, 'Not'), (12, 'Unsqueeze'), (13, 'Cast'),
+                                (14, 'Where')],
+                               [(), (5, 'ConstantOfShape'), (6, 'Expand')],
+                               [(0, 'Input'), (8, 'Unsqueeze'), (9, 'Less')]],
+                        'out': [[(0, 'AddV2')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 14
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            14: [2]
+                        }, {
+                            'padding_sequence': [0]
+                        }], [[0, 1], 2]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            14: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [0]
+                },
             ]
         }
 
-        def _make_padding_sequence_node(tensor_idx, hidden_size, model):
+        def _make_padding_sequence_node(tensor_idx, hidden_size, model, seq_len_first=False):
             # Models with different size may have different nums of self-attention head.
             # In Google Bert, the nums_head = hidden_size // 64.
             # But in some other models, like minilm, they has smaller attention head channel.
@@ -192,7 +251,11 @@ class PaddingSequence(Pattern):
             else:
                 attr['dst_shape'] = '-1,' + str(1) + ',1,-1'
 
-            attr['dims'] = 1
+            if not seq_len_first:
+                attr['dims'] = 1
+            else:
+                attr['dims'] = 0
+                attr['seq_len_first'] = True
             padding_sequence_node = util.construct_node(node_name,
                                                         'PaddingSequence',
                                                         input_tensors=input_tensors,
@@ -288,5 +351,17 @@ class PaddingSequence(Pattern):
             return model
         else:
             model.remove_nodes(['padding_sequence'])
+
+        for idx in [5, 6]:
+            pattern_dict = pattern_mapping_config['PaddingSequence'][idx]
+            model = _make_padding_sequence_node(0, 1024, model, seq_len_first=True)
+            model, new_node_names, ret_old_nodes = util.pattern_mapping(
+                "PaddingSequence", pattern_dict, model)
+            if len(new_node_names) != 0:
+                assert ret_old_nodes[0][0].op_type == 'Input'
+                model.insert_nodes(0, [ret_old_nodes[0][0]])
+                return model
+            else:
+                model.remove_nodes(['padding_sequence'])
 
         return model

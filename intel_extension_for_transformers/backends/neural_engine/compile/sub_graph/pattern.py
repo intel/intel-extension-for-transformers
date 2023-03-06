@@ -48,6 +48,7 @@ supported_patterns = [
     'InteractFeatures',
     'AttentionReshape',
     'QKVReshape',
+    'DecoderAttnReshape',
     'ConvReshape',
     'AddClsToken',
     'TransposeBatchMatMul',
@@ -64,12 +65,15 @@ supported_patterns = [
     "ReshapeBeforeRestoreHiddenStates",
     "ReshapeAfterRestoreHiddenStates",
     'LayerNormWithReduceMean',
+    'LayerNormWithTranspose',
     'StartEndLogits',
+    'CastTo',
     'InsertQuantNode',
     'InsertBF16Node',
     'QunatizeFusion',
     'QKVMerge',
     'ReshapeFusion',
+    'OperatorAdaptor',
     'OutputData',
 ]
 

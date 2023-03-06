@@ -54,6 +54,7 @@ class GatherOperator : public Operator {
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
   vector<int64_t> mul_;
+  bool keep_dims_ = true;
 
   std::vector<const void*> rt_data_;
 };

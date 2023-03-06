@@ -83,7 +83,7 @@ struct type_caster<executor::Tensor> {
     py::array a;
     if (src.dtype() == "fp32") {
       a = py::array(std::move(src.shape()), reinterpret_cast<const float*>(src.raw_data()));
-    } else if (src.dtype() == "int32") {
+    } else if (src.dtype() == "int32" || src.dtype() == "s32") {
       a = py::array(std::move(src.shape()), reinterpret_cast<const int32_t*>(src.raw_data()));
     } else if (src.dtype() == "u8") {
       a = py::array(std::move(src.shape()), reinterpret_cast<const uint8_t*>(src.raw_data()));

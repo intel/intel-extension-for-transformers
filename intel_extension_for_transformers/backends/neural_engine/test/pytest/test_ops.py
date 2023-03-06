@@ -20,7 +20,9 @@ from tensorflow.core.framework import node_def_pb2
 from tensorflow.core.framework import attr_value_pb2
 from onnx import NodeProto
 from onnx.helper import make_attribute
+import numpy as np
 from collections import namedtuple
+from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS, Operator
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
 
@@ -486,6 +488,8 @@ class TestOps(unittest.TestCase):
         gather_node.attribute.append(make_attribute('axis', 0))
 
         gather_node_test = OPERATORS['Gather']()
+        gather_node_test.input_tensors = [Tensor(name="src"),
+                                          Tensor(name="indices", data=np.array(1).astype("int32"))]
         gather_node_test.set_attr('onnxruntime', gather_node)
         batch_dims = gather_node_test.attr['batch_dims']
         axis = gather_node_test.attr['axis']
@@ -685,13 +689,16 @@ class TestOps(unittest.TestCase):
         b = namedtuple('type', ['tensor_type'])
         c = namedtuple('tensor_type', ['shape', 'elem_type'])
         d = namedtuple('shape', ['dim'])
-        fake_node = a(name='onnx_input', type=b(c(shape=d([1, 1]), elem_type=7)))
+        p = namedtuple('dim', ['dim_param', 'dim_value'])
+        fake_node = a(name='onnx_input', type=b(c(shape=d([p(dim_param='seq_len',
+                                dim_value=None), p(dim_param="", dim_value=32)]), elem_type=7)))
         onnx_input_node = fake_node
         outputs = namedtuple('fake_output', ['outputs'])
         fake_nodes_dict = {'onnx_input': outputs(['next'])}
 
         onnx_input_node_test = OPERATORS['ONNXINPUT']()
-        onnx_input_node_test.extract('onnxruntime', onnx_input_node, None, fake_nodes_dict)
+        g = Graph()
+        onnx_input_node_test.extract('onnxruntime', onnx_input_node, None, fake_nodes_dict, g)
         op_type = onnx_input_node_test.op_type
         tensor_name = onnx_input_node_test.output_tensors[0].name
         source_op = onnx_input_node_test.output_tensors[0].source_op
@@ -888,6 +895,18 @@ class TestOps(unittest.TestCase):
         flatten_node_test.name = flatten_node.name
         name = flatten_node_test.name
         self.assertEqual('flatten', name)
+
+    def test_logsoftmax_onnx(self):
+        logsoftmax_node = NodeProto()
+        logsoftmax_node.name = 'logsoftmax'
+        logsoftmax_node.op_type = 'LogSoftmax'
+        logsoftmax_node.attribute.append(make_attribute('axis', 1))
+
+        logsoftmax_node_test = OPERATORS['LogSoftmax']()
+        logsoftmax_node_test.input_tensors = [Tensor(name="src")]
+        logsoftmax_node_test.set_attr('onnxruntime', logsoftmax_node)
+        axis = logsoftmax_node_test.attr['axis']
+        self.assertEqual(1, axis)
 
 if __name__ == "__main__":
     unittest.main()

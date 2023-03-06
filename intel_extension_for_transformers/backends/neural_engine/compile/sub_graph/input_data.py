@@ -231,5 +231,5 @@ class InputData(Pattern):
             model.insert_nodes(0, [input_data_node])
             model.nodes[0].attr = None
             model.remove_nodes(onnx_input_nodes_list)
-        
+
         return model

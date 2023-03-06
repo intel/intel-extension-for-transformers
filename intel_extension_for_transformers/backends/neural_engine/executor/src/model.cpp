@@ -323,7 +323,15 @@ void Model::SetInput(const shared_ptr<OperatorConfig>& op_conf, const int operat
   const string& op_type = op_conf->type();
   if (op_type == "Output") {
     model_output_tensors_.push_back(tensors_[id]);
-    output_tensors_.push_back(Tensor(nullptr, tensors_[id]->shape(), tensors_[id]->dtype()));
+    // handle some input_tensors in output_tensors (dynamic dim)
+    vector<int64_t> shape = tensors_[id]->shape();
+    for (const auto& s : tensors_[id]->shape()) {
+      if (s < 0) {
+        shape = {};
+        break;
+      }
+    }
+    output_tensors_.push_back(Tensor(nullptr, shape, tensors_[id]->dtype()));
   }
 }
 

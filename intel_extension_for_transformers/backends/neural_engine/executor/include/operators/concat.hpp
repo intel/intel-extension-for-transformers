@@ -49,7 +49,7 @@ class ConcatOperator : public Operator {
   std::vector<memory> src_m_;
   memory dst_m_;
   unordered_map<int, memory> memory_args_;
-  bool same_shape_ = true;
+  bool forward_with_dnnl_ = true;
   int64_t size_before_concat_dim_ = 0;
   int64_t dst_concat_bytes_ = 0;
   vector<int64_t> src_concat_bytes_;

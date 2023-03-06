@@ -20,6 +20,7 @@
 from .op import Operator, operator_registry
 from .tensor import Tensor
 from ..graph_utils import names_from_input
+from .. import logger
 
 
 # graph.input
@@ -30,7 +31,7 @@ class ONNXINPUT(Operator):
         """The init function of this operator."""
         super().__init__()
 
-    def extract(self, framework, node, model, nodes_dict):
+    def extract(self, framework, node, framework_model, nodes_dict, engine_graph=None):
         """Extract operators to the neural engine."""
         from ..onnx_utils import ONNX_DTYPE_ID
         self._name = node.name
@@ -38,6 +39,17 @@ class ONNXINPUT(Operator):
         output_tensor_name = names_from_input(self._name)[1]
         shape_len = len(node.type.tensor_type.shape.dim)
         shape = [-1] * shape_len
+        for i, d in enumerate(node.type.tensor_type.shape.dim):
+            param = d.dim_param
+            if engine_graph and param in ['max_seq_len', 'seq_len'] and i == 0:
+                engine_graph.add_config_item('seq_len_first_dim', True)
+            if param == '':
+                    v = d.dim_value
+                    if v != 0:
+                        shape[i] = v
+                    else:
+                        logger.error("Unknown dimension parameter in ONNX model input, " \
+                                 "only dim_param or dim_value")
         dtype = ONNX_DTYPE_ID[node.type.tensor_type.elem_type]
         output_tensor = Tensor(
             name=output_tensor_name,

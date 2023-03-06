@@ -131,7 +131,7 @@ class Tensor(object):
         """Get the config dict in the graph."""
         conf_dict = OrderedDict()
         if self._dtype is not None:
-            conf_dict['dtype'] = self._dtype
+            conf_dict['dtype'] = util.DTYPES_DICT.get(self._dtype, self._dtype)
         if self._shape is not None:
             conf_dict['shape'] = self._shape
         if self._location is not None:

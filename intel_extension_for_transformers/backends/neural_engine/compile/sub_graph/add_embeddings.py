@@ -20,6 +20,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
+import copy
 
 
 @pattern_registry(pattern_type='AddEmbeddings')
@@ -153,6 +154,50 @@ class AddEmbeddings(Pattern):
                     },
                     'returns': [0, 1]
                 },
+
+                # opennmt encoder
+                {
+                    'patterns': {
+                        'in': [[(0, ['AddV2', 'Add']), (1, 'Transpose'), (2, 'LayerNorm'), ]],
+                        'out': [[(0, 'BinaryAdd'), (1, 'Transpose'), (2, 'Reshape'),
+                                 (3, 'LayerNorm')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 0,
+                        1: 1,
+                        2: 'embeddings_transpose_reshape_2d',
+                        3: 2,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            0: [1]
+                        },
+                        {
+                            0: [0]
+                        }], [[0, 1], 2]],
+                        1: [[], [[], 1]],
+                        2: [[], [[], 1]],
+                        3: [[{
+                            2: [1]
+                        }, {
+                            2: [2]
+                        }], [[1, 2], 3]],
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            0: [0]
+                        }], [[0], 1]],
+                        1: [[], [[], 1]],
+                        2: [[{
+                            1: [0]
+                        }], [[], 1]],
+                        3: [[{
+                            2: [0]
+                        }], [[], 1]],
+                    },
+                    'returns': [0, 1, 2]
+                },
             ]
         }
 
@@ -183,7 +228,8 @@ class AddEmbeddings(Pattern):
             ln_node_idx = model.get_node_id(node_names[3])
             model.nodes[ln_node_idx].attr = attr4
 
-        for i in range(len(pattern_mapping_config['AddEmbeddings'])):
+        # shape = [bs, seq_len, hidden_size] after embeddings
+        for i in range(len(pattern_mapping_config['AddEmbeddings']) - 1):
             pattern_dict = pattern_mapping_config['AddEmbeddings'][i]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings", 
                                                                         pattern_dict, model)
@@ -201,6 +247,25 @@ class AddEmbeddings(Pattern):
                         binary_add_node_idx = model.get_node_id(new_node_names[j][0])
                         model.nodes[binary_add_node_idx].attr = OrderedDict()
 
+                return model
+
+        # shape = [seq_len, bs, hidden_size] after embeddings
+        for pattern_dict in pattern_mapping_config['AddEmbeddings'][-1:]:
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings",
+                                                                        pattern_dict, model)
+            if len(new_node_names) != 0:
+                for j in range(len(new_node_names)):
+                    reshape_idx = 0
+                    idx = 0
+                    for n in ret_old_nodes[j]:
+                        if model.get_node_by_name(new_node_names[j][idx]).op_type == "Reshape":
+                            reshape_idx = idx
+                            idx += 1
+                        model.get_node_by_name(new_node_names[j][idx]).attr = copy.deepcopy(n.attr)
+                        idx += 1
+                    hidden_size = str(model.inquire_config_item("hidden_size"))
+                    model.get_node_by_name(new_node_names[j][reshape_idx]).attr = OrderedDict(
+                        {'dst_shape': '-1,' + hidden_size})
                 return model
 
         return model

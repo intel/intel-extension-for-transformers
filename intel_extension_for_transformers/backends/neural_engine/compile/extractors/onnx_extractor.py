@@ -52,10 +52,14 @@ class ONNXExtractor(object):
         logger.info('Start to extarct onnx model ops...')
         new_graph = Graph()
         new_graph.framework = 'onnxruntime'
+        input_tensors_name = [names_from_input(n.name)[1] for n in model.graph.input]
+        output_tensors_name = [names_from_input(n.name)[1] for n in model.graph.output]
+        new_graph.input_tensors_name = input_tensors_name
+        new_graph.output_tensors_name = output_tensors_name
         for graph_input in model.graph.input:
             op_type = 'ONNXINPUT'
             new_node = OPERATORS[op_type]()
-            new_node.extract('onnxruntime', graph_input, model, graph_nodes_dict)
+            new_node.extract('onnxruntime', graph_input, model, graph_nodes_dict, new_graph)
             new_graph.insert_nodes(len(new_graph.nodes), [new_node])
         for node in model.graph.node:
             op_type = node.op_type

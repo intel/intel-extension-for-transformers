@@ -1032,6 +1032,7 @@ InnerProductPrimitiveFwdFactory& InnerProductPrimitiveFwdFactory::GetInstance() 
 /************ MatMulPrimitiveFwdFactory member function ************/
 size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                                          const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                         const vector<int64_t>& src0_perm, const vector<int64_t>& src1_perm,
                                          const vector<int64_t>& dst_perm, const string& append_op,
                                          const vector<int64_t>& post_op_shape, const float& output_scale,
                                          const dnnl::engine* eng) {
@@ -1041,6 +1042,12 @@ size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string&
   seed = hash_val(prefix, src0_dtype, src1_dtype, dst_dtype);
   seed = get_array_hash(seed, src0_shape, src0_shape.size());
   seed = get_array_hash(seed, src1_shape, src1_shape.size());
+  if (!src0_perm.empty()) {
+    seed = get_array_hash(seed, src0_perm, src0_perm.size());
+  }
+  if (!src1_perm.empty()) {
+    seed = get_array_hash(seed, src1_perm, src1_perm.size());
+  }
   // if dst_shape has reverse_perm
   if (!dst_perm.empty()) {
     seed = get_array_hash(seed, dst_perm, dst_perm.size());
@@ -1062,11 +1069,13 @@ size_t MatMulPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string&
 
 size_t MatMulPrimitiveFwdFactory::Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                                       const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                                      const vector<int64_t>& src0_perm, const vector<int64_t>& src1_perm,
                                       const vector<int64_t>& dst_perm, const string& append_op,
                                       const vector<int64_t>& post_op_shape, const float& output_scale,
                                       const dnnl::engine* eng) {
   return MatMulPrimitiveFwdFactory::GetInstance().GenKey(src0_dtype, src1_dtype, dst_dtype, src0_shape, src1_shape,
-                                                         dst_perm, append_op, post_op_shape, output_scale, eng);
+                                                         src0_perm, src1_perm, dst_perm, append_op, post_op_shape,
+                                                         output_scale, eng);
 }
 
 bool MatMulPrimitiveFwdFactory::IsInFactory(const size_t& key) {

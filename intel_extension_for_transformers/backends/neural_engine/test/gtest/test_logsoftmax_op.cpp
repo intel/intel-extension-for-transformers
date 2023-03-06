@@ -108,7 +108,7 @@ bool CheckResult(const TestParams& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   try {
-    executor::LogsoftmaxOperator smax_op(p.conf);
+    executor::LogSoftmaxOperator smax_op(p.conf);
     smax_op.Prepare(p.input, p.output);
     smax_op.Reshape(p.input, p.output);
     smax_op.Forward(p.input, p.output);
@@ -160,20 +160,20 @@ bool CheckLLGAResult(const TestParams& t) {
 }
 
 
-class LogsoftmaxOpTest : public testing::TestWithParam<TestParams> {
+class LogSoftmaxOpTest : public testing::TestWithParam<TestParams> {
  protected:
-  LogsoftmaxOpTest() {}
-  ~LogsoftmaxOpTest() {}
+  LogSoftmaxOpTest() {}
+  ~LogSoftmaxOpTest() {}
   void SetUp() override {}
   void TearDown() override {}
 };
 
-TEST_P(LogsoftmaxOpTest, TestPostfix) {
+TEST_P(LogSoftmaxOpTest, TestPostfix) {
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckResult(t));
 }
 
-TEST_P(LogsoftmaxOpTest, TestPostfixLLGA) {
+TEST_P(LogSoftmaxOpTest, TestPostfixLLGA) {
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckLLGAResult(t));
 }
@@ -237,4 +237,4 @@ static auto CasesFp32 = []() {
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, LogsoftmaxOpTest, CasesFp32());
+INSTANTIATE_TEST_SUITE_P(Prefix, LogSoftmaxOpTest, CasesFp32());

@@ -160,6 +160,8 @@ void ConcatOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   dst_m_ = memory(concat_pd.dst_desc(), eng_);
 
   //// Part3: Prepare data for our own implementation of concat op
+  src_concat_bytes_.clear();
+  src_concat_bytes_accum_.clear();
   size_before_concat_dim_ =
       std::accumulate(src_shape_origin.begin(), src_shape_origin.begin() + axis_, 1, std::multiplies<int64_t>());
   int64_t size_after_concat_dim =
@@ -173,14 +175,9 @@ void ConcatOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   }
   dst_concat_bytes_ = dst_shape[axis_] * size_after_concat_dim * type2bytes[output[0]->dtype()];
 
-  // To check whether input tensors have different sizes of concat_dim
-  same_shape_ = true;
-  for (int i = 1; i < num_src; ++i) {
-    if (input[i]->shape()[axis_] != input[0]->shape()[axis_]) {
-      same_shape_ = false;
-      break;
-    }
-  }
+  // onednn forward results have some issues when src0 tensor has dim 1 at axis
+  // for example, (a, b, 1, d) + (a, b, n, d) -> (a, b, n+1, d) gets wrong output when n >= b
+  forward_with_dnnl_ = input[0]->shape()[axis_] == 1 ? false : true;
 }
 
 void ConcatOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -191,7 +188,7 @@ void ConcatOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
 
   // If input tensors have a same size of concat_dim, we will use oneDNN's implementation.
   // Otherwise, we will use our own implementation to avoid incorrect results.
-  if (same_shape_) {
+  if (forward_with_dnnl_) {
     // 1. Prepare memory objects with data_ptr
     dnnl::stream s(eng_);
     for (int n = 0; n < num_src; ++n) {

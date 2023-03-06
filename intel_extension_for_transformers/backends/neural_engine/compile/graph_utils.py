@@ -200,11 +200,13 @@ def search_straight_pattern(input_pattern, graph):
 
         for index, value in enumerate(node.input_tensors):
             is_const = False
-            # is_const = (value.source_op == [])
             is_const = (isinstance(value.data, np.ndarray))
             if not is_const and len(value.source_op) != 0:
-                cur_node = graph.get_node_by_name(value.source_op[0])
-                _dfs(op_names, op_types, cur_node, pattern[:end_index])
+                try:
+                    cur_node = graph.get_node_by_name(value.source_op[0])
+                    _dfs(op_names, op_types, cur_node, pattern[:end_index])
+                except BaseException:
+                    pass
             if index == len(node.input_tensors) - 1:
                 op_names.pop()
                 op_types.pop()
@@ -679,6 +681,21 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                         in_match_result=[in_match_result[0]]
                     else:
                         in_match_result=[in_match_result[1]]
+            # transpose output may be used by another nodes (or as a model output)
+            # check its connections and return new matched results
+            if num_match > 0 and pattern_name == "TransposeBatchMatMul":
+                new_in_match_result = []
+                for name_list in in_match_result:
+                    keep_flag = True
+                    for name in name_list[:-1]:
+                        node = graph.get_node_by_name(name)
+                        if node.op_type == "Transpose" and (len(node.output_tensors[0].dest_op) > 1
+                        or node.output_tensors[0].name in graph.output_tensors_name):
+                            keep_flag = False
+                            break
+                    if keep_flag:
+                        new_in_match_result.append(name_list)
+                in_match_result = new_in_match_result
         else:
             # check whether the nodes exit or not
             nodes_exist = True

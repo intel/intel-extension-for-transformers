@@ -38,6 +38,8 @@ class Graph(object):
         self._refresh_execution_options = False
         # modeling config, like num_attention_heads in transformer related models
         self._framework_modeling_config = {}
+        self._input_tensors_name = []
+        self._output_tensors_name = []
 
     @property
     def nodes(self):
@@ -68,25 +70,50 @@ class Graph(object):
 
     @execution_options.setter
     def execution_options(self, options):
+        """Set execution_options"""
         self._execution_options = options
         self._refresh_execution_options = True
 
     @property
     def framework_modeling_config(self):
+        """Get framework_modeling_config"""
         return self._framework_modeling_config
     
     @framework_modeling_config.setter
     def framework_modeling_config(self, config):
+        """Set framework_modeling_config"""
         self._framework_modeling_config = config
     
     def add_config_item(self, key, val):
+        """Add a pair into framework_modeling_config"""
         self._framework_modeling_config[key] = val
     
     def inquire_config_item(self, key):
+        """Get a pair from framework_modeling_config"""
         val = self._framework_modeling_config.get(key, None)
         if not val:
-            logger.info("the item {} does not exist in the config...".format(key))
+            logger.warning("the item {} does not exist in the config...".format(key))
         return val
+
+    @property
+    def input_tensors_name(self):
+        """Get input_tensors_name"""
+        return self._input_tensors_name
+
+    @input_tensors_name.setter
+    def input_tensors_name(self, name_list):
+        """Set input_tensors_name"""
+        self._input_tensors_name = name_list
+
+    @property
+    def output_tensors_name(self):
+        """Get output_tensors_name"""
+        return self._output_tensors_name
+
+    @output_tensors_name.setter
+    def output_tensors_name(self, name_list):
+        """Set output_tensors_name"""
+        self._output_tensors_name = name_list
 
     def insert_nodes(self, index, nodes):
         """Insert nodes to neural engine IR."""

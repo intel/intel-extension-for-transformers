@@ -41,10 +41,20 @@ class TestAttentionReshape(unittest.TestCase):
         input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
 
+        batchmatmul_node = OPERATORS['BatchMatMul']()
+        input_tensors = [Tensor(name='b_src0', dest_op=['batchmatmul']),
+                         Tensor(name='b_src1', dest_op=['batchmatmul'])]
+        output_tensors = [Tensor(name='batchmatmul:0', source_op=['batchmatmul'],
+                                 dest_op=['transpose'])]
+        batchmatmul_node.construct('batchmatmul', 'BatchMatMul', input_tensors=input_tensors,
+                                output_tensors=output_tensors, attr=OrderedDict({
+                                    'src_perm': '0,1,2,3', 'dst_perm': '0,2,1,3'}))
+
         transpose_node = OPERATORS['Transpose']()
-        input_tensors = [Tensor(data=np.array(1), shape=[1,12,384,384])]
-        output_tensors = [Tensor(name='transpose:0', source_op=['transpose'], dest_op=['shape']),
-                Tensor(name='transpose:0', source_op=['transpose'], dest_op=['reshape'])]
+        input_tensors = [Tensor(name='batchmatmul:0', source_op=['batchmatmul'],
+                                dest_op=['transpose'])]
+        output_tensors = [Tensor(name='transpose:0', source_op=['transpose'],
+                                 dest_op=['shape', 'reshape'])]
         transpose_node.construct('transpose', 'Transpose', input_tensors=input_tensors,
                                 output_tensors=output_tensors, attr=OrderedDict({
                                     'src_perm': '0,1,2,3', 'dst_perm': '0,2,1,3'}))
@@ -94,11 +104,13 @@ class TestAttentionReshape(unittest.TestCase):
                                 output_tensors=output_tensors, attr=OrderedDict(
                                     {'src1_perm': '0,1'}))
 
-        graph.insert_nodes(len(graph.nodes), [input_data_node, transpose_node, shape_node, gather_node, unsqueeze_node, concat_node, reshape_node, matmul_node])
+        graph.insert_nodes(len(graph.nodes), [input_data_node, batchmatmul_node, transpose_node,
+                                              shape_node, gather_node, unsqueeze_node, concat_node,
+                                              reshape_node, matmul_node])
         graph = AttentionReshape()(graph)
-        self.assertEqual(4, len(graph.nodes))
-        self.assertEqual('-1,1', graph.nodes[2].attr['dst_shape'])
-        self.assertEqual('0,1', graph.nodes[3].attr['src1_perm'])
+        self.assertEqual(5, len(graph.nodes))
+        self.assertEqual('-1,1', graph.nodes[3].attr['dst_shape'])
+        self.assertEqual('0,1', graph.nodes[4].attr['src1_perm'])
 
 
     def test_attention_reshape_1(self):

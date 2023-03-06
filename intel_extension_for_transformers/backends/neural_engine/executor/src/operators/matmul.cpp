@@ -353,8 +353,6 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   vector<int64_t> src1_shape = GetShapes(src1_shape_origin, src1_perm_);
   vector<int64_t> src0_stride = GetStrides(src0_shape_origin, src0_perm_);
   vector<int64_t> src1_stride = GetStrides(src1_shape_origin, src1_perm_);
-  src0_->set_shape(src0_shape);
-  src1_->set_shape(src1_shape);
 
   memory::dims bias_shape;
   if (has_bias_) bias_shape = bias_->shape();
@@ -525,7 +523,8 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   // If the matmul forward class in the cache pool, just get it from pool.
   // Otherwise, do the reshape and send the related class into the cache pool
   size_t key = MatMulPrimitiveFwdFactory::Key(src0_->dtype(), src1_->dtype(), output_dtype_,
-    src0_->shape(), src1_->shape(), dst_perm_, append_op_, post_->shape(), output_scale_, &eng_);
+    src0_->shape(), src1_->shape(), src0_perm_, src1_perm_, dst_perm_, append_op_, post_->shape(),
+    output_scale_, &eng_);
   if (MatMulPrimitiveFwdFactory::IsInFactory(key) && !MatMulPrimitiveFwdFactory::DoNotCache()) {
     matmul_p_ = MatMulPrimitiveFwdFactory::Get(key);
   } else {

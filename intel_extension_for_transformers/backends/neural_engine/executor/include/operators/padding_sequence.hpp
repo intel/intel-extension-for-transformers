@@ -42,6 +42,7 @@ class PaddingSequenceOperator : public Operator {
   float padding_;
   std::vector<int64_t> attr_dst_shape_;
   std::vector<int64_t> dims_;
+  bool seq_len_first_ = false;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_PADDING_SEQUENCE_HPP_

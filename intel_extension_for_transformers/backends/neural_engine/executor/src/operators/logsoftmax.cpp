@@ -203,7 +203,7 @@ static inline void logsoftmax_int_kernel(uint8_t* out, float* in, float oscale, 
 }
 #endif
 
-LogsoftmaxOperator::LogsoftmaxOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+LogSoftmaxOperator::LogSoftmaxOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : -1;
@@ -217,7 +217,7 @@ LogsoftmaxOperator::LogsoftmaxOperator(const shared_ptr<OperatorConfig>& conf) :
   }
 }
 
-void LogsoftmaxOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int input_size = input.size();
   dst_ = output[0];
   if (output.size() > 1) {
@@ -244,7 +244,7 @@ void LogsoftmaxOperator::MapTensors(const vector<Tensor*>& input, const vector<T
   }
 }
 
-void LogsoftmaxOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
 #ifndef __AVX512F__
   if (output_dtype_ == "u8") {
     LOG(ERROR) << "Output dtype u8 in Logsoftmax only supports AVX512!";
@@ -260,7 +260,7 @@ void LogsoftmaxOperator::Prepare(const vector<Tensor*>& input, const vector<Tens
   is_dynamic_ = output.size() > 1;
 }
 
-void LogsoftmaxOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (output_dtype_ == "fp32" || output_dtype_ == "bf16" || is_dynamic_) {
     // dynamic quantization will calculate the logsoftmax result with fp32 and then quantization in runtime.
     Reshape_dnnl(input, output);
@@ -276,7 +276,7 @@ void LogsoftmaxOperator::Reshape(const vector<Tensor*>& input, const vector<Tens
   }
 }
 
-void LogsoftmaxOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (output_dtype_ == "fp32" || output_dtype_ == "bf16" || is_dynamic_) {
     Forward_dnnl(input, output);
   } else if (lut_optimization_) {
@@ -290,7 +290,7 @@ void LogsoftmaxOperator::Forward(const vector<Tensor*>& input, const vector<Tens
   }
 }
 
-void LogsoftmaxOperator::Reshape_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Reshape_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
   // 1.1: Prepare Tensor origin shape
   const memory::dims& src_shape_origin = input[0]->shape();
@@ -333,12 +333,12 @@ void LogsoftmaxOperator::Reshape_dnnl(const vector<Tensor*>& input, const vector
   dst_m_ = memory(dst_md, eng_);
 }
 
-void LogsoftmaxOperator::Reshape_u8(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Reshape_u8(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> input_shape = src_->shape();
   dst_->set_shape(input_shape);
 }
 
-void LogsoftmaxOperator::Reshape_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Reshape_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> input_shape = src_->shape();
   dst_->set_shape(input_shape);
 
@@ -370,7 +370,7 @@ void LogsoftmaxOperator::Reshape_Sparselib(const vector<Tensor*>& input, const v
   }
 }
 
-void LogsoftmaxOperator::Forward_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Forward_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
   const auto& src_data = input[0]->data();
   // when change data value please use mutable_data
@@ -431,7 +431,7 @@ void LogsoftmaxOperator::Forward_dnnl(const vector<Tensor*>& input, const vector
   }
 }
 #if __AVX512F__
-void LogsoftmaxOperator::Forward_u8(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Forward_u8(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   float* src_f32 = static_cast<float*>(src_->mutable_data());
   uint8_t* dst_u8 = static_cast<uint8_t*>(dst_->mutable_data());
 
@@ -454,7 +454,7 @@ void LogsoftmaxOperator::Forward_u8(const vector<Tensor*>& input, const vector<T
 }
 #endif
 
-void LogsoftmaxOperator::Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void LogSoftmaxOperator::Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   Tensor* dst_ptr = output[0];
   if (lut_optimization_) {
     std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data()};
@@ -463,7 +463,7 @@ void LogsoftmaxOperator::Forward_Sparselib(const vector<Tensor*>& input, const v
   this->unref_tensors(input);
 }
 
-void LogsoftmaxOperator::RuntimeMinmax(dnnl::stream& s) {
+void LogSoftmaxOperator::RuntimeMinmax(dnnl::stream& s) {
   // use onednn reduction calculate min/max
   vector<int64_t> reduce_shape(dst_->shape().size(), 1);
   vector<int64_t> reduce_stride = GetStrides(reduce_shape);
@@ -480,7 +480,7 @@ void LogsoftmaxOperator::RuntimeMinmax(dnnl::stream& s) {
   dnnl::reduction(reduce_max_pd).execute(s, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
 }
 
-void LogsoftmaxOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {
+void LogSoftmaxOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {
   if (stage == "in") {
     output[0]->set_tensor_format(input[0]->tensor_format());
   } else if (stage == "out") {
@@ -489,5 +489,5 @@ void LogsoftmaxOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<T
     LOG(WARNING) << "Wrong stage parameter, should be in or out...";
   }
 }
-REGISTER_OPERATOR_CLASS(Logsoftmax);
+REGISTER_OPERATOR_CLASS(LogSoftmax);
 }  // namespace executor

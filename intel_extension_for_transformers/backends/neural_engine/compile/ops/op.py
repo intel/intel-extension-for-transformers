@@ -60,6 +60,8 @@ class Operator(object):
         self._input_tensors = []
         self._output_tensors = []
         self._attr = OrderedDict()
+        # ['extract_from_framework', 'construct']
+        self._filling_method = None
 
     @property
     def name(self):
@@ -115,7 +117,11 @@ class Operator(object):
         """Attr initialization."""
         self._attr = OrderedDict()
 
-    def extract(self, framework, node, model, nodes_dict):
+    @property
+    def filling_method(self):
+        return self._filling_method
+
+    def extract(self, framework, node, framework_model, nodes_dict, engine_graph=None):
         """Extract the op from framework."""
         from ..tf_utils import tf_extract_operator
         from ..onnx_utils import onnx_extract_operator
@@ -127,8 +133,9 @@ class Operator(object):
         
         self._name = node.name
         self._op_type, self._input_tensors, self._output_tensors = OP_EXTRACTORS[framework](
-            node, model, nodes_dict)
+            node, framework_model, nodes_dict, engine_graph)
         self.set_attr(framework, node)
+        self._filling_method = 'extract_from_' + framework
 
     def construct(self, name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict()):
         """Make the op by set the attributes."""
@@ -137,6 +144,7 @@ class Operator(object):
         self._input_tensors = input_tensors
         self._output_tensors = output_tensors
         self._attr = attr
+        self._filling_method = 'construct'
 
     @property
     def config(self):

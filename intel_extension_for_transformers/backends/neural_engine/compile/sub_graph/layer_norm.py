@@ -163,6 +163,35 @@ class LayerNorm(Pattern):
                     },
                     'returns': [4]
                 },
+
+                # opennmt encoder
+                {
+                    'patterns': {
+                        'in': [[(0, 'ReduceMean'), (1, 'Sub'), (2, 'Cast'), (3, 'Pow'),
+                                (4, 'ReduceMean'), (5, 'Add'), (6, 'Sqrt'), (7, 'Div'), (8,'Mul'),
+                                (9, 'Add')]],
+                        'out': [[(0, 'LayerNorm')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 9
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            0: [0]
+                        }, {
+                            8: [1]
+                        }, {
+                            9: [1]
+                        }], [[0, 1, 2], 3]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            9: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [5]
+                },
             ]
         }
 

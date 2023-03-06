@@ -234,14 +234,15 @@ def _bf16_tensor_to_array(tensor, base_dir: str = "") -> np.ndarray:
             .view(np.float16))
 
 
-def onnx_extract_operator(node, model, nodes_dict):
+def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
     """Decorate the operator in onnx.
 
     Args:
         node: NodeProto
-        model: ONNXModel
+        framework_model: ONNXModel
         nodes_dict: dict, return value from graph_node_names_details
         tf_dtypes: dict, for get the dtype string
+        engine_graph: Engine Graph class
 
     Returns:
         op_type: node op type
@@ -272,13 +273,13 @@ def onnx_extract_operator(node, model, nodes_dict):
             pre_node = nodes_dict[origin_tensor_name].node
         
         data = None
-        if pre_node in model.graph.initializer:
+        if pre_node in framework_model.graph.initializer:
             if pre_node.data_type == TensorProto.BFLOAT16:
                 data = _bf16_tensor_to_array(pre_node)
             else:
                 data = to_array(pre_node)
         else:
-            if (pre_node not in model.graph.input) and (pre_node.op_type == 'Constant'):
+            if (pre_node not in framework_model.graph.input) and (pre_node.op_type == 'Constant'):
                 data = to_array(pre_node.attribute[0].t)
         if isinstance(data, np.ndarray):
             if data.dtype == np.int64:

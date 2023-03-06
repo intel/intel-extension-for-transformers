@@ -34,10 +34,10 @@ using dnnl::prop_kind;
  *
  */
 
-class LogsoftmaxOperator : public Operator {
+class LogSoftmaxOperator : public Operator {
  public:
-  explicit LogsoftmaxOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~LogsoftmaxOperator() {}
+  explicit LogSoftmaxOperator(const shared_ptr<OperatorConfig>& conf);
+  virtual ~LogSoftmaxOperator() {}
 
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

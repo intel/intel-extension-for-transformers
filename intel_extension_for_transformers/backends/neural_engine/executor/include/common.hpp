@@ -337,6 +337,7 @@ class MatMulPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::matmul> {
  public:
   static size_t Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                     const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                    const vector<int64_t>& src0_perm, const vector<int64_t>& src1_perm,
                     const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
                     const float& output_scale, const dnnl::engine* eng);
   static bool IsInFactory(const size_t& key);
@@ -352,6 +353,7 @@ class MatMulPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::matmul> {
   static MatMulPrimitiveFwdFactory& GetInstance();
   static size_t GenKey(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                        const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
+                       const vector<int64_t>& src0_perm, const vector<int64_t>& src1_perm,
                        const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
                        const float& output_scale, const dnnl::engine* eng);
 };

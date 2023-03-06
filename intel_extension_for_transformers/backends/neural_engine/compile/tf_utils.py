@@ -105,14 +105,15 @@ def get_tensor_dest_op(node_name, tensor_name, nodes_dict):
     return dest_op_names
 
 
-def tf_extract_operator(node, model, nodes_dict):
+def tf_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
     """Decorate the operator in tensorflow.
 
     Args:
         node: NodeDef
-        model: TensorflowModel
+        framework_model: TensorflowModel
         nodes_dict: dict, return value from graph_node_names_details
         tf_dtypes: dict, for get the dtype string
+        engine_graph: Engine Graph class
 
     Returns:
         op_type: node op type
@@ -182,7 +183,7 @@ def tf_extract_operator(node, model, nodes_dict):
     for i in range(out_num):
         output_tensor_name = node.name + ':' + str(i)
         try:
-            output_tensor = model.graph.get_tensor_by_name(output_tensor_name)
+            output_tensor = framework_model.graph.get_tensor_by_name(output_tensor_name)
         except BaseException:
             return op_type, input_tensors, []
 
