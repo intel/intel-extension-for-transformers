@@ -1,3 +1,5 @@
+# Transposed MatMul
+
 - [Introduction](#introduction)
   - [Problem Statements](#problem-statements)
 - [Matmul_p2031_2013](#matmul_p2031_2013)
@@ -6,11 +8,11 @@
   - [Matmul_vnni_noperm_p2013_p1302](#matmul_vnni_noperm_p2013_p1302)
     - [Reorder beforehand](#reorder-beforehand)
 
-# Introduction
+## Introduction
 
 This document introduces our specialized matmul kernels for the special permutations used in transformer models.
 
-## Problem Statements
+### Problem Statements
 
 We focus our transpose matmul kernel on accelerating the "attention" of the transformer. Given the equation of dot-product attention,
 
@@ -38,13 +40,13 @@ Attention(Q, K, V): head_nun   head_size batch_size seq_len <===perm1302==== bat
 > - The concept of "perm" is derived from that of the [transpose operator of ONNX](https://github.com/onnx/onnx/blob/rel-1.11.0/docs/Operators.md#transpose). It is used to describe the permutation of tensor axes.
 > - The physical memory format is LHS, and the conceptual layout is RHS (where the last two dimensions perform matrix multiplication, leaving the rest for batching).
 
-# Matmul_p2031_2013
+## Matmul_p2031_2013
 
 > i.e. The kernel for the first matmul operation
 
 Currently, we have only implemented a kernel of these permutations with float32 input and output.
 
-## Matmul_avx512f_p2031_p2013
+### Matmul_avx512f_p2031_p2013
 
 The following figure illustrates loops iterated by this kernel:
 
@@ -57,13 +59,13 @@ The inner-most loop body performs computation for each tile, where the results o
 
 where lighter cells indicate values used in following steps along the k-axis.
 
-# Matmul_noperm_p2031_p1302
+## Matmul_noperm_p2031_p1302
 
 > i.e. The kernel for the second matmul operation
 
 Currently, we have only implemented a kernel of these permutations with uint8, int8, and uint8 as left matrix, right matrix, and output matrix respectfully.
 
-## Matmul_vnni_noperm_p2013_p1302
+### Matmul_vnni_noperm_p2013_p1302
 
 The following figure illustrates loops iterated by the `vnni_noperm_p2013_p1302` kernel:
 
@@ -73,18 +75,18 @@ As the memory format does not match what VNNI needs, the kernel tile continuousl
 
 ![matmul_vnni_noperm_p2031_p1302 transform8x8](../imgs/matmul_vnni_noperm_p2031_p1302_transform8x8.png)
 
-> | Legend                        | Explanation                   |
-> |-------------------------------|-------------------------------|
-> | Cell values                   | Original memory offset (may not be contiguous for those next to ellipsis) |
-> | Thinner border                | Memory contiguous elements    |
-> | Bolder border                 | Cache line                    |
-> | Fill color | The first and second `transpose_4B_8x8` tasks    |
+| Legend                        | Explanation                   |
+|-------------------------------|-------------------------------|
+| Cell values                   | Original memory offset (may not be contiguous for those next to ellipsis) |
+| Thinner border                | Memory contiguous elements    |
+| Bolder border                 | Cache line                    |
+| Fill color | The first and second `transpose_4B_8x8` tasks    |
 
 Following the reordering, the kernel tile computes over 16x32x16 as the graph below demonstrated (similar legends applied):
 
 ![matmul_vnni_noperm_p2031_p1302 tile](../imgs/matmul_vnni_noperm_p2031_p1302_tile.png)
 
-### Reorder beforehand
+#### Reorder beforehand
 
 Notice that sub-matrices from both the left and right matrices need to be reordered multiple times in the above workflow, leading to suboptimal performance. To avoid this overhead, we perform reordering on a temporary piece of memory beforehand. It turned out to be able to boost performance by more than twofold on large matrices. The following figure shows the loops iterated by this kernel:
 

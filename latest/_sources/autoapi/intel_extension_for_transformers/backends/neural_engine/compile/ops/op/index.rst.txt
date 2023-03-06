@@ -36,8 +36,8 @@ Functions
 
    :param cls: The class of register.
    :type cls: class
-   :param operator_type: The operator registration name
-   :type operator_type: str
+   :param operator_type: The operator registration name(s)
+   :type operator_type: str or str list
 
    :returns: The class of register.
    :rtype: cls

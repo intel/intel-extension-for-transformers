@@ -18,12 +18,11 @@ Classes
 .. autoapisummary::
 
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.AddV2
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MultiHeadAttenion
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Add
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.DequantizeLinear
-   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Div
-   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Equal
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Erf
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Expand
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Fill
@@ -32,14 +31,11 @@ Classes
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.InnerProduct
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Input
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LayerNorm
-   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LessEqual
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasAdd
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasGelu
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasTanh
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBias
-   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Mul
-   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.NonZero
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Output
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.PaddingSequence
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Pow
@@ -54,7 +50,6 @@ Classes
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Square
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SquaredDifference
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.StopGradient
-   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sub
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul
@@ -64,7 +59,6 @@ Classes
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Quantize
-   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Not
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.CumSum
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Onehot
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TokenTypeIds
@@ -79,6 +73,7 @@ Classes
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ExpandIndices
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tile
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny
 
 
 
@@ -88,6 +83,13 @@ Classes
    Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
 
    Register the AddV2 operator.
+
+
+.. py:class:: MultiHeadAttenion
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
+   The class of neural engine operator.
 
 
 .. py:class:: Add
@@ -116,20 +118,6 @@ Classes
    Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
 
    Register the DequantizeLinear operator.
-
-
-.. py:class:: Div
-
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
-
-   Register the Div operator.
-
-
-.. py:class:: Equal
-
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
-
-   Register the Equal operator.
 
 
 .. py:class:: Erf
@@ -188,13 +176,6 @@ Classes
    Register the LayerNorm operator.
 
 
-.. py:class:: LessEqual
-
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
-
-   Register the LessEqual operator.
-
-
 .. py:class:: MakeIterator
 
    Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
@@ -228,20 +209,6 @@ Classes
    Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
 
    Register the MatMulWithBias operator.
-
-
-.. py:class:: Mul
-
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
-
-   Register the Mul operator.
-
-
-.. py:class:: NonZero
-
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
-
-   Register the NonZero operator.
 
 
 .. py:class:: Output
@@ -342,13 +309,6 @@ Classes
    Register the StopGradient operator.
 
 
-.. py:class:: Sub
-
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
-
-   Register the Sub operator.
-
-
 .. py:class:: Tanh
 
    Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
@@ -410,13 +370,6 @@ Classes
    Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
 
    Register the Quantize operator.
-
-
-.. py:class:: Not
-
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
-
-   Register the Not operator.
 
 
 .. py:class:: CumSum
@@ -515,5 +468,12 @@ Classes
    Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
 
    Register the Tile operator.
+
+
+.. py:class:: OpAny
+
+   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
+   Register the OpAny operator.
 
 

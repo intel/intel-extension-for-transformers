@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  <title>Binary Injectors &mdash; Intel® Extension for Transformers 1.0b documentation</title>
       <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
@@ -13,15 +13,15 @@
     <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
-        <script src="../../../../../../../_static/jquery.js"></script>
-        <script src="../../../../../../../_static/underscore.js"></script>
-        <script src="../../../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../../_static/sphinx_highlight.js"></script>
     <script src="../../../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+    <link rel="search" title="Search" href="../../../../../../../search.html" />
+    <link rel="next" title="Element-wise Injector" href="eltwise_injector.html" />
+    <link rel="prev" title="3D Inference" href="3D_inference.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,10 +47,32 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../../kernel_desc.html">Implementation Details</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="3D_inference.html">3D Inference</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Binary Injectors</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#framework-features">Framework Features</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="eltwise_injector.html">Element-wise Injector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kernel_vnni.html">Sparse GEMM VNNI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kernel_amx.html">Sparse GEMM AMX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kernel_avx512f.html">Sparse GEMM AVX512F</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kernel_transpose_matmul.html">Transposed MatMul</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kernel_transpose_mha.html">Transposed MHA</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../api_doc/kernel/api_c.html">Kernels C++ APIs</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
 </ul>
 
@@ -68,7 +90,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Introduction</li>
+          <li class="breadcrumb-item"><a href="../../../../../../../kernel.html">Kernels</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../kernel_desc.html">Implementation Details</a></li>
+      <li class="breadcrumb-item active">Binary Injectors</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/binaryop_injector.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -78,25 +102,35 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <ul class="simple">
-<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
-<li><p><a class="reference external" href="#framework-features">Framework Features</a></p>
-<ul>
+  <section id="binary-injectors">
+<h1>Binary Injectors<a class="headerlink" href="#binary-injectors" title="Permalink to this heading"></a></h1>
+<p>– <a class="reference external" href="#introduction">Introduction</a>
+– <a class="reference external" href="#framework-features">Framework Features</a></p>
+<ul class="simple">
+<li><ul>
 <li><p><a class="reference external" href="#param_typehpp">param_type.hpp</a></p></li>
-<li><p><a class="reference external" href="#operator_deschpp">operator_desc.hpp</a></p></li>
-<li><p><a class="reference external" href="#jit_binaryop_injectorhpp">jit_binaryop_injector.hpp</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference external" href="#usage">Usage</a></p>
-<ul>
+<li><ul>
+<li><p><a class="reference external" href="#operator_deschpp">operator_desc.hpp</a></p></li>
+</ul>
+</li>
+<li><ul>
+<li><p><a class="reference external" href="#jit_binaryop_injectorhpp">jit_binaryop_injector.hpp</a>
+– <a class="reference external" href="#usage">Usage</a></p></li>
+</ul>
+</li>
+<li><ul>
 <li><p><a class="reference external" href="#developers-perspective">Developer’s Perspective</a></p></li>
+</ul>
+</li>
+<li><ul>
 <li><p><a class="reference external" href="#users-perspective">User’s Perspective</a></p></li>
 </ul>
 </li>
 </ul>
-<p><a name="UzSzO"></a></p>
 <section id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h1>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>Some DL operators need two changeable source operands <code class="docutils literal notranslate"><span class="pre">src1</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">src2</span></code>, apply a series of computations(e.g. add, horizontal max or combine some ops to a new op like dynamic quantization), and store the result to the dst. We call these operators <strong>binaryop</strong>.<br />In general, the data in <code class="docutils literal notranslate"><span class="pre">src1</span></code> and <code class="docutils literal notranslate"><span class="pre">src2</span></code> can be stored in registers or memory. Binaryop also can apply op-fusion optimization. Take the embedding layer in the bert model as an example, the gather op can be fused with the next op(binaryadd) and reduce the overhead of moving data from memory to the SIMD register in one of the source operands.<br />
 For implementing the binaryop-fusion, we design a new injector, <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code>. The source operands <code class="docutils literal notranslate"><span class="pre">src1</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">src2</span></code> are from SIMD register and memory, We will make the binaryop_injector as a component of the postop_injector so users can apply the eltwiseops/binaryops they configured in postop-chain sequentially in the future.<br />
 For kernel developers, the using step of <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> is quite similar to <code class="docutils literal notranslate"><span class="pre">eltwise_injector</span></code>, but more easily. <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> does not need to call the <code class="docutils literal notranslate"><span class="pre">escape</span></code> function because our current binaryops are quite simple and don’t need too many SIMD registers to do some computation. kernel developer also doesn’t need to prepare LUT because no const value will be used in binaryop now. Please notice that except <code class="docutils literal notranslate"><span class="pre">compute_vector</span></code>, binaryop_injector also exposes some <strong>“simple-arithmetic-op”</strong> to the kernel developer. The purpose is to reduce the time of browsing ISA doc, developers only need to tell the injector op_type and data_type then binaryop_injector can insert appropriate instruction automatically(e.g. dt=s8, op_type=add insert <code class="docutils literal notranslate"><span class="pre">vpaddb</span></code>; dt=fp32, op_type=add insert <code class="docutils literal notranslate"><span class="pre">vaddps</span></code>).<br />
@@ -104,10 +138,10 @@ For Transformers-accelerated Libraries’s user(engine developer), if they want 
 <a name="nC8IX"></a></p>
 </section>
 <section id="framework-features">
-<h1>Framework Features<a class="headerlink" href="#framework-features" title="Permalink to this heading"></a></h1>
+<h2>Framework Features<a class="headerlink" href="#framework-features" title="Permalink to this heading"></a></h2>
 <p><a name="gGo6C"></a></p>
 <section id="param-type-hpp">
-<h2>param_type.hpp<a class="headerlink" href="#param-type-hpp" title="Permalink to this heading"></a></h2>
+<h3>param_type.hpp<a class="headerlink" href="#param-type-hpp" title="Permalink to this heading"></a></h3>
 <p>Some new classes/structs will be introduced. The most important class is binaryop_attr, which indicates what type of algorithm we want to apply and the ptrs we needed.<code class="docutils literal notranslate"><span class="pre">static_addr</span></code> is used for normal binaryop, <code class="docutils literal notranslate"><span class="pre">scale</span></code> and <code class="docutils literal notranslate"><span class="pre">zp</span></code> are used for per-channel quantization/dequantization.<br />Please notice that Transformers-accelerated Libraries’s users must free the ptrs like static_addr on their own, Transformers-accelerated Libraries will not free these ptrs.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">binaryop_alg</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">undef</span><span class="p">,</span><span class="w"> </span><span class="n">add</span><span class="p">,</span><span class="w"> </span><span class="n">sub</span><span class="p">,</span><span class="w"> </span><span class="n">mul</span><span class="p">,</span><span class="w"> </span><span class="n">per_channel_quant</span><span class="p">,</span><span class="w"> </span><span class="n">per_channel_dequant</span><span class="w"> </span><span class="p">};</span>
 
@@ -133,7 +167,7 @@ For Transformers-accelerated Libraries’s user(engine developer), if they want 
 <p><a name="JzRdj"></a></p>
 </section>
 <section id="operator-desc-hpp">
-<h2>operator_desc.hpp<a class="headerlink" href="#operator-desc-hpp" title="Permalink to this heading"></a></h2>
+<h3>operator_desc.hpp<a class="headerlink" href="#operator-desc-hpp" title="Permalink to this heading"></a></h3>
 <p>The member <code class="docutils literal notranslate"><span class="pre">binaryop_list_</span></code> store the binaryop_attr which user wants to apply.<br />Add two new methods to get/set <code class="docutils literal notranslate"><span class="pre">binaryop_list_</span></code>.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">public</span><span class="o">:</span>
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">set_binaryop_list</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">binaryop_attr</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">binaryop_list</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">binaryop_list_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binaryop_list</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
@@ -145,7 +179,7 @@ For Transformers-accelerated Libraries’s user(engine developer), if they want 
 <p><a name="aUhwk"></a></p>
 </section>
 <section id="jit-binaryop-injector-hpp">
-<h2>jit_binaryop_injector.hpp<a class="headerlink" href="#jit-binaryop-injector-hpp" title="Permalink to this heading"></a></h2>
+<h3>jit_binaryop_injector.hpp<a class="headerlink" href="#jit-binaryop-injector-hpp" title="Permalink to this heading"></a></h3>
 <p>The APIs <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> exposes to users are as follows:<br /><code class="docutils literal notranslate"><span class="pre">binary_injector_init</span></code> used to initial the <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">set_mask</span></code> help kernel developer set the mask register that they need(will be used in compute_vector or simple-arithmetic-binaryop)</p>
 <p><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">init_quantization</span></code> if your binary-alg contains <code class="docutils literal notranslate"><span class="pre">per-channel-quantization/dequantization</span></code>, you should call this function, passing a free <code class="docutils literal notranslate"><span class="pre">Reg64</span></code> and a free <code class="docutils literal notranslate"><span class="pre">Zmm</span></code>  before executing <code class="docutils literal notranslate"><span class="pre">compute_vector</span></code> to process the scale &amp; zp.</p>
@@ -174,10 +208,10 @@ For Transformers-accelerated Libraries’s user(engine developer), if they want 
 </section>
 </section>
 <section id="usage">
-<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h1>
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
 <p><a name="BVBDX"></a></p>
 <section id="developer-s-perspective">
-<h2>Developer’s Perspective<a class="headerlink" href="#developer-s-perspective" title="Permalink to this heading"></a></h2>
+<h3>Developer’s Perspective<a class="headerlink" href="#developer-s-perspective" title="Permalink to this heading"></a></h3>
 <p>Transformers-accelerated Libraries developer only needs two steps to use the <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code>.<br />step1. initial the <code class="docutils literal notranslate"><span class="pre">binaryop_injector</span></code> in kernel’s construct function.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">binary_injector</span><span class="p">.</span><span class="n">binary_injector_init</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
 </pre></div>
@@ -196,7 +230,7 @@ Note that users can also pass binaryop’s address directly from their <code cla
 <p><a name="tJ6bf"></a></p>
 </section>
 <section id="user-s-perspective">
-<h2>User’s Perspective<a class="headerlink" href="#user-s-perspective" title="Permalink to this heading"></a></h2>
+<h3>User’s Perspective<a class="headerlink" href="#user-s-perspective" title="Permalink to this heading"></a></h3>
 <p>For the users of Transformers-accelerated Libraries, they only need to call <code class="docutils literal notranslate"><span class="pre">set_binaryop_list</span></code> to set the <code class="docutils literal notranslate"><span class="pre">bianryop_attr_list</span></code>.<br />And add a new key “binaryop_list” in <code class="docutils literal notranslate"><span class="pre">op_attrs</span></code> for kernel hashing.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">layernorm_ba_desc</span><span class="p">.</span><span class="n">set_binaryop_list</span><span class="p">({{</span><span class="n">append_vec</span><span class="p">,</span><span class="w"> </span><span class="n">binaryop_alg</span><span class="o">::</span><span class="n">add</span><span class="p">}});</span>
 <span class="n">op_attrs</span><span class="p">[</span><span class="s">&quot;binaryop_list&quot;</span><span class="p">]</span><span class="o">=</span><span class="s">&quot;binary_add&quot;</span><span class="p">;</span>
@@ -204,11 +238,15 @@ Note that users can also pass binaryop’s address directly from their <code cla
 </div>
 </section>
 </section>
+</section>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="3D_inference.html" class="btn btn-neutral float-left" title="3D Inference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="eltwise_injector.html" class="btn btn-neutral float-right" title="Element-wise Injector" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

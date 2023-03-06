@@ -12,10 +12,8 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -49,7 +47,7 @@
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">Kernels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/examples.html">Examples</a></li>
 </ul>
 
@@ -242,6 +240,8 @@
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd">BinaryAdd (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM.block_size">block_size (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM attribute)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/optimizer_tf/index.html#intel_extension_for_transformers.optimization.optimizer_tf.TFOptimization.build_train_func">build_train_func() (intel_extension_for_transformers.optimization.optimizer_tf.TFOptimization method)</a>
 
       <ul>
@@ -296,6 +296,10 @@
       </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/onnx_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils.change_num_name">change_num_name() (in module intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils)</a>
 </li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/prune_utils/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils.check_config">check_config() (in module intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.check_is_pruned_step">check_is_pruned_step() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/collect_quant_info/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.collect_quant_info.CollectQuantInfo">CollectQuantInfo (class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.collect_quant_info)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/index.html#intel_extension_for_transformers.backends.neural_engine.compile.compile">compile() (in module intel_extension_for_transformers.backends.neural_engine.compile)</a>
@@ -315,9 +319,15 @@
 </li>
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/tensor/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.config">(intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor property)</a>
 </li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.config">(intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler.config">(intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler attribute)</a>
+</li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.config_file_path">config_file_path (intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning attribute)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape">ConstantOfShape (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator.construct">construct() (intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator method)</a>
@@ -335,6 +345,8 @@
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution">Convolution (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/conv_reshape/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.conv_reshape.ConvReshape">ConvReshape (class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.conv_reshape)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/engine.html#c.CPU_INSTANCE">CPU_INSTANCE (C macro)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.AutoDistillation.create_distillers">create_distillers() (intel_extension_for_transformers.optimization.AutoDistillation method)</a>
 
@@ -361,6 +373,8 @@
       <li><a href="autoapi/intel_extension_for_transformers/optimization/dynamic/evolution/index.html#intel_extension_for_transformers.optimization.dynamic.evolution.Evolution.crossover">crossover() (intel_extension_for_transformers.optimization.dynamic.evolution.Evolution method)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.CumSum">CumSum (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.current_sparsity_ratio">current_sparsity_ratio (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -408,8 +422,6 @@
         <li><a href="autoapi/intel_extension_for_transformers/optimization/utils/utility_tf/index.html#intel_extension_for_transformers.optimization.utils.utility_tf.distributed_init">(in module intel_extension_for_transformers.optimization.utils.utility_tf)</a>
 </li>
       </ul></li>
-      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Div">Div (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
-</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/tensor/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.dtype">dtype (intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor property)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph.Graph.dump_tensor">dump_tensor() (intel_extension_for_transformers.backends.neural_engine.compile.graph.Graph method)</a>
@@ -436,6 +448,8 @@
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/embeddingbag/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.embeddingbag.EmbeddingBag">(class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.embeddingbag)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.end_step">end_step (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph.Graph.engine_init">engine_init() (intel_extension_for_transformers.backends.neural_engine.compile.graph.Graph method)</a>
 
       <ul>
@@ -454,8 +468,6 @@
         <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.PruningConfig.epochs">(intel_extension_for_transformers.optimization.PruningConfig property)</a>
 </li>
       </ul></li>
-      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Equal">Equal (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
-</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Erf">Erf (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/logger/index.html#intel_extension_for_transformers.backends.neural_engine.compile.logger.error">error() (in module intel_extension_for_transformers.backends.neural_engine.compile.logger)</a>
@@ -840,6 +852,12 @@
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/generate_sequence/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.generate_sequence.GenerateSequence">GenerateSequence (class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.generate_sequence)</a>
 </li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.get_block_size_dict">get_block_size_dict() (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM.get_block_size_dict">(intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM method)</a>
+</li>
+      </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/onnx_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils.get_children">get_children() (in module intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_data_dtype">get_data_dtype() (in module intel_extension_for_transformers.backends.neural_engine.compile.graph_utils)</a>
@@ -855,6 +873,20 @@
 </li>
       </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/logger/index.html#intel_extension_for_transformers.backends.neural_engine.compile.logger.Logger.get_logger">get_logger() (intel_extension_for_transformers.backends.neural_engine.compile.logger.Logger method)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.get_mask_single">get_mask_single() (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern method)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.get_masks">get_masks() (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern method)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.get_masks_global">get_masks_global() (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM.get_masks_global">(intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM.get_masks_global">(intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.get_masks_local">get_masks_local() (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern method)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name">get_model_fwk_name() (in module intel_extension_for_transformers.backends.neural_engine.compile.graph_utils)</a>
 </li>
@@ -894,6 +926,14 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.get_pattern">get_pattern() (in module intel_extension_for_transformers.optimization.pytorch_pruner.patterns)</a>
 </li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.get_pattern_lock_masks">get_pattern_lock_masks() (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM.get_pattern_lock_masks">(intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM.get_pattern_lock_masks">(intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM method)</a>
+</li>
+      </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph.Graph.get_pre_node_names">get_pre_node_names() (intel_extension_for_transformers.backends.neural_engine.compile.graph.Graph method)</a>
 
       <ul>
@@ -912,6 +952,16 @@
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph/graph/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph.graph.Graph.get_sparse_nodes_name">(intel_extension_for_transformers.backends.neural_engine.compile.graph.graph.Graph method)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.get_sparsity_ratio">get_sparsity_ratio() (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM.get_sparsity_ratio">(intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM.get_sparsity_ratio">(intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.get_sparsity_ratio">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/dynamic/evolution/index.html#intel_extension_for_transformers.optimization.dynamic.evolution.Evolution.get_store">get_store() (intel_extension_for_transformers.optimization.dynamic.evolution.Evolution method)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/tf_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.get_tensor_dest_op">get_tensor_dest_op() (in module intel_extension_for_transformers.backends.neural_engine.compile.tf_utils)</a>
@@ -922,6 +972,8 @@
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph/graph/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph.graph.Graph.get_tensor_idx">(intel_extension_for_transformers.backends.neural_engine.compile.graph.graph.Graph method)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.global_step">global_step (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph.Graph">Graph (class in intel_extension_for_transformers.backends.neural_engine.compile.graph)</a>
 
       <ul>
@@ -1218,6 +1270,13 @@
 
       <ul>
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/bias_add/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.ops.bias_add">module</a>
+</li>
+      </ul></li>
+      <li>
+    intel_extension_for_transformers.backends.neural_engine.compile.ops.binary_op
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/binary_op/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.ops.binary_op">module</a>
 </li>
       </ul></li>
       <li>
@@ -1713,6 +1772,13 @@
 </li>
       </ul></li>
       <li>
+    intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.multi_head_attention
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/multi_head_attention/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.multi_head_attention">module</a>
+</li>
+      </ul></li>
+      <li>
     intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.output_data
 
       <ul>
@@ -2115,9 +2181,13 @@
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/dynamic/evolution/index.html#intel_extension_for_transformers.optimization.dynamic.evolution.inverse">inverse() (in module intel_extension_for_transformers.optimization.dynamic.evolution)</a>
 </li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.is_global">is_global (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern attribute)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/onnx_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils.is_supported_onnx_graph">is_supported_onnx_graph() (in module intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/onnx_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils.is_supported_onnx_node">is_supported_onnx_node() (in module intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler">IterativeScheduler (class in intel_extension_for_transformers.optimization.pytorch_pruner.scheduler)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/iterator_get_next/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.iterator_get_next.IteratorGetNext">IteratorGetNext (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.iterator_get_next)</a>
 </li>
@@ -2129,31 +2199,87 @@
 <h2 id="J">J</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv42jd">jd (C++ type)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv42jd">[1]</a>, <a href="docs/api_doc/kernel/engine.html#_CPPv42jd">[2]</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv42jd">[3]</a>
+      <li><a href="docs/api_doc/kernel/engine.html#_CPPv42jd">jd (C++ type)</a>, <a href="docs/api_doc/kernel/engine.html#_CPPv42jd">[1]</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv42jd">[2]</a>, <a href="docs/api_doc/kernel/operator_desc.html#_CPPv42jd">[3]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[4]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[5]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[6]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[7]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[8]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[9]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[10]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[11]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv42jd">[12]</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd9attentionE">jd::attention (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd9attentionE">jd::attention (C++ class)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd9attention9attentionERK17kernel_desc_proxy">jd::attention::attention (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd9attention9attentionEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd9attention9attentionERK17kernel_desc_proxy">jd::attention::attention (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd9attention9attentionEv">[1]</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd9attentionD0Ev">jd::attention::~attention (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd9attentionD0Ev">jd::attention::~attention (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd14attention_descE">jd::attention_desc (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd14attention_descE">jd::attention_desc (C++ class)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd14attention_desc14attention_descERK13operator_desc">jd::attention_desc::attention_desc (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd14attention_desc14attention_descEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd14attention_desc14attention_descERK13operator_desc">jd::attention_desc::attention_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd14attention_desc14attention_descEv">[1]</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd14attention_descD0Ev">jd::attention_desc::~attention_desc (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd14attention_descD0Ev">jd::attention_desc::~attention_desc (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd9eltwiseopE">jd::eltwiseop (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_ioE">jd::attention_io (C++ enum)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd9eltwiseop9eltwiseopERK17kernel_desc_proxy">jd::eltwiseop::eltwiseop (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd9eltwiseop9eltwiseopEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io6K_BIASE">jd::attention_io::K_BIAS (C++ enumerator)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd9eltwiseopD0Ev">jd::eltwiseop::~eltwiseop (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io8K_SCALESE">jd::attention_io::K_SCALES (C++ enumerator)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd14eltwiseop_descE">jd::eltwiseop_desc (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io8K_WEIGHTE">jd::attention_io::K_WEIGHT (C++ enumerator)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd14eltwiseop_desc14eltwiseop_descERK13operator_desc">jd::eltwiseop_desc::eltwiseop_desc (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd14eltwiseop_desc14eltwiseop_descEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io9MERGE_DSTE">jd::attention_io::MERGE_DST (C++ enumerator)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd14eltwiseop_descD0Ev">jd::eltwiseop_desc::~eltwiseop_desc (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io9MERGE_SRCE">jd::attention_io::MERGE_SRC (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io6Q_BIASE">jd::attention_io::Q_BIAS (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io10Q_K_SCALESE">jd::attention_io::Q_K_SCALES (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io8Q_K_SRC2E">jd::attention_io::Q_K_SRC2 (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io8Q_SCALESE">jd::attention_io::Q_SCALES (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io8Q_WEIGHTE">jd::attention_io::Q_WEIGHT (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io18QK_V_OUTPUT_SCALESE">jd::attention_io::QK_V_OUTPUT_SCALES (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io22QK_V_OUTPUT_ZERO_POINTE">jd::attention_io::QK_V_OUTPUT_ZERO_POINT (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io13RESHAPE_INPUTE">jd::attention_io::RESHAPE_INPUT (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io6V_BIASE">jd::attention_io::V_BIAS (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io8V_SCALESE">jd::attention_io::V_SCALES (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd12attention_io8V_WEIGHTE">jd::attention_io::V_WEIGHT (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/engine.html#_CPPv4N2jd10cpu_engineE">jd::cpu_engine (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/engine.html#_CPPv4N2jd10cpu_engine10cpu_engineEv">jd::cpu_engine::cpu_engine (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/engine.html#_CPPv4N2jd10cpu_engine10empty_listE">jd::cpu_engine::empty_list (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/engine.html#_CPPv4NK2jd10cpu_engine23get_implementation_listERK13operator_desc">jd::cpu_engine::get_implementation_list (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/engine.html#_CPPv4N2jd10cpu_engineD0Ev">jd::cpu_engine::~cpu_engine (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd16dyn_quantize_mhaE">jd::dyn_quantize_mha (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd16dyn_quantize_mha16dyn_quantize_mhaERK17kernel_desc_proxy">jd::dyn_quantize_mha::dyn_quantize_mha (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd16dyn_quantize_mha16dyn_quantize_mhaEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd16dyn_quantize_mhaD0Ev">jd::dyn_quantize_mha::~dyn_quantize_mha (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd21dyn_quantize_mha_descE">jd::dyn_quantize_mha_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd21dyn_quantize_mha_desc21dyn_quantize_mha_descERK13operator_desc">jd::dyn_quantize_mha_desc::dyn_quantize_mha_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd21dyn_quantize_mha_desc21dyn_quantize_mha_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd21dyn_quantize_mha_descD0Ev">jd::dyn_quantize_mha_desc::~dyn_quantize_mha_desc (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd9eltwiseopE">jd::eltwiseop (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd9eltwiseop9eltwiseopERK17kernel_desc_proxy">jd::eltwiseop::eltwiseop (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd9eltwiseop9eltwiseopEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd9eltwiseopD0Ev">jd::eltwiseop::~eltwiseop (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd14eltwiseop_descE">jd::eltwiseop_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd14eltwiseop_desc14eltwiseop_descERK13operator_desc">jd::eltwiseop_desc::eltwiseop_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd14eltwiseop_desc14eltwiseop_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd14eltwiseop_descD0Ev">jd::eltwiseop_desc::~eltwiseop_desc (C++ function)</a>
 </li>
       <li><a href="docs/api_doc/kernel/engine.html#_CPPv4N2jd6engineE">jd::engine (C++ class)</a>
 </li>
@@ -2167,123 +2293,721 @@
 </li>
       <li><a href="docs/api_doc/kernel/engine.html#_CPPv4N2jd6engineD0Ev">jd::engine::~engine (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd6gatherE">jd::gather (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd6gatherE">jd::gather (C++ class)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd6gather6gatherERK17kernel_desc_proxy">jd::gather::gather (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd6gather6gatherEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd6gather6gatherERK17kernel_desc_proxy">jd::gather::gather (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd6gather6gatherEv">[1]</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd6gatherD0Ev">jd::gather::~gather (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd6gatherD0Ev">jd::gather::~gather (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd11gather_descE">jd::gather_desc (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd11gather_descE">jd::gather_desc (C++ class)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd11gather_desc11gather_descERK13operator_desc">jd::gather_desc::gather_desc (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd11gather_desc11gather_descEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd11gather_desc11gather_descERK13operator_desc">jd::gather_desc::gather_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd11gather_desc11gather_descEv">[1]</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd11gather_descD0Ev">jd::gather_desc::~gather_desc (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd11gather_descD0Ev">jd::gather_desc::~gather_desc (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17kernel_desc_proxyE">jd::kernel_desc_proxy (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17kernel_desc_proxyE">jd::kernel_desc_proxy (C++ class)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17kernel_desc_proxy19create_proxy_objectERNSt10shared_ptrIK13kernel_desc_tEERK13operator_desc">jd::kernel_desc_proxy::create_proxy_object (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17kernel_desc_proxy19create_proxy_objectERNSt10shared_ptrIK13kernel_desc_tEERK13operator_desc">jd::kernel_desc_proxy::create_proxy_object (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17kernel_desc_proxy10impl_list_E">jd::kernel_desc_proxy::impl_list_ (C++ member)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17kernel_desc_proxy10impl_list_E">jd::kernel_desc_proxy::impl_list_ (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17kernel_desc_proxy17kernel_desc_proxyERK13operator_desc">jd::kernel_desc_proxy::kernel_desc_proxy (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17kernel_desc_proxy17kernel_desc_proxyEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17kernel_desc_proxy17kernel_desc_proxyERK13operator_desc">jd::kernel_desc_proxy::kernel_desc_proxy (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17kernel_desc_proxy17kernel_desc_proxyEv">[1]</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4NK2jd17kernel_desc_proxy11kernel_kindEv">jd::kernel_desc_proxy::kernel_kind (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4NK2jd17kernel_desc_proxy11kernel_kindEv">jd::kernel_desc_proxy::kernel_kind (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17kernel_desc_proxyD0Ev">jd::kernel_desc_proxy::~kernel_desc_proxy (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17kernel_desc_proxyD0Ev">jd::kernel_desc_proxy::~kernel_desc_proxy (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12kernel_proxyE">jd::kernel_proxy (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12kernel_proxyE">jd::kernel_proxy (C++ class)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12kernel_proxy19create_proxy_objectERNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE">jd::kernel_proxy::create_proxy_object (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12kernel_proxy19create_proxy_objectERNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE">jd::kernel_proxy::create_proxy_object (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12kernel_proxy7executeERKNSt6vectorIPKvEE">jd::kernel_proxy::execute (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4NK2jd12kernel_proxy7executeERKNSt6vectorIPKvEE">jd::kernel_proxy::execute (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4NK2jd12kernel_proxy11kernel_kindEv">jd::kernel_proxy::kernel_kind (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4NK2jd12kernel_proxy18get_workspace_sizeEv">jd::kernel_proxy::get_workspace_size (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12kernel_proxy12kernel_proxyERK17kernel_desc_proxy">jd::kernel_proxy::kernel_proxy (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12kernel_proxy12kernel_proxyEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4NK2jd12kernel_proxy11kernel_kindEv">jd::kernel_proxy::kernel_kind (C++ function)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12kernel_proxyD0Ev">jd::kernel_proxy::~kernel_proxy (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12kernel_proxy12kernel_proxyERK17kernel_desc_proxy">jd::kernel_proxy::kernel_proxy (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12kernel_proxy12kernel_proxyEv">[1]</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_tE">jd::kernel_t (C++ class)</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_tE">[1]</a>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12kernel_proxyD0Ev">jd::kernel_proxy::~kernel_proxy (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12layernorm_baE">jd::layernorm_ba (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12layernorm_ba12layernorm_baERK17kernel_desc_proxy">jd::layernorm_ba::layernorm_ba (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12layernorm_ba12layernorm_baEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12layernorm_baD0Ev">jd::layernorm_ba::~layernorm_ba (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17layernorm_ba_descE">jd::layernorm_ba_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17layernorm_ba_desc17layernorm_ba_descERK13operator_desc">jd::layernorm_ba_desc::layernorm_ba_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17layernorm_ba_desc17layernorm_ba_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd17layernorm_ba_descD0Ev">jd::layernorm_ba_desc::~layernorm_ba_desc (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd20layernormalized_spmmE">jd::layernormalized_spmm (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd20layernormalized_spmm20layernormalized_spmmERK17kernel_desc_proxy">jd::layernormalized_spmm::layernormalized_spmm (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd20layernormalized_spmm20layernormalized_spmmEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd20layernormalized_spmmD0Ev">jd::layernormalized_spmm::~layernormalized_spmm (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd25layernormalized_spmm_descE">jd::layernormalized_spmm_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd25layernormalized_spmm_desc25layernormalized_spmm_descERK13operator_desc">jd::layernormalized_spmm_desc::layernormalized_spmm_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd25layernormalized_spmm_desc25layernormalized_spmm_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd25layernormalized_spmm_descD0Ev">jd::layernormalized_spmm_desc::~layernormalized_spmm_desc (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10logsoftmaxE">jd::logsoftmax (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10logsoftmax10logsoftmaxERK17kernel_desc_proxy">jd::logsoftmax::logsoftmax (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10logsoftmax10logsoftmaxEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10logsoftmaxD0Ev">jd::logsoftmax::~logsoftmax (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd15logsoftmax_descE">jd::logsoftmax_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd15logsoftmax_desc15logsoftmax_descERK13operator_desc">jd::logsoftmax_desc::logsoftmax_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd15logsoftmax_desc15logsoftmax_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd15logsoftmax_descD0Ev">jd::logsoftmax_desc::~logsoftmax_desc (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_descE">jd::operator_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desc18apply_postops_listEv">jd::operator_desc::apply_postops_list (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc19apply_postops_list_E">jd::operator_desc::apply_postops_list_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desc5attrsEv">jd::operator_desc::attrs (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc6attrs_E">jd::operator_desc::attrs_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc14binaryop_list_E">jd::operator_desc::binaryop_list_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc9eng_kind_E">jd::operator_desc::eng_kind_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desc11engine_kindEv">jd::operator_desc::engine_kind (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desc17get_binaryop_listEv">jd::operator_desc::get_binaryop_list (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desc9impl_nthrEv">jd::operator_desc::impl_nthr (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc10impl_nthr_E">jd::operator_desc::impl_nthr_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc9ker_kind_E">jd::operator_desc::ker_kind_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc9ker_prop_E">jd::operator_desc::ker_prop_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desc11kernel_kindEv">jd::operator_desc::kernel_kind (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desc11kernel_propEv">jd::operator_desc::kernel_prop (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desceqERK13operator_desc">jd::operator_desc::operator== (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc13operator_descERKN2jd11kernel_kindERKN2jd11kernel_propERKN2jd11engine_kindERKNSt6vectorI11tensor_descEERKNSt13unordered_mapINSt6stringENSt6stringEEERKNSt6vectorI11postop_attrEE">jd::operator_desc::operator_desc (C++ function)</a>, <a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc13operator_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc17set_binaryop_listERKNSt6vectorI13binaryop_attrEE">jd::operator_desc::set_binaryop_list (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4NK2jd13operator_desc12tensor_descsEv">jd::operator_desc::tensor_descs (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_desc9ts_descs_E">jd::operator_desc::ts_descs_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/operator_desc.html#_CPPv4N2jd13operator_descD0Ev">jd::operator_desc::~operator_desc (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4I00EN2jd10proxy_baseE">jd::proxy_base (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10proxy_base19create_proxy_objectERNSt10shared_ptrIK1TEERK5arg_t">jd::proxy_base::create_proxy_object (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10proxy_base12data_handle_E">jd::proxy_base::data_handle_ (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4NK2jd10proxy_base6get_spEv">jd::proxy_base::get_sp (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10proxy_base10proxy_baseEv">jd::proxy_base::proxy_base (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10proxy_base8reset_spERKNSt10shared_ptrIK1TEE">jd::proxy_base::reset_sp (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd10proxy_baseD0Ev">jd::proxy_base::~proxy_base (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd7softmaxE">jd::softmax (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd7softmax7softmaxERK17kernel_desc_proxy">jd::softmax::softmax (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd7softmax7softmaxEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd7softmaxD0Ev">jd::softmax::~softmax (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12softmax_descE">jd::softmax_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12softmax_desc12softmax_descERK13operator_desc">jd::softmax_desc::softmax_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12softmax_desc12softmax_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd12softmax_descD0Ev">jd::softmax_desc::~softmax_desc (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd13sparse_matmulE">jd::sparse_matmul (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd13sparse_matmul13sparse_matmulERK17kernel_desc_proxy">jd::sparse_matmul::sparse_matmul (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd13sparse_matmul13sparse_matmulEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd13sparse_matmulD0Ev">jd::sparse_matmul::~sparse_matmul (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd18sparse_matmul_descE">jd::sparse_matmul_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd18sparse_matmul_desc18sparse_matmul_descERK13operator_desc">jd::sparse_matmul_desc::sparse_matmul_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd18sparse_matmul_desc18sparse_matmul_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd18sparse_matmul_descD0Ev">jd::sparse_matmul_desc::~sparse_matmul_desc (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssdE">jd::ssd (C++ type)</a>, <a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssdE">[1]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssdE">[2]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssdE">[3]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssdE">[4]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssdE">[5]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssdE">[6]</a>, <a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssdE">[7]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17amx_bf16_params_tE">jd::ssd::amx_bf16_params_t (C++ type)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd21amx_bf16bf16_inputs_tE">jd::ssd::amx_bf16bf16_inputs_t (C++ type)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20amx_bf16f32_inputs_tE">jd::ssd::amx_bf16f32_inputs_t (C++ type)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4I0000EN2jd3ssd12amx_inputs_tE">jd::ssd::amx_inputs_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_inputs_t4biasE">jd::ssd::amx_inputs_t::bias (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_inputs_t3dstE">jd::ssd::amx_inputs_t::dst (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_inputs_t3srcE">jd::ssd::amx_inputs_t::src (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_inputs_t6weightE">jd::ssd::amx_inputs_t::weight (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17amx_int8_params_tE">jd::ssd::amx_int8_params_t (C++ type)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4I0EN2jd3ssd12amx_params_tE">jd::ssd::amx_params_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t16blocks_per_groupE">jd::ssd::amx_params_t::blocks_per_group (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t9blocksizeE">jd::ssd::amx_params_t::blocksize (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t7colidxsE">jd::ssd::amx_params_t::colidxs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t12group_rowptrE">jd::ssd::amx_params_t::group_rowptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t8has_biasE">jd::ssd::amx_params_t::has_bias (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t9nnz_groupE">jd::ssd::amx_params_t::nnz_group (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t7nrowptrE">jd::ssd::amx_params_t::nrowptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t9num_tileME">jd::ssd::amx_params_t::num_tileM (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t12postop_attrsE">jd::ssd::amx_params_t::postop_attrs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t14same_src_dtypeE">jd::ssd::amx_params_t::same_src_dtype (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t5shapeE">jd::ssd::amx_params_t::shape (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t5tileME">jd::ssd::amx_params_t::tileM (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t5tileNE">jd::ssd::amx_params_t::tileN (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12amx_params_t6weightE">jd::ssd::amx_params_t::weight (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13avx512_data_tE">jd::ssd::avx512_data_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13avx512_data_t4biasE">jd::ssd::avx512_data_t::bias (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13avx512_data_t5denseE">jd::ssd::avx512_data_t::dense (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13avx512_data_t3dstE">jd::ssd::avx512_data_t::dst (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13avx512_data_t6sparseE">jd::ssd::avx512_data_t::sparse (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_tE">jd::ssd::avx512_fp32_params_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t8has_biasE">jd::ssd::avx512_fp32_params_t::has_bias (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t6im_endE">jd::ssd::avx512_fp32_params_t::im_end (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t8im_startE">jd::ssd::avx512_fp32_params_t::im_start (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t6in_endE">jd::ssd::avx512_fp32_params_t::in_end (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t8in_startE">jd::ssd::avx512_fp32_params_t::in_start (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t1KE">jd::ssd::avx512_fp32_params_t::K (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t1ME">jd::ssd::avx512_fp32_params_t::M (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t1NE">jd::ssd::avx512_fp32_params_t::N (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t12postop_attrsE">jd::ssd::avx512_fp32_params_t::postop_attrs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20avx512_fp32_params_t10sparse_ptrE">jd::ssd::avx512_fp32_params_t::sparse_ptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd4BIASE">jd::ssd::BIAS (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd3DSTE">jd::ssd::DST (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd6DST_M1E">jd::ssd::DST_M1 (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd6DST_M2E">jd::ssd::DST_M2 (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16eltwiseop_data_tE">jd::ssd::eltwiseop_data_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16eltwiseop_data_t3dstE">jd::ssd::eltwiseop_data_t::dst (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16eltwiseop_data_t11element_numE">jd::ssd::eltwiseop_data_t::element_num (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16eltwiseop_data_t3srcE">jd::ssd::eltwiseop_data_t::src (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17eltwiseop_param_tE">jd::ssd::eltwiseop_param_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17eltwiseop_param_t11element_numE">jd::ssd::eltwiseop_param_t::element_num (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17eltwiseop_param_t19element_num_each_thE">jd::ssd::eltwiseop_param_t::element_num_each_th (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17eltwiseop_param_t5in_dtE">jd::ssd::eltwiseop_param_t::in_dt (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17eltwiseop_param_t6out_dtE">jd::ssd::eltwiseop_param_t::out_dt (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17eltwiseop_param_t12postop_attrsE">jd::ssd::eltwiseop_param_t::postop_attrs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17eltwiseop_param_t14remain_elementE">jd::ssd::eltwiseop_param_t::remain_element (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13gather_data_tE">jd::ssd::gather_data_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13gather_data_t14binaryop_addrsE">jd::ssd::gather_data_t::binaryop_addrs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13gather_data_t3dstE">jd::ssd::gather_data_t::dst (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13gather_data_t13gather_data_tEPvPvPv">jd::ssd::gather_data_t::gather_data_t (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13gather_data_t3idxE">jd::ssd::gather_data_t::idx (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13gather_data_t3srcE">jd::ssd::gather_data_t::src (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_tE">jd::ssd::gather_param_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t15binary_ts_sizesE">jd::ssd::gather_param_t::binary_ts_sizes (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t14binaryop_attrsE">jd::ssd::gather_param_t::binaryop_attrs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t13dst_axis_sizeE">jd::ssd::gather_param_t::dst_axis_size (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t2dtE">jd::ssd::gather_param_t::dt (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t7dt_sizeE">jd::ssd::gather_param_t::dt_size (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t11extend_maskE">jd::ssd::gather_param_t::extend_mask (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t8idx_sizeE">jd::ssd::gather_param_t::idx_size (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t10inner_sizeE">jd::ssd::gather_param_t::inner_size (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t5loopsE">jd::ssd::gather_param_t::loops (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t4maskE">jd::ssd::gather_param_t::mask (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t10outer_sizeE">jd::ssd::gather_param_t::outer_size (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t6remainE">jd::ssd::gather_param_t::remain (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t13src_axis_sizeE">jd::ssd::gather_param_t::src_axis_size (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14gather_param_t8src_sizeE">jd::ssd::gather_param_t::src_size (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_tE">jd::ssd::layernorm_ba_data_t (C++ struct)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4I00EN2jd8kernel_t6createEbRNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE">jd::kernel_t::create (C++ function)</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4I00EN2jd8kernel_t6createEbRNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_tUt1_6E">jd::ssd::layernorm_ba_data_t::[anonymous] (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4NK2jd8kernel_t7executeERKNSt6vectorIPKvEE">jd::kernel_t::execute (C++ function)</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4NK2jd8kernel_t7executeERKNSt6vectorIPKvEE">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t5alphaE">jd::ssd::layernorm_ba_data_t::alpha (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_t4initEv">jd::kernel_t::init (C++ function)</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_t4initEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t4betaE">jd::ssd::layernorm_ba_data_t::beta (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4NK2jd8kernel_t2kdEv">jd::kernel_t::kd (C++ function)</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4NK2jd8kernel_t2kdEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t3dstE">jd::ssd::layernorm_ba_data_t::dst (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_t3kd_E">jd::kernel_t::kd_ (C++ member)</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_t3kd_E">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t4dst2E">jd::ssd::layernorm_ba_data_t::dst2 (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_t8kernel_tERK8kernel_t">jd::kernel_t::kernel_t (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_t8kernel_tERKNSt10shared_ptrIK13kernel_desc_tEE">[1]</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_t8kernel_tERR8kernel_t">[2]</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_t8kernel_tERK8kernel_t">[3]</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_t8kernel_tERKNSt10shared_ptrIK13kernel_desc_tEE">[4]</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_t8kernel_tERR8kernel_t">[5]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t3epsE">jd::ssd::layernorm_ba_data_t::eps (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_taSERK8kernel_t">jd::kernel_t::operator= (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_taSERR8kernel_t">[1]</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_taSERK8kernel_t">[2]</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_taSERR8kernel_t">[3]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t4meanE">jd::ssd::layernorm_ba_data_t::mean (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd8kernel_tD0Ev">jd::kernel_t::~kernel_t (C++ function)</a>, <a href="docs/api_doc/kernel/kernel.html#_CPPv4N2jd8kernel_tD0Ev">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t1nE">jd::ssd::layernorm_ba_data_t::n (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12layernorm_baE">jd::layernorm_ba (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t3oneE">jd::ssd::layernorm_ba_data_t::one (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12layernorm_ba12layernorm_baERK17kernel_desc_proxy">jd::layernorm_ba::layernorm_ba (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12layernorm_ba12layernorm_baEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t11process_rowE">jd::ssd::layernorm_ba_data_t::process_row (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12layernorm_baD0Ev">jd::layernorm_ba::~layernorm_ba (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t3srcE">jd::ssd::layernorm_ba_data_t::src (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17layernorm_ba_descE">jd::layernorm_ba_desc (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd19layernorm_ba_data_t3varE">jd::ssd::layernorm_ba_data_t::var (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17layernorm_ba_desc17layernorm_ba_descERK13operator_desc">jd::layernorm_ba_desc::layernorm_ba_desc (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17layernorm_ba_desc17layernorm_ba_descEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_tE">jd::ssd::layernorm_ba_param_t (C++ struct)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd17layernorm_ba_descD0Ev">jd::layernorm_ba_desc::~layernorm_ba_desc (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t9batch_numE">jd::ssd::layernorm_ba_param_t::batch_num (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4I00EN2jd10proxy_baseE">jd::proxy_base (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t14binaryop_attrsE">jd::ssd::layernorm_ba_param_t::binaryop_attrs (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd10proxy_base19create_proxy_objectERNSt10shared_ptrIK1TEERK5arg_t">jd::proxy_base::create_proxy_object (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t7col_numE">jd::ssd::layernorm_ba_param_t::col_num (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd10proxy_base12data_handle_E">jd::proxy_base::data_handle_ (C++ member)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t18direct_process_rowE">jd::ssd::layernorm_ba_param_t::direct_process_row (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4NK2jd10proxy_base6get_spEv">jd::proxy_base::get_sp (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t8input_dtE">jd::ssd::layernorm_ba_param_t::input_dt (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd10proxy_base10proxy_baseEv">jd::proxy_base::proxy_base (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t13ker_per_batchE">jd::ssd::layernorm_ba_param_t::ker_per_batch (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd10proxy_base8reset_spERKNSt10shared_ptrIK1TEE">jd::proxy_base::reset_sp (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t10output2_dtE">jd::ssd::layernorm_ba_param_t::output2_dt (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd10proxy_baseD0Ev">jd::proxy_base::~proxy_base (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t9output_dtE">jd::ssd::layernorm_ba_param_t::output_dt (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd7softmaxE">jd::softmax (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t12postop_attrsE">jd::ssd::layernorm_ba_param_t::postop_attrs (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd7softmax7softmaxERK17kernel_desc_proxy">jd::softmax::softmax (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd7softmax7softmaxEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t21process_batch_per_kerE">jd::ssd::layernorm_ba_param_t::process_batch_per_ker (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd7softmaxD0Ev">jd::softmax::~softmax (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t11process_colE">jd::ssd::layernorm_ba_param_t::process_col (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12softmax_descE">jd::softmax_desc (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t7row_numE">jd::ssd::layernorm_ba_param_t::row_num (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12softmax_desc12softmax_descERK13operator_desc">jd::softmax_desc::softmax_desc (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12softmax_desc12softmax_descEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t9spec_typeE">jd::ssd::layernorm_ba_param_t::spec_type (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd12softmax_descD0Ev">jd::softmax_desc::~softmax_desc (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t12split_outputE">jd::ssd::layernorm_ba_param_t::split_output (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd13sparse_matmulE">jd::sparse_matmul (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20layernorm_ba_param_t17thread_elt_offsetE">jd::ssd::layernorm_ba_param_t::thread_elt_offset (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd13sparse_matmul13sparse_matmulERK17kernel_desc_proxy">jd::sparse_matmul::sparse_matmul (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd13sparse_matmul13sparse_matmulEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13matmul_data_tE">jd::ssd::matmul_data_t (C++ struct)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd13sparse_matmulD0Ev">jd::sparse_matmul::~sparse_matmul (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13matmul_data_t3dstE">jd::ssd::matmul_data_t::dst (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd18sparse_matmul_descE">jd::sparse_matmul_desc (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13matmul_data_t4src0E">jd::ssd::matmul_data_t::src0 (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd18sparse_matmul_desc18sparse_matmul_descERK13operator_desc">jd::sparse_matmul_desc::sparse_matmul_desc (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd18sparse_matmul_desc18sparse_matmul_descEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13matmul_data_t4src1E">jd::ssd::matmul_data_t::src1 (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd18sparse_matmul_descD0Ev">jd::sparse_matmul_desc::~sparse_matmul_desc (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13matmul_data_t4src2E">jd::ssd::matmul_data_t::src2 (C++ member)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd16transpose_matmulE">jd::transpose_matmul (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_ioE">jd::ssd::matmul_io (C++ type)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd16transpose_matmul16transpose_matmulERK17kernel_desc_proxy">jd::transpose_matmul::transpose_matmul (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd16transpose_matmul16transpose_matmulEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_io2ioE">jd::ssd::matmul_io::io (C++ enum)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd16transpose_matmulD0Ev">jd::transpose_matmul::~transpose_matmul (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_io2io4DST0E">jd::ssd::matmul_io::io::DST0 (C++ enumerator)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd21transpose_matmul_descE">jd::transpose_matmul_desc (C++ class)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_io2io13matmul_io_MAXE">jd::ssd::matmul_io::io::matmul_io_MAX (C++ enumerator)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd21transpose_matmul_desc21transpose_matmul_descERK13operator_desc">jd::transpose_matmul_desc::transpose_matmul_desc (C++ function)</a>, <a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd21transpose_matmul_desc21transpose_matmul_descEv">[1]</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_io2io6SCALE0E">jd::ssd::matmul_io::io::SCALE0 (C++ enumerator)</a>
 </li>
-      <li><a href="docs/api_doc/kernel/api_c.html#_CPPv4N2jd21transpose_matmul_descD0Ev">jd::transpose_matmul_desc::~transpose_matmul_desc (C++ function)</a>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_io2io4SRC0E">jd::ssd::matmul_io::io::SRC0 (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_io2io4SRC1E">jd::ssd::matmul_io::io::SRC1 (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_io2io4SRC2E">jd::ssd::matmul_io::io::SRC2 (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd9matmul_io2io3ZP0E">jd::ssd::matmul_io::io::ZP0 (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_tE">jd::ssd::matmul_param_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_t5alphaE">jd::ssd::matmul_param_t::alpha (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_t5batchE">jd::ssd::matmul_param_t::batch (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_t4betaE">jd::ssd::matmul_param_t::beta (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_t1KE">jd::ssd::matmul_param_t::K (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_t1ME">jd::ssd::matmul_param_t::M (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_t6m_tileE">jd::ssd::matmul_param_t::m_tile (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_t1NE">jd::ssd::matmul_param_t::N (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14matmul_param_t6n_tileE">jd::ssd::matmul_param_t::n_tile (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16matmul_u8_data_tE">jd::ssd::matmul_u8_data_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16matmul_u8_data_t3dstE">jd::ssd::matmul_u8_data_t::dst (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16matmul_u8_data_t5scaleE">jd::ssd::matmul_u8_data_t::scale (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16matmul_u8_data_t4src0E">jd::ssd::matmul_u8_data_t::src0 (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16matmul_u8_data_t4src1E">jd::ssd::matmul_u8_data_t::src1 (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16matmul_u8_data_t2zpE">jd::ssd::matmul_u8_data_t::zp (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd22mean_var_reduce_data_tE">jd::ssd::mean_var_reduce_data_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd22mean_var_reduce_data_t7mean_inE">jd::ssd::mean_var_reduce_data_t::mean_in (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd22mean_var_reduce_data_t8mean_outE">jd::ssd::mean_var_reduce_data_t::mean_out (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd22mean_var_reduce_data_t6var_inE">jd::ssd::mean_var_reduce_data_t::var_in (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd22mean_var_reduce_data_t7var_outE">jd::ssd::mean_var_reduce_data_t::var_out (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd23mean_var_reduce_param_tE">jd::ssd::mean_var_reduce_param_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd23mean_var_reduce_param_t2BME">jd::ssd::mean_var_reduce_param_t::BM (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd23mean_var_reduce_param_t2BNE">jd::ssd::mean_var_reduce_param_t::BN (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd23mean_var_reduce_param_t11element_numE">jd::ssd::mean_var_reduce_param_t::element_num (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd23mean_var_reduce_param_t1ME">jd::ssd::mean_var_reduce_param_t::M (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd23mean_var_reduce_param_t1NE">jd::ssd::mean_var_reduce_param_t::N (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd6SCALESE">jd::ssd::SCALES (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20seq_vnni_copy_paramsE">jd::ssd::seq_vnni_copy_params (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20seq_vnni_copy_params6dstptrE">jd::ssd::seq_vnni_copy_params::dstptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20seq_vnni_copy_params9dststrideE">jd::ssd::seq_vnni_copy_params::dststride (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20seq_vnni_copy_params1kE">jd::ssd::seq_vnni_copy_params::k (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20seq_vnni_copy_params6srcptrE">jd::ssd::seq_vnni_copy_params::srcptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20seq_vnni_copy_params9srcstrideE">jd::ssd::seq_vnni_copy_params::srcstride (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14softmax_data_tE">jd::ssd::softmax_data_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14softmax_data_t3dstE">jd::ssd::softmax_data_t::dst (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14softmax_data_t3oneE">jd::ssd::softmax_data_t::one (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14softmax_data_t15process_vec_numE">jd::ssd::softmax_data_t::process_vec_num (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14softmax_data_t3srcE">jd::ssd::softmax_data_t::src (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd14softmax_data_t3tmpE">jd::ssd::softmax_data_t::tmp (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_tE">jd::ssd::softmax_param_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t17get_lut_exp_attrsE">jd::ssd::softmax_param_t::get_lut_exp_attrs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t8input_dtE">jd::ssd::softmax_param_t::input_dt (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t9output_dtE">jd::ssd::softmax_param_t::output_dt (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t12postop_attrsE">jd::ssd::softmax_param_t::postop_attrs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t10scalar_numE">jd::ssd::softmax_param_t::scalar_num (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t9sepc_typeE">jd::ssd::softmax_param_t::sepc_type (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t13vec_align_lenE">jd::ssd::softmax_param_t::vec_align_len (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t15vec_num_per_thrE">jd::ssd::softmax_param_t::vec_num_per_thr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t16vec_num_tail_thrE">jd::ssd::softmax_param_t::vec_num_tail_thr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd15softmax_param_t12vec_tail_lenE">jd::ssd::softmax_param_t::vec_tail_len (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13sparse_schemeE">jd::ssd::sparse_scheme (C++ enum)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13sparse_scheme14dense_x_sparseE">jd::ssd::sparse_scheme::dense_x_sparse (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13sparse_scheme14sparse_x_denseE">jd::ssd::sparse_scheme::sparse_x_dense (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13sparse_scheme15sparse_x_sparseE">jd::ssd::sparse_scheme::sparse_x_sparse (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13sparse_scheme5undefE">jd::ssd::sparse_scheme::undef (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17spec_softmax_typeE">jd::ssd::spec_softmax_type (C++ enum)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd17spec_softmax_type3lutE">jd::ssd::spec_softmax_type::lut (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20spec_translnorm_typeE">jd::ssd::spec_translnorm_type (C++ enum)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20spec_translnorm_type6directE">jd::ssd::spec_translnorm_type::direct (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd20spec_translnorm_type6normalE">jd::ssd::spec_translnorm_type::normal (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd3SRCE">jd::ssd::SRC (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13subfunc_levelE">jd::ssd::subfunc_level (C++ enum)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13subfunc_level5kdimsE">jd::ssd::subfunc_level::kdims (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13subfunc_level9non_kdimsE">jd::ssd::subfunc_level::non_kdims (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13subfunc_level4noneE">jd::ssd::subfunc_level::none (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd13subfunc_level17subfunc_level_MAXE">jd::ssd::subfunc_level::subfunc_level_MAX (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd21transpose_copy_paramsE">jd::ssd::transpose_copy_params (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd21transpose_copy_params6dstptrE">jd::ssd::transpose_copy_params::dstptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd21transpose_copy_params9dststrideE">jd::ssd::transpose_copy_params::dststride (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd21transpose_copy_params1kE">jd::ssd::transpose_copy_params::k (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd21transpose_copy_params6srcptrE">jd::ssd::transpose_copy_params::srcptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd21transpose_copy_params9srcstrideE">jd::ssd::transpose_copy_params::srcstride (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_ioE">jd::ssd::transpose_mha_io (C++ type)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2ioE">jd::ssd::transpose_mha_io::io (C++ enum)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io5BATCHE">jd::ssd::transpose_mha_io::io::BATCH (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io3DSTE">jd::ssd::transpose_mha_io::io::DST (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io8HEAD_NUME">jd::ssd::transpose_mha_io::io::HEAD_NUM (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io9HEAD_SIZEE">jd::ssd::transpose_mha_io::io::HEAD_SIZE (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io4MASKE">jd::ssd::transpose_mha_io::io::MASK (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io9SCALE_DSTE">jd::ssd::transpose_mha_io::io::SCALE_DST (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io7SCALE_KE">jd::ssd::transpose_mha_io::io::SCALE_K (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io7SCALE_QE">jd::ssd::transpose_mha_io::io::SCALE_Q (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io7SCALE_VE">jd::ssd::transpose_mha_io::io::SCALE_V (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io7SEQ_LENE">jd::ssd::transpose_mha_io::io::SEQ_LEN (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io6SL_PADE">jd::ssd::transpose_mha_io::io::SL_PAD (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io5SRC_KE">jd::ssd::transpose_mha_io::io::SRC_K (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io5SRC_QE">jd::ssd::transpose_mha_io::io::SRC_Q (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io5SRC_VE">jd::ssd::transpose_mha_io::io::SRC_V (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io5TMP2ME">jd::ssd::transpose_mha_io::io::TMP2M (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io20transpose_mha_io_MAXE">jd::ssd::transpose_mha_io::io::transpose_mha_io_MAX (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd16transpose_mha_io2io6ZP_DSTE">jd::ssd::transpose_mha_io::io::ZP_DST (C++ enumerator)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_paramsE">jd::ssd::transpose_mha_step1_params (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params5astepE">jd::ssd::transpose_mha_step1_params::astep (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params6batchkE">jd::ssd::transpose_mha_step1_params::batchk (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params10cbatchstepE">jd::ssd::transpose_mha_step1_params::cbatchstep (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params3cfgE">jd::ssd::transpose_mha_step1_params::cfg (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params5cstepE">jd::ssd::transpose_mha_step1_params::cstep (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params6expsumE">jd::ssd::transpose_mha_step1_params::expsum (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params1kE">jd::ssd::transpose_mha_step1_params::k (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params1mE">jd::ssd::transpose_mha_step1_params::m (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params4matAE">jd::ssd::transpose_mha_step1_params::matA (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params4matBE">jd::ssd::transpose_mha_step1_params::matB (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params4matCE">jd::ssd::transpose_mha_step1_params::matC (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params4matDE">jd::ssd::transpose_mha_step1_params::matD (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params7scaleABE">jd::ssd::transpose_mha_step1_params::scaleAB (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step1_params7sumstepE">jd::ssd::transpose_mha_step1_params::sumstep (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step2_paramsE">jd::ssd::transpose_mha_step2_params (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step2_params6dstptrE">jd::ssd::transpose_mha_step2_params::dstptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step2_params9dststrideE">jd::ssd::transpose_mha_step2_params::dststride (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step2_params1kE">jd::ssd::transpose_mha_step2_params::k (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step2_params6srcptrE">jd::ssd::transpose_mha_step2_params::srcptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step2_params9srcstrideE">jd::ssd::transpose_mha_step2_params::srcstride (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step2_params6sumptrE">jd::ssd::transpose_mha_step2_params::sumptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_paramsE">jd::ssd::transpose_mha_step3_params (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params5astepE">jd::ssd::transpose_mha_step3_params::astep (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params3cfgE">jd::ssd::transpose_mha_step3_params::cfg (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params5cstepE">jd::ssd::transpose_mha_step3_params::cstep (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params1kE">jd::ssd::transpose_mha_step3_params::k (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params4matAE">jd::ssd::transpose_mha_step3_params::matA (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params4matBE">jd::ssd::transpose_mha_step3_params::matB (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params4matCE">jd::ssd::transpose_mha_step3_params::matC (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params7scaleABE">jd::ssd::transpose_mha_step3_params::scaleAB (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params6scaleCE">jd::ssd::transpose_mha_step3_params::scaleC (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd26transpose_mha_step3_params10zeropointCE">jd::ssd::transpose_mha_step3_params::zeropointC (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4I0EN2jd3ssd11vnni_data_tE">jd::ssd::vnni_data_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd11vnni_data_t8ptr_biasE">jd::ssd::vnni_data_t::ptr_bias (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd11vnni_data_t9ptr_denseE">jd::ssd::vnni_data_t::ptr_dense (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd11vnni_data_t7ptr_dstE">jd::ssd::vnni_data_t::ptr_dst (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd11vnni_data_t10ptr_dst_m1E">jd::ssd::vnni_data_t::ptr_dst_m1 (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd11vnni_data_t10ptr_dst_m2E">jd::ssd::vnni_data_t::ptr_dst_m2 (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd11vnni_data_t10ptr_scalesE">jd::ssd::vnni_data_t::ptr_scales (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_tE">jd::ssd::vnni_param_t (C++ struct)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t10append_sumE">jd::ssd::vnni_param_t::append_sum (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t9blocksizeE">jd::ssd::vnni_param_t::blocksize (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t2BME">jd::ssd::vnni_param_t::BM (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t2BNE">jd::ssd::vnni_param_t::BN (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t8has_biasE">jd::ssd::vnni_param_t::has_bias (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t8im_startE">jd::ssd::vnni_param_t::im_start (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t7indicesE">jd::ssd::vnni_param_t::indices (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t6indptrE">jd::ssd::vnni_param_t::indptr (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t11output_typeE">jd::ssd::vnni_param_t::output_type (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t12postop_attrsE">jd::ssd::vnni_param_t::postop_attrs (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t8sub_funcE">jd::ssd::vnni_param_t::sub_func (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t6tile_wE">jd::ssd::vnni_param_t::tile_w (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t6weightE">jd::ssd::vnni_param_t::weight (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd12vnni_param_t7welfordE">jd::ssd::vnni_param_t::welford (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd3WEIE">jd::ssd::WEI (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/types.html#_CPPv4N2jd3ssd10WORK_SPACEE">jd::ssd::WORK_SPACE (C++ member)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd16transpose_matmulE">jd::transpose_matmul (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd16transpose_matmul16transpose_matmulERK17kernel_desc_proxy">jd::transpose_matmul::transpose_matmul (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd16transpose_matmul16transpose_matmulEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd16transpose_matmulD0Ev">jd::transpose_matmul::~transpose_matmul (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd21transpose_matmul_descE">jd::transpose_matmul_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd21transpose_matmul_desc21transpose_matmul_descERK13operator_desc">jd::transpose_matmul_desc::transpose_matmul_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd21transpose_matmul_desc21transpose_matmul_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd21transpose_matmul_descD0Ev">jd::transpose_matmul_desc::~transpose_matmul_desc (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd13transpose_mhaE">jd::transpose_mha (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd13transpose_mha13transpose_mhaERK17kernel_desc_proxy">jd::transpose_mha::transpose_mha (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd13transpose_mha13transpose_mhaEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd13transpose_mhaD0Ev">jd::transpose_mha::~transpose_mha (C++ function)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd18transpose_mha_descE">jd::transpose_mha_desc (C++ class)</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd18transpose_mha_desc18transpose_mha_descERK13operator_desc">jd::transpose_mha_desc::transpose_mha_desc (C++ function)</a>, <a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd18transpose_mha_desc18transpose_mha_descEv">[1]</a>
+</li>
+      <li><a href="docs/api_doc/kernel/interface.html#_CPPv4N2jd18transpose_mha_descD0Ev">jd::transpose_mha_desc::~transpose_mha_desc (C++ function)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -2321,8 +3045,6 @@
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.LazyImport">LazyImport (class in intel_extension_for_transformers.backends.neural_engine.compile.graph_utils)</a>
 </li>
-      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LessEqual">LessEqual (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
-</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.list2str">list2str() (in module intel_extension_for_transformers.backends.neural_engine.compile.graph_utils)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.AutoDistillation.load_search_results">load_search_results() (intel_extension_for_transformers.optimization.AutoDistillation method)</a>
@@ -2357,9 +3079,17 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM.M">M (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM attribute)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.MagnitudePruner">MagnitudePruner (class in intel_extension_for_transformers.optimization.pytorch_pruner.pruner)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator">MakeIterator (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/map_and_batch_dataset/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.map_and_batch_dataset.MapAndBatchDataset">MapAndBatchDataset (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.map_and_batch_dataset)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.mask_weights">mask_weights() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.masks">masks (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul">Matmul (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
@@ -2400,6 +3130,8 @@
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/matmul_with_bias_tanh/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_bias_tanh.MatmulWithBiasTanh">MatmulWithBiasTanh (class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_bias_tanh)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/trainer/index.html#intel_extension_for_transformers.optimization.trainer.NLPSeq2SeqTrainer.max_length">max_length (intel_extension_for_transformers.optimization.trainer.NLPSeq2SeqTrainer property)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.max_sparsity_ratio_per_layer">max_sparsity_ratio_per_layer (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.AutoDistillationConfig.max_trials">max_trials (intel_extension_for_transformers.optimization.AutoDistillationConfig property)</a>
 
@@ -2447,6 +3179,8 @@
         <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.QuantizationConfig.metrics">(intel_extension_for_transformers.optimization.QuantizationConfig property)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.model">model (intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning attribute)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/optimizer_tf/index.html#intel_extension_for_transformers.optimization.optimizer_tf.TFOptimization.model_builder_builtin">model_builder_builtin() (intel_extension_for_transformers.optimization.optimizer_tf.TFOptimization method)</a>
 
       <ul>
@@ -2512,6 +3246,8 @@
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/batch_matmul_v2/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.ops.batch_matmul_v2">intel_extension_for_transformers.backends.neural_engine.compile.ops.batch_matmul_v2</a>
 </li>
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/bias_add/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.ops.bias_add">intel_extension_for_transformers.backends.neural_engine.compile.ops.bias_add</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/binary_op/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.ops.binary_op">intel_extension_for_transformers.backends.neural_engine.compile.ops.binary_op</a>
 </li>
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/cast/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.ops.cast">intel_extension_for_transformers.backends.neural_engine.compile.ops.cast</a>
 </li>
@@ -2653,6 +3389,8 @@
 </li>
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/merged_embeddingbag/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.merged_embeddingbag">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.merged_embeddingbag</a>
 </li>
+        <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/multi_head_attention/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.multi_head_attention">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.multi_head_attention</a>
+</li>
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/output_data/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.output_data">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.output_data</a>
 </li>
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/padding_sequence/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.padding_sequence">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.padding_sequence</a>
@@ -2767,11 +3505,15 @@
 </li>
         <li><a href="autoapi/intel_extension_for_transformers/version/index.html#module-intel_extension_for_transformers.version">intel_extension_for_transformers.version</a>
 </li>
+        <li><a href="autoapi/sparsity_all/index.html#module-sparsity_all">sparsity_all</a>
+</li>
         <li><a href="autoapi/test_add_cls_token/index.html#module-test_add_cls_token">test_add_cls_token</a>
 </li>
         <li><a href="autoapi/test_attention_output_layer_norm_length_adaptive_keep_indices/index.html#module-test_attention_output_layer_norm_length_adaptive_keep_indices">test_attention_output_layer_norm_length_adaptive_keep_indices</a>
 </li>
         <li><a href="autoapi/test_attention_reshape/index.html#module-test_attention_reshape">test_attention_reshape</a>
+</li>
+        <li><a href="autoapi/test_binary_op/index.html#module-test_binary_op">test_binary_op</a>
 </li>
         <li><a href="autoapi/test_conv_reshape/index.html#module-test_conv_reshape">test_conv_reshape</a>
 </li>
@@ -2838,7 +3580,9 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Mul">Mul (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.modules">modules (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MultiHeadAttenion">MultiHeadAttenion (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/dynamic/evolution/index.html#intel_extension_for_transformers.optimization.dynamic.evolution.Evolution.mutate">mutate() (intel_extension_for_transformers.optimization.dynamic.evolution.Evolution method)</a>
 </li>
@@ -2848,6 +3592,8 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM.N">N (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM attribute)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator.name">name (intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator property)</a>
 
       <ul>
@@ -2892,16 +3638,14 @@
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph/graph/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph.graph.Graph.nodes">(intel_extension_for_transformers.backends.neural_engine.compile.graph.graph.Graph property)</a>
 </li>
       </ul></li>
-      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.NonZero">NonZero (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
-</li>
-      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Not">Not (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
-</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.NoTrainerOptimizer">NoTrainerOptimizer (class in intel_extension_for_transformers.optimization)</a>
 
       <ul>
         <li><a href="autoapi/intel_extension_for_transformers/optimization/optimizer/index.html#intel_extension_for_transformers.optimization.optimizer.NoTrainerOptimizer">(class in intel_extension_for_transformers.optimization.optimizer)</a>
 </li>
       </ul></li>
+      <li><a href="docs/api_doc/kernel/engine.html#c.NULL_INSTANCE">NULL_INSTANCE (C macro)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/trainer/index.html#intel_extension_for_transformers.optimization.trainer.NLPSeq2SeqTrainer.num_beams">num_beams (intel_extension_for_transformers.optimization.trainer.NLPSeq2SeqTrainer property)</a>
 </li>
   </ul></td>
@@ -2918,9 +3662,81 @@
         <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.QuantizationConfig.objectives">(intel_extension_for_transformers.optimization.QuantizationConfig property)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_after_eval">on_after_eval() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_after_eval">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.PatternLockPruner.on_after_optimizer_step">on_after_optimizer_step() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.PatternLockPruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_after_optimizer_step">(intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.SnipMomentumPruner.on_after_optimizer_step">(intel_extension_for_transformers.optimization.pytorch_pruner.pruner.SnipMomentumPruner method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.SnipPruner.on_after_optimizer_step">(intel_extension_for_transformers.optimization.pytorch_pruner.pruner.SnipPruner method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_after_optimizer_step">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_before_eval">on_before_eval() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_before_eval">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_before_optimizer_step">on_before_optimizer_step() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_before_optimizer_step">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_epoch_begin">on_epoch_begin() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_epoch_begin">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_epoch_end">on_epoch_end() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_epoch_end">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.PatternLockPruner.on_step_begin">on_step_begin() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.PatternLockPruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_step_begin">(intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_step_begin">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_step_end">on_step_end() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_step_end">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_train_begin">on_train_begin() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_train_begin">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.on_train_end">on_train_end() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_train_end">(intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
+      </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Onehot">Onehot (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/one_hot/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.one_hot.OneHot">OneHot (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.one_hot)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler">OneshotScheduler (class in intel_extension_for_transformers.optimization.pytorch_pruner.scheduler)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/onnx_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils.onnx_extract_operator">onnx_extract_operator() (in module intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils)</a>
 </li>
@@ -2940,6 +3756,8 @@
         <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.QuantizationConfig.op_wise">(intel_extension_for_transformers.optimization.QuantizationConfig property)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny">OpAny (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator">Operator (class in intel_extension_for_transformers.backends.neural_engine.compile.ops)</a>
 
       <ul>
@@ -2952,8 +3770,6 @@
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.operator_registry">(in module intel_extension_for_transformers.backends.neural_engine.compile.ops.op)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/optimize_dataset/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.optimize_dataset.OptimizeDataset">OptimizeDataset (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.optimize_dataset)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.OptimizedModel">OptimizedModel (class in intel_extension_for_transformers.optimization)</a>
@@ -3021,6 +3837,14 @@
       <ul>
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/pattern/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern.Pattern">(class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern)</a>
 </li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern">(class in intel_extension_for_transformers.optimization.pytorch_pruner.patterns)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern.pattern">pattern (intel_extension_for_transformers.optimization.pytorch_pruner.patterns.Pattern attribute)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.pattern">(intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
+</li>
       </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils/index.html#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping">pattern_mapping() (in module intel_extension_for_transformers.backends.neural_engine.compile.graph_utils)</a>
 </li>
@@ -3032,6 +3856,12 @@
         <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/pattern/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern.pattern_registry">(in module intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.PatternLockPruner">PatternLockPruner (class in intel_extension_for_transformers.optimization.pytorch_pruner.pruner)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNInM">PatternNInM (class in intel_extension_for_transformers.optimization.pytorch_pruner.patterns)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/patterns/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.patterns.PatternNxM">PatternNxM (class in intel_extension_for_transformers.optimization.pytorch_pruner.patterns)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/utils/objectives/index.html#intel_extension_for_transformers.optimization.utils.objectives.Objective.performance">performance() (intel_extension_for_transformers.optimization.utils.objectives.Objective static method)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/config/index.html#intel_extension_for_transformers.optimization.config.QuantizationConfig.performance_only">performance_only (intel_extension_for_transformers.optimization.config.QuantizationConfig property)</a>
@@ -3050,6 +3880,8 @@
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Pow">Pow (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.prepare">prepare() (intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/utils/models/modeling_bert_dynamic/index.html#intel_extension_for_transformers.optimization.utils.models.modeling_bert_dynamic.BertForMaskedLM.prepare_inputs_for_generation">prepare_inputs_for_generation() (intel_extension_for_transformers.optimization.utils.models.modeling_bert_dynamic.BertForMaskedLM method)</a>
 
       <ul>
@@ -3060,6 +3892,10 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/prune_utils/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils.process_and_check_config">process_and_check_config() (in module intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/prune_utils/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils.process_config">process_config() (in module intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.Provider">Provider (class in intel_extension_for_transformers.optimization)</a>
 
       <ul>
@@ -3092,18 +3928,26 @@
         <li><a href="autoapi/intel_extension_for_transformers/optimization/utils/models/modeling_roberta_dynamic/index.html#intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic.RobertaAttention.prune_heads">(intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic.RobertaAttention method)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner">Pruner (class in intel_extension_for_transformers.optimization.pytorch_pruner.pruner)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/config/index.html#intel_extension_for_transformers.optimization.config.PruningConfig.pruner_config">pruner_config (intel_extension_for_transformers.optimization.config.PruningConfig property)</a>
 
       <ul>
         <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.PruningConfig.pruner_config">(intel_extension_for_transformers.optimization.PruningConfig property)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.pruner_info">pruner_info (intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning attribute)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.PrunerConfig">PrunerConfig (class in intel_extension_for_transformers.optimization)</a>
 
       <ul>
         <li><a href="autoapi/intel_extension_for_transformers/optimization/pruning/index.html#intel_extension_for_transformers.optimization.pruning.PrunerConfig">(class in intel_extension_for_transformers.optimization.pruning)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.pruners">pruners (intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning attribute)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning">Pruning (class in intel_extension_for_transformers.optimization.pytorch_pruner.pruning)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.PruningConfig">PruningConfig (class in intel_extension_for_transformers.optimization)</a>
 
       <ul>
@@ -3218,6 +4062,8 @@
       </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reorder">Reorder (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/prune_utils/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils.reset_non_value_to_default">reset_non_value_to_default() (in module intel_extension_for_transformers.optimization.pytorch_pruner.prune_utils)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/reshape/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.reshape.Reshape">Reshape (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.reshape)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/reshape_after_restore_hidden_states/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_after_restore_hidden_states.ReshapeAfterRestoreHiddenStates">ReshapeAfterRestoreHiddenStates (class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_after_restore_hidden_states)</a>
@@ -3230,14 +4076,14 @@
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/restore_hidden_states_in_length_adaptive_update_indices/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices.RestoreHiddenStatesInLengthAdaptive">RestoreHiddenStatesInLengthAdaptive (class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/config/index.html#intel_extension_for_transformers.optimization.config.QuantizationConfig.resume_path">resume_path (intel_extension_for_transformers.optimization.config.QuantizationConfig property)</a>
 
       <ul>
         <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.QuantizationConfig.resume_path">(intel_extension_for_transformers.optimization.QuantizationConfig property)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/trainer/index.html#intel_extension_for_transformers.optimization.trainer.BaseTrainer.resuming_checkpoint">resuming_checkpoint (intel_extension_for_transformers.optimization.trainer.BaseTrainer property)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/utils/models/modeling_roberta_dynamic/index.html#intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic.RobertaAttention">RobertaAttention (class in intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic)</a>
@@ -3311,6 +4157,12 @@
       <li><a href="autoapi/intel_extension_for_transformers/optimization/dynamic/evolution/index.html#intel_extension_for_transformers.optimization.dynamic.evolution.Evolution.save_store">save_store() (intel_extension_for_transformers.optimization.dynamic.evolution.Evolution method)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/scatter_elements/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.scatter_elements.ScatterElements">ScatterElements (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.scatter_elements)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler">Scheduler (class in intel_extension_for_transformers.optimization.pytorch_pruner.scheduler)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.scheduler">scheduler (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.scores">scores (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.AutoDistillation.search">search() (intel_extension_for_transformers.optimization.AutoDistillation method)</a>
 
@@ -3489,6 +4341,8 @@
 </li>
         <li><a href="autoapi/test_attention_reshape/index.html#test_attention_reshape.TestAttentionReshape.setUpClass">(test_attention_reshape.TestAttentionReshape class method)</a>
 </li>
+        <li><a href="autoapi/test_binary_op/index.html#test_binary_op.TestBinaryOp.setUpClass">(test_binary_op.TestBinaryOp class method)</a>
+</li>
         <li><a href="autoapi/test_conv_reshape/index.html#test_conv_reshape.TestConvReshape.setUpClass">(test_conv_reshape.TestConvReshape class method)</a>
 </li>
         <li><a href="autoapi/test_embeddingbag/index.html#test_embeddingbag.TestEmbeddingBag.setUpClass">(test_embeddingbag.TestEmbeddingBag class method)</a>
@@ -3558,12 +4412,21 @@
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Slice">Slice (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
 </li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.SnipMomentumPruner">SnipMomentumPruner (class in intel_extension_for_transformers.optimization.pytorch_pruner.pruner)</a>
+</li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.SnipPruner">SnipPruner (class in intel_extension_for_transformers.optimization.pytorch_pruner.pruner)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/softmax/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.softmax.Softmax">Softmax (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.softmax)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/tensor/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.source_op">source_op (intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor property)</a>
 </li>
+      <li>
+    sparsity_all
+
+      <ul>
+        <li><a href="autoapi/sparsity_all/index.html#module-sparsity_all">module</a>
+</li>
+      </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/split/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.split.Split">Split (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.split)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sqrt">Sqrt (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
@@ -3575,6 +4438,8 @@
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/squeeze/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.squeeze.Squeeze">Squeeze (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.squeeze)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/compile/index.html#intel_extension_for_transformers.backends.neural_engine.compile.compile.start_pipeline">start_pipeline() (in module intel_extension_for_transformers.backends.neural_engine.compile.compile)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.start_step">start_step (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/start_end_logits/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.start_end_logits.StartEndLogits">StartEndLogits (class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.start_end_logits)</a>
 </li>
@@ -3598,8 +4463,6 @@
         <li><a href="autoapi/intel_extension_for_transformers/optimization/mixture/auto_distillation/index.html#intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation.student_model">(intel_extension_for_transformers.optimization.mixture.auto_distillation.AutoDistillation property)</a>
 </li>
       </ul></li>
-      <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sub">Sub (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops)</a>
-</li>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/sub_graph/index.html#intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.SubGraphMatcher">SubGraphMatcher (class in intel_extension_for_transformers.backends.neural_engine.compile.sub_graph)</a>
 
       <ul>
@@ -3619,6 +4482,8 @@
       <ul>
         <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.PruningConfig.target_sparsity_ratio">(intel_extension_for_transformers.optimization.PruningConfig property)</a>
 </li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.target_sparsity_ratio">(intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
+</li>
       </ul></li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/index.html#intel_extension_for_transformers.optimization.AutoDistillation.teacher_model">teacher_model (intel_extension_for_transformers.optimization.AutoDistillation property)</a>
 
@@ -3632,6 +4497,8 @@
         <li><a href="autoapi/test_attention_output_layer_norm_length_adaptive_keep_indices/index.html#test_attention_output_layer_norm_length_adaptive_keep_indices.TestAttentionReshape.tearDownClass">(test_attention_output_layer_norm_length_adaptive_keep_indices.TestAttentionReshape class method)</a>
 </li>
         <li><a href="autoapi/test_attention_reshape/index.html#test_attention_reshape.TestAttentionReshape.tearDownClass">(test_attention_reshape.TestAttentionReshape class method)</a>
+</li>
+        <li><a href="autoapi/test_binary_op/index.html#test_binary_op.TestBinaryOp.tearDownClass">(test_binary_op.TestBinaryOp class method)</a>
 </li>
         <li><a href="autoapi/test_conv_reshape/index.html#test_conv_reshape.TestConvReshape.tearDownClass">(test_conv_reshape.TestConvReshape class method)</a>
 </li>
@@ -3725,6 +4592,13 @@
 
       <ul>
         <li><a href="autoapi/test_attention_reshape/index.html#module-test_attention_reshape">module</a>
+</li>
+      </ul></li>
+      <li>
+    test_binary_op
+
+      <ul>
+        <li><a href="autoapi/test_binary_op/index.html#module-test_binary_op">module</a>
 </li>
       </ul></li>
       <li>
@@ -3862,6 +4736,8 @@
         <li><a href="autoapi/test_pattern_dispatch/index.html#module-test_pattern_dispatch">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     test_position_embeddings
 
@@ -3869,8 +4745,6 @@
         <li><a href="autoapi/test_position_embeddings/index.html#module-test_position_embeddings">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     test_qkv_merge
 
@@ -3960,6 +4834,8 @@
         <li><a href="autoapi/test_reshape_before_and_after_attention_out_layer_norm_gather_elements/index.html#test_reshape_before_and_after_attention_out_layer_norm_gather_elements.TestAttentionReshape">(class in test_reshape_before_and_after_attention_out_layer_norm_gather_elements)</a>
 </li>
       </ul></li>
+      <li><a href="autoapi/test_binary_op/index.html#test_binary_op.TestBinaryOp">TestBinaryOp (class in test_binary_op)</a>
+</li>
       <li><a href="autoapi/test_conv_reshape/index.html#test_conv_reshape.TestConvReshape">TestConvReshape (class in test_conv_reshape)</a>
 </li>
       <li><a href="autoapi/test_embeddingbag/index.html#test_embeddingbag.TestEmbeddingBag">TestEmbeddingBag (class in test_embeddingbag)</a>
@@ -4112,12 +4988,30 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/unpack/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.unpack.Unpack">Unpack (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.unpack)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="autoapi/intel_extension_for_transformers/backends/neural_engine/compile/ops/unsqueeze/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.unsqueeze.Unsqueeze">Unsqueeze (class in intel_extension_for_transformers.backends.neural_engine.compile.ops.unsqueeze)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.update_frequency_on_step">update_frequency_on_step (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner attribute)</a>
+</li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruning/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.update_items_for_all_pruners">update_items_for_all_pruners() (intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning method)</a>
 </li>
       <li><a href="autoapi/intel_extension_for_transformers/optimization/utils/models/modeling_roberta_dynamic/index.html#intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic.RobertaPreTrainedModel.update_keys_to_ignore">update_keys_to_ignore() (intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic.RobertaPreTrainedModel method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.MagnitudePruner.update_scores">update_scores() (intel_extension_for_transformers.optimization.pytorch_pruner.pruner.MagnitudePruner method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/pruner/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner.update_scores">(intel_extension_for_transformers.optimization.pytorch_pruner.pruner.Pruner method)</a>
+</li>
+      </ul></li>
+      <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler.update_sparsity_ratio">update_sparsity_ratio() (intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler method)</a>
+
+      <ul>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler.update_sparsity_ratio">(intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler method)</a>
+</li>
+        <li><a href="autoapi/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler/index.html#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler.update_sparsity_ratio">(intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 

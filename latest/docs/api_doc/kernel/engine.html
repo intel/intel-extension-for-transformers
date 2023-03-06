@@ -13,17 +13,15 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Examples" href="../../examples.html" />
-    <link rel="prev" title="Class kernel" href="kernel.html" /> 
+    <link rel="next" title="Class operator_desc" href="operator_desc.html" />
+    <link rel="prev" title="Class Kernel" href="interface.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -52,16 +50,20 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../../../kernel.html">Transformers-accelerated Libraries</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Transformers-accelerated Libraries</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.html">Performance and Profiling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.html">Validation Performance Data</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../api_kernel.html">C++ APIs</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="kernel.html">Class kernel</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kernel_desc.html">Implementation Details</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="api_c.html">Kernels C++ APIs</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="interface.html">Class Kernel</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Class engine</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#_CPPv42jd">namespace jd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#c.CPU_INSTANCE">)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#c.NULL_INSTANCE">)</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="operator_desc.html">Class operator_desc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="types.html">Operator Specific Types</a></li>
 </ul>
 </li>
 </ul>
@@ -83,8 +85,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../../../kernel.html">Transformers-accelerated Libraries</a></li>
-          <li class="breadcrumb-item"><a href="../api_kernel.html">C++ APIs</a></li>
+          <li class="breadcrumb-item"><a href="../../../kernel.html">Kernels</a></li>
+          <li class="breadcrumb-item"><a href="api_c.html">Kernels C++ APIs</a></li>
       <li class="breadcrumb-item active">Class engine</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../_sources/docs/api_doc/kernel/engine.rst.txt" rel="nofollow"> View page source</a>
@@ -99,11 +101,11 @@
 <h1>Class engine<a class="headerlink" href="#class-engine" title="Permalink to this heading"></a></h1>
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv42jd">
-<span id="_CPPv32jd"></span><span id="_CPPv22jd"></span><span id="jd"></span><span class="target" id="namespacejd"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">jd</span></span></span><br /></dt>
+<span id="_CPPv32jd"></span><span id="_CPPv22jd"></span><span id="jd"></span><span class="target" id="namespacejd"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">jd</span></span></span><a class="headerlink" href="#_CPPv42jd" title="Permalink to this definition"></a><br /></dt>
 <dd><dl class="cpp class">
 <dt class="sig sig-object cpp" id="_CPPv4N2jd6engineE">
 <span id="_CPPv3N2jd6engineE"></span><span id="_CPPv2N2jd6engineE"></span><span id="jd::engine"></span><span class="target" id="classjd_1_1engine"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">engine</span></span></span><a class="headerlink" href="#_CPPv4N2jd6engineE" title="Permalink to this definition"></a><br /></dt>
-<dd><p>Subclassed by jd::cpu_engine</p>
+<dd><p>Subclassed by <a class="reference internal" href="#classjd_1_1cpu__engine"><span class="std std-ref">jd::cpu_engine</span></a></p>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
@@ -123,7 +125,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK2jd6engine23get_implementation_listERK13operator_desc">
-<span id="_CPPv3NK2jd6engine23get_implementation_listERK13operator_desc"></span><span id="_CPPv2NK2jd6engine23get_implementation_listERK13operator_desc"></span><span id="jd::engine::get_implementation_list__operator_descCRC"></span><span class="target" id="classjd_1_1engine_1a5e6f17467908e30fd76e176aefa0bb16"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">impl_list_item_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_implementation_list</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK2jd6engine23get_implementation_listERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv3NK2jd6engine23get_implementation_listERK13operator_desc"></span><span id="_CPPv2NK2jd6engine23get_implementation_listERK13operator_desc"></span><span id="jd::engine::get_implementation_list__operator_descCRC"></span><span class="target" id="classjd_1_1engine_1a5e6f17467908e30fd76e176aefa0bb16"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">impl_list_item_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_implementation_list</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="operator_desc.html#_CPPv4N2jd13operator_descE" title="jd::operator_desc"><span class="n"><span class="pre">operator_desc</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK2jd6engine23get_implementation_listERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 </div>
@@ -139,14 +141,63 @@
 
 </dd></dl>
 
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-defines">Defines</p>
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.CPU_INSTANCE">
+<span class="target" id="cpu__engine_8hpp_1a8c6fb287b79ba893c97ad3efb8b569f3"></span><span class="sig-name descname"><span class="n"><span class="pre">CPU_INSTANCE</span></span></span><span class="sig-paren">(</span><span class="p"><span class="pre">...</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CPU_INSTANCE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.NULL_INSTANCE">
+<span class="target" id="cpu__engine_8hpp_1a046cd21f5e00e5dee6e16aa5b5755397"></span><span class="sig-name descname"><span class="n"><span class="pre">NULL_INSTANCE</span></span></span><span class="sig-paren">(</span><span class="p"><span class="pre">...</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.NULL_INSTANCE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<dl class="cpp type">
+<dt class="sig sig-object cpp">
+<span class="target" id="namespacejd"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">jd</span></span></span><br /></dt>
+<dd><dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd10cpu_engineE">
+<span id="_CPPv3N2jd10cpu_engineE"></span><span id="_CPPv2N2jd10cpu_engineE"></span><span id="jd::cpu_engine"></span><span class="target" id="classjd_1_1cpu__engine"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cpu_engine</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd6engineE" title="jd::engine"><span class="n"><span class="pre">engine</span></span></a><a class="headerlink" href="#_CPPv4N2jd10cpu_engineE" title="Permalink to this definition"></a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd10cpu_engine10cpu_engineEv">
+<span id="_CPPv3N2jd10cpu_engine10cpu_engineEv"></span><span id="_CPPv2N2jd10cpu_engine10cpu_engineEv"></span><span id="jd::cpu_engine::cpu_engine"></span><span class="target" id="classjd_1_1cpu__engine_1a10a8aa06b52c5d83a932053923ad4a63"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cpu_engine</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd10cpu_engine10cpu_engineEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd10cpu_engineD0Ev">
+<span id="_CPPv3N2jd10cpu_engineD0Ev"></span><span id="_CPPv2N2jd10cpu_engineD0Ev"></span><span id="jd::cpu_engine::~cpu_engine"></span><span class="target" id="classjd_1_1cpu__engine_1ac5275aa99283edb320b780dcaf80b952"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~cpu_engine</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd10cpu_engineD0Ev" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd10cpu_engine23get_implementation_listERK13operator_desc">
+<span id="_CPPv3NK2jd10cpu_engine23get_implementation_listERK13operator_desc"></span><span id="_CPPv2NK2jd10cpu_engine23get_implementation_listERK13operator_desc"></span><span id="jd::cpu_engine::get_implementation_list__operator_descCRC"></span><span class="target" id="classjd_1_1cpu__engine_1a9acc8664c9ed58c73d996d8a6046d0e6"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">impl_list_item_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_implementation_list</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="operator_desc.html#_CPPv4N2jd13operator_descE" title="jd::operator_desc"><span class="n"><span class="pre">operator_desc</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK2jd10cpu_engine23get_implementation_listERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd10cpu_engine10empty_listE">
+<span id="_CPPv3N2jd10cpu_engine10empty_listE"></span><span id="_CPPv2N2jd10cpu_engine10empty_listE"></span><span id="jd::cpu_engine::empty_list__std::vector:impl_list_item_t:C"></span><span class="target" id="classjd_1_1cpu__engine_1ae7974f54ffcec90af5e4f8d37ae1ad06"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">impl_list_item_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">empty_list</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span><a class="headerlink" href="#_CPPv4N2jd10cpu_engine10empty_listE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="kernel.html" class="btn btn-neutral float-left" title="Class kernel" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../../examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="interface.html" class="btn btn-neutral float-left" title="Class Kernel" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="operator_desc.html" class="btn btn-neutral float-right" title="Class operator_desc" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

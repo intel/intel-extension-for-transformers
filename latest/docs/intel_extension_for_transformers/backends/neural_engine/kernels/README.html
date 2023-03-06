@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Transformers-accelerated Libraries &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  <title>Transformers-Accelerated Libraries &mdash; Intel® Extension for Transformers 1.0b documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -13,17 +13,15 @@
     <script src="../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
-        <script src="../../../../../_static/jquery.js"></script>
-        <script src="../../../../../_static/underscore.js"></script>
-        <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
         <script src="../../../../../_static/sphinx_highlight.js"></script>
     <script src="../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" />
-    <link rel="next" title="Performance and Profiling" href="docs/profiling.html" />
-    <link rel="prev" title="Transformers-accelerated Libraries" href="../../../../../kernel.html" /> 
+    <link rel="next" title="Performance" href="../../../../../kernel_perf.html" />
+    <link rel="prev" title="Kernels" href="../../../../../kernel.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -52,8 +50,8 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../../../../../kernel.html">Transformers-accelerated Libraries</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Transformers-accelerated Libraries</a><ul>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Transformers-Accelerated Libraries</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#introduction">Introduction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#build">Build</a></li>
@@ -65,12 +63,12 @@
 <li class="toctree-l4"><a class="reference internal" href="#sparse-matmul-kernel">sparse_matmul kernel:</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#developer-guide-for-developers">Developer guide for developers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supported-matrix">Supported Matrix</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="docs/profiling.html">Performance and Profiling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="docs/validated_data.html">Validation Performance Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../api_doc/api_kernel.html">C++ APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../kernel_desc.html">Implementation Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api_doc/kernel/api_c.html">Kernels C++ APIs</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
@@ -90,8 +88,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
-      <li class="breadcrumb-item active">Transformers-accelerated Libraries</li>
+          <li class="breadcrumb-item"><a href="../../../../../kernel.html">Kernels</a></li>
+      <li class="breadcrumb-item active">Transformers-Accelerated Libraries</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/kernels/README.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -102,7 +100,7 @@
            <div itemprop="articleBody">
              
   <section id="transformers-accelerated-libraries">
-<h1>Transformers-accelerated Libraries<a class="headerlink" href="#transformers-accelerated-libraries" title="Permalink to this heading"></a></h1>
+<h1>Transformers-Accelerated Libraries<a class="headerlink" href="#transformers-accelerated-libraries" title="Permalink to this heading"></a></h1>
 <p>===========================================</p>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
@@ -133,7 +131,7 @@ make<span class="w"> </span>-j
 </section>
 <section id="performance">
 <h3>Performance<a class="headerlink" href="#performance" title="Permalink to this heading"></a></h3>
-<p>We provide a benchmark tool to measure the performance out of box, please refer to <a class="reference external" href="../test/kernels/benchmark/README">benchmark</a> for more details.
+<p>We provide a benchmark tool to measure the performance out of box, please refer to <a class="reference internal" href="../test/kernels/benchmark/benchmark.html"><span class="doc">benchmark</span></a> for more details.
 For advanced users, please refer to <a class="reference internal" href="docs/profiling.html"><span class="doc">profling section</span></a>.</p>
 </section>
 </section>
@@ -154,30 +152,67 @@ For advanced users, please refer to <a class="reference internal" href="docs/pro
 <p>Refer to corresponding <a class="reference external" href="../test/gtest/kernels/">unit test</a> for examples.</p>
 </section>
 </section>
-<section id="developer-guide-for-developers">
-<h2>Developer guide for developers<a class="headerlink" href="#developer-guide-for-developers" title="Permalink to this heading"></a></h2>
-<ul class="simple">
-<li><p>The jit_domain/ directory, containing different JIT assemblies (Derived class of Xbyak::CodeGenerator).</p></li>
-<li><p>The kernels/ directory, containing derived classes of different kernels.</p></li>
-<li><p>For different kernels: by convention,</p>
-<ol class="simple">
-<li><p>xxxx_kd_t is the descriptor of a specific derived primitive/kernel.</p></li>
-<li><p>xxxx_k_t is a specific derived primitive/kernel.</p></li>
-<li><p>jit_xxxx_t is JIT assembly implementation of a specific derived primitive/kernel.
-where, “xxxx” represents an algorithm, such as brgemm, GEMM and so on.</p></li>
-</ol>
-</li>
-<li><p>The kernel is determined by the kernel main-kind and kernel isomer. After determining the kernel, it can be implemented by different algorithms. This is the design logic.</p></li>
-</ul>
-</section>
+<section id="supported-matrix">
+<h2>Supported Matrix<a class="headerlink" href="#supported-matrix" title="Permalink to this heading"></a></h2>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Operator</th>
+<th>Type</th>
+<th>ISA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="docs/kernel_desc/kernel_vnni.md">InnerProduct</a></td>
+<td>Dense/Sparse</td>
+<td>VNNI, AMX</td>
+</tr>
+<tr>
+<td>InnerProduct + <a href="docs/kernel_desc/eltwise_injector.md">element-wise</a></td>
+<td>Sparse</td>
+<td>VNNI, AMX</td>
+</tr>
+<tr>
+<td>InnerProduct + <a href="docs/kernel_desc/binaryop_injector.md">residual-add</a></td>
+<td>Sparse</td>
+<td>VNNI, AMX</td>
+</tr>
+<tr>
+<td><a href="docs/kernel_desc/kernel_layernormalized_spmm.md">InnerProduct + layernorm</a></td>
+<td>Sparse</td>
+<td>VNNI, AMX</td>
+</tr>
+<tr>
+<td>SoftMax/GeLU LUT</td>
+<td>NA</td>
+<td>VNNI, AVX512-BF16</td>
+</tr>
+<tr>
+<td>MHA</td>
+<td>Dense</td>
+<td>AMX-INT8</td>
+</tr>
+<tr>
+<td><a href="docs/kernel_desc/kernel_transpose_mha.md">Transposed MHA</a></td>
+<td>Sparse</td>
+<td>AMX-INT8, VNNI</td>
+</tr>
+<tr>
+<td>Transposed Layernorm</td>
+<td>Sparse</td>
+<td>AVX512F</td>
+</tr>
+</tbody>
+</table></section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../../../../../kernel.html" class="btn btn-neutral float-left" title="Transformers-accelerated Libraries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="docs/profiling.html" class="btn btn-neutral float-right" title="Performance and Profiling" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../../../../../kernel.html" class="btn btn-neutral float-left" title="Kernels" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../../../../kernel_perf.html" class="btn btn-neutral float-right" title="Performance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

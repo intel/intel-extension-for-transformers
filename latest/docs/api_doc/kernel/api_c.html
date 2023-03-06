@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kernel C++ APIs &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  <title>Kernels C++ APIs &mdash; Intel® Extension for Transformers 1.0b documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
@@ -13,15 +13,15 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-        <script src="../../../_static/jquery.js"></script>
-        <script src="../../../_static/underscore.js"></script>
-        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" /> 
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Class Kernel" href="interface.html" />
+    <link rel="prev" title="Transposed MHA" href="../../intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_mha.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,10 +47,22 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../kernel.html">Transformers-accelerated Libraries</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kernel_desc.html">Implementation Details</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Kernels C++ APIs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="interface.html">Class Kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine.html">Class engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="operator_desc.html">Class operator_desc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="types.html">Operator Specific Types</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
 </ul>
 
@@ -68,7 +80,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Kernel C++ APIs</li>
+          <li class="breadcrumb-item"><a href="../../../kernel.html">Kernels</a></li>
+      <li class="breadcrumb-item active">Kernels C++ APIs</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../_sources/docs/api_doc/kernel/api_c.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -78,565 +91,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="kernel-c-apis">
-<span id="api"></span><h1>Kernel C++ APIs<a class="headerlink" href="#kernel-c-apis" title="Permalink to this heading"></a></h1>
-<dl class="cpp type">
-<dt class="sig sig-object cpp" id="_CPPv42jd">
-<span id="_CPPv32jd"></span><span id="_CPPv22jd"></span><span id="jd"></span><span class="target" id="namespacejd"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">jd</span></span></span><a class="headerlink" href="#_CPPv42jd" title="Permalink to this definition"></a><br /></dt>
-<dd><dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4I00EN2jd10proxy_baseE">
-<span id="_CPPv3I00EN2jd10proxy_baseE"></span><span id="_CPPv2I00EN2jd10proxy_baseE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">arg_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classjd_1_1proxy__base"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">proxy_base</span></span></span><a class="headerlink" href="#_CPPv4I00EN2jd10proxy_baseE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;interface.hpp&gt;</em></div>
-<p>Proxy pattern. The proxy could interface to anything. Similar to onednn’s “struct handle”. oneapi/dnnl/dnnl.hpp:136. </p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd10proxy_base10proxy_baseEv">
-<span id="_CPPv3N2jd10proxy_base10proxy_baseEv"></span><span id="_CPPv2N2jd10proxy_base10proxy_baseEv"></span><span id="jd::proxy_base::proxy_base"></span><span class="target" id="classjd_1_1proxy__base_1a7903864206f5d26b091e462d5013ec59"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">proxy_base</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd10proxy_base10proxy_baseEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd10proxy_baseD0Ev">
-<span id="_CPPv3N2jd10proxy_baseD0Ev"></span><span id="_CPPv2N2jd10proxy_baseD0Ev"></span><span id="jd::proxy_base::~proxy_base"></span><span class="target" id="classjd_1_1proxy__base_1ae50c17ce9b1b61a06e5443fcde05d1c0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~proxy_base</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd10proxy_baseD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd10proxy_base8reset_spERKNSt10shared_ptrIK1TEE">
-<span id="_CPPv3N2jd10proxy_base8reset_spERKNSt10shared_ptrIK1TEE"></span><span id="_CPPv2N2jd10proxy_base8reset_spERKNSt10shared_ptrIK1TEE"></span><span id="jd::proxy_base::reset_sp__std::shared_ptr:TC:CR"></span><span class="target" id="classjd_1_1proxy__base_1a072e206e7e485430210f53d084205895"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">reset_sp</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN2jd10proxy_baseE" title="jd::proxy_base::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">sp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd10proxy_base8reset_spERKNSt10shared_ptrIK1TEE" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK2jd10proxy_base6get_spEv">
-<span id="_CPPv3NK2jd10proxy_base6get_spEv"></span><span id="_CPPv2NK2jd10proxy_base6get_spEv"></span><span id="jd::proxy_base::get_spC"></span><span class="target" id="classjd_1_1proxy__base_1a1a9502377f2d312d787475cd24be146c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN2jd10proxy_baseE" title="jd::proxy_base::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_sp</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd10proxy_base6get_spEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
+  <section id="kernels-c-apis">
+<h1>Kernels C++ APIs<a class="headerlink" href="#kernels-c-apis" title="Permalink to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="interface.html">Class Kernel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="engine.html">Class engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operator_desc.html">Class operator_desc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="types.html">Operator Specific Types</a></li>
+</ul>
 </div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-protected-functions">Protected Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd10proxy_base19create_proxy_objectERNSt10shared_ptrIK1TEERK5arg_t">
-<span id="_CPPv3N2jd10proxy_base19create_proxy_objectERNSt10shared_ptrIK1TEERK5arg_t"></span><span id="_CPPv2N2jd10proxy_base19create_proxy_objectERNSt10shared_ptrIK1TEERK5arg_t"></span><span id="jd::proxy_base::create_proxy_object__std::shared_ptr:TC:R.arg_tCR"></span><span class="target" id="classjd_1_1proxy__base_1abe3b7fc9d100bb2104c8a124458b58c5"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">create_proxy_object</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN2jd10proxy_baseE" title="jd::proxy_base::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">result_ref</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN2jd10proxy_baseE" title="jd::proxy_base::arg_t"><span class="n"><span class="pre">arg_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">arg</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N2jd10proxy_base19create_proxy_objectERNSt10shared_ptrIK1TEERK5arg_t" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-private-members">Private Members</p>
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd10proxy_base12data_handle_E">
-<span id="_CPPv3N2jd10proxy_base12data_handle_E"></span><span id="_CPPv2N2jd10proxy_base12data_handle_E"></span><span id="jd::proxy_base::data_handle___std::shared_ptr:TC:"></span><span class="target" id="classjd_1_1proxy__base_1acf23f6b6b935f6df3b48eb45fa54794f"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN2jd10proxy_baseE" title="jd::proxy_base::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">data_handle_</span></span></span><a class="headerlink" href="#_CPPv4N2jd10proxy_base12data_handle_E" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17kernel_desc_proxyE">
-<span id="_CPPv3N2jd17kernel_desc_proxyE"></span><span id="_CPPv2N2jd17kernel_desc_proxyE"></span><span id="jd::kernel_desc_proxy"></span><span class="target" id="classjd_1_1kernel__desc__proxy"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_desc_proxy</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4I00EN2jd10proxy_baseE" title="jd::proxy_base"><span class="n"><span class="pre">proxy_base</span></span></a><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">kernel_desc_t</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N2jd17kernel_desc_proxyE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;interface.hpp&gt;</em></div>
-<p>Base proxy class, interfacing to the real/cached kernel_desc_t. </p>
-<p>Subclassed by <a class="reference internal" href="#classjd_1_1attention__desc"><span class="std std-ref">jd::attention_desc</span></a>, <a class="reference internal" href="#classjd_1_1eltwiseop__desc"><span class="std std-ref">jd::eltwiseop_desc</span></a>, <a class="reference internal" href="#classjd_1_1gather__desc"><span class="std std-ref">jd::gather_desc</span></a>, <a class="reference internal" href="#classjd_1_1layernorm__ba__desc"><span class="std std-ref">jd::layernorm_ba_desc</span></a>, <a class="reference internal" href="#classjd_1_1softmax__desc"><span class="std std-ref">jd::softmax_desc</span></a>, <a class="reference internal" href="#classjd_1_1sparse__matmul__desc"><span class="std std-ref">jd::sparse_matmul_desc</span></a>, <a class="reference internal" href="#classjd_1_1transpose__matmul__desc"><span class="std std-ref">jd::transpose_matmul_desc</span></a></p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17kernel_desc_proxy17kernel_desc_proxyEv">
-<span id="_CPPv3N2jd17kernel_desc_proxy17kernel_desc_proxyEv"></span><span id="_CPPv2N2jd17kernel_desc_proxy17kernel_desc_proxyEv"></span><span id="jd::kernel_desc_proxy::kernel_desc_proxy"></span><span class="target" id="classjd_1_1kernel__desc__proxy_1a506df5b2d9aadc8085085389b45e1bda"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_desc_proxy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd17kernel_desc_proxy17kernel_desc_proxyEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17kernel_desc_proxy17kernel_desc_proxyERK13operator_desc">
-<span id="_CPPv3N2jd17kernel_desc_proxy17kernel_desc_proxyERK13operator_desc"></span><span id="_CPPv2N2jd17kernel_desc_proxy17kernel_desc_proxyERK13operator_desc"></span><span id="jd::kernel_desc_proxy::kernel_desc_proxy__operator_descCR"></span><span class="target" id="classjd_1_1kernel__desc__proxy_1a623e4543689b330efc9d82670b98a0eb"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_desc_proxy</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd17kernel_desc_proxy17kernel_desc_proxyERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17kernel_desc_proxyD0Ev">
-<span id="_CPPv3N2jd17kernel_desc_proxyD0Ev"></span><span id="_CPPv2N2jd17kernel_desc_proxyD0Ev"></span><span id="jd::kernel_desc_proxy::~kernel_desc_proxy"></span><span class="target" id="classjd_1_1kernel__desc__proxy_1a6f5988efd9d3bd174482a73c732fc735"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~kernel_desc_proxy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd17kernel_desc_proxyD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK2jd17kernel_desc_proxy11kernel_kindEv">
-<span id="_CPPv3NK2jd17kernel_desc_proxy11kernel_kindEv"></span><span id="_CPPv2NK2jd17kernel_desc_proxy11kernel_kindEv"></span><span id="jd::kernel_desc_proxy::kernel_kindC"></span><span class="target" id="classjd_1_1kernel__desc__proxy_1a9700ef173aadc7f6c880c6179272bc17"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">kernel_kind</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">kernel_kind</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd17kernel_desc_proxy11kernel_kindEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-protected-functions">Protected Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17kernel_desc_proxy19create_proxy_objectERNSt10shared_ptrIK13kernel_desc_tEERK13operator_desc">
-<span id="_CPPv3N2jd17kernel_desc_proxy19create_proxy_objectERNSt10shared_ptrIK13kernel_desc_tEERK13operator_desc"></span><span id="_CPPv2N2jd17kernel_desc_proxy19create_proxy_objectERNSt10shared_ptrIK13kernel_desc_tEERK13operator_desc"></span><span id="jd::kernel_desc_proxy::create_proxy_object__std::shared_ptr:kernel_desc_tC:R.operator_descCR"></span><span class="target" id="classjd_1_1kernel__desc__proxy_1a42c28046010e88f0b674457af90eeb8c"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">create_proxy_object</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">kernel_desc_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">result_ref</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N2jd17kernel_desc_proxy19create_proxy_objectERNSt10shared_ptrIK13kernel_desc_tEERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-protected-attributes">Protected Attributes</p>
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17kernel_desc_proxy10impl_list_E">
-<span id="_CPPv3N2jd17kernel_desc_proxy10impl_list_E"></span><span id="_CPPv2N2jd17kernel_desc_proxy10impl_list_E"></span><span id="jd::kernel_desc_proxy::impl_list___std::vector:impl_list_item_t:CP"></span><span class="target" id="classjd_1_1kernel__desc__proxy_1af1096c1dd9e2ad8696fee63237a4820e"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">impl_list_item_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">impl_list_</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span><a class="headerlink" href="#_CPPv4N2jd17kernel_desc_proxy10impl_list_E" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12kernel_proxyE">
-<span id="_CPPv3N2jd12kernel_proxyE"></span><span id="_CPPv2N2jd12kernel_proxyE"></span><span id="jd::kernel_proxy"></span><span class="target" id="classjd_1_1kernel__proxy"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_proxy</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4I00EN2jd10proxy_baseE" title="jd::proxy_base"><span class="n"><span class="pre">proxy_base</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N2jd8kernel_tE" title="jd::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">kernel_desc_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N2jd12kernel_proxyE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;interface.hpp&gt;</em></div>
-<p>Base proxy class, interfacing to the real/cached <a class="reference internal" href="kernel.html#classjd_1_1kernel__t"><span class="std std-ref">kernel_t</span></a>. </p>
-<p>Subclassed by <a class="reference internal" href="#classjd_1_1attention"><span class="std std-ref">jd::attention</span></a>, <a class="reference internal" href="#classjd_1_1eltwiseop"><span class="std std-ref">jd::eltwiseop</span></a>, <a class="reference internal" href="#classjd_1_1gather"><span class="std std-ref">jd::gather</span></a>, <a class="reference internal" href="#classjd_1_1layernorm__ba"><span class="std std-ref">jd::layernorm_ba</span></a>, <a class="reference internal" href="#classjd_1_1softmax"><span class="std std-ref">jd::softmax</span></a>, <a class="reference internal" href="#classjd_1_1sparse__matmul"><span class="std std-ref">jd::sparse_matmul</span></a>, <a class="reference internal" href="#classjd_1_1transpose__matmul"><span class="std std-ref">jd::transpose_matmul</span></a></p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12kernel_proxy12kernel_proxyEv">
-<span id="_CPPv3N2jd12kernel_proxy12kernel_proxyEv"></span><span id="_CPPv2N2jd12kernel_proxy12kernel_proxyEv"></span><span id="jd::kernel_proxy::kernel_proxy"></span><span class="target" id="classjd_1_1kernel__proxy_1a158b6920d2ea6d0ea3f6f3e4ec1bb7ec"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_proxy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12kernel_proxy12kernel_proxyEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12kernel_proxy12kernel_proxyERK17kernel_desc_proxy">
-<span id="_CPPv3N2jd12kernel_proxy12kernel_proxyERK17kernel_desc_proxy"></span><span id="_CPPv2N2jd12kernel_proxy12kernel_proxyERK17kernel_desc_proxy"></span><span id="jd::kernel_proxy::kernel_proxy__kernel_desc_proxyCR"></span><span class="target" id="classjd_1_1kernel__proxy_1ad7fca404615e4d61805720c651d31e56"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_proxy</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kdp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12kernel_proxy12kernel_proxyERK17kernel_desc_proxy" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12kernel_proxyD0Ev">
-<span id="_CPPv3N2jd12kernel_proxyD0Ev"></span><span id="_CPPv2N2jd12kernel_proxyD0Ev"></span><span id="jd::kernel_proxy::~kernel_proxy"></span><span class="target" id="classjd_1_1kernel__proxy_1a09f3354a029d364a63c071ace8591248"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~kernel_proxy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12kernel_proxyD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK2jd12kernel_proxy11kernel_kindEv">
-<span id="_CPPv3NK2jd12kernel_proxy11kernel_kindEv"></span><span id="_CPPv2NK2jd12kernel_proxy11kernel_kindEv"></span><span id="jd::kernel_proxy::kernel_kindC"></span><span class="target" id="classjd_1_1kernel__proxy_1abe6c0eb0f89f2dd77952063262b2bac9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">kernel_kind</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">kernel_kind</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd12kernel_proxy11kernel_kindEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12kernel_proxy7executeERKNSt6vectorIPKvEE">
-<span id="_CPPv3N2jd12kernel_proxy7executeERKNSt6vectorIPKvEE"></span><span id="_CPPv2N2jd12kernel_proxy7executeERKNSt6vectorIPKvEE"></span><span id="jd::kernel_proxy::execute__std::vector:voidCP:CR"></span><span class="target" id="classjd_1_1kernel__proxy_1a0fde93647c2dac089ea2fdb9a49b865b"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">execute</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rt_data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12kernel_proxy7executeERKNSt6vectorIPKvEE" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-protected-functions">Protected Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12kernel_proxy19create_proxy_objectERNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE">
-<span id="_CPPv3N2jd12kernel_proxy19create_proxy_objectERNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE"></span><span id="_CPPv2N2jd12kernel_proxy19create_proxy_objectERNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE"></span><span id="jd::kernel_proxy::create_proxy_object__std::shared_ptr:kernel_tC:R.std::shared_ptr:kernel_desc_tC:CR"></span><span class="target" id="classjd_1_1kernel__proxy_1ac8a87af7b1d40d1256c5ed928e41ab68"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">create_proxy_object</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd8kernel_tE" title="jd::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">result_ref</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">kernel_desc_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kd</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N2jd12kernel_proxy19create_proxy_objectERNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd18sparse_matmul_descE">
-<span id="_CPPv3N2jd18sparse_matmul_descE"></span><span id="_CPPv2N2jd18sparse_matmul_descE"></span><span id="jd::sparse_matmul_desc"></span><span class="target" id="classjd_1_1sparse__matmul__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sparse_matmul_desc</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd18sparse_matmul_descE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;interface.hpp&gt;</em></div>
-<p>Derived proxy class, interfacing to the real/cached sparse_matmul_desc_t. </p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd18sparse_matmul_desc18sparse_matmul_descEv">
-<span id="_CPPv3N2jd18sparse_matmul_desc18sparse_matmul_descEv"></span><span id="_CPPv2N2jd18sparse_matmul_desc18sparse_matmul_descEv"></span><span id="jd::sparse_matmul_desc::sparse_matmul_desc"></span><span class="target" id="classjd_1_1sparse__matmul__desc_1aa1494e4c7e097e57ec9c77af3a42491d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sparse_matmul_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd18sparse_matmul_desc18sparse_matmul_descEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd18sparse_matmul_desc18sparse_matmul_descERK13operator_desc">
-<span id="_CPPv3N2jd18sparse_matmul_desc18sparse_matmul_descERK13operator_desc"></span><span id="_CPPv2N2jd18sparse_matmul_desc18sparse_matmul_descERK13operator_desc"></span><span id="jd::sparse_matmul_desc::sparse_matmul_desc__operator_descCR"></span><span class="target" id="classjd_1_1sparse__matmul__desc_1a4a60cc697c68ad821d3823efe18cbed5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sparse_matmul_desc</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd18sparse_matmul_desc18sparse_matmul_descERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd18sparse_matmul_descD0Ev">
-<span id="_CPPv3N2jd18sparse_matmul_descD0Ev"></span><span id="_CPPv2N2jd18sparse_matmul_descD0Ev"></span><span id="jd::sparse_matmul_desc::~sparse_matmul_desc"></span><span class="target" id="classjd_1_1sparse__matmul__desc_1af4dc8e84a727a691f62f28aa5ca50943"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~sparse_matmul_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd18sparse_matmul_descD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd21transpose_matmul_descE">
-<span id="_CPPv3N2jd21transpose_matmul_descE"></span><span id="_CPPv2N2jd21transpose_matmul_descE"></span><span id="jd::transpose_matmul_desc"></span><span class="target" id="classjd_1_1transpose__matmul__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">transpose_matmul_desc</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd21transpose_matmul_descE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd21transpose_matmul_desc21transpose_matmul_descEv">
-<span id="_CPPv3N2jd21transpose_matmul_desc21transpose_matmul_descEv"></span><span id="_CPPv2N2jd21transpose_matmul_desc21transpose_matmul_descEv"></span><span id="jd::transpose_matmul_desc::transpose_matmul_desc"></span><span class="target" id="classjd_1_1transpose__matmul__desc_1a94c34c3b95ad775c04fe7e6a0448d3fa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">transpose_matmul_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd21transpose_matmul_desc21transpose_matmul_descEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd21transpose_matmul_desc21transpose_matmul_descERK13operator_desc">
-<span id="_CPPv3N2jd21transpose_matmul_desc21transpose_matmul_descERK13operator_desc"></span><span id="_CPPv2N2jd21transpose_matmul_desc21transpose_matmul_descERK13operator_desc"></span><span id="jd::transpose_matmul_desc::transpose_matmul_desc__operator_descCR"></span><span class="target" id="classjd_1_1transpose__matmul__desc_1afda98cb7581d049d9f3eda1f54e91449"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">transpose_matmul_desc</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd21transpose_matmul_desc21transpose_matmul_descERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd21transpose_matmul_descD0Ev">
-<span id="_CPPv3N2jd21transpose_matmul_descD0Ev"></span><span id="_CPPv2N2jd21transpose_matmul_descD0Ev"></span><span id="jd::transpose_matmul_desc::~transpose_matmul_desc"></span><span class="target" id="classjd_1_1transpose__matmul__desc_1a6518c08bd04f2171c6e830955434012b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~transpose_matmul_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd21transpose_matmul_descD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd14eltwiseop_descE">
-<span id="_CPPv3N2jd14eltwiseop_descE"></span><span id="_CPPv2N2jd14eltwiseop_descE"></span><span id="jd::eltwiseop_desc"></span><span class="target" id="classjd_1_1eltwiseop__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">eltwiseop_desc</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd14eltwiseop_descE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd14eltwiseop_desc14eltwiseop_descEv">
-<span id="_CPPv3N2jd14eltwiseop_desc14eltwiseop_descEv"></span><span id="_CPPv2N2jd14eltwiseop_desc14eltwiseop_descEv"></span><span id="jd::eltwiseop_desc::eltwiseop_desc"></span><span class="target" id="classjd_1_1eltwiseop__desc_1a56c835337a2c662586f3caef4fe8cf34"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">eltwiseop_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd14eltwiseop_desc14eltwiseop_descEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd14eltwiseop_desc14eltwiseop_descERK13operator_desc">
-<span id="_CPPv3N2jd14eltwiseop_desc14eltwiseop_descERK13operator_desc"></span><span id="_CPPv2N2jd14eltwiseop_desc14eltwiseop_descERK13operator_desc"></span><span id="jd::eltwiseop_desc::eltwiseop_desc__operator_descCR"></span><span class="target" id="classjd_1_1eltwiseop__desc_1a189dc99076c92ed8fc3ab32ca3d6fab4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">eltwiseop_desc</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd14eltwiseop_desc14eltwiseop_descERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd14eltwiseop_descD0Ev">
-<span id="_CPPv3N2jd14eltwiseop_descD0Ev"></span><span id="_CPPv2N2jd14eltwiseop_descD0Ev"></span><span id="jd::eltwiseop_desc::~eltwiseop_desc"></span><span class="target" id="classjd_1_1eltwiseop__desc_1a8e82a79e02eadce4a7744de046f8cbe1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~eltwiseop_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd14eltwiseop_descD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17layernorm_ba_descE">
-<span id="_CPPv3N2jd17layernorm_ba_descE"></span><span id="_CPPv2N2jd17layernorm_ba_descE"></span><span id="jd::layernorm_ba_desc"></span><span class="target" id="classjd_1_1layernorm__ba__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">layernorm_ba_desc</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd17layernorm_ba_descE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17layernorm_ba_desc17layernorm_ba_descEv">
-<span id="_CPPv3N2jd17layernorm_ba_desc17layernorm_ba_descEv"></span><span id="_CPPv2N2jd17layernorm_ba_desc17layernorm_ba_descEv"></span><span id="jd::layernorm_ba_desc::layernorm_ba_desc"></span><span class="target" id="classjd_1_1layernorm__ba__desc_1a48c9281a11c709ce8f1de5159f605efc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">layernorm_ba_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd17layernorm_ba_desc17layernorm_ba_descEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17layernorm_ba_desc17layernorm_ba_descERK13operator_desc">
-<span id="_CPPv3N2jd17layernorm_ba_desc17layernorm_ba_descERK13operator_desc"></span><span id="_CPPv2N2jd17layernorm_ba_desc17layernorm_ba_descERK13operator_desc"></span><span id="jd::layernorm_ba_desc::layernorm_ba_desc__operator_descCR"></span><span class="target" id="classjd_1_1layernorm__ba__desc_1a5b2f9d1dde3fec5265343eb9b2cbc582"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">layernorm_ba_desc</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd17layernorm_ba_desc17layernorm_ba_descERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd17layernorm_ba_descD0Ev">
-<span id="_CPPv3N2jd17layernorm_ba_descD0Ev"></span><span id="_CPPv2N2jd17layernorm_ba_descD0Ev"></span><span id="jd::layernorm_ba_desc::~layernorm_ba_desc"></span><span class="target" id="classjd_1_1layernorm__ba__desc_1afeab578af344d2c00274082bd2cc677d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~layernorm_ba_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd17layernorm_ba_descD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd11gather_descE">
-<span id="_CPPv3N2jd11gather_descE"></span><span id="_CPPv2N2jd11gather_descE"></span><span id="jd::gather_desc"></span><span class="target" id="classjd_1_1gather__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gather_desc</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd11gather_descE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd11gather_desc11gather_descEv">
-<span id="_CPPv3N2jd11gather_desc11gather_descEv"></span><span id="_CPPv2N2jd11gather_desc11gather_descEv"></span><span id="jd::gather_desc::gather_desc"></span><span class="target" id="classjd_1_1gather__desc_1a715e64dc0d5e6fce941785334c5efc89"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gather_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd11gather_desc11gather_descEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd11gather_desc11gather_descERK13operator_desc">
-<span id="_CPPv3N2jd11gather_desc11gather_descERK13operator_desc"></span><span id="_CPPv2N2jd11gather_desc11gather_descERK13operator_desc"></span><span id="jd::gather_desc::gather_desc__operator_descCR"></span><span class="target" id="classjd_1_1gather__desc_1af61fcddbcf7c51efb7fe64076ec75b5b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gather_desc</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd11gather_desc11gather_descERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd11gather_descD0Ev">
-<span id="_CPPv3N2jd11gather_descD0Ev"></span><span id="_CPPv2N2jd11gather_descD0Ev"></span><span id="jd::gather_desc::~gather_desc"></span><span class="target" id="classjd_1_1gather__desc_1a163b42d721ddb0279ae06a8b33c52f92"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~gather_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd11gather_descD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12softmax_descE">
-<span id="_CPPv3N2jd12softmax_descE"></span><span id="_CPPv2N2jd12softmax_descE"></span><span id="jd::softmax_desc"></span><span class="target" id="classjd_1_1softmax__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">softmax_desc</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd12softmax_descE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12softmax_desc12softmax_descEv">
-<span id="_CPPv3N2jd12softmax_desc12softmax_descEv"></span><span id="_CPPv2N2jd12softmax_desc12softmax_descEv"></span><span id="jd::softmax_desc::softmax_desc"></span><span class="target" id="classjd_1_1softmax__desc_1a83e0df4de229b330d1807960542865a0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">softmax_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12softmax_desc12softmax_descEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12softmax_desc12softmax_descERK13operator_desc">
-<span id="_CPPv3N2jd12softmax_desc12softmax_descERK13operator_desc"></span><span id="_CPPv2N2jd12softmax_desc12softmax_descERK13operator_desc"></span><span id="jd::softmax_desc::softmax_desc__operator_descCR"></span><span class="target" id="classjd_1_1softmax__desc_1a5fbb2e9159155a8ef069b0642d362d0a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">softmax_desc</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12softmax_desc12softmax_descERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12softmax_descD0Ev">
-<span id="_CPPv3N2jd12softmax_descD0Ev"></span><span id="_CPPv2N2jd12softmax_descD0Ev"></span><span id="jd::softmax_desc::~softmax_desc"></span><span class="target" id="classjd_1_1softmax__desc_1aa2c2f5b551a0b2ce3b0744767d76c6a2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~softmax_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12softmax_descD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd14attention_descE">
-<span id="_CPPv3N2jd14attention_descE"></span><span id="_CPPv2N2jd14attention_descE"></span><span id="jd::attention_desc"></span><span class="target" id="classjd_1_1attention__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">attention_desc</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd14attention_descE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd14attention_desc14attention_descEv">
-<span id="_CPPv3N2jd14attention_desc14attention_descEv"></span><span id="_CPPv2N2jd14attention_desc14attention_descEv"></span><span id="jd::attention_desc::attention_desc"></span><span class="target" id="classjd_1_1attention__desc_1a1004c5fa82ed056673d37fd2a45932ed"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">attention_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd14attention_desc14attention_descEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd14attention_desc14attention_descERK13operator_desc">
-<span id="_CPPv3N2jd14attention_desc14attention_descERK13operator_desc"></span><span id="_CPPv2N2jd14attention_desc14attention_descERK13operator_desc"></span><span id="jd::attention_desc::attention_desc__operator_descCR"></span><span class="target" id="classjd_1_1attention__desc_1a82e3ee2b2ea863eabfc9e693793c6310"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">attention_desc</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">operator_desc</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">op_desc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd14attention_desc14attention_descERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd14attention_descD0Ev">
-<span id="_CPPv3N2jd14attention_descD0Ev"></span><span id="_CPPv2N2jd14attention_descD0Ev"></span><span id="jd::attention_desc::~attention_desc"></span><span class="target" id="classjd_1_1attention__desc_1a434842aa146d01cb3ab8c770e1cc6d5a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~attention_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd14attention_descD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd13sparse_matmulE">
-<span id="_CPPv3N2jd13sparse_matmulE"></span><span id="_CPPv2N2jd13sparse_matmulE"></span><span id="jd::sparse_matmul"></span><span class="target" id="classjd_1_1sparse__matmul"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sparse_matmul</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd12kernel_proxyE" title="jd::kernel_proxy"><span class="n"><span class="pre">kernel_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd13sparse_matmulE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;interface.hpp&gt;</em></div>
-<p>Derived proxy class, interfacing to the real/cached sparse_matmul_t. </p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd13sparse_matmul13sparse_matmulEv">
-<span id="_CPPv3N2jd13sparse_matmul13sparse_matmulEv"></span><span id="_CPPv2N2jd13sparse_matmul13sparse_matmulEv"></span><span id="jd::sparse_matmul::sparse_matmul"></span><span class="target" id="classjd_1_1sparse__matmul_1adbcec17e8eeda716132bb8cd327aa3bd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sparse_matmul</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd13sparse_matmul13sparse_matmulEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd13sparse_matmul13sparse_matmulERK17kernel_desc_proxy">
-<span id="_CPPv3N2jd13sparse_matmul13sparse_matmulERK17kernel_desc_proxy"></span><span id="_CPPv2N2jd13sparse_matmul13sparse_matmulERK17kernel_desc_proxy"></span><span id="jd::sparse_matmul::sparse_matmul__kernel_desc_proxyCR"></span><span class="target" id="classjd_1_1sparse__matmul_1a57565e3fdfc12db61fd81ceb2a98aa4a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sparse_matmul</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kdp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd13sparse_matmul13sparse_matmulERK17kernel_desc_proxy" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd13sparse_matmulD0Ev">
-<span id="_CPPv3N2jd13sparse_matmulD0Ev"></span><span id="_CPPv2N2jd13sparse_matmulD0Ev"></span><span id="jd::sparse_matmul::~sparse_matmul"></span><span class="target" id="classjd_1_1sparse__matmul_1a7e5c75b33d6eb41f5124132468230fa3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~sparse_matmul</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd13sparse_matmulD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd16transpose_matmulE">
-<span id="_CPPv3N2jd16transpose_matmulE"></span><span id="_CPPv2N2jd16transpose_matmulE"></span><span id="jd::transpose_matmul"></span><span class="target" id="classjd_1_1transpose__matmul"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">transpose_matmul</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd12kernel_proxyE" title="jd::kernel_proxy"><span class="n"><span class="pre">kernel_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd16transpose_matmulE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd16transpose_matmul16transpose_matmulEv">
-<span id="_CPPv3N2jd16transpose_matmul16transpose_matmulEv"></span><span id="_CPPv2N2jd16transpose_matmul16transpose_matmulEv"></span><span id="jd::transpose_matmul::transpose_matmul"></span><span class="target" id="classjd_1_1transpose__matmul_1a073128a91dfb5df4a443d4ea03e2f5d5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">transpose_matmul</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd16transpose_matmul16transpose_matmulEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd16transpose_matmul16transpose_matmulERK17kernel_desc_proxy">
-<span id="_CPPv3N2jd16transpose_matmul16transpose_matmulERK17kernel_desc_proxy"></span><span id="_CPPv2N2jd16transpose_matmul16transpose_matmulERK17kernel_desc_proxy"></span><span id="jd::transpose_matmul::transpose_matmul__kernel_desc_proxyCR"></span><span class="target" id="classjd_1_1transpose__matmul_1ae1e65a8d7ce3bd4ebdd34968f3430e4d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">transpose_matmul</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kdp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd16transpose_matmul16transpose_matmulERK17kernel_desc_proxy" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd16transpose_matmulD0Ev">
-<span id="_CPPv3N2jd16transpose_matmulD0Ev"></span><span id="_CPPv2N2jd16transpose_matmulD0Ev"></span><span id="jd::transpose_matmul::~transpose_matmul"></span><span class="target" id="classjd_1_1transpose__matmul_1a1cdfaf0d9c67b44e7faa0382cc2b8d4d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~transpose_matmul</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd16transpose_matmulD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd9eltwiseopE">
-<span id="_CPPv3N2jd9eltwiseopE"></span><span id="_CPPv2N2jd9eltwiseopE"></span><span id="jd::eltwiseop"></span><span class="target" id="classjd_1_1eltwiseop"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">eltwiseop</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd12kernel_proxyE" title="jd::kernel_proxy"><span class="n"><span class="pre">kernel_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd9eltwiseopE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd9eltwiseop9eltwiseopEv">
-<span id="_CPPv3N2jd9eltwiseop9eltwiseopEv"></span><span id="_CPPv2N2jd9eltwiseop9eltwiseopEv"></span><span id="jd::eltwiseop::eltwiseop"></span><span class="target" id="classjd_1_1eltwiseop_1a15b5e14e2c854056ae9401282a68662a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">eltwiseop</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd9eltwiseop9eltwiseopEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd9eltwiseop9eltwiseopERK17kernel_desc_proxy">
-<span id="_CPPv3N2jd9eltwiseop9eltwiseopERK17kernel_desc_proxy"></span><span id="_CPPv2N2jd9eltwiseop9eltwiseopERK17kernel_desc_proxy"></span><span id="jd::eltwiseop::eltwiseop__kernel_desc_proxyCR"></span><span class="target" id="classjd_1_1eltwiseop_1ac89dffed3619c1009f3af1a1d732f4ba"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">eltwiseop</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kdp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd9eltwiseop9eltwiseopERK17kernel_desc_proxy" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd9eltwiseopD0Ev">
-<span id="_CPPv3N2jd9eltwiseopD0Ev"></span><span id="_CPPv2N2jd9eltwiseopD0Ev"></span><span id="jd::eltwiseop::~eltwiseop"></span><span class="target" id="classjd_1_1eltwiseop_1a409afd6385355b94d82db3c5daa45a7d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~eltwiseop</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd9eltwiseopD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12layernorm_baE">
-<span id="_CPPv3N2jd12layernorm_baE"></span><span id="_CPPv2N2jd12layernorm_baE"></span><span id="jd::layernorm_ba"></span><span class="target" id="classjd_1_1layernorm__ba"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">layernorm_ba</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd12kernel_proxyE" title="jd::kernel_proxy"><span class="n"><span class="pre">kernel_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd12layernorm_baE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12layernorm_ba12layernorm_baEv">
-<span id="_CPPv3N2jd12layernorm_ba12layernorm_baEv"></span><span id="_CPPv2N2jd12layernorm_ba12layernorm_baEv"></span><span id="jd::layernorm_ba::layernorm_ba"></span><span class="target" id="classjd_1_1layernorm__ba_1aa0fa3622346def795a6ceab22c147efd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">layernorm_ba</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12layernorm_ba12layernorm_baEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12layernorm_ba12layernorm_baERK17kernel_desc_proxy">
-<span id="_CPPv3N2jd12layernorm_ba12layernorm_baERK17kernel_desc_proxy"></span><span id="_CPPv2N2jd12layernorm_ba12layernorm_baERK17kernel_desc_proxy"></span><span id="jd::layernorm_ba::layernorm_ba__kernel_desc_proxyCR"></span><span class="target" id="classjd_1_1layernorm__ba_1aa246e85b7b7e10c2610f5482cfc4c503"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">layernorm_ba</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kdp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12layernorm_ba12layernorm_baERK17kernel_desc_proxy" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd12layernorm_baD0Ev">
-<span id="_CPPv3N2jd12layernorm_baD0Ev"></span><span id="_CPPv2N2jd12layernorm_baD0Ev"></span><span id="jd::layernorm_ba::~layernorm_ba"></span><span class="target" id="classjd_1_1layernorm__ba_1ae077b38de70a330517b68ecd5fc7df66"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~layernorm_ba</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd12layernorm_baD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd6gatherE">
-<span id="_CPPv3N2jd6gatherE"></span><span id="_CPPv2N2jd6gatherE"></span><span id="jd::gather"></span><span class="target" id="classjd_1_1gather"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gather</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd12kernel_proxyE" title="jd::kernel_proxy"><span class="n"><span class="pre">kernel_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd6gatherE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd6gather6gatherEv">
-<span id="_CPPv3N2jd6gather6gatherEv"></span><span id="_CPPv2N2jd6gather6gatherEv"></span><span id="jd::gather::gather"></span><span class="target" id="classjd_1_1gather_1a0fd72be999cc3317e12dee959e33ffcb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gather</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd6gather6gatherEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd6gather6gatherERK17kernel_desc_proxy">
-<span id="_CPPv3N2jd6gather6gatherERK17kernel_desc_proxy"></span><span id="_CPPv2N2jd6gather6gatherERK17kernel_desc_proxy"></span><span id="jd::gather::gather__kernel_desc_proxyCR"></span><span class="target" id="classjd_1_1gather_1a21bf6199dccbc2f4ad4ce6884393cf21"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">gather</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kdp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd6gather6gatherERK17kernel_desc_proxy" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd6gatherD0Ev">
-<span id="_CPPv3N2jd6gatherD0Ev"></span><span id="_CPPv2N2jd6gatherD0Ev"></span><span id="jd::gather::~gather"></span><span class="target" id="classjd_1_1gather_1adb4554e78764f07b06fab684a7e6edb3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~gather</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd6gatherD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd7softmaxE">
-<span id="_CPPv3N2jd7softmaxE"></span><span id="_CPPv2N2jd7softmaxE"></span><span id="jd::softmax"></span><span class="target" id="classjd_1_1softmax"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">softmax</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd12kernel_proxyE" title="jd::kernel_proxy"><span class="n"><span class="pre">kernel_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd7softmaxE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd7softmax7softmaxEv">
-<span id="_CPPv3N2jd7softmax7softmaxEv"></span><span id="_CPPv2N2jd7softmax7softmaxEv"></span><span id="jd::softmax::softmax"></span><span class="target" id="classjd_1_1softmax_1a89c6ba7a03b1f0739783691727d25867"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">softmax</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd7softmax7softmaxEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd7softmax7softmaxERK17kernel_desc_proxy">
-<span id="_CPPv3N2jd7softmax7softmaxERK17kernel_desc_proxy"></span><span id="_CPPv2N2jd7softmax7softmaxERK17kernel_desc_proxy"></span><span id="jd::softmax::softmax__kernel_desc_proxyCR"></span><span class="target" id="classjd_1_1softmax_1a4f276adc405034f887a51b45f5e6e1d1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">softmax</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kdp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd7softmax7softmaxERK17kernel_desc_proxy" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd7softmaxD0Ev">
-<span id="_CPPv3N2jd7softmaxD0Ev"></span><span id="_CPPv2N2jd7softmaxD0Ev"></span><span id="jd::softmax::~softmax"></span><span class="target" id="classjd_1_1softmax_1a525dcdafc7da2f32e61fc7a91fec453a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~softmax</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd7softmaxD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd9attentionE">
-<span id="_CPPv3N2jd9attentionE"></span><span id="_CPPv2N2jd9attentionE"></span><span id="jd::attention"></span><span class="target" id="classjd_1_1attention"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">attention</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N2jd12kernel_proxyE" title="jd::kernel_proxy"><span class="n"><span class="pre">kernel_proxy</span></span></a><a class="headerlink" href="#_CPPv4N2jd9attentionE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd9attention9attentionEv">
-<span id="_CPPv3N2jd9attention9attentionEv"></span><span id="_CPPv2N2jd9attention9attentionEv"></span><span id="jd::attention::attention"></span><span class="target" id="classjd_1_1attention_1a9f319a2b76752979025609bdb0a593d3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">attention</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd9attention9attentionEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd9attention9attentionERK17kernel_desc_proxy">
-<span id="_CPPv3N2jd9attention9attentionERK17kernel_desc_proxy"></span><span id="_CPPv2N2jd9attention9attentionERK17kernel_desc_proxy"></span><span id="jd::attention::attention__kernel_desc_proxyCR"></span><span class="target" id="classjd_1_1attention_1aa959e0c2353c087ba42f6596422d0c36"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">attention</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd17kernel_desc_proxyE" title="jd::kernel_desc_proxy"><span class="n"><span class="pre">kernel_desc_proxy</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kdp</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd9attention9attentionERK17kernel_desc_proxy" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd9attentionD0Ev">
-<span id="_CPPv3N2jd9attentionD0Ev"></span><span id="_CPPv2N2jd9attentionD0Ev"></span><span id="jd::attention::~attention"></span><span class="target" id="classjd_1_1attention_1ad66d21e07544807fdecdd07c756b35f7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~attention</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd9attentionD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="cpp type">
-<dt class="sig sig-object cpp">
-<span class="target" id="namespacejd"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">jd</span></span></span><br /></dt>
-<dd><dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_tE">
-<span id="_CPPv3N2jd8kernel_tE"></span><span id="_CPPv2N2jd8kernel_tE"></span><span id="jd::kernel_t"></span><span class="target" id="classjd_1_1kernel__t"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_t</span></span></span><a class="headerlink" href="#_CPPv4N2jd8kernel_tE" title="Permalink to this definition"></a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;kernel.hpp&gt;</em></div>
-<p>kernel/primitive implementation real class. </p>
-<p>Subclassed by jd::attention_k_t, jd::attention_ref_k_t, jd::eltwiseop_k_t, jd::eltwiseop_ref_k_t, jd::gather_k_t, jd::gather_ref_k_t, jd::layernorm_ba_k_t, jd::layernorm_ba_ref_k_t, jd::matmul_avx512f_p2031_p2013_k_t, jd::matmul_ref_k_t, jd::matmul_vnni_noperm_p2031_p1302_k_t, jd::matmul_vnni_p2031_p2013_k_t, jd::softmax_k_t, jd::softmax_ref_k_t, jd::spmm_amx_bf16_x16_k_t, jd::spmm_avx512f_k_t, jd::spmm_ref_k_t, jd::spmm_vnni_k_t</p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_t8kernel_tERKNSt10shared_ptrIK13kernel_desc_tEE">
-<span id="_CPPv3N2jd8kernel_t8kernel_tERKNSt10shared_ptrIK13kernel_desc_tEE"></span><span id="_CPPv2N2jd8kernel_t8kernel_tERKNSt10shared_ptrIK13kernel_desc_tEE"></span><span id="jd::kernel_t::kernel_t__std::shared_ptr:kernel_desc_tC:CR"></span><span class="target" id="classjd_1_1kernel__t_1aca14e1ae17b9210f96fba970c66ca707"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kernel_t</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">kernel_desc_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kd</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd8kernel_t8kernel_tERKNSt10shared_ptrIK13kernel_desc_tEE" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_tD0Ev">
-<span id="_CPPv3N2jd8kernel_tD0Ev"></span><span id="_CPPv2N2jd8kernel_tD0Ev"></span><span id="jd::kernel_t::~kernel_t"></span><span class="target" id="classjd_1_1kernel__t_1a40232185a3750225dbb9490d2a4903a9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~kernel_t</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd8kernel_tD0Ev" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_t8kernel_tERR8kernel_t">
-<span id="_CPPv3N2jd8kernel_t8kernel_tERR8kernel_t"></span><span id="_CPPv2N2jd8kernel_t8kernel_tERR8kernel_t"></span><span id="jd::kernel_t::kernel_t__kernel_tRR"></span><span class="target" id="classjd_1_1kernel__t_1ac0cab6d8f644b6d54529292573456d50"></span><span class="sig-name descname"><span class="n"><span class="pre">kernel_t</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N2jd8kernel_t8kernel_tERR8kernel_t" title="jd::kernel_t::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N2jd8kernel_t8kernel_tERR8kernel_t" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_taSERR8kernel_t">
-<span id="_CPPv3N2jd8kernel_taSERR8kernel_t"></span><span id="_CPPv2N2jd8kernel_taSERR8kernel_t"></span><span id="jd::kernel_t::assign-operator__kernel_tRR"></span><span class="target" id="classjd_1_1kernel__t_1a07ca1664008809cb3ecf8134bce566c4"></span><a class="reference internal" href="#_CPPv4N2jd8kernel_tE" title="jd::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N2jd8kernel_tE" title="jd::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N2jd8kernel_taSERR8kernel_t" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_t8kernel_tERK8kernel_t">
-<span id="_CPPv3N2jd8kernel_t8kernel_tERK8kernel_t"></span><span id="_CPPv2N2jd8kernel_t8kernel_tERK8kernel_t"></span><span id="jd::kernel_t::kernel_t__kernel_tCR"></span><span class="target" id="classjd_1_1kernel__t_1ac256bb938a91565e024fc6e44fb2607a"></span><span class="sig-name descname"><span class="n"><span class="pre">kernel_t</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd8kernel_t8kernel_tERK8kernel_t" title="jd::kernel_t::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N2jd8kernel_t8kernel_tERK8kernel_t" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_taSERK8kernel_t">
-<span id="_CPPv3N2jd8kernel_taSERK8kernel_t"></span><span id="_CPPv2N2jd8kernel_taSERK8kernel_t"></span><span id="jd::kernel_t::assign-operator__kernel_tCR"></span><span class="target" id="classjd_1_1kernel__t_1a557d3f7ddb13ada2e2bb95058f730476"></span><a class="reference internal" href="#_CPPv4N2jd8kernel_tE" title="jd::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd8kernel_tE" title="jd::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N2jd8kernel_taSERK8kernel_t" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_t4initEv">
-<span id="_CPPv3N2jd8kernel_t4initEv"></span><span id="_CPPv2N2jd8kernel_t4initEv"></span><span id="jd::kernel_t::init"></span><span class="target" id="classjd_1_1kernel__t_1afa5d86f7845326d1df31272d967680f6"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">init</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N2jd8kernel_t4initEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK2jd8kernel_t7executeERKNSt6vectorIPKvEE">
-<span id="_CPPv3NK2jd8kernel_t7executeERKNSt6vectorIPKvEE"></span><span id="_CPPv2NK2jd8kernel_t7executeERKNSt6vectorIPKvEE"></span><span id="jd::kernel_t::execute__std::vector:voidCP:CRC"></span><span class="target" id="classjd_1_1kernel__t_1a0ba577db4280e0454882814c28a2779e"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">execute</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rt_data</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK2jd8kernel_t7executeERKNSt6vectorIPKvEE" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK2jd8kernel_t2kdEv">
-<span id="_CPPv3NK2jd8kernel_t2kdEv"></span><span id="_CPPv2NK2jd8kernel_t2kdEv"></span><span id="jd::kernel_t::kdC"></span><span class="target" id="classjd_1_1kernel__t_1ae8b538640876506aa54a6b46b2abfcb2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">kernel_desc_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">kd</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd8kernel_t2kdEv" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-functions">Public Static Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4I00EN2jd8kernel_t6createEbRNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE">
-<span id="_CPPv3I00EN2jd8kernel_t6createERNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE"></span><span id="_CPPv2I00EN2jd8kernel_t6createERNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">derived_k_t</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">derived_kd_t</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classjd_1_1kernel__t_1a7b1efd73af0f85878cbc13174469344d"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">create</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd8kernel_tE" title="jd::kernel_t"><span class="n"><span class="pre">kernel_t</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">k_ref</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">kernel_desc_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">kd</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN2jd8kernel_t6createEbRNSt10shared_ptrIK8kernel_tEERKNSt10shared_ptrIK13kernel_desc_tEE" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-protected-attributes">Protected Attributes</p>
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv4N2jd8kernel_t3kd_E">
-<span id="_CPPv3N2jd8kernel_t3kd_E"></span><span id="_CPPv2N2jd8kernel_t3kd_E"></span><span id="jd::kernel_t::kd___std::shared_ptr:kernel_desc_tC:"></span><span class="target" id="classjd_1_1kernel__t_1a15441ac930181ffd6058d0dbe812d582"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">kernel_desc_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">kd_</span></span></span><a class="headerlink" href="#_CPPv4N2jd8kernel_t3kd_E" title="Permalink to this definition"></a><br /></dt>
-<dd></dd></dl>
-
-</div>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../../intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_mha.html" class="btn btn-neutral float-left" title="Transposed MHA" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="interface.html" class="btn btn-neutral float-right" title="Class Kernel" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

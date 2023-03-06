@@ -1,8 +1,24 @@
-:orphan:
-
 :py:mod:`intel_extension_for_transformers.optimization.pytorch_pruner`
 ======================================================================
 
 .. py:module:: intel_extension_for_transformers.optimization.pytorch_pruner
+
+.. autoapi-nested-parse::
+
+   PyTorch Pruner module.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   patterns/index.rst
+   prune_utils/index.rst
+   pruner/index.rst
+   pruning/index.rst
+   scheduler/index.rst
 
 

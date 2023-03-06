@@ -13,17 +13,15 @@
     <script src="../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
-        <script src="../../../../../../_static/jquery.js"></script>
-        <script src="../../../../../../_static/underscore.js"></script>
-        <script src="../../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../_static/sphinx_highlight.js"></script>
     <script src="../../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../../search.html" />
-    <link rel="next" title="Validation Performance Data" href="validated_data.html" />
-    <link rel="prev" title="Transformers-accelerated Libraries" href="../README.html" /> 
+    <link rel="next" title="Validated Performance Data" href="validated_data.html" />
+    <link rel="prev" title="Performance" href="../../../../../../kernel_perf.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -52,16 +50,20 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../kernel.html">Transformers-accelerated Libraries</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../README.html">Transformers-accelerated Libraries</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Performance and Profiling</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#verbose">Verbose</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#vtune">VTune</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sde">SDE</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../kernel_perf.html">Performance</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Performance and Profiling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#verbose">Verbose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#vtune">VTune</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sde">SDE</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="validated_data.html">Validation Performance Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../api_doc/api_kernel.html">C++ APIs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="validated_data.html">Validated Performance Data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../kernel_desc.html">Implementation Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../api_doc/kernel/api_c.html">Kernels C++ APIs</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
@@ -81,7 +83,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../../../../../../kernel.html">Transformers-accelerated Libraries</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../kernel.html">Kernels</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../kernel_perf.html">Performance</a></li>
       <li class="breadcrumb-item active">Performance and Profiling</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.md.txt" rel="nofollow"> View page source</a>
@@ -263,8 +266,8 @@ path/to/sde/xed64<span class="w"> </span>-64<span class="w"> </span>-ir<span cla
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../README.html" class="btn btn-neutral float-left" title="Transformers-accelerated Libraries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="validated_data.html" class="btn btn-neutral float-right" title="Validation Performance Data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../../../../../../kernel_perf.html" class="btn btn-neutral float-left" title="Performance" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="validated_data.html" class="btn btn-neutral float-right" title="Validated Performance Data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

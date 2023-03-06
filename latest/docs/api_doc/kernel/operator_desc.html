@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Class operator_desc &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Operator Specific Types" href="types.html" />
+    <link rel="prev" title="Class engine" href="engine.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../xtransformers.html">Intel® Extension for Transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kernel_desc.html">Implementation Details</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="api_c.html">Kernels C++ APIs</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="interface.html">Class Kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine.html">Class engine</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Class operator_desc</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv42jd">namespace jd</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="types.html">Operator Specific Types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../kernel.html">Kernels</a></li>
+          <li class="breadcrumb-item"><a href="api_c.html">Kernels C++ APIs</a></li>
+      <li class="breadcrumb-item active">Class operator_desc</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/docs/api_doc/kernel/operator_desc.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="class-operator-desc">
+<h1>Class operator_desc<a class="headerlink" href="#class-operator-desc" title="Permalink to this heading"></a></h1>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv42jd">
+<span id="_CPPv32jd"></span><span id="_CPPv22jd"></span><span id="jd"></span><span class="target" id="namespacejd"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">jd</span></span></span><br /></dt>
+<dd><dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_descE">
+<span id="_CPPv3N2jd13operator_descE"></span><span id="_CPPv2N2jd13operator_descE"></span><span id="jd::operator_desc"></span><span class="target" id="classjd_1_1operator__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">operator_desc</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_descE" title="Permalink to this definition"></a><br /></dt>
+<dd><div class="docutils container">
+<em>#include &lt;operator_desc.hpp&gt;</em></div>
+<p>The operator descriptor class, describing a specific kind of operator. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc13operator_descEv">
+<span id="_CPPv3N2jd13operator_desc13operator_descEv"></span><span id="_CPPv2N2jd13operator_desc13operator_descEv"></span><span id="jd::operator_desc::operator_desc"></span><span class="target" id="classjd_1_1operator__desc_1a6d0ac2ec09c17c61437a1ce3bb75c2fb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">operator_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd13operator_desc13operator_descEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc13operator_descERKN2jd11kernel_kindERKN2jd11kernel_propERKN2jd11engine_kindERKNSt6vectorI11tensor_descEERKNSt13unordered_mapINSt6stringENSt6stringEEERKNSt6vectorI11postop_attrEE">
+<span id="_CPPv3N2jd13operator_desc13operator_descERKN2jd11kernel_kindERKN2jd11kernel_propERKN2jd11engine_kindERKNSt6vectorI11tensor_descEERKNSt13unordered_mapINSt6stringENSt6stringEEERKNSt6vectorI11postop_attrEE"></span><span id="_CPPv2N2jd13operator_desc13operator_descERKN2jd11kernel_kindERKN2jd11kernel_propERKN2jd11engine_kindERKNSt6vectorI11tensor_descEERKNSt13unordered_mapINSt6stringENSt6stringEEERKNSt6vectorI11postop_attrEE"></span><span id="jd::operator_desc::operator_desc__jd::kernel_kindCR.jd::kernel_propCR.jd::engine_kindCR.std::vector:tensor_desc:CR.std::unordered_map:ss.ss:CR.std::vector:postop_attr:CR"></span><span class="target" id="classjd_1_1operator__desc_1a68afb739f628f23408ec903b25264913"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">operator_desc</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">kernel_kind</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ker_kind</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">kernel_prop</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ker_prop</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">engine_kind</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">eng_kind</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">tensor_desc</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ts_descs</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unordered_map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">attrs</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">postop_attr</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">apply_postops_list</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd13operator_desc13operator_descERKN2jd11kernel_kindERKN2jd11kernel_propERKN2jd11engine_kindERKNSt6vectorI11tensor_descEERKNSt13unordered_mapINSt6stringENSt6stringEEERKNSt6vectorI11postop_attrEE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_descD0Ev">
+<span id="_CPPv3N2jd13operator_descD0Ev"></span><span id="_CPPv2N2jd13operator_descD0Ev"></span><span id="jd::operator_desc::~operator_desc"></span><span class="target" id="classjd_1_1operator__desc_1abb1f63380ba69fac57c7642cd12c21a1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~operator_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd13operator_descD0Ev" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desceqERK13operator_desc">
+<span id="_CPPv3NK2jd13operator_desceqERK13operator_desc"></span><span id="_CPPv2NK2jd13operator_desceqERK13operator_desc"></span><span id="jd::operator_desc::eq-operator__operator_descCRC"></span><span class="target" id="classjd_1_1operator__desc_1a462d78f802bc157ee525487f4ccf61a6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N2jd13operator_descE" title="jd::operator_desc"><span class="n"><span class="pre">operator_desc</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desceqERK13operator_desc" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc17set_binaryop_listERKNSt6vectorI13binaryop_attrEE">
+<span id="_CPPv3N2jd13operator_desc17set_binaryop_listERKNSt6vectorI13binaryop_attrEE"></span><span id="_CPPv2N2jd13operator_desc17set_binaryop_listERKNSt6vectorI13binaryop_attrEE"></span><span id="jd::operator_desc::set_binaryop_list__std::vector:binaryop_attr:CR"></span><span class="target" id="classjd_1_1operator__desc_1a4ca160c0dc4e59e4fb52d4ec5b5dc318"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_binaryop_list</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">binaryop_attr</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">binaryop_list</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N2jd13operator_desc17set_binaryop_listERKNSt6vectorI13binaryop_attrEE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc11kernel_kindEv">
+<span id="_CPPv3NK2jd13operator_desc11kernel_kindEv"></span><span id="_CPPv2NK2jd13operator_desc11kernel_kindEv"></span><span id="jd::operator_desc::kernel_kindC"></span><span class="target" id="classjd_1_1operator__desc_1ab7224afb78319462b24249065ab804f8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">kernel_kind</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">kernel_kind</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc11kernel_kindEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc11kernel_propEv">
+<span id="_CPPv3NK2jd13operator_desc11kernel_propEv"></span><span id="_CPPv2NK2jd13operator_desc11kernel_propEv"></span><span id="jd::operator_desc::kernel_propC"></span><span class="target" id="classjd_1_1operator__desc_1a2324d6e7c83209b9394b1ff6d313bb93"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">kernel_prop</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">kernel_prop</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc11kernel_propEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc11engine_kindEv">
+<span id="_CPPv3NK2jd13operator_desc11engine_kindEv"></span><span id="_CPPv2NK2jd13operator_desc11engine_kindEv"></span><span id="jd::operator_desc::engine_kindC"></span><span class="target" id="classjd_1_1operator__desc_1a91efc452065b2c089942f882e13c30c5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">engine_kind</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">engine_kind</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc11engine_kindEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc9impl_nthrEv">
+<span id="_CPPv3NK2jd13operator_desc9impl_nthrEv"></span><span id="_CPPv2NK2jd13operator_desc9impl_nthrEv"></span><span id="jd::operator_desc::impl_nthrC"></span><span class="target" id="classjd_1_1operator__desc_1af549034ecb7a64363f4e3bf5bf9a800b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">impl_nthr</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc9impl_nthrEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc12tensor_descsEv">
+<span id="_CPPv3NK2jd13operator_desc12tensor_descsEv"></span><span id="_CPPv2NK2jd13operator_desc12tensor_descsEv"></span><span id="jd::operator_desc::tensor_descsC"></span><span class="target" id="classjd_1_1operator__desc_1afda5b3db0d0b3ed3c9ab704d6663e5ff"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">tensor_desc</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">tensor_descs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc12tensor_descsEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc5attrsEv">
+<span id="_CPPv3NK2jd13operator_desc5attrsEv"></span><span id="_CPPv2NK2jd13operator_desc5attrsEv"></span><span id="jd::operator_desc::attrsC"></span><span class="target" id="classjd_1_1operator__desc_1a22f0f2e75dab5be17d13da511d051032"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unordered_map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">attrs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc5attrsEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc18apply_postops_listEv">
+<span id="_CPPv3NK2jd13operator_desc18apply_postops_listEv"></span><span id="_CPPv2NK2jd13operator_desc18apply_postops_listEv"></span><span id="jd::operator_desc::apply_postops_listC"></span><span class="target" id="classjd_1_1operator__desc_1a9ca82906156332436472fb1deceb4ba1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">postop_attr</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">apply_postops_list</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc18apply_postops_listEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc17get_binaryop_listEv">
+<span id="_CPPv3NK2jd13operator_desc17get_binaryop_listEv"></span><span id="_CPPv2NK2jd13operator_desc17get_binaryop_listEv"></span><span id="jd::operator_desc::get_binaryop_listC"></span><span class="target" id="classjd_1_1operator__desc_1aa78c4084a4c0ef5b17ce75da2f0cb75e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">binaryop_attr</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_binaryop_list</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc17get_binaryop_listEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-private-members">Private Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc9ker_kind_E">
+<span id="_CPPv3N2jd13operator_desc9ker_kind_E"></span><span id="_CPPv2N2jd13operator_desc9ker_kind_E"></span><span id="jd::operator_desc::ker_kind___jd::kernel_kind"></span><span class="target" id="classjd_1_1operator__desc_1aa20b0b1d91ee8e053440ea06b790dab2"></span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">kernel_kind</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ker_kind_</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_desc9ker_kind_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc9ker_prop_E">
+<span id="_CPPv3N2jd13operator_desc9ker_prop_E"></span><span id="_CPPv2N2jd13operator_desc9ker_prop_E"></span><span id="jd::operator_desc::ker_prop___jd::kernel_prop"></span><span class="target" id="classjd_1_1operator__desc_1ac5a13b22027e59d8699a6e6839d6bf1e"></span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">kernel_prop</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ker_prop_</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_desc9ker_prop_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc9eng_kind_E">
+<span id="_CPPv3N2jd13operator_desc9eng_kind_E"></span><span id="_CPPv2N2jd13operator_desc9eng_kind_E"></span><span id="jd::operator_desc::eng_kind___jd::engine_kind"></span><span class="target" id="classjd_1_1operator__desc_1a91998b0bc80a1e1239e91ffcdbed4d4d"></span><a class="reference internal" href="engine.html#_CPPv42jd" title="jd"><span class="n"><span class="pre">jd</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">engine_kind</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">eng_kind_</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_desc9eng_kind_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc10impl_nthr_E">
+<span id="_CPPv3N2jd13operator_desc10impl_nthr_E"></span><span id="_CPPv2N2jd13operator_desc10impl_nthr_E"></span><span id="jd::operator_desc::impl_nthr___uint64_t"></span><span class="target" id="classjd_1_1operator__desc_1a9360cb01c83bf354c88495cf57534efa"></span><span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">impl_nthr_</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_desc10impl_nthr_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc9ts_descs_E">
+<span id="_CPPv3N2jd13operator_desc9ts_descs_E"></span><span id="_CPPv2N2jd13operator_desc9ts_descs_E"></span><span id="jd::operator_desc::ts_descs___std::vector:tensor_desc:"></span><span class="target" id="classjd_1_1operator__desc_1adccb067b0d91e566a093c022ad815baa"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">tensor_desc</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ts_descs_</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_desc9ts_descs_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc6attrs_E">
+<span id="_CPPv3N2jd13operator_desc6attrs_E"></span><span id="_CPPv2N2jd13operator_desc6attrs_E"></span><span id="jd::operator_desc::attrs___std::unordered_map:ss.ss:"></span><span class="target" id="classjd_1_1operator__desc_1a4a05658164a36cdb25ecdc47d40326a9"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unordered_map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">attrs_</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_desc6attrs_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc19apply_postops_list_E">
+<span id="_CPPv3N2jd13operator_desc19apply_postops_list_E"></span><span id="_CPPv2N2jd13operator_desc19apply_postops_list_E"></span><span id="jd::operator_desc::apply_postops_list___std::vector:postop_attr:"></span><span class="target" id="classjd_1_1operator__desc_1a24094b308bd35743fe14b4adde2417bc"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">postop_attr</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">apply_postops_list_</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_desc19apply_postops_list_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_desc14binaryop_list_E">
+<span id="_CPPv3N2jd13operator_desc14binaryop_list_E"></span><span id="_CPPv2N2jd13operator_desc14binaryop_list_E"></span><span id="jd::operator_desc::binaryop_list___std::vector:binaryop_attr:"></span><span class="target" id="classjd_1_1operator__desc_1ac6a60a9aee95e818244698568ad33801"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">binaryop_attr</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">binaryop_list_</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_desc14binaryop_list_E" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="engine.html" class="btn btn-neutral float-left" title="Class engine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="types.html" class="btn btn-neutral float-right" title="Operator Specific Types" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

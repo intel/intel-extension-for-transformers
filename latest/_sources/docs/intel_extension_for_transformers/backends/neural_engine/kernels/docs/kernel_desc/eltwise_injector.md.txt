@@ -1,3 +1,4 @@
+# Element-wise Injector
 - [Introduction](#introduction)
 - [Framework Features](#framework-features)
   - [param\_types.hpp](#param_typeshpp)
@@ -9,14 +10,14 @@
   - [User's Perspective](#users-perspective)
 
 <a name="VRz3S"></a>
-# Introduction
+## Introduction
 op-fusion is a very widely used optimization approach in Deep-Learning. Considering we have two ops, Conv and Relu, in traditional way, we apply Conv op first, then store the value in the memory, after that we load the value and apply Relu. Obviously there have a useless load&store operations, we can fuse the Conv&Relu to remove the useless I/O, this is the key idea about op-fusion.<br />
 In Transformers-accelerated Libraries, we will provide a new class named injector for the op-fusion. From the perspective of the developers who want to apply the op-fusion optimization, they can make the injector a member of their jit_kernel class and initialize it in the kernel class's construct function, when they want to apply postop, just need to call **eltwise_injector->vector_compute** and tell injector what registers has been used by **eltwise_injector->escape_regs**. Besides, the upper-level users also should call **eltwise_injector->prepare_table** to prepare the LUT which element-wise-op needs at the end of their xbyak kernel.<br />
 **eltwise-injector** supports 8 operators currently, there are exp, tanh, gelu, relu, linear, quantize(fp32->u8/s8), dequantize(u8/s8->fp32) and look-up result from LUT(as experimental API now). **eltwise_injector** also supports a postop-chain for applying multiple postops(pure-eltwise op now, will support binary-op in the future) sequentially.
 <a name="vY7m9"></a>
-# Framework Features
+## Framework Features
 <a name="Bu07F"></a>
-## param_types.hpp
+### param_types.hpp
 Follow classes/structs will be introduced. The most important class is `postop_attr`, which indicate the postop's attribute developer wants to apply, including data_type(e.g. fp32/bf16), op_type(only support eltwise now), algo_type(e.g. Gelu/Relu), aplha(zero points for quantization), beta, sacle for some operators such as linear&quantize.
 ```cpp
 enum class postop_alg : uint8_t { exp, gelu, tanh, gelu, relu, quantize, dequantize, linear, int8_lut };
@@ -41,7 +42,7 @@ class postop_attr {
 };
 ```
 
-### alpha,beta,scale meaning
+#### alpha,beta,scale meaning
 these 3 params are only used in quantize, dequantize, linear, relu.  
 The quantize's mathematical definition is fp32=saturate(round(int8/scale+zero_point)) and the dequantize's mathematical definition is int8=(fp32-zero_point)*scale. In these two operators,alpha represents zero_point, scale represents scale and beta is unused.  
 The mathematical definition of linear is y=αx+β. attr's alpha represents alpha, beta represents beta and scale is unused.  
@@ -57,7 +58,7 @@ x & \text{if $x \gt 0 $}
 $$
 
 <a name="raAMd"></a>
-## operator_desc.hpp
+### operator_desc.hpp
 The member `apply_postops_list_`store the `postop_attr` which user want to apply.
 ```cpp
 class operator_desc {
@@ -86,7 +87,7 @@ class operator_desc {
 }
 ```
 <a name="hZaPk"></a>
-## jit_eltwise_injector.hpp
+### jit_eltwise_injector.hpp
 We design an element-wise injector named eltwise_injector which can apply eltwise-ops. We will combine the injectors like eltwise_injector, binary_injector into a new injector named postop-injector in the future.<br />Here are the APIs which eltwise_injector expose to the developer:<br />`eltwise_injector_init` is used for injector initialization.<br />`vector_compute` is used for executing the postop calculate, users can indicate the eltwiseop's idx to select the op which they want to apply, if the idx list is empty, the injector will apply all ops in postop-chian.<br />`escape_regs` is used for telling injector which registers have been used in upper-level kernel.All dst zmm registers should be registered.<br />
 `escape_erase` is used for removing the specified type register ID from used_regs set, if reg_idx is not given,this function will erase all IDs by default.   
 `prepare_table` is used for inserting the LUT which injected code needed at the end of the upper-level kernel.  
@@ -104,8 +105,8 @@ class jit_eltwise_injector {
 };
 ```
 <a name="AHBMr"></a>
-# Usage
-## Developer's Perspective.
+## Usage
+### Developer's Perspective.
 <a name="EibWR"></a>
 step0. Add a postop_attrs vector member in your params for pass the postop_attrs to the jit_kernel
 ```cpp
@@ -179,7 +180,7 @@ void jit_eltwiseop_t::generate() {
 ```
 **NOTE:The postops will be apply **`in-place`** and storing work is upper op's task.**
 <a name="rV6bL"></a>
-## User's Perspective
+### User's Perspective
 This is the guide about how to set op-fusion in UT in user's perspective.
 <a name="IqCA0"></a>
 step0. Prepare the postop_attr

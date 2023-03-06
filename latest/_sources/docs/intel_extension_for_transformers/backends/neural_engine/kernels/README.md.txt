@@ -1,4 +1,4 @@
-# Transformers-accelerated Libraries
+# Transformers-Accelerated Libraries
 ===========================================
 
 ## Introduction
@@ -26,7 +26,7 @@ make -j
 ```
 
 ### Performance
-We provide a benchmark tool to measure the performance out of box, please refer to [benchmark](../test/kernels/benchmark/README.md) for more details.
+We provide a benchmark tool to measure the performance out of box, please refer to [benchmark](../test/kernels/benchmark/benchmark.md) for more details.
 For advanced users, please refer to [profling section](docs/profiling.md).
 
 ## API reference for users
@@ -43,12 +43,16 @@ For advanced users, please refer to [profling section](docs/profiling.md).
 ```
 Refer to corresponding [unit test](../test/gtest/kernels/) for examples.
 
-## Developer guide for developers
-* The jit_domain/ directory, containing different JIT assemblies (Derived class of Xbyak::CodeGenerator).
-* The kernels/ directory, containing derived classes of different kernels.
-* For different kernels: by convention,
-  1. xxxx_kd_t is the descriptor of a specific derived primitive/kernel.
-  2. xxxx_k_t is a specific derived primitive/kernel.
-  3. jit_xxxx_t is JIT assembly implementation of a specific derived primitive/kernel.
-  where, "xxxx" represents an algorithm, such as brgemm, GEMM and so on.
-* The kernel is determined by the kernel main-kind and kernel isomer. After determining the kernel, it can be implemented by different algorithms. This is the design logic.
+
+## Supported Matrix
+
+| Operator                    | Type          | ISA               |
+| --------------------------- | ------------- | ----------------- |
+| [InnerProduct](docs/kernel_desc/kernel_vnni.md)                | Dense/Sparse  | VNNI, AMX         |
+| InnerProduct + [element-wise](docs/kernel_desc/eltwise_injector.md) | Sparse        | VNNI, AMX         |
+| InnerProduct + [residual-add](docs/kernel_desc/binaryop_injector.md) | Sparse        | VNNI, AMX         |
+| [InnerProduct + layernorm](docs/kernel_desc/kernel_layernormalized_spmm.md)    | Sparse        | VNNI, AMX         |
+| SoftMax/GeLU LUT            | NA            | VNNI, AVX512-BF16 |
+| MHA                         | Dense         | AMX-INT8          |
+| [Transposed MHA](docs/kernel_desc/kernel_transpose_mha.md)              | Sparse        | AMX-INT8, VNNI    |
+| Transposed Layernorm        | Sparse        | AVX512F           |
