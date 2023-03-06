@@ -60,7 +60,6 @@ void spmm_avx512f_bench::get_true_data() {
   const auto& wei_desc = ts_descs[ssd::WEI];
   const auto& src_desc = ts_descs[ssd::SRC];
   const auto& bias_desc = ts_descs[ssd::BIAS];
-  int dims = wei_desc.shape().size();
   int M = src_desc.shape()[0];
   int K = wei_desc.shape()[0];
   int N = wei_desc.shape()[1];
@@ -77,7 +76,7 @@ void spmm_avx512f_bench::get_true_data() {
   auto dst_fp32 = static_cast<float*>(const_cast<void*>(rt_data[ssd::DST]));
 
   // Computing the kernel
-  assert(dims == 2);
+  assert(wei_desc.shape().size() == 2);
   for (int i = 0; i < M; ++i) {
 #pragma omp parallel for
     for (int j = 0; j < N; ++j) {

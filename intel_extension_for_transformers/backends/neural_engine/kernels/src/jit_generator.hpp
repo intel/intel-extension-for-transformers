@@ -23,6 +23,7 @@
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
 #include "utils.hpp"
+#include "cpu_isa.hpp"
 
 using Tmm = Xbyak::Tmm;
 using Zmm = Xbyak::Zmm;
@@ -122,6 +123,15 @@ class jit_generator : public Xbyak::CodeGenerator {
   void bf16_cvt_fp32(Zmm zmm) {
     vpmovzxwd(zmm, Ymm(zmm.getIdx()));
     vpslld(zmm, zmm, 0x10);
+  }
+
+  void fp32_cvt_bf16(Zmm zmm) {
+    if (isa_available(avx512_core_bf16)) {
+      vcvtneps2bf16(Ymm(zmm.getIdx()), zmm);
+    } else {
+      vpsrld(zmm, zmm, 16);
+      vpmovdw(Ymm(zmm.getIdx()), zmm);
+    }
   }
 
   void preamble() {

@@ -198,7 +198,7 @@ void jit_softmax_t::lut_store_data(int simd_idx, Reg64 dst, int offset, bool mas
   } else if (param_.output_dt == data_type::s8) {
     vpmovsdb(mask ? ptr[dst + offset * xmm_byte_size] | bit32_mask : ptr[dst + offset * xmm_byte_size], Zmm(simd_idx));
   } else if (param_.output_dt == data_type::bf16) {
-    vcvtneps2bf16(Ymm(simd_idx), Zmm(simd_idx));
+    fp32_cvt_bf16(Zmm(simd_idx));
     vmovdqu16(mask ? ptr[dst + offset * ymm_byte_size] | bit32_mask : ptr[dst + offset * ymm_byte_size], Ymm(simd_idx));
   } else {
     vmovups(mask ? ptr[dst + offset * zmm_byte_size] | bit32_mask : ptr[dst + offset * zmm_byte_size], Zmm(simd_idx));

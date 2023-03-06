@@ -22,6 +22,7 @@ bool layernorm_ba_kd_t::init() {
   if (op_attr.count("spec_type") == 0) {
     op_attr["spec_type"] = "normal";
     SPARSE_LOG(INFO) << "layernorm_ba spec_type set to normal by default.";
+    normal_translnorm_init();
   } else if (op_attr["spec_type"] == "normal") {
     normal_translnorm_init();
   } else if (op_attr["spec_type"] == "direct") {
@@ -174,7 +175,7 @@ bool layernorm_ba_k_t::direct_init() {
 
 bool layernorm_ba_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto op_attrs = derived_kd().get()->get_operator_desc().attrs();
-  if (op_attrs["spec_type"] == "normal") {
+  if (op_attrs.count("spec_type") == 0 || op_attrs["spec_type"] == "normal") {
     normal_execute(rt_data);
   } else if (op_attrs["spec_type"] == "direct") {
     direct_execute(rt_data);

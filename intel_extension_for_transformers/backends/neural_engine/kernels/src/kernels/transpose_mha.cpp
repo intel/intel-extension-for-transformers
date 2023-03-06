@@ -241,20 +241,15 @@ bool transpose_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
   int totalbatch = batchleft * batch;  // number of "barchk" in a batch
   int EXPSUM_BW = sizeof(float);
   int vnni_cpy_inc_var = 4;
-  MHA_kernel* transpose_cpy = nullptr;
-  MHA_kernel* vnni_cpy = nullptr;
-  MHA_kernel* MHA_step1 = nullptr;
-  MHA_kernel* MHA_step2 = nullptr;
-  MHA_kernel* MHA_step3 = nullptr;
 
-  if (impl_ == impl::amx) {
-    transpose_cpy = kernel_set[ker_idx::trans_cpy].get();
-    vnni_cpy = kernel_set[ker_idx::vnni_cpy_Nx4].get();
-    MHA_step1 = k == 64 ? kernel_set[mha_amx_step1_k64].get() : kernel_set[ker_idx::mha_amx_step1_k32].get();
-    MHA_step2 = kernel_set[ker_idx::mha_amx_step2].get();
-    MHA_step3 = seq_len % 64 == 0 ? kernel_set[ker_idx::mha_amx_step3_ktile64].get()
-                                  : kernel_set[ker_idx::mha_amx_step3_ktile32].get();
-  } else if (impl_ == impl::vnni_w) {
+  // get amx kernel.
+  MHA_kernel* transpose_cpy = kernel_set[ker_idx::trans_cpy].get();
+  MHA_kernel* vnni_cpy = kernel_set[ker_idx::vnni_cpy_Nx4].get();
+  MHA_kernel* MHA_step1 = k == 64 ? kernel_set[mha_amx_step1_k64].get() : kernel_set[ker_idx::mha_amx_step1_k32].get();
+  MHA_kernel* MHA_step2 = kernel_set[ker_idx::mha_amx_step2].get();
+  MHA_kernel* MHA_step3 = seq_len % 64 == 0 ? kernel_set[ker_idx::mha_amx_step3_ktile64].get()
+                                            : kernel_set[ker_idx::mha_amx_step3_ktile32].get();
+  if (impl_ == impl::vnni_w) {
     transpose_cpy = kernel_set[ker_idx::trans_cpy].get();
     vnni_cpy = kernel_set[ker_idx::vnni_cpy_Nx2].get();
     MHA_step1 = kernel_set[ker_idx::mha_vnni_step1].get();
@@ -262,6 +257,7 @@ bool transpose_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
     MHA_step3 = kernel_set[ker_idx::mha_vnni_step3].get();
     vnni_cpy_inc_var = 2;
   }
+
 #pragma omp parallel for collapse(1)
   for (int ibat = 0; ibat < totalbatch; ibat++) {
 #ifdef _OPENMP

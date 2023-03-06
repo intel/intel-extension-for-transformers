@@ -34,6 +34,8 @@ inline int uint8_2_int32(uint8_t a) { return static_cast<int>(a); }
 
 inline float rand_float_postfix() { return rand() / static_cast<float>(RAND_MAX); }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 inline int8_t fp32_2_s8(float val, float scale = 1.f) {
   int32_t res = nearbyint(val * scale);
   return static_cast<int8_t>(res < -128 ? -128 : res > 127 ? 127 : res);
@@ -43,6 +45,7 @@ inline float bf16_2_fp32(jd::bfloat16_t bf16_val) {
   unsigned int ans = bf16_val << 16;
   return *reinterpret_cast<float*>(&ans);
 }
+#pragma GCC diagnostic pop
 
 inline jd::data_type str_2_dt(std::string str) {
   if (str == "fp32") return jd::data_type::fp32;
