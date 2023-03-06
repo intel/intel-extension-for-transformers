@@ -165,6 +165,11 @@ class ReshapeFusion(Pattern):
                     pre_node.attr['reshape'] = node.attr['dst_shape']
                     pre_node.output_tensors[0] = node.output_tensors[0]
                     pre_node.output_tensors[0].source_op = [pre_node.name]
+                    if node.output_tensors[0].dest_op != []:
+                        next_node = model.get_node_by_name(node.output_tensors[0].dest_op[0])
+                        for input_tensor in next_node.input_tensors:
+                            if input_tensor.name == node.output_tensors[0].name:
+                                input_tensor.source_op = [pre_node.name]
                     if 'dims' in node.attr:
                         pre_node.attr['reshape_dims'] = str(node.attr['dims'])
                         pre_node.input_tensors.append(node.input_tensors[1])

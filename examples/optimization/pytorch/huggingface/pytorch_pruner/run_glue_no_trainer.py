@@ -516,6 +516,10 @@ def main():
         embedding_cnt = 0
         all_total_cnt = 0
 
+        import timeit
+
+        start_time = timeit.default_timer()
+
         for step, batch in enumerate(eval_dataloader):
             outputs = model(**batch)
             predictions = outputs.logits.argmax(dim=-1) if not is_regression else outputs.logits.squeeze()
@@ -524,8 +528,14 @@ def main():
                 references=accelerator.gather(batch["labels"]),
             )
 
+        runtime = timeit.default_timer() - start_time
+
         eval_metric = metric.compute()
-        logger.info(f"epoch {epoch}: {eval_metric}")
+        batch_size = args.per_device_eval_batch_size
+        throughput = len(eval_dataset) / runtime
+        latency = '{:.3f}'.format(runtime / len(eval_dataset))
+
+        logger.info(f"Epoch {epoch}: {eval_metric}\nBatch size: {batch_size}\nLatency： {latency}\nThroughput: {throughput} samples/sec")
         if args.push_to_hub and epoch < args.num_train_epochs - 1:
             accelerator.wait_for_everyone()
             unwrapped_model = accelerator.unwrap_model(model)

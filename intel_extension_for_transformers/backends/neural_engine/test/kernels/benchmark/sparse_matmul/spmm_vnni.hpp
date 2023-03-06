@@ -26,6 +26,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <memory>
 
 #include "benchmark_utils.hpp"
 #include "interface.hpp"
@@ -41,6 +42,7 @@ class spmm_vnni_bench : public sparse_matmul_bench {
   jd::data_type dt_dst = jd::data_type::s8;
   std::unordered_map<std::string, std::string> op_attrs = {};
   std::vector<postop_alg> postop_algs = {};
+  bool calc_mean_var = false;
 
  public:
   spmm_vnni_bench() {}

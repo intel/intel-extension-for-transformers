@@ -26,7 +26,7 @@ struct gather_param_t {
   int loops, remain;
   int64_t mask, extend_mask;
   int src_axis_size, dst_axis_size;
-  int outer_size, inner_size;
+  int src_size, idx_size, outer_size, inner_size;
   std::vector<binaryop_attr> binaryop_attrs;
   std::vector<int64_t> binary_ts_sizes;
 };

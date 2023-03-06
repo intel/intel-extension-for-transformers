@@ -20,16 +20,22 @@
 
 namespace jd {
 namespace ssd {
+enum spec_translnorm_type { normal, direct };
+
 struct layernorm_ba_param_t {
   data_type input_dt;
   data_type output_dt;
-  data_type affine_dt;
+  data_type output2_dt;
+  spec_translnorm_type spec_type;
   int row_num;
   int col_num;
   int process_col;  // for control loop.
+  int direct_process_row;
   int process_batch_per_ker;
-  int ker_per_batch;
-  size_t thread_elt_offset;  // for load data.
+  int ker_per_batch;          // for normal translnorm, each batch will be processed by same num of kers.
+  int batch_num;              // for direct lnorm, pass the batch_num to the ker domain
+  size_t thread_elt_offset;   // for load data.
+  bool split_output = false;  // for write fp32 & u8 result to dst at the same time
   std::vector<postop_attr> postop_attrs;
   std::vector<binaryop_attr> binaryop_attrs;
 };
@@ -37,11 +43,17 @@ struct layernorm_ba_param_t {
 struct layernorm_ba_data_t {
   void* src;
   void* dst;
-  const float* one_div_n;
-  const float one = 1;
-  const float eps = 1e-5;
   const float* alpha;
   const float* beta;
+  const float* mean;
+  const float* var;
+  void* dst2;
+  union {
+    float n;
+    int process_row;  // for direct_translnorm
+  };
+  const float one = 1;
+  const float eps = 1e-5;
 };
 
 }  // namespace ssd

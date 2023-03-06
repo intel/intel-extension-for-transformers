@@ -59,9 +59,8 @@ void UnsqueezeOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   } else {
     // just copy data
     memcpy(dst_ptr->mutable_data(), src_data, src_ptr->size() * type2bytes[src_ptr->dtype()]);
+    this->unref_tensors(input);
   }
-
-  this->unref_tensors(input);
 }
 
 REGISTER_OPERATOR_CLASS(Unsqueeze);

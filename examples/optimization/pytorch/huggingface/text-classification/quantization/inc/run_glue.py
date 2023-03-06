@@ -226,6 +226,10 @@ class OptimizationArguments:
 
 
 def main():
+    if int(os.environ.get("LOCAL_RANK", -1)) != -1 and '--no_cuda' in sys.argv:
+        from intel_extension_for_transformers.optimization.utils.utility import distributed_init
+        distributed_init()
+
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
@@ -520,14 +524,12 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for quantization.")
 
-        model.config.save_pretrained(training_args.output_dir)
         trainer.save_model(training_args.output_dir)
         if optim_args.quantization_approach != "PostTrainingDynamic":
             if not training_args.do_train:
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-            model.config.save_pretrained(training_args.output_dir)
         elif optim_args.quantization_approach == "QuantizationAwareTraining":
             early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional

@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include "jit_domain/jit_spmm_vnni.hpp"
+#include <memory>
 
 #define GET_OFF(field) offsetof(ssd::vnni_data_t<void>, field)
 
@@ -32,6 +33,9 @@ Xbyak::Zmm jit_spmm_vnni_t::TW_Vmm(int i) {
   const int& alloc_idx = alloc_start - i;
   return Xbyak::Zmm(alloc_idx);
 }
+
+// using TH VMM as dst temp register
+Xbyak::Zmm jit_spmm_vnni_t::Temp_Vmm(int i) { return TH_Vmm(i); }
 
 // {zmm0, zmm1, zmm2, zmm3, ...}
 Xbyak::Zmm jit_spmm_vnni_t::dst_tile_Vmm(int i, int j) {
@@ -208,15 +212,21 @@ void jit_spmm_vnni_t::repeat_THx4xTW_matmal(dim_t m_start) {
 void jit_spmm_vnni_t::handle_postop_escape_vmms() {
   eltwise_injector_.escape_regs(reg_type::zmm, vpermt2d_arg_idx.getIdx());
   eltwise_injector_.escape_regs(reg_type::zmm, vpshufb_arg_b.getIdx());
-  eltwise_injector_.escape_regs(reg_type::zmm, vreg_dst_temp.getIdx());
+  eltwise_injector_.escape_regs(reg_type::zmm, vreg_temp.getIdx());
   for (int i = 0; i < TH(); ++i) {
     for (int j = 0; j < TW(); ++j) {
       eltwise_injector_.escape_regs(reg_type::zmm, dst_tile_Vmm(i, j).getIdx());
     }
   }
+  if (param_.welford) {
+    for (int j = 0; j < TW(); ++j) {
+      eltwise_injector_.escape_regs(reg_type::zmm, Temp_Vmm(j).getIdx());
+    }
+  }
 }
 
 void jit_spmm_vnni_t::handle_postop_escape_regs() {
+  eltwise_injector_.escape_regs(reg_type::reg64, param1.getIdx());
   eltwise_injector_.escape_regs(reg_type::reg64, reg_dst.getIdx());
   eltwise_injector_.escape_regs(reg_type::reg64, reg_scale.getIdx());
   eltwise_injector_.escape_regs(reg_type::reg64, reg_dst_idx.getIdx());
@@ -225,6 +235,10 @@ void jit_spmm_vnni_t::handle_postop_escape_regs() {
   eltwise_injector_.escape_regs(reg_type::reg64, reg_m_idx.getIdx());
   eltwise_injector_.escape_regs(reg_type::reg64, reg_dst_idx.getIdx());
   eltwise_injector_.escape_regs(reg_type::mask, reg_k1.getIdx());
+  if (param_.welford) {
+    eltwise_injector_.escape_regs(reg_type::reg64, reg_dst_m1.getIdx());
+    eltwise_injector_.escape_regs(reg_type::reg64, reg_dst_m2.getIdx());
+  }
 }
 
 void jit_spmm_vnni_t::store_intermediate_dst(dim_t m_start) {
@@ -237,14 +251,27 @@ void jit_spmm_vnni_t::store_intermediate_dst(dim_t m_start) {
   }
 }
 
-void jit_spmm_vnni_t::handle_dst_buffer_epilogue_sub() {
+void jit_spmm_vnni_t::handle_dst_buffer_epilogue_sub(bool set_zero) {
+  mov(reg_dst, ptr[param1 + GET_OFF(ptr_dst)]);
   add(reg_dst, reg_dst_idx);
-  add(reg_scale, reg_m_idx);
+  std::shared_ptr<void> rec_vregs;
+  if (param_.welford) {
+    // restore vpshufb_arg_b and vpermt2d_arg_idx
+    // which are used as reg_dst_m1 and reg_dst_m1 in line 266&267
+    rec_vregs = {nullptr, [&](...) {
+                   vbroadcasti32x4(vpshufb_arg_b, ptr[rip + L_vpshufb_arg]);
+                   vpmovzxbd(vpermt2d_arg_idx, ptr[rip + L_vpermt2d_arg]);
+                 }};
+    vpbroadcastd(vreg_m_idx, reg_m_idx.cvt32());
+    vcvtdq2ps(vreg_m_idx, vreg_m_idx);
+    mov(reg_dst_m1, ptr[param1 + GET_OFF(ptr_dst_m1)]);
+    mov(reg_dst_m2, ptr[param1 + GET_OFF(ptr_dst_m2)]);
+  }
+
   for (int i = 0; i < TH(); ++i) {
-    vbroadcastss(vreg_dst_temp, ptr[reg_scale + i * BYTE4]);  // move in scale.
     for (int j = 0; j < TW(); ++j) {
       vcvtdq2ps(dst_tile_Vmm(i, j) | T_rn_sae, dst_tile_Vmm(i, j));
-      vmulps(dst_tile_Vmm(i, j), vreg_dst_temp, dst_tile_Vmm(i, j));
+      vmulps(dst_tile_Vmm(i, j), dst_tile_Vmm(i, j), zword_b[reg_scale + reg_m_idx * BYTE4 + i * BYTE4]);  // *= scale.
       if (output_type() == data_type::fp32 && param_.append_sum) {
         vaddps(dst_tile_Vmm(i, j), dst_tile_Vmm(i, j),
                ptr[reg_dst + reg_n_idx * BYTE4 + i * ld_dst() * BYTE4 + j * VEC * BYTE4]);
@@ -252,6 +279,8 @@ void jit_spmm_vnni_t::handle_dst_buffer_epilogue_sub() {
       if (param_.postop_attrs.size() != 0) {
         eltwise_injector_.vector_compute(dst_tile_Vmm(i, j), param_.postop_attrs);
       }
+
+      // move out
       if (output_type() == data_type::u8) {
         if (param_.postop_attrs.size() == 0 || param_.postop_attrs.back().op_alg != postop_alg::quantize)
           vcvtps2udq(dst_tile_Vmm(i, j), dst_tile_Vmm(i, j));
@@ -263,22 +292,74 @@ void jit_spmm_vnni_t::handle_dst_buffer_epilogue_sub() {
       } else if (output_type() == data_type::fp32) {
         vmovups(ptr[reg_dst + reg_n_idx * BYTE4 + i * ld_dst() * BYTE4 + j * VEC * BYTE4], dst_tile_Vmm(i, j));
       }
+
+      if (param_.welford) {
+        calc_mean_variance(i, j, set_zero);
+      }
     }
   }
-  sub(reg_scale, reg_m_idx);
-  sub(reg_dst, reg_dst_idx);
+}
+
+void jit_spmm_vnni_t::calc_mean_variance(int i, int j, bool set_zero) {
+  /**
+   * mean_{n}= mean_{n-1} + (xn - mean_{n-1}) / n
+   * m2_{n} = m2_{n-1} + (xn - mean_{n-1})(xn - mean_{n})
+   *
+   * mean_{n}= mean_{n-1} + A/n
+   * m2_{n} = m2_{n-1} + A (A - A/n) = m2_{n-1} + (A*A - A*A/n)
+   *
+   * means are accumulate in Temp_Vmm(j) / TW_Vmm(j)
+   * M2 are accumulate in dst_tile_Vmm(0, j)
+   */
+  const Xbyak::Address& zword_dst_m1 = ptr[reg_dst_m1 + reg_n_idx * BYTE4 + j * VEC * BYTE4];
+  const Xbyak::Address& zword_dst_m2 = ptr[reg_dst_m2 + reg_n_idx * BYTE4 + j * VEC * BYTE4];
+  if (j == 0) vaddps(vreg_m_idx, vreg_m_idx, zword_b[rip + L_m512_1f]);  // ({m+1}_idx_, n) := m_idx + 1
+  if (j == 0) vrcp14ps(vreg_temp2, vreg_m_idx);                          // get 1/n
+  if (i == 0) {
+    if (set_zero == true) {
+      vxorps(Temp_Vmm(j), Temp_Vmm(j), Temp_Vmm(j));  // move in M0(mean)
+    } else {
+      vmovups(Temp_Vmm(j), zword_dst_m1);  // load from memory
+    }
+  }
+
+  vsubps(dst_tile_Vmm(i, j), dst_tile_Vmm(i, j), Temp_Vmm(j));         // A:= x - mean;
+  vfmadd231ps(Temp_Vmm(j), dst_tile_Vmm(i, j), vreg_temp2);            // mean += A/n
+  vmulps(dst_tile_Vmm(i, j), dst_tile_Vmm(i, j), dst_tile_Vmm(i, j));  // A2 = A * A
+  vfnmadd231ps(dst_tile_Vmm(i, j), dst_tile_Vmm(i, j), vreg_temp2);    // A2 - A2 / N
+
+  if (i == 0) {
+    if (set_zero == true) {
+      vxorps(dst_tile_Vmm(0, j), dst_tile_Vmm(0, j), dst_tile_Vmm(0, j));  // update m2
+    } else {
+      vaddps(dst_tile_Vmm(0, j), dst_tile_Vmm(i, j), zword_dst_m2);  // update m2
+    }
+  } else {
+    vaddps(dst_tile_Vmm(0, j), dst_tile_Vmm(i, j), dst_tile_Vmm(0, j));  // update m2
+  }
+
+  if (i == TH() - 1) {  // move out
+    vmovups(zword_dst_m1, Temp_Vmm(j));
+    vmovups(zword_dst_m2, dst_tile_Vmm(0, j));
+  }
 }
 
 void jit_spmm_vnni_t::gen_subfunc_dst_epilogue() {
+  L(func_dst_epilogue_start_);
+  {
+    Xbyak::util::StackFrame callee1_sf(this, 0);
+    handle_dst_buffer_epilogue_sub(true);
+  }
   L(func_dst_epilogue_);
-  Xbyak::util::StackFrame callee1_sf(this, 0);
-  handle_dst_buffer_epilogue_sub();
+  {
+    Xbyak::util::StackFrame callee1_sf(this, 0);
+    handle_dst_buffer_epilogue_sub(false);
+  }
 }
 
 void jit_spmm_vnni_t::read_params() {
   mov(reg_dense, ptr[param1 + GET_OFF(ptr_dense)]);
   mov(reg_bias, ptr[param1 + GET_OFF(ptr_bias)]);
-  mov(reg_dst, ptr[param1 + GET_OFF(ptr_dst)]);
   mov(reg_scale, ptr[param1 + GET_OFF(ptr_scales)]);
 }
 
@@ -360,8 +441,6 @@ void jit_spmm_vnni_t::generate() {
   }
   callee_functions_code_size_ = getSize();
 
-  Xbyak::Label L_vpermt2d_arg;
-  Xbyak::Label L_vpshufb_arg;
   {
     sub(rsp, nonvolatile_reg_size);
     mov(ptr[rsp + 0x00], rbx);
@@ -374,7 +453,6 @@ void jit_spmm_vnni_t::generate() {
     mov(ptr[rsp + 0x30], rdi);
     mov(ptr[rsp + 0x38], rsi);
 #endif
-
     read_params();
 
     mov(reg_wei, reinterpret_cast<uint64_t>(param_.weight));
@@ -386,12 +464,12 @@ void jit_spmm_vnni_t::generate() {
     mov(temp_r32, 0xf0);
     kmovb(reg_k1, temp_r32);
 
-    xor_(reg_m_idx, reg_m_idx);
     xor_(reg_dst_idx, reg_dst_idx);
     // When K-dim is cut into k_blocks parts, it'll produce same number of DST intermediate results.
     // Loop-M2: CPP loop for each blocked row. Asm code unroll.
     for (dim_t im = 0; im < param_.BM; im += mt_size()) {
       xor_(reg_n_idx, reg_n_idx);  // reg_n_idx = 0
+      mov(reg_m_idx, im);          // reg_m_idx = im
 
       // n_blocks and n_tiles are N-dim loops, and can be used for N-dim multithread.
       // n_blocks is asm outer loop, with longer assembly context span. n_tiles is inner loop.
@@ -403,17 +481,16 @@ void jit_spmm_vnni_t::generate() {
       repeat_THx4xTW_matmal(im);
       // generate the epilogue logic. This is different depending on B_blocks value (should we
       // cache intermediate results or write results with post-op to output)
-      call(func_dst_epilogue_);
+      if (im == 0) {
+        call(func_dst_epilogue_start_);  // zeroing registers for the first iteration
+      } else {
+        call(func_dst_epilogue_);  // load from memory for the rest iterations
+      }
 
       add(reg_n_idx, nt_size());
       cmp(reg_n_idx, param_.BN);
       jl(L_nt_loop, T_NEAR);  // Loop-N2 end.
-      add(reg_m_idx, mt_size() * BYTE4);
-      if (output_type() == data_type::u8 || output_type() == data_type::s8) {
-        add(reg_dst_idx, mt_size() * BYTE1 * ld_dst());
-      } else {
-        add(reg_dst_idx, mt_size() * BYTE4 * ld_dst());
-      }
+      add(reg_dst_idx, mt_size() * get_data_size(output_type()) * ld_dst());
     }  // Loop-M2 end.
 
     mov(rbx, ptr[rsp + 0x00]);
@@ -440,6 +517,10 @@ void jit_spmm_vnni_t::generate() {
   L(L_vpshufb_arg);
   for (int i = 0; i < num_size; ++i) {
     db(vpshufb_control[i], word_size);
+  }
+  L(L_m512_1f);
+  for (int i = 0; i < num_size; ++i) {
+    db(bit_cast<uint32_t, float>(1.f), sizeof(float));
   }
   outLocalLabel();  // end of local label
   eltwise_injector_.prepare_table();

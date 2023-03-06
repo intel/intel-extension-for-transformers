@@ -1,4 +1,4 @@
-# Design of AMX Kernel
+# Sparse GEMM AMX
 
 ## Brief introduction for ISAs
 As we all know, AMX ISA introduces the `tdpbf16ps`, which does **16x32** matrix times **32x16** matrix as the following:

@@ -55,8 +55,10 @@ float cast_to<bfloat16_t, float>(bfloat16_t x) {
 //   return tmp.b[1];
 // }
 
+#ifdef WITH_GCC_FLAGS
 #pragma GCC push_options
 #pragma GCC optimize "no-strict-aliasing"
+#endif
 inline float make_fp32(bfloat16_t x) {
   unsigned int y = static_cast<unsigned int>(x);
   y = y << 16;
@@ -69,7 +71,9 @@ inline bfloat16_t make_bf16(float x) {
   *res = *res >> 16;
   return (bfloat16_t)*res;
 }
+#ifdef WITH_GCC_FLAGS
 #pragma GCC pop_options
+#endif
 
 template <typename T>
 void init_vector(T* v, int num_size, float range1, float range2, int seed) {
@@ -80,11 +84,14 @@ void init_vector(T* v, int num_size, float range1, float range2, int seed) {
     v[i] = cast_to<T, float>(u(gen));
   }
 }
-template void init_vector<float>(float*, int, float, float, int);
-template void init_vector<int32_t>(int32_t*, int, float, float, int);
-template void init_vector<uint8_t>(uint8_t*, int, float, float, int);
-template void init_vector<int8_t>(int8_t*, int, float, float, int);
-template void init_vector<bfloat16_t>(bfloat16_t*, int, float, float, int);
+
+#define DECLARE_INIT_VECTOR(type) template void init_vector<type>(type*, int, float, float, int);
+
+DECLARE_INIT_VECTOR(float)
+DECLARE_INIT_VECTOR(int32_t)
+DECLARE_INIT_VECTOR(uint8_t)
+DECLARE_INIT_VECTOR(uint16_t)
+DECLARE_INIT_VECTOR(int8_t)
 
 template <typename T>
 struct s_is_u8s8 {
@@ -210,7 +217,9 @@ int get_data_size(jd::data_type dt) {
   return jd::type_size.at(dt);
 }
 
+#ifdef WITH_GCC_FLAGS
 #pragma GCC optimize "no-strict-aliasing"
+#endif
 float get_exp(float x) {
   unsigned int max = 0x42b17218;
   unsigned int min = 0xc2aeac50;
@@ -223,8 +232,9 @@ float get_exp(float x) {
     return expf(x);
   }
 }
+#ifdef WITH_GCC_FLAGS
 #pragma GCC optimize "strict-aliasing"
-
+#endif
 // todo:add a erf_gelu version.
 float get_gelu(float x) {
   // an approximate fitting function of GELU(x)

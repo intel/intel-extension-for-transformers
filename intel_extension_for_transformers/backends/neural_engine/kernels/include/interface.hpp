@@ -87,7 +87,8 @@ class SPARSE_API_ kernel_proxy : public proxy_base<kernel_t, std::shared_ptr<con
 
  public:
   inline const jd::kernel_kind& kernel_kind() const { return get_sp()->kd()->kernel_kind(); }
-  void execute(const std::vector<const void*>& rt_data);
+  void execute(const std::vector<const void*>& rt_data) const;
+  size_t get_workspace_size() const;
 };
 
 //// The following paragraphs are the various derived kernels and its descriptors.
@@ -122,6 +123,13 @@ class SPARSE_API_ layernorm_ba_desc : public kernel_desc_proxy {
   virtual ~layernorm_ba_desc() {}
 };
 
+class SPARSE_API_ layernormalized_spmm_desc : public kernel_desc_proxy {
+ public:
+  layernormalized_spmm_desc() {}
+  explicit layernormalized_spmm_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~layernormalized_spmm_desc() {}
+};
+
 class gather_desc : public kernel_desc_proxy {
  public:
   gather_desc() {}
@@ -136,11 +144,32 @@ class softmax_desc : public kernel_desc_proxy {
   virtual ~softmax_desc() {}
 };
 
+class logsoftmax_desc : public kernel_desc_proxy {
+ public:
+  logsoftmax_desc() {}
+  explicit logsoftmax_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~logsoftmax_desc() {}
+};
+
 class attention_desc : public kernel_desc_proxy {
  public:
   attention_desc() {}
   explicit attention_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~attention_desc() {}
+};
+
+class SPARSE_API_ transpose_mha_desc : public kernel_desc_proxy {
+ public:
+  transpose_mha_desc() {}
+  explicit transpose_mha_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~transpose_mha_desc() {}
+};
+
+class SPARSE_API_ dyn_quantize_mha_desc : public kernel_desc_proxy {
+ public:
+  dyn_quantize_mha_desc() {}
+  explicit dyn_quantize_mha_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~dyn_quantize_mha_desc() {}
 };
 
 /**
@@ -174,6 +203,13 @@ class SPARSE_API_ layernorm_ba : public kernel_proxy {
   virtual ~layernorm_ba() {}
 };
 
+class SPARSE_API_ layernormalized_spmm : public kernel_proxy {
+ public:
+  layernormalized_spmm() {}
+  explicit layernormalized_spmm(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~layernormalized_spmm() {}
+};
+
 class SPARSE_API_ gather : public kernel_proxy {
  public:
   gather() {}
@@ -188,11 +224,32 @@ class SPARSE_API_ softmax : public kernel_proxy {
   virtual ~softmax() {}
 };
 
+class SPARSE_API_ logsoftmax : public kernel_proxy {
+ public:
+  logsoftmax() {}
+  explicit logsoftmax(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~logsoftmax() {}
+};
+
 class SPARSE_API_ attention : public kernel_proxy {
  public:
   attention() {}
   explicit attention(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~attention() {}
+};
+
+class SPARSE_API_ transpose_mha : public kernel_proxy {
+ public:
+  transpose_mha() {}
+  explicit transpose_mha(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~transpose_mha() {}
+};
+
+class SPARSE_API_ dyn_quantize_mha : public kernel_proxy {
+ public:
+  dyn_quantize_mha() {}
+  explicit dyn_quantize_mha(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~dyn_quantize_mha() {}
 };
 
 }  // namespace jd

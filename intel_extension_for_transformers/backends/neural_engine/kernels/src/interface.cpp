@@ -76,7 +76,9 @@ bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_r
   return true;
 }
 
-void kernel_proxy::execute(const std::vector<const void*>& rt_data) {
+size_t kernel_proxy::get_workspace_size() const { return get_sp()->get_workspace_size(); }
+
+void kernel_proxy::execute(const std::vector<const void*>& rt_data) const {
   bool status = false;
 #ifdef SPARSE_LIB_USE_VTUNE
   auto vtune_wrapper = vtune_wrapper_t();

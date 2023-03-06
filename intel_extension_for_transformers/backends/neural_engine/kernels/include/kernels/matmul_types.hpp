@@ -19,19 +19,22 @@
 #include <vector>
 
 #include "param_types.hpp"
-#include "../utils.hpp"
+#include "utils.hpp"
+
 namespace jd {
 namespace ssd {
-/**
- * @brief tensors index configuration of this kernel.
- * TODO(Yi): potential confliction with indices of other op types
- */
-static constexpr int SRC0 = 0;
-static constexpr int SRC1 = 1;
-static constexpr int DST0 = 2;
-static constexpr int SRC2 = 3;  // for binary add
-static constexpr int SCALE0 = 4;
-static constexpr int ZP0 = 5;
+
+namespace matmul_io {
+enum io {
+  SRC0,
+  SRC1,
+  DST0,
+  SRC2,
+  SCALE0,
+  ZP0,
+  matmul_io_MAX = ZP0,
+};
+}  // namespace matmul_io
 
 struct matmul_param_t {
   dim_t M;

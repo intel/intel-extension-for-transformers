@@ -249,8 +249,8 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
     }
   }
 #endif
-  is_dynamic_ =
-      output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
+  is_dynamic_ = (output.size() > 1) ||
+                (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
   if (is_dynamic_) LOG(INFO) << this->name() << " is DYNAMIC!!!";
   switch (kernel_type_) {
     case Dense:
@@ -513,8 +513,9 @@ void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const 
       ic_dim = src1_min_->size() > 1 ? 0 | (1 << 1) : 0;
       vector<float> src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
       vector<float> src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
-      if (dst_min_ != nullptr)
+      if (dst_min_ != nullptr) {
         dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      }
       rescales_ = GetRescales(src1_scales, src0_scales, dst_scales_, dst_->dtype(), append_eltwise_);
     } else {
       rescales_ = vector<float>(1, 1.f);
@@ -545,13 +546,14 @@ void InnerProductOperator::ShapeInferSparseLib(const vector<Tensor*>& input, con
   // save the SparseLib primitive class creation time
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
-            << "InnerProduct to SparseLib has wrong dispatch kernel config...";
-    LOG(INFO) << "Operator " << name_ << " dispatch configs are " << dispatch_config_[0] << ","
-              <<  dispatch_config_[1] << "," <<  dispatch_config_[2] << "," <<  dispatch_config_[3];
+        << "InnerProduct to SparseLib has wrong dispatch kernel config...";
+    LOG(INFO) << "Operator " << name_ << " dispatch configs are " << dispatch_config_[0] << "," << dispatch_config_[1]
+              << "," << dispatch_config_[2] << "," << dispatch_config_[3];
     // pass 3D shape and tensor_format
     vector<int64_t> src1_3d_shape;
     StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
     dst_->set_tensor_format(TensorFormat::MmKMb);
+
     dst_->set_shape({src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]});
   } else {
     vector<int64_t> src1_shape = src1_->shape();
@@ -575,6 +577,7 @@ void InnerProductOperator::ShapeInferSparseLib(const vector<Tensor*>& input, con
 void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<int64_t> src1_shape_origin = src1_->shape();
   vector<int64_t> src1_shape = src1_shape_origin;
+
   // set dispatch config from tuning
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
     // e.g. dispatch_config_ = {"SparseLib", "1,256,128", "1,1,1", "4,4", "1"};
@@ -671,9 +674,9 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
       LOG(WARNING) << "post tensor will be used by multi node...";
     }
   }
-  std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
-                                           rescales_.data()};
-  spmm_kern_.execute(runtime_data);
+    std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr,
+                                             dst_data, rescales_.data()};
+    spmm_kern_.execute(runtime_data);
 }
 #endif
 
@@ -741,7 +744,7 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
           vector<int64_t> dst_3d_shape_origin = {src1_3d_shape[0], src0_->shape()[0], src1_3d_shape[2]};
           output[0]->reorder(dst_3d_shape_origin);
           output[0]->set_tensor_format(TensorFormat::KM);
-          output[0]->set_shape({output[0]->shape()[0],  output[0]->shape()[1] * output[0]->shape()[2]});
+          output[0]->set_shape({output[0]->shape()[0], output[0]->shape()[1] * output[0]->shape()[2]});
           DstReshapeFusion(input, output);
           LOG(INFO) << "Reorder dst tensor from MmKMb to KM of operator " << name_;
           // reorder src and post back
@@ -772,7 +775,9 @@ void InnerProductOperator::ResetOpStatus(const vector<Tensor*>& input, const vec
   } else if (kernel_type_ == SparseLib) {
     src0_->set_tensor_format(TensorFormat::NK);
     if (src1_->tensor_format() == TensorFormat::MmKMb) src1_->set_tensor_format(TensorFormat::KM);
-    if (dst_->tensor_format() == TensorFormat::MmKMb) dst_->set_tensor_format(TensorFormat::KM);
+    if (dst_->tensor_format() == TensorFormat::MmKMb) {
+      dst_->set_tensor_format(TensorFormat::KM);
+    }
     if (post_ != nullptr && !binary_add_ && post_->tensor_format() == TensorFormat::MmKMb) {
       post_->set_tensor_format(TensorFormat::KM);
     }

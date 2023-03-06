@@ -26,30 +26,31 @@
 #include "kernels/matmul_ref.hpp"
 #include "jit_domain/jit_seq_cpy_2x8x8.hpp"
 
-#define OMP_NUM_THREADS "OMP_NUM_THREADS"
-
 namespace jd {
 using dt = jd::data_type;
 using ft = jd::format_type;
 
 // test seq_cpy_2x8x8
-struct seqcpyA_param_t {
+struct seqcpy_param_t {
   dim_t M;
   dim_t N;
   uint8_t offset;
 };
-inline static std::string seqcpyATestParam2str(testing::TestParamInfo<seqcpyA_param_t> tpi) {
+
+inline static std::string to_string(testing::TestParamInfo<seqcpy_param_t> tpi) {
   return std::to_string(tpi.param.M) + "_" + std::to_string(tpi.param.N) + "_off" + std::to_string(tpi.param.offset);
 }
-class MMVNNIP2031P2013SEQCPYATest : public testing::TestWithParam<seqcpyA_param_t> {
+
+class MMVNNIP2031P2013SEQCPYATest : public testing::TestWithParam<seqcpy_param_t> {
  protected:
   MMVNNIP2031P2013SEQCPYATest() {}
   virtual ~MMVNNIP2031P2013SEQCPYATest() {}
   void SetUp() override {}
   void TearDown() override {}
 };
+
 TEST_P(MMVNNIP2031P2013SEQCPYATest, ) {
-  seqcpyA_param_t t = testing::TestWithParam<seqcpyA_param_t>::GetParam();
+  seqcpy_param_t t = testing::TestWithParam<seqcpy_param_t>::GetParam();
   const int M = t.M, N = t.N;
   const int ld_src = N;
   if (M % 8 != 0) {
@@ -73,14 +74,18 @@ TEST_P(MMVNNIP2031P2013SEQCPYATest, ) {
               (i + ii >= M || j + jj >= N) ? 0 : (src[(i + ii) * ld_src + j + jj] + t.offset);
 
   // run kernel
-  auto jit_ker = new jit_seq_cpy_2x8x8({M, N, ld_src, t.offset});
+  auto jit_ker = new jit_seq_cpy_2x8x8(jit_seq_cpy_2x8x8::param_t{t.offset});
   ASSERT_NE(jit_ker, nullptr);
   ASSERT_TRUE(jit_ker->create_kernel());
+
+  const int ld_dst = jit_seq_cpy_2x8x8::dst_step(M);
   for (dim_t i = 0; i < M; i += 8) {
-    jit_seq_cpy_2x8x8::rt_data_t rt_data{
-        src + i * N,
-        dst + i * 8,
-    };
+    jit_seq_cpy_2x8x8::rt_data_t rt_data;
+    rt_data.src = src + i * N;
+    rt_data.dst = dst + i * 8;
+    rt_data.N = N;
+    rt_data.ld_src = ld_src;
+    rt_data.ld_dst = ld_dst;
     (*jit_ker)(&rt_data);
   }
 
@@ -91,8 +96,9 @@ TEST_P(MMVNNIP2031P2013SEQCPYATest, ) {
   free(dst);
   delete jit_ker;
 }
+
 INSTANTIATE_TEST_SUITE_P(SparseLib, MMVNNIP2031P2013SEQCPYATest,
-                         ::testing::ValuesIn(std::vector<seqcpyA_param_t>{
+                         ::testing::ValuesIn(std::vector<seqcpy_param_t>{
                              {64, 64, 0},
                              {64, 1, 0},
                              {64, 15, 0},
@@ -104,5 +110,5 @@ INSTANTIATE_TEST_SUITE_P(SparseLib, MMVNNIP2031P2013SEQCPYATest,
                              {64, 63, 128},
                              {64, 65, 131},
                          }),
-                         seqcpyATestParam2str);
+                         to_string);
 }  // namespace jd

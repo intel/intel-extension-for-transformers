@@ -5,4 +5,4 @@ protobuf
 sacrebleu >= 1.4.12
 py7zr
 torch >= 1.10
-transformers>=4.19.0.dev0
+transformers>=4.19.0.dev0, <=4.26.0

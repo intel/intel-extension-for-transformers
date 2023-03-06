@@ -95,7 +95,7 @@ void jit_matmul_vnni_8xkx48_t::generate() {
   mov(reg_dst, ptr[parambase + GET_OFF(dst)]);
   auto reg_scale = reg_src0.cvt32();
   auto& reg_src_b0 = reg_src1;
-  mov(reg_scale, reinterpret_value<float, uint32_t>(param_.scale));
+  mov(reg_scale, bit_cast<uint32_t, float>(param_.scale));
   const auto& vreg_scale = vreg_temp;
   vpbroadcastd(vreg_scale, reg_scale);
   if (param_.binary_add) mov(reg_src_b0, ptr[parambase + GET_OFF(src_b0)]);

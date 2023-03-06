@@ -18,6 +18,7 @@
 """The neural engine tensor file."""
 
 from collections import OrderedDict
+from .. import graph_utils as util
 import numpy as np
 
 
@@ -41,6 +42,8 @@ class Tensor(object):
         self._data = data
         self._shape = shape
         self._dtype = dtype
+        if not dtype and isinstance(data, np.ndarray):
+            self._dtype = util.get_data_dtype(data)
         # location in bin file if const
         self._location = location
         if source_op == None:
@@ -71,6 +74,7 @@ class Tensor(object):
     def data(self, data):
         """Data assignment."""
         self._data = data
+        self._dtype = util.get_data_dtype(data)
 
     @property
     def shape(self):

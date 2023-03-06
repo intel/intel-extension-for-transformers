@@ -52,6 +52,19 @@ EXECUTOR_TYPE = {
     "_QuantizedFusedMatMulAndDequantize": "InnerProduct",
     "_FusedMatMul": "InnerProduct",
     "_MklLayerNorm": "LayerNorm",
+    "Div": "BinaryOp",
+    "Sub": "BinaryOp",
+    "Mul": "BinaryOp",
+    "Equal": "BinaryOp",
+    "Less": "BinaryOp",
+    "Greater": "BinaryOp",
+    "LessEqual": "BinaryOp",
+    "LessOrEqual": "BinaryOp",
+    "GreaterOrEqual": "BinaryOp",
+    "NonZero": "BinaryOp",
+    "NotEqual": "BinaryOp",
+    'Not': "BinaryOp",
+    'Neg': "BinaryOp",
 }
 
 class SubGraphMatcher(object):

@@ -1,0 +1,11 @@
+transformers==4.23.1
+accelerate
+datasets >= 1.8.0
+sentencepiece != 0.1.92
+protobuf
+torch==1.13.1
+torchvision
+onnx>=1.12
+onnxruntime==1.13.1
+onnxruntime-extensions
+evaluate

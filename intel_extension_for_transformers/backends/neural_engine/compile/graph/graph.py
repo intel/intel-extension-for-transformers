@@ -36,6 +36,8 @@ class Graph(object):
         self._engine = None
         self._execution_options = None
         self._refresh_execution_options = False
+        # modeling config, like num_attention_heads in transformer related models
+        self._framework_modeling_config = {}
 
     @property
     def nodes(self):
@@ -68,6 +70,23 @@ class Graph(object):
     def execution_options(self, options):
         self._execution_options = options
         self._refresh_execution_options = True
+
+    @property
+    def framework_modeling_config(self):
+        return self._framework_modeling_config
+    
+    @framework_modeling_config.setter
+    def framework_modeling_config(self, config):
+        self._framework_modeling_config = config
+    
+    def add_config_item(self, key, val):
+        self._framework_modeling_config[key] = val
+    
+    def inquire_config_item(self, key):
+        val = self._framework_modeling_config.get(key, None)
+        if not val:
+            logger.info("the item {} does not exist in the config...".format(key))
+        return val
 
     def insert_nodes(self, index, nodes):
         """Insert nodes to neural engine IR."""
@@ -249,16 +268,22 @@ class Graph(object):
                 continue
 
         # modify the output_tensors' dest_op
-        if mode == 'insert':
-            for i in range(len(node.output_tensors)):
-                node.output_tensors[i].source_op = [node.name]
-                t = node.output_tensors[i]
-                for dest_op_name in node.output_tensors[i].dest_op:
-                    if dest_op_name in self._node_id.keys():
-                        dest_node_idx = self.get_node_id(dest_op_name)
-                        tensor_idx = self.get_tensor_idx(dest_op_name, t.name, from_output=False)
+        for i in range(len(node.output_tensors)):
+            t = node.output_tensors[i]
+            for dest_op_name in node.output_tensors[i].dest_op:
+                if dest_op_name in self._node_id.keys():
+                    dest_node_idx = self.get_node_id(dest_op_name)
+                    tensor_idx = self.get_tensor_idx(dest_op_name, t.name, from_output=False)
+                    if mode == 'insert':
+                        node.output_tensors[i].source_op = [node.name]
                         if tensor_idx != -1:
                             self._nodes[dest_node_idx].input_tensors[tensor_idx].source_op = [node.name]
+                    if mode == 'remove':
+                        if tensor_idx != -1 and node.name not in self._node_id.keys():
+                            if node.name in \
+                            self._nodes[dest_node_idx].input_tensors[tensor_idx].source_op:
+                                self._nodes[dest_node_idx].input_tensors[tensor_idx].\
+                                source_op.remove(node.name)
         self._engine = None
 
         return node

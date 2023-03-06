@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include "kernels/spmm_ref.hpp"
+
 #define TH 4
 #define TW 4
 #define VEC 16
@@ -65,6 +66,7 @@ bool spmm_ref_k_t::execute_s8_(const std::vector<const void*>& rt_data) const {
   bool has_bias = derived_kd()->has_bias();
   auto attrs_map = derived_kd()->get_operator_desc().attrs();
   bool append_sum = (attrs_map["append_sum"] == "true");
+  bool welford = (attrs_map["welford"] == "true");
   auto num_BN = N_ / BN_;
   std::vector<dim_t> left_stride = {K_, 1};
   std::vector<dim_t> right_stride = {BN_ * K_, BN_, 1};
@@ -133,6 +135,29 @@ bool spmm_ref_k_t::execute_s8_(const std::vector<const void*>& rt_data) const {
         } else if (dst_dt == dt::u8) {
           dst_u8[dst_idx] = static_cast<uint8_t>(value);
         }
+      }
+    }
+  }
+  if (rt_data.size() >= ssd::DST_M2 + 1 && dst_dt == dt::fp32 && welford) {
+    auto mean_fp32 = static_cast<float*>(const_cast<void*>(rt_data[ssd::DST_M1]));
+    auto var_fp32 = static_cast<float*>(const_cast<void*>(rt_data[ssd::DST_M2]));
+
+    for (dim_t idx_mbs = 0; idx_mbs < num_BN; ++idx_mbs) {
+      for (dim_t j = 0; j < BN_; ++j) {
+        double sum = 0.f;
+        for (dim_t i = 0; i < M_; ++i) {
+          sum += dst_fp32[idx_mbs * BN_ * M_ + i * BN_ + j];
+        }
+        mean_fp32[idx_mbs * BN_ + j] = sum / M_;
+      }
+    }
+    for (dim_t idx_mbs = 0; idx_mbs < num_BN; ++idx_mbs) {
+      for (dim_t j = 0; j < BN_; ++j) {
+        double M2 = 0.f;
+        for (dim_t i = 0; i < M_; ++i) {
+          M2 += pow(dst_fp32[idx_mbs * BN_ * M_ + i * BN_ + j] - mean_fp32[idx_mbs * BN_ + j], 2);
+        }
+        var_fp32[idx_mbs * BN_ + j] = M2 / M_;
       }
     }
   }

@@ -61,6 +61,8 @@ enum SubKernel {
 }  // namespace
 
 namespace jd {
+using matmul_io = ssd::matmul_io::io;
+
 template <typename T_kd>
 inline bool attention_ref_kd_t::add_kernel_desc(const operator_desc& op_desc, const char* name) {
   std::shared_ptr<const kernel_desc_t> kd;
@@ -145,7 +147,7 @@ bool attention_ref_kd_t::init() {
 
   // weight merge
   // TODO(Yi): merge QKV together
-  qk_weight_addr_ = reinterpret_cast<char*>(aligned_allocator_t<int8_t>::allocate(ip_chanel * ip_chanel * 2));
+  qk_weight_addr_ = reinterpret_cast<void*>(aligned_allocator_t<int8_t>::allocate(ip_chanel * ip_chanel * 2));
   memcpy(qk_weight_addr_, q_weight_addr, wei_bytes);
   void* qk_weight_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(qk_weight_addr_) + wei_bytes);
   memcpy(qk_weight_addr_offset, k_weight_addr, wei_bytes);
@@ -154,16 +156,21 @@ bool attention_ref_kd_t::init() {
       ip_chanel * 2, ip_chanel, 4, 1, reinterpret_cast<int8_t*>(qk_weight_addr_)));
 
   // bias merge
-  fused_bias_addr_ = aligned_allocator_t<char>::allocate(bias_bytes * 3);
+  fused_bias_addr_ = reinterpret_cast<void*>(aligned_allocator_t<char>::allocate(bias_bytes * 3));
   memcpy(fused_bias_addr_, q_bias_addr, bias_bytes);
-  memcpy(fused_bias_addr_ + bias_bytes, k_bias_addr, bias_bytes);
-  memcpy(fused_bias_addr_ + bias_bytes * 2, v_bias_addr, bias_bytes);
+  void* fused_bias_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(fused_bias_addr_) + bias_bytes);
+  memcpy(fused_bias_addr_offset, k_bias_addr, bias_bytes);
+  fused_bias_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(fused_bias_addr_) + bias_bytes * 2);
+  memcpy(fused_bias_addr_offset, v_bias_addr, bias_bytes);
 
   // scales merge
-  fused_scales_addr_ = aligned_allocator_t<char>::allocate(scale_bytes * 3);
+  fused_scales_addr_ = reinterpret_cast<void*>(aligned_allocator_t<char>::allocate(scale_bytes * 3));
   memcpy(fused_scales_addr_, q_scales_addr, scale_bytes);
-  memcpy(fused_scales_addr_ + scale_bytes, k_scales_addr, scale_bytes);
-  memcpy(fused_scales_addr_ + scale_bytes * 2, v_scales_addr, scale_bytes);
+  void* fused_scales_addr_offset =
+      reinterpret_cast<void*>(reinterpret_cast<intptr_t>(fused_scales_addr_) + scale_bytes);
+  memcpy(fused_scales_addr_offset, k_scales_addr, scale_bytes);
+  fused_scales_addr_offset = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(fused_scales_addr_) + scale_bytes * 2);
+  memcpy(fused_scales_addr_offset, v_scales_addr, scale_bytes);
 
   const float softmax_in_zero_point = str_to_num<float>(op_attrs["softmax_in_zero_point"]);
   const float softmax_in_scale = str_to_num<float>(op_attrs["softmax_in_scale"]);
@@ -265,7 +272,7 @@ void attention_ref_k_t::setup_memory() {
   const auto tensor_bytes = [](const jd::tensor_desc& d) { return d.size() * type2bytes[d.dtype()]; };
 
   offset.push_back(tensor_bytes(ker_opdesc(SubKernel::QK_SPMM).tensor_descs()[ssd::DST]));
-  offset.push_back(tensor_bytes(ker_opdesc(SubKernel::Q_K_GEMM).tensor_descs()[ssd::DST0]));
+  offset.push_back(tensor_bytes(ker_opdesc(SubKernel::Q_K_GEMM).tensor_descs()[matmul_io::DST0]));
   offset.push_back(tensor_bytes(ker_opdesc(SubKernel::SOFTMAX).tensor_descs()[1]));
   offset.push_back(tensor_bytes(ker_opdesc(SubKernel::V_SPMM).tensor_descs()[ssd::DST]));
   // the last kernel(QK(softmax) * V) don't need alloc memory
@@ -284,15 +291,16 @@ void attention_ref_k_t::setup_memory() {
 
   // part1 Q X K
   mem_[SubKernel::Q_K_GEMM].resize(4);
-  mem_[SubKernel::Q_K_GEMM][ssd::SRC0] = mem_[SubKernel::QK_SPMM][ssd::DST];
-  mem_[SubKernel::Q_K_GEMM][ssd::SRC1] = mem_[SubKernel::QK_SPMM][ssd::DST] + offset[0] / 2;  // split qk out to q and k
-  mem_[SubKernel::Q_K_GEMM][ssd::DST0] = mem_[SubKernel::QK_SPMM][ssd::DST] + offset[0];      // dst
-  mem_[SubKernel::Q_K_GEMM][ssd::SRC2] = nullptr;
+  mem_[SubKernel::Q_K_GEMM][matmul_io::SRC0] = mem_[SubKernel::QK_SPMM][ssd::DST];
+  mem_[SubKernel::Q_K_GEMM][matmul_io::SRC1] =
+      mem_[SubKernel::QK_SPMM][ssd::DST] + offset[0] / 2;  // split qk out to q and k
+  mem_[SubKernel::Q_K_GEMM][matmul_io::DST0] = mem_[SubKernel::QK_SPMM][ssd::DST] + offset[0];  // dst
+  mem_[SubKernel::Q_K_GEMM][matmul_io::SRC2] = nullptr;
 
   // part2 Softmax
   mem_[SubKernel::SOFTMAX].resize(2);
-  mem_[SubKernel::SOFTMAX][0] = mem_[SubKernel::Q_K_GEMM][ssd::DST0];
-  mem_[SubKernel::SOFTMAX][1] = mem_[SubKernel::Q_K_GEMM][ssd::DST0] + offset[1];
+  mem_[SubKernel::SOFTMAX][0] = mem_[SubKernel::Q_K_GEMM][matmul_io::DST0];
+  mem_[SubKernel::SOFTMAX][1] = mem_[SubKernel::Q_K_GEMM][matmul_io::DST0] + offset[1];
 
   // part5 spmm for V
   mem_[SubKernel::V_SPMM].resize(ssd::SCALES + 1);
@@ -305,13 +313,13 @@ void attention_ref_k_t::setup_memory() {
   mem_[SubKernel::V_SPMM][ssd::DST] = mem_[SubKernel::SOFTMAX][1] + offset[2];
 
   // part6  V X QK(softmax out)
-  mem_[SubKernel::QK_V_MATMUL].resize(ssd::ZP0 + 1);
-  mem_[SubKernel::QK_V_MATMUL][ssd::SRC0] = mem_[SubKernel::SOFTMAX][1];
-  mem_[SubKernel::QK_V_MATMUL][ssd::SRC1] = mem_[SubKernel::V_SPMM][ssd::DST];
-  mem_[SubKernel::QK_V_MATMUL][ssd::DST0] = nullptr;
-  mem_[SubKernel::QK_V_MATMUL][ssd::SRC2] = nullptr;
-  mem_[SubKernel::QK_V_MATMUL][ssd::SCALE0] = nullptr;
-  mem_[SubKernel::QK_V_MATMUL][ssd::ZP0] = nullptr;
+  mem_[SubKernel::QK_V_MATMUL].resize(matmul_io::ZP0 + 1);
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::SRC0] = mem_[SubKernel::SOFTMAX][1];
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::SRC1] = mem_[SubKernel::V_SPMM][ssd::DST];
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::DST0] = nullptr;
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::SRC2] = nullptr;
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::SCALE0] = nullptr;
+  mem_[SubKernel::QK_V_MATMUL][matmul_io::ZP0] = nullptr;
 }
 bool attention_ref_k_t::init() {
   // Create kernel
@@ -337,12 +345,12 @@ std::vector<const void*> attention_ref_k_t::set_input_output(int index, const st
     // part0 QK spmm_vnni and part5 V spmm_vnni
     data[ssd::SRC] = rt_data[attention_io::MERGE_SRC];
   } else if (index == SubKernel::Q_K_GEMM) {
-    data[ssd::SRC2] = rt_data[attention_io::Q_K_SRC2];
+    data[matmul_io::SRC2] = rt_data[attention_io::Q_K_SRC2];
   } else if (index == SubKernel::QK_V_MATMUL) {
     // part4 transpose matmul for QK x V
-    data[ssd::DST0] = rt_data[attention_io::MERGE_DST];
-    data[ssd::SCALE0] = rt_data[attention_io::QK_V_OUTPUT_SCALES];
-    data[ssd::ZP0] = rt_data[attention_io::QK_V_OUTPUT_ZERO_POINT];
+    data[matmul_io::DST0] = rt_data[attention_io::MERGE_DST];
+    data[matmul_io::SCALE0] = rt_data[attention_io::QK_V_OUTPUT_SCALES];
+    data[matmul_io::ZP0] = rt_data[attention_io::QK_V_OUTPUT_ZERO_POINT];
   }
   return data;
 }

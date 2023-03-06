@@ -1,20 +1,34 @@
-# Multiple Choice with quantization
+Step-by-Step
+=========
 
-The script `run_swag.py` provides three quantization approaches (PostTrainingStatic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+This document describes the step-by-step instructions for reproducing the quantization on models for the multiple choice tasks on the SWAG dataset.
 
-You can use the `run_tuning.sh` and `run_benchmark.sh` to run quantization and evaluation on the `bert-base-uncased-finetuned-swag` model.
+# Prerequisite
+## 1. Installation
 
-## Command
+Make sure you have installed Intel® Extension for Transformers and all the dependencies in the current example:
 
-- To get int8 model
+```shell
+pip install intel-extension-for-transformers
+pip install -r requirements.txt
+```
+
+# Run
+
+## 1. Run Command (Shell)
+
+- Topology:
+   - distilbert_swag
+
+- To get the int8 model
 
 ```
-bash run_tuning.sh  --topology=distilbert_swag
+bash run_tuning.sh  --topology=[topology]
 ```
 
-- To evaluate with the int8 model
+- To benchmark the int8 model
 
 
 ```
-bash run_benchmark.sh --topology=distilbert_swag --mode=benchmark --int8=true
+bash run_benchmark.sh --topology=[topology] --mode=benchmark --int8=true
 ```

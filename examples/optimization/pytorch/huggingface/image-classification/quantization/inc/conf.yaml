@@ -1,0 +1,18 @@
+model:                                               # mandatory. used to specify model specific information.
+  name: vit
+  framework: pytorch_fx                                 # mandatory. possible values are tensorflow, mxnet, pytorch, pytorch_ipex, onnxrt_integerops and onnxrt_qlinearops.
+
+quantization:                                        # optional. tuning constraints on model-wise for advance user to reduce tuning space.
+  approach: post_training_static_quant
+  calibration:
+    sampling_size: [1000]
+
+tuning:
+  accuracy_criterion:
+    relative:  0.01                                  # optional. default value is relative, other value is absolute. this example allows relative accuracy loss: 1%.
+  exit_policy:
+    timeout: 0                                       # optional. tuning timeout (seconds). default value is 0 which means early stop. combine with max_trials field to decide when to exit.
+    max_trials: 300
+  random_seed: 1978                                  # optional. random seed for deterministic tuning.
+  workspace:
+    path: nc_workspace/vit/

@@ -114,4 +114,4 @@ class attention_bench : public kernel_bench {
 
 }  // namespace jd
 
-#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_LAYERNORM_BA_HPP_
+#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_ATTENTION_HPP_

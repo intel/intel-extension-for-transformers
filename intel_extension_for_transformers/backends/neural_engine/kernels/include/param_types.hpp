@@ -25,10 +25,14 @@ enum class kernel_kind : uint8_t {
   sparse_matmul,
   eltwiseop,
   layernorm_ba,
+  layernormalized_spmm,
   transpose_matmul,
   softmax,
+  logsoftmax,
   gather,
-  attention
+  attention,
+  transpose_mha,
+  dyn_quantize_mha,
 };
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };
@@ -57,6 +61,7 @@ enum class kernel_prop : uint8_t {
 // Data type.
 enum class data_type : uint8_t {
   undef,
+  f8,
   u8,
   s8,
   u16,
@@ -78,6 +83,7 @@ enum class format_type : uint8_t {
   ab,  // shape permutation = {0, 1}
   ba,  // shape permutation = {1, 0}
   abc,
+  abcd,
 
   // encoding format of sparse matrix
   uncoded,
@@ -133,8 +139,7 @@ class binaryop_attr {
 };
 
 static std::unordered_map<data_type, const int> type_size = {
-    {data_type::fp32, 4}, {data_type::s32, 4}, {data_type::fp16, 2},
-    {data_type::bf16, 2}, {data_type::u8, 1},  {data_type::s8, 1},
-};
+    {data_type::fp32, 4}, {data_type::s32, 4}, {data_type::fp16, 2}, {data_type::bf16, 2},
+    {data_type::u8, 1},   {data_type::s8, 1},  {data_type::f8, 1}};
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_

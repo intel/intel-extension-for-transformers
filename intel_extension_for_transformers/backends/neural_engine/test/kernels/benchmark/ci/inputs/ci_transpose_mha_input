@@ -1,0 +1,33 @@
+### ncores_per_inst batch_size head_num head_size seq_len impl
+
+# large
+4 4 16 64 32 vnni_w
+4 4 16 64 32 vnni_b
+4 4 16 64 64 vnni_w
+4 4 16 64 64 vnni_b
+4 4 16 64 96 vnni_w
+4 4 16 64 96 vnni_b
+4 4 16 64 128 vnni_w
+4 4 16 64 128 vnni_b
+4 4 16 64 160 vnni_w
+4 4 16 64 160 vnni_b
+4 4 16 64 256 vnni_w
+4 4 16 64 256 vnni_b
+4 4 16 64 384 vnni_w
+4 4 16 64 384 vnni_b
+
+# mini
+4 4 4 32 32 vnni_w
+4 4 4 32 32 vnni_b
+4 4 4 32 64 vnni_w
+4 4 4 32 64 vnni_b
+4 4 4 32 96 vnni_w
+4 4 4 32 96 vnni_b
+4 4 4 32 128 vnni_w
+4 4 4 32 128 vnni_b
+4 4 4 32 160 vnni_w
+4 4 4 32 160 vnni_b
+4 4 4 32 256 vnni_w
+4 4 4 32 256 vnni_b
+4 4 4 32 384 vnni_w
+4 4 4 32 384 vnni_b

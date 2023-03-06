@@ -1,11 +1,35 @@
-# Text classification
+Step-by-Step
+=========
 
-## GLUE task
+This document describes the step-by-step instructions for reproducing the distillation on models for the text classification (GLUE) tasks.
 
-The script `run_glue.py` provides the pruning approach (Magnitude) based on [Intel Extension for Transformers].
+# Prerequisite
+## 1. Installation
 
-Here is how to run the script:
- 
+Make sure you have installed Intel® Extension for Transformers and all the dependencies in the current example:
+
+```shell
+pip install intel-extension-for-transformers
+pip install -r requirements.txt
+```
+
+# Run
+
+## 1. Run Command (Shell)
+
+- Topology:
+   - distilbert-base-uncased
+
+```
+bash run_tuning.sh  --topology=[topology]
+```
+
+```
+bash run_benchmark.sh --topology=[topology] --mode=benchmark --use_distillation_model=true
+```
+
+## 2. Run Command (Python)
+
 ```
 python -u ./run_glue.py \
         --model_name_or_path distilbert-base-uncased \
@@ -21,18 +45,7 @@ python -u ./run_glue.py \
         --overwrite_output_dir \
 ```
 
-### Command
-
-```
-bash run_tuning.sh  --topology=topology
-```
-
-```
-bash run_benchmark.sh --topology=topology --mode=benchmark --use_distillation_model=true
-```
-topology is "distilbert-base-uncased"
-
-## multinode mode
+# Multi-node Mode
 
 The script `run_glue.py` also provides multinode mode. Just need add three extra arguments to enable multinode.
 
@@ -56,7 +69,10 @@ python -u ./run_glue.py \
         --worker "woker0.ipaddress:port,woker1.ipaddress:port" \
         --task_index 0 \
 ```
-on order workser, change the task_index to 1, 2, 3 and etc.
+To rank other follower nodes, change the `task_index` to 1, 2, 3 and etc.
 
-### Command
+Or you can run the shell script instead:
+
+```
 bash run_tunning_multinode.sh  --topology=distilbert-base-uncased --worker=ip_address_list --task_index=0
+```

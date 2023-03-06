@@ -736,8 +736,8 @@ class TestOps(unittest.TestCase):
 
         unsqueeze_node_test = OPERATORS['Unsqueeze']()
         unsqueeze_node_test.set_attr('onnxruntime', unsqueeze_node)
-        axis = unsqueeze_node_test.attr['axis']
-        self.assertEqual('0,2,3,1', axis)
+        axes = unsqueeze_node_test.attr['axes']
+        self.assertEqual('0,2,3,1', axes)
     
     def test_range(self):
         range_node = NodeProto()

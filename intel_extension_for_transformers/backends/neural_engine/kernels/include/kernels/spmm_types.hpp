@@ -37,6 +37,9 @@ static constexpr int SRC = 1; /*  bs*seq, 768  */
 static constexpr int BIAS = 2;
 static constexpr int DST = 3;
 static constexpr int SCALES = 4;
+static constexpr int DST_M1 = 5;      // m in Welford's online algorithm
+static constexpr int DST_M2 = 6;      // m2 in Welford's online algorithm
+static constexpr int WORK_SPACE = 7;  // memory be used in computing
 
 /**
  * @brief Scenarios supported by spmm_vnni kernel/algorithm.
@@ -73,6 +76,7 @@ struct vnni_param_t {
   std::vector<dim_t> indices;
   const int8_t* weight;
   std::vector<postop_attr> postop_attrs;
+  bool welford;
 };
 
 /**
@@ -83,7 +87,9 @@ struct vnni_data_t {
   const uint8_t* ptr_dense;  // activation(K, N).
   const int32_t* ptr_bias;   // bias(M, 1).
   dst_t* ptr_dst;            // dst(M, N).
-  const float* ptr_scales;
+  const float* ptr_scales;   // bias(M, 1)
+  float* ptr_dst_m1;         // m in Welford's online algorithm
+  float* ptr_dst_m2;         // m2 in Welford's online algorithm
 };
 
 /**

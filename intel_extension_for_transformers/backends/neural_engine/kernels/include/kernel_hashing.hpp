@@ -65,6 +65,8 @@ class hash_t {
     return seed;
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
   uint64_t get_attr_hash(const std::unordered_map<std::string, std::string>& attrs, const kernel_kind& ker_kind) const {
     auto op_attrs = attrs;
     uint64_t seed = 0;
@@ -75,11 +77,14 @@ class hash_t {
     switch (ker_kind) {
       case kernel_kind::undef:
         break;
+      case kernel_kind::layernormalized_spmm:
+        hash_combine(seed, op_attrs["split_output"]);
       case kernel_kind::sparse_matmul:
         hash_combine(seed, op_attrs["sparse_ptr"]);
         hash_combine(seed, op_attrs["micro_oc"]);
         hash_combine(seed, op_attrs["append_sum"]);
         hash_combine(seed, op_attrs["sub_func"]);
+        hash_combine(seed, op_attrs["welford"]);
         break;
       case kernel_kind::attention:
         hash_combine(seed, op_attrs["q_weight_ptr"]);
@@ -98,7 +103,13 @@ class hash_t {
         hash_combine(seed, op_attrs["softmax_out_zero_point"]);
         hash_combine(seed, op_attrs["softmax_out_scale"]);
         break;
+      case kernel_kind::transpose_mha:
+        break;
       case kernel_kind::layernorm_ba:
+        hash_combine(seed, op_attrs["split_output"]);
+        hash_combine(seed, op_attrs["matrix_shape"]);
+        hash_combine(seed, op_attrs["spec_type"]);
+        break;
       case kernel_kind::gather:
         hash_combine(seed, op_attrs["matrix_shape"]);
         break;
@@ -119,6 +130,7 @@ class hash_t {
     }
     return seed;
   }
+#pragma GCC diagnostic pop
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNEL_HASHING_HPP_
