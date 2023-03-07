@@ -491,4 +491,15 @@ class OpAny(Operator):
     """Register the OpAny operator."""
     def __init__(self):
         """The init function of this operator."""
+
+@operator_registry(operator_type='SequenceLength')
+class SequenceLength(Operator):
+
+    def __init__(self):
+        super().__init__()
+
+@operator_registry(operator_type='MultiHeadAttenion')
+class MultiHeadAttenion(Operator):
+
+    def __init__(self):
         super().__init__()

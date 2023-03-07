@@ -90,6 +90,9 @@ class kernel_bench {
   virtual void gen_case() = 0;
   // Set kp, use kp->execute() to run kernel
   virtual void set_kernel_proxy() = 0;
+  // The index of workspace pointer in rt_data; Use negative values for kernels which do not need workspace
+  virtual int get_workspace_idx() const { return -1; }
+
   friend class bench_op;
 };
 

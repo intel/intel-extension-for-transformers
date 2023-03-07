@@ -20,9 +20,9 @@
 
 #include "amx_utils.hpp"
 #include "cpu_isa.hpp"
-#include "dyn_quantize_mha_types.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
+#include "kernels/dyn_quantize_mha_types.hpp"
 #include "operator_desc.hpp"
 #include "utils.hpp"
 

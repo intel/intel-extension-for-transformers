@@ -24,7 +24,7 @@ class jit_amx_config_t : public jit_generator {
   jit_amx_config_t() : jit_generator() {}
   virtual ~jit_amx_config_t() {}
 
-  void tile_configure(void* palette) const { (*this)(palette); }
+  void tile_configure(const void* palette) const { (*this)(palette); }
 
  private:
   void generate() override;

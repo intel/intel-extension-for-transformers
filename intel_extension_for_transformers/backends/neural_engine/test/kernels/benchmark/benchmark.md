@@ -199,6 +199,21 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf softmax lut 256x256 u
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf attention 1 64 8 128 0.5 1
 ```
 
+      
+### Static MHA
+```shell
+[<environment_variable>...] ./benchmark <mode> mha_dense <batch_size> <seq_len> <head_num> <head_size> [dst_type] [padding_mask] [badd_dim]
+```
+
+- `batch_size` / `seq_len` / `head_num` / `head_size` are the the problem size.
+- `dst_type` is the output data type, could be one of `u8` / `s8` / `fp32`; default to `u8` if leave blank.
+- `padding_mask` a positive integer which is the length of sequence(s) before padding; leave blank pr set to negative value so that it defaults to `seq_len` (no padding).
+- `badd_dim` dimension of the tensor to apply binary_add before performing softmax; leave blank pr set to non-positive value to disable the binary add; set to `1`-`4` to apply the binary_add with broadcasting if necessary.
+#### Examples
+```shell
+BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf mha_dense 1 2048 16 256 u8 -1 4
+```
+
 # For developers
 To add benchmark support for a newly-added kernel, you may need to follow several steps:
 

@@ -135,12 +135,69 @@ static std::string init_info_transpose_mha(std::vector<dim_t> shape) {
 
   return ss.str();
 }
+static std::string init_info_transpose_matmul(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "transpose_matmul"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+static std::string init_info_softmax(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "softmax"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+static std::string init_info_gather(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "gather"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
 
 static std::string init_info_layernormalized_spmm(std::vector<dim_t> shape) {
   std::stringstream ss;
   ss << "cpu"
      << ","
      << "layernormalized_spmm"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+
+static std::string init_info_mha_dense(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "mha_dense"
      << ",";
 
   ss << "shape";
@@ -182,6 +239,10 @@ void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
       CASE(transpose_mha);
       CASE(layernormalized_spmm);
       CASE(dyn_quantize_mha);
+      CASE(transpose_matmul);
+      CASE(softmax);
+      CASE(gather);
+      CASE(mha_dense);
       default:
         SPARSE_LOG(FATAL) << "unknown primitive kind";
     }

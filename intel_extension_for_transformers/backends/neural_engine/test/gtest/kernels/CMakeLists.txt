@@ -39,6 +39,7 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_seq_cpy_2x8x8.cpp
     test_seq_cpy_48x4.cpp
     test_dyn_quantize_mha.cpp
+    test_mha_dense_kernel.cpp
 )
 
 if(NOT WIN32) # TODO(jiwei): disable attention test on windows due to lack of VNNI instruction set
@@ -51,6 +52,11 @@ list(APPEND KERNEL_TEST_CASES_SRC test_spmm_amx_bf16_x16_kernel.cpp)
 list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_tr_src0.cpp)
 list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_tr_src1.cpp)
 list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_mm_tile.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_tr_k.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_tr_v.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_softmax.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_mm_qk.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_mm_av.cpp)
 endif()
 
 function(register_gtest_func exe src)

@@ -52,3 +52,6 @@ source $script_dir/benchmark.sh --modes=acc,perf --op=attention --medium_n=$medi
 source $script_dir/benchmark.sh --modes=acc,perf --op=transpose_mha --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_transpose_mha_input" |
     tee "$log_dir/transpose_mha.log"
+source $script_dir/benchmark.sh --modes=acc,perf --op=mha_dense --medium_n=$medium_n --it_per_core=100 \
+    --batch="$script_dir/inputs/ci_mha_dense_input" |
+    tee "$log_dir/mha_dense.log"

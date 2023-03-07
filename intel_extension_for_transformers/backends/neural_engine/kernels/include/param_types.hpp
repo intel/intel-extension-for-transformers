@@ -32,7 +32,8 @@ enum class kernel_kind : uint8_t {
   gather,
   attention,
   transpose_mha,
-  dyn_quantize_mha,
+  mha_dense,
+  dyn_quantize_mha
 };
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };

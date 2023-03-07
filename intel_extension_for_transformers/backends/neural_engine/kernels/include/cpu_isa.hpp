@@ -51,6 +51,7 @@ enum cpu_isa_t : unsigned {
   avx512_core_bf16_amx_int8 = avx512_core_bf16 | amx_int8,
   avx512_core_bf16_amx_bf16 = avx512_core_bf16 | amx_bf16,
   avx512_core_amx = amx_int8 | amx_bf16,
+  avx512_core_fp16 = avx512_core_fp16_bit,
 };
 
 bool init_amx();
@@ -89,6 +90,8 @@ static inline bool isa_available(const cpu_isa_t cpu_isa) {
     case avx512_core_amx:
       return isa_available(avx512_core_bf16_amx_int8) && isa_available(avx512_core_bf16_amx_bf16) &&
              cpu().has(Cpu::tAVX512_FP16);
+    case avx512_core_fp16:
+      return cpu().has(Cpu::tAVX512_FP16);
     case isa_any:
       return true;
   }

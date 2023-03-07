@@ -36,6 +36,21 @@ class jit_eltwise_injector {
   void vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs,
                       std::vector<int> postop_idxs = {});
   void escape_regs(reg_type type, int reg_idx);
+  template <typename reg_t>
+  inline typename std::enable_if<std::is_base_of<Xbyak::Xmm, reg_t>::value, void>::type escape_regs(const reg_t& reg) {
+    escape_regs(reg_type::zmm, reg.getIdx());
+  }
+  template <typename reg_t>
+  inline typename std::enable_if<std::is_base_of<Xbyak::Reg32e, reg_t>::value, void>::type escape_regs(
+      const reg_t& reg) {
+    escape_regs(reg_type::reg64, reg.getIdx());
+  }
+  template <typename reg_t>
+  inline typename std::enable_if<std::is_base_of<Xbyak::Opmask, reg_t>::value, void>::type escape_regs(
+      const reg_t& reg) {
+    escape_regs(reg_type::mask, reg.getIdx());
+  }
+
   void escape_erase(reg_type type, int reg_idx = -1);
   void init_tb_allocate_set(const std::vector<postop_attr>& postop_attrs);
   int max_zmm_allocate_num() { return zmm_tb_allocate.size(); }

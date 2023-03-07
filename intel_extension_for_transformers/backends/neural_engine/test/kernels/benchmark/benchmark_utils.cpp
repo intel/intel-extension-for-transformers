@@ -48,14 +48,19 @@ bench_res_t bench_op::run_bench(bench_mode mode) {
     res.stat = bench_status::fail;
     return res;
   }
-  if (mode == bench_mode::acc) {
-    res.correct = kb->check_result();
-  }
+  if (mode == bench_mode::acc) res.correct = kb->check_result();
+
   return res;
 }
 bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
-  const auto& p = kb->args.first;
+  auto& p = kb->args.first;
   bench_res_t res;
+
+  // prepare workspace
+  const auto workspace_idx = kb->get_workspace_idx();
+  const auto workspace_size = kb->kp->get_workspace_size();
+  if (workspace_idx >= 0 && workspace_size > 0)
+    p.rt_data[workspace_idx] = aligned_allocator_t<char>::allocate(workspace_size);
 
   kb->kp->execute(p.rt_data);
 
@@ -74,6 +79,8 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
   std::vector<const void*> tmp_data(p.rt_data);
   std::vector<void*> new_data;
   std::vector<int> idx = kb->get_refresh_data_idx();
+  SPARSE_LOG_IF(FATAL, std::any_of(idx.begin(), idx.end(), [workspace_idx](int i) { return i == workspace_idx; }))
+      << "workspace must not be refreshed!";
   if (!alloc_new_mem(ts_descs, &tmp_data, &new_data, idx)) {
     res.stat = bench_status::fail;
     return res;
@@ -96,6 +103,11 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
 
   // free new memory
   free_new_mem(&new_data);
+  // free workspace memory
+  if (workspace_idx >= 0 && workspace_size > 0) {
+    aligned_allocator_t<char>::deallocate(const_cast<void*>(p.rt_data[workspace_idx]));
+    p.rt_data[workspace_idx] = nullptr;
+  }
 
   res.stat = bench_status::success;
   return res;

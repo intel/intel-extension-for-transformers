@@ -35,7 +35,10 @@ void amx_tile_config_t::amx_tile_configure(int thread_x, tile_param_t param) {
   }
 }
 
-void amx_tile_config_t::amx_tile_release() { tilerls.tile_release(); }
+void amx_tile_config_t::amx_tile_release(int thread_x) {
+  tilerls.tile_release();
+  param_[thread_x] = tile_param_t();
+}
 
 #ifdef WITH_GCC_FLAGS
 #pragma GCC push_options

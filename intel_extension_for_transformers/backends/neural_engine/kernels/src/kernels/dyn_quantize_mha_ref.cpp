@@ -14,6 +14,8 @@
 
 #include "kernels/dyn_quantize_mha_ref.hpp"
 
+#include <algorithm>
+
 namespace jd {
 using io = ssd::dyn_quantize_mha_io::io;
 using dt = jd::data_type;

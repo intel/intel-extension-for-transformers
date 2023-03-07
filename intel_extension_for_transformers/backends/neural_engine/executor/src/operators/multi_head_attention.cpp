@@ -24,9 +24,6 @@ MultiHeadAttenionOperator::MultiHeadAttenionOperator(const shared_ptr<OperatorCo
     : Operator(conf), Q_perm_({}), K_perm_({}), V_perm_({}), dst_perm_({}), output_scale_(1.) {
   auto attrs_map = operator_conf_->attributes();
 
-  int max_threads = std::min(32, omp_get_max_threads());
-  trans_mha_tmpbuf = reinterpret_cast<uint8_t*>(aligned_alloc(64, max_threads * Size2M));
-
   auto iter = attrs_map.find("Q_perm");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&Q_perm_, attrs_map["Q_perm"], ",");
@@ -51,9 +48,17 @@ MultiHeadAttenionOperator::MultiHeadAttenionOperator(const shared_ptr<OperatorCo
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&dst_reshape_, attrs_map["reshape"], ",");
   }
+
+  if (dst_reshape_.size() > 0 && dst_reshape_[0] != -1) {
+    is_sparse_ = true;
+    int max_threads = std::min(32, omp_get_max_threads());
+    trans_mha_tmpbuf = reinterpret_cast<uint8_t*>(aligned_alloc(64, max_threads * Size2M));
+  }
 }
 
-MultiHeadAttenionOperator::~MultiHeadAttenionOperator() { aligned_free(trans_mha_tmpbuf); }
+MultiHeadAttenionOperator::~MultiHeadAttenionOperator() {
+  if (is_sparse_) aligned_free(trans_mha_tmpbuf);
+}
 
 void MultiHeadAttenionOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   dst_ = output[0];
@@ -105,11 +110,34 @@ void MultiHeadAttenionOperator::Prepare(const vector<Tensor*>& input, const vect
   QK_rescales = GetRescales(Q_scales, K_scales, {}, "fp32");
   QK_rescale_ = QK_rescales[0] * output_scale_;
   softmax_rescale_ = QK_scales[0];
-  QKV_zeropoint_ = GetZeroPoints(dst_min_->data(), dst_scales, dst_->dtype())[0];
-  QKV_rescale_ = GetRescales(QK_scales, V_scales, dst_scales, dst_->dtype())[0];
+  if (is_sparse_) {
+    QKV_zeropoint_ = GetZeroPoints(dst_min_->data(), dst_scales, dst_->dtype())[0];
+    QKV_rescale_ = GetRescales(QK_scales, V_scales, dst_scales, dst_->dtype())[0];
+  } else {
+    QKV_zeropoint_ = (dst_->dtype() == "fp32") ? 0 : GetZeroPoints(dst_min_->data(), dst_scales, dst_->dtype())[0];
+    QKV_rescale_ = GetRescales(QK_scales, V_scales, dst_scales, dst_->dtype())[0];
+    scaleQ = Q_scales[0];
+    scaleK = K_scales[0];
+    scaleV = V_scales[0];
+    scaleRet = dst_scales[0];
+  }
 }
 
 void MultiHeadAttenionOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (is_sparse_)
+    ReshapeSparse(input, output);
+  else
+    ReshapeDense(input, output);
+}
+
+void MultiHeadAttenionOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (is_sparse_)
+    ForwardSparse(input, output);
+  else
+    ForwardDense(input, output);
+}
+
+void MultiHeadAttenionOperator::ReshapeSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   std::unordered_map<std::string, std::string> op_attrs;
   src_shape_ = Q_->shape();
   if (Q_->tensor_format() != TensorFormat::MmKMb) {
@@ -203,7 +231,55 @@ static void ref_mm_row_NN_f32(T1* matA, T2* matB, float* matC, float* matD, int 
   }
 }
 
-void MultiHeadAttenionOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttenionOperator::ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  std::unordered_map<std::string, std::string> attr_map;
+  if (Q_ != nullptr) {
+    auto& Q_shape = Q_->shape();
+    bs_ = Q_shape[0];
+    seq_len_ = Q_shape[1];
+    head_num_ = Q_shape[2];
+    head_size_ = Q_shape[3];
+    attr_map["merged_QKV"] = "False";
+
+  } else {
+    auto& QKV_shape = QKV_->shape();
+    bs_ = QKV_shape[0];
+    seq_len_ = QKV_shape[1];
+    head_num_ = QKV_shape[3];
+    head_size_ = QKV_shape[4];
+    attr_map["merged_QKV"] = "True";
+  }
+  hidden_size_ = head_num_ * head_size_;
+  attr_map["QK_rescale"] = std::to_string(QK_rescale_);
+  attr_map["softmax_rescale"] = std::to_string(softmax_rescale_);
+  attr_map["QKV_rescale"] = std::to_string(QKV_rescale_);
+  attr_map["QKV_dstzp"] = std::to_string(QKV_zeropoint_);
+  attr_map["Q_scale"] = std::to_string(scaleQ);
+  attr_map["K_scale"] = std::to_string(scaleK);
+  attr_map["V_scale"] = std::to_string(scaleV);
+  attr_map["DST_scale"] = std::to_string(scaleRet);
+  attr_map["QK_output_scale"] = std::to_string(output_scale_);
+  std::vector<jd::tensor_desc> ts_descs;
+  jd::data_type dt = jd::data_type::s8;
+  jd::format_type ft = jd::format_type::undef;
+  ts_descs.push_back(jd::tensor_desc({bs_, seq_len_, head_num_, head_size_}, dt, ft));
+  ts_descs.push_back(jd::tensor_desc({bs_, seq_len_, head_num_, head_size_}, dt, ft));
+  ts_descs.push_back(jd::tensor_desc({bs_, seq_len_, head_num_, head_size_}, dt, ft));
+  ts_descs.push_back(jd::tensor_desc({bs_}, jd::data_type::s32, ft));
+  ts_descs.push_back(jd::tensor_desc({bs_, seq_len_, head_num_, head_size_},
+                                     (dst_->dtype() == "fp32") ? jd::data_type::fp32 : jd::data_type::u8, ft));
+  jd::operator_desc op_desc(jd::kernel_kind::mha_dense, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                            ts_descs, attr_map);
+  jd::mha_dense_desc mha_dense_d(op_desc);
+  mha_dense_ = jd::mha_dense(mha_dense_d);
+  dst_->set_shape({bs_, seq_len_, head_num_, head_size_});
+  if (!dst_reshape_.empty()) {
+    vector<int64_t> dst_shape = GetDstShape(dst_reshape_, dst_->size(), {}, {});
+    dst_->set_shape(dst_shape);
+  }
+}
+
+void MultiHeadAttenionOperator::ForwardSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int8_t *Q_data = nullptr, *K_data = nullptr, *V_data = nullptr;
   if (Q_->tensor_format() != TensorFormat::MmKMb) {
     vector<int64_t> src_prem = {2, 0, 1, 3};
@@ -235,6 +311,25 @@ void MultiHeadAttenionOperator::Forward(const vector<Tensor*>& input, const vect
     output[0]->reorder(Q_->shape(), {1, 2, 0, 3});
     dst_->set_shape(dst_shape);
   }
+  this->unref_tensors(input);
+}
+
+void MultiHeadAttenionOperator::ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  int8_t *Q_data = nullptr, *K_data = nullptr, *V_data = nullptr;
+  if (Q_ != nullptr) {
+    Q_data = reinterpret_cast<int8_t*>(Q_->mutable_data());
+    K_data = reinterpret_cast<int8_t*>(K_->mutable_data());
+    V_data = reinterpret_cast<int8_t*>(V_->mutable_data());
+  } else {
+    int8_t* QKV_data = reinterpret_cast<int8_t*>(QKV_->mutable_data());
+    Q_data = QKV_data;
+    K_data = QKV_data + hidden_size_;
+    V_data = QKV_data + 2 * hidden_size_;
+  }
+  int32_t* att_mask_data = reinterpret_cast<int32_t*>(att_mask_->mutable_data());
+  int8_t* dst_data = reinterpret_cast<int8_t*>(dst_->mutable_data());
+  rt_data_ = {Q_data, K_data, V_data, att_mask_data, dst_data};
+  mha_dense_.execute(rt_data_);
   this->unref_tensors(input);
 }
 

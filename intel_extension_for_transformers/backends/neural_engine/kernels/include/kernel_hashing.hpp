@@ -124,6 +124,13 @@ class hash_t {
         hash_combine(seed, op_attrs["vec_len"]);
         hash_combine(seed, op_attrs["quant_factor"]);
         break;
+      case kernel_kind::mha_dense:
+        hash_combine(seed, op_attrs["QK_rescale"]);
+        hash_combine(seed, op_attrs["softmax_rescale"]);
+        hash_combine(seed, op_attrs["QKV_rescale"]);
+        hash_combine(seed, op_attrs["QKV_dstzp"]);
+        hash_combine(seed, op_attrs["merged_QKV"]);
+        hash_combine(seed, op_attrs["is_package"]);
       case kernel_kind::eltwiseop:
       default:
         break;
