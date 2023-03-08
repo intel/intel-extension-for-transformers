@@ -53,7 +53,7 @@ class mha_dense_k_t;
  *               |
  *               |
  *             Output
- * 
+ *
  * Currently only support per-tensor quantization.
  */
 class mha_dense_kd_t : public kernel_desc_t {
