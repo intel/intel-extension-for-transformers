@@ -14,6 +14,8 @@
 
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_SEQUENCE_LENGTH_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_SEQUENCE_LENGTH_HPP_
+
+#include <memory>
 #include <vector>
 
 #include "../operator.hpp"
