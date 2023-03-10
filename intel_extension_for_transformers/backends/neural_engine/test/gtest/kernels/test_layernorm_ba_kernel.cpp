@@ -203,8 +203,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
   if (per_channel_quant) op_attrs["binaryop_list"] = "u8_perchannel_quant";
 
-  operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                                  op_attrs, postop_attr);
+  operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu,
+                                  ts_descs, op_attrs, postop_attr);
 
   // init per_channel quant factor
   if (per_channel_quant) {

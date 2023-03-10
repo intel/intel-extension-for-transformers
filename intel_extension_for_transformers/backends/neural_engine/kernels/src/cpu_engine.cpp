@@ -13,8 +13,10 @@
 //  limitations under the License.
 
 #include "cpu_engine.hpp"
+#include "cpu_memory_storage.hpp"
+
 namespace jd {
-const std::vector<impl_list_item_t> cpu_engine::empty_list = {};
+const std::vector<impl_list_item_t> cpu_engine_t::empty_list = {};
 
 // C API forward declaration.
 #define DECLARE_IMPL_LIST(kind) \
@@ -34,7 +36,7 @@ DECLARE_IMPL_LIST(dyn_quantize_mha);
 
 #undef DECLARE_IMPL_LIST
 
-const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const operator_desc& op_desc) const {
+const std::vector<impl_list_item_t>* cpu_engine_t::get_implementation_list(const operator_desc& op_desc) const {
   // Call C API.
 #define CASE(kind)        \
   case kernel_kind::kind: \
@@ -53,9 +55,13 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
     CASE(mha_dense);
     CASE(dyn_quantize_mha);
     default:
-      return &cpu_engine::empty_list;
+      return &cpu_engine_t::empty_list;
   }
 
 #undef CASE
+}
+bool cpu_engine_t::create_memory_storage(memory_storage_t** storage) const {
+  *storage = new cpu_memory_storage_t(this);
+  return true;
 }
 }  // namespace jd

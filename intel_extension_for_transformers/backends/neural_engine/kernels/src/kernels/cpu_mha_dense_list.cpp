@@ -27,6 +27,6 @@ static const std::map<kernel_prop, std::vector<impl_list_item_t>> mha_dense_impl
 
 const std::vector<impl_list_item_t>* get_mha_dense_impl_list(const operator_desc& op_desc) {
   const auto impl_list_it = mha_dense_impl_list_map.find(op_desc.kernel_prop());
-  return (impl_list_it != mha_dense_impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine::empty_list;
+  return (impl_list_it != mha_dense_impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine_t::empty_list;
 }
 }  // namespace jd

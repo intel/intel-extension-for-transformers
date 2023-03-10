@@ -11,18 +11,77 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNEL_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNEL_HPP_
 #include <memory>
 #include <vector>
 
 #include "kernel_desc.hpp"
+#include "memory_storage.hpp"
 
 namespace jd {
 /**
  * @brief kernel/primitive implementation real class.
  */
+enum mem_type_t { host_mem, ocl_mem, sycl_mem };
+class stream_t;
+struct context_t {
+  explicit context_t(stream_t* stream) : stream_(stream) {}
+  stream_t* get_stream() const { return stream_; }
+  void add_input(memory_storage_t* input) { inputs_.push_back(input); }
+  void set_input(size_t index, memory_storage_t* input) {
+    if (index < inputs_.size()) {
+      inputs_[index] = input;
+    }
+  }
+  void set_inputs(const std::vector<memory_storage_t*>& inputs) { inputs_ = inputs; }
+  void add_output(memory_storage_t* input) { outputs_.push_back(input); }
+  void set_output(size_t index, memory_storage_t* output) {
+    if (index < outputs_.size()) {
+      outputs_[index] = output;
+    }
+  }
+  void set_outputs(const std::vector<memory_storage_t*>& outputs) { outputs_ = outputs; }
+  void set_workspace(size_t index, memory_storage_t* workspace) {
+    if (index < workspaces_.size()) {
+      workspaces_[index] = workspace;
+    }
+  }
+  void set_workspaces(const std::vector<memory_storage_t*>& workspaces) { workspaces_ = workspaces; }
+  std::vector<memory_storage_t*> inputs() const { return inputs_; }
+  memory_storage_t* input(size_t index) const {
+    if (index < inputs_.size()) {
+      return inputs_[index];
+    }
+    return nullptr;
+  }
+  std::vector<memory_storage_t*> outputs() const { return outputs_; }
+  memory_storage_t* output(size_t index) const {
+    if (index < outputs_.size()) {
+      return outputs_[index];
+    }
+    return nullptr;
+  }
+
+  std::vector<memory_storage_t*> workspaces() const { return workspaces_; }
+
+  memory_storage_t* workspace(size_t index) const {
+    if (index < workspaces_.size()) {
+      return workspaces_[index];
+    }
+    return nullptr;
+  }
+
+  mem_type_t mem_type() const { return mem_type_; }
+
+ private:
+  mem_type_t mem_type_;
+  stream_t* stream_;
+  std::vector<memory_storage_t*> inputs_;
+  std::vector<memory_storage_t*> outputs_;
+  std::vector<memory_storage_t*> workspaces_;
+};
+
 class kernel_t {
  public:
   explicit kernel_t(const std::shared_ptr<const kernel_desc_t>& kd);
@@ -54,7 +113,11 @@ class kernel_t {
   }
   // init kernel_t
   virtual bool init() = 0;
-  virtual bool execute(const std::vector<const void*>& rt_data) const = 0;
+  virtual bool init(const context_t&) { return true; }
+
+  virtual bool execute(const std::vector<const void*>&) const { return true; }
+  virtual bool execute(const context_t&) const { return true; }
+  virtual bool execute() const { return true; }
   virtual size_t get_workspace_size() const { return 0; }
 
  public:

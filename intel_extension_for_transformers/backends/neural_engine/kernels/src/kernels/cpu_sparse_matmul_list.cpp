@@ -58,6 +58,6 @@ const std::vector<impl_list_item_t>* get_sparse_matmul_impl_list(const operator_
   const auto& dst_dtype = tensor_descs[ssd::DST].dtype();
   map_key_t key{op_desc.kernel_prop(), src0_dtype, src1_dtype, dst_dtype};
   const auto impl_list_it = impl_list_map.find(key);
-  return (impl_list_it != impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine::empty_list;
+  return (impl_list_it != impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine_t::empty_list;
 }
 }  // namespace jd

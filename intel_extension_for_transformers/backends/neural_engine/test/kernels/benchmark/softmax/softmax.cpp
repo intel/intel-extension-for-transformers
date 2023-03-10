@@ -118,8 +118,8 @@ bool softmax_bench::check_result() {
 }
 
 void softmax_bench::gen_case() {
-  operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs,
-                             postop_attrs);
+  operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
+                             op_attrs, postop_attrs);
 
   int num = get_element_num(softmax_desc);
   auto in_dt = ts_descs[0].dtype();

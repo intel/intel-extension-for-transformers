@@ -24,12 +24,13 @@ namespace jd {
 #define CPU_INSTANCE(...) impl_list_item_t(type_deduction_helper_t<__VA_ARGS__::kd_t>())
 #define NULL_INSTANCE(...) impl_list_item_t(nullptr)
 
-class cpu_engine : public engine {
+class cpu_engine_t : public engine_t {
  public:
-  cpu_engine() : engine(engine_kind::cpu) {}
-  virtual ~cpu_engine() {}
+  cpu_engine_t() : engine_t(engine_kind::cpu, runtime_kind::undef) {}
+  virtual ~cpu_engine_t() {}
 
  public:
+  bool create_memory_storage(memory_storage_t** storage) const override;
   const std::vector<impl_list_item_t>* get_implementation_list(const operator_desc& op_desc) const override;
 
  public:

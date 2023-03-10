@@ -198,7 +198,8 @@ std::pair<OpArgs, OpArgs> gen_case(  //
 
   operator_desc op_desc(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
   attr_map["approx_exp"] = "True";
-  operator_desc op_desc2(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
+  operator_desc op_desc2(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
+                         attr_map);
 
   OpArgs op_args_p = {data_p, op_desc};
   OpArgs op_args_q = {data_q, op_desc2};

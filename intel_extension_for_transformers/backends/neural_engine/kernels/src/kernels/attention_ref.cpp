@@ -179,7 +179,7 @@ bool attention_ref_kd_t::init() {
 
   // sub-kernel 0: spmm for QK
   operator_desc spmm_qk_desc =
-      operator_desc(kernel_kind::sparse_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
+      operator_desc(kernel_kind::sparse_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(), op_desc_.runtime_kind(),
                     {qk_weight_desc, src_desc, qk_bias_desc, qk_dst_desc_s8, qk_scales_desc},
                     {{"weight_ptr", std::to_string(reinterpret_cast<uint64_t>(qk_weight_addr_))},
                      {"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(qk_sparse_ptr_))},

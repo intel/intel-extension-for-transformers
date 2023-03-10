@@ -154,8 +154,8 @@ TEST_P(SoftmaxLutKernelTest, TestPostfix) {
 std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
                                          const std::unordered_map<std::string, std::string> op_attrs,
                                          const std::vector<postop_attr>& postop_attr) {
-  operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs,
-                             postop_attr);
+  operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
+                             op_attrs, postop_attr);
 
   int num = get_element_num(softmax_desc);
   void* src = nullptr;

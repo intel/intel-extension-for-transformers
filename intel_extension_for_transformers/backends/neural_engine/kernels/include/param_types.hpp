@@ -23,6 +23,7 @@ namespace jd {
 enum class kernel_kind : uint8_t {
   undef,
   sparse_matmul,
+  matmul,
   eltwiseop,
   layernorm_ba,
   layernormalized_spmm,
@@ -99,6 +100,15 @@ enum class format_type : uint8_t {
 enum class engine_kind : uint8_t {
   undef,
   cpu,
+  gpu,
+};
+
+// Runtime kind.
+enum class runtime_kind : uint8_t {
+  undef,
+  opencl,
+  sycl,
+  thread_pool
 };
 
 // postop attribute for op-fusion

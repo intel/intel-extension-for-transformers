@@ -24,7 +24,7 @@
 #include "verbose.hpp"
 
 namespace jd {
-class engine;
+class engine_t;
 class kernel_t;
 /**
  * @brief kernel descriptor implementation real class.

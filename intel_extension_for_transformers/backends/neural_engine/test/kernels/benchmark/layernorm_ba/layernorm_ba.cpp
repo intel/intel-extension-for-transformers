@@ -205,8 +205,8 @@ void layernorm_ba_bench::gen_case() {
   rt_data2.push_back(alpha);
   rt_data2.push_back(beta);
 
-  operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                                  op_attrs, postop_attrs);
+  operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu,
+                                  ts_descs, op_attrs, postop_attrs);
 
   op_args_t p = {layernorm_ba_desc, rt_data1};
   op_args_t q = {layernorm_ba_desc, rt_data2};

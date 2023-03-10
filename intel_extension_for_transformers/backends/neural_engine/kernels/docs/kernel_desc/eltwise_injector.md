@@ -43,14 +43,14 @@ class postop_attr {
 ```
 
 #### alpha,beta,scale meaning
-these 3 params are only used in quantize, dequantize, linear, relu.  
-The quantize's mathematical definition is fp32=saturate(round(int8/scale+zero_point)) and the dequantize's mathematical definition is int8=(fp32-zero_point)*scale. In these two operators,alpha represents zero_point, scale represents scale and beta is unused.  
-The mathematical definition of linear is y=αx+β. attr's alpha represents alpha, beta represents beta and scale is unused.  
-The relu's mathematical definition is as follow, attr's alpha represents alpha, beta and scale are unused.  
+these 3 params are only used in quantize, dequantize, linear, relu.
+The quantize's mathematical definition is fp32=saturate(round(int8/scale+zero_point)) and the dequantize's mathematical definition is int8=(fp32-zero_point)*scale. In these two operators,alpha represents zero_point, scale represents scale and beta is unused.
+The mathematical definition of linear is y=αx+β. attr's alpha represents alpha, beta represents beta and scale is unused.
+The relu's mathematical definition is as follow, attr's alpha represents alpha, beta and scale are unused.
 
 $$
 \begin{align}
-y =\begin{cases} 
+y =\begin{cases}
 \alpha x & \text{if $x \le 0 $} \\
 x & \text{if $x \gt 0 $}
 \end{cases}
@@ -81,16 +81,16 @@ class operator_desc {
         ts_descs_(ts_descs),
         attrs_(attrs),
         apply_postops_list_(apply_postops_list) {}
-    
-  private: 
+
+  private:
    std::vector<postop_attr> apply_postops_list_;
 }
 ```
 <a name="hZaPk"></a>
 ### jit_eltwise_injector.hpp
 We design an element-wise injector named eltwise_injector which can apply eltwise-ops. We will combine the injectors like eltwise_injector, binary_injector into a new injector named postop-injector in the future.<br />Here are the APIs which eltwise_injector expose to the developer:<br />`eltwise_injector_init` is used for injector initialization.<br />`vector_compute` is used for executing the postop calculate, users can indicate the eltwiseop's idx to select the op which they want to apply, if the idx list is empty, the injector will apply all ops in postop-chian.<br />`escape_regs` is used for telling injector which registers have been used in upper-level kernel.All dst zmm registers should be registered.<br />
-`escape_erase` is used for removing the specified type register ID from used_regs set, if reg_idx is not given,this function will erase all IDs by default.   
-`prepare_table` is used for inserting the LUT which injected code needed at the end of the upper-level kernel.  
+`escape_erase` is used for removing the specified type register ID from used_regs set, if reg_idx is not given,this function will erase all IDs by default.
+`prepare_table` is used for inserting the LUT which injected code needed at the end of the upper-level kernel.
 ```cpp
 class jit_eltwise_injector {
  public:
@@ -150,8 +150,8 @@ void jit_eltwiseop_t::assign_regs() {
   addr_src = r15;
   addr_dst = r14;
   reg_param = rdi;
-  remain_element_num = rsi; 
-    
+  remain_element_num = rsi;
+
   eltwise_injector.escape_regs(reg_type::mask, remain_task_mask.getIdx());
   eltwise_injector.escape_regs(reg_type::reg64, scratch_.getIdx());
   eltwise_injector.escape_regs(reg_type::zmm, reg_src.getIdx());
@@ -166,7 +166,7 @@ step3. Apply the postops where you want and then prepare the LUT at the end of t
 void jit_eltwiseop_t::generate() {
   this->preamble();
   load_params();
-    
+
   //load data.
   vmovups(reg_src, ptr[addr_src]);
   eltwise_injector.vector_compute(reg_src, param_.postop_attrs);
@@ -186,7 +186,7 @@ This is the guide about how to set op-fusion in UT in user's perspective.
 step0. Prepare the postop_attr
 ```cpp
 postop_attr fp32_gelu_attr{data_type::fp32, postop_type::eltwise, postop_alg::gelu};
-postop_attr bf16_gelu_attr{data_type::bf16, postop_type::eltwise, postop_alg::gelu}; 
+postop_attr bf16_gelu_attr{data_type::bf16, postop_type::eltwise, postop_alg::gelu};
 postop_attr fp32_gelu_attr{data_type::fp32, postop_type::eltwise, postop_alg::gelu};
 postop_attr bf16_gelu_attr{data_type::bf16, postop_type::eltwise, postop_alg::gelu};
 ```
