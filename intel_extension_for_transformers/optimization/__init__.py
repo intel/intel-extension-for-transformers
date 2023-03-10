@@ -27,6 +27,8 @@ from .config import (
     QuantizationConfig,
     WEIGHTS_NAME,
     DynamicLengthConfig,
+    PrunerV2,
+    WeightPruningConfig
 )
 from .distillation import (
     DistillationCriterionMode,

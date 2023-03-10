@@ -1,5 +1,5 @@
 """scheduler module."""
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2022 Intel Corporation
@@ -23,18 +23,17 @@ SCHEDULERS = {}
 
 def register_scheduler(name):
     """Class decorator used to register a Scheduler subclass to the registry.
-
+    
     Decorator function used before a Scheduler subclass.
     Make sure that the Scheduler class decorated by this function can be registered in SCHEDULERS.
     
     Args:
         cls (class): The class of register.
-        name: A string. Define the scheduler type.
-
+        name: A string that defines the scheduler type.
+        
     Returns:
         cls: The class of register.
     """
-
     def register(scheduler):
         SCHEDULERS[name] = scheduler
         return scheduler
@@ -44,55 +43,55 @@ def register_scheduler(name):
 
 def get_scheduler(config):
     """Get registered scheduler class.
-
+    
     Get a scheduler object from SCHEDULERS.
-
+    
     Args:
-        config: A config dict object. Contains the scheduler information.
-
+        config: A config dict object that contains the scheduler information.
+        
     Returns:
         A Scheduler object.
     """
     name = "iterative"
-    if config.start_step == config.end_step:
+    if config.start_step == config.end_step:  # pragma: no cover
         name = "oneshot"
     return SCHEDULERS[name](config)
 
 
-class Scheduler:
+class PruningScheduler:
     """Pruning Scheduler.
 
     The class which defines a sparsity changing process during pruning.
     Mainly contains two types:
         1. iterative scheduler. Prune the model from dense to target sparsity gradually.
         2. one-shot scheduler. Prune the model in a single step and reach the target sparsity.
-
+        
     Args:
-        config: A config dict object. Contains the scheduler information.
-
+        config: A config dict object that contains the scheduler information.
+        
     Attributes:
-        config: A config dict object. Contains the scheduler information.
+        config: A config dict object that contains the scheduler information.
     """
-
+    
     def __init__(self, config):
         """Initialize."""
         self.config = config
 
-    def update_sparsity_ratio(self, aggressive_ratio, current_prune_step, total_prune_steps, masks):
+    def update_sparsity_ratio(self, target_ratio, current_prune_step, total_prune_steps, masks, init_ratio=0.0):
         """To be implemented in subclasses."""
         raise NotImplementedError
 
 
 @register_scheduler('oneshot')
-class OneshotScheduler(Scheduler):
+class OneshotScheduler(PruningScheduler):  # pragma: no cover
     """Pruning Scheduler.
-
+    
     A Scheduler class derived from Scheduler.
     Prune the model to target sparsity once.
-
+    
     Args:
-        config: A config dict object. Contains the scheduler information.
-
+        config: A config dict object that contains the scheduler information.
+        
     Attributes:
         Inherit from parent class Scheduler.
     """
@@ -101,20 +100,31 @@ class OneshotScheduler(Scheduler):
         """Initialize."""
         super(OneshotScheduler, self).__init__(config)
 
-    def update_sparsity_ratio(self, aggressive_ratio, current_prune_step, total_prune_steps, masks):
-        """Return the aggressive ratio."""
-        return aggressive_ratio
+    def update_sparsity_ratio(self, target_ratio, current_prune_step, total_prune_steps, masks, init_ratio=0.0):
+        """Update sparsity ratio.
+        
+        Args:
+            target_ratio: A float representing the sparsity ratio after pruning.
+            current_prune_step: An integer representing the current pruning step.
+            total_prune_steps: An integer representing the total number of steps of the pruning process.
+            masks: A dict {"module_name": Tensor} that stores the masks for modules' weights.
+            init_ratio: A float representing the sparsity ratio before pruning. 
+
+        Return:
+            A float representing the sparsity ratio that the model will reach after the next pruning step.
+        """
+        return target_ratio
 
 
 @register_scheduler('iterative')
-class IterativeScheduler(Scheduler):
+class IterativeScheduler(PruningScheduler):
     """Pruning Scheduler.
-
+    
     A Scheduler class derived from Scheduler.
-    Prune the model to from dense to target sparsity in several steps.
-
+    Prune the model from dense to target sparsity in several steps.
+    
     Args:
-        config: A config dict object. Contains the scheduler information.
+        config: A config dict object that contains the scheduler information.
 
     Attributes:
         Inherit from parent class Scheduler.
@@ -123,9 +133,9 @@ class IterativeScheduler(Scheduler):
     def __init__(self, config):
         """Initialize."""
         super(IterativeScheduler, self).__init__(config)
-        # self.decay_type = config["sparsity_decay_type"]
 
-    def update_sparsity_ratio(self, target_ratio, current_prune_step, total_prune_steps, masks):
+    def update_sparsity_ratio(self, target_ratio, current_prune_step, total_prune_steps, masks,
+                              init_sparsity_ratio=0.0):
         """Obtain new target sparsity ratio according to the step.
 
         Args:
@@ -133,31 +143,33 @@ class IterativeScheduler(Scheduler):
             current_prune_step: A integer. The current pruning step.
             total_prune_steps: A integer. The total steps included in the pruning progress.
             masks: A dict{"module_name": Tensor}. The masks for modules' weights.
+            init_sparsity_ratio:
         
-        Returns：
-            A float. the target sparsity ratio the model will reach after the next pruning step.
+        Returns:
+            A float representing the target sparsity ratio the model will reach after the next pruning step.
         """
         aggressive_ratio = target_ratio
-        # if self.config.prune_domain == "global":
-        #     aggressive_ratio += 0.02
-
-        aggressive_ratio = min(self.config.max_sparsity_ratio_per_layer,
-                               aggressive_ratio)  ##lagacy issue
+        aggressive_ratio = min(self.config.max_sparsity_ratio_per_op,
+                               aggressive_ratio)  ##legacy issue
 
         decay_type = self.config.sparsity_decay_type
         if decay_type == "cos":
-            current_target_sparsity = (aggressive_ratio) * (
-                    1.0 - math.cos(float(current_prune_step) / total_prune_steps * (math.pi / 2)))
+            current_target_sparsity = (aggressive_ratio - init_sparsity_ratio) * (
+                    1.0 - math.cos(float(current_prune_step) / total_prune_steps * (math.pi / 2))) + init_sparsity_ratio
         elif decay_type == "exp":
-            target_dense_change_ratio = (1.0 - aggressive_ratio) ** (1 / total_prune_steps)
-            current_target_sparsity = 1.0 - target_dense_change_ratio ** current_prune_step
+            target_dense_change_ratio = ((1.0 - aggressive_ratio) / (1.0 - init_sparsity_ratio)) ** (
+                    1 / total_prune_steps)
+            current_target_sparsity = 1.0 - (
+                    1.0 - init_sparsity_ratio) * target_dense_change_ratio ** current_prune_step
 
-        elif decay_type == "linear":
-            current_target_sparsity = (aggressive_ratio) * float(current_prune_step) / total_prune_steps
+        elif decay_type == "linear":  # pragma: no cover
+            current_target_sparsity = (aggressive_ratio - init_sparsity_ratio) * float(
+                current_prune_step) / total_prune_steps + init_sparsity_ratio
 
-        elif decay_type == "cube":
-            current_target_sparsity = (aggressive_ratio) * ((float(current_prune_step) / total_prune_steps) ** 3)
-        else:
+        elif decay_type == "cube":  # pragma: no cover
+            current_target_sparsity = (aggressive_ratio - init_sparsity_ratio) * (
+                    (float(current_prune_step) / total_prune_steps) ** 3) + init_sparsity_ratio
+        else:  # pragma: no cover
             assert False, "{} is not supported".format(decay_type)
 
         current_target_sparsity = min(target_ratio, current_target_sparsity)

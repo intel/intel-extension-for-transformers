@@ -1,6 +1,10 @@
 datasets
-tqdm
-torch >= 1.10.0
-transformers>=4.12.0
+transformers
 accelerate
-huggingface_hub
+datasets
+sentencepiece
+scipy
+scikit-learn
+protobuf
+torch
+evaluate

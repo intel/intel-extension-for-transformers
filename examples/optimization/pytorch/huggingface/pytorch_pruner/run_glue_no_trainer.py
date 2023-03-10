@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+""" Finetuning a 🤗 Transformers model for sequence classification on GLUE."""
 import argparse
 import logging
 import math
@@ -20,12 +21,14 @@ import random
 from pathlib import Path
 import sys
 
+from intel_extension_for_transformers.optimization.config import WeightPruningConfig
 from intel_extension_for_transformers.optimization.pytorch_pruner.pruning import Pruning
 
 sys.path.insert(0, './')
 import datasets
 from datasets import load_dataset, load_metric
 from torch.utils.data import DataLoader
+import torch
 from tqdm.auto import tqdm
 
 import transformers
@@ -99,6 +102,12 @@ def parse_args():
         required=True,
     )
     parser.add_argument(
+        "--teacher_model_name_or_path",
+        type=str,
+        default=None,
+        help="Path to pretrained teacher model or model identifier from huggingface.co/models.",
+    )
+    parser.add_argument(
         "--use_slow_tokenizer",
         action="store_true",
         help="If passed, will use a slow tokenizer (not backed by the 🤗 Tokenizers library).",
@@ -121,7 +130,6 @@ def parse_args():
         default=0.0,
         help="distiller loss weight",
     )
-
     parser.add_argument(
         "--learning_rate",
         type=float,
@@ -150,11 +158,6 @@ def parse_args():
         choices=["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup"],
     )
     parser.add_argument(
-        "--pruning_config",
-        type=str,
-        help="pruning_config",
-    )
-    parser.add_argument(
         "--num_warmup_steps", type=int, default=0, help="Number of steps for the warmup in the lr scheduler."
     )
     parser.add_argument("--output_dir", type=str, default=None, help="Where to store the final model.")
@@ -169,6 +172,27 @@ def parse_args():
                         help="Number of epochs the network not be purned")
     parser.add_argument("--hub_token", type=str, help="The token to use to push to the Model Hub.")
     parser.add_argument("--do_prune", action="store_true", help="Whether or not to prune the model")
+    
+    parser.add_argument(
+        "--pruning_pattern",
+        type=str, default="4x1",
+        help="pruning pattern type, we support NxM and N:M."
+    )
+    parser.add_argument(
+        "--target_sparsity",
+        type=float, default=0.8,
+        help="Target sparsity of the model."
+    )
+    parser.add_argument(
+        "--pruning_frequency",
+        type=int, default=-1,
+        help="Sparse step frequency for iterative pruning, default to a quarter of pruning steps."
+    )
+    parser.add_argument(
+        "--pruning_type",
+        type=str, default="snip_momentum",
+        help="Pruning type determines how should the weights of a neural network are scored and pruned."
+    )
     args = parser.parse_args()
 
     # Sanity checks
@@ -296,8 +320,11 @@ def main():
         config=config,
     )
     if args.distill_loss_weight > 0:
+        teacher_path = args.teacher_model_name_or_path
+        if teacher_path is None:
+            teacher_path = args.model_name_or_path
         teacher_model = AutoModelForSequenceClassification.from_pretrained(
-            args.model_name_or_path,
+            teacher_path,
             from_tf=bool(".ckpt" in args.model_name_or_path),
             config=config,
         )
@@ -463,21 +490,40 @@ def main():
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
     completed_steps = 0
 
-    pruner = Pruning(args.pruning_config)
+    # Pruning preparation
     num_iterations = len(train_dataset) / total_batch_size
-
-    total_iterations = num_iterations * (args.num_train_epochs - args.sparsity_warm_epochs - args.cooldown_epochs)
-    if args.do_prune:
-        pruner.update_items_for_all_pruners(start_step=int(args.sparsity_warm_epochs * num_iterations),
-                                            end_step=int(total_iterations))  ##iterative
-    else:
-        pruner.update_items_for_all_pruners(start_step=total_iterations+1,
-                                            end_step=total_iterations+1) ##removing the pruner by set the start step to the training end
+    num_warm = int(args.sparsity_warm_epochs * num_iterations)
+    total_iterations = int(num_iterations * (args.num_train_epochs - args.cooldown_epochs))
+    frequency = int((total_iterations - num_warm + 1) / 40) if args.pruning_frequency == -1 \
+                                                           else args.pruning_frequency
+    pruning_start = num_warm
+    pruning_end = total_iterations
+    if not args.do_prune:
+        pruning_start = num_iterations * args.num_train_epochs + 1
+        pruning_end = pruning_start
+    pruning_configs=[
+        {
+            "pruning_type": "snip_momentum",
+            "pruning_scope": "global",
+            "sparsity_decay_type": "exp",
+            "excluded_op_names": ["classifier", "pooler", ".*embeddings*"],
+            "pruning_op_types": ["Linear"],
+            "max_sparsity_ratio_per_op": 0.98
+        }
+    ]
+    configs = WeightPruningConfig(
+        pruning_configs,
+        target_sparsity=args.target_sparsity,
+        pattern=args.pruning_pattern,
+        pruning_frequency=frequency,
+        start_step=pruning_start,
+        end_step=pruning_end,
+        pruning_type=args.pruning_type,
+    )
+    pruner = Pruning(configs)
     pruner.model = model
     pruner.on_train_begin()
-    sparsity_warm_step = 0
 
-    import torch
     for epoch in range(args.num_train_epochs):
         model.train()
 
@@ -511,14 +557,6 @@ def main():
                 break
 
         model.eval()
-        zero_cnt = 0
-        total_cnt = 0
-        embedding_cnt = 0
-        all_total_cnt = 0
-
-        import timeit
-
-        start_time = timeit.default_timer()
 
         for step, batch in enumerate(eval_dataloader):
             outputs = model(**batch)
@@ -528,42 +566,41 @@ def main():
                 references=accelerator.gather(batch["labels"]),
             )
 
-        runtime = timeit.default_timer() - start_time
-
         eval_metric = metric.compute()
-        batch_size = args.per_device_eval_batch_size
-        throughput = len(eval_dataset) / runtime
-        latency = '{:.3f}'.format(runtime / len(eval_dataset))
-
-        logger.info(f"Epoch {epoch}: {eval_metric}\nBatch size: {batch_size}\nLatency： {latency}\nThroughput: {throughput} samples/sec")
+        logger.info(f"epoch {epoch}: {eval_metric}")
+        # pruner.on_after_eval()
         if args.push_to_hub and epoch < args.num_train_epochs - 1:
             accelerator.wait_for_everyone()
-            unwrapped_model = accelerator.unwrap_model(model)
-            unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
+            # unwrapped_model = accelerator.unwrap_model(model)
+            # unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
+            accelerator.save_state(args.output_dir)
             if accelerator.is_main_process:
                 tokenizer.save_pretrained(args.output_dir)
+                config.save_pretrained(args.output_dir)
                 repo.push_to_hub(
                     commit_message=f"Training in progress epoch {epoch}", blocking=False, auto_lfs_prune=True
                 )
         if args.output_dir is not None:
             accelerator.wait_for_everyone()
-            unwrapped_model = accelerator.unwrap_model(model)
+            # unwrapped_model = accelerator.unwrap_model(model)
             file = os.path.join(args.output_dir, f"epoch{epoch}")
-            unwrapped_model.save_pretrained(file)
+            # unwrapped_model.save_pretrained(file)
             # unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
-            if accelerator.is_main_process:
-                tokenizer.save_pretrained(args.output_dir)
+            accelerator.save_state(file)
+            # if accelerator.is_main_process:
+                # tokenizer.save_pretrained(args.output_dir)
                 # if args.push_to_hub:
                 #     repo.push_to_hub(commit_message="End of training", auto_lfs_prune=True)
 
+
     if args.output_dir is not None:
         accelerator.wait_for_everyone()
-        unwrapped_model = accelerator.unwrap_model(model)
-        file = os.path.join(args.output_dir, f"epoch{epoch}.pytorch.bin")
-        unwrapped_model.save_pretrained(file)
+        # unwrapped_model = accelerator.unwrap_model(model)
         # unwrapped_model.save_pretrained(args.output_dir, save_function=accelerator.save)
+        accelerator.save_state(args.output_dir)
         if accelerator.is_main_process:
             tokenizer.save_pretrained(args.output_dir)
+            config.save_pretrained(args.output_dir)
             if args.push_to_hub:
                 repo.push_to_hub(commit_message="End of training", auto_lfs_prune=True)
 
@@ -590,3 +627,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+

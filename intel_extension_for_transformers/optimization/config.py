@@ -17,6 +17,7 @@
 
 """Config: provide config classes for optimization processes."""
 
+import yaml
 from enum import Enum
 from neural_compressor.conf.config import (
     Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
@@ -39,6 +40,24 @@ WEIGHTS_NAME = "pytorch_model.bin"
 class Provider(Enum):
     """Optimization functionalities provider: INC or NNCF."""
     INC = "inc"
+
+
+def constructor_register(cls):
+    yaml_key = "!{}".format(cls.__name__)
+
+    def constructor(loader, node):
+        instance = cls.__new__(cls)
+        yield instance
+
+        state = loader.construct_mapping(node, deep=True)
+        instance.__init__(**state)
+
+    yaml.add_constructor(
+        yaml_key,
+        constructor,
+        yaml.SafeLoader,
+    )
+    return cls
 
 
 class DynamicLengthConfig(object):
@@ -932,3 +951,73 @@ class NASConfig(object):
             self.config.nas.search.higher_is_better.append(
                 metric.greater_is_better
                 )
+@constructor_register
+class PrunerV2:
+    """
+    similiar to torch optimizer's interface
+    """
+
+    def __init__(self,
+                 target_sparsity=None, pruning_type=None, pattern=None, op_names=None,
+                 excluded_op_names=None,
+                 start_step=None, end_step=None, pruning_scope=None, pruning_frequency=None,
+                 min_sparsity_ratio_per_op=None, max_sparsity_ratio_per_op=None,
+                 sparsity_decay_type=None, pruning_op_types=None, reg_type=None,
+                 criterion_reduce_type=None, parameters=None, resume_from_pruned_checkpoint=None):
+        self.pruner_config = DotDict({
+            'target_sparsity': target_sparsity,
+            'pruning_type': pruning_type,
+            'pattern': pattern,
+            'op_names': op_names,
+            'excluded_op_names': excluded_op_names,  ##global only
+            'start_step': start_step,
+            'end_step': end_step,
+            'pruning_scope': pruning_scope,
+            'pruning_frequency': pruning_frequency,
+            'min_sparsity_ratio_per_op': min_sparsity_ratio_per_op,
+            'max_sparsity_ratio_per_op': max_sparsity_ratio_per_op,
+            'sparsity_decay_type': sparsity_decay_type,
+            'pruning_op_types': pruning_op_types,
+            'reg_type': reg_type,
+            'criterion_reduce_type': criterion_reduce_type,
+            'parameters': parameters,
+            'resume_from_pruned_checkpoint': resume_from_pruned_checkpoint
+        })
+
+class WeightPruningConfig:
+    """Similiar to torch optimizer's interface."""
+    def __init__(self, pruning_configs=[{}],  ##empty dict will use global values
+                 target_sparsity=0.9, pruning_type="snip_momentum", pattern="4x1", op_names=[],
+                 excluded_op_names=[],
+                 start_step=0, end_step=0, pruning_scope="global", pruning_frequency=1,
+                 min_sparsity_ratio_per_op=0.0, max_sparsity_ratio_per_op=0.98,
+                 sparsity_decay_type="exp", pruning_op_types=['Conv', 'Linear'],
+                 **kwargs):
+        """Init a WeightPruningConfig object."""
+        self.pruning_configs = pruning_configs
+        self._weight_compression = DotDict({
+            'target_sparsity': target_sparsity,
+            'pruning_type': pruning_type,
+            'pattern': pattern,
+            'op_names': op_names,
+            'excluded_op_names': excluded_op_names,  ##global only
+            'start_step': start_step,
+            'end_step': end_step,
+            'pruning_scope': pruning_scope,
+            'pruning_frequency': pruning_frequency,
+            'min_sparsity_ratio_per_op': min_sparsity_ratio_per_op,
+            'max_sparsity_ratio_per_op': max_sparsity_ratio_per_op,
+            'sparsity_decay_type': sparsity_decay_type,
+            'pruning_op_types': pruning_op_types,
+        })
+        self._weight_compression.update(kwargs)
+
+    @property
+    def weight_compression(self):
+        """Get weight_compression."""
+        return self._weight_compression
+
+    @weight_compression.setter
+    def weight_compression(self, weight_compression):
+        """Set weight_compression."""
+        self._weight_compression = weight_compression

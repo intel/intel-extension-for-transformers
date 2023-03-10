@@ -3,142 +3,147 @@ import sys
 import unittest
 
 import torch
-import torch.nn as nn
-import torchvision
-from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
-
+from intel_extension_for_transformers.optimization.config import WeightPruningConfig, PrunerV2
 from intel_extension_for_transformers.optimization.pytorch_pruner.pruning import Pruning
+import torchvision
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
 
 sys.path.insert(0, './')
 
+local_schedulers_config = [
+    {
+        "start_step": 0,
+        "end_step": 2,
+        "pruning_type": "magnitude",
+        "op_names": ['layer1.*'],
+        "excluded_op_names": ['layer2.*'],
+        "pruning_scope": "global",
+        "target_sparsity": 0.5,
+        "pattern": "4x1"
+    },
+    {
+        "start_step": 1,
+        "end_step": 10,
+        "target_sparsity": 0.5,
+        "pruning_type": "snip_momentum",
+        "pruning_frequency": 2,
+        "op_names": ['layer2.*'],
+        "pruning_scope": "local",
+        "target_sparsity": 0.75,
+        "pattern": "32x1",
+        "sparsity_decay_type": "exp"
+    },
+    {
+        "start_step": 1,
+        "end_step": 10,
+        "pruning_type": "snip_progressive",
+        "pruning_frequency": 2,
+        "op_names": ['layer2.*'],
+        "pruning_scope": "local",
+        "target_sparsity": 0.7,
+        "pattern": "4x2",
+        "sparsity_decay_type": "linear"
+    }
+]
+
+fake_snip_config = WeightPruningConfig(local_schedulers_config, target_sparsity=0.9, start_step=0, \
+                                       end_step=10, pruning_frequency=1, sparsity_decay_type="exp")
+
 def build_fake_yaml_basic():
     fake_snip_yaml = """
-    model:
-      name: imagenet_prune
-      framework: pytorch
-    pruning:
-      approach:
-        weight_compression_pytorch:
-          initial_sparsity: 0.0
-          target_sparsity: 0.9
-          max_sparsity_ratio_per_layer: 0.9
-          start_step: 0
-          end_step: 10
-          excluded_names: ["classifier"]
-          update_frequency_on_step: 1
-          sparsity_decay_type: "exp"
-          pruners:
-            - !Pruner
-                start_step: 0
-                sparsity_decay_type: "cos"
-                end_step: 10
-                prune_type: "magnitude"
-                names: ['layer1.*']
-                extra_excluded_names: ['layer2.*']
-                prune_domain: "global"
-                pattern: "tile_pattern_4x1"
-            - !Pruner
-                start_step: 1
-                end_step: 1
-                target_sparsity: 0.5
-                prune_type: "snip_momentum"
-                update_frequency: 2
-                names: ['layer2.*']
-                prune_domain: local
-                pattern: "tile_pattern_2:4"
-            - !Pruner
-                start_step: 2
-                end_step: 8
-                target_sparsity: 0.8
-                prune_type: "snip"
-                names: ['layer3.*']
-                prune_domain: "local"
-                pattern: "tile_pattern_16x1"
-                sparsity_decay_type: "cube"
+version: 1.0
+
+model:
+  name: "bert-mini"
+  framework: "pytorch"
+
+pruning:
+  approach:
+    weight_compression_v2:
+      start_step: 0
+      end_step: 0
+
+      pruning_op_types: ["Linear"]
+      target_sparsity: 0.5
+      max_sparsity_ratio_per_op: 0.5
+
+      pruners:
+        - !PrunerV2
+            excluded_op_names: ["classifier", "pooler", ".*embeddings*"]
+            pattern: "2:4"
+            pruning_frequency: 50
+            pruning_scope: "global"
+            pruning_type: "snip_momentum"
+            sparsity_decay_type: "linear"
     """
     with open('fake_snip.yaml', 'w', encoding="utf-8") as f:
         f.write(fake_snip_yaml)
 
-def build_fake_yaml_channel():
-    fake_channel_pruning_yaml = """
-        model:
-          name: imagenet_prune
-          framework: pytorch
-        pruning:
-          approach:
-            weight_compression_pytorch:
-              initial_sparsity: 0.0
-              target_sparsity: 0.9
-              start_step: 0
-              end_step: 10
-              excluded_names: ["classifier"]
-              update_frequency_on_step: 1
-              sparsity_decay_type: "exp"
-              pruners:
-                - !Pruner
-                    start_step: 5
-                    end_step: 5
-                    prune_type: "pattern_lock"
-                    names: ['layer1.*']
-                    extra_excluded_names: ['layer2.*']
-                    prune_domain: "global"
-                    pattern: "channelx1"
-                - !Pruner
-                    start_step: 1
-                    end_step: 1
-                    target_sparsity: 0.5
-                    prune_type: "pattern_lock"
-                    update_frequency: 2
-                    names: ['layer2.*']
-                    prune_domain: local
-                    pattern: "2:4"
-                - !Pruner
-                    start_step: 2
-                    end_step: 8
-                    target_sparsity: 0.8
-                    prune_type: "snip"
-                    names: ['layer3.*']
-                    prune_domain: "local"
-                    pattern: "1xchannel"
-                    sparsity_decay_type: "cube"
-        """
-
-    with open('fake_channel_pruning.yaml', 'w', encoding="utf-8") as f:
-        f.write(fake_channel_pruning_yaml)
-
-class TestPytorchPruner(unittest.TestCase):
+class TestPruning(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.model = torchvision.models.resnet18()
         build_fake_yaml_basic()
-        build_fake_yaml_channel()
-    
+
     @classmethod
     def tearDownClass(self):
         os.remove('fake_snip.yaml')
-        os.remove('fake_channel_pruning.yaml')
-    
-    def test_pytorch_pruner(self):
-        prune = Pruning('fake_snip.yaml')
-        prune.update_items_for_all_pruners(start_step=1)
+
+    def test_pruning_basic(self):
+        local_configs = [
+            {
+                "op_names": ['layer1.*'],
+                'target_sparsity': 0.5,
+                "pattern": '8x2',
+                "pruning_type": "magnitude_progressive",
+                "false_key": "this is to test unsupport keys"
+            },
+            {
+                "op_names": ['layer2.*'],
+                'target_sparsity': 0.5,
+                'pattern': '2:4'
+            },
+            {
+                "op_names": ['layer3.*'],
+                'target_sparsity': 0.7,
+                'pattern': '5x1',
+                "pruning_type": "snip_progressive"
+            },
+            {
+                "start_step": 2,
+                "end_step": 8,
+                "pruning_type": "gradient",
+                "pruning_frequency": 2,
+                "op_names": ['fc'],
+                "pruning_scope": "local",
+                "target_sparsity": 0.75,
+                "pattern": "1x1",
+                "sparsity_decay_type": "cube",
+                "reg_type": "group_lasso",
+                "parameters": {'reg_coeff': 0.0}
+            }
+        ]
+        config = WeightPruningConfig(
+            local_configs,
+            target_sparsity=0.8
+        )
+        prune = Pruning(config)
+        prune.update_config(start_step=1, end_step=10)
         prune.model = self.model
+
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.0001)
-
-        # prepare data
-        try:
-            from neural_compressor.experimental.data.datasets.dummy_dataset import DummyDataset
-            dummy_dataset = DummyDataset(shape=(10, 3, 224, 224), low=0., high=1., label=True)
-        except:
-            x_train = np.random.uniform(low=0., high=1., size=tuple([10, 3, 224, 224]))
-            y_train = np.random.randint(low=0, high=2, size=tuple([10]))
-            x_train, y_train = torch.tensor(x_train, dtype=torch.float32), \
+        x_train = np.random.uniform(low=0., high=1., size=tuple([10, 3, 224, 224]))
+        y_train = np.random.randint(low=0, high=2, size=tuple([10]))
+        x_train, y_train = torch.tensor(x_train, dtype=torch.float32), \
                                 torch.tensor(y_train, dtype=torch.long)
-            dummy_dataset = TensorDataset(x_train, y_train)
+        dummy_dataset = TensorDataset(x_train, y_train)
         dummy_dataloader = DataLoader(dummy_dataset)
+
         prune.on_train_begin()
-        prune.update_items_for_all_pruners(update_frequency_on_step=1)
+        prune.update_config(pruning_frequency=4)
         for epoch in range(2):
             self.model.train()
             prune.on_epoch_begin(epoch)
@@ -156,32 +161,56 @@ class TestPytorchPruner(unittest.TestCase):
                 local_step += 1
 
             prune.on_epoch_end()
-        r1, r2, r3 = prune.get_sparsity_ratio()
+        prune.get_sparsity_ratio()
         prune.on_train_end()
         prune.on_before_eval()
         prune.on_after_eval()
-        self.assertTrue(r1 > 0 and r2 > 0 and r3 > 0)
-    
-    def test_pytorch_pruner_channel_pruning(self):
-        prune = Pruning("fake_channel_pruning.yaml")
-        ##prune.generate_pruners()
+
+    def test_pruning_pattern(self):
+        local_configs = [
+            {
+                "op_names": ['layer1.*'],
+                'target_sparsity': 0.5,
+                "pattern": '5:8',
+                "pruning_type": "magnitude"
+            },
+            {
+                "op_names": ['layer2.*'],
+                "pattern": '1xchannel',
+                "pruning_scope": "global"
+            },
+            {
+                "start_step": 2,
+                "end_step": 20,
+                "op_names": ['layer3.*'],
+                'target_sparsity': 0.666666,
+                'pattern': '4x2',
+                "pruning_type": "snip_progressive",
+                "pruning_frequency": 5
+            }
+        ]
+        config = WeightPruningConfig(
+            local_configs,
+            target_sparsity=0.8,
+            sparsity_decay_type="cos",
+            excluded_op_names=["downsample.*"],
+            pruning_scope="local",
+            min_sparsity_ratio_per_op=0.1
+        )
+        prune = Pruning(config)
+        prune.update_config(start_step=1, end_step=10)
         prune.model = self.model
+
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.0001)
-
-        try:
-            from neural_compressor.experimental.data.datasets.dummy_dataset import DummyDataset
-            dummy_dataset = DummyDataset(shape=(10, 3, 224, 224), low=0., high=1., label=True)
-        except:
-            x_train = np.random.uniform(low=0., high=1., size=tuple([10, 3, 224, 224]))
-            y_train = np.random.randint(low=0, high=2, size=tuple([10]))
-            x_train, y_train = torch.tensor(x_train, dtype=torch.float32), \
+        x_train = np.random.uniform(low=0., high=1., size=tuple([10, 3, 224, 224]))
+        y_train = np.random.randint(low=0, high=2, size=tuple([10]))
+        x_train, y_train = torch.tensor(x_train, dtype=torch.float32), \
                                 torch.tensor(y_train, dtype=torch.long)
-            dummy_dataset = TensorDataset(x_train, y_train)
+        dummy_dataset = TensorDataset(x_train, y_train)
         dummy_dataloader = DataLoader(dummy_dataset)
-
         prune.on_train_begin()
-        for epoch in range(2):
+        for epoch in range(5):
             self.model.train()
             prune.on_epoch_begin(epoch)
             local_step = 0
@@ -198,6 +227,39 @@ class TestPytorchPruner(unittest.TestCase):
                 local_step += 1
 
             prune.on_epoch_end()
+        prune.get_sparsity_ratio()
+        prune.on_train_end()
+        prune.on_before_eval()
+        prune.on_after_eval()
+
+
+    def test_fucntion(self):
+        from intel_extension_for_transformers.optimization.pytorch_pruner.patterns import BasePattern, PatternNInM, PatternNxM
+        from intel_extension_for_transformers.optimization.pytorch_pruner.utils import process_and_check_config, process_config, parse_to_prune
+        from intel_extension_for_transformers.optimization.pytorch_pruner.pruners import parse_valid_pruner_types
+
+        prune = Pruning(fake_snip_config)
+        prune.model = self.model
+        prune.on_train_begin()
+        config = process_and_check_config(fake_snip_config)[0]
+        modules = parse_to_prune(config, self.model)
+
+        test_pattern = BasePattern(config, modules)
+        mask = test_pattern.get_single_mask_per_target_ratio(torch.randn(5, 6), 0.8)
+        test_pattern.get_sparsity_ratio({'': mask})
+        test_pattern.get_pattern_lock_masks(prune.pruners[0].modules)
+        test_pattern.check_layer_validity()
+
+        test_pattern = PatternNxM(config, modules)
+        test_pattern.get_sparsity_ratio_progressive({'': mask})
+        test_pattern.get_pattern_lock_masks(prune.pruners[0].modules)
+
+        config = process_config('fake_snip.yaml')[0]
+        test_pattern = PatternNInM(config, modules)
+        test_pattern.get_pattern_lock_masks(prune.pruners[0].modules)
+
+        parse_valid_pruner_types()
+
 
 if __name__ == "__main__":
     unittest.main()
