@@ -52,7 +52,7 @@ void SliceDataGT(const T* src_data, T* dst_data, const vector<int64_t>& src_shap
   vector<int64_t> src_shape_tmp = src_shape;
   vector<int64_t> dst_shape_tmp = src_shape;
   for (int64_t i = 0; i < axes.size(); ++i) {
-    dst_shape_tmp[axes[i]] = static_cast<int64_t>((ends[i] - starts[i]) / steps[i]) + 1;
+    dst_shape_tmp[axes[i]] = static_cast<int64_t>((ends[i] - starts[i] - 1) / steps[i]) + 1;
     int64_t _IN = 1;
     int64_t IC = 1;
     int64_t IH = 1;
@@ -91,6 +91,24 @@ void SliceDataGT(const T* src_data, T* dst_data, const vector<int64_t>& src_shap
   free(dst_data_tmp);
 }
 
+std::vector<int64_t> GetIndicesFromTensor(const vector<Tensor*>& input, const int64_t& tensor_idx) {
+  vector<int64_t> ret_indices;
+  for (int t = 0; t < input[tensor_idx]->size(); ++t) {
+    ret_indices.push_back(static_cast<int64_t>(*(static_cast<int*>(input[tensor_idx]->mutable_data()) + t)));
+  }
+  return ret_indices;
+}
+
+void ClampIndices(int64_t* v, const int64_t& min, const int64_t& max) {
+  if (*v < min) {
+    *v = min;
+  } else if (*v > max) {
+    *v = max;
+  } else {
+    return;
+  }
+}
+
 void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& output,
                  const shared_ptr<OperatorConfig>& conf) {
   // config parse
@@ -122,10 +140,41 @@ void GetTrueData(const std::vector<Tensor*>& input, const std::vector<Tensor*>& 
   // set dst shape
   const vector<int64_t>& src_shape = src->shape();
   vector<int64_t> dst_shape = src_shape;
+  int64_t tensor_idx = 1;
+  if (starts_.empty()) {
+    starts_ = GetIndicesFromTensor(input, tensor_idx);
+    tensor_idx++;
+  }
+  if (ends_.empty()) {
+    ends_ = GetIndicesFromTensor(input, tensor_idx);
+    tensor_idx++;
+  }
+  // axes_ and steps_ are optional input tensors
+  if (axes_.empty()) {
+    if (tensor_idx <= input.size() - 1) {
+      axes_ = GetIndicesFromTensor(input, tensor_idx);
+      tensor_idx++;
+    } else {
+      for (int i = 0; i < src_shape.size(); ++i) axes_.push_back(i);
+    }
+  }
+  if (steps_.empty()) {
+    if (tensor_idx <= input.size() - 1) {
+      steps_ = GetIndicesFromTensor(input, tensor_idx);
+      tensor_idx++;
+    } else {
+      // default step is 1
+      steps_ = vector<int64_t>(src_shape.size(), 1);
+    }
+  }
   for (int64_t i = 0; i < axes_.size(); ++i) {
+    axes_[i] = axes_[i] < 0 ? src_shape.size() + axes_[i] : axes_[i];
     starts_[i] = starts_[i] < 0 ? src_shape[axes_[i]] + starts_[i] : starts_[i];
     ends_[i] = ends_[i] < 0 ? src_shape[axes_[i]] + ends_[i] : ends_[i];
-    dst_shape[axes_[i]] = static_cast<int64_t>((ends_[i] - starts_[i]) / steps_[i]) + 1;
+    // convert invalid inputs to valid values
+    ClampIndices(&starts_[i], 0, dst_shape[axes_[i]]);
+    ClampIndices(&ends_[i], 0, dst_shape[axes_[i]]);
+    dst_shape[axes_[i]] = static_cast<int64_t>((ends_[i] - starts_[i] - 1) / steps_[i]) + 1;
   }
   output[0]->set_shape(dst_shape);
   // forward
@@ -231,16 +280,103 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   return {op_args, op_args_copy};
 }
 
+template <typename T>
+std::pair<Tensor*, Tensor*> make_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config,
+                                            const std::vector<T>& value = {}) {
+  // step1: set shape
+  Tensor* a_tensor = new Tensor(*a_tensor_config);
+  // step2: set tensor life
+  a_tensor->add_tensor_life(1);
+  // step3: library buffer can only be obtained afterwards
+  auto tensor_data = a_tensor->mutable_data();
+  if (!value.empty()) {
+    for (int i = 0 ; i < a_tensor->size(); ++i) {
+      (static_cast<T*>(tensor_data))[i] = value[i];
+    }
+  } else {
+    executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
+  }
+
+  Tensor* a_tensor_copy = new Tensor(*a_tensor_config);
+  a_tensor_copy->add_tensor_life(1);
+  auto tensor_data_copy = a_tensor_copy->mutable_data();
+  memcpy(tensor_data_copy, tensor_data, a_tensor_copy->size() * sizeof(T));
+  return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
+}
+
+std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape,
+                                           const std::vector<std::vector<int>>& values) {
+// Step 1: Construct Tensor config ptr
+  const auto& src_shape = input_shape[0];
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
+  const auto& starts_shape = input_shape[1];
+  shared_ptr<TensorConfig> starts_config = std::make_shared<TensorConfig>("starts", starts_shape);
+  const auto& ends_shape = input_shape[2];
+  shared_ptr<TensorConfig> ends_config = std::make_shared<TensorConfig>("ends", ends_shape);
+  std::vector<shared_ptr<TensorConfig>> input_config = {src_config, starts_config, ends_config};
+  if (!input_shape[3].empty()) {
+    const auto& axes_shape = input_shape[3];
+    shared_ptr<TensorConfig> axes_config = std::make_shared<TensorConfig>("axes", axes_shape);
+    input_config.push_back(axes_config);
+  }
+  if (!input_shape[4].empty()) {
+    const auto& steps_shape = input_shape[4];
+    shared_ptr<TensorConfig> steps_config = std::make_shared<TensorConfig>("steps", steps_shape);
+    input_config.push_back(steps_config);
+  }
+  std::vector<int64_t> dst_shape = {};
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  std::vector<shared_ptr<TensorConfig>> output_config = {dst_config, dst_config};
+
+  // Step 1.1: Construct Operator config obj
+  std::map<std::string, std::string> attr_map;
+  shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
+  auto op_config = std::make_shared<OperatorConfig>("slice", "fp32", input_config, output_config, op_attr);
+
+  // Step 2: Construct Tensor ptr
+  std::vector<Tensor*> input_tensors;
+  std::vector<Tensor*> input_tensors_cpy;
+  for (int i = 0; i < input_config.size(); ++i) {
+    std::pair<Tensor*, Tensor*> tensor;
+    if (i == 0) {
+      tensor = make_tensor_obj<float>(input_config[i]);
+    } else {
+      tensor = make_tensor_obj<int>(input_config[i], values[i-1]);
+    }
+    input_tensors.push_back(tensor.first);
+    input_tensors_cpy.push_back(tensor.second);
+  }
+  Tensor* dst_tensor = new Tensor(*dst_config);
+  dst_tensor->add_tensor_life(1);
+  Tensor* dst_tensor_copy = new Tensor(*dst_config);
+  dst_tensor_copy->add_tensor_life(1);
+
+  OpArgs op_args = {input_tensors, {dst_tensor}, op_config};
+  OpArgs op_args_copy = {input_tensors_cpy, {dst_tensor_copy}, op_config};
+
+  return {op_args, op_args_copy};
+}
+
 static auto CasesFp32 = []() {
   std::string memory_strategy = getenv("DIRECT_BUFFER") == NULL ? "cycle_buffer" : "direct_buffer";
   MemoryAllocator::SetStrategy(memory_strategy);
   std::vector<TestParams> cases;
   // Config
+  // indices as attributes
   std::vector<int64_t> src_shape;
   std::string starts;
   std::string ends;
   std::string axes;
   std::string steps;
+  // indices as input tensors
+  std::vector<int64_t> starts_shape;
+  std::vector<int64_t> ends_shape;
+  std::vector<int64_t> axes_shape;
+  std::vector<int64_t> steps_shape;
+  std::vector<int> starts_val;
+  std::vector<int> ends_val;
+  std::vector<int> axes_val;
+  std::vector<int> steps_val;
 
   // case: 1d slice
   src_shape = {10};
@@ -284,7 +420,7 @@ static auto CasesFp32 = []() {
 
   // case: 2d slice, axes=1
   src_shape = {3, 2};
-  starts = "1";
+  starts = "0";
   ends = "-1";
   axes = "1";
   steps = "1";
@@ -300,7 +436,7 @@ static auto CasesFp32 = []() {
 
   // case: 3d slice, axes=1
   src_shape = {3, 2, 3};
-  starts = "1";
+  starts = "0";
   ends = "-1";
   axes = "1";
   steps = "1";
@@ -316,7 +452,7 @@ static auto CasesFp32 = []() {
 
   // case: 3d slice, axes=1,2
   src_shape = {3, 2, 3};
-  starts = "1,2";
+  starts = "0,1";
   ends = "-1,-1";
   axes = "1,2";
   steps = "1,1";
@@ -324,7 +460,7 @@ static auto CasesFp32 = []() {
 
   // case: 3d slice, axes=0,2
   src_shape = {3, 2, 3};
-  starts = "1,2";
+  starts = "1,0";
   ends = "-1,-1";
   axes = "0,2";
   steps = "1,1";
@@ -337,6 +473,43 @@ static auto CasesFp32 = []() {
   axes = "0,2";
   steps = "2,2";
   cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+
+  // case: 3d slice, axes=2，step=2
+  src_shape = {2, 3, 4};
+  starts_shape = {1};
+  ends_shape = {1};
+  axes_shape = {1};
+  steps_shape = {1};
+  starts_val = {0};
+  ends_val = {3};
+  axes_val = {2};
+  steps_val = {2};
+  cases.push_back({GenerateFp32Case({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
+                                    {starts_val, ends_val, axes_val, steps_val}), false});
+
+  // case: 3d slice, axes=2，step=2, invalid indices inputs
+  src_shape = {2, 3, 4};
+  starts_shape = {1};
+  ends_shape = {1};
+  axes_shape = {1};
+  steps_shape = {1};
+  starts_val = {-5};
+  ends_val = {5};
+  axes_val = {2};
+  steps_val = {2};
+  cases.push_back({GenerateFp32Case({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
+                                    {starts_val, ends_val, axes_val, steps_val}), false});
+
+  // case: 3d slice, axes=0,1,2，step=1,1,1
+  src_shape = {2, 3, 4};
+  starts_shape = {3};
+  ends_shape = {3};
+  axes_shape = {};
+  steps_shape = {};
+  starts_val = {0, 0, 0};
+  ends_val = {1, 1, 1};
+  cases.push_back({GenerateFp32Case({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
+                                    {starts_val, ends_val}), false});
 
   return ::testing::ValuesIn(cases);
 };

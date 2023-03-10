@@ -26,6 +26,8 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/operators/gelu.cpp
     ${HOST_SRC_DIR}/src/operators/position_ids.cpp
     ${HOST_SRC_DIR}/src/operators/token_type_ids.cpp
+    ${HOST_SRC_DIR}/src/operators/cossin.cpp
+    ${HOST_SRC_DIR}/src/operators/constantofshape.cpp
     ${HOST_SRC_DIR}/src/operators/concat.cpp
     ${HOST_SRC_DIR}/src/operators/embeddingbag.cpp
     ${HOST_SRC_DIR}/src/operators/split.cpp
@@ -74,6 +76,7 @@ target_link_libraries(host_operators
         yaml-cpp
         glog
         xbyak::xbyak
+        Eigen3::Eigen
 )
 if(NE_WITH_SPARSELIB)
 target_link_libraries(host_operators

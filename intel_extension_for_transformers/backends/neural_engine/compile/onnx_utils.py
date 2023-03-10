@@ -263,13 +263,16 @@ def onnx_extract_operator(node, framework_model, nodes_dict, engine_graph=None):
         so both have single string
     """
     input_names = []
-    # name list
     input_tensor_names = node.input
     for input_tensor_name in input_tensor_names:
+        # The resize op could have the third input name but no second input.
+        if input_tensor_name == '':
+            continue
         origin_tensor_name, input_tensor_name = util.names_from_input(input_tensor_name)
         try:
             pre_node = nodes_dict[nodes_dict[input_tensor_name]].node
         except BaseException:
+            # if origin_tensor_name in nodes_dict:
             pre_node = nodes_dict[origin_tensor_name].node
         
         data = None

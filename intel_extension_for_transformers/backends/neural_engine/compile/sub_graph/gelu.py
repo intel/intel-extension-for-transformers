@@ -87,6 +87,10 @@ class Gelu(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping("Gelu", 
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
-                return model
+                for j in range(len(new_node_names)):
+                    gelu_node = model.get_node_by_name(new_node_names[j][0])
+                    attr = OrderedDict()
+                    attr['algorithm'] = 'gelu_tanh'
+                    gelu_node.attr = attr
 
         return model

@@ -52,6 +52,7 @@ set(DEP_LIBS
      dnnl
      yaml-cpp
      glog
+     Eigen3::Eigen
 )
 if(NE_WITH_ONEDNN_GRAPH)
 list(APPEND DEP_LIBS dnnl_graph)

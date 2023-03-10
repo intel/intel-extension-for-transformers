@@ -17,9 +17,7 @@
 
 """The neural engine subgraph matcher file."""
 
-import time
 import copy
-import numpy as np
 from tqdm import tqdm
 from .pattern import supported_patterns, superbert_patterns, PATTERNS
 from .. import logger
@@ -65,6 +63,52 @@ EXECUTOR_TYPE = {
     "NotEqual": "BinaryOp",
     'Not': "BinaryOp",
     'Neg': "BinaryOp",
+    "Sin": "CosSin",
+    "Cos": "CosSin",
+}
+
+pattern_default_setting = {
+    # General Pattern
+    'PaddingSequence': True,
+    'AttentionReshape': True,
+    'QKVReshape': True,
+    'ReshapeFusion': True,
+    'InsertBF16Node': True,
+    'OperatorAdaptor': True,
+
+    'GroupNorm': True,
+
+    # transpose_mode_int8
+     'QKVMerge': False,
+
+    # 'TextEncoder
+    'TextEncoder_WordEmbedding': False,
+    'TextEncoder_QReshape': False,
+    'TextEncoder_KVReshape': False,
+    'TextEncoder_AttentionMaskAddReshape': False,
+    'TextEncoder_SoftmaxReshape': False,
+    'TextEncoder_MulReshape': False,
+    'TextEncoder_AttentionReshape': False,
+    'TextEncoder_CasualAttentionMask': False,
+
+    # vae deocder & Transformer2Dmodel
+    'AttentionBlock_Resize2Gather': False,
+    'AttentionBlock_QKVPreReshape': False,
+    'AttentionBlock_AttentionMaskAddReshape': False,
+    'AttentionBlock_ConstantOfShapeWithMul': False,
+
+    'Transformer2Dmodel_GetSampleBatch': False,
+    'Transformer2Dmodel_SampleSlice': False,
+    'Transformer2Dmodel_EncoderHiddenStatesReshape': False,
+    'Transformer2Dmodel_ConstantOfShapeWithMul': False,
+    'Transformer2Dmodel_QKVPreReshape': False,
+    'Transformer2Dmodel_QKVReshape': False,
+    'AttentionBlock_QKVReshape': False,
+    'Transformer2Dmodel_QKVReshapeTo4D': False,
+    'Transformer2Dmodel_AttentionMaskAddReshape': False,
+    'Transformer2Dmodel_FFNInputSlice': False,
+    'Transformer2Dmodel_FFNInputSlice_1': False,
+    'Transformer2DModel_UpBlockResize': False,
 }
 
 class SubGraphMatcher(object):
@@ -85,8 +129,8 @@ class SubGraphMatcher(object):
         
         for index in range(len(supported_patterns)):
             pattern_name = supported_patterns[index]
-            if pattern_name == 'QKVMerge':
-                pattern_mask[index] = False
+            if pattern_name in pattern_default_setting:
+                pattern_mask[index] = pattern_default_setting[pattern_name]
 
         # modify the pattern mask according to pattern_config
         if pattern_config != None:

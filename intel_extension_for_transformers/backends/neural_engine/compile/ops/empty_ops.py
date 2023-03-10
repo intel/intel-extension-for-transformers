@@ -272,16 +272,6 @@ class Shape(Operator):
         super().__init__()
 
 
-# tf.slice(input_, begin, size, name=None)
-# Extracts a slice from a tensor
-@operator_registry(operator_type='Slice')
-class Slice(Operator):
-    """Register the Slice operator."""
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 # Computes element-wise square root of the input tensor.
 @operator_registry(operator_type='Sqrt')
 class Sqrt(Operator):

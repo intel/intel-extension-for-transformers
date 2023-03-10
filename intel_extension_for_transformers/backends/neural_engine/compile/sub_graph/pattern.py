@@ -47,6 +47,37 @@ supported_patterns = [
     'LastLayerShape',
     'InteractFeatures',
     'AttentionReshape',
+
+    # Text Encoder
+    'TextEncoder_WordEmbedding',
+    'TextEncoder_QReshape',            
+    'TextEncoder_KVReshape',
+    'TextEncoder_AttentionMaskAddReshape',
+    'TextEncoder_SoftmaxReshape',
+    'TextEncoder_MulReshape',
+    'TextEncoder_AttentionReshape',
+    'TextEncoder_CasualAttentionMask',
+
+    #vae decoder & Transformer2Dmodel
+    'AttentionBlock_Resize2Gather',
+    'GroupNorm',
+    'AttentionBlock_QKVPreReshape',
+    'AttentionBlock_AttentionMaskAddReshape',
+    'AttentionBlock_ConstantOfShapeWithMul',
+
+    'Transformer2Dmodel_GetSampleBatch',
+    'Transformer2Dmodel_SampleSlice',
+    'Transformer2Dmodel_EncoderHiddenStatesReshape',
+    'Transformer2Dmodel_ConstantOfShapeWithMul',
+    'Transformer2Dmodel_QKVPreReshape',
+    'Transformer2Dmodel_QKVReshape',
+    'AttentionBlock_QKVReshape',
+    'Transformer2Dmodel_QKVReshapeTo4D',
+    'Transformer2Dmodel_AttentionMaskAddReshape',
+    'Transformer2Dmodel_FFNInputSlice',
+    'Transformer2Dmodel_FFNInputSlice_1',
+    'Transformer2DModel_UpBlockResize',
+
     'QKVReshape',
     'DecoderAttnReshape',
     'ConvReshape',

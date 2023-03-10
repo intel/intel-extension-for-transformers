@@ -35,7 +35,7 @@ void SliceData(const T* src_data, T* dst_data, const vector<int64_t>& src_shape,
   vector<int64_t> src_shape_tmp = src_shape;
   vector<int64_t> dst_shape_tmp = src_shape;
   for (int64_t i = 0; i < axes.size(); ++i) {
-    dst_shape_tmp[axes[i]] = static_cast<int64_t>((ends[i] - starts[i]) / steps[i]) + 1;
+    dst_shape_tmp[axes[i]] = static_cast<int64_t>((ends[i] - starts[i] - 1) / steps[i]) + 1;
     int64_t IN = 1;
     int64_t IC = 1;
     int64_t IH = 1;
@@ -116,13 +116,64 @@ void SliceOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>&
   output[0]->set_dtype(input[0]->dtype());
 }
 
+std::vector<int64_t> SliceOperator::GetIndicesFromTensor(const vector<Tensor*>& input, const int64_t& tensor_idx) {
+  vector<int64_t> ret_indices;
+  for (int t = 0; t < input[tensor_idx]->size(); ++t) {
+    // executor kernels have no int64_t dtype implementation, just int
+    // convert it to int64_t for indices collection.
+    ret_indices.push_back(static_cast<int64_t>(*(static_cast<int*>(input[tensor_idx]->mutable_data()) + t)));
+  }
+  return ret_indices;
+}
+
+void SliceOperator::ClampIndices(int64_t* v, const int64_t& min, const int64_t& max) {
+  if (*v < min) {
+    *v = min;
+  } else if (*v > max) {
+    *v = max;
+  } else {
+    return;
+  }
+}
+
 void SliceOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   const vector<int64_t>& src_shape = input[0]->shape();
   vector<int64_t> dst_shape = src_shape;
+  int64_t tensor_idx = 1;
+  if (starts_.empty()) {
+    starts_ = GetIndicesFromTensor(input, tensor_idx);
+    tensor_idx++;
+  }
+  if (ends_.empty()) {
+    ends_ = GetIndicesFromTensor(input, tensor_idx);
+    tensor_idx++;
+  }
+  // axes_ and steps_ are optional input tensors
+  if (axes_.empty()) {
+    if (tensor_idx <= input.size() - 1) {
+      axes_ = GetIndicesFromTensor(input, tensor_idx);
+      tensor_idx++;
+    } else {
+      for (int i = 0; i < src_shape.size(); ++i) axes_.push_back(i);
+    }
+  }
+  if (steps_.empty()) {
+    if (tensor_idx <= input.size() - 1) {
+      steps_ = GetIndicesFromTensor(input, tensor_idx);
+      tensor_idx++;
+    } else {
+      // default step is 1
+      steps_ = vector<int64_t>(src_shape.size(), 1);
+    }
+  }
   for (int64_t i = 0; i < axes_.size(); ++i) {
+    axes_[i] = axes_[i] < 0 ? src_shape.size() + axes_[i] : axes_[i];
     starts_[i] = starts_[i] < 0 ? src_shape[axes_[i]] + starts_[i] : starts_[i];
     ends_[i] = ends_[i] < 0 ? src_shape[axes_[i]] + ends_[i] : ends_[i];
-    dst_shape[axes_[i]] = static_cast<int64_t>((ends_[i] - starts_[i]) / steps_[i]) + 1;
+    // convert invalid inputs to valid values
+    ClampIndices(&starts_[i], 0, dst_shape[axes_[i]]);
+    ClampIndices(&ends_[i], 0, dst_shape[axes_[i]]);
+    dst_shape[axes_[i]] = static_cast<int64_t>((ends_[i] - starts_[i] - 1) / steps_[i]) + 1;
   }
   output[0]->set_shape(dst_shape);
 }

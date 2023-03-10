@@ -41,6 +41,9 @@ class SliceOperator : public Operator {
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
+  std::vector<int64_t> GetIndicesFromTensor(const vector<Tensor*>& input, const int64_t& tensor_idx);
+  void ClampIndices(int64_t* v, const int64_t& min, const int64_t& max);
+
   std::vector<int64_t> starts_;
   std::vector<int64_t> ends_;
   std::vector<int64_t> axes_;
@@ -48,3 +51,4 @@ class SliceOperator : public Operator {
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_SLICE_HPP_
+

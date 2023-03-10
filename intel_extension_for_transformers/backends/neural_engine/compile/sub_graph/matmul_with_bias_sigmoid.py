@@ -33,6 +33,12 @@ class MatMulWithBiasSigmoid(Pattern):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'MatMulWithBiasSigmoid': [
+                # # unet
+                {
+                    'patterns': {
+                        'in': [[(0, 'MatMulWithBias'), (1, ['Sigmoid']), (2, 'Mul')]],
+                    },
+                },
                 {
                     'patterns': {
                         'in': [[(0, 'MatMulWithBias'), (1, ['Sigmoid'])]],
@@ -72,7 +78,14 @@ class MatMulWithBiasSigmoid(Pattern):
                 attr['append_op'] = 'sigmoid'
                 model.nodes[mat_node_idx].attr = attr
 
-        pattern_dict = pattern_mapping_config['MatMulWithBiasSigmoid'][0]
+        # for unet
+        pattern = pattern_mapping_config['MatMulWithBiasSigmoid'][0]['patterns']['in']
+        patterns_nodes_name = util.search_pattern(pattern, model)
+        print('MatMulWithBiasSigmoid = ', patterns_nodes_name)
+        if len(patterns_nodes_name) != 0:
+            return model
+
+        pattern_dict = pattern_mapping_config['MatMulWithBiasSigmoid'][1]
         model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithBiasSigmoid", 
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:

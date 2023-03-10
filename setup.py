@@ -153,6 +153,7 @@ class build_ext(build_ext):
                 '-DNE_WITH_TESTS=OFF',
                 "-DCMAKE_C_COMPILER=cl.exe",
                 "-DCMAKE_CXX_COMPILER=cl.exe",
+                '-DEIGEN_BUILD_DOC=OFF',
                 '-DPYTHON_EXECUTABLE={}'.format(sys.executable)
             ]
             build_args = [
