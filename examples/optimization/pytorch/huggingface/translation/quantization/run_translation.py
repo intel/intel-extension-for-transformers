@@ -265,7 +265,7 @@ class OptimizationArguments:
         metadata={"help": "run benchmark."})
     int8: bool = field(
         default=False,
-        metadata={"help":"run benchmark."})
+        metadata={"help":"load int8 model."})
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
@@ -303,7 +303,7 @@ def main():
     # Log on each process the small summary:
     logger.warning(
         f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+        + f"\ndistributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
     )
     logger.info(f"Training/evaluation parameters {training_args}")
 
