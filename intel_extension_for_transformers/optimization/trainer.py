@@ -334,7 +334,7 @@ class BaseTrainer():
             eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
             train_func (:obj:`Callable`, optional: The function used to train the model.
             calib_dataloader: The dataloader for calibration dataset.
-        
+
         Returns:
             An objective of neural_compressor Quantization class, which can automativally searches for 
             optimal quantization recipes for low precision model inference and achieving best tuning 

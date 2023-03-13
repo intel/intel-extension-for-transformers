@@ -22,14 +22,13 @@ from enum import Enum
 from neural_compressor.conf.config import (
     Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
 )
-from neural_compressor.conf.dotdict import DotDict
+from neural_compressor.conf.dotdict import DotDict, deep_set
 from intel_extension_for_transformers.optimization.utils.metrics import Metric
 from intel_extension_for_transformers.optimization.utils.objectives import Objective, performance
 from intel_extension_for_transformers.optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from intel_extension_for_transformers.optimization.distillation import (
     Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
 )
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
 from typing import List, Union
 from xmlrpc.client import boolean
 
@@ -42,6 +41,31 @@ class Provider(Enum):
     INC = "inc"
 
 
+def check_value(name, src, supported_type, supported_value=[]):  # pragma: no cover
+    """Check if the given object is the given supported type and in the given supported value.
+
+    Example:
+        def datatype(self, datatype):
+            if check_value('datatype', datatype, list, ['fp32', 'bf16', 'uint8', 'int8']):
+                self._datatype = datatype
+    """
+    if isinstance(src, list) and any([not isinstance(i, supported_type) for i in src]):
+        assert False, ("Type of {} items should be {} but not {}".format(
+            name, str(supported_type), [type(i) for i in src]))
+    elif not isinstance(src, list) and not isinstance(src, supported_type):
+        assert False, ("Type of {} should be {} but not {}".format(
+            name, str(supported_type), type(src)))
+
+    if len(supported_value) > 0:
+        if isinstance(src, str) and src not in supported_value:
+            assert False, ("{} is not in supported {}: {}. Skip setting it.".format(
+                src, name, str(supported_value)))
+        elif isinstance(src, list) and all([isinstance(i, str) for i in src]) and \
+            any([i not in supported_value for i in src]):
+            assert False, ("{} is not in supported {}: {}. Skip setting it.".format(
+                src, name, str(supported_value)))
+
+    return True
 def constructor_register(cls):
     yaml_key = "!{}".format(cls.__name__)
 
@@ -140,6 +164,7 @@ class QuantizationConfig(object):
         config_file: str = None,
         sampling_size: int = 100,
         use_bf16: bool = False,
+        recipes: dict = None,
     ):
         """Init a QuantizationConfig object.
 
@@ -153,6 +178,20 @@ class QuantizationConfig(object):
             config_file: Path to the config file
             sampling_size: How many samples to use
             use_bf16: Whether to use bf16
+            recipes: apply recipes for quantization, neural_compressor support below recipes:
+                     'smooth_quant': whether do smooth quant
+                     'smooth_quant_args': parameters for smooth_quant
+                     'fast_bias_correction': whether do fast bias correction
+                     'weight_correction': whether do weight correction
+                     'gemm_to_matmul': whether convert gemm to matmul and add, only valid for onnx models
+                     'graph_optimization_level': support 'DISABLE_ALL', 'ENABLE_BASIC', 'ENABLE_EXTENDED', 'ENABLE_ALL'
+                                               only valid for onnx models
+                     'first_conv_or_matmul_quantization': whether quantize the first conv or matmul
+                     'last_conv_or_matmul_quantization': whether quantize the last conv or matmul
+                     'pre_post_process_quantization': whether quantize the ops in preprocess and postprocess
+                     'add_qdq_pair_to_weight': whether add QDQ pair for weights, only vaild for onnxrt_trt_ep
+                     'optypes_to_exclude_output_quant': don't quantize output of specified optypes
+                     'dedicated_qdq_pair': whether dedicate QDQ pair, only vaild for onnxrt_trt_ep
         """
         super().__init__()
         if config_file is None:
@@ -177,6 +216,8 @@ class QuantizationConfig(object):
         if sampling_size is not None:
             self.sampling_size = sampling_size
         self.inc_config.usr_cfg.use_bf16 = use_bf16
+        if recipes is not None:
+            self.recipes = recipes
 
     @property
     def approach(self):
@@ -405,6 +446,115 @@ class QuantizationConfig(object):
             self.inc_config.usr_cfg.quantization.calibration.sampling_size = sampling_size
         else:
             assert False, "The sampling_size must be a list of int numbers"
+
+    @property
+    def recipes(self):
+        """Get the sampling size."""
+        return self.inc_config.usr_cfg.quantization.recipes
+
+    @recipes.setter
+    def recipes(self, recipes):
+        """Set recipes."""
+        if recipes is not None and not isinstance(recipes, dict):
+            raise ValueError("recipes should be a dict.")
+
+        def smooth_quant(val=None):
+            if val is not None:
+                return check_value("smooth_quant", val, bool)
+            else:
+                return False
+
+        def smooth_quant_args(val=None):
+            if val is not None:
+                check_value("smooth_quant_args", val, dict)
+                for k, v in val.items():
+                    if k == "alpha":
+                        check_value("alpha", v, float)
+                return True
+            else:
+                return {}
+
+        def fast_bias_correction(val=None):
+            if val is not None:
+                return check_value("fast_bias_correction", val, bool)
+            else:
+                return False
+
+        def weight_correction(val=None):
+            if val is not None:
+                return check_value("weight_correction", val, bool)
+            else:
+                return False
+
+        def gemm_to_matmul(val=None):
+            if val is not None:
+                return check_value("gemm_to_matmul", val, bool)
+            else:
+                return True
+
+        def graph_optimization_level(val=None):
+            if val is not None:
+                return check_value("graph_optimization_level", val, str,
+                    ["DISABLE_ALL", "ENABLE_BASIC", "ENABLE_EXTENDED", "ENABLE_ALL"])
+            else:
+                return "ENABLE_BASIC"
+
+        def first_conv_or_matmul_quantization(val=None):
+            if val is not None:
+                return check_value("first_conv_or_matmul_quantization", val, bool)
+            else:
+                return True
+
+        def last_conv_or_matmul_quantization(val=None):
+            if val is not None:
+                return check_value("last_conv_or_matmul_quantization", val, bool)
+            else:
+                return True
+
+        def pre_post_process_quantization(val=None):
+            if val is not None:
+                return check_value("pre_post_process_quantization", val, bool)
+            else:
+                return True
+
+        def add_qdq_pair_to_weight(val=None):
+            if val is not None:
+                return check_value("add_qdq_pair_to_weight", val, bool)
+            else:
+                return False
+
+        def optypes_to_exclude_output_quant(val=None):  # pragma: no cover
+            if val is not None:
+                return isinstance(val, list)
+            else:
+                return []
+
+        def dedicated_qdq_pair(val=None):
+            if val is not None:
+                return check_value("dedicated_qdq_pair", val, bool)
+            else:
+                return False
+
+        RECIPES = {"smooth_quant": smooth_quant,
+                   "smooth_quant_args": smooth_quant_args,
+                   "fast_bias_correction": fast_bias_correction,
+                   "weight_correction": weight_correction,
+                   "gemm_to_matmul": gemm_to_matmul,
+                   "graph_optimization_level": graph_optimization_level,
+                   "first_conv_or_matmul_quantization": first_conv_or_matmul_quantization,
+                   "last_conv_or_matmul_quantization": last_conv_or_matmul_quantization,
+                   "pre_post_process_quantization": pre_post_process_quantization,
+                   "add_qdq_pair_to_weight": add_qdq_pair_to_weight,
+                   "optypes_to_exclude_output_quant": optypes_to_exclude_output_quant,
+                   "dedicated_qdq_pair": dedicated_qdq_pair
+                   }
+        _recipes = {}
+        for k in RECIPES.keys():
+            if k in recipes and RECIPES[k](recipes[k]):
+                _recipes.update({k: recipes[k]})
+            else:
+                _recipes.update({k: RECIPES[k]()})
+        deep_set(self.inc_config.usr_cfg, 'quantization.recipes', _recipes)
 
 
 class PruningConfig(object):
@@ -951,6 +1101,8 @@ class NASConfig(object):
             self.config.nas.search.higher_is_better.append(
                 metric.greater_is_better
                 )
+
+
 @constructor_register
 class PrunerV2:
     """
@@ -983,6 +1135,7 @@ class PrunerV2:
             'parameters': parameters,
             'resume_from_pruned_checkpoint': resume_from_pruned_checkpoint
         })
+
 
 class WeightPruningConfig:
     """Similiar to torch optimizer's interface."""

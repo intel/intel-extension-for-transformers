@@ -73,7 +73,6 @@ class TestQuantization(unittest.TestCase):
         )
         self.optimizer = NoTrainerOptimizer(self.model)
 
-
     @classmethod
     def tearDownClass(self):
         shutil.rmtree('./mlruns', ignore_errors=True)
@@ -146,6 +145,52 @@ class TestQuantization(unittest.TestCase):
             # check loaded model
             self.assertTrue((output_1 == output_2).all())
 
+    def test_fx_model_with_smooth_quant(self):
+        def eval_func(model):
+            return 1
+
+        def train_func(model):
+            return model
+
+        trainer = NLPTrainer(
+            model=self.model,
+            train_dataset=self.dummy_dataset,
+            eval_dataset=self.dummy_dataset,
+        )
+
+        tune_metric = metrics.Metric(
+            name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
+        )
+        quantization_config = QuantizationConfig(
+            approach="PostTrainingStatic",
+            metrics=[tune_metric],
+            objectives=[objectives.performance],
+            recipes={"smooth_quant": True,
+                     "smooth_quant_args": {"alpha": 0.6},
+                     "fast_bias_correction": True,
+                     "weight_correction": True,
+                     "gemm_to_matmul": True,
+                     "graph_optimization_level": "DISABLE_ALL",
+                     "first_conv_or_matmul_quantization": True,
+                     "last_conv_or_matmul_quantization": True,
+                     "pre_post_process_quantization": True,
+                     "add_qdq_pair_to_weight": True,
+                     "dedicated_qdq_pair": True
+                     }
+        )
+        quantized_model = trainer.quantize(quant_config=quantization_config)
+        self.assertTrue("quantize" in str(type(quantized_model._model.classifier.module)))
+        quantization_config = QuantizationConfig(
+            approach="PostTrainingStatic",
+            metrics=[tune_metric],
+            objectives=[objectives.performance],
+            recipes={}
+        )
+        quantized_model = trainer.quantize(quant_config=quantization_config,
+                                           train_func=train_func,
+                                           eval_func=eval_func)
+        self.assertTrue("quantize" in str(type(quantized_model._model.classifier.module)))
+
     def test_functional_quant(self):
         def eval_func(model):
             return 1
@@ -158,7 +203,7 @@ class TestQuantization(unittest.TestCase):
             approach='PostTrainingStatic',
             objectives=[objectives.performance]
         )
-        self.trainer.quantize(quant_config=quantization_config, 
+        self.trainer.quantize(quant_config=quantization_config,
                               provider="inc",
                               train_func = train_func,
                               eval_func = eval_func,)
@@ -183,7 +228,7 @@ class TestQuantization(unittest.TestCase):
         self.optimizer.provider = "INC"
         self.optimizer.calib_dataloader = self.trainer.get_eval_dataloader()
 
-        opt_model = self.optimizer.quantize(quant_config=quantization_config, 
+        opt_model = self.optimizer.quantize(quant_config=quantization_config,
                               provider="inc",
                               train_func = train_func,
                               eval_func = eval_func)

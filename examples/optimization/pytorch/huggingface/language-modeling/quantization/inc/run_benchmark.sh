@@ -122,6 +122,10 @@ function run_benchmark {
         DATASET_NAME="oscar"
         DATASET_CONFIG_NAME="unshuffled_original_ast"
         model_name_or_path="abeja/gpt-neox-japanese-2.7b"
+    elif [ "${topology}" = "bloom_clm_static" ]; then
+        script="run_clm.py"
+        DATASET_NAME="lambada"
+        model_name_or_path="bigscience/bloom-560m"
     fi
     
     if [[ ${int8} == "true" ]]; then
@@ -130,18 +134,32 @@ function run_benchmark {
     fi
     echo $extra_cmd
 
-    python -u ${script} \
-        --model_name_or_path ${model_name_or_path} \
-        --dataset_name ${DATASET_NAME} \
-        --dataset_config_name ${DATASET_CONFIG_NAME} \
-        --do_eval \
-        --per_device_eval_batch_size ${batch_size} \
-        --output_dir ./tmp/benchmark_output \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --no_cuda \
-        ${mode_cmd} \
-        ${extra_cmd}
+    if [ -z ${DATASET_CONFIG_NAME} ];then
+        python -u ${script} \
+            --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${DATASET_NAME} \
+            --do_eval \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ./tmp/benchmark_output \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --no_cuda \
+            ${mode_cmd} \
+            ${extra_cmd}
+    else
+        python -u ${script} \
+            --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${DATASET_NAME} \
+            --dataset_config_name ${DATASET_CONFIG_NAME} \
+            --do_eval \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ./tmp/benchmark_output \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --no_cuda \
+            ${mode_cmd} \
+            ${extra_cmd}
+    fi
 }
 
 main "$@"

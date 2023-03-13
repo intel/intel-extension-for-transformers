@@ -221,10 +221,22 @@ class OptimizationArguments:
         metadata={"help": "run benchmark."})
     int8: bool = field(
         default=False,
-        metadata={"help":"load int8 model."})
+        metadata={"help": "run benchmark with int8 model."})
     accuracy_only: bool = field(
         default=False,
-        metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
+        metadata={"help": "Whether to only test accuracy for model tuned by Neural Compressor."})
+    smooth_quant: bool = field(
+        default=False,
+        metadata={"help": "Whether to use smooth quantization."})
+    smooth_quant_alpha: float = field(
+        default=0.5,
+        metadata={"help": "Whether to use smooth quantization."})
+    sampling_size: int = field(
+        default=None,
+        metadata={"help": "calibration sampling size for neural compressor."})
+    torchscript: bool = field(
+        default=False,
+        metadata={"help": "Whether to set torchscript when load model."})
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -351,6 +363,7 @@ def main():
         "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
         "use_auth_token": True if model_args.use_auth_token else None,
+        "torchscript": optim_args.torchscript,
     }
     if model_args.config_name:
         config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
@@ -554,16 +567,21 @@ def main():
                                                                     early_stopping_threshold))
 
         tune_metric = metrics.Metric(
-                        name=metric_name, 
+                        name=metric_name,
                         is_relative=optim_args.is_relative,
-                        criterion=optim_args.perf_tol, 
+                        criterion=optim_args.perf_tol,
                         greater_is_better=False
         )
-        quantization_config = QuantizationConfig(
-            approach=optim_args.quantization_approach,
-            metrics=[tune_metric],
-            sampling_size = len(train_dataset)//20
-        )
+        quantization_config = QuantizationConfig(approach=optim_args.quantization_approach,
+                                                 metrics=[tune_metric],
+                                                 sampling_size=optim_args.sampling_size
+                                                    if optim_args.sampling_size is not None else len(train_dataset) // 100 * 5 ,
+                                                 recipes={
+                                                     "smooth_quant": True,
+                                                     "smooth_quant_args:": {
+                                                         "alpha": optim_args.smooth_quant_alpha
+                                                     }
+                                                 } if optim_args.smooth_quant else None)
         model = trainer.quantize(quant_config=quantization_config)
 
     if optim_args.benchmark or optim_args.accuracy_only:
