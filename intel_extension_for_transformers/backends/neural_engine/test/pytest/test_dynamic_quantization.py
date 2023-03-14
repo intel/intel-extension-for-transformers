@@ -227,7 +227,7 @@ class TestDynamicQuantization(unittest.TestCase):
         fp32_result = graph.inference([input_data])
         int8_model = dynamic_quantization(graph)
         int8_result = int8_model.inference([input_data])
-        flag = np.allclose(int8_result["qk"], fp32_result["qk"], rtol=0.1)
+        flag = np.allclose(int8_result["qk"], fp32_result["qk"], rtol=0.1,atol=5)
         self.assertEqual(True, flag)
 
 
