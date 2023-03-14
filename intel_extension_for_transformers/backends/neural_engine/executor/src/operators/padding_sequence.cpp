@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 #include "padding_sequence.hpp"
-
+#include <limits>
 #include "common.hpp"
 
 namespace executor {

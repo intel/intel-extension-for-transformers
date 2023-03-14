@@ -34,6 +34,7 @@ class TestPaddingSequence(unittest.TestCase):
     
     def test_padding_sequence_1(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -147,6 +148,7 @@ class TestPaddingSequence(unittest.TestCase):
 
     def test_padding_sequence_2(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -239,6 +241,7 @@ class TestPaddingSequence(unittest.TestCase):
 
     def test_padding_sequence_3(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -343,6 +346,7 @@ class TestPaddingSequence(unittest.TestCase):
 
     def test_padding_sequence_4(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(name='src', source_op=['input_data'],

@@ -40,7 +40,10 @@ class Tensor(object):
         # otherwise it will make a bloated new graph
         # but it still can be set when using the constructed new graph
         self._data = data
-        self._shape = shape
+        if shape is not None and len(shape) == 0:
+            self._shape = [1]
+        else:
+            self._shape = shape
         self._dtype = dtype
         if not dtype and isinstance(data, np.ndarray):
             self._dtype = util.get_data_dtype(data)

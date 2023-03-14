@@ -46,42 +46,42 @@ class QunatizeFusion(Pattern):
                 return search_quant_fusion(pre_node)
             else:
                 return (None, False)
-
-        quant_info = util.get_quant_info()
-
-        remove_node_name = []
-        # fuse quant nodes to previous innerproduct or matmul output dtype to enhance perf
-        for node in model.nodes:
-            if node.op_type == "Quantize":
-                dtype = node.attr['output_dtype'] 
-                quant_node, can_fuse = search_quant_fusion(node)
-                if can_fuse:
-                    if dtype == 'u8' or dtype == 's8':
-                        if quant_node.op_type == "Softmax":
-                            model.change_node_input_tensors(quant_node.name, 1, node.input_tensors[1],
-                                                            'insert')
-                            model.change_node_input_tensors(quant_node.name, 2, node.input_tensors[2],
-                                                            'insert')
-                            quant_node.attr['output_dtype'] = "u8"
-                        else:
-                            model.change_node_input_tensors(quant_node.name, -2, node.input_tensors[1],
-                                                            'modify')
-                            model.change_node_input_tensors(quant_node.name, -1, node.input_tensors[2],
-                                                            'modify')
-                            quant_node.attr['output_dtype'] = node.attr['output_dtype']
-                    elif dtype == 'bf16':
-                        quant_node.attr['output_dtype'] = dtype
-
-                    for dst_node_name in node.output_tensors[0].dest_op:
-                        dst_node = model.get_node_by_name(dst_node_name)
-                        for idx, input_tensor in enumerate(dst_node.input_tensors):
-                            if node.output_tensors[0].name == input_tensor.name:
-                                model.change_node_input_tensors(dst_node_name, idx,
-                                                                node.input_tensors[0], 'modify')
-
-                    remove_node_name.append(node.name)
-
-
-        model.remove_nodes(remove_node_name)
+        if model.framework_modeling_config['framework'] == 'onnxruntime':
+          quant_info = util.get_quant_info()
+  
+          remove_node_name = []
+          # fuse quant nodes to previous innerproduct or matmul output dtype to enhance perf
+          for node in model.nodes:
+              if node.op_type == "Quantize":
+                  dtype = node.attr['output_dtype'] 
+                  quant_node, can_fuse = search_quant_fusion(node)
+                  if can_fuse:
+                      if dtype == 'u8' or dtype == 's8':
+                          if quant_node.op_type == "Softmax":
+                              model.change_node_input_tensors(quant_node.name, 1, node.input_tensors[1],
+                                                              'insert')
+                              model.change_node_input_tensors(quant_node.name, 2, node.input_tensors[2],
+                                                              'insert')
+                              quant_node.attr['output_dtype'] = "u8"
+                          else:
+                              model.change_node_input_tensors(quant_node.name, -2, node.input_tensors[1],
+                                                              'modify')
+                              model.change_node_input_tensors(quant_node.name, -1, node.input_tensors[2],
+                                                              'modify')
+                              quant_node.attr['output_dtype'] = node.attr['output_dtype']
+                      elif dtype == 'bf16':
+                          quant_node.attr['output_dtype'] = dtype
+  
+                      for dst_node_name in node.output_tensors[0].dest_op:
+                          dst_node = model.get_node_by_name(dst_node_name)
+                          for idx, input_tensor in enumerate(dst_node.input_tensors):
+                              if node.output_tensors[0].name == input_tensor.name:
+                                  model.change_node_input_tensors(dst_node_name, idx,
+                                                                  node.input_tensors[0], 'modify')
+  
+                      remove_node_name.append(node.name)
+  
+  
+          model.remove_nodes(remove_node_name)
 
         return model

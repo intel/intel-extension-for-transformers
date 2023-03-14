@@ -35,6 +35,7 @@ class TestOperatorAdaptor(unittest.TestCase):
 
     def test_gather_sweep(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -64,6 +65,7 @@ class TestOperatorAdaptor(unittest.TestCase):
 
     def test_reshape_non_2d_src_before_inner_product(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]

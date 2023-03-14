@@ -42,3 +42,14 @@ class Slice(Operator):
                     keep_idx.append(idx)
             self._input_tensors = [self._input_tensors[i] for i in keep_idx]
 
+        if framework == 'torch':
+            if node.kind() == 'aten::slice':
+                self._attr['axes'] = node.inputsAt(1).toIValue()
+                self._attr['starts'] = node.inputsAt(2).toIValue()
+                self._attr['ends'] = node.inputsAt(3).toIValue()   # TODO: check None type - 1
+                self._attr['steps'] = node.inputsAt(4).toIValue()
+            elif node.kind() == 'aten::select':
+                self._attr['axes'] = node.inputsAt(1).toIValue()
+                self._attr['starts'] = node.inputsAt(2).toIValue()
+                self._attr['ends'] = node.inputsAt(2).toIValue()
+                self._attr['steps'] = 1

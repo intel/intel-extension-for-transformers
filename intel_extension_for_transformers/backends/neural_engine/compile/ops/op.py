@@ -20,7 +20,8 @@
 from abc import abstractmethod
 from collections import namedtuple, OrderedDict
 from .tensor import Tensor
-
+from .. import logger
+from ..graph_utils import list2str
 
 OPERATORS = {}
 
@@ -50,6 +51,13 @@ def operator_registry(operator_type):
 
     return decorator_operator
 
+def parseTorchListConstruct(lc_value):
+    node = lc_value.node()
+    values = []
+    for i in range(node.inputsSize()):
+        in_val = node.inputsAt(i)
+        values.append(in_val.toIValue())
+    return values
 
 class Operator(object):
     """The class of neural engine operator."""
@@ -63,6 +71,7 @@ class Operator(object):
         self._attr = OrderedDict()
         # ['extract_from_framework', 'construct']
         self._filling_method = None
+        self._ori_node = None
 
     @property
     def name(self):
@@ -126,13 +135,18 @@ class Operator(object):
         """Extract the op from framework."""
         from ..tf_utils import tf_extract_operator
         from ..onnx_utils import onnx_extract_operator
+        from ..torch_utils import torch_extract_operator
 
         OP_EXTRACTORS = {
             'tensorflow': tf_extract_operator,
             'onnxruntime': onnx_extract_operator,
+            'torch': torch_extract_operator,
         }
-
-        self._name = node.name
+        if framework == "torch":
+            from ..torch_utils import get_node_name
+            self._name = get_node_name(node)
+        else:
+            self._name = node.name
         self._op_type, self._input_tensors, self._output_tensors = OP_EXTRACTORS[framework](
             node, framework_model, nodes_dict, engine_graph)
         self.set_attr(framework, node)
@@ -172,3 +186,13 @@ class Operator(object):
             conf_dict['attr'] = self._attr
 
         return conf_dict
+
+    @property
+    def ori_node(self):
+        """Get the original node."""
+        return self._ori_node
+
+    @ori_node.setter
+    def ori_node(self, node):
+        """node assignment."""
+        self._ori_node = node

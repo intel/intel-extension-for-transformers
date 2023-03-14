@@ -227,45 +227,45 @@ class AddEmbeddings(Pattern):
 
             ln_node_idx = model.get_node_id(node_names[3])
             model.nodes[ln_node_idx].attr = attr4
-
-        # shape = [bs, seq_len, hidden_size] after embeddings
-        for i in range(len(pattern_mapping_config['AddEmbeddings']) - 1):
-            pattern_dict = pattern_mapping_config['AddEmbeddings'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings", 
-                                                                        pattern_dict, model)
-            if len(new_node_names) != 0:
-                for j in range(len(new_node_names)):
-                    ln_node = ret_old_nodes[j][1]
-                    add_node = ret_old_nodes[j][0]
-                    is_vit = False
-                    if add_node.input_tensors[-1].data is not None:
-                        is_vit = True
-                    hidden_size = int(ln_node.input_tensors[-1].shape[-1])
-                    epsilon = ln_node.attr['epsilon']
-                    _set_attr(hidden_size, epsilon, new_node_names[j], model, is_vit)
-                    if len(pattern_dict['patterns']['in'][0]) == 2:
-                        binary_add_node_idx = model.get_node_id(new_node_names[j][0])
-                        model.nodes[binary_add_node_idx].attr = OrderedDict()
-
-                return model
-
-        # shape = [seq_len, bs, hidden_size] after embeddings
-        for pattern_dict in pattern_mapping_config['AddEmbeddings'][-1:]:
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings",
-                                                                        pattern_dict, model)
-            if len(new_node_names) != 0:
-                for j in range(len(new_node_names)):
-                    reshape_idx = 0
-                    idx = 0
-                    for n in ret_old_nodes[j]:
-                        if model.get_node_by_name(new_node_names[j][idx]).op_type == "Reshape":
-                            reshape_idx = idx
-                            idx += 1
-                        model.get_node_by_name(new_node_names[j][idx]).attr = copy.deepcopy(n.attr)
-                        idx += 1
-                    hidden_size = str(model.inquire_config_item("hidden_size"))
-                    model.get_node_by_name(new_node_names[j][reshape_idx]).attr = OrderedDict(
-                        {'dst_shape': '-1,' + hidden_size})
-                return model
+        if model.framework_modeling_config['framework'] == 'onnxruntime':
+          # shape = [bs, seq_len, hidden_size] after embeddings
+          for i in range(len(pattern_mapping_config['AddEmbeddings']) - 1):
+              pattern_dict = pattern_mapping_config['AddEmbeddings'][i]
+              model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings", 
+                                                                          pattern_dict, model)
+              if len(new_node_names) != 0:
+                  for j in range(len(new_node_names)):
+                      ln_node = ret_old_nodes[j][1]
+                      add_node = ret_old_nodes[j][0]
+                      is_vit = False
+                      if add_node.input_tensors[-1].data is not None:
+                          is_vit = True
+                      hidden_size = int(ln_node.input_tensors[-1].shape[-1])
+                      epsilon = ln_node.attr['epsilon']
+                      _set_attr(hidden_size, epsilon, new_node_names[j], model, is_vit)
+                      if len(pattern_dict['patterns']['in'][0]) == 2:
+                          binary_add_node_idx = model.get_node_id(new_node_names[j][0])
+                          model.nodes[binary_add_node_idx].attr = OrderedDict()
+  
+                  return model
+  
+          # shape = [seq_len, bs, hidden_size] after embeddings
+          for pattern_dict in pattern_mapping_config['AddEmbeddings'][-1:]:
+              model, new_node_names, ret_old_nodes = util.pattern_mapping("AddEmbeddings",
+                                                                          pattern_dict, model)
+              if len(new_node_names) != 0:
+                  for j in range(len(new_node_names)):
+                      reshape_idx = 0
+                      idx = 0
+                      for n in ret_old_nodes[j]:
+                          if model.get_node_by_name(new_node_names[j][idx]).op_type == "Reshape":
+                              reshape_idx = idx
+                              idx += 1
+                          model.get_node_by_name(new_node_names[j][idx]).attr = copy.deepcopy(n.attr)
+                          idx += 1
+                      hidden_size = str(model.inquire_config_item("hidden_size"))
+                      model.get_node_by_name(new_node_names[j][reshape_idx]).attr = OrderedDict(
+                          {'dst_shape': '-1,' + hidden_size})
+                  return model
 
         return model

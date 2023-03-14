@@ -17,7 +17,7 @@
 
 """The neural engine operator mapping file."""
 
-from .op import Operator, operator_registry
+from .op import Operator, operator_registry, list2str, parseTorchListConstruct
 from .tensor import Tensor
 
 
@@ -36,3 +36,19 @@ class LayerNormalization(Operator):
             if axis != -1:
                 self._attr['axis'] = axis
             self._attr['epsilon'] = node.attribute[2].f
+
+# Fused_op Mean, AddV2, Mul, etc.
+# This pattern has several ops combinations, so the input_tensors and output_tensors may various
+@operator_registry(operator_type='LayerNorm')
+class LayerNorm(Operator):
+    """Register the LayerNorm operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+    def set_attr(self, framework, node):
+        if framework == 'torch':
+            """Extract the node attr from torchscript."""
+            if node.inputsSize() > 4:
+                self._attr['epsilon'] = node.inputsAt(4).toIValue()
+                self._attr['normalized_shape'] = list2str(parseTorchListConstruct(node.inputsAt(1)))

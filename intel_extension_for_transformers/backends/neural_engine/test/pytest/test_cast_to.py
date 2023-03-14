@@ -35,6 +35,7 @@ class TestCastTo(unittest.TestCase):
 
     def test_softmax_cast(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -62,6 +63,7 @@ class TestCastTo(unittest.TestCase):
 
     def test_greater_cast_reducesum(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -96,6 +98,7 @@ class TestCastTo(unittest.TestCase):
 
     def test_range_cast_less(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]

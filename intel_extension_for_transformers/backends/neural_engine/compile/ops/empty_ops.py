@@ -16,7 +16,7 @@
 # limitations under the License.
 """The neural engine empty op file."""
 
-from .op import Operator, operator_registry
+from .op import Operator, operator_registry, list2str, parseTorchListConstruct
 from .tensor import Tensor
 
 
@@ -69,6 +69,13 @@ class ConstantOfShape(Operator):
 class DequantizeLinear(Operator):
     """Register the DequantizeLinear operator."""
 
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Dequantize')
+class Dequantize(Operator):
+    """Register the DequantizeLinear operator."""
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -138,17 +145,6 @@ class InnerProduct(Operator):
 @operator_registry(operator_type='Input')
 class Input(Operator):
     """Register the Input operator."""
-
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
-# Fused_op Mean, AddV2, Mul, etc.
-# This pattern has several ops combinations, so the input_tensors and output_tensors may various
-@operator_registry(operator_type='LayerNorm')
-class LayerNorm(Operator):
-    """Register the LayerNorm operator."""
 
     def __init__(self):
         """The init function of this operator."""
@@ -229,17 +225,6 @@ class PaddingSequence(Operator):
         super().__init__()
 
 
-# Given a tensor x and a tensor y ,
-# this operation computes x^y for corresponding elements in x and y
-@operator_registry(operator_type='Pow')
-class Pow(Operator):
-    """Register the Pow operator."""
-
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 @operator_registry(operator_type='QLinearMatMul')
 class QLinearMatMul(Operator):
     """Register the QLinearMatMul operator."""
@@ -288,18 +273,6 @@ class Rsqrt(Operator):
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
-
-
-# tf.shape(input, out_type=tf.dtypes.int32, name=None)
-# Returns a tensor containing the shape of the input tensor.
-@operator_registry(operator_type='Shape')
-class Shape(Operator):
-    """Register the Shape operator."""
-
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
 
 # Computes element-wise square root of the input tensor.
 @operator_registry(operator_type='Sqrt')
@@ -415,16 +388,6 @@ class Matmul(Operator):
         """The init function of this operator."""
         super().__init__()
 
-
-@operator_registry(operator_type='Quantize')
-class Quantize(Operator):
-    """Register the Quantize operator."""
-
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 @operator_registry(operator_type='CumSum')
 class CumSum(Operator):
     """Register the CumSum operator."""
@@ -505,16 +468,6 @@ class Flatten(Operator):
         """The init function of this operator."""
         super().__init__()
 
-
-@operator_registry(operator_type='Reorder')
-class Reorder(Operator):
-    """Register the Reorder operator."""
-
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 @operator_registry(operator_type='MergedEmbeddingbag')
 class MergedEmbeddingbag(Operator):
     """Register the MergedEmbeddingbag operator."""
@@ -561,6 +514,55 @@ class OpAny(Operator):
 
 @operator_registry(operator_type='SequenceLength')
 class SequenceLength(Operator):
-
+    """Register the SequenceLength operator."""
     def __init__(self):
+        super().__init__()
+
+@operator_registry(operator_type='Arange')
+class Arange(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Reciprocal')
+class Reciprocal(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Einsum')
+class Einsum(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Repeat')
+class Repeat(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Stack')
+class Stack(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Constant')
+class Constant(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='ListConstruct')
+class ListConstruct(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
         super().__init__()

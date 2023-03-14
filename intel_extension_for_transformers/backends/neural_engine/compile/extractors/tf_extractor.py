@@ -50,7 +50,7 @@ class TensorflowExtractor(object):
         graph_nodes_dict = graph_node_names_details(nodes)
         logger.info('Start to extarct tensorflow model ops...')
         new_graph = Graph()
-        new_graph.framework = 'tensorflow'
+        new_graph.framework_modeling_config['framework'] = 'tensorflow'
         for node in nodes:
             # ignore the Const nodes, they have no source inputs
             if node.op == 'Const':

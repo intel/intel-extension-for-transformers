@@ -105,6 +105,7 @@ supported_patterns = [
     'QKVMerge',
     'ReshapeFusion',
     'OperatorAdaptor',
+    'RemoveConstantOP',
     'OutputData',
 ]
 

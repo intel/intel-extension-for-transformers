@@ -19,6 +19,7 @@
 
 import copy
 from tqdm import tqdm
+from collections import namedtuple, OrderedDict
 from .pattern import supported_patterns, superbert_patterns, PATTERNS
 from .. import logger
 
@@ -33,6 +34,7 @@ EXECUTOR_TYPE = {
     "Conv": "Convolution",
     "QuantizedMatMulWithBiasAndDequantize": "InnerProduct",
     "TransposeBatchMatMul": "Matmul",
+    "MatmulwithTranspose" : "Matmul", 
     "BatchMatMul": "Matmul",
     "BatchMatMulV2": "Matmul",
     "Add": "BinaryAdd",
@@ -144,7 +146,7 @@ class SubGraphMatcher(object):
             if pattern in PATTERNS and pattern_mask[pattern_id]:
                 p_fusion = PATTERNS[pattern]()
                 model = p_fusion(model)
-        self._remove_identity(model) 
+        self._remove_identity(model)
          
     def _tune_patterns(self, model, iterations = 10, warm_up = 5):
         # pattern tuning strategy(for superbert): 
@@ -194,6 +196,10 @@ class SubGraphMatcher(object):
                 rm_node_names.append(node.name)
             else:
                 if node.op_type in EXECUTOR_TYPE.keys():
+                    if node.op_type == "Cos":
+                        node.attr = OrderedDict({'algorithm': 'cos'})
+                    if node.op_type == "Sin":
+                        node.attr = OrderedDict({'algorithm': 'sin'})                           
                     op_type = EXECUTOR_TYPE[node.op_type]
                     model.nodes[i].op_type = op_type
         model.remove_nodes(rm_node_names)

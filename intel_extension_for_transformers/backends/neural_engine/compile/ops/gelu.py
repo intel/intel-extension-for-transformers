@@ -36,3 +36,5 @@ class Gelu(Operator):
         """Extract the node attr from tensorflow."""
         if framework == 'tensorflow':
             self._attr['approximate'] = node.attr['approximate'].b
+        if framework == 'torch':
+            self._attr['approximate'] = node.inputsAt(1).toIValue()

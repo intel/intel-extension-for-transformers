@@ -51,7 +51,7 @@ class ONNXExtractor(object):
         graph_nodes_dict = graph_node_names_details(model)
         logger.info('Start to extarct onnx model ops...')
         new_graph = Graph()
-        new_graph.framework = 'onnxruntime'
+        new_graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_tensors_name = [names_from_input(n.name)[1] for n in model.graph.input]
         output_tensors_name = [names_from_input(n.name)[1] for n in model.graph.output]
         new_graph.input_tensors_name = input_tensors_name

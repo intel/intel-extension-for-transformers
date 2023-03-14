@@ -36,6 +36,7 @@ class TestInsertInputOuputData(unittest.TestCase):
     def test_input_output_data(self):
         # construct graph
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         # insert input node
         input_data_node = OPERATORS['ONNXINPUT']()
         input_tensors = []

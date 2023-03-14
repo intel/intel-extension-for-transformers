@@ -53,6 +53,10 @@ class Gather(Operator):
                 self._attr['keep_dims'] = False
 
 
+                self._attr['axis'] = 0
+            
+        if framework == 'torch':
+            pass
 # tf.gather(params, indices, validate_indices=None, axis=None, batch_dims=0, name=None)
 # argument validate_indices is deprecated
 # indices must be an integer tensor of any dimension (usually 0-D or 1-D).

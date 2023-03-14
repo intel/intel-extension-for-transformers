@@ -35,6 +35,7 @@ class TestExecutionOptions(unittest.TestCase):
 
     def test_execution_options(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(name="activation", shape=[-1, -1], dtype="fp32")]

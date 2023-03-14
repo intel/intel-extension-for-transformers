@@ -41,6 +41,9 @@ void ConcatOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   ////        dimension size among all input tensors, except for the one of the axis to concatenate on.
   ////        Please note this will only work for weight tensors, which are known ahead of runtime.
   // 0.1 Get the largest values of each dimension size except for the axis to concatenate on.
+  if (axis_ < 0) {
+    axis_ += input[0]->shape().size();
+  }
   vector<int64_t> max_dim_sizes(input[0]->shape());
   size_t dim_num = max_dim_sizes.size();
   for (size_t i = 1; i < input.size(); ++i) {

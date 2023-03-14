@@ -38,7 +38,7 @@ class Graph(object):
         self._execution_options = None
         self._refresh_execution_options = False
         # modeling config, like num_attention_heads in transformer related models
-        self._framework_modeling_config = {}
+        self._framework_modeling_config = {'framework': None}
         self._input_tensors_name = []
         self._output_tensors_name = []
 
@@ -332,6 +332,7 @@ class Graph(object):
         consts_info = OrderedDict()
         weight_bytes = bytearray()
         non_consts_len = 0
+
         for t in self._nodes[0].output_tensors:
             assert self._nodes[0].op_type == 'Input', 'The graph must have input data'
             if t.source_op == [] and isinstance(t.data, np.ndarray):
@@ -342,7 +343,8 @@ class Graph(object):
         for i in range(len(self._nodes)):
             for j in range(len(self._nodes[i].input_tensors)):
                 t = self._nodes[i].input_tensors[j]
-                if t.source_op == [] and isinstance(t.data, np.ndarray):
+                if (t.source_op == [] or self._node_id.get(t.source_op[-1], None) == 0) \
+                                      and isinstance(t.data, np.ndarray):
                     data = t.data
                     start = len(weight_bytes)
                     data_bytes = data.tobytes()
@@ -519,6 +521,7 @@ class Graph(object):
                             "s32": np.int32,
                             "u8": np.uint8,
                             "bf16": np.uint16,
+                            'fp64': np.float64,
                         }
                         tensor_data = np.frombuffer(tensor_data, dtype=DTYPES_DICT[tensor_dtype]).\
                             reshape(tensor_shape)
@@ -549,6 +552,8 @@ class Graph(object):
                     tensor_name_2_class[tensor_name] = tensor
                     tensor.source_op.append(node)
                     output_tensors.append(tensor)
+
+                A = d['model']['operator'][node]['input']
                 for tensor_name in d['model']['operator'][node]['input']:
                     tensor = tensor_name_2_class[tensor_name]
                     tensor.dest_op.append(node)

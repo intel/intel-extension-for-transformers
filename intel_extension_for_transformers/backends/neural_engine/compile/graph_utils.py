@@ -34,6 +34,7 @@ DTYPES_DICT = {"float16": "fp16",
                "int64": "s64",
                "uint8": "u8",
                "uint16": "bf16",
+               "float64": "fp64"
                }
 
 
@@ -799,7 +800,11 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
             ret_tmp = []
             for idx in returns_inference:
                 node = graph.get_node_by_name(in_match_result[i][idx])
-                ret_tmp.append(copy.deepcopy(node))
+                try:
+                    ret_tmp.append(copy.deepcopy(node))
+                except:
+                    node.ori_node = None
+                    ret_tmp.append(copy.deepcopy(node))
             ret_old_nodes.append(ret_tmp)
 
         return (in_match_result, new_node_names, input_tensors, output_tensors, ret_old_nodes)
@@ -1029,6 +1034,7 @@ def get_model_fwk_name(model):
     """
     onnx = LazyImport('onnx')
     tf = LazyImport('tensorflow')
+    torch = LazyImport('torch')
     def _is_onnxruntime(model):
         """Check if the model is onnxruntime."""
         try:
@@ -1056,6 +1062,17 @@ def get_model_fwk_name(model):
             pass
         else:
             return 'tensorflow'
+        return 'NA'
+
+    def _is_torch(model):
+        """Check if the model is torch."""
+        try:
+            if isinstance(model, str):
+                torch.jit.load(model)
+        except:
+            pass
+        else:
+            return 'torch'
         return 'NA'
 
     def _is_neural_engine(model):
@@ -1087,7 +1104,7 @@ def get_model_fwk_name(model):
         assert os.path.exists(absmodel) or os.path.exists(absmodel+'.pb'), \
             'invalid input path, the file does not exist!'
 
-    checker = [_is_onnxruntime, _is_neural_engine, _is_tensorflow]
+    checker = [_is_onnxruntime, _is_neural_engine, _is_tensorflow, _is_torch]
     for handler in checker:
         fwk_name = handler(model)
         if fwk_name != 'NA':

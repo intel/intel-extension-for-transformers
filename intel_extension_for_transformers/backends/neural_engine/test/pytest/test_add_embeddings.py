@@ -35,6 +35,7 @@ class TestAddEmbeddings(unittest.TestCase):
 
     def test_add_embeddings_with_seq_len_first(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]

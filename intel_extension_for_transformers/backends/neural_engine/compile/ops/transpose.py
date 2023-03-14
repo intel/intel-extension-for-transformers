@@ -17,9 +17,10 @@
 
 """The neural engine operator mapping file."""
 
-from .op import Operator, operator_registry
+from .op import Operator, operator_registry, parseTorchListConstruct
 from .tensor import Tensor
 from ..graph_utils import list2str
+import copy
 
 
 # tf.transpose(a, perm=None, conjugate=False, name='transpose')
@@ -51,3 +52,12 @@ class Transpose(Operator):
             src_perm = [i for i in range(len(dst_perm))]
             self._attr['src_perm'] = list2str(src_perm)
             self._attr['dst_perm'] = list2str(dst_perm)
+
+        if framework == 'torch':
+            if node.kind() == 'aten::permute':
+                self._attr['src_perm'] = list2str(list(range(node.inputsAt(1).node().inputsSize())))
+                self._attr['dst_perm'] = list2str(parseTorchListConstruct(node.inputsAt(1)))
+            if node.kind() == 'aten::transpose':
+                dim0 = node.inputsAt(1).toIValue()
+                dim1 = node.inputsAt(2).toIValue()
+                self._attr['transpose_dims'] = list2str([dim0, dim1])

@@ -33,6 +33,10 @@ ReorderOperator::ReorderOperator(const shared_ptr<OperatorConfig>& conf) : Opera
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&dst_perm_, attrs_map["dst_perm"], ",");
   }
+  iter = attrs_map.find("transpose_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&transpose_dims_, attrs_map["transpose_dims"], ",");
+  }
   iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
     output_dtype_ = attrs_map["output_dtype"];
@@ -97,6 +101,23 @@ void ReorderOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*
 void ReorderOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   const memory::dims& src_shape = src_->shape();
   memory::dims dst_shape_origin = src_shape;
+
+  if (transpose_dims_.size()) {
+    src_perm_.clear();
+    dst_perm_.clear();
+    auto dims = src_shape.size();
+    for (int i = 0; i < dims; i++) {
+      src_perm_.push_back(i);
+      dst_perm_.push_back(i);
+    }
+    auto dim0 = transpose_dims_[0];
+    auto dim1 = transpose_dims_[1];
+    if (dim0 < 0) dim0 += dims;
+    if (dim1 < 0) dim1 += dims;
+    dst_perm_[dim0] = src_perm_[dim1];
+    dst_perm_[dim1] = src_perm_[dim0];
+  }
+
   vector<int64_t> dst_shape = GetShapes(dst_shape_origin, dst_perm_);
 
   memory::dims src_stride = GetStrides(src_shape, src_perm_);

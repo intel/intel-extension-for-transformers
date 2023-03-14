@@ -35,6 +35,7 @@ class TestTransposeBatchMatMul(unittest.TestCase):
 
     def test_transpose_batch_matmul_1(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -85,6 +86,7 @@ class TestTransposeBatchMatMul(unittest.TestCase):
 
     def test_transpose_batch_matmul_2(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -123,6 +125,7 @@ class TestTransposeBatchMatMul(unittest.TestCase):
 
     def test_transpose_batch_matmul_3(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]

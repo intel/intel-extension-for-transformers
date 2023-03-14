@@ -58,7 +58,7 @@ void BinaryOpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor
   vector<int64_t> out_shape;
   for (int i = 0; i < src1_shape.size(); i++) {
     if (src0_shape[i] != src1_shape[i] && src0_shape[i] != 1 && src1_shape[i] != 1) {
-      LOG(ERROR) << "can not broadcast!";
+      LOG(ERROR) << "can not broadcast! " << i  << "src 0 shape "  <<src0_shape[i] << "src1 shape" << src1_shape[i];
       return;
     }
     out_shape.push_back(max(src0_shape[i], src1_shape[i]));

@@ -51,4 +51,3 @@ class SliceOperator : public Operator {
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_SLICE_HPP_
-

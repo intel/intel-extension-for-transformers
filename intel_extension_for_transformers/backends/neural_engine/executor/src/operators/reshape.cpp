@@ -24,6 +24,10 @@ ReshapeOperator::ReshapeOperator(const shared_ptr<OperatorConfig>& conf) : Opera
   if (iter != attrs_map.end()) StringSplit<int64_t>(&dims_, attrs_map["dims"], ",");
   iter = attrs_map.find("mul");
   if (iter != attrs_map.end()) StringSplit<int64_t>(&mul_, attrs_map["mul"], ",");
+  iter = attrs_map.find("unsqueeze");
+  unsqueeze_ = (iter != attrs_map.end() && iter->second != "") ? StringToNum<int>(iter->second) : -2;
+  iter = attrs_map.find("squeeze");
+  squeeze_ = (iter != attrs_map.end() && iter->second != "") ? StringToNum<int>(iter->second) : -2;
 }
 
 ReshapeOperator::~ReshapeOperator() {}
@@ -34,9 +38,47 @@ void ReshapeOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*
 
 void ReshapeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // Set dst tensor shape
+  if (unsqueeze_ != -2) {
+    auto before_dst_shape = input[0]->shape();
+    if (unsqueeze_ == -1) {
+      before_dst_shape.push_back(1);
+    } else {
+      before_dst_shape.emplace(before_dst_shape.begin() + unsqueeze_, 1);
+    }
+    Tensor* dst_ptr = output[0];
+    dst_ptr->set_shape(before_dst_shape);
+    return;
+  }
+  if (squeeze_ != -2) {
+    auto before_dst_shape = input[0]->shape();
+    if (squeeze_ == -1) {
+      before_dst_shape.pop_back();
+    } else {
+      before_dst_shape.erase(before_dst_shape.begin() + squeeze_);
+    }
+    Tensor* dst_ptr = output[0];
+    dst_ptr->set_shape(before_dst_shape);
+    return;
+  }
+  if (shape_.empty()) {
+    shape_ = input[0]->shape();
+  }
   vector<int64_t> pre_dst_shape(shape_);
   if (input.size() == 2) {
     auto shape_vec = input[1]->shape();
+    int j = 0;
+    for (int i = 0; i < pre_dst_shape.size(); i++) {
+      if (pre_dst_shape[i] == -1) {
+        pre_dst_shape[i] = shape_vec[dims_[j++]];
+      }
+      if (j >= dims_.size()) {
+        break;
+      }
+    }
+  }
+
+  if (input.size() == 1 && dims_.size() != 0) {
+    auto shape_vec = input[0]->shape();
     int j = 0;
     for (int i = 0; i < pre_dst_shape.size(); i++) {
       if (pre_dst_shape[i] == -1) {

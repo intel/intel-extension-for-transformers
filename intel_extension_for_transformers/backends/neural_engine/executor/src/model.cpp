@@ -405,14 +405,8 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
     vector<int64_t> origin_model_input = model_input_tensors_[i]->shape();
     LOG(INFO) << "data shape is " << data_shape[0] << " model config is " << model_input_shape[0] << " origin shape is "
               << origin_model_input[0];
-    CHECK_EQ(data_shape.size(), model_input_shape.size()) << "input data should have same "
-                                                          << "dimensions with configured model shape....";
     for (int axis = 0; axis < data_shape.size(); ++axis) {
       if (data_shape[axis] != origin_model_input[axis]) {
-        // not equal case only happen when model input axis support dynamic in
-        // config which axis value should be -1
-        CHECK_EQ(model_input_shape[axis], -1) << "data shape mismatch " << data_shape[axis]
-                                              << " while model input shape need " << model_input_shape[axis];
         reshape_model = true;
       }
     }

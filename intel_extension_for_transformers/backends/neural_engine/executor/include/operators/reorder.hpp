@@ -52,6 +52,7 @@ class ReorderOperator : public Operator {
   bool append_sum_;
   vector<int64_t> src_perm_;
   vector<int64_t> dst_perm_;
+  vector<int64_t> transpose_dims_;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::reorder reorder_prim_;
   memory src_m_;
