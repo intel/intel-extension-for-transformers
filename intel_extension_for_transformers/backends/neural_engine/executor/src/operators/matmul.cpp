@@ -195,35 +195,11 @@ void MatmulOperator::SetTransposeMode() {
   if (dst_->dtype() == "fp32" && binary_add_ && src0_->dtype() == "fp32") {
     vector<int64_t> src0_perm_transpose{2, 0, 3, 1};
     vector<int64_t> src1_perm_transpose{2, 0, 1, 3};
-    transpose_mode_ = true;
-    for (int i = 0; i < src0_perm_.size(); i++) {
-      if (src0_perm_[i] != src0_perm_transpose[i]) {
-        transpose_mode_ = false;
-        break;
-      }
-    }
-    for (int i = 0; i < src1_perm_.size(); i++) {
-      if (src1_perm_[i] != src1_perm_transpose[i]) {
-        transpose_mode_ = false;
-        break;
-      }
-    }
+    transpose_mode_ = (src0_perm_ == src0_perm_transpose) && (src1_perm_ == src1_perm_transpose);
   } else if (dst_->dtype() == "u8") {
     vector<int64_t> dst_perm_transpose{1, 3, 0, 2};
     vector<int64_t> src1_perm_transpose{2, 0, 3, 1};
-    transpose_mode_ = true;
-    for (int i = 0; i < dst_perm_.size(); i++) {
-      if (dst_perm_[i] != dst_perm_transpose[i]) {
-        transpose_mode_ = false;
-        break;
-      }
-    }
-    for (int i = 0; i < src1_perm_.size(); i++) {
-      if (src1_perm_[i] != src1_perm_transpose[i]) {
-        transpose_mode_ = false;
-        break;
-      }
-    }
+    transpose_mode_ = (dst_perm_ == dst_perm_transpose) && (src1_perm_ == src1_perm_transpose);
   }
 }
 #endif
@@ -281,7 +257,9 @@ void MatmulOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
 
 void MatmulOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (transpose_mode_) {
+#if __AVX512F__
     ForwardwithTransMode(input, output);
+#endif
   } else {
     ForwardwithOnednn(input, output);
   }
@@ -329,7 +307,7 @@ void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input, const ve
   transpose_matmul_ = jd::transpose_matmul(matmul_desc);
   DstReshapeFusion(input, output);
 }
-
+#if __AVX512F__
 void MatmulOperator::ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   void* dst_data = dst_->mutable_data();
   std::vector<const void*> runtime_data = {src0_->data(),
@@ -342,7 +320,7 @@ void MatmulOperator::ForwardwithTransMode(const vector<Tensor*>& input, const ve
   transpose_matmul_.execute(runtime_data);
   this->unref_tensors(input);
 }
-
+#endif
 // 1. Create primitive
 void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
@@ -354,7 +332,8 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   vector<int64_t> src0_stride = GetStrides(src0_shape_origin, src0_perm_);
   vector<int64_t> src1_stride = GetStrides(src1_shape_origin, src1_perm_);
 
-  memory::dims bias_shape;
+  vector<int64_t> bias_shape;
+  vector<int64_t> bias_stride;
   if (has_bias_) bias_shape = bias_->shape();
 
   // 1.2 malloc tensor for output
@@ -374,9 +353,8 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   if (has_bias_ && bias_shape.size() != dst_shape.size()) {
     bias_shape = vector<int64_t>(dst_shape.size(), 1);
     bias_shape.back() = bias_->shape().back();
+    bias_stride = GetStrides(bias_shape, reverse_perm);
   }
-  vector<int64_t> bias_stride = GetStrides(bias_shape, reverse_perm);
-
   // 1.4 Prepare memory descriptors
   memory::desc any_src0_md = memory::desc(src0_shape, type2mem[src0_->dtype()], memory::format_tag::any);
   memory::desc src0_md = memory::desc(src0_shape, type2mem[src0_->dtype()], src0_stride);
@@ -427,15 +405,12 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   vector<float> dst_scales;
   vector<float> rescales;
   dnnl::post_ops po;
-  int ic_dim = 0;
+  int ic_dim = 0;  // matmul only support per_tensor now
   if (is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
-      ic_dim = src1_min_->size() > 1 ? 2 : 0;
-      // attr.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
-      vector<int64_t> scale_shape(src1_shape.size(), 1);
-      scale_shape[src1_shape.size() - 1] = src1_min_->size();
-      scale_md_ = memory::desc(scale_shape, memory::data_type::f32, GetStrides(scale_shape));
-      po.append_binary(algorithm::binary_mul, scale_md_);
+      attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
+      scale_f32_mem_ = memory({{1}, memory::data_type::f32, {1}}, eng_);
+      zp_src0_mem_ = memory({{1}, memory::data_type::s32, {1}}, eng_);
       // need zero point when src0 is u8
       if (src0_->dtype() == "u8") {
         attr_.set_zero_points(DNNL_ARG_SRC, ic_dim, {DNNL_RUNTIME_S32_VAL});
@@ -522,9 +497,9 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
 
   // If the matmul forward class in the cache pool, just get it from pool.
   // Otherwise, do the reshape and send the related class into the cache pool
-  size_t key = MatMulPrimitiveFwdFactory::Key(src0_->dtype(), src1_->dtype(), output_dtype_,
-    src0_->shape(), src1_->shape(), src0_perm_, src1_perm_, dst_perm_, append_op_, post_->shape(),
-    output_scale_, &eng_);
+  size_t key = MatMulPrimitiveFwdFactory::Key(src0_->dtype(), src1_->dtype(), output_dtype_, src0_->shape(),
+                                              src1_->shape(), src0_perm_, src1_perm_, dst_perm_, append_op_,
+                                              post_->shape(), output_scale_, &eng_);
   if (MatMulPrimitiveFwdFactory::IsInFactory(key) && !MatMulPrimitiveFwdFactory::DoNotCache()) {
     matmul_p_ = MatMulPrimitiveFwdFactory::Get(key);
   } else {
@@ -603,10 +578,11 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
     reorder_prim_weight_.execute(eng_stream_, src1_m_, any_src1_m_);
   }
   // the runtime calculation of dynamic quantization
+
+  vector<int32_t> src0_zero_points;
+  vector<float> rescales;
+  vector<float> dynamic_bias;
   if (is_dynamic_) {
-    vector<int32_t> src0_zero_points;
-    vector<float> rescales;
-    vector<float> dynamic_bias;
     DynamicForward(&src0_zero_points, &rescales, &dynamic_bias);
   }
 
@@ -619,12 +595,7 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   if (post_ != nullptr && binary_add_) {
     void* post_ptr = post_->mutable_data();
     binary_m_.set_data_handle(post_ptr, eng_stream_);
-    // dynamic quantization inserts additional post_ops
-    int op_idx = 0;
-    if (is_dynamic_) {
-      op_idx++;
-    }
-    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(op_idx) | DNNL_ARG_SRC_1] = binary_m_;
+    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = binary_m_;
   }
 
   // 4. Execute the primitive
@@ -639,6 +610,12 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   this->unref_tensors(input);
 
   if (is_dynamic_) {
+    // float minx = *(float*)dst_data, maxx = *(float*)dst_data;
+    // for (int i = 0; i < matmul_fp32_res.size(); i++) {
+    //   minx = std::min(minx, *((float*)dst_data + i));
+    //   maxx = std::max(maxx, *((float*)dst_data + i));
+    // }
+    // std::cout << minx << "\t" << maxx << std::endl;
     // quantize the fp32 result of matmul
     if (output.size() > 1) {
       runtime_minmax(reinterpret_cast<float*>(matmul_fp32_res.mutable_data()), matmul_fp32_res.size(),
@@ -647,6 +624,7 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
       // quantize
       if (output_dtype_ == "u8" || output_dtype_ == "s8") {
         auto scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+        memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
 #if __AVX512F__
         Quantize_avx512(matmul_fp32_res.size(), dst_->dtype(), matmul_fp32_res.data(),
                         static_cast<const float*>(dst_min_->data()), scales_, dst_->mutable_data());
@@ -690,27 +668,24 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
                                     vector<float>* dynamic_bias_ptr) {
   auto& src0_zero_points = *src0_zero_points_ptr;
   auto& rescales = *rescales_ptr;
-  auto& dynamic_bias = *dynamic_bias_ptr;
-  memory scale_f32_mem(scale_md_, eng_);
-  memory zp_src0_mem({{1}, memory::data_type::s32, {1}}, eng_);
   int channel_size = src1_min_->size();  // channel_size=1 represent per_tensor
   rescales.resize(channel_size);
-  vector<float> src0_scales;
-  vector<float> src1_scales;
-  src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
-  src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
+  const float* src0_scales = reinterpret_cast<const float*>(src0_max_->data());
+  const float* src1_scales = reinterpret_cast<const float*>(src1_max_->data());
+  // std::cout << name_ << "\tsrc0:\t" << src0_scales[0] << std::endl;
+  // std::cout << name_ << "\tsrc1:\t" << src1_scales[0] << std::endl;
   if (channel_size == 1) {
     rescales[0] = output_scale_ / src0_scales[0] / src1_scales[0];
   } else {
 #pragma omp parallel for
     for (int i = 0; i < channel_size; i++) rescales[i] = output_scale_ / src0_scales[0] / src1_scales[i];
   }
-  scale_f32_mem.set_data_handle(reinterpret_cast<void*>(rescales.data()), eng_stream_);
-  memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = scale_f32_mem;
-  // memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem;
+  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales.data()), eng_stream_);
+  memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
 
   // The bias loaded from file is not scaled. So need rescaled runtime.
   if (has_bias_) {
+    auto& dynamic_bias = *dynamic_bias_ptr;
     dynamic_bias.resize(bias_->size());
     void* bias_m_data = bias_m_.get_data_handle();
     if (bias_m_data != nullptr) {
@@ -727,9 +702,10 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
   }
 
   if (src0_->dtype() == "u8") {
-    src0_zero_points = GetZeroPoints(src0_min_->data(), src0_scales, src0_->dtype());
-    zp_src0_mem.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);
-    memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = zp_src0_mem;
+    src0_zero_points = GetZeroPoints(reinterpret_cast<const float*>(src0_min_->data()), src0_scales, src0_->dtype(),
+                                     src0_min_->size());
+    zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);
+    memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = zp_src0_mem_;
   }
 }
 
@@ -754,13 +730,13 @@ void MatmulOperator::InputShapeFallBack(const vector<Tensor*>& input) {
     vector<int64_t> src1_shape = input[1]->shape();
     src1_shape_bfb_ = src1_shape;
     input[1]->set_shape({src1_shape[1], src1_shape[2], src1_shape[0] * src1_shape[3], src1_shape[4]});
-  // Q SparseLib 3D format, K Dense format
+    // Q SparseLib 3D format, K Dense format
   } else if (input[0]->tensor_format() == TensorFormat::MmKMb && input[0]->shape().size() == 5 &&
              input[1]->tensor_format() == TensorFormat::MK && input[1]->shape().size() == 4) {
     vector<int64_t> src0_shape = input[0]->shape();
     src0_shape_bfb_ = src0_shape;
     input[0]->set_shape({src0_shape[1], src0_shape[2], src0_shape[0] * src0_shape[3], src0_shape[4]});
-  // QK BatchMatmul SparseLib 3D format, V Dense format
+    // QK BatchMatmul SparseLib 3D format, V Dense format
   } else if (input[0]->tensor_format() == TensorFormat::BmBbHnSHs && input[0]->shape().size() == 5 &&
              input[1]->tensor_format() == TensorFormat::MK && input[1]->shape().size() == 4) {
     vector<int64_t> src0_shape = input[0]->shape();
@@ -792,30 +768,30 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
     // 1. Q x K (both SparseLib 3D format)
     if (input[0]->tensor_format() == TensorFormat::MmKMb && input[0]->shape().size() == 5 &&
         input[1]->tensor_format() == TensorFormat::MmKMb && input[1]->shape().size() == 5) {
-      LOG(INFO) << "Operator " << name_ <<" gonna modify QK Matmul related attrs for SparseLib 3D format...";
+      LOG(INFO) << "Operator " << name_ << " gonna modify QK Matmul related attrs for SparseLib 3D format...";
       UnsqueezePerm(&src0_perm_);
       UnsqueezePerm(&src1_perm_);
       transpose_mode_ = false;
       adapt_attrs_ = true;
       output[0]->set_tensor_format(TensorFormat::BmBbHnSHs);
-    // 2. Softmax(QK) x V (both SparseLib 3D format)
+      // 2. Softmax(QK) x V (both SparseLib 3D format)
     } else if (input[0]->tensor_format() == TensorFormat::BmBbHnSHs && input[0]->shape().size() == 5 &&
                input[1]->tensor_format() == TensorFormat::MmKMb && input[1]->shape().size() == 5) {
-      LOG(INFO) << "Operator " << name_ <<" gonna modify QKV Matmul related attrs for SparseLib 3D format...";
+      LOG(INFO) << "Operator " << name_ << " gonna modify QKV Matmul related attrs for SparseLib 3D format...";
       UnsqueezePerm(&src1_perm_);
       UnsqueezePerm(&dst_perm_);
       transpose_mode_ = false;
       adapt_attrs_ = true;
       output[0]->set_tensor_format(TensorFormat::BmHnHsBbS);
-    // mix sparsity
-    } else if (((input[0]->tensor_format() == TensorFormat::MmKMb || input[0]->tensor_format() ==
-               TensorFormat::BmBbHnSHs) && input[1]->tensor_format() != TensorFormat::MmKMb) ||
-               (input[1]->tensor_format() == TensorFormat::MmKMb && input[0]->tensor_format() !=
-               TensorFormat::MmKMb)) {
+      // mix sparsity
+    } else if (((input[0]->tensor_format() == TensorFormat::MmKMb ||
+                 input[0]->tensor_format() == TensorFormat::BmBbHnSHs) &&
+                input[1]->tensor_format() != TensorFormat::MmKMb) ||
+               (input[1]->tensor_format() == TensorFormat::MmKMb && input[0]->tensor_format() != TensorFormat::MmKMb)) {
       LOG(INFO) << "FALL BACK...";
       output[0]->set_tensor_format(TensorFormat::BHnSHs);
       InputShapeFallBack(input);
-    // Dense
+      // Dense
     } else {
       return;
     }
@@ -825,8 +801,8 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
       int64_t bm = input[0]->shape()[0];
       post_shape.insert(post_shape.begin(), bm);
       post_shape[1] = model_->input_shape()[0] / bm;
-      CHECK_EQ(Product(post_shape), Product(post_->shape())) << "Wrong post shape in operator " << name_
-                                                             << " with SparseLib 3D format...";
+      CHECK_EQ(Product(post_shape), Product(post_->shape()))
+          << "Wrong post shape in operator " << name_ << " with SparseLib 3D format...";
       post_->set_shape(post_shape);
     }
   } else if (stage == "out") {
@@ -837,7 +813,7 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
       if (binary_add_ && post_ != nullptr) {
         vector<int64_t> post_shape(post_->shape().size() - 1, 0);
         post_shape[0] = model_->input_shape()[0];
-        for (int i = 1; i < post_shape.size(); ++i) post_shape[i] = post_->shape()[i+1];
+        for (int i = 1; i < post_shape.size(); ++i) post_shape[i] = post_->shape()[i + 1];
         post_->set_shape(post_shape);
       }
       adapt_attrs_ = false;
@@ -858,14 +834,14 @@ void MatmulOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Ten
       vector<int64_t> src1_shape = input[1]->shape();
       input[1]->set_shape({src1_shape[0] * src1_shape[1], src1_shape[2], src1_shape[3], src1_shape[4]});
       LOG(INFO) << "Reorder src1 tensor of operator " << name_;
-    // Q SparseLib 3D format, K Dense format
+      // Q SparseLib 3D format, K Dense format
     } else if (input[0]->tensor_format() == TensorFormat::MmKMb && input[0]->shape().size() == 4 &&
                input[1]->tensor_format() == TensorFormat::MK && input[1]->shape().size() == 4) {
       input[0]->reorder(src0_shape_bfb_, {0, 3, 1, 2, 4});
       vector<int64_t> src0_shape = input[0]->shape();
       input[0]->set_shape({src0_shape[0] * src0_shape[1], src0_shape[2], src0_shape[3], src0_shape[4]});
       LOG(INFO) << "Reorder src0 tensor of operator " << name_;
-    // QK BatchMatmul SparseLib 3D format, V Dense format, no need reorder
+      // QK BatchMatmul SparseLib 3D format, V Dense format, no need reorder
     } else {
       LOG(INFO) << "Run with SparseLib 3D format without reorder in operator " << name_;
     }

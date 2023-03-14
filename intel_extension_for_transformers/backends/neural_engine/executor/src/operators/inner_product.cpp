@@ -793,8 +793,9 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
       ic_dim = src1_min_->size() > 1 ? 0 | (1 << 1) : 0;
       vector<float> src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
       vector<float> src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
-      if (dst_min_ != nullptr)
+      if (dst_min_ != nullptr) {
         dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      }
       rescales_ = GetRescales(src0_scales, src1_scales, dst_scales_, dst_->dtype(), append_eltwise_);
     } else {
       rescales_ = vector<float>(1, 1.f);
@@ -817,7 +818,7 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
   if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{1, 0}) src1_->set_transpose();
   if (!src0_perm_.empty() && src0_perm_ == vector<int64_t>{1, 0}) src0_->set_transpose();
 
-  if (has_bias_) {
+  if (has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")) {
     vector<int64_t> bias_shape = {src1_shape[0]};
     vector<int64_t> bias_stride = GetStrides(bias_shape);
     bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
@@ -874,11 +875,10 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   if (is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
       int ic_dim = src1_min_->size() > 1 ? 2 : 0;
-      // attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
-      vector<int64_t> scale_shape(src1_shape.size(), 1);
-      scale_shape[src1_shape.size() - 1] = src1_min_->size();
-      scale_md_ = memory::desc(scale_shape, memory::data_type::f32, GetStrides(scale_shape));
-      po.append_binary(algorithm::binary_mul, scale_md_);
+      attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
+      vector<int64_t> scale_shape;
+      scale_shape.push_back(src1_min_->size());
+      scale_f32_mem_ = memory({scale_shape, memory::data_type::f32, GetStrides(scale_shape)}, eng_);
       // need zero point when src0 is u8
       if (src0_->dtype() == "u8") {
         vector<int64_t> zero_point_shape(src1_shape);
@@ -886,9 +886,6 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
         zero_point_shape[src1_shape.size() - 2] = 1;
         vector<int64_t> zero_point_stride = GetStrides(zero_point_shape, {});
         CalculateCompensation(src1_shape, src1_stride, zero_point_stride);
-        // use binary_add to calculate zero_point
-        compensation_md_ = memory::desc(zero_point_shape, memory::data_type::f32, zero_point_stride);
-        po.append_binary(algorithm::binary_add, compensation_md_);
       }
     }
   }
@@ -1119,9 +1116,8 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   }
 
   // the runtime calculation of dynamic quantization
-  vector<float> src0_compensation;
   vector<float> dynamic_bias;
-  if (is_dynamic_) DynamicForward(&src0_compensation, &dynamic_bias, &any_bias_m);
+  if (is_dynamic_) DynamicForward(&dynamic_bias, &any_bias_m);
 
   // 3. Insert memory args
   memory_args_[DNNL_ARG_SRC_0] = any_src0_m;
@@ -1130,13 +1126,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   if (post_ != nullptr && binary_add_) {
     void* post_ptr = post_->mutable_data();
     binary_m_.set_data_handle(post_ptr, eng_stream_);
-    // dynamic quantization inserts additional post_ops
-    int op_idx = 0;
-    if (is_dynamic_) {
-      op_idx++;
-      if (src0_->dtype() == "u8") op_idx++;
-    }
-    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(op_idx) | DNNL_ARG_SRC_1] = binary_m_;
+    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = binary_m_;
   }
 
   // 4. Execute the primitive
@@ -1157,6 +1147,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   }
   eng_stream_.wait();
   if (is_dynamic_) {
+    // inner_product_fp32_res.print();
     // quantize the fp32 result of inner_porduct
     if (output.size() > 1) {
       runtime_minmax(reinterpret_cast<float*>(inner_product_fp32_res.mutable_data()), inner_product_fp32_res.size(),
@@ -1165,6 +1156,8 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
       // quantize
       if (output_dtype_ == "u8" || output_dtype_ == "s8") {
         auto scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+        memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
+        // std::cout << name_ << "\tdst:\t" << scales_[0] << std::endl;
 #if __AVX512F__
         Quantize_avx512(inner_product_fp32_res.size(), dst_->dtype(), inner_product_fp32_res.data(),
                         static_cast<const float*>(dst_min_->data()), scales_, dst_->mutable_data());
@@ -1204,39 +1197,34 @@ void InnerProductOperator::RuntimeMinmax() {
   dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
 }
 
-void InnerProductOperator::DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* dynamic_bias_ptr,
-                                          memory* any_bias_m_ptr) {
-  auto& src0_compensation = *src0_compensation_ptr;
+void InnerProductOperator::DynamicForward(vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr) {
   auto& dynamic_bias = *dynamic_bias_ptr;
   auto& any_bias_m = *any_bias_m_ptr;
   int channel_size = src1_min_->size();  // channel_size=1 represent per_tensor
-  memory scale_f32_mem(scale_md_, eng_);
-  memory compensation_mem(compensation_md_, eng_);
-  src0_compensation.resize(compensation_.size());
   rescales_.resize(channel_size);
-  vector<float> src0_scales;
-  vector<float> src1_scales;
-  src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
-  src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
+  const float* src0_scales = reinterpret_cast<const float*>(src0_max_->data());
+  const float* src1_scales = reinterpret_cast<const float*>(src1_max_->data());
+  // std::cout << name_ << "\tsrc0:\t" << src0_scales[0] << std::endl;
+  // std::cout << name_ << "\tsrc1:\t" << src1_scales[0] << std::endl;
   if (channel_size == 1) {
     rescales_[0] = output_scale_ / src0_scales[0] / src1_scales[0];
   } else {
 #pragma omp parallel for
     for (int i = 0; i < channel_size; i++) rescales_[i] = output_scale_ / src0_scales[0] / src1_scales[i];
   }
-  scale_f32_mem.set_data_handle(reinterpret_cast<void*>(rescales_.data()), eng_stream_);
-  // memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem;
-  memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = scale_f32_mem;
+  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales_.data()), eng_stream_);
+  memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
   // The bias loaded from file is not scaled. So need rescaled runtime.
-  if (has_bias_) {
+  // the compensation is src0_scale*sr0_min*ones_like(src0)*src1. compensation will be add as bias
+  if (has_bias_ || src0_->dtype() == "u8") {
     dynamic_bias.resize(bias_->size());
     float* bias_data = reinterpret_cast<float*>(bias_->mutable_data());
-    if (channel_size == 1) {
+    float com_scale = (*(reinterpret_cast<float*>(src0_min_->mutable_data()))) / output_scale_ * src0_scales[0];
 #pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales_[0];
-    } else {
-#pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales_[i];
+    for (int i = 0; i < bias_->size(); i++) {
+      dynamic_bias[i] = 0;
+      if (has_bias_) dynamic_bias[i] += bias_data[i] / rescales_[channel_size == 1 ? 0 : i];
+      if (src0_->dtype() == "u8") dynamic_bias[i] += compensation_[i] * com_scale;
     }
     bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
     if (inner_product_pd_.bias_desc() != bias_m_.get_desc()) {
@@ -1244,21 +1232,6 @@ void InnerProductOperator::DynamicForward(vector<float>* src0_compensation_ptr, 
       dnnl::reorder(bias_m_, any_bias_m).execute(eng_stream_, bias_m_, any_bias_m);
     }
     memory_args_[DNNL_ARG_BIAS] = any_bias_m;
-  }
-  if (src0_->dtype() == "u8") {
-    // the compensation is src0_scale*sr0_min*ones_like(src0)*src1
-    float src0_min = *(reinterpret_cast<float*>(src0_min_->mutable_data()));
-    if (channel_size == 1) {
-#pragma omp parallel for
-      for (int i = 0; i < compensation_.size(); i++)
-        src0_compensation[i] = compensation_[i] * src0_min / src1_scales[0];
-    } else {
-#pragma omp parallel for
-      for (int i = 0; i < compensation_.size(); i++)
-        src0_compensation[i] = compensation_[i] * src0_min / src1_scales[i];
-    }
-    compensation_mem.set_data_handle(reinterpret_cast<void*>(src0_compensation.data()), eng_stream_);
-    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(1) | DNNL_ARG_SRC_1] = compensation_mem;
   }
 }
 REGISTER_OPERATOR_CLASS(InnerProduct);

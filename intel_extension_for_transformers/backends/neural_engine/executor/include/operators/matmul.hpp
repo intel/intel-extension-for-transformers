@@ -53,7 +53,6 @@ class MatmulOperator : public Operator {
   void ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
 
-
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
@@ -88,7 +87,8 @@ class MatmulOperator : public Operator {
   vector<int64_t> reshape_;
   vector<float> rescales_;
   dnnl::primitive_attr attr_;
-  memory::desc scale_md_;
+  memory scale_f32_mem_;
+  memory zp_src0_mem_;
 
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream eng_stream_ = dnnl::stream(eng_);

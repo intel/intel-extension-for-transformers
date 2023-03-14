@@ -92,6 +92,7 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
                    reinterpret_cast<float*>(dst_max_->mutable_data()));
     scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
     min_data = static_cast<const float*>(dst_min_->data());
+    memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
   }
   // quantize
   if (src_data != nullptr && dst_data != nullptr) {

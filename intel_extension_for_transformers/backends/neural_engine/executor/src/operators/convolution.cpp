@@ -69,6 +69,10 @@ ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
   if (iter != attrs_map.end()) {
     gelu_split_ = attrs_map["gelu_split"] == "true";
   }
+  iter = attrs_map.find("reshape_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_dims_, attrs_map["reshape_dims"], ",");
+  }
   iter = attrs_map.find("append_op");
   binary_add_ = (iter != attrs_map.end() && iter->second == "binary_add") ? true : false;
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
@@ -84,6 +88,9 @@ ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
 
 void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int input_size = input.size();
+  if (!reshape_dims_.empty()) {
+    input_size -= 1;
+  }
   dst_ = output[0];
   switch (input_size) {
     case 2: {
@@ -129,14 +136,27 @@ void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<
       break;
     }
     case 8: {
-      src_ = input[0];
-      weight_ = input[1];
-      src_min_ = input[2];
-      src_max_ = input[3];
-      weight_min_ = input[4];
-      weight_max_ = input[5];
-      dst_min_ = input[6];
-      dst_max_ = input[7];
+      if (append_sum_ || binary_add_) {
+        // dynamic quantization
+        src_ = input[0];
+        weight_ = input[1];
+        bias_ = input[2];
+        post_ = input[3];
+        src_min_ = input[4];
+        src_max_ = input[5];
+        weight_min_ = input[6];
+        weight_max_ = input[7];
+        has_bias_ = true;
+      } else {
+        src_ = input[0];
+        weight_ = input[1];
+        src_min_ = input[2];
+        src_max_ = input[3];
+        weight_min_ = input[4];
+        weight_max_ = input[5];
+        dst_min_ = input[6];
+        dst_max_ = input[7];
+      }
       break;
     }
     case 9: {
@@ -174,8 +194,11 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   // only for dense gemm dispatcher now
   if (dispatch_from_ == "InnerProduct" && (input[1]->location().empty() || input[1]->shape().empty())) return;
   MapTensors(input, output);
+  bool is_dynamic_ =
+      output.size() > 1 || (src_min_ != nullptr && src_min_->raw_data() == nullptr && !src_min_->is_shared());
+  if (is_dynamic_ && dispatch_from_ == "InnerProduct") return;
   if (has_bias_) {
-    LOG(INFO) << "Convolution has bias";
+    LOG(INFO) << name_ << "Convolution has bias";
   }
   dst_->set_dtype(output_dtype_);
 
@@ -275,7 +298,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
       weight_group_shape[1] /= group_;
       if (weight_group_shape[1] % group_ != 0) {
         LOG(ERROR) << "Output channel(" << weight_group_shape[1] << ") is not divisible by "
-                  << "group(" << group_ << ") in covolution!";
+                   << "group(" << group_ << ") in covolution!";
       }
     }
     vector<int64_t> weight_group_stride = GetStrides(weight_group_shape);
@@ -303,7 +326,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   vector<int64_t> src_shape_origin;
   if (dispatch_from_ == "InnerProduct") {
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_Convolution"].size(), dispatch_config_.size() - 1)
-            << "InnerProduct to Convolution has wrong dispatch kernel config...";
+        << "InnerProduct to Convolution has wrong dispatch kernel config...";
     StringSplit<int64_t>(&src_shape_origin, dispatch_config_[1], ",");
     CHECK_EQ(Product(src_shape_origin), Product(src_->shape())) << "Wrong dispatch input shape...";
     // consider if model transpose src0 or not
@@ -487,9 +510,9 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
 
   // If the convolution forward class in the cache pool, just get it from the pool.
   // Otherwise, do the reshape and send the related class into the cache pool
-  size_t key = ConvolutionPrimitiveFwdFactory::Key(src_->dtype(), weight_->dtype(), output_dtype_,
-    src_shape, weight_->shape(), dst_perm_, append_op_, post_->shape(), output_scale_, group_, pads_,
-    strides_, &eng_);
+  size_t key = ConvolutionPrimitiveFwdFactory::Key(src_->dtype(), weight_->dtype(), output_dtype_, src_shape,
+                                                   weight_->shape(), dst_perm_, append_op_, post_->shape(),
+                                                   output_scale_, group_, pads_, strides_, &eng_);
   if (ConvolutionPrimitiveFwdFactory::IsInFactory(key) && !ConvolutionPrimitiveFwdFactory::DoNotCache()) {
     convolution_p_ = ConvolutionPrimitiveFwdFactory::Get(key);
   } else {

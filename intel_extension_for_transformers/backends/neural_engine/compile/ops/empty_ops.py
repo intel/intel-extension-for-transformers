@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The neural engine empty op file."""
 
 from .op import Operator, operator_registry
@@ -25,19 +24,24 @@ from .tensor import Tensor
 @operator_registry(operator_type='AddV2')
 class AddV2(Operator):
     """Register the AddV2 operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
+
 @operator_registry(operator_type='MultiHeadAttenion')
 class MultiHeadAttenion(Operator):
+
     def __init__(self):
         super().__init__()
+
 
 # x + y element-wise, supports broadcasting
 @operator_registry(operator_type='Add')
 class Add(Operator):
     """Register the Add operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -46,6 +50,7 @@ class Add(Operator):
 @operator_registry(operator_type='BinaryAdd')
 class BinaryAdd(Operator):
     """Register the BinaryAdd operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -54,6 +59,7 @@ class BinaryAdd(Operator):
 @operator_registry(operator_type='ConstantOfShape')
 class ConstantOfShape(Operator):
     """Register the ConstantOfShape operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -62,6 +68,7 @@ class ConstantOfShape(Operator):
 @operator_registry(operator_type='DequantizeLinear')
 class DequantizeLinear(Operator):
     """Register the DequantizeLinear operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -71,6 +78,7 @@ class DequantizeLinear(Operator):
 @operator_registry(operator_type='Erf')
 class Erf(Operator):
     """Register the Erf operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -79,6 +87,7 @@ class Erf(Operator):
 @operator_registry(operator_type='Expand')
 class Expand(Operator):
     """Register the Expand operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -89,6 +98,7 @@ class Expand(Operator):
 @operator_registry(operator_type='Fill')
 class Fill(Operator):
     """Register the Fill operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -97,6 +107,7 @@ class Fill(Operator):
 @operator_registry(operator_type='FlatMapDataset')
 class FlatMapDataset(Operator):
     """Register the FlatMapDataset operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -105,6 +116,7 @@ class FlatMapDataset(Operator):
 @operator_registry(operator_type='Identity')
 class Identity(Operator):
     """Register the Identity operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -116,6 +128,7 @@ class Identity(Operator):
 @operator_registry(operator_type='InnerProductGraph')
 class InnerProduct(Operator):
     """Register the InnerProduct operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -125,6 +138,7 @@ class InnerProduct(Operator):
 @operator_registry(operator_type='Input')
 class Input(Operator):
     """Register the Input operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -135,6 +149,7 @@ class Input(Operator):
 @operator_registry(operator_type='LayerNorm')
 class LayerNorm(Operator):
     """Register the LayerNorm operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -143,6 +158,7 @@ class LayerNorm(Operator):
 @operator_registry(operator_type='MakeIterator')
 class MakeIterator(Operator):
     """Register the MakeIterator operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -153,6 +169,7 @@ class MakeIterator(Operator):
 @operator_registry(operator_type='MatMulWithBiasAdd')
 class MatMulWithBiasAdd(Operator):
     """Register the MatMulWithBiasAdd operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -163,6 +180,7 @@ class MatMulWithBiasAdd(Operator):
 @operator_registry(operator_type='MatMulWithBiasGelu')
 class MatMulWithBiasGelu(Operator):
     """Register the MatMulWithBiasGelu operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -173,6 +191,7 @@ class MatMulWithBiasGelu(Operator):
 @operator_registry(operator_type='MatMulWithBiasTanh')
 class MatMulWithBiasTanh(Operator):
     """Register the MatMulWithBiasTanh operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -183,6 +202,7 @@ class MatMulWithBiasTanh(Operator):
 @operator_registry(operator_type='MatMulWithBias')
 class MatMulWithBias(Operator):
     """Register the MatMulWithBias operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -192,6 +212,7 @@ class MatMulWithBias(Operator):
 @operator_registry(operator_type='Output')
 class Output(Operator):
     """Register the Output operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -202,6 +223,7 @@ class Output(Operator):
 @operator_registry(operator_type='PaddingSequence')
 class PaddingSequence(Operator):
     """Register the PaddingSequence operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -212,6 +234,7 @@ class PaddingSequence(Operator):
 @operator_registry(operator_type='Pow')
 class Pow(Operator):
     """Register the Pow operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -220,6 +243,7 @@ class Pow(Operator):
 @operator_registry(operator_type='QLinearMatMul')
 class QLinearMatMul(Operator):
     """Register the QLinearMatMul operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -228,6 +252,7 @@ class QLinearMatMul(Operator):
 @operator_registry(operator_type='QLinearAdd')
 class QLinearAdd(Operator):
     """Register the QLinearAdd operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -236,6 +261,7 @@ class QLinearAdd(Operator):
 @operator_registry(operator_type='QLinearMul')
 class QLinearMul(Operator):
     """Register the QLinearMul operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -247,6 +273,7 @@ class QLinearMul(Operator):
 @operator_registry(operator_type='RealDiv')
 class RealDiv(Operator):
     """Register the RealDiv operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -257,6 +284,7 @@ class RealDiv(Operator):
 @operator_registry(operator_type='Rsqrt')
 class Rsqrt(Operator):
     """Register the Rsqrt operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -267,6 +295,7 @@ class Rsqrt(Operator):
 @operator_registry(operator_type='Shape')
 class Shape(Operator):
     """Register the Shape operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -276,6 +305,7 @@ class Shape(Operator):
 @operator_registry(operator_type='Sqrt')
 class Sqrt(Operator):
     """Register the Sqrt operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -285,6 +315,7 @@ class Sqrt(Operator):
 @operator_registry(operator_type='Square')
 class Square(Operator):
     """Register the Square operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -295,6 +326,7 @@ class Square(Operator):
 @operator_registry(operator_type='SquaredDifference')
 class SquaredDifference(Operator):
     """Register the SquaredDifference operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -303,6 +335,7 @@ class SquaredDifference(Operator):
 @operator_registry(operator_type='StopGradient')
 class StopGradient(Operator):
     """Register the StopGradient operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -312,6 +345,7 @@ class StopGradient(Operator):
 @operator_registry(operator_type='Tanh')
 class Tanh(Operator):
     """Register the Tanh operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -320,6 +354,7 @@ class Tanh(Operator):
 @operator_registry(operator_type='TensorSliceDataset')
 class TensorSliceDataset(Operator):
     """Register the TensorSliceDataset operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -330,6 +365,7 @@ class TensorSliceDataset(Operator):
 @operator_registry(operator_type='TransposeBatchMatMul')
 class TransposeBatchMatMul(Operator):
     """Register the TransposeBatchMatMul operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -338,41 +374,52 @@ class TransposeBatchMatMul(Operator):
 @operator_registry(operator_type='Where')
 class Where(Operator):
     """Register the Where operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Range')
 class Range(Operator):
     """Register the Range operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Relu')
 class Relu(Operator):
     """Register the Relu operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='MatMulWithBiasRelu')
 class MatMulWithBiasRelu(Operator):
     """Register the MatMulWithBiasRelu operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Matmul')
 class Matmul(Operator):
     """Register the Matmul operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
+
 @operator_registry(operator_type='Quantize')
 class Quantize(Operator):
     """Register the Quantize operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
@@ -381,110 +428,139 @@ class Quantize(Operator):
 @operator_registry(operator_type='CumSum')
 class CumSum(Operator):
     """Register the CumSum operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Onehot')
 class Onehot(Operator):
     """Register the Onehot operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='TokenTypeIds')
 class TokenTypeIds(Operator):
     """Register the TokenTypeIds operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='PositionIds')
 class PositionIds(Operator):
     """Register the PositionIds operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Loop')
 class Loop(Operator):
     """Register the Loop operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Sigmoid')
 class Sigmoid(Operator):
     """Register the Sigmoid operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='MatMulWithBiasSigmoid')
 class MatMulWithBiasSigmoid(Operator):
     """Register the MatMulWithBiasSigmoid operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='EmbeddingBag')
 class EmbeddingBag(Operator):
     """Register the EmbeddingBag operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Flatten')
 class Flatten(Operator):
     """Register the Flatten operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Reorder')
 class Reorder(Operator):
     """Register the Reorder operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='MergedEmbeddingbag')
 class MergedEmbeddingbag(Operator):
     """Register the MergedEmbeddingbag operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Convolution')
 class Convolution(Operator):
     """Register the Convolution operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='ExpandIndices')
 class ExpandIndices(Operator):
     """Register the ExpandIndices operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
 
 @operator_registry(operator_type='Tile')
 class Tile(Operator):
     """Register the Tile operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
+
 @operator_registry(operator_type='OpAny')
 class OpAny(Operator):
     """Register the OpAny operator."""
+
     def __init__(self):
         """The init function of this operator."""
+
 
 @operator_registry(operator_type='SequenceLength')
 class SequenceLength(Operator):
 
     def __init__(self):
         super().__init__()
-

@@ -17,4 +17,4 @@
 
 """The module of compile."""
 
-from .compile import compile
+from .compile import compile, dynamic_quantization

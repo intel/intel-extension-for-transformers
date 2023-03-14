@@ -63,7 +63,6 @@
 #define NEURALENGINE_API_
 #endif  // GTEST_API_
 
-
 namespace executor {
 
 using std::max;
@@ -97,8 +96,7 @@ vector<int64_t> GetShapes(const vector<int64_t>& origin_shape, const vector<int6
 // e.g.: axis = (0, 1, 2, 3), shape = (64, 16, 384, 64), return stride = (16*384*64, 384*64, 64, 1)
 vector<int64_t> GetStrides(const vector<int64_t>& origin_shape, const vector<int64_t>& absolute_perm = {});
 
-vector<int64_t> GetDstShape(const vector<int64_t>& dst_shape, size_t dst_size,
-                            const vector<int64_t>& ref_shape,
+vector<int64_t> GetDstShape(const vector<int64_t>& dst_shape, size_t dst_size, const vector<int64_t>& ref_shape,
                             const vector<int64_t>& reshape_dims);
 
 template <typename T>
@@ -106,7 +104,7 @@ T StringToNum(const string& str);
 
 // Compare two buffer
 template <typename T>
-bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps = 1e-6);
+bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2_true, int64_t elem_true, float eps = 1e-6);
 
 bool CompareShape(const vector<int64_t>& shape1, const vector<int64_t>& shape2);
 
@@ -116,6 +114,8 @@ vector<float> GetRescales(const vector<float>& src0_scales, const vector<float>&
                           const vector<float>& dst_scales, const string& dst_dtype, const bool append_eltwise = false);
 
 vector<int> GetZeroPoints(const void* mins, const vector<float>& scales, const string& dtype);
+
+vector<int> GetZeroPoints(const float* mins, const float* scales, const string& dtype, const int size);
 
 void AddZeroPoints(const int size, const string& dtype, const float* src_data, const float* range_mins,
                    const vector<float>& scales, float* dst_data);
@@ -170,11 +170,11 @@ void zero_ker(uint8_t* out, size_t len);
 void move_ker(uint8_t* out, const uint8_t* in, size_t len);
 void add_ker(uint8_t* inout, uint8_t* in, size_t len);
 
-void runtime_minmax(float* data, size_t len, float* min_num, float* max_num);
+void runtime_minmax(const float* data, size_t len, float* min_num, float* max_num);
 #if __AVX512F__
-void block_minmax_avx512(float* Input, size_t N, float* Min, float* Max);
+void block_minmax_avx512(const float* Input, size_t N, float* Min, float* Max);
 #else
-void block_minmax(float* Input, size_t N, float* Min, float* Max);
+void block_minmax(const float* Input, size_t N, float* Min, float* Max);
 #endif
 
 /************ hash funtion for primitive cache ************/
@@ -272,9 +272,7 @@ class PrimitiveCachePool {
 template <typename T>
 class DnnlPrimitiveFactory {
  public:
-  DnnlPrimitiveFactory() {
-    do_not_cache_ = (getenv("ENGINE_PRIMITIVE_CACHE_OFF") != NULL);
-  }
+  DnnlPrimitiveFactory() { do_not_cache_ = (getenv("ENGINE_PRIMITIVE_CACHE_OFF") != NULL); }
   ~DnnlPrimitiveFactory() {}
 
   bool IsInCache(const size_t& key) {
@@ -337,9 +335,9 @@ class MatMulPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::matmul> {
  public:
   static size_t Key(const string& src0_dtype, const string& src1_dtype, const string& dst_dtype,
                     const vector<int64_t>& src0_shape, const vector<int64_t>& src1_shape,
-                    const vector<int64_t>& src0_perm, const vector<int64_t>& src1_perm,
-                    const vector<int64_t>& dst_perm, const string& append_op, const vector<int64_t>& post_op_shape,
-                    const float& output_scale, const dnnl::engine* eng);
+                    const vector<int64_t>& src0_perm, const vector<int64_t>& src1_perm, const vector<int64_t>& dst_perm,
+                    const string& append_op, const vector<int64_t>& post_op_shape, const float& output_scale,
+                    const dnnl::engine* eng);
   static bool IsInFactory(const size_t& key);
   // call IsInFactory function first
   static dnnl::matmul& Get(const size_t& key);
@@ -383,7 +381,6 @@ class ConvolutionPrimitiveFwdFactory : public DnnlPrimitiveFactory<dnnl::convolu
                        const float& output_scale, const int64_t& group, const vector<int64_t>& pads,
                        const vector<int64_t>& strides, const dnnl::engine* eng);
 };
-
 }  // namespace executor
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_COMMON_HPP_

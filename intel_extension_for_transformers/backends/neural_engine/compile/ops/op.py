@@ -53,12 +53,13 @@ def operator_registry(operator_type):
 
 class Operator(object):
     """The class of neural engine operator."""
+
     def __init__(self):
         """The init function of this operator."""
         self._name = ''
         self._op_type = ''
-        self._input_tensors = []
-        self._output_tensors = []
+        self._input_tensors= []
+        self._output_tensors= []
         self._attr = OrderedDict()
         # ['extract_from_framework', 'construct']
         self._filling_method = None
@@ -130,7 +131,7 @@ class Operator(object):
             'tensorflow': tf_extract_operator,
             'onnxruntime': onnx_extract_operator,
         }
-        
+
         self._name = node.name
         self._op_type, self._input_tensors, self._output_tensors = OP_EXTRACTORS[framework](
             node, framework_model, nodes_dict, engine_graph)

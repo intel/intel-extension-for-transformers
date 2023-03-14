@@ -72,7 +72,7 @@ class InnerProductOperator : public Operator {
   void PrepareSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ShapeInferSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
-  void DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
+  void DynamicForward(vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
   void RuntimeMinmax();
   void CalculateCompensation(const vector<int64_t>& src1_shape, const vector<int64_t>& src1_stride,
                              const vector<int64_t>& zero_point_stride);
@@ -111,8 +111,7 @@ class InnerProductOperator : public Operator {
   vector<int64_t> compensation_;
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
-  memory::desc scale_md_;
-  memory::desc compensation_md_;
+  memory scale_f32_mem_;
 
 #ifdef WITH_SPARSELIB
   jd::tensor_desc src0_desc_;

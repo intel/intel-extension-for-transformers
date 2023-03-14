@@ -138,30 +138,54 @@ vector<int64_t> GetStrides(const vector<int64_t>& origin_shape, const vector<int
 }
 
 template <typename T>
-bool CompareData(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps) {
-  if (buf1 == buf2) {
+bool CompareData(const void* buf1, int64_t elem_num1, const void* buf_true, int64_t elem_true, float eps) {
+  if (buf1 == buf_true) {
     return false;
   }
-  if (elem_num1 != elem_num2) {
+  if (elem_num1 != elem_true) {
     return false;
   }
   const auto buf1_data = static_cast<const T*>(buf1);
-  const auto buf2_data = static_cast<const T*>(buf2);
+  const auto buf2_data = static_cast<const T*>(buf_true);
   for (int64_t i = 0; i < elem_num1; ++i) {
     auto err = fabs(buf1_data[i] - buf2_data[i]);
     if (err > eps) {
-      LOG(ERROR) << "idx: " << i << ", true: " << buf1_data[i] <<
-        ", predict: " << buf2_data[i] << ", err: " << err << ", eps: " << eps;
+      LOG(ERROR) << "idx: " << i << ", true: " << static_cast<int>(buf1_data[i])
+                 << ", predict: " << static_cast<int>(buf2_data[i]) << ", err: " << err << ", eps: " << eps;
       return false;
     }
   }
   return true;
 }
-template bool CompareData<float>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
-template bool CompareData<uint16_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2,
+template <>
+bool CompareData<float>(const void* buf1, int64_t elem_num1, const void* buf_true, int64_t elem_true, float eps) {
+  if (buf1 == buf_true) {
+    return false;
+  }
+  if (elem_num1 != elem_true) {
+    return false;
+  }
+  const auto buf1_data = static_cast<const float*>(buf1);
+  const auto buf2_data = static_cast<const float*>(buf_true);
+  float err = 0;
+  float ref = 0;
+  for (int64_t i = 0; i < elem_num1; ++i) {
+    ref += buf2_data[i] * buf2_data[i];
+    err += (buf1_data[i] - buf2_data[i]) * (buf1_data[i] - buf2_data[i]);
+  }
+  if (std::sqrt(err) / std::sqrt(ref) > eps) {
+    LOG(ERROR) << "Reference matrix: " << std::sqrt(ref) << ", Error: " << std::sqrt(err)
+               << ", Relative error:" << std::sqrt(err) / std::sqrt(ref) << ", eps" << eps;
+    return false;
+  }
+  return true;
+}
+template bool CompareData<uint16_t>(const void* buf1, int64_t elem_num1, const void* buf_true, int64_t elem_true,
                                     float eps);  // bf16
-template bool CompareData<int8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
-template bool CompareData<uint8_t>(const void* buf1, int64_t elem_num1, const void* buf2, int64_t elem_num2, float eps);
+template bool CompareData<int8_t>(const void* buf1, int64_t elem_num1, const void* buf_true, int64_t elem_true,
+                                  float eps);
+template bool CompareData<uint8_t>(const void* buf1, int64_t elem_num1, const void* buf_true, int64_t elem_true,
+                                   float eps);
 
 bool CompareShape(const vector<int64_t>& shape1, const vector<int64_t>& shape2) {
   if (shape1.size() != shape2.size()) return false;
@@ -174,7 +198,7 @@ bool CompareShape(const vector<int64_t>& shape1, const vector<int64_t>& shape2) 
 vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, const string& dtype) {
   const float* mins_p = static_cast<const float*>(mins);
   const float* maxs_p = static_cast<const float*>(maxs);
-
+  // std::cout << mins_p[0] << "\t" << maxs_p[0] << std::endl;
   vector<float> scales;
   if (dtype == "u8") {
     for (int i = 0; i < size; i++) {
@@ -262,6 +286,18 @@ vector<int> GetZeroPoints(const void* mins, const vector<float>& scales, const s
     for (int i = 0; i < scales.size(); i++) zerops.emplace_back(nearbyint(-mins_p[i] * scales[i]));
   } else if (dtype == "s8") {
     for (int i = 0; i < scales.size(); i++) zerops.emplace_back(nearbyint(-128 - mins_p[i] * scales[i]));
+  } else {
+    LOG(ERROR) << "Can't suppport dtype: " << dtype << " now!";
+  }
+  return zerops;
+}
+
+vector<int> GetZeroPoints(const float* mins, const float* scales, const string& dtype, const int size) {
+  vector<int> zerops;
+  if (dtype == "u8") {
+    for (int i = 0; i < size; i++) zerops.emplace_back(nearbyint(-mins[i] * scales[i]));
+  } else if (dtype == "s8") {
+    for (int i = 0; i < size; i++) zerops.emplace_back(nearbyint(-128 - mins[i] * scales[i]));
   } else {
     LOG(ERROR) << "Can't suppport dtype: " << dtype << " now!";
   }
@@ -764,7 +800,7 @@ void add_ker(uint8_t* inout, uint8_t* in, size_t len) {
 #endif
 }
 
-void runtime_minmax(float* data, size_t length, float* min_num, float* max_num) {
+void runtime_minmax(const float* data, size_t length, float* min_num, float* max_num) {
   int block_size = (length / CPU_COUNT) / ALIGN_NUM * ALIGN_NUM;
   if (block_size == 0) {
     auto result = std::minmax_element(data, data + length);
@@ -797,7 +833,7 @@ void runtime_minmax(float* data, size_t length, float* min_num, float* max_num) 
   *max_num = *std::max_element(block_maxs.begin(), block_maxs.end());
 }
 
-void block_minmax_avx512(float* Input, size_t N, float* Min, float* Max) {
+void block_minmax_avx512(const float* Input, size_t N, float* Min, float* Max) {
   float tmp_min = std::numeric_limits<float>::max();
   float tmp_max = std::numeric_limits<float>::lowest();
 
@@ -881,7 +917,7 @@ void block_minmax_avx512(float* Input, size_t N, float* Min, float* Max) {
   *Min = tmp_min;
   *Max = tmp_max;
 }
-void block_minmax(float* Input, size_t N, float* Min, float* Max) {
+void block_minmax(const float* Input, size_t N, float* Min, float* Max) {
   float tmp_min = std::numeric_limits<float>::max();
   float tmp_max = std::numeric_limits<float>::lowest();
 
