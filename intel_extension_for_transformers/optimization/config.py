@@ -458,12 +458,14 @@ class QuantizationConfig(object):
         if recipes is not None and not isinstance(recipes, dict):
             raise ValueError("recipes should be a dict.")
 
+        # Support PyTorch only
         def smooth_quant(val=None):
             if val is not None:
                 return check_value("smooth_quant", val, bool)
             else:
                 return False
 
+        # Support PyTorch only
         def smooth_quant_args(val=None):
             if val is not None:
                 check_value("smooth_quant_args", val, dict)
@@ -474,79 +476,40 @@ class QuantizationConfig(object):
             else:
                 return {}
 
-        def fast_bias_correction(val=None):
+        # Support tensorflow, but not enabled now
+        def fast_bias_correction(val=None):  # pragma: no cover
             if val is not None:
                 return check_value("fast_bias_correction", val, bool)
             else:
                 return False
 
-        def weight_correction(val=None):
+        # Support tensorflow, but not enabled now
+        def weight_correction(val=None):  # pragma: no cover
             if val is not None:
                 return check_value("weight_correction", val, bool)
             else:
                 return False
 
-        def gemm_to_matmul(val=None):
-            if val is not None:
-                return check_value("gemm_to_matmul", val, bool)
-            else:
-                return True
-
-        def graph_optimization_level(val=None):
-            if val is not None:
-                return check_value("graph_optimization_level", val, str,
-                    ["DISABLE_ALL", "ENABLE_BASIC", "ENABLE_EXTENDED", "ENABLE_ALL"])
-            else:
-                return "ENABLE_BASIC"
-
+        # Support Tensorflow only
         def first_conv_or_matmul_quantization(val=None):
             if val is not None:
                 return check_value("first_conv_or_matmul_quantization", val, bool)
             else:
                 return True
 
+        # Support Tensorflow only
         def last_conv_or_matmul_quantization(val=None):
             if val is not None:
                 return check_value("last_conv_or_matmul_quantization", val, bool)
             else:
                 return True
 
-        def pre_post_process_quantization(val=None):
-            if val is not None:
-                return check_value("pre_post_process_quantization", val, bool)
-            else:
-                return True
-
-        def add_qdq_pair_to_weight(val=None):
-            if val is not None:
-                return check_value("add_qdq_pair_to_weight", val, bool)
-            else:
-                return False
-
-        def optypes_to_exclude_output_quant(val=None):  # pragma: no cover
-            if val is not None:
-                return isinstance(val, list)
-            else:
-                return []
-
-        def dedicated_qdq_pair(val=None):
-            if val is not None:
-                return check_value("dedicated_qdq_pair", val, bool)
-            else:
-                return False
-
-        RECIPES = {"smooth_quant": smooth_quant,
-                   "smooth_quant_args": smooth_quant_args,
-                   "fast_bias_correction": fast_bias_correction,
-                   "weight_correction": weight_correction,
-                   "gemm_to_matmul": gemm_to_matmul,
-                   "graph_optimization_level": graph_optimization_level,
-                   "first_conv_or_matmul_quantization": first_conv_or_matmul_quantization,
-                   "last_conv_or_matmul_quantization": last_conv_or_matmul_quantization,
-                   "pre_post_process_quantization": pre_post_process_quantization,
-                   "add_qdq_pair_to_weight": add_qdq_pair_to_weight,
-                   "optypes_to_exclude_output_quant": optypes_to_exclude_output_quant,
-                   "dedicated_qdq_pair": dedicated_qdq_pair
+        RECIPES = {"smooth_quant": smooth_quant, # Only for PyTorch
+                   "smooth_quant_args": smooth_quant_args, # Only for PyTorch
+                   "fast_bias_correction": fast_bias_correction, # Support PyTorch and Tensorflow, not used now.
+                   "weight_correction": weight_correction, # Support PyTorch and Tensorflow, not used now.
+                   "first_conv_or_matmul_quantization": first_conv_or_matmul_quantization, # Only for Tensorflow
+                   "last_conv_or_matmul_quantization": last_conv_or_matmul_quantization, # Only for Tensorflow
                    }
         _recipes = {}
         for k in RECIPES.keys():

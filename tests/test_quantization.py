@@ -170,17 +170,10 @@ class TestQuantization(unittest.TestCase):
             objectives=[objectives.performance],
             recipes={"smooth_quant": True,
                      "smooth_quant_args": {"alpha": 0.6},
-                     "fast_bias_correction": True,
-                     "weight_correction": True,
-                     "gemm_to_matmul": True,
-                     "graph_optimization_level": "DISABLE_ALL",
-                     "first_conv_or_matmul_quantization": True,
-                     "last_conv_or_matmul_quantization": True,
-                     "pre_post_process_quantization": True,
-                     "add_qdq_pair_to_weight": True,
-                     "dedicated_qdq_pair": True
                      }
         )
+        recipes = quantization_config.recipes
+        self.assertTrue(recipes["smooth_quant"])
         quantized_model = trainer.quantize(quant_config=quantization_config)
         self.assertTrue("quantize" in str(type(quantized_model._model.classifier.module)))
         quantization_config = QuantizationConfig(
@@ -193,6 +186,14 @@ class TestQuantization(unittest.TestCase):
                                            train_func=train_func,
                                            eval_func=eval_func)
         self.assertTrue("quantize" in str(type(quantized_model._model.classifier.module)))
+
+        with self.assertRaises(ValueError):
+            quantization_config = QuantizationConfig(
+                approach="PostTrainingStatic",
+                metrics=[tune_metric],
+                objectives=[objectives.performance],
+                recipes=[]
+            )
 
     def test_functional_quant(self):
         def eval_func(model):
