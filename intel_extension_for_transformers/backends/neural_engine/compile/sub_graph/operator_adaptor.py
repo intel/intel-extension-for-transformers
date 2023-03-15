@@ -76,8 +76,13 @@ class OperatorAdaptor(Pattern):
                     sweep_nodes_info[n.name] = sweep_op[n.op_type]
             elif n.op_type in ['MatMul', 'MatMulWithBias', 'MatMulWithBiasAdd']:
                 if isinstance(n.input_tensors[1].data, np.ndarray):
-                    pre_node = model.get_node_by_name(n.input_tensors[0].source_op[0])
-                    if pre_node.op_type == 'Transpose' and len(pre_node.attr['dst_perm']) > 3:
+                    pre_node = None
+                    try:
+                        pre_node = model.get_node_by_name(n.input_tensors[0].source_op[0])
+                    except:
+                        pre_node = None
+                    if pre_node and pre_node.op_type == 'Transpose' and \
+                       len(pre_node.attr['dst_perm']) > 3:
                         ip_need_reshape_2d_names.append(n.name)
             else:
                 continue
