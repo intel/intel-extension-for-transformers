@@ -173,7 +173,7 @@ std::pair<OpArgs, OpArgs> gen_case(  //
   auto Qs = make_tensor_obj(ts_descs[mha_dense_io::SRC_Q]);
   auto Ks = make_tensor_obj(ts_descs[mha_dense_io::SRC_K]);
   auto Vs = make_tensor_obj(ts_descs[mha_dense_io::SRC_V]);
-  auto min_sl = std::max(16L, seqlen / 4);
+  auto min_sl = std::max(dim_t(16), seqlen / 4);
   auto masks = make_tensor_obj(ts_descs[mha_dense_io::MASK], min_sl, seqlen);
   auto dsts = make_tensor_obj(ts_descs[mha_dense_io::DST], 0, 0);
 
@@ -198,8 +198,7 @@ std::pair<OpArgs, OpArgs> gen_case(  //
 
   operator_desc op_desc(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
   attr_map["approx_exp"] = "True";
-  operator_desc op_desc2(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                         attr_map);
+  operator_desc op_desc2(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
 
   OpArgs op_args_p = {data_p, op_desc};
   OpArgs op_args_q = {data_q, op_desc2};

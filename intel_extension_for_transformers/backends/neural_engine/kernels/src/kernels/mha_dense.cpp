@@ -115,7 +115,8 @@ bool mha_dense_k_t::init() {
 
   // init ker_trans_k
   for (int i = 1; i <= 16; ++i) {
-    ker_trans_k_[i] = new jit_trans_AB16a4b({.M = i, .N = hs_max64, .ld_src = ld_src_, .pad_n = pad_to(hs_max64, 16)});
+    ker_trans_k_[i] = new jit_trans_AB16a4b(
+        {/*.M = */ i, /*.N = */ hs_max64, /*.ld_src = */ ld_src_, /*.pad_n = */ pad_to(hs_max64, 16)});
     if (!ker_trans_k_[i]->create_kernel()) return false;
   }
 
@@ -151,7 +152,7 @@ bool mha_dense_k_t::init() {
 
   // init ker_trans_v
   for (int i = 0; i <= 4; i++) {
-    ker_trans_v_[i] = new jit_trans_BA16b4a({.M = i, .N = hs_max64, .ld_src = ld_src_});
+    ker_trans_v_[i] = new jit_trans_BA16b4a({/*.M = */ i, /*.N = */ hs_max64, /*.ld_src = */ ld_src_});
     if (!ker_trans_v_[i]->create_kernel()) return false;
   }
 
@@ -159,10 +160,10 @@ bool mha_dense_k_t::init() {
   const int ld_dst = head_size_ * head_num_;
   for (int i = 64; i <= MAX_SEQLEN; i += 64) {
     ker_av_gemm_32x_[i / 64] = new jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab(
-        {.M = 32, .K_pad = i, .N = head_size_, .ld_dst = ld_dst, .dst_dt = dst_dt_});
+        {/*.M = */ 32, /*.K_pad = */ i, /*.N = */ head_size_, /*.ld_dst = */ ld_dst, /*.dst_dt = */ dst_dt_});
     if (!ker_av_gemm_32x_[i / 64]->create_kernel()) return false;
     ker_av_gemm_16x_[i / 64] = new jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab(
-        {.M = 16, .K_pad = i, .N = head_size_, .ld_dst = ld_dst, .dst_dt = dst_dt_});
+        {/*.M = */ 16, /*.K_pad = */ i, /*.N = */ head_size_, /*.ld_dst = */ ld_dst, /*.dst_dt = */ dst_dt_});
     if (!ker_av_gemm_16x_[i / 64]->create_kernel()) return false;
   }
   return true;
@@ -245,8 +246,8 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       for (int i = 0; i < seq_len; i += 16)
         for (int j = 0; j < head_size_; j += 64) {
           jit_trans_AB16a4b::rt_data_t rt_data_tr_k{
-              .src = curr_k + i * ld_src_ + j,
-              .dst = k_scrach + i * head_size_ + j * 16,
+              /*.src = */ curr_k + i * ld_src_ + j,
+              /*.dst = */ k_scrach + i * head_size_ + j * 16,
           };
           (*ker_trans_k_[std::min(16, seq_len - i)])(&rt_data_tr_k);
         }
@@ -256,44 +257,44 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       for (int j = 0; j < head_size_; j += 64)
         for (int i = 0; i < sl_pad64; i += 4) {
           jit_trans_BA16b4a::rt_data_t rt_data_tr_v{
-              .src = curr_v + i * ld_src_ + j,
-              .dst = v_scrach_p64 + i * 16 + j * sl_pad64,
-              .ld_dst = tr_v_dst_stride,
+              /*.src = */ curr_v + i * ld_src_ + j,
+              /*.dst = */ v_scrach_p64 + i * 16 + j * sl_pad64,
+              /*.ld_dst = */ tr_v_dst_stride,
           };
           (*ker_trans_v_[std::max(0, std::min(4, seq_len - i))])(&rt_data_tr_v);
         }
 
       const auto padding_mask = reinterpret_cast<const int32_t*>(rt_data[mha_dense_io::MASK])[ibs];
       jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::rt_data_t rt_data_qk{
-          .src0 = nullptr,
-          .src1 = k_scrach,
-          .dst = qk_scrach,
+          /*.src0 = */ nullptr,
+          /*.src1 = */ k_scrach,
+          /*.dst = */ qk_scrach,
       };
       jit_softmax_Ab16a::rt_data_t rt_data_softmax1{
-          .src = qk_scrach,
-          .dst = softmax_scrach_p64,
-          .att_tile = padding_mask / 16,
-          .softmax_rescale = softmax_rescale_,
-          .src_badd = nullptr,
-          .ld_badd = badd_stride[2],
-          .QK_rescale = QK_rescale_,
+          /*.src = */ qk_scrach,
+          /*.dst = */ softmax_scrach_p64,
+          /*.att_tile = */ padding_mask / 16,
+          /*.softmax_rescale = */ softmax_rescale_,
+          /*.src_badd = */ nullptr,
+          /*.ld_badd = */ badd_stride[2],
+          /*.QK_rescale = */ QK_rescale_,
       };
       jit_softmax_Ab16a::rt_data_t rt_data_softmax2{
-          .src = qk_scrach + sl_pad16 * 16,           // sl_pad_ / 16 * 16 * 16
-          .dst = softmax_scrach_p64 + sl_pad64 * 16,  // sl_pad64_ / 64 * 16 * 64
-          .att_tile = padding_mask / 16,
-          .softmax_rescale = softmax_rescale_,
-          .src_badd = nullptr,
-          .ld_badd = badd_stride[2],
-          .QK_rescale = QK_rescale_,
+          /*.src = */ qk_scrach + sl_pad16 * 16,           // sl_pad_ / 16 * 16 * 16
+          /*.dst = */ softmax_scrach_p64 + sl_pad64 * 16,  // sl_pad64_ / 64 * 16 * 64
+          /*.att_tile = */ padding_mask / 16,
+          /*.softmax_rescale = */ softmax_rescale_,
+          /*.src_badd = */ nullptr,
+          /*.ld_badd = */ badd_stride[2],
+          /*.QK_rescale = */ QK_rescale_,
       };
       jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::rt_data_t rt_data_av{
-          .src0 = softmax_scrach_p64,
-          .src1 = v_scrach_p64,
-          .dst = nullptr,
-          .K = padding_mask,
-          .rescale = QKV_rescale_,
-          .zp = QKV_dstzp_,
+          /*.src0 = */ softmax_scrach_p64,
+          /*.src1 = */ v_scrach_p64,
+          /*.dst = */ nullptr,
+          /*.K = */ padding_mask,
+          /*.rescale = */ QKV_rescale_,
+          /*.zp = */ QKV_dstzp_,
       };
       const int att_tail = reinterpret_cast<const int32_t*>(rt_data[mha_dense_io::MASK])[ibs] % 16;
       int cur_r_pos = 0;

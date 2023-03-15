@@ -364,9 +364,9 @@ class Profiling_ {
       // weight shape
       for (int j = 0; j < weight_shape.size(); ++j) {
         if (j == weight_shape.size()-1) {
-          fprintf(fp, "%ld,", weight_shape[j]);
+          fprintf(fp, "%lld,", weight_shape[j]);
         } else {
-          fprintf(fp, "%ldx", weight_shape[j]);
+          fprintf(fp, "%lldx", weight_shape[j]);
         }
       }
       // perf ratio
@@ -416,17 +416,17 @@ class Profiling_ {
       if (i == tensors.size()-1) {
         for (int j = 0; j < tensors[i]->shape().size(); ++j) {
           if (j == tensors[i]->shape().size()-1) {
-            fprintf(fp, "%ld,", tensors[i]->shape()[j]);
+            fprintf(fp, "%lld,", tensors[i]->shape()[j]);
           } else {
-            fprintf(fp, "%ldx", tensors[i]->shape()[j]);
+            fprintf(fp, "%lldx", tensors[i]->shape()[j]);
           }
         }
       } else {
         for (int j = 0; j < tensors[i]->shape().size(); ++j) {
           if (j == tensors[i]->shape().size()-1) {
-            fprintf(fp, "%ld;", tensors[i]->shape()[j]);
+            fprintf(fp, "%lld;", tensors[i]->shape()[j]);
           } else {
-            fprintf(fp, "%ldx", tensors[i]->shape()[j]);
+            fprintf(fp, "%lldx", tensors[i]->shape()[j]);
           }
         }
       }
@@ -447,9 +447,9 @@ class Profiling_ {
       // weight shape
       for (int j = 0; j < weight_shape.size(); ++j) {
         if (j == weight_shape.size()-1) {
-          fprintf(fp, "%ld,", weight_shape[j]);
+          fprintf(fp, "%lld,", weight_shape[j]);
         } else {
-          fprintf(fp, "%ldx", weight_shape[j]);
+          fprintf(fp, "%lldx", weight_shape[j]);
         }
       }
       // weight sparse ratio
