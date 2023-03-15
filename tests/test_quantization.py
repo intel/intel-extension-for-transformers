@@ -129,7 +129,7 @@ class TestQuantization(unittest.TestCase):
             if mode == QuantizationMode.QUANTIZATIONAWARETRAINING:
                 model = onnx.load('int8-model.onnx')
                 tensor_list = {tensor.name:tensor for tensor in model.graph.initializer}
-                torch_data = quantized_model.model.classifier.state_dict()\
+                torch_data = quantized_model.classifier.state_dict()\
                                 ['module._packed_params._packed_params'][0].\
                                 dequantize().detach().cpu().numpy().T
                 from onnx.numpy_helper import to_array
@@ -175,7 +175,7 @@ class TestQuantization(unittest.TestCase):
         recipes = quantization_config.recipes
         self.assertTrue(recipes["smooth_quant"])
         quantized_model = trainer.quantize(quant_config=quantization_config)
-        self.assertTrue("quantize" in str(type(quantized_model._model.classifier.module)))
+        self.assertTrue("quantize" in str(type(quantized_model.classifier.module)))
         quantization_config = QuantizationConfig(
             approach="PostTrainingStatic",
             metrics=[tune_metric],
@@ -185,7 +185,7 @@ class TestQuantization(unittest.TestCase):
         quantized_model = trainer.quantize(quant_config=quantization_config,
                                            train_func=train_func,
                                            eval_func=eval_func)
-        self.assertTrue("quantize" in str(type(quantized_model._model.classifier.module)))
+        self.assertTrue("quantize" in str(type(quantized_model.classifier.module)))
 
         with self.assertRaises(ValueError):
             quantization_config = QuantizationConfig(

@@ -87,7 +87,7 @@ class TestDistillation(unittest.TestCase):
             loaded_model = OptimizedModel.from_pretrained(
                 './distilled_model',
             )
-            distilled_weight = copy.deepcopy(distilled_model.model.classifier.weight)
+            distilled_weight = copy.deepcopy(distilled_model.classifier.weight)
             loaded_weight = copy.deepcopy(loaded_model.classifier.weight)
             # check distilled model
             self.assertTrue((distilled_weight != origin_weight).any())

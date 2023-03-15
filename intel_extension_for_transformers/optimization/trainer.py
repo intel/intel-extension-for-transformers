@@ -136,6 +136,7 @@ class BaseTrainer():
         self.enable_executor = False
         self.enable_bf16 = False
         self.orchestrate_opt = False
+        self.orchestrate_opt_pruning = False
         self.dynamic_config = None
 
 
@@ -315,7 +316,7 @@ class BaseTrainer():
         self.opt_model = self.quantizer.fit()
         self.enable_inc_quant = True
         self.save_model(self.args.output_dir)
-        return self.opt_model
+        return self.opt_model.model
 
     def quantize(
         self,
@@ -454,8 +455,11 @@ class BaseTrainer():
 
         self.component = self.pruner
         self.opt_model = self.pruner.fit()
+        stats, sparsity = self.opt_model.report_sparsity()
+        logger.info(stats)
+        logger.info(sparsity)
 
-        return self.opt_model
+        return self.opt_model.model
 
     def init_distiller(
         self,
@@ -532,7 +536,7 @@ class BaseTrainer():
         self.component = self.distiller
         self.opt_model = self.distiller.fit()
 
-        return self.opt_model
+        return self.opt_model.model
 
     def orchestrate_optimizations(
         self,
@@ -556,14 +560,11 @@ class BaseTrainer():
         self._train_func = self.builtin_train_func if train_func is None else train_func
         components = self.create_optimizer_builtin(config_list, teacher_model)
         self.orchestrate_optimizer = Orchestrate_optimizer(self.model, components, \
-                                     eval_func=self.eval_func, train_func=self.train_func)
+                                     eval_func=self.eval_func, train_func=self.train_func, \
+                                     output_dir=self.args.output_dir)
         self.component = self.orchestrate_optimizer.scheduler.components[0]
-        self.opt_model = self.orchestrate_optimizer.fit()
-        self._save_inc_int8(self.opt_model, self.args.output_dir)
-
-        logger.info("orchestrate_optimizations model and configure file have saved to {}".format(
-            self.args.output_dir))
-        return self.opt_model
+        torch_model = self.orchestrate_optimizer.fit()
+        return torch_model
 
     def create_optimizer_builtin(self, config_list, teacher_model=None):
         """The function to create optimizer.
@@ -581,6 +582,7 @@ class BaseTrainer():
                 component.q_func = self._train_func
                 self.enable_inc_quant = True
             elif isinstance(config, PruningConfig):
+                self.orchestrate_opt_pruning = True
                 component = self.init_pruner(config)
                 component.eval_func = self._eval_func
                 component.pruning_func = self._train_func

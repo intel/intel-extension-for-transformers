@@ -1,11 +1,10 @@
 import copy
-import mlflow
+import torch
 import numpy as np
 import os
 import shutil
 import torch.utils.data as data
 import unittest
-import neural_compressor
 from datasets import load_dataset, load_metric
 from intel_extension_for_transformers.optimization import (
     PrunerConfig,
@@ -93,9 +92,8 @@ class TestOrchestrateOptimizations(unittest.TestCase):
         self.model = symbolic_trace(self.model, is_qat=True)
         self.trainer.model = self.model
         conf_list = [pruning_conf, distillation_conf, quantization_conf]
-        model = self.trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=self.teacher_model)
-
-        self.assertTrue(isinstance(model, neural_compressor.model.torch_model.PyTorchFXModel))
+        opt_model = self.trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=self.teacher_model)
+        self.assertTrue("quantize" in str(type(opt_model.classifier.module)))
 
 
 if __name__ == "__main__":

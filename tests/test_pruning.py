@@ -72,13 +72,12 @@ class TestPruning(unittest.TestCase):
             pruning_conf = PruningConfig(pruner_config=pruner_config, metrics=metric)
             agent = self.trainer.init_pruner(pruning_config=pruning_conf)
             pruned_model = self.trainer.prune()
-            pruned_model.report_sparsity()
             # By default, model will be saved in tmp_trainer dir.
             self.trainer.save_model('./pruned_model')
             loaded_model = OptimizedModel.from_pretrained(
                 './pruned_model',
             )
-            pruned_weight = copy.deepcopy(pruned_model.model.classifier.weight)
+            pruned_weight = copy.deepcopy(pruned_model.classifier.weight)
             loaded_weight = copy.deepcopy(loaded_model.classifier.weight)
             # check pruned model
             self.assertTrue((pruned_weight != origin_weight).any())
