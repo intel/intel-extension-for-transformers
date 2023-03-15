@@ -38,44 +38,21 @@ class LogSoftmaxOperator : public Operator {
  public:
   explicit LogSoftmaxOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~LogSoftmaxOperator() {}
-
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
-  void AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
 
  private:
   int axis_;
   string output_dtype_ = "fp32";
-  bool is_dynamic_ = false;
-  bool lut_optimization_ = false;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::logsoftmax_forward logsoftmax_p_;
   memory src_m_;
   memory dst_m_;
-  jd::tensor_desc src_desc_;
-  jd::tensor_desc dst_desc_;
-  jd::logsoftmax logsoftmax_ker_;
   unordered_map<int, memory> memory_args_;
-
   Tensor* src_ = nullptr;
   Tensor* dst_ = nullptr;
-
-  Tensor* dst_min_ = nullptr;
-  Tensor* dst_max_ = nullptr;
-
-  vector<float> dst_scales_;
-
-  void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void Reshape_u8(const vector<Tensor*>& input, const vector<Tensor*>& output);
-#if __AVX512F__
-  void Forward_u8(const vector<Tensor*>& input, const vector<Tensor*>& output);
-#endif
-  void Reshape_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void Forward_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void Reshape_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void RuntimeMinmax(dnnl::stream& s);
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_LOGSOFTMAX_HPP_
+

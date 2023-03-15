@@ -144,14 +144,7 @@ class SPARSE_API_ softmax_desc : public kernel_desc_proxy {
   virtual ~softmax_desc() {}
 };
 
-class SPARSE_API_ logsoftmax_desc : public kernel_desc_proxy {
- public:
-  logsoftmax_desc() {}
-  explicit logsoftmax_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
-  virtual ~logsoftmax_desc() {}
-};
-
-class SPARSE_API_ attention_desc : public kernel_desc_proxy {
+class attention_desc : public kernel_desc_proxy {
  public:
   attention_desc() {}
   explicit attention_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
@@ -229,13 +222,6 @@ class SPARSE_API_ softmax : public kernel_proxy {
   softmax() {}
   explicit softmax(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~softmax() {}
-};
-
-class SPARSE_API_ logsoftmax : public kernel_proxy {
- public:
-  logsoftmax() {}
-  explicit logsoftmax(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
-  virtual ~logsoftmax() {}
 };
 
 class SPARSE_API_ attention : public kernel_proxy {

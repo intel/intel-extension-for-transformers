@@ -130,36 +130,6 @@ bool CheckResult(const TestParams& t) {
   return false;
 }
 
-bool CheckLLGAResult(const TestParams& t) {
-  const auto& p = t.args.first;
-  const auto& q = t.args.second;
-  try {
-    executor::LLGAINFO llga_info;
-    llga_info.InitLTFromTensorConf(p.conf, false);
-    executor::LLGAOPCreator::GetInstance().CreateLogSoftmaxOp(&llga_info, p.conf);
-    executor::LLGAKernel smax_op(p.conf, &llga_info);
-    smax_op.Prepare(p.input, p.output);
-    smax_op.Reshape(p.input, p.output);
-    smax_op.Forward(p.input, p.output);
-  } catch (const dnnl::error& e) {
-    if (e.status != dnnl_status_t::dnnl_success && t.expect_to_fail) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-  if (!t.expect_to_fail) {
-    GetTrueData(q.input, q.output, q.conf);
-    // Should compare buffer with different addresses
-    EXPECT_NE(p.output[0]->data(), q.output[0]->data());
-    float eps = 1e-5;
-    return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
-                                        q.output[0]->size(), eps);
-  }
-  return false;
-}
-
-
 class LogSoftmaxOpTest : public testing::TestWithParam<TestParams> {
  protected:
   LogSoftmaxOpTest() {}
@@ -171,11 +141,6 @@ class LogSoftmaxOpTest : public testing::TestWithParam<TestParams> {
 TEST_P(LogSoftmaxOpTest, TestPostfix) {
   TestParams t = testing::TestWithParam<TestParams>::GetParam();
   EXPECT_TRUE(CheckResult(t));
-}
-
-TEST_P(LogSoftmaxOpTest, TestPostfixLLGA) {
-  TestParams t = testing::TestWithParam<TestParams>::GetParam();
-  EXPECT_TRUE(CheckLLGAResult(t));
 }
 
 std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t> >& input_shape,
