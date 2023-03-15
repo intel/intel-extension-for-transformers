@@ -14,196 +14,226 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Benchmark: provide the inference functions for PyTorchBenchmark and ExecutorBenchmark."""
 import os
-from transformers import PyTorchBenchmark
-from transformers.benchmark.benchmark import *
-from transformers.benchmark.benchmark_utils import *
-from .model import OptimizedModel
+import sys
+import torch
+import psutil
+from collections import UserDict
+from .utils.utility import remove_label
+from neural_compressor.utils import logger
+from neural_compressor import Benchmark as INCBenchmark
+from neural_compressor.config import BenchmarkConfig as INCBenchmarkConfig
+from intel_extension_for_transformers.optimization.model import OptimizedModel
 
 
-def _prepare_inference_func(self, model_name: str, batch_size: int, sequence_length: int) -> Callable[[], None]:
-    """Prepare the inference function.
+def refactor_batch_size(value, batch_size, old_batch_size=-1):
+    """return batched data from value.
 
     Args:
-        model_name (str): the input Pytorch model name used
-        batch_size (int): batch size
-        sequence_length (int): the length of the sequence of input data
-
-    Raises:
-        ValueError: Mixed precision is possible only for GPU.
+        value (torch.Tensor): input data.
+        batch_size (int): target batch size.
+        old_batch_size (int, optional): original batch size of value. Defaults to -1.
 
     Returns:
-        An executable or ScriptFunction.
+        batched_value: batched data.
     """
-    config = self.config_dict[model_name]
+    batched_value = value
+    if isinstance(value, torch.Tensor):
+        if old_batch_size == -1:
+            old_batch_size = value.shape[0]
+        if old_batch_size == value.shape[0]:
+            if batch_size <= old_batch_size:
+                batched_value = value[:batch_size]
+            else:
+                tmp_value = value[0].unsqueeze(0)
+                for i in range(old_batch_size, batch_size):
+                    batched_value = torch.cat((batched_value, tmp_value))
+    return batched_value
 
-    if self.args.torchscript:
-        config.torchscript = True
 
-    logger.warning("Function transformers.PyTorchBenchmark._prepare_inference_func is replaced "
-                    "by intel_extension_for_transformers.optimization.benchmark to support int8 models.")
-    model = OptimizedModel.from_pretrained(model_name)
+def get_example_inputs(dataloader, batch_size=1):
+    """return batched data from dataloader.
 
-    model.eval()
-    model.to(self.args.device)
+    Args:
+        dataloader: dataloader.
+        batch_size (int, optional): batch size. Defaults to 1.
 
-    # encoder-decoder has vocab size saved differently
-    vocab_size = config.vocab_size if hasattr(config, "vocab_size") else config.encoder.vocab_size
-    input_ids = torch.randint(vocab_size, (batch_size, sequence_length), dtype=torch.long, device=self.args.device)
+    Returns:
+        batched_data: batched data.
+    """
+    it = iter(dataloader)
+    data = next(it)
+    try:   # pragma: no cover
+        for d, label in data:
+            data = d
+        logger.info("Label is detected in dataloader. If the detection is wrong," + \
+                    "please add a fake label to avoid it.")
+    except:
+        pass
+    old_batch_size = dataloader.batch_size
+    if isinstance(data, dict) or isinstance(data, UserDict):
+        batched_data = {}
+        for k, v in data.items():
+            batched_data[k] = refactor_batch_size(v, batch_size, old_batch_size)
+    elif isinstance(data, list) or isinstance(data, tuple):   # pragma: no cover
+        batched_data = []
+        for v in data:
+            batched_data.append(refactor_batch_size(v, batch_size, old_batch_size))
+    else:   # pragma: no cover
+        batched_data = refactor_batch_size(data, batch_size, old_batch_size)
+    return batched_data
 
-    if self.args.fp16:   # pragma: no cover 
-        logger.info("Running training in Mixed Precision...")
-        if not self.args.is_gpu:
-            raise ValueError("Mixed precision is possible only for GPU.")
-        # amp seems to have memory leaks so that memory usage
-        # is measured using .half() for now https://github.com/NVIDIA/apex/issues/439
-        model.half()
 
-    if self.args.torchscript:
+def preprocess_model(model, example_inputs, config, additional_cmd):
+    """convert model to torchscript and generate mode.
+
+    Args:
+        model (torch.nn.Module): original model.
+        example_inputs: used to jit trace original model.
+        config (BenchmarkConfig): control the benchmark process.
+        additional_cmd (str): additional_cmd for raw_cmd.
+
+    Returns:
+        model (torch.jit.ScriptModule): original model.
+        example_inputs: preprocessed example_inputs for jit model.
+        additional_cmd (str): additional_cmd for raw_cmd.
+    """
+    if config.generate and not config.torchscript:
+        additional_cmd += " --generate"
+    if config.torchscript:
+        # preprocess input type to tuple or tuple of tensor
+        if isinstance(example_inputs, dict) or isinstance(example_inputs, UserDict):
+            example_inputs = remove_label(example_inputs)
+            example_inputs = tuple(example_inputs.values())
+        elif isinstance(example_inputs, list) or isinstance(example_inputs, tuple):
+            example_inputs = tuple(example_inputs)
+
+        if config.generate:
+            class NewModel(torch.nn.Module):
+                def __init__(self, model) -> None:
+                    super().__init__()
+                    self.model = model
+                def forward(self, *args, **kwargs):
+                    output = self.model.generate(*args, **kwargs)
+                    return output
+            model = NewModel(model)
+            if isinstance(example_inputs, tuple):
+                example_inputs = example_inputs[0] #only input_ids is used.
+
         with torch.no_grad():
             try:
-                inference_model = torch.jit.trace(model, input_ids)
-            except:
-                inference_model = torch.jit.trace(model, input_ids, strict=False)
-    else:
-        inference_model = model
+                model = torch.jit.trace(model, example_inputs)
+                model = torch.jit.freeze(model.eval())
+            except:   # pragma: no cover
+                model = torch.jit.trace(model, example_inputs, strict=False)
+                model = torch.jit.freeze(model.eval())
+    return model, example_inputs, additional_cmd
 
-    def encoder_decoder_forward():   # pragma: no cover 
-        """Forward function for the encoder-decoder.
 
-        Returns:
-            An executable or ScriptFunction with indices of input or decoder input sequence tokens.
-        """
-        with torch.no_grad():
-            outputs = inference_model(input_ids, decoder_input_ids=input_ids)
-        return outputs
+def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=None):
+    """function for benchmarking model.
 
-    def encoder_forward():
-        """Forward function for the encoder.
+    Args:
+        model_name_or_path (str, torch.nn.Module or torch.jit.ScriptModule): model_name_or_path.
+        config (BenchmarkConfig, optional): control the benchmark process. Defaults to None.
+        example_inputs (optional): used as a input for benchmarking. Defaults to None.
+        dataloader (optional): used to build example_inputs for benchmarking. Defaults to None.
+    """
+    additional_cmd = ""
+    from_pretrain_flag = False
+    already_jit_flag = False
 
-        Returns:
-            An executable or ScriptFunction with indices of input sequence tokens.
-        """
-        with torch.no_grad():
-            outputs = inference_model(input_ids)
-        return outputs
-
-    def get_weight_size(model):
-        """Get the weight size of the input model.
-
-        Args:
-            model (object): the input model
-
-        Returns:
-            Float: weight size
-        """
+    # check model type
+    if isinstance(model_name_or_path, torch.nn.Module):
+        model = model_name_or_path
         if isinstance(model, torch.jit.ScriptModule):
-            torch.jit.save(model, "temp.p")
+            already_jit_flag = True
+    else:
+        if config.backend == 'ipex' or config.torchscript == True:
+            model = OptimizedModel.from_pretrained(model_name_or_path, torchscript=True)
         else:
-            torch.save(model.state_dict(), "temp.p")
-        weight_size = os.path.getsize("temp.p") / 1024 / 1024
-        os.remove('temp.p')
-        return weight_size
+            model = OptimizedModel.from_pretrained(model_name_or_path)
+        from_pretrain_flag = True
+        if isinstance(model, torch.jit.ScriptModule):
+            already_jit_flag = True
+            from_pretrain_flag = False # jit model can be saved directly.
 
-    if not hasattr(self, 'weight_size_dict'):
-        self.weight_size_dict = dict()
+    # set kwargs to model configuration
+    model.eval()
+    if hasattr(model, 'config') and config.kwargs is not None:
+        for k, v in config.kwargs.items():
+            setattr(model.config, k, v)
 
-    if model_name not in self.weight_size_dict:
-        weight_size = round(get_weight_size(inference_model), 3)
-        self.weight_size_dict.update({model_name: weight_size})
+    # get example inputs
+    if example_inputs is None:
+        assert dataloader is not None, "Please pass in an example inputs or a dataloder"
+        example_inputs = get_example_inputs(dataloader, config.batch_size)
+    else:
+        example_inputs = refactor_batch_size(example_inputs, config.batch_size)
 
-    _forward = encoder_decoder_forward if config.is_encoder_decoder else encoder_forward
-    return _forward
+    # handle generate and torchscript for eager model. not for ipex
+    if config.backend == 'ipex':
+        additional_cmd += " --enable_ipex"
+        # for ipex backend, we will convert model to torchscript if not.
+        if not already_jit_flag:
+            config.torchscript=True
+            import intel_extension_for_pytorch as ipex
+            model = ipex.optimize(model)
+    if not already_jit_flag:
+        model, example_inputs, additional_cmd = preprocess_model(
+            model, example_inputs, config, additional_cmd
+        )
+        if config.torchscript:
+            already_jit_flag = True
 
-PyTorchBenchmark._prepare_inference_func = _prepare_inference_func
+    # save preprocessed model and preprocessed input.
+    tmp_model_path = os.path.join(os.getcwd() + '/tmp_model.bin')
+    tmp_data_path = os.path.join(os.getcwd() + '/example_inputs.bin')
+    torch.save(example_inputs, tmp_data_path)
+    if already_jit_flag:
+        model.save(tmp_model_path)
+        additional_cmd += " --torchscript"
+        # jit model can be saved directly.
+        from_pretrain_flag = False
+    else:
+        try:
+            torch.save(model, tmp_model_path)
+        except Exception as e:
+            assert from_pretrain_flag == True, "Please pass in " + \
+              "model_name_or_path instead of torch.nn.module, due to {}".format(e)
+            torch.save(model.state_dict(), tmp_model_path)
+    weight_size = os.path.getsize(tmp_model_path) / 1024 / 1024
+    logger.info("Model size: {} MB".format(weight_size))
 
+    # prepare raw_command for benchmark
+    if from_pretrain_flag:
+        model_path = model_name_or_path
+        additional_cmd += " --from_pretrain"
+    else:
+        model_path = tmp_model_path
+    current_path = os.path.abspath(__file__).rstrip("benchmark.py")
+    file_path = current_path + "utils/get_throughput.py \
+        --model {} --data {} --batch_size {} --warmup {} \
+        --iters {} {}".format(
+        model_path, tmp_data_path, config.batch_size, config.warmup,
+        config.iteration, additional_cmd
+    )
+    raw_cmd = "{} {}".format(sys.executable, file_path)
 
-origin_func = PyTorchBenchmark.run
-def run(self):
-    """Print the table headers and run the Pytorch benchmark.
+    # trigger INC benchmark
+    if config.num_of_instance == -1:
+        cpu_counts = psutil.cpu_count(logical=False)
+        config.num_of_instance = int(cpu_counts // config.cores_per_instance)
+    os.environ['NC_ENV_CONF'] = "False" # mark the start of benchmark
+    inc_conf = INCBenchmarkConfig(
+        cores_per_instance=config.cores_per_instance,
+        num_of_instance=config.num_of_instance
+    )
+    inc_bench = INCBenchmark(inc_conf)
+    inc_bench(raw_cmd=raw_cmd)
 
-    Returns:
-        A PyTorchBenchmark object.
-    """
-    output = origin_func(self)
-    self.print_fn("\n" + 20 * "=" + ("INFERENCE - MODEL SIZE - RESULT").center(40) + 20 * "=")
-    self.print_fn(80 * "-")
-    self.print_fn("Model Name".center(60) + "Model Size in MB".center(15))
-    self.print_fn(80 * "-")
-    for model_name in self.args.model_names:
-        self.print_fn(model_name[:50].center(60), 
-                      str(self.weight_size_dict[model_name]).center(15),)
-    self.print_fn(80 * "-")
-    return output
-
-PyTorchBenchmark.run = run
-
-
-ExecutorBenchmarkArguments = PyTorchBenchmarkArguments
-
-
-class ExecutorBenchmark(PyTorchBenchmark):
-    """ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor.
-    args: ExecutorBenchmarkArguments
-    configs: PretrainedConfig
-    framework (str): Executor
-    """
-
-    def _prepare_inference_func(self, model_name: str, batch_size: int, sequence_length: int) -> Callable[[], None]:
-        config = self.config_dict[model_name]
-
-        logger.warning("Function transformers.PyTorchBenchmark._prepare_inference_func is replaced "
-                        "by intel_extension_for_transformers.optimization.benchmark to support executor.")
-
-        from intel_extension_for_transformers.backends.neural_engine.compile import compile
-        model = compile(model_name)
-
-        # encoder-decoder has vocab size saved differently
-        vocab_size = config.vocab_size if hasattr(config, "vocab_size") else config.encoder.vocab_size
-
-        input_ids = torch.randint(
-            vocab_size, 
-            (batch_size, sequence_length),
-        ).int()
-        if len(model.nodes[0].output_tensors) == 2:
-            attention_mask = torch.ones((batch_size, sequence_length)).int()
-            input_data = [input_ids, attention_mask]
-        elif len(model.nodes[0].output_tensors) == 3:   # pragma: no cover 
-            attention_mask = torch.ones((batch_size, sequence_length)).int()
-            token_type_ids = torch.ones((batch_size, sequence_length)).int()
-            input_data = [input_ids, attention_mask, token_type_ids]
-        else:   # pragma: no cover 
-            input_data = [input_ids]
-
-        def encoder_forward():
-            """Forward function for the encoder.
-
-            Returns:
-                The inference of the model input data.
-            """
-            with torch.no_grad():
-                outputs = model.inference(input_data)
-            return outputs
-
-        def get_weight_size(model_name):
-            """Get the weight size of the input model.
-
-            Args:
-                model_name (str): the input Pytorch model name used
-
-            Returns:
-                float: weight size
-            """
-            weight_size = os.path.getsize(model_name) / 1024 / 1024
-            return weight_size
-
-        if not hasattr(self, 'weight_size_dict'):
-            self.weight_size_dict = dict()
-
-        if model_name not in self.weight_size_dict:
-            weight_size = round(get_weight_size(model_name), 3)
-            self.weight_size_dict.update({model_name: weight_size})
-
-        _forward = encoder_forward
-        return _forward
+    # remove tmp files
+    os.remove(tmp_model_path)
+    os.remove(tmp_data_path)

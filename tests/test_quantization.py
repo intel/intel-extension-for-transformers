@@ -34,11 +34,12 @@ class DummyDataset(data.Dataset):
         self.encoded_dict['labels'] = 1
 
     def __len__(self):
-        return 1
+        return 10
 
     def __getitem__(self, index):
         """Returns one data pair (source and target)."""
-        return self.encoded_dict
+        if index < 10:
+            return self.encoded_dict
 
 
 def check_onnx(model_path, dataloader):
@@ -97,6 +98,7 @@ class TestQuantization(unittest.TestCase):
                 self.trainer.export_to_onnx('fp32-model.onnx')
                 self.assertTrue(check_onnx('fp32-model.onnx', self.trainer.get_eval_dataloader()))
 
+            self.trainer.benchmark(num_of_instance=1)
             tune_metric = metrics.Metric(
                 name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
             )
@@ -106,6 +108,7 @@ class TestQuantization(unittest.TestCase):
                 objectives=[objectives.performance]
             )
             quantized_model = self.trainer.quantize(quant_config=quantization_config, provider="inc")
+            self.trainer.benchmark(self.trainer.args.output_dir, num_of_instance=1)
             # By default, model will be saved into tmp_trainer dir.
             self.trainer.save_model('./quantized_model')
 

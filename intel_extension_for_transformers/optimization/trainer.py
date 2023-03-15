@@ -37,8 +37,10 @@ from intel_extension_for_transformers.optimization import (
     QuantizationMode,
     PruningConfig,
     DynamicLengthConfig,
+    BenchmarkConfig,
     NAS,
 )
+from intel_extension_for_transformers.optimization.benchmark import benchmark
 from intel_extension_for_transformers.optimization.utils.metrics import Metric
 from intel_extension_for_transformers.optimization.utils.utility import LazyImport
 from packaging import version
@@ -300,6 +302,8 @@ class BaseTrainer():
                 "Please pass the metrics to QuantizationConfig.metrics!"
             self.quantizer.eval_func = self.builtin_eval_func
 
+        if self.quant_config.framework == "pytorch_ipex":
+            self.model_config = self.model.config # jit model will loss config
         if self.quant_config.approach != QuantizationMode.POSTTRAININGDYNAMIC.value:
             # pylint: disable=E1101
             self.quantizer.calib_dataloader = self.get_train_dataloader() \
@@ -310,11 +314,7 @@ class BaseTrainer():
         self.component = self.quantizer
         self.opt_model = self.quantizer.fit()
         self.enable_inc_quant = True
-        # pylint: disable=E1101
-        self._save_inc_int8(self.opt_model, self.args.output_dir)
-        # pylint: disable=E1101
-        logger.info("quantized model and configure file have saved to {}".format(
-            self.args.output_dir))
+        self.save_model(self.args.output_dir)
         return self.opt_model
 
     def quantize(
@@ -354,15 +354,17 @@ class BaseTrainer():
             assert False, "Unsupport provider:{}".format(self._provider)
 
     def _save_inc_int8(self, opt_model, output_dir):
-        if isinstance(opt_model, IPEXModel):
-            opt_model.save(output_dir)
-            return
-        self.model.config.architectures = [self.model.__class__.__name__]
-        self.model.config.torch_dtype = "int8"
-        self.model.config.save_pretrained(output_dir)
         weights_file = os.path.join(os.path.abspath(os.path.expanduser(output_dir)), WEIGHTS_NAME)
-        torch.save(opt_model.quantized_state_dict(), weights_file)
-        logger.info("quantized model and configure file have saved to {}".format(weights_file))
+        if isinstance(opt_model, IPEXModel):
+            opt_model.model.save(weights_file)
+            self.model_config.backend = "ipex"
+            self.model_config.save_pretrained(output_dir)
+        else:
+            self.model.config.architectures = [self.model.__class__.__name__]
+            self.model.config.torch_dtype = "int8"
+            self.model.config.save_pretrained(output_dir)
+            torch.save(opt_model.quantized_state_dict(), weights_file)
+        logger.info("quantized model and configure file have saved to {}".format(output_dir))
 
     def init_pruner(
         self,
@@ -424,7 +426,7 @@ class BaseTrainer():
             provider (str): The provider used to quantize.
             eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
             train_func (:obj:`Callable`, optional: The function used to train the model.
-        
+
         Returns:
             An objective of neural_compressor Pruning class.
         """
@@ -1952,7 +1954,8 @@ class BaseTrainer():
         logger.info(f"Saving model checkpoint to {output_dir}")
         # Save a trained model and configuration using `save_pretrained()`.
         # They can then be reloaded using `from_pretrained()`
-        if not isinstance(self.model, PreTrainedModel):  # pragma: no cover
+        if not isinstance(self.model, PreTrainedModel) \
+          and not isinstance(self.model, IPEXModel):  # pragma: no cover
             unwrapped_model = unwrap_model(self.model)
             is_pretrained = isinstance(unwrapped_model, PreTrainedModel)
 
@@ -2454,6 +2457,40 @@ class BaseTrainer():
             input.pop('start_positions')
             input.pop('end_positions')
         return input
+
+
+    def benchmark(
+        self,
+        model_name_or_path=None,
+        backend: str = "torch",  # select from ["torch", "ipex", "neural_engine"]
+        cores_per_instance: int = 4,
+        num_of_instance: int = -1,
+        torchscript: bool = False,
+        generate: bool = False,
+        **kwargs
+    ):
+        """get performance of model
+
+        Args:
+            backend (str, optional): Defaults to "torch".
+            cores_per_instance (int, optional): Defaults to 4.
+            num_of_instance (int, optional): Defaults to -1.
+            torchscript (bool, optional):Defaults to False.
+            generate (bool, optional): Defaults to False.
+        """
+        eval_dataloader = self.get_eval_dataloader()
+        config = BenchmarkConfig(
+            backend=backend,
+            batch_size=eval_dataloader.batch_size,
+            cores_per_instance=cores_per_instance,
+            num_of_instance=num_of_instance,
+            torchscript=torchscript,
+            generate=generate,
+        )
+        config.kwargs = kwargs
+        if model_name_or_path is None:
+            model_name_or_path = self.model
+        benchmark(model_name_or_path, config, example_inputs=None, dataloader=eval_dataloader)
 
 
     def set_dynamic_config(

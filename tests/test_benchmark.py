@@ -1,127 +1,147 @@
 import os
 import shutil
 import unittest
+# Import torch first and then transformers to avoid unresponsive jit.trace.
+import torch
+import transformers
+from datasets import load_dataset
 import neural_compressor.adaptor.pytorch as nc_torch
-from intel_extension_for_transformers.optimization import (
-    metrics,
-    objectives,
-    QuantizationConfig,
-)
-from intel_extension_for_transformers.optimization.benchmark import (
-    PyTorchBenchmark,
-    PyTorchBenchmarkArguments,
-    ExecutorBenchmark,
-    ExecutorBenchmarkArguments,
-)
-from packaging.version import Version
-from transformers import (
-    AutoConfig,
-)
+from intel_extension_for_transformers.optimization import BenchmarkConfig
+from intel_extension_for_transformers.optimization.benchmark import benchmark
 
-os.environ["WANDB_DISABLED"] = "true"
-os.environ["GLOG_minloglevel"] = "2"
-os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
 
-PT_VERSION = nc_torch.get_torch_version()
-MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
-
+def get_example_inputs(model_name, dataset_name='sst2'):
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
+    dataset = load_dataset(dataset_name, split='validation')
+    text = dataset[0]['text'] if dataset_name=='lambada' else dataset[0]['sentence']
+    example_inputs = tokenizer(text, padding='max_length', max_length=195, return_tensors='pt')
+    return example_inputs
 
 class TestBenchmark(unittest.TestCase):
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-
-    @classmethod
-    def check_results_dict_not_empty(cls, results):
-        for model_result in results.values():
-            for batch_size, sequence_length in zip(model_result["bs"], model_result["ss"]):
-                result = model_result["result"][batch_size][sequence_length]
-                cls.assertIsNotNone(cls, result)
-
-    def test_benchmark(self):
-        MODEL_ID_FP32 = "distilbert-base-uncased-finetuned-sst-2-english"
-        MODEL_ID_INT8 = "Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static"
-        benchmark_args = PyTorchBenchmarkArguments(
-            models=[MODEL_ID_FP32, MODEL_ID_INT8],
-            training=False,
-            memory=False,
-            inference=True,
-            sequence_lengths=[8],
-            batch_sizes=[1],
-            multi_process=False,
-            only_pretrain_model=True,
+    def test_fp32_model(self):
+        config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=-1,
         )
-        benchmark = PyTorchBenchmark(benchmark_args)
-        results = benchmark.run()
-        TestBenchmark.check_results_dict_not_empty(results.time_inference_result)
+        model_name_or_path = "distilbert-base-uncased-finetuned-sst-2-english"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/distilbert_base_uncased_sst2"):
+            model_name_or_path = "/tf_dataset2/models/nlp_toolkit/distilbert_base_uncased_sst2"
+        example_inputs = get_example_inputs(model_name_or_path)
+        benchmark(model_name_or_path, config, example_inputs=example_inputs)
 
-    def test_torchscript_benchmark(self):
-        MODEL_ID_FP32 = "distilbert-base-uncased-finetuned-sst-2-english"
-        MODEL_ID_INT8 = "Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static"
-        benchmark_args = PyTorchBenchmarkArguments(
-            models=[MODEL_ID_FP32, MODEL_ID_INT8],
-            training=False,
-            memory=False,
-            inference=True,
+    def test_fp32_model_ipex(self):
+        config = BenchmarkConfig(
+            backend='ipex',
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=-1,
+        )
+        model_name_or_path = "distilbert-base-uncased-finetuned-sst-2-english"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/distilbert_base_uncased_sst2"):
+            model_name_or_path = "/tf_dataset2/models/nlp_toolkit/distilbert_base_uncased_sst2"
+        example_inputs = get_example_inputs(model_name_or_path)
+        benchmark(model_name_or_path, config, example_inputs=example_inputs)
+
+    def test_int8_model(self):
+        config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=-1,
+        )
+        model_name_or_path = "Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/distilbert_sst2_int8"):
+            model_name_or_path = "/tf_dataset2/models/nlp_toolkit/distilbert_sst2_int8"
+        example_inputs = get_example_inputs(model_name_or_path)
+        example_inputs = example_inputs['input_ids'] # for UT coverage
+        benchmark(model_name_or_path, config, example_inputs=example_inputs)
+
+    def test_int8_model_ipex(self):
+        config = BenchmarkConfig(
+            backend='ipex',
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=-1,
+        )
+        model_name_or_path = "Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/distilbert_sst2_int8"):
+            model_name_or_path = "/tf_dataset2/models/nlp_toolkit/distilbert_sst2_int8"
+        example_inputs = get_example_inputs(model_name_or_path)
+        example_inputs = tuple(example_inputs.values()) # for UT coverage
+        benchmark(model_name_or_path, config, example_inputs=example_inputs)
+
+    def test_torchscript(self):
+        config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=-1,
             torchscript=True,
-            sequence_lengths=[8],
-            batch_sizes=[1],
-            multi_process=False,
-            only_pretrain_model=True,
         )
-        benchmark = PyTorchBenchmark(benchmark_args)
-        results = benchmark.run()
-        TestBenchmark.check_results_dict_not_empty(results.time_inference_result)
+        model_name_or_path = "distilbert-base-uncased-finetuned-sst-2-english"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/distilbert_base_uncased_sst2"):
+            model_name_or_path = "/tf_dataset2/models/nlp_toolkit/distilbert_base_uncased_sst2"
+        example_inputs = get_example_inputs(model_name_or_path)
+        benchmark(model_name_or_path, config, example_inputs=example_inputs)
 
-
-@unittest.skipIf(PT_VERSION.release >= Version("1.12.0").release,
-    "Please use PyTroch 1.11 or lower version for executor backend")
-class TestExecutorBenchmark(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from test_quantization import TestQuantization
-        TestQuantization.setUpClass()
-        cls.trainer = TestQuantization.trainer
-        # By default, the onnx model is saved in tmp_trainer dir
-        cls.trainer.export_to_onnx()
-        tune_metric = metrics.Metric(
-                name="eval_loss", greater_is_better=False,
-                is_relative=False, criterion=0.5
-            )
-        quantization_config = QuantizationConfig(
-            approach='PostTrainingStatic',
-            metrics=[tune_metric],
-            objectives=[objectives.performance]
+    def test_int8_torchscript(self):
+        config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=-1,
+            torchscript=True,
         )
-        cls.trainer.quantize(quant_config=quantization_config, provider="inc")
-        cls.trainer.enable_executor = True
-        cls.trainer.export_to_onnx()
+        model_name_or_path = "Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/distilbert_sst2_int8"):
+            model_name_or_path = "/tf_dataset2/models/nlp_toolkit/distilbert_sst2_int8"
+        example_inputs = get_example_inputs(model_name_or_path)
+        benchmark(model_name_or_path, config, example_inputs=example_inputs)
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree('./mlruns', ignore_errors=True)
-        shutil.rmtree('./tmp_trainer', ignore_errors=True)
-        shutil.rmtree('./nc_workspace', ignore_errors=True)
-        if os.path.exists('augmented_model.onnx'):
-            os.remove('augmented_model.onnx')
-
-    def test_executor_benchmark(self):
-        MODEL_ID_FP32 = 'tmp_trainer/fp32-model.onnx'
-        MODEL_ID_INT8 = 'tmp_trainer/int8-model.onnx'
-        config = AutoConfig.from_pretrained(MODEL_NAME)
-        benchmark_args = ExecutorBenchmarkArguments(
-            models=[MODEL_ID_FP32, MODEL_ID_INT8],
-            memory=False,
-            inference=True,
-            sequence_lengths=[32],
-            batch_sizes=[1],
-            multi_process=False,
-            only_pretrain_model=True,
+    def test_generate(self):
+        config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=1,
+            torchscript=False,
+            generate=True,
+            max_length=195,
         )
-        benchmark = ExecutorBenchmark(benchmark_args, configs=[config, config])
-        results = benchmark.run()
-        TestBenchmark.check_results_dict_not_empty(results.time_inference_result)
+        model_name = "adasnew/t5-small-xsum"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/t5-small-xsum"):
+            model_name = "/tf_dataset2/models/nlp_toolkit/t5-small-xsum"
+        example_inputs = get_example_inputs(model_name, dataset_name='lambada')
+        example_inputs = example_inputs['input_ids'][0].to('cpu').unsqueeze(0) # for UT coverage
+        benchmark(model_name, config, example_inputs=example_inputs)
 
+    def test_int8_generate(self):
+        config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=1,
+            torchscript=False,
+            generate=True,
+            max_length=195,
+        )
+        model_name = "Intel/t5-small-xsum-int8-dynamic"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/t5-small-xsum-int8-dynamic"):
+            model_name = "/tf_dataset2/models/nlp_toolkit/t5-small-xsum-int8-dynamic"
+        example_inputs = get_example_inputs(model_name, dataset_name='lambada')
+        benchmark(model_name, config, example_inputs=example_inputs)
+
+    def test_torchscript_generate(self):
+        # test_int8_torchscript_generate will fail when torch.jit.trace, deleted.
+        config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=1,
+            torchscript=True,
+            generate=True,
+            max_length=195,
+        )
+        model_name = "adasnew/t5-small-xsum"
+        if os.path.exists("/tf_dataset2/models/nlp_toolkit/t5-small-xsum"):
+            model_name = "/tf_dataset2/models/nlp_toolkit/t5-small-xsum"
+        example_inputs = get_example_inputs(model_name, dataset_name='lambada')
+        benchmark(model_name, config, example_inputs=example_inputs)
 
 if __name__ == "__main__":
     unittest.main()

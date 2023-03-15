@@ -60,6 +60,8 @@ function run_benchmark {
         mode_cmd=" --accuracy_only"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark"
+    elif [[ ${mode} == "benchmark_only" ]]; then
+        mode_cmd=" --benchmark_only "
     else
         echo "Error: No such mode: ${mode}"
         exit 1
@@ -94,7 +96,8 @@ function run_benchmark {
 
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
-        model_name_or_path=${tuned_checkpoint}
+        # ipex need fp32 model to init trainer now.
+        # model_name_or_path=${tuned_checkpoint}
     fi
     echo $extra_cmd
 

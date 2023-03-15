@@ -226,6 +226,9 @@ class OptimizationArguments:
     benchmark: bool = field(
         default=False,
         metadata={"help": "run benchmark."})
+    benchmark_only: bool = field(
+        default=False,
+        metadata={"help": "run benchmark only."})
     int8: bool = field(
         default=False,
         metadata={"help":"load int8 model."})
@@ -598,6 +601,14 @@ def main():
         )
         model = trainer.quantize(quant_config=quantization_config)
 
+    if optim_args.benchmark_only:
+        trainer.benchmark(
+            model_args.model_name_or_path,
+            batch_size=training_args.per_device_eval_batch_size,
+            cores_per_instance=4,
+            num_of_instance=-1
+        )
+    
     if optim_args.benchmark or optim_args.accuracy_only:
         results = trainer.evaluate()
         logger.info("metrics keys: {}".format(results.keys()))
@@ -614,11 +625,6 @@ def main():
                 print("Throughput: {} samples/sec".format(throughput))
                 break
         assert ret, "No metric returned, Please check inference metric!"
-
-
-def _mp_fn(index):
-    # For xla_spawn (TPUs)
-    main()
 
 
 if __name__ == "__main__":

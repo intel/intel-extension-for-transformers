@@ -27,6 +27,7 @@ from .config import (
     QuantizationConfig,
     WEIGHTS_NAME,
     DynamicLengthConfig,
+    BenchmarkConfig,
     PrunerV2,
     WeightPruningConfig
 )

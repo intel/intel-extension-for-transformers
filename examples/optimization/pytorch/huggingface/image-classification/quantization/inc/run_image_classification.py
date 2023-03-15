@@ -188,6 +188,9 @@ class OptimizationArguments:
     benchmark: bool = field(
         default=False,
         metadata={"help": "run benchmark."})
+    benchmark_only: bool = field(
+        default=False,
+        metadata={"help": "run benchmark only."})
     int8: bool = field(
         default=False,
         metadata={"help":"load int8 model."})
@@ -444,6 +447,14 @@ def main():
         )
 
         model = trainer.quantize(quant_config=quantization_config)
+    
+    if optim_args.benchmark_only:
+        trainer.benchmark(
+            model_args.model_name_or_path,
+            batch_size=training_args.per_device_eval_batch_size,
+            cores_per_instance=4,
+            num_of_instance=-1
+        )
 
     if optim_args.benchmark or optim_args.accuracy_only:
 

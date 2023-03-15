@@ -25,6 +25,7 @@ from neural_compressor.utils import logger
 from intel_extension_for_transformers.optimization.utils.utility import LazyImport
 from packaging.version import Version
 from transformers import AutoConfig
+from transformers.file_utils import WEIGHTS_NAME
 
 torch = LazyImport("torch")
 
@@ -82,10 +83,11 @@ class OptimizedModel:
             )
 
         model_class = eval(f'transformers.{config.architectures[0]}')
-        if os.path.exists(os.path.join(model_name_or_path, "best_model.pt")):
+
+        if hasattr(config, 'backend') and config.backend == "ipex":
             import intel_extension_for_pytorch    # pylint: disable=E0401
             logger.info("the INC IPEX quantization optimized model is loading.")
-            weight_file = os.path.join(model_name_or_path, "best_model.pt")
+            weight_file = os.path.join(model_name_or_path, WEIGHTS_NAME)
             q_model = torch.jit.load(weight_file)
             q_model = torch.jit.freeze(q_model.eval())
             return q_model

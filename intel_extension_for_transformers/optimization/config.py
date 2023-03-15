@@ -1102,7 +1102,133 @@ class NASConfig(object):
                 metric.greater_is_better
                 )
 
+class BenchmarkConfig:
+    """Config Class for Benchmark."""
+    def __init__(
+        self,
+        backend: str = "torch",  # select from ["torch", "ipex", "neural_engine"]
+        batch_size: int = 1,
+        warmup: int = 5,
+        iteration: int = 20,
+        cores_per_instance: int = 4,
+        num_of_instance: int = -1,
+        torchscript: bool = False,
+        generate: bool = False,
+        **kwargs,
+    ):
+        """Init a BenchmarkConfig object.
 
+        Args:
+            backend (str, optional): the backend used for benchmark. Defaults to "torch".
+            warmup (int, optional): skip iters when collecting latency. Defaults to 5.
+            iteration (int, optional): total iters when collecting latency. Defaults to 20.
+            cores_per_instance (int, optional): the core number for 1 instance. Defaults to 4.
+            num_of_instance (int, optional): the instance number. Defaults to -1.
+            torchscript (bool, optional): Enable it if you want to jit trace it \
+                                          before benchmarking. Defaults to False.
+            generate (bool, optional): Enable it if you want to use model.generate \
+                                       when benchmarking. Defaults to False.
+        """
+        self.backend = backend
+        self.batch_size = batch_size
+        self.warmup = warmup
+        self.iteration = iteration
+        self.cores_per_instance = cores_per_instance
+        self.num_of_instance = num_of_instance
+        self.torchscript = torchscript
+        self.generate = generate
+        self.kwargs = kwargs
+
+    @property
+    def backend(self):
+        """Get backend."""
+        return self._backend
+
+    @backend.setter
+    def backend(self, backend):
+        """Set backend."""
+        self._backend = backend
+
+    @property
+    def batch_size(self):
+        """Get batch_size."""
+        return self._batch_size
+
+    @batch_size.setter
+    def batch_size(self, batch_size):
+        """Set batch_size."""
+        self._batch_size = batch_size
+
+    @property
+    def warmup(self):
+        """Get warmup."""
+        return self._warmup
+
+    @warmup.setter
+    def warmup(self, warmup):
+        """Set warmup."""
+        self._warmup = warmup
+
+    @property
+    def iteration(self):
+        """Get iteration."""
+        return self._iteration
+
+    @iteration.setter
+    def iteration(self, iteration):
+        """Set iteration."""
+        self._iteration = iteration
+
+    @property
+    def cores_per_instance(self):
+        """Get cores_per_instance."""
+        return self._cores_per_instance
+
+    @cores_per_instance.setter
+    def cores_per_instance(self, cores_per_instance):
+        """Set cores_per_instance."""
+        self._cores_per_instance = cores_per_instance
+
+    @property
+    def num_of_instance(self):
+        """Get num_of_instance."""
+        return self._num_of_instance
+
+    @num_of_instance.setter
+    def num_of_instance(self, num_of_instance):
+        """Set num_of_instance."""
+        self._num_of_instance = num_of_instance
+
+    @property
+    def torchscript(self):
+        """Get torchscript."""
+        return self._torchscript
+
+    @torchscript.setter
+    def torchscript(self, torchscript):
+        """Set torchscript."""
+        self._torchscript = torchscript
+
+    @property
+    def generate(self):
+        """Get generate."""
+        return self._generate
+
+    @generate.setter
+    def generate(self, generate):
+        """Set generate."""
+        self._generate = generate
+
+    @property
+    def kwargs(self):
+        """Get kwargs."""
+        return self._kwargs
+
+    @kwargs.setter
+    def kwargs(self, kwargs):
+        """Set kwargs."""
+        self._kwargs = kwargs
+        
 @constructor_register
 class PrunerV2:
     """
