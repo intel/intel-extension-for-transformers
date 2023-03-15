@@ -210,6 +210,10 @@ class OptimizationArguments:
         default=False,
         metadata={"help": "Whether or not to apply quantization."},
     )
+    strategy: Optional[str] = field(
+        default="basic",
+        metadata={"help": "Tuning strategy. Supported strategies are basic, bayesian, mse, mse_v2."},
+    )
     quantization_approach: Optional[str] = field(
         default="PostTrainingStatic",
         metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
@@ -669,6 +673,8 @@ def main():
             metrics=[tune_metric],
             sampling_size = len(train_dataset)//20
         )
+        if optim_args.strategy == "mse_v2":
+            quantization_config.strategy = "mse_v2"
         if optim_args.framework == "ipex":
             quantization_config.framework = "pytorch_ipex" 
             trainer.calib_dataloader = calib_dataloader

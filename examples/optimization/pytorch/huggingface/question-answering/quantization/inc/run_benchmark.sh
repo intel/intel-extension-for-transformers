@@ -84,6 +84,14 @@ function run_benchmark {
     elif [ "${topology}" = "roberta_base_SQuAD2_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="deepset/roberta-base-squad2"
+    elif [ "${topology}" = "longformer_base_squad_static" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="valhalla/longformer-base-4096-finetuned-squadv1"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "longformer_base_squad_dynamic" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="valhalla/longformer-base-4096-finetuned-squadv1"
+        approach="PostTrainingDynamic"
     elif [ "${topology}" = "distilbert_base_squad_ipex" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"

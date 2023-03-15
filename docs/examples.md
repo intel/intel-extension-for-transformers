@@ -114,6 +114,13 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
     <td>&#10004;</td>
   </tr>
   <tr>
+    <td><a href="https://huggingface.co/valhalla/longformer-base-4096-finetuned-squadv1">valhalla/longformer-base-4096-finetuned-squadv1</a></td>
+    <td>question-answering</td>
+    <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
+    <td>&#10004;</td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
     <td><a href="https://huggingface.co/lvwerra/pegasus-samsum">lvwerra/pegasus-samsum</a></td>
     <td>summarization</td>
     <td><a href="https://huggingface.co/datasets/samsum">samsum</a></td>

@@ -341,9 +341,11 @@ class QuantizationConfig(object):
     @strategy.setter
     def strategy(self, strategy):
         """Set the strategy."""
-        assert strategy in ["basic", "bayesian", "mse"], \
+        assert strategy in ["basic", "bayesian", "mse", "mse_v2"], \
             "strategy: {} is not support!".format(strategy)
         self.inc_config.usr_cfg.tuning.strategy.name = strategy
+        if strategy == "mse_v2":
+                 self.inc_config.usr_cfg.tuning.strategy_kwargs = {"confidence_batches": 1}
 
     @property
     def timeout(self):
