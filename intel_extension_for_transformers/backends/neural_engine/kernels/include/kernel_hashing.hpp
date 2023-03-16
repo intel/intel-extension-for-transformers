@@ -121,6 +121,9 @@ class hash_t {
         hash_combine(seed, op_attrs["m_tile"]);
         hash_combine(seed, op_attrs["n_tile"]);
         break;
+      case kernel_kind::dynamic_quant_matmul:
+        hash_combine(seed, op_attrs["large_wei_threshold"]);
+        break;
       case kernel_kind::softmax:
         hash_combine(seed, op_attrs["spec_type"]);
         hash_combine(seed, op_attrs["vec_len"]);
@@ -133,6 +136,9 @@ class hash_t {
         hash_combine(seed, op_attrs["QKV_dstzp"]);
         hash_combine(seed, op_attrs["merged_QKV"]);
         hash_combine(seed, op_attrs["is_package"]);
+      case kernel_kind::dynamic_quant:
+        hash_combine(seed, op_attrs["input_dt"]);
+        break;
       case kernel_kind::eltwiseop:
       default:
         break;

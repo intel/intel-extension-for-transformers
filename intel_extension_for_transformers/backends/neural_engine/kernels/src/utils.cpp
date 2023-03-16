@@ -340,16 +340,16 @@ template void cast_to_float_array<uint8_t>(const void*, std::vector<float>*, int
 template void cast_to_float_array<bfloat16_t>(const void*, std::vector<float>*, int);
 
 template <typename T>
-void cast_from_float_array(std::vector<float> src, void* dst, int size) {
+void cast_from_float_array(const std::vector<float>& src, void* dst, int size) {
   T* dst_typed = reinterpret_cast<T*>(dst);
   for (int i = 0; i < size; ++i) {
     dst_typed[i] = cast_to<float, T>(src[i]);
   }
 }
-template void cast_from_float_array<float>(std::vector<float>, void*, int);
-template void cast_from_float_array<int>(std::vector<float>, void*, int);
-template void cast_from_float_array<int8_t>(std::vector<float>, void*, int);
-template void cast_from_float_array<uint8_t>(std::vector<float>, void*, int);
-template void cast_from_float_array<bfloat16_t>(std::vector<float>, void*, int);
+template void cast_from_float_array<float>(const std::vector<float>&, void*, int);
+template void cast_from_float_array<int>(const std::vector<float>&, void*, int);
+template void cast_from_float_array<int8_t>(const std::vector<float>&, void*, int);
+template void cast_from_float_array<uint8_t>(const std::vector<float>&, void*, int);
+template void cast_from_float_array<bfloat16_t>(const std::vector<float>&, void*, int);
 
 }  // namespace jd

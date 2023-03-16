@@ -18,7 +18,6 @@
 #include <memory>
 #include <utility>
 #include <vector>
-
 #include "cpu_isa.hpp"
 #include "jit_domain/jit_layernorm_ba.hpp"
 #include "kernel.hpp"

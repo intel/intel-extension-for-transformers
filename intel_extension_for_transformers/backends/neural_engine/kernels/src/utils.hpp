@@ -228,7 +228,7 @@ template <typename T>
 void SPARSE_API_ cast_to_float_array(const void* src, std::vector<float>* dst, int size);
 
 template <typename T>
-void SPARSE_API_ cast_from_float_array(std::vector<float> src, void* dst, int size);
+void SPARSE_API_ cast_from_float_array(const std::vector<float>& src, void* dst, int size);
 
 template <class T>
 inline void safe_delete(T*& ptr) {  // NOLINT(runtime/references)

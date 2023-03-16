@@ -54,13 +54,16 @@ bench_res_t bench_op::run_bench(bench_mode mode) {
 }
 bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
   auto& p = kb->args.first;
+  auto& q = kb->args.second;
   bench_res_t res;
 
   // prepare workspace
   const auto workspace_idx = kb->get_workspace_idx();
   const auto workspace_size = kb->kp->get_workspace_size();
-  if (workspace_idx >= 0 && workspace_size > 0)
+  if (workspace_idx >= 0 && workspace_size > 0) {
     p.rt_data[workspace_idx] = aligned_allocator_t<char>::allocate(workspace_size);
+    q.rt_data[workspace_idx] = aligned_allocator_t<char>::allocate(workspace_size);
+  }
 
   kb->kp->execute(p.rt_data);
 
@@ -85,14 +88,12 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
     res.stat = bench_status::fail;
     return res;
   }
-
   double ns = 0.0;
   for (int i = 0; i < benchmark_iter; ++i) {
     // refresh data
     if (benchmark_refresh) {
       refresh_data(&new_data, idx);
     }
-
     ns += exec_time(kb->kp, tmp_data);
   }
 
@@ -106,7 +107,9 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
   // free workspace memory
   if (workspace_idx >= 0 && workspace_size > 0) {
     aligned_allocator_t<char>::deallocate(const_cast<void*>(p.rt_data[workspace_idx]));
+    aligned_allocator_t<char>::deallocate(const_cast<void*>(q.rt_data[workspace_idx]));
     p.rt_data[workspace_idx] = nullptr;
+    q.rt_data[workspace_idx] = nullptr;
   }
 
   res.stat = bench_status::success;

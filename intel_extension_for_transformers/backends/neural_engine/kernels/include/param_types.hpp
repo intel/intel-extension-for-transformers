@@ -28,12 +28,14 @@ enum class kernel_kind : uint8_t {
   layernorm_ba,
   layernormalized_spmm,
   transpose_matmul,
+  dynamic_quant_matmul,
   softmax,
   gather,
   attention,
   transpose_mha,
   mha_dense,
-  dyn_quantize_mha
+  dyn_quantize_mha,
+  dynamic_quant
 };
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };

@@ -44,6 +44,8 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_seq_cpy_48x4.cpp
     test_dyn_quantize_mha.cpp
     test_mha_dense_kernel.cpp
+    test_dynamic_quant_matmul.cpp
+    test_dynamic_quant.cpp
 )
 if (NE_WITH_SPARSELIB_GPU)
 list(APPEND KERNEL_TEST_CASES_SRC ./gpu/test_gpu_matmul.cpp)

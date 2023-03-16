@@ -21,6 +21,7 @@
 #include "transpose_matmul/transpose_matmul.hpp"
 #include "transpose_mha/transpose_mha.hpp"
 #include "mha_dense/mha_dense.hpp"
+#include "dynamic_quant_matmul/dynamic_quant_matmul.hpp"
 
 int main(int argc, char** argv) {
   jd::bench_mode mode;
@@ -62,6 +63,8 @@ int main(int argc, char** argv) {
     kb = std::make_shared<jd::transpose_mha_bench>();
   } else if (!strcmp(argv[0], "mha_dense")) {
     kb = std::make_shared<jd::mha_dense_bench>();
+  } else if (!strcmp(argv[0], "dynamic_quant_matmul")) {
+    kb = std::make_shared<jd::dynamic_quant_matmul_bench>();
   } else {
     LOG(ERROR) << "unknown kernel type";
     return 1;

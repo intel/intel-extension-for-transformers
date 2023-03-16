@@ -12,6 +12,8 @@
       - [matmul\_vnni\_noperm\_p2031\_p1302](#matmul_vnni_noperm_p2031_p1302)
     - [softmax](#softmax)
     - [attention](#attention)
+    - [Static MHA](#static-mha)
+    - [dynamic\_quant\_matmul](#dynamic_quant_matmul)
 - [For developers](#for-developers)
 
 # Benchmark for Kernels
@@ -212,6 +214,19 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf attention 1 64 8 128 
 #### Examples
 ```shell
 BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf mha_dense 1 2048 16 256 u8 -1 4
+```
+
+### dynamic_quant_matmul
+```shell
+[<environment_variable>...] ./benchmark <mode> dynamic_quant_matmul <batch_size> <m> <n> <k> [large_weight_threshold] [add_bias]
+```
+- `batch_size` / `m` / `n` / `k` are the the problem size.
+- `large_weight_threshold` should be 0-1, if weight*large_weight_threshold large than L2-cache size, kernel will select large_wei jit-path.
+- `add_bias` could be one of `true` / `false`, indicate whether add a bias value after gemm.
+- Please note that dynamic_quant_matmul only supports s8-activation, s8-weight and s8-destination, so the user does not need to specify the data type.
+#### Examples
+```shell
+BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf dynamic_quant_matmul 1 512 1280 1280
 ```
 
 # For developers

@@ -184,6 +184,9 @@ class jit_generator : public Xbyak::CodeGenerator {
     return result;
   }
 
+  void transpose_16x16_ps(const std::array<Xbyak::Zmm, 16UL>& src, const std::array<Xbyak::Zmm, 16UL>& tmp,
+                          const int N = 16);
+
  protected:
   const uint8_t* jit_ker_ = nullptr;
   static constexpr uint64_t MAX_CODE_SIZE = 128 * 1024;

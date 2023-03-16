@@ -109,6 +109,20 @@ class SPARSE_API_ transpose_matmul_desc : public kernel_desc_proxy {
   virtual ~transpose_matmul_desc() {}
 };
 
+class SPARSE_API_ dynamic_quant_matmul_desc : public kernel_desc_proxy {
+ public:
+  dynamic_quant_matmul_desc() {}
+  explicit dynamic_quant_matmul_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~dynamic_quant_matmul_desc() {}
+};
+
+class SPARSE_API_ dynamic_quant_desc : public kernel_desc_proxy {
+ public:
+  dynamic_quant_desc() {}
+  explicit dynamic_quant_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~dynamic_quant_desc() {}
+};
+
 class SPARSE_API_ eltwiseop_desc : public kernel_desc_proxy {
  public:
   eltwiseop_desc() {}
@@ -187,6 +201,19 @@ class SPARSE_API_ transpose_matmul : public kernel_proxy {
   transpose_matmul() {}
   explicit transpose_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~transpose_matmul() {}
+};
+class SPARSE_API_ dynamic_quant_matmul : public kernel_proxy {
+ public:
+  dynamic_quant_matmul() {}
+  explicit dynamic_quant_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~dynamic_quant_matmul() {}
+};
+
+class SPARSE_API_ dynamic_quant : public kernel_proxy {
+ public:
+  dynamic_quant() {}
+  explicit dynamic_quant(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~dynamic_quant() {}
 };
 
 class SPARSE_API_ eltwiseop : public kernel_proxy {

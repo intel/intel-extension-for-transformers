@@ -26,6 +26,7 @@ DECLARE_IMPL_LIST(sparse_matmul);
 DECLARE_IMPL_LIST(eltwiseop);
 DECLARE_IMPL_LIST(layernorm_ba);
 DECLARE_IMPL_LIST(transpose_matmul);
+DECLARE_IMPL_LIST(dynamic_quant_matmul);
 DECLARE_IMPL_LIST(layernormalized_spmm);
 DECLARE_IMPL_LIST(softmax);
 DECLARE_IMPL_LIST(gather);
@@ -33,6 +34,7 @@ DECLARE_IMPL_LIST(attention);
 DECLARE_IMPL_LIST(transpose_mha);
 DECLARE_IMPL_LIST(mha_dense);
 DECLARE_IMPL_LIST(dyn_quantize_mha);
+DECLARE_IMPL_LIST(dynamic_quant);
 
 #undef DECLARE_IMPL_LIST
 
@@ -54,6 +56,8 @@ const std::vector<impl_list_item_t>* cpu_engine_t::get_implementation_list(const
     CASE(transpose_mha);
     CASE(mha_dense);
     CASE(dyn_quantize_mha);
+    CASE(dynamic_quant_matmul);
+    CASE(dynamic_quant);
     default:
       return &cpu_engine_t::empty_list;
   }
