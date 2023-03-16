@@ -20,6 +20,7 @@ from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
 from ..ops import Tensor
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_EncoderHiddenStatesReshape')
@@ -43,16 +44,20 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
 
         pattern = pattern_mapping_config['Transformer2Dmodel_EncoderHiddenStatesReshape'][0]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
+        logger.info('Transformer2Dmodel_EncoderHiddenStatesReshape mathched...')
+        logger.debug('Transformer2Dmodel_EncoderHiddenStatesReshape = {}'.format(patterns_nodes_name))
         if len(patterns_nodes_name) != 0:
-            for j in range(len(patterns_nodes_name)):
-
-                input_node = model.get_node_by_name(patterns_nodes_name[j][0])
+            first_matmul_node_idx = -1
+            all_dest_op = []
+            for i in range(len(patterns_nodes_name)):
+                input_node = model.get_node_by_name(patterns_nodes_name[i][0])
                 encoder_hidden_states_tensor = input_node.output_tensors[2]
 
-                matmul_node_name = patterns_nodes_name[j][1]
+                matmul_node_name = patterns_nodes_name[i][1]
                 matmul_node = model.get_node_by_name(matmul_node_name)
-
                 matmul_node_idx = model.get_node_id(matmul_node.name)
+                if i == 0:
+                    first_matmul_node_idx = matmul_node_idx
 
                 #create a new 2d reshape node
                 new_node_name = 'encoder_hidden_states/reshape_2d'
@@ -62,7 +67,7 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
                 output_tensor = [
                     Tensor(name=new_node_output_tensor_name,
                            source_op=[new_node_name],
-                           dest_op=[matmul_node.name],
+                           dest_op=[],
                            dtype=matmul_node.output_tensors[0].dtype)
                 ]
                 new_node = util.construct_node(node_name=new_node_name,
@@ -73,7 +78,12 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
                 attr['dst_shape'] = '-1,768'
                 new_node.attr = attr
 
-                model.insert_nodes(matmul_node_idx, [new_node])
                 matmul_node.input_tensors[0] = new_node.output_tensors[0]
+                all_dest_op.append(matmul_node.name)
+                
+            # only insert one node to reshape the encoder_hidden_satates.
+            new_node.output_tensors[0].dest_op = all_dest_op
+            assert first_matmul_node_idx != -1
+            model.insert_nodes(first_matmul_node_idx, [new_node])
 
         return model

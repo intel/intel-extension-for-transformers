@@ -19,6 +19,7 @@ namespace executor {
 static unordered_map<string, dnnl::memory::data_type> type2mem{{"fp32", dnnl::memory::data_type::f32},
                                                                {"s32", dnnl::memory::data_type::s32},
                                                                {"fp16", dnnl::memory::data_type::f16},
+                                                               {"bf16", dnnl::memory::data_type::bf16},
                                                                {"u8", dnnl::memory::data_type::u8},
                                                                {"s8", dnnl::memory::data_type::s8}};
 

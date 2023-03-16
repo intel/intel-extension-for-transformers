@@ -14,12 +14,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """The MatMulWithBiasSigmoid pattern."""
 
 from .pattern import Pattern, pattern_registry
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='MatMulWithBiasSigmoid')
@@ -33,7 +33,7 @@ class MatMulWithBiasSigmoid(Pattern):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'MatMulWithBiasSigmoid': [
-                # # unet
+                # unet
                 {
                     'patterns': {
                         'in': [[(0, 'MatMulWithBias'), (1, ['Sigmoid']), (2, 'Mul')]],
@@ -81,13 +81,14 @@ class MatMulWithBiasSigmoid(Pattern):
         # for unet
         pattern = pattern_mapping_config['MatMulWithBiasSigmoid'][0]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
-        print('MatMulWithBiasSigmoid = ', patterns_nodes_name)
+        logger.info('MatMulWithBiasSigmoid skip...')
+        logger.debug('MatMulWithBiasSigmoid = {}'.format(patterns_nodes_name))
         if len(patterns_nodes_name) != 0:
             return model
 
         pattern_dict = pattern_mapping_config['MatMulWithBiasSigmoid'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithBiasSigmoid", 
-                                                                    pattern_dict, model)
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithBiasSigmoid", pattern_dict,
+                                                                    model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)
 

@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='TextEncoder_WordEmbedding')
@@ -119,6 +120,8 @@ class TextEncoder_WordEmbedding(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
+                logger.info('TextEncoder_WordEmbedding mathched...')
+                logger.debug('TextEncoder_WordEmbedding = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     gatherv2_node = ret_old_nodes[j][0]
                     hidden_size = int(gatherv2_node.input_tensors[0].shape[-1])

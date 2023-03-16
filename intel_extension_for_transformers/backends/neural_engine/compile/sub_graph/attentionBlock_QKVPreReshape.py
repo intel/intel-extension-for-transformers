@@ -20,6 +20,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='AttentionBlock_QKVPreReshape')
@@ -76,7 +77,8 @@ class AttentionBlock_QKVPreReshape(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping("AttentionBlock_QKVPreReshape",
                                                                         pattern_dict, model)
 
-            print('i = ', i, 'AttentionBlock_QKVPreReshape = ', new_node_names)
+            logger.info('AttentionBlock_QKVPreReshape mathched...')
+            logger.debug('AttentionBlock_QKVPreReshape = {}'.format(new_node_names))
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):
                     # the first new node

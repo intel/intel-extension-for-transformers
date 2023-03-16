@@ -37,6 +37,7 @@ class BinaryOpOperator : public Operator {
   explicit BinaryOpOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~BinaryOpOperator() {}
 
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 

@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='TextEncoder_KVReshape')
@@ -100,7 +101,8 @@ class TextEncoder_KVReshape(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping("TextEncoder_KVReshape", pattern_dict,
                                                                         model)
 
-            print('i = ', i, ' TextEncoder_KVReshape = ', new_node_names)
+            logger.info('TextEncoder_KVReshape mathched...')
+            logger.debug('TextEncoder_KVReshape = {}'.format(new_node_names))
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):
                     pack_node = ret_old_nodes[j][0]

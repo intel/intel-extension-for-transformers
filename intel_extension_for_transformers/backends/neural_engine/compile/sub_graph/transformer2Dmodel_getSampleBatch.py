@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_GetSampleBatch')
@@ -74,7 +75,8 @@ class Transformer2Dmodel_GetSampleBatch(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'Transformer2Dmodel_GetSampleBatch = ', new_node_names)
+                logger.info('Transformer2Dmodel_GetSampleBatch mathched...')
+                logger.debug('Transformer2Dmodel_GetSampleBatch = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
 
                     # the first new node

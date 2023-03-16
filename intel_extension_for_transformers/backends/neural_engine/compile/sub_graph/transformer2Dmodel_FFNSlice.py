@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_FFNInputSlice')
@@ -44,8 +45,8 @@ class Transformer2Dmodel_FFNInputSlice(Pattern):
         #
         pattern = pattern_mapping_config['Transformer2Dmodel_FFNInputSlice'][0]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
-        print('Transformer2Dmodel_FFNInputSlice = ', patterns_nodes_name)
-
+        logger.info('Transformer2Dmodel_FFNInputSlice mathched...')
+        logger.debug('Transformer2Dmodel_FFNInputSlice = {}'.format(patterns_nodes_name))
         if len(patterns_nodes_name) != 0:
             for j in range(len(patterns_nodes_name)):
                 matmul_node = model.get_node_by_name(patterns_nodes_name[j][0])

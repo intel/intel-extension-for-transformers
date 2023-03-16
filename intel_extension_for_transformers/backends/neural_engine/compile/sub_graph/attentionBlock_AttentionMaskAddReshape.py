@@ -20,6 +20,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='AttentionBlock_AttentionMaskAddReshape')
@@ -77,7 +78,8 @@ class AttentionBlock_AttentionMaskAddReshape(Pattern):
                 "AttentionBlock_AttentionMaskAddReshape", pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'AttentionBlock_AttentionMaskAddReshape = ', new_node_names)
+                logger.info('AttentionBlock_AttentionMaskAddReshape mathched...')
+                logger.debug('AttentionBlock_AttentionMaskAddReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node
                     attr = OrderedDict()

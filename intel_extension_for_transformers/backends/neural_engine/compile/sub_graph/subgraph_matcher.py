@@ -111,6 +111,7 @@ pattern_default_setting = {
     'Transformer2Dmodel_FFNInputSlice': False,
     'Transformer2Dmodel_FFNInputSlice_1': False,
     'Transformer2DModel_UpBlockResize': False,
+    'StableDiffusion_bf16Convert': False
 }
 
 class SubGraphMatcher(object):

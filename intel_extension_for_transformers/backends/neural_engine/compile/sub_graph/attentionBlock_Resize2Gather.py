@@ -21,6 +21,7 @@ from collections import OrderedDict
 import numpy as np
 from .. import graph_utils as util
 from ..ops import Tensor
+from .. import logger
 
 
 @pattern_registry(pattern_type='AttentionBlock_Resize2Gather')
@@ -88,7 +89,8 @@ class AttentionBlock_Resize2Gather(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'AttentionBlock_Resize2Gather = ', new_node_names)
+                logger.info('AttentionBlock_Resize2Gather mathched...')
+                logger.debug('AttentionBlock_Resize2Gather = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # restor the add node
                     assert ret_old_nodes[j][0].op_type == 'Add'

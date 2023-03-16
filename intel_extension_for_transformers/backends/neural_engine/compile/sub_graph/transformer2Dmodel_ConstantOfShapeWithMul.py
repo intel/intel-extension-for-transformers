@@ -18,6 +18,7 @@
 
 from .pattern import Pattern, pattern_registry
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_ConstantOfShapeWithMul')
@@ -82,6 +83,7 @@ class Transformer2Dmodel_ConstantOfShapeWithMul(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping(
                 "Transformer2Dmodel_ConstantOfShapeWithMul", pattern_dict, model)
             if len(new_node_names) != 0:
-                print('Transformer2Dmodel_ConstantOfShapeWithMul = ', new_node_names)
+                logger.info('TextEncoder_AttentionMaskAddReshape mathched...')
+                logger.debug('TextEncoder_AttentionMaskAddReshape = {}'.format(new_node_names))
 
         return model

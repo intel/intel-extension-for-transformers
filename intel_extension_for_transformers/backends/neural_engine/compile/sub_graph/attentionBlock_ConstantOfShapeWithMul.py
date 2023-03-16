@@ -18,6 +18,7 @@
 
 from .pattern import Pattern, pattern_registry
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='AttentionBlock_ConstantOfShapeWithMul')
@@ -120,7 +121,8 @@ class AttentionBlock_ConstantOfShapeWithMul(Pattern):
         patterns_nodes_name = util.search_pattern(pattern, model)
         mul = -1
         if len(patterns_nodes_name) != 0:
-            print('AttentionBlock_ConstantOfShapeWithMul = ', patterns_nodes_name)
+            logger.info('AttentionBlock_ConstantOfShapeWithMul mathched...')
+            logger.debug('AttentionBlock_ConstantOfShapeWithMul = {}'.format(patterns_nodes_name))
             for j in range(len(patterns_nodes_name)):
                 mul_idx = model.get_node_id(patterns_nodes_name[j][11])
                 if int(model.nodes[mul_idx].input_tensors[1].data) == 0:
@@ -131,6 +133,7 @@ class AttentionBlock_ConstantOfShapeWithMul(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping(
                 "AttentionBlock_ConstantOfShapeWithMul", pattern_dict, model)
             if len(new_node_names) != 0:
-                print('AttentionBlock_ConstantOfShapeWithMul = ', new_node_names)
+                logger.info('AttentionBlock_ConstantOfShapeWithMul mathched...')
+                logger.debug('AttentionBlock_ConstantOfShapeWithMul = {}'.format(patterns_nodes_name))
 
         return model

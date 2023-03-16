@@ -18,6 +18,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='GroupNorm')
@@ -74,7 +75,8 @@ class GroupNorm(Pattern):
             pattern_dict = pattern_mapping_config['GroupNorm'][i]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("GroupNorm", pattern_dict, model)
             if len(new_node_names) != 0:
-                print('GroupNorm = ', new_node_names)
+                logger.info('GroupNorm mathched...')
+                logger.debug('GroupNorm = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     group = ret_old_nodes[j][0].input_tensors[1].shape[0]
                     channels = ret_old_nodes[j][1].input_tensors[1].shape[0]

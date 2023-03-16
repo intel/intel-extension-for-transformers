@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_AttentionMaskAddReshape')
@@ -74,8 +75,8 @@ class Transformer2Dmodel_AttentionMaskAddReshape(Pattern):
                 "Transformer2Dmodel_AttentionMaskAddReshape", pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('Transformer2Dmodel_AttentionMaskAddReshape matched ...')
-                print('i = ', i, 'Transformer2Dmodel_AttentionMaskAddReshape = ', new_node_names)
+                logger.info('Transformer2Dmodel_AttentionMaskAddReshape mathched...')
+                logger.debug('Transformer2Dmodel_AttentionMaskAddReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     assert ret_old_nodes[j][2].op_type == 'Transpose'
                     mat_node_idx = model.get_node_id(new_node_names[j][1])

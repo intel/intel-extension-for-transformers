@@ -21,6 +21,7 @@ from collections import OrderedDict
 import numpy as np
 from .. import graph_utils as util
 from ..ops import Tensor
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2DModel_UpBlockResize')
@@ -82,7 +83,8 @@ class Transformer2DModel_UpBlockResize(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'Transformer2DModel_UpBlockResize = ', new_node_names)
+                logger.info('Transformer2DModel_UpBlockResize mathched...')
+                logger.debug('Transformer2DModel_UpBlockResize = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # restor the add node
                     assert ret_old_nodes[j][0].op_type == 'Add'

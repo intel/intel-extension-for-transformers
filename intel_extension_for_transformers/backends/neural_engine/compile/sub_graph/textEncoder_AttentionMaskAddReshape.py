@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='TextEncoder_AttentionMaskAddReshape')
@@ -84,7 +85,8 @@ class TextEncoder_AttentionMaskAddReshape(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'TextEncoder_AttentionMaskAddReshape = ', new_node_names)
+                logger.info('TextEncoder_AttentionMaskAddReshape mathched...')
+                logger.debug('TextEncoder_AttentionMaskAddReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     concat_node = ret_old_nodes[j][0]
                     hidden_size = int(concat_node.input_tensors[-3].data)

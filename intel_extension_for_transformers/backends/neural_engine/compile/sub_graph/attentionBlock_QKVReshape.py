@@ -20,6 +20,7 @@ from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
 from ..ops import Tensor
+from .. import logger
 
 
 @pattern_registry(pattern_type='AttentionBlock_QKVReshape')
@@ -69,7 +70,8 @@ class AttentionBlock_QKVReshape(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'AttentionBlock_QKVReshape = ', new_node_names)
+                logger.info('AttentionBlock_QKVReshape mathched...')
+                logger.debug('AttentionBlock_QKVReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     concat_node = ret_old_nodes[j][0]
                     concat_node_input_size = len(concat_node.input_tensors)

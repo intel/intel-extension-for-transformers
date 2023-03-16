@@ -18,6 +18,7 @@
 
 from .pattern import Pattern, pattern_registry
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_FFNInputSlice_1')
@@ -62,7 +63,8 @@ class Transformer2Dmodel_FFNInputSlice_1(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'Transformer2Dmodel_FFNInputSlice_1 = ', new_node_names)
+                logger.info('Transformer2Dmodel_FFNInputSlice_1 mathched...')
+                logger.debug('Transformer2Dmodel_FFNInputSlice_1 = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node
                     assert ret_old_nodes[j][6].op_type == 'Slice'

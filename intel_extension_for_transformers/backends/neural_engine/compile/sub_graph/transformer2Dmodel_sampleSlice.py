@@ -18,6 +18,7 @@
 
 from .pattern import Pattern, pattern_registry
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_SampleSlice')
@@ -42,8 +43,8 @@ class Transformer2Dmodel_SampleSlice(Pattern):
 
         pattern = pattern_mapping_config['Transformer2Dmodel_SampleSlice'][0]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
-        print('Transformer2Dmodel_SampleSlice = ', patterns_nodes_name)
-
+        logger.info('Transformer2Dmodel_SampleSlice mathched...')
+        logger.debug('Transformer2Dmodel_SampleSlice = {}'.format(patterns_nodes_name))
         if len(patterns_nodes_name) != 0:
             for j in range(len(patterns_nodes_name)):
                 #the first node

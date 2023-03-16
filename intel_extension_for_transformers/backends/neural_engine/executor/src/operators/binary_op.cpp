@@ -36,8 +36,11 @@ BinaryOpOperator::BinaryOpOperator(const shared_ptr<OperatorConfig>& conf) :
   }
 }
 
+void BinaryOpOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  output[0]->set_dtype(input[0]->dtype());
+}
+
 void BinaryOpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  assert(input[0]->dtype() == input[1]->dtype());
   auto src0_shape = input[0]->shape();
   auto src1_shape = input[1]->shape();
   auto src0_shape_size = src0_shape.size();
@@ -74,9 +77,9 @@ void BinaryOpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor
     {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
   auto datatype = type2mem[output[0]->dtype()];
   // Create src and dst memory descriptors.
-  auto src_0_md = memory::desc(input[0]->shape(), datatype, GetStrides(src0_shape));
-  auto src_1_md = memory::desc(input[1]->shape(), datatype, GetStrides(src1_shape));
-  auto dst_md = memory::desc(output[0]->shape(), datatype, GetStrides(out_shape));
+  auto src_0_md = memory::desc(input[0]->shape(), type2mem[input[0]->dtype()], GetStrides(src0_shape));
+  auto src_1_md = memory::desc(input[1]->shape(), type2mem[input[1]->dtype()], GetStrides(src1_shape));
+  auto dst_md = memory::desc(output[0]->shape(), type2mem[output[0]->dtype()], GetStrides(out_shape));
 
   dnnl::primitive_attr binary_attr;
   dnnl::binary::desc binary_d(algo_, src_0_md, src_1_md, dst_md);

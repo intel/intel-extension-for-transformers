@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='TextEncoder_MulReshape')
@@ -71,7 +72,8 @@ class TextEncoder_MulReshape(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'TextEncoder_MulReshape = ', new_node_names)
+                logger.info('TextEncoder_MulReshape mathched...')
+                logger.debug('TextEncoder_MulReshape = {}'.format(new_node_names))
                 # except the reshape_7
                 for j in range(len(new_node_names)):
                     pack_node = ret_old_nodes[j][0]

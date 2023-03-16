@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_QKVReshape')
@@ -64,7 +65,8 @@ class Transformer2Dmodel_QKVReshape(Pattern):
                                                                         pattern_dict, model)
             weight = False
             if len(new_node_names) != 0:
-                print('i = ', i, 'Transformer2Dmodel_QKVReshape = ', new_node_names)
+                logger.info('Transformer2Dmodel_QKVReshape mathched...')
+                logger.debug('Transformer2Dmodel_QKVReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node
                     reshape_node_idx = model.get_node_id(new_node_names[j][0])

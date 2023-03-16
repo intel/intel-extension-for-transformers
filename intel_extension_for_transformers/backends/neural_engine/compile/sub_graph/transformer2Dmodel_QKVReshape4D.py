@@ -19,6 +19,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
+from .. import logger
 
 
 @pattern_registry(pattern_type='Transformer2Dmodel_QKVReshapeTo4D')
@@ -68,7 +69,8 @@ class Transformer2Dmodel_QKVReshapeTo4D(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                print('i = ', i, 'Transformer2Dmodel_QKVReshapeTo4D = ', new_node_names)
+                logger.info('Transformer2Dmodel_QKVReshapeTo4D mathched...')
+                logger.debug('Transformer2Dmodel_QKVReshapeTo4D = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     concat_node = ret_old_nodes[j][0]
                     concat_node_input_size = len(concat_node.input_tensors)

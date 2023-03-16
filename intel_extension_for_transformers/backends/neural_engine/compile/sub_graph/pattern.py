@@ -77,6 +77,7 @@ supported_patterns = [
     'Transformer2Dmodel_FFNInputSlice',
     'Transformer2Dmodel_FFNInputSlice_1',
     'Transformer2DModel_UpBlockResize',
+    'StableDiffusion_bf16Convert',
 
     'QKVReshape',
     'DecoderAttnReshape',

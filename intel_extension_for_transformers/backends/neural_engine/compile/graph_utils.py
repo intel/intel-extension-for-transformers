@@ -471,7 +471,7 @@ def search_pattern(pattern_list, graph):
                 return []
             iter_ret = _check_subgraph(iter_ret, m_subgraph, subgraph_idx, has_head)
         if has_one_no_head:
-            logger.warning(
+            logger.debug(
             "Does not completely support this pattern: {} now, please check the output results."\
             .format(pattern_list))
         pattern_max_len = 1
