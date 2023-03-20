@@ -41,7 +41,6 @@ class TestTextEncoder(unittest.TestCase):
     def test_text_encoder(self):
         os.environ['GLOG_minloglevel'] = '2'
         root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/text_encoder/'
-        #root_dir = '/tf_dataset2/inc-ut/nlptoolkit_ut_model/'
         if is_win():
             root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
         model_dir = root_dir + 'model.onnx'
@@ -49,41 +48,30 @@ class TestTextEncoder(unittest.TestCase):
         self.assertTrue(os.path.exists(model_dir), 'model is not found, please set your own model path!')
 
         graph = compile(model_dir, config=pattern_config)
-        ir_path = './ir/'
-        conf_path = ir_path + 'conf.yaml'
-        bin_path = ir_path + 'model.bin'
-        graph.save(ir_path)
-
-        model = Graph()
-        model.graph_init(conf_path, bin_path)
-        
         input_0_path = root_dir + 'input_ids.pt'
         inputs_0 = torch.load(input_0_path)
 
-        output = model.inference([inputs_0])
+        output = graph.inference([inputs_0])
         for node_name in output.keys():
-            print(node_name, 'output = ', output[node_name], ', shape = ', output[node_name].shape)
+            print(node_name, ', shape = ', output[node_name].shape)
 
-        # ----------------------------------------------------------------------------------------
         # onnxruntime
-
         session = ort.InferenceSession(model_dir)
         x = torch.load(input_0_path).numpy().astype(np.int32)
 
         ortvalue = ort.OrtValue.ortvalue_from_numpy(x)
         ortvalue.device_name()
 
-        #ort_inputs = {ort_session.get_inputs()[0].name: to_numpy(x)}
         outputs = session.run(None, {
             'input_ids': ortvalue,
         })
 
         for idx, output_ort in enumerate(outputs):
-            #print('output.name = ', out_name[idx], output.shape)
-            print('output.name= ', ', shape = ', output_ort.shape, ',data = ', output_ort)
+            print('onnxruntime output_shape = ', output_ort.shape)
 
         flag = np.allclose(output['last_hidden_state:0'], outputs[0], atol=1e-2)
         self.assertTrue(flag)
+
 
 if __name__ == '__main__':
     unittest.main()
