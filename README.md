@@ -125,7 +125,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <th colspan="8" align="center">MODEL COMPRESSION</th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="docs/quantization.md">Quantization</a></td>
+    <td colspan="2" align="center"><a href="docs/smoothquant.md">SmoothQuant</a>/<a href="docs/weightonlyquant.md">WeightOnlyQuant</a></td>
     <td colspan="2" align="center"><a href="docs/pruning.md">Pruning</a></td>
     <td colspan="2" align="center" colspan="2"><a href="docs/distillation.md">Distillation</a></td>
     <td align="center" colspan="2"><a href="examples/huggingface/pytorch/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
