@@ -571,6 +571,160 @@ def main():
             objectives=[objectives.performance]
         )
         quantized_model = optimization.quantize(quant_config=quantization_config)
+        exit(0)
+
+    # region Training and validation
+    if training_args.do_train:
+        callbacks = [SavePretrainedCallback(output_dir=training_args.output_dir)]
+        if training_args.do_eval and not data_args.task_name == "mnli":
+            # Do both evaluation and training in the Keras fit loop, unless the task is MNLI
+            # because MNLI has two validation sets
+            validation_data = tf_data["validation"]
+        else:
+            validation_data = None
+        model.fit(
+            tf_data["train"],
+            validation_data=validation_data,
+            epochs=2,
+            callbacks=callbacks,
+        )
+    # endregion
+
+    # region Evaluation
+    if training_args.do_eval:
+        # We normally do validation as part of the Keras fit loop, but we run it independently
+        # if there was no fit() step (because we didn't train the model) or if the task is MNLI,
+        # because MNLI has a separate validation-mismatched validation set
+        logger.info("*** Evaluate ***")
+
+        # Loop to handle MNLI double evaluation (matched, mis-matched)
+        if data_args.task_name == "mnli":
+            tasks = ["mnli", "mnli-mm"]
+            tf_datasets = [tf_data["validation_matched"], tf_data["validation_mismatched"]]
+            raw_datasets = [datasets["validation_matched"], datasets["validation_mismatched"]]
+        else:
+            tasks = [data_args.task_name]
+            tf_datasets = [tf_data["validation"]]
+            raw_datasets = [datasets["validation"]]
+
+        num_examples = 0
+        if optim_args.int8:
+            model = tf.saved_model.load(training_args.output_dir)
+        else:
+            from intel_extension_for_transformers.optimization.utils.utility_tf import keras2SavedModel
+            model = keras2SavedModel(model)
+        for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
+            num_examples += sum(
+                1 for _ in (tf_dataset.unbatch()
+                            if hasattr(tf_dataset, "unbatch") else tf_dataset
+                            )
+            )
+            preds: np.ndarray = None
+            label_ids: np.ndarray = None
+            infer = model.signatures[list(model.signatures.keys())[0]]
+
+            if optim_args.accuracy_only:
+                iterations = 1
+                warmup = 0
+            else:
+                iterations = 10
+                warmup = 5
+            latency_list = []
+
+            for idx in range(iterations):
+                iteration_time = 0
+                for i, (inputs, labels) in enumerate(tf_dataset):
+                    for name in inputs:
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
+                    start = time.time()
+                    results = infer(**inputs)
+                    iteration_time += time.time() - start
+                    if idx == 0:    # only accumulate once all the preds and labels
+                        if preds is None:
+                            preds = results["Identity"].numpy()
+                        else:
+                            preds = np.append(preds, results["Identity"].numpy(), axis=0)
+                        if label_ids is None:
+                            label_ids = labels.numpy()
+                        else:
+                            label_ids = np.append(label_ids, labels.numpy(), axis=0)
+                latency_list.append(iteration_time)
+                logger.info("Iteration {} time: {} sec".format(idx, iteration_time))
+            eval_metrics = compute_metrics({"logits": preds}, label_ids)
+        logger.info("\nEvaluation result: ")
+        logger.info("metric ({}) Accuracy: {}".format(task, eval_metrics["accuracy"]))
+
+        average_iteration_time = np.array(latency_list[warmup:]).mean()
+        logger.info(
+            "Throughput: {} samples/sec".format(
+                num_examples / average_iteration_time)
+        )
+
+    # endregion
+
+    # region Prediction
+    if training_args.do_predict or data_args.predict_file:
+        logger.info("*** Predict ***")
+
+        # Loop to handle MNLI double evaluation (matched, mis-matched)
+        tasks = []
+        tf_datasets = []
+        raw_datasets = []
+        if training_args.do_predict:
+            if data_args.task_name == "mnli":
+                tasks.extend(["mnli", "mnli-mm"])
+                tf_datasets.extend([tf_data["test_matched"], tf_data["test_mismatched"]])
+                raw_datasets.extend([datasets["test_matched"], datasets["test_mismatched"]])
+            else:
+                tasks.append(data_args.task_name)
+                tf_datasets.append(tf_data["test"])
+                raw_datasets.append(datasets["test"])
+        if data_args.predict_file:
+            tasks.append("user_data")
+            tf_datasets.append(tf_data["user_data"])
+            raw_datasets.append(datasets["user_data"])
+
+        if optim_args.int8:
+            model = tf.saved_model.load(training_args.output_dir)
+
+        for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
+            if optim_args.int8:
+                preds: np.ndarray = None
+                infer = model.signatures[list(model.signatures.keys())[0]]
+                for i, (inputs, labels) in enumerate(tf_dataset):
+                    for name in inputs:
+                        inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
+                    results = infer(**inputs)
+                    for val in results:
+                        if preds is None:
+                            preds = results[val].numpy()
+                        else:
+                            preds = np.append(preds, results[val].numpy(), axis=0)
+                test_predictions = {"logits": preds}
+            else:
+                test_predictions = model.predict(tf_dataset)
+            if "label" in raw_dataset:
+                test_metrics = compute_metrics(test_predictions,
+                                                raw_dataset["label"])
+                print(f"Test metrics ({task}):")
+                print(test_metrics)
+
+            if is_regression:
+                predictions_to_write = np.squeeze(test_predictions["logits"])
+            else:
+                predictions_to_write = np.argmax(test_predictions["logits"], axis=1)
+
+            output_predict_file = os.path.join(training_args.output_dir, f"predict_results_{task}.txt")
+            with open(output_predict_file, "w") as writer:
+                logger.info(f"***** Writing prediction results for {task} *****")
+                writer.write("index\tprediction\n")
+                for index, item in enumerate(predictions_to_write):
+                    if is_regression:
+                        writer.write(f"{index}\t{item:3.3f}\n")
+                    else:
+                        item = config.id2label[item]
+                        writer.write(f"{index}\t{item}\n")
+    # endregion
 
 
 if __name__ == "__main__":
