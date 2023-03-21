@@ -486,8 +486,9 @@ class Graph(object):
         self._node_id = {}
         self._engine = None
         yamlPath = os.path.join(config)
-        f = open(yamlPath, 'r', encoding='utf-8')
-        cfg = f.read()
+        cfg = None
+        with open(yamlPath, 'r', encoding='utf-8') as f:
+            cfg = f.read()
         d = yaml.load(cfg, Loader=yaml.FullLoader)
         bin_file = None
         if weight_data != None:
@@ -564,6 +565,9 @@ class Graph(object):
                 op = util.construct_node(node, optype, copy.deepcopy(input_tensors),
                                          copy.deepcopy(output_tensors), attr)
             self.insert_nodes(len(self.nodes), [op])
+
+        if bin_file:
+            bin_file.close()
 
     def save(self, output_dir=None):
         """Save the model IR to the bin and ymal file."""
