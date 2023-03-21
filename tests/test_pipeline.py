@@ -1,5 +1,6 @@
 import os
 import unittest
+import shutil
 import neural_compressor.adaptor.pytorch as nc_torch
 from intel_extension_for_transformers.optimization.pipeline import pipeline
 from packaging.version import Version
@@ -22,8 +23,7 @@ message = "The output scores should be close to 0.9999."
 class TestPipeline(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
-        from test_benchmark import TestBenchmark
-        TestBenchmark.tearDownClass()
+        shutil.rmtree('./tmp_trainer', ignore_errors=True)
 
     def test_fp32_pt_model(self):
         text_classifier = pipeline(
@@ -50,8 +50,8 @@ class TestExecutorPipeline(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         set_seed(42)
-        from test_benchmark import TestExecutorBenchmark
-        TestExecutorBenchmark.setUpClass()
+        from test_quantization import TestQuantization
+        TestQuantization.setUpClass()
         cls.config = AutoConfig.from_pretrained(MODEL_NAME)
         cls.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 

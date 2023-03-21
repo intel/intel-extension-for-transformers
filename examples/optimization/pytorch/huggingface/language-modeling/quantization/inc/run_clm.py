@@ -595,7 +595,9 @@ def main():
     if optim_args.benchmark_only:
         model_path = model_args.model_name_or_path
         # to avoid wrong architecture from model name (only work for fp32).
-        if 'CausalLM' not in config.architectures[0]:
+        arch_list = [arch for model, arch in \
+            transformers.AutoModelForCausalLM._model_mapping._model_mapping.items()]
+        if config.architectures[0] not in arch_list:
             model_path = model
         trainer.benchmark(
             model_path,
