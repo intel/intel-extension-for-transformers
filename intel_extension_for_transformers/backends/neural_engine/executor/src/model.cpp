@@ -589,8 +589,12 @@ void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) 
     // create llga op according to operator config, which will be added into llga graph g_.
     LLGAOPCreator::GetInstance().CreateOP(&llga_info_, op_configs[i], i, fallback);
   }
-
-  auto partitions = llga_info_.GetPartitions();
+  vector<dnnl::graph::partition> partitions;
+  try {
+    partitions = llga_info_.GetPartitions();
+  } catch (...) {
+    LOG(FATAL) << "Fail to get partitions of LLGA\n";
+  }
 
   // add Input layer into operators_
   operators_.push_back(std::make_shared<Dispatcher>(op_configs[0], &execution_options_, this));

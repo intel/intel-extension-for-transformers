@@ -117,34 +117,26 @@ class TorchExtractor(object):
                 for val_user in out_val.uses():
                     next_node = val_user.user
                     dest_ops.append(get_node_name(next_node))
-                if out_tensor.dtype in [torch.qint8]:
+                if out_tensor.dtype == torch.qint8:
                     # extrace min max from tensor
-                    # TODO: support per-channel
                     fp32_data = out_tensor.dequantize()
-                    fp32_min = fp32_data.min().numpy()
-                    fp32_max = fp32_data.max().numpy()
-                    min_tensor = Tensor(name=tensor_name + "_min",
-                        source_op=[],
-                        dest_op=dest_ops,
-                        shape=list(fp32_min.shape),
-                        data=fp32_min,
-                        dtype=get_data_dtype(fp32_min)
-                        )
-                    max_tensor = Tensor(name=tensor_name + "_max",
-                        source_op=[],
-                        dest_op=dest_ops,
-                        shape=list(fp32_max.shape),
-                        data=fp32_max,
-                        dtype=get_data_dtype(fp32_max)
-                        )
-                    #graph_nodes_dict[tensor_name + "_min"] = min_tensor
-                    #graph_nodes_dict[tensor_name + "_max"] = max_tensor
-                    util.insert_quant_info(tensor_name, [min_tensor, max_tensor, 's8'])
+                    if out_tensor.qscheme() == torch.per_channel_affine or \
+                       out_tensor.qscheme() == torch.per_channel_symmetric:
+                        # per_channel case
+                        fp32_min = torch.min(fp32_data, 1).values.numpy()
+                        fp32_max = torch.max(fp32_data, 1).values.numpy()
+                    else:
+                        fp32_min = fp32_data.min().numpy()
+                        fp32_max = fp32_data.max().numpy()
+                    dtype = 's8' + "_weight"
+                    util.insert_quant_info(tensor_name, [fp32_min, fp32_max, dtype])
 
                     # ensure weight is sym quantized.
-                    # out_tensor = out_tensor.int_repr()
-                    weight_scale = 127.0 / max(abs(fp32_min), abs(fp32_max))
-                    out_tensor = torch.round(fp32_data * weight_scale).to(torch.int8)
+                    out_tensor = out_tensor.int_repr()
+
+                elif out_tensor.dtype == torch.quint8:
+                    logger.error("Tensor {} of uint8 is not supported.".format(tensor_name))
+                    import sys; sys.exit(1)
 
                 if out_tensor.dtype == torch.float64:
                     out_tensor = out_tensor.to(torch.float32)

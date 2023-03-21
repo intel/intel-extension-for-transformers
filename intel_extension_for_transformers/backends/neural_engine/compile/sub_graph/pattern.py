@@ -31,6 +31,7 @@ from abc import abstractmethod
 supported_patterns = [
     'InputFile',
     'InputData',
+    'RemoveConstantOP',
     'CollectQuantInfo',
     'LayerNorm',
     'WordEmbeddings',
@@ -106,7 +107,9 @@ supported_patterns = [
     'QKVMerge',
     'ReshapeFusion',
     'OperatorAdaptor',
-    'RemoveConstantOP',
+    'RemoveListConstruct',
+    'TorchPaddingSequence',
+    'InnerproductReshapeFusion',
     'OutputData',
 ]
 

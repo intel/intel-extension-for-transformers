@@ -24,12 +24,14 @@ from .pattern import supported_patterns, superbert_patterns, PATTERNS
 from .. import logger
 
 EXECUTOR_TYPE = {
+    "InnerProduct": "InnerProduct",
     "MatMulWithBias": "InnerProduct",
     "MatMulWithBiasAdd": "InnerProduct",
     "MatMulWithBiasGelu": "InnerProduct",
     "MatMulWithBiasTanh": "InnerProduct",
     "MatMulWithBiasRelu": "InnerProduct",
     "MatMulWithBiasSigmoid": "InnerProduct",
+    "Matmul": "Matmul",
     "MatMul": "InnerProduct",
     "Conv": "Convolution",
     "QuantizedMatMulWithBiasAndDequantize": "InnerProduct",

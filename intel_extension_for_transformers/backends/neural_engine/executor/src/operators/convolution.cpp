@@ -192,6 +192,7 @@ void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<
 
 void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // only for dense gemm dispatcher now
+  if (dispatch_from_ == "InnerProduct" && input[0]->dtype() != "fp32") return;
   if (dispatch_from_ == "InnerProduct" && (input[1]->location().empty() || input[1]->shape().empty())) return;
   MapTensors(input, output);
   bool is_dynamic_ =

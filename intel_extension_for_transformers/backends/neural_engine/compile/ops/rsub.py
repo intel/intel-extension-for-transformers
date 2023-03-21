@@ -34,6 +34,15 @@ class Rsub(Operator):
         "aten::rsub(Tensor self, Scalar other, Scalar alpha) -> Tensor"};
         """
         if framework == 'torch':
-           if node.inputsAt(1).type().kind() != 'TensorType':
-               self._attr['other'] = node.inputsAt(1).toIValue()
-           self._attr['alpha'] = node.inputsAt(2).toIValue()
+            import numpy as np
+            self._op_type = 'BinaryOp'
+            data = np.array(node.inputsAt(1).toIValue()).astype(np.float32)
+            input_tensor = Tensor(name=self.name + '_other',
+                source_op=[],
+                dest_op=[self.name],
+                shape=[1],
+                data=data,
+                dtype="fp32"
+            )
+            self.input_tensors.append(input_tensor)
+            self._attr['algorithm'] = 'sub'
