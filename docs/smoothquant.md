@@ -6,7 +6,7 @@
 4. [Example](#Example)
 5. [Supported Framework Matrix](#Supported-Framework-Matrix)
 ## Introduction
-Quantization is a common compression operation to reduce memory and accelerate inference by converting the floating point matrix to an integer matrix. For large language models (LLMs) with gigantic parameters, the systematic outliers make quantification of activations difficult.  [SmoothQuant](https://arxiv.org/abs/2211.10438), a training free post-training quantization (PTQ) solution, offline migrates this difficulty from activations to weights with a mathematically equivalent transformation.
+[Quantization](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/quantization.md) is a common compression operation to reduce memory and accelerate inference by converting the floating point matrix to an integer matrix. For large language models (LLMs) with gigantic parameters, the systematic outliers make quantification of activations difficult.  [SmoothQuant](https://arxiv.org/abs/2211.10438), a training free post-training quantization (PTQ) solution, offline migrates this difficulty from activations to weights with a mathematically equivalent transformation.
 
 ## Quantization Fundamentals
 
@@ -311,25 +311,21 @@ After setting the sq_config, we can do quantization, save, load and inference it
 ```bash
 from intel_extension_for_transformers.transformers import AutoConfig, AutoModelForCausalLM
 sq_model = AutoModelForCausalLM.from_pretrained(
-                                                    model_name_or_path,
-                                                    quantization_config=sq_config,
-                                                    use_llm_runtime=False
+                                                model_name_or_path,
+                                                quantization_config=sq_config,
+                                                use_llm_runtime=False
                                                 )
 # save
 config = AutoConfig.from_pretrained(model_name_or_path)
 config.save_pretrained(output_dir)
 sq_model.save(output_dir)
 # load
-sq_model = TSModelForCausalLM.from_pretrained(
-    output_dir, file_name="best_model.pt"
-)
+sq_model = TSModelForCausalLM.from_pretrained(output_dir, file_name="best_model.pt")
 # int8 model generation
 generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 prompt = "Once upon a time, a little girl"
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-gen_ids = sq_model.generate(
-    input_ids, max_new_tokens=32, **generate_kwargs
-)
+gen_ids = sq_model.generate(input_ids, max_new_tokens=32, **generate_kwargs)
 gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
 print(gen_text)
 ```
