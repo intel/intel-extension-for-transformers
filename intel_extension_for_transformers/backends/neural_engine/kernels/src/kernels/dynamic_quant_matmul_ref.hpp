@@ -26,7 +26,7 @@
 namespace jd {
 class dynamic_quant_matmul_ref_k_t;
 
-class dynamic_quant_matmul_ref_kd_t : public kernel_desc_t {
+class SPARSE_API_ dynamic_quant_matmul_ref_kd_t : public kernel_desc_t {
  public:
   explicit dynamic_quant_matmul_ref_kd_t(const jd::operator_desc& op_desc);
 
@@ -48,7 +48,7 @@ class dynamic_quant_matmul_ref_kd_t : public kernel_desc_t {
   std::vector<int> prob_size_;
 };
 
-class dynamic_quant_matmul_ref_k_t : public kernel_t {
+class SPARSE_API_ dynamic_quant_matmul_ref_k_t : public kernel_t {
  public:
   using kd_t = dynamic_quant_matmul_ref_kd_t;
   explicit dynamic_quant_matmul_ref_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}

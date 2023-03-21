@@ -333,11 +333,11 @@ void cast_to_float_array(const void* src, std::vector<float>* dst, int size) {
     (*dst)[i] = cast_to<T, float>(src_typed[i]);
   }
 }
-template void cast_to_float_array<float>(const void*, std::vector<float>*, int);
-template void cast_to_float_array<int>(const void*, std::vector<float>*, int);
-template void cast_to_float_array<int8_t>(const void*, std::vector<float>*, int);
-template void cast_to_float_array<uint8_t>(const void*, std::vector<float>*, int);
-template void cast_to_float_array<bfloat16_t>(const void*, std::vector<float>*, int);
+template void SPARSE_API_ cast_to_float_array<float>(const void*, std::vector<float>*, int);
+template void SPARSE_API_ cast_to_float_array<int>(const void*, std::vector<float>*, int);
+template void SPARSE_API_ cast_to_float_array<int8_t>(const void*, std::vector<float>*, int);
+template void SPARSE_API_ cast_to_float_array<uint8_t>(const void*, std::vector<float>*, int);
+template void SPARSE_API_ cast_to_float_array<bfloat16_t>(const void*, std::vector<float>*, int);
 
 template <typename T>
 void cast_from_float_array(const std::vector<float>& src, void* dst, int size) {
@@ -346,10 +346,10 @@ void cast_from_float_array(const std::vector<float>& src, void* dst, int size) {
     dst_typed[i] = cast_to<float, T>(src[i]);
   }
 }
-template void cast_from_float_array<float>(const std::vector<float>&, void*, int);
-template void cast_from_float_array<int>(const std::vector<float>&, void*, int);
-template void cast_from_float_array<int8_t>(const std::vector<float>&, void*, int);
-template void cast_from_float_array<uint8_t>(const std::vector<float>&, void*, int);
-template void cast_from_float_array<bfloat16_t>(const std::vector<float>&, void*, int);
+template void SPARSE_API_ cast_from_float_array<float>(const std::vector<float>&, void*, int);
+template void SPARSE_API_ cast_from_float_array<int>(const std::vector<float>&, void*, int);
+template void SPARSE_API_ cast_from_float_array<int8_t>(const std::vector<float>&, void*, int);
+template void SPARSE_API_ cast_from_float_array<uint8_t>(const std::vector<float>&, void*, int);
+template void SPARSE_API_ cast_from_float_array<bfloat16_t>(const std::vector<float>&, void*, int);
 
 }  // namespace jd

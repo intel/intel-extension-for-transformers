@@ -1,13 +1,15 @@
-# problem description
+# Dynamic Quant Matmul
+
+## problem description
 Quantization technology, as an important method of model compression and acceleration, has been applied to more and more scenarios.  Among them, static quantization shows high enough accuracy in some models (such as bert), but its accuracy is not satisfactory in some other models (such as stable-diffusion).  Dynamic quantization can improve the accuracy performance, but it requires the inference engine to use multiple small operators to complete the quantization process, which will inevitably affect the throughput performance of the entire model.  To solve the above problems, we introduce a dynamic quantization matmul kernel based on AMX instructions, which can complete dynamic quantization while ensuring high performance of matrix computation.
 
-# Dynamic Quant Matmul
-## Prerequisites for using dynamic quant matmul
+## Kernel details
+### Prerequisites for using dynamic quant matmul
 1. In order to facilitate the dequantization of the matmul results of activation and weight, we require that the activation matrix and weight matrix use symmetric quantization with zero point as 0. At the same time, in order to cooperate with the subsequent dynamic quantization kernels, we will also use symmetric quantization for the result matrix, that is, only output the quantized dst matrix and the corresponding scale, and not output zero point.
 2. The current dynamic_quant_matmul supports flexible `batch`, `M`, `N`, but requires that `K` can be divisible by 4  
 
 
-## Preprocessing of weight matrix
+### Preprocessing of weight matrix
 Our dynamic_quant_matmul is applied in the scenario of multiplying activation matrix and weight matrix. Since the weight matrix is static during inference, it can be preprocessed before inference to facilitate our ISA to accelerate the calculation of matrix multiplication, mainly divided into two steps:
 
 1. Padding + AMX reorder the weight matrix to facilitate the calculation of `tdpbssd` instruction, please refer to AMX document to understand the reorder method. Each `tdpbssd` instruction calculates block shape generally as `16 × tile_k` * `tile_k x 16`, where `tile_k` value satisfies the following formula `max_tile_k(tile_k<=k&&k%tile_k==0&&tile_k%4==0)`. The build of each block is always 16 on `N dimension`, so when weight matrix cannot be divisible by 16 on `N-dim`, we will pad 0 on `N-dim` to make it divisible by 16, and use mask register to avoid writing back extra values when writing back `N-dim` on the last result tile.
@@ -16,10 +18,10 @@ Our dynamic_quant_matmul is applied in the scenario of multiplying activation ma
 The whole weight matrix preprocessing process can be represented by the following figure
 ![wei_preprocess](../imgs/kernel_dynamic_quant_matmul_wei_preprocess.png)  
 
-## different jit-paths for different weight size
+### different jit-paths for different weight size
  In our internal implementation of dynamic_quant_matmul, the weight matrix has a very high spatial locality, and we hope that the L2 cache can cache the entire weight matrix that the core is responsible for processing, so we will generate different jit kernels to meet the above requirements for different weight size. When the reuse-data-size is less than `L2-cache-size`×`large_wei_threshold` (can be specified by the user, default is 1), we will enable small_wei path, otherwise enable large_wei path.  
 
-### small_wei jit-path
+#### small_wei jit-path
 In this jit-path, we will have a `16xpad_n` tmp_buffer, which is used for data write-back of `tilestored` instruction, dequantize of dst tile, and the calculation of scale and quantize of dst tile are all done on this tmp buffer, so this buffer also has a very high spatial locality. When `(16xpad_n+weight)`x`large_wei_threshold`<`L2-cache-size`, this path has better performance for matmul. Specifically, this jit-path will parallelize on the `M-dim`, each core caches the entire weight matrix, and the pseudo code description of the kernel calculation process is as follows
 ```cpp
 for (int m = 0; m < M; m += TILE_M) {
@@ -38,7 +40,7 @@ for (int m = 0; m < M; m += TILE_M) {
     }
 }
 ```
-### large_wei jit-path
+#### large_wei jit-path
 In this jit-path, the calculation of dynamic_quant_matmul will be done by two kernels
 
 1. s8(activation)s8(weight)bf16(dst) matmul

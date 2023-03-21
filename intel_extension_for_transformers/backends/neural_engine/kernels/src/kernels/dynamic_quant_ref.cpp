@@ -16,6 +16,8 @@
 
 namespace jd {
 
+using io = ssd::dynamic_quant_io::io;
+
 void get_dynamic_quant_scale(float* mat, float* scale, int channel_num, int quantized_dim_elt_num) {
 #pragma omp parallel for
   for (int channel = 0; channel < channel_num; channel++) {
@@ -48,12 +50,12 @@ bool dynamic_quant_ref_k_t::execute(const std::vector<const void*>& rt_data) con
       std::accumulate(src_desc.shape().begin(), src_desc.shape().end() - 1, size_t(1), std::multiplies<size_t>());
   std::vector<float> fp32_src(src_desc.size(), 0);
   if (src_desc.dtype() == data_type::fp32) {
-    cast_to_float_array<float>(rt_data[0], &fp32_src, src_desc.size());
+    cast_to_float_array<float>(rt_data[io::SRC], &fp32_src, src_desc.size());
   } else {
-    cast_to_float_array<bfloat16_t>(rt_data[0], &fp32_src, src_desc.size());
+    cast_to_float_array<bfloat16_t>(rt_data[io::SRC], &fp32_src, src_desc.size());
   }
-  auto mat_dst = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[1]));
-  auto scale_dst = reinterpret_cast<float*>(const_cast<void*>(rt_data[2]));
+  auto mat_dst = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[io::MAT_DST]));
+  auto scale_dst = reinterpret_cast<float*>(const_cast<void*>(rt_data[io::SCALE_DST]));
   get_dynamic_quant_scale(fp32_src.data(), scale_dst, channel_num, quantized_dim_elt_num);
   s8_quant_mat(mat_dst, fp32_src, scale_dst, channel_num, quantized_dim_elt_num);
   return true;

@@ -43,7 +43,7 @@ autoapi_add_toctree_entry = False
 autosummary_generate = True
 autoapi_options = ['members',  'show-inheritance',
                    'show-module-summary', 'imported-members', ]
-autoapi_ignore = []
+autoapi_ignore = ['*/intel_extension_for_transformers/backends/neural_engine/third_party/*']
 
 templates_path = ['_templates']
 
@@ -54,7 +54,8 @@ source_suffix = ['.rst', '.md']
 # The master toctree document.
 master_doc = 'index'
 
-exclude_patterns = ['_build_doxygen']
+exclude_patterns = ['_build_doxygen',
+'*/intel_extension_for_transformers/backends/neural_engine/third_party/*']
 
 pygments_style = 'sphinx'
 

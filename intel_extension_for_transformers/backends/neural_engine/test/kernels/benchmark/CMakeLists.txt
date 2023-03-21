@@ -47,6 +47,7 @@ add_subdirectory(attention)
 add_subdirectory(transpose_mha)
 add_subdirectory(mha_dense)
 add_subdirectory(dynamic_quant_matmul)
+add_subdirectory(dynamic_quant)
 
 add_executable(${BENCHMARK_EXE} ${SRCS})
 

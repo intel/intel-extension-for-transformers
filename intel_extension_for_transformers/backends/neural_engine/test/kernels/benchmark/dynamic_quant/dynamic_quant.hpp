@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_MATMUL_HPP_
-#define ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_MATMUL_HPP_
+#ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_HPP_
+#define ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_HPP_
 
 #include <functional>
 #include <iostream>
@@ -30,30 +30,29 @@
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
-#include "kernels/dynamic_quant_matmul_rt_data_idx.hpp"
+#include "kernels/dynamic_quant_rt_data_idx.hpp"
 
-#define DYNAMIC_QUANT_MATMUL_ARG_NUM 5
+#define DYNAMIC_QUANT_ARG_NUM 3
 
 namespace jd {
-class dynamic_quant_matmul_bench : public kernel_bench {
-using io = jd::ssd::dynamic_quant_matmul_io::io;
+class dynamic_quant_bench : public kernel_bench {
+using io = jd::ssd::dynamic_quant_io::io;
 
  protected:
-  int b, m, n, k;
-  std::string add_bias, large_wei_threshold;
+  int channel_num, quantize_dim_elt_num;
+  std::string input_dt;
 
  private:
   std::unordered_map<std::string, std::string> op_attrs;
 
  public:
-  dynamic_quant_matmul_bench() {}
-  virtual ~dynamic_quant_matmul_bench() {
+  dynamic_quant_bench() {}
+  virtual ~dynamic_quant_bench() {
     const auto& p_rt_data = args.first.rt_data;
     const auto& q_rt_data = args.second.rt_data;
     for (auto&& i : p_rt_data) free(const_cast<void*>(i));
-    free(const_cast<void*>(q_rt_data[io::DST]));
+    free(const_cast<void*>(q_rt_data[io::MAT_DST]));
     free(const_cast<void*>(q_rt_data[io::SCALE_DST]));
-    free(const_cast<void*>(q_rt_data[io::WORKSPACE]));
   }
 
   bench_res_t set_config(int argc, char** argv) override;
@@ -61,14 +60,15 @@ using io = jd::ssd::dynamic_quant_matmul_io::io;
   double calc_flop() const override {
     double FLOPs = 0.0f;
 
-    FLOPs += 2. * b * m * n * k;
+    FLOPs += 3. * channel_num * quantize_dim_elt_num;
 
     return FLOPs;
   }
+
   std::vector<int> get_refresh_data_idx() const override {
-    return std::vector<int>{io::ACTIVATION, io::WEIGHT, io::DST, io::SCALE_A, io::SCALE_W, io::SCALE_DST, io::BIAS};
+    return std::vector<int>{io::SRC, io::MAT_DST, io::SCALE_DST};
   }
-  int get_workspace_idx() const override { return io::WORKSPACE; }
+
   // Just like that in gtest file
   void get_true_data() override {}
   // Just like that in gtest file
@@ -76,11 +76,11 @@ using io = jd::ssd::dynamic_quant_matmul_io::io;
   // Just like that in gtest file
   void gen_case() override;
   void set_kernel_proxy() override {
-    dynamic_quant_matmul_desc desc(args.first.op_desc);
-    kp = std::make_shared<dynamic_quant_matmul>(desc);
+    dynamic_quant_desc desc(args.first.op_desc);
+    kp = std::make_shared<dynamic_quant>(desc);
   }
 };
 
 }  // namespace jd
 
-#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_MATMUL_HPP_
+#endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_HPP_

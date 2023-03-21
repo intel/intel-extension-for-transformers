@@ -20,8 +20,8 @@ using io = ssd::dynamic_quant_io::io;
 bool dynamic_quant_kd_t::init() {
   if (!isa_available(avx512_core)) return false;
   auto ts_desc = op_desc_.tensor_descs();
-  auto src_desc = ts_desc[0];
-  auto dst_desc = ts_desc[2];
+  auto src_desc = ts_desc[io::SRC];
+  auto dst_desc = ts_desc[io::MAT_DST];
   params_.input_dt = src_desc.dtype();
   params_.output_dt = dst_desc.dtype();
   params_.quantized_dim_elt_num = src_desc.shape().back();

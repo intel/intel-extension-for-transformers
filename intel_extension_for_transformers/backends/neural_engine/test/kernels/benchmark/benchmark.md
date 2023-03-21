@@ -14,6 +14,7 @@
     - [attention](#attention)
     - [Static MHA](#static-mha)
     - [dynamic\_quant\_matmul](#dynamic_quant_matmul)
+    - [dynamic\_quant](#dynamic_quant)
 - [For developers](#for-developers)
 
 # Benchmark for Kernels
@@ -218,15 +219,32 @@ BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf mha_dense 1 2048 16 25
 
 ### dynamic_quant_matmul
 ```shell
-[<environment_variable>...] ./benchmark <mode> dynamic_quant_matmul <batch_size> <m> <n> <k> [large_weight_threshold] [add_bias]
+[<environment_variable>...] ./benchmark <mode> dynamic_quant_matmul <batch_size> <m> <n> <k> <large_weight_threshold> <add_bias>
 ```
 - `batch_size` / `m` / `n` / `k` are the the problem size.
 - `large_weight_threshold` should be 0-1, if weight*large_weight_threshold large than L2-cache size, kernel will select large_wei jit-path.
 - `add_bias` could be one of `true` / `false`, indicate whether add a bias value after gemm.
-- Please note that dynamic_quant_matmul only supports s8-activation, s8-weight and s8-destination, so the user does not need to specify the data type.
+
+Please note that dynamic_quant_matmul only supports s8-activation, s8-weight and s8-destination, so the user does not need to specify the data type.
+
 #### Examples
 ```shell
 BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf dynamic_quant_matmul 1 512 1280 1280
+```
+
+### dynamic_quant
+```shell
+[<environment_variable>...] ./benchmark <mode> dynamic_quant <channel_num> <quantize_dim_elt_num> <src_data_type>
+```
+- `channel_num` the number of channels in input-tensor.
+- `quantize_dim_elt_num` the number of elements in the quantized dim.
+- `src_data_type` could be one of `fp32` / `bf16`, indicate the data type of input-tensor.
+
+Please note that dynamic_quant only supports per-channel symmetric quantization.  
+
+#### Examples
+```shell
+BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf dynamic_quant 1280 1280 bf16
 ```
 
 # For developers

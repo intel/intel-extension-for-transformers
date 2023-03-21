@@ -15,8 +15,11 @@
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
 #include "kernels/dynamic_quant_ref.hpp"
+#include "kernels/dynamic_quant_rt_data_idx.hpp"
 
 namespace jd {
+
+using io = ssd::dynamic_quant_io::io;
 
 struct op_args_t {
   operator_desc op_desc;
@@ -66,13 +69,13 @@ bool check_result(const test_params_t& t) {
   }
 
   if (!t.expect_to_fail) {
-    auto buf1 = data1[1];
+    auto buf1 = data1[io::MAT_DST];
     auto size = p.dst->size();
-    auto buf2 = data2[1];
+    auto buf2 = data2[io::MAT_DST];
     auto ans1 = compare_data<int8_t>(buf1, size, buf2, size, 1e-2);
-    auto buf3 = data1[2];
+    auto buf3 = data1[io::SCALE_DST];
     auto size2 = p.scale->size();
-    auto buf4 = data2[2];
+    auto buf4 = data2[io::SCALE_DST];
     auto ans2 = compare_data<float>(buf3, size2, buf4, size2, 5e-3);
     return ans1 && ans2;
   }
@@ -103,8 +106,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
     return ptr;
   };
 
-  auto mat_size = ts_descs[0].size();
-  auto scale_size = ts_descs[1].size();
+  auto mat_size = ts_descs[io::SRC].size();
+  auto scale_size = ts_descs[io::SCALE_DST].size();
   auto fp32_mat = gen_data(static_cast<float>(1), mat_size, 100.f, 300.f);
   auto scale = gen_data(static_cast<float>(1), scale_size, 0.f, 0.f, true);
   auto correct_scale = gen_data(static_cast<float>(1), scale_size, 0.f, 0.f, true);
@@ -123,10 +126,10 @@ static auto case_func = []() {
   std::vector<std::vector<int64_t>> problem_size = {{512, 10240}, {512, 1280},  {2048, 5120},
                                                     {2048, 640},  {8192, 2560}, {8192, 320}};
   for (auto&& shape : problem_size) {
-    tensor_desc mat_desc = {shape, jd::data_type::bf16, jd::format_type::undef};
-    tensor_desc scale_desc = {{shape[0]}, jd::data_type::fp32, jd::format_type::undef};
+    tensor_desc src_desc = {shape, jd::data_type::bf16, jd::format_type::undef};
     tensor_desc dst_mat_desc = {shape, jd::data_type::s8, jd::format_type::undef};
-    cases.push_back({gen_case({mat_desc, scale_desc, dst_mat_desc}, {{"input_dt", "bf16"}}), false});
+    tensor_desc scale_desc = {{shape[0]}, jd::data_type::fp32, jd::format_type::undef};
+    cases.push_back({gen_case({src_desc, dst_mat_desc, scale_desc}, {{"input_dt", "bf16"}}), false});
   }
 
   return ::testing::ValuesIn(cases);
