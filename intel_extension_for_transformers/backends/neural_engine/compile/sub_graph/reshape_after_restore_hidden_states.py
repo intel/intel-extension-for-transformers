@@ -84,6 +84,10 @@ class ReshapeAfterRestoreHiddenStates(Pattern):
                 hidden_size = int(ret_old_nodes[i][1].input_tensors[1].shape[0])
                 se_attr = ret_old_nodes[i][0].attr
                 mat_attr = ret_old_nodes[i][1].attr
+                mat_node = model.get_node_by_name(new_node_names[i][2])
+                reshape_node = model.get_node_by_name(new_node_names[i][1])
+                mat_node.input_tensors[0].name = ret_old_nodes[i][1].input_tensors[0].name
+                reshape_node.output_tensors[0].name =  mat_node.input_tensors[0].name
                 _set_attr(se_attr, mat_attr, hidden_size, new_node_names[i], model)
             
             return model

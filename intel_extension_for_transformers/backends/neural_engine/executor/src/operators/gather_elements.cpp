@@ -37,6 +37,8 @@ void GatherElementsOperator::Reshape(const vector<Tensor*>& input, const vector<
   auto& input_data_dtype = data->dtype();
   dst_tensor_ptr->set_shape(dst_shape_);
   dst_tensor_ptr->set_dtype(input_data_dtype);
+  outer_ = 1;
+  inner_ = 1;
   for (int i = 0; i < input[0]->shape().size(); i++) {
     if (i < axis_) outer_ *= input[0]->shape()[i];
     if (i > axis_) inner_ *= input[0]->shape()[i];

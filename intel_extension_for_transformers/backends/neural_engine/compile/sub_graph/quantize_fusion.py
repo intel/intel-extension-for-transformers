@@ -57,12 +57,22 @@ class QunatizeFusion(Pattern):
                   quant_node, can_fuse = search_quant_fusion(node)
                   if can_fuse:
                       if dtype == 'u8' or dtype == 's8':
+                          
                           if quant_node.op_type == "Softmax":
-                              model.change_node_input_tensors(quant_node.name, 1, node.input_tensors[1],
-                                                              'insert')
-                              model.change_node_input_tensors(quant_node.name, 2, node.input_tensors[2],
-                                                              'insert')
-                              quant_node.attr['output_dtype'] = "u8"
+                              def is_lat_model(model, p=None):
+                                if p == None:
+                                    p = [[(0, 'TopK'),(1, 'GatherElements')]]
+                                match_result = util.search_pattern(p, model)
+                                return len(match_result) != 0
+                              if is_lat_model(model):
+                                node.attr = OrderedDict({'output_dtype': "u8"})
+                                continue
+                              else:
+                                model.change_node_input_tensors(quant_node.name, 1, node.input_tensors[1],
+                                                                'insert')
+                                model.change_node_input_tensors(quant_node.name, 2, node.input_tensors[2],
+                                                                'insert')
+                                quant_node.attr['output_dtype'] = "u8"
                           else:
                               model.change_node_input_tensors(quant_node.name, -2, node.input_tensors[1],
                                                               'modify')

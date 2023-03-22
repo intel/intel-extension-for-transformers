@@ -76,6 +76,44 @@ class RestoreHiddenStatesInLengthAdaptive(Pattern):
                     },
                     'returns': [10, 12]
                 },
+                {
+                    'patterns': {
+                        'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Unsqueeze'), (3, 'Concat'),
+                                (4, 'Reshape'), (5, 'Equal'), (6, 'Where'), (8, 'Expand'),
+                                (9, 'ScatterElements')],
+                               [(), (7, 'Unsqueeze'), (8, 'Expand')]],
+                        'out': [[(0, 'Reshape'), (1, 'ExpandIndices'), (2, 'ScatterElements')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 'reshape_to_3d_before_restoration',
+                        1: 8,
+                        2: 9,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            0: [0]
+                        }, {
+                            'input_data': [0]
+                        }], [[0, 1], 2]],
+                        1: [[{
+                            7: [0]
+                        }], [[0], 2]],
+                        2: [[{
+                            9: [0],
+                        }, {
+                            9: [2]
+                        }], [[0, 2], 3]],
+                    },
+                    'output_tensors': {
+                        0: [[], [[], 1]],
+                        1: [[], [[], 1]],
+                        2: [[{
+                            9: [0]
+                        }], [[0], 1]],
+                    },
+                    'returns': [7, 9]
+                },
             ]
         }
 
@@ -94,29 +132,29 @@ class RestoreHiddenStatesInLengthAdaptive(Pattern):
             model.nodes[se_node_idx].attr = se_attr
 
         # minilmv2-lat-roberta
-        pattern_dict = pattern_mapping_config['RestoreHiddenStatesInLengthAdaptiveUpdateIndices'][
-            0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping(
-            'RestoreHiddenStatesInLengthAdaptiveUpdateIndices', pattern_dict, model)
-        if len(new_node_names) != 0:
-            for i in range(len(new_node_names)):
-                attr = OrderedDict()
-                input_indices = []
-                unsqueeze_node = ret_old_nodes[i][0]
-                input_indices.append(int(unsqueeze_node.attr['axis']))
-                se_attr = ret_old_nodes[i][1].attr
-                _set_attr(input_indices, se_attr, new_node_names[i], model)
-                # the first scatter elements operation need the output of embedding layer norm
-                # but its output shape is [bsxseq_len, hidden_size]
-                # so the first scatter node need modify this tensor to 3d tensor
-                # whose shape is [bs, seq_len, hidden_size]
-                reshape_3d_node = model.get_node_by_name(new_node_names[i][0])
-                embedding_ln_out_tensor = copy.deepcopy(reshape_3d_node.output_tensors[0])
-                scatter_node = model.get_node_by_name(new_node_names[i][2])
-                # check if one input tensor is from embedding_layer_norm node
-                if scatter_node.input_tensors[0].name == reshape_3d_node.input_tensors[0].name:
-                    model.change_node_input_tensors(new_node_names[i][2], 0,
-                        tensor=embedding_ln_out_tensor, mode='modify')
-            return model
+        for i in range(len(pattern_mapping_config['RestoreHiddenStatesInLengthAdaptiveUpdateIndices'])):
+            pattern_dict = pattern_mapping_config['RestoreHiddenStatesInLengthAdaptiveUpdateIndices'][i]
+            model, new_node_names, ret_old_nodes = util.pattern_mapping(
+                'RestoreHiddenStatesInLengthAdaptiveUpdateIndices', pattern_dict, model)
+            if len(new_node_names) != 0:
+                for i in range(len(new_node_names)):
+                    attr = OrderedDict()
+                    input_indices = []
+                    unsqueeze_node = ret_old_nodes[i][0]
+                    input_indices.append(int(unsqueeze_node.attr['axes']))
+                    se_attr = ret_old_nodes[i][1].attr
+                    _set_attr(input_indices, se_attr, new_node_names[i], model)
+                    # the first scatter elements operation need the output of embedding layer norm
+                    # but its output shape is [bsxseq_len, hidden_size]
+                    # so the first scatter node need modify this tensor to 3d tensor
+                    # whose shape is [bs, seq_len, hidden_size]
+                    reshape_3d_node = model.get_node_by_name(new_node_names[i][0])
+                    embedding_ln_out_tensor = copy.deepcopy(reshape_3d_node.output_tensors[0])
+                    scatter_node = model.get_node_by_name(new_node_names[i][2])
+                    # check if one input tensor is from embedding_layer_norm node
+                    if scatter_node.input_tensors[0].name == reshape_3d_node.input_tensors[0].name:
+                        model.change_node_input_tensors(new_node_names[i][2], 0,
+                            tensor=embedding_ln_out_tensor, mode='modify')
+                return model
 
         return model
