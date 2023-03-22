@@ -69,6 +69,10 @@ ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
   if (iter != attrs_map.end()) {
     gelu_split_ = attrs_map["gelu_split"] == "true";
   }
+  iter = attrs_map.find("reshape");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_, attrs_map["reshape"], ",");
+  }
   iter = attrs_map.find("reshape_dims");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&reshape_dims_, attrs_map["reshape_dims"], ",");
@@ -320,6 +324,18 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   }
 }
 
+void ConvolutionOperator::DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (!reshape_.empty()) {
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+    }
+    vector<int64_t> reshape(reshape_);
+    vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), ref_shape, reshape_dims_);
+    output[0]->set_shape(dst_shape);
+  }
+}
+
 // 1. Create primitive
 void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // Part1: Derive operator's user proper shape and strides
@@ -521,6 +537,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
     convolution_p_ = dnnl::convolution_forward(convolution_pd_);
     ConvolutionPrimitiveFwdFactory::Set(key, convolution_p_);
   }
+  DstReshapeFusion(input, output);
 }
 
 // 2. inference kernel(for int8 and f32)

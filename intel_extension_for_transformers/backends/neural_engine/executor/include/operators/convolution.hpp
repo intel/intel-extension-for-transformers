@@ -45,6 +45,7 @@ class ConvolutionOperator : public Operator {
 
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
   bool weight_cached_;
   bool has_bias_;
@@ -67,6 +68,7 @@ class ConvolutionOperator : public Operator {
   vector<int64_t> pads_;
   vector<int64_t> strides_;
   vector<int64_t> weight_shape_;
+  vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
 
   dnnl::primitive_attr attr_;

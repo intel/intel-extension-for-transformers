@@ -34,6 +34,7 @@ class TestGraphDispatch(unittest.TestCase):
         pass
 
     def test_graph_dispatch(self):
+        os.environ['GLOG_minloglevel'] = '2'
         # set input data
         shape = [1, 128]
         input_0 = np.random.uniform(low=0, high=128, size=shape).astype('int32')
