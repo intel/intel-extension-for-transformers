@@ -52,15 +52,21 @@ class InsertQuantNode(Pattern):
         if not quant_info:
             return model
 
-        for node in model.nodes:
+        node_idx = 0
+        while node_idx < len(model.nodes):
+            node = model.nodes[node_idx]
             if node.op_type in EXECUTOR_TYPE and \
               (EXECUTOR_TYPE[node.op_type] == "InnerProduct" or \
                 EXECUTOR_TYPE[node.op_type] == "Matmul"):
-                for idx, input_tensor in enumerate(node.input_tensors):
+                input_size = len(node.input_tensors)
+                if "reshape_dims" in node.attr:
+                    input_size -= 1
+                insert_offset = input_size
+
+                idx = 0
+                while idx < input_size:
+                    input_tensor = node.input_tensors[idx]
                     input_name = input_tensor.name
-                    insert_offset = 1 if len(node.input_tensors) % 2 == 0 else 0
-                    insert_offset = insert_offset - 2 if "append_op" not in node.attr and \
-                                                    insert_offset == 1 else insert_offset
                     if input_name in quant_info and idx < 3:
                         quant_min = Tensor(
                             name=input_name + "_min",
@@ -90,16 +96,17 @@ class InsertQuantNode(Pattern):
                             node.input_tensors[idx] = quant_output
                             insert_idx = model.get_node_id(node.name)
                             model.insert_nodes(insert_idx, [quantize_op])
+                            node_idx += 1
                             # insert src0/src1 min and max tensor
-                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 3,
+                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 0,
                                                             quant_min, 'insert')
-                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
+                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 1,
                                                             quant_max, 'insert')
                         if "weight" in quant_info[input_name][2]:
                             # insert weight min and max tensor
-                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 3,
+                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 0,
                                                             quant_min, 'insert')
-                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
+                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 1,
                                                             quant_max, 'insert')
                         if "output" in quant_info[input_name][2]:
                             output_name = node.output_tensors[0].name
@@ -114,12 +121,13 @@ class InsertQuantNode(Pattern):
                                 data=np.array(quant_info[input_name][4].astype("float32")), 
                                 dtype="fp32")
                             # insert output min and max tensor
-                            model.change_node_input_tensors(node.name, insert_offset + 7,
+                            model.change_node_input_tensors(node.name, insert_offset + 4,
                                                             quant_min, 'insert')
-                            model.change_node_input_tensors(node.name, insert_offset + 8,
+                            model.change_node_input_tensors(node.name, insert_offset + 5,
                                                             quant_max, 'insert')
                             util.insert_quant_info(node.name, [])
-
+                    idx += 1
+            node_idx += 1
         # remove fall back quant nodes
         remove_list=[]
         for node in model.nodes:
@@ -190,7 +198,9 @@ class InsertQuantNode(Pattern):
                     node.op_type] == "InnerProduct" and len(node.input_tensors) > 4:
                 bias_fp32 = node.input_tensors[2].data
                 weight_s8 = node.input_tensors[1].data
-                offset = 1 if len(node.input_tensors) % 2 == 0 else 0
+                offset = 0
+                if 'append_op' in node.attr and node.attr['append_op'] in ['binary_add', 'sum']:
+                    offset = 1
                 input_data_min = node.input_tensors[offset + 3].data
                 dtype = node.input_tensors[0].dtype
                 input_scale, input_zero_point = get_scale_zp(node.input_tensors[offset + 3].data,

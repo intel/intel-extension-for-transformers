@@ -33,6 +33,7 @@ supported_patterns = [
     'InputData',
     'RemoveConstantOP',
     'CollectQuantInfo',
+    'TorchInnerProductInsertBias',
     'LayerNorm',
     'WordEmbeddings',
     'MergedEmbeddingbag',
@@ -101,15 +102,17 @@ supported_patterns = [
     'LayerNormWithTranspose',
     'StartEndLogits',
     'CastTo',
+
+    'RemoveListConstruct',
+    'TorchPaddingSequence',
+    'InnerproductReshapeFusion',
+    
     'InsertQuantNode',
     'InsertBF16Node',
     'QunatizeFusion',
     'QKVMerge',
     'ReshapeFusion',
     'OperatorAdaptor',
-    'RemoveListConstruct',
-    'TorchPaddingSequence',
-    'InnerproductReshapeFusion',
     'OutputData',
 ]
 
