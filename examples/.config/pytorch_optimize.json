@@ -20,6 +20,48 @@
       }
     }
   },
+  "bloom_text_static": {
+    "working_dir": "optimization/pytorch/huggingface/text_generation/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bloom_text_static",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bloom_text_static",
+        "mode": "benchmark",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "bloom_text_dynamic": {
+    "working_dir": "optimization/pytorch/huggingface/text_generation/quantization/inc",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bloom_text_dynamic",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bloom_text_dynamic",
+        "mode": "benchmark",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "gpt_neo_clm_dynamic": {
     "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
     "tune": {
