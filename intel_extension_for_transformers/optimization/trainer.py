@@ -361,9 +361,10 @@ class BaseTrainer():
             self.model_config.backend = "ipex"
             self.model_config.save_pretrained(output_dir)
         else:
-            self.model.config.architectures = [self.model.__class__.__name__]
-            self.model.config.torch_dtype = "int8"
-            self.model.config.save_pretrained(output_dir)
+            if hasattr(self.model, "config") and hasattr(self.model.config, "save_pretrained"):
+                self.model.config.architectures = [self.model.__class__.__name__]
+                self.model.config.torch_dtype = "int8"
+                self.model.config.save_pretrained(output_dir)
             torch.save(opt_model.quantized_state_dict(), weights_file)
         logger.info("quantized model and configure file have saved to {}".format(output_dir))
 
