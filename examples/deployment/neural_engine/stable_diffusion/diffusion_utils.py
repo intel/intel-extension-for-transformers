@@ -1,10 +1,13 @@
-# Copyright 2022 The HuggingFace Team. All rights reserved.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,15 +17,12 @@
 
 import inspect
 from typing import Callable, List, Optional, Union
-import time
 import torch
 
 from packaging import version
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
-import numpy as np
 
 from diffusers.configuration_utils import FrozenDict
 from diffusers.models import AutoencoderKL, UNet2DConditionModel
@@ -279,22 +279,18 @@ class StableDiffusionPipeline(DiffusionPipeline):
             else:
                 attention_mask = None
 
-            #model = Graph()
-            #model.graph_init('./text_encoder/conf.yaml', 'text_encoder/model.bin')
-            output=text_encoder_graph.inference([text_input_ids])
+            prompt_embeds = text_encoder_graph.inference([text_input_ids])
+            bsz, seq_length = text_input_ids.shape
+            prompt_embeds = torch.from_numpy(prompt_embeds['last_hidden_state:0']).reshape(
+                bsz, seq_length, -1)
 
-            prompt_embeds = self.text_encoder(
-                text_input_ids.to(device),
-                attention_mask=attention_mask,
-            )
-            result = np.allclose(output['last_hidden_state:0'], prompt_embeds[0],atol=1e-5)
-            if result == True:
-                print('hello')
-                bsz, seq_length = text_input_ids.shape
-                prompt_embeds = torch.from_numpy(output['last_hidden_state:0']).reshape(bsz, seq_length, -1)
-            else:
-                prompt_embeds = prompt_embeds[0]
-        
+            # pytorch text_encoder
+            # prompt_embeds = self.text_encoder(
+            #     text_input_ids.to(device),
+            #     attention_mask=attention_mask,
+            # )
+            # prompt_embeds = prompt_embeds[0]
+
         prompt_embeds = prompt_embeds.to(dtype=self.text_encoder.dtype, device=device)
 
         bs_embed, seq_len, _ = prompt_embeds.shape
@@ -336,11 +332,11 @@ class StableDiffusionPipeline(DiffusionPipeline):
             else:
                 attention_mask = None
 
-            negative_prompt_embeds = self.text_encoder(
-                uncond_input.input_ids.to(device),
-                attention_mask=attention_mask,
-            )
-            negative_prompt_embeds = negative_prompt_embeds[0]
+            # text_encoder engine inference
+            negative_prompt_embeds = text_encoder_graph.inference([uncond_input.input_ids])
+            bsz, seq_length = uncond_input.input_ids.shape
+            negative_prompt_embeds = torch.from_numpy(negative_prompt_embeds['last_hidden_state:0']).reshape(
+                bsz, seq_length, -1)
 
         if do_classifier_free_guidance:
             # duplicate unconditional embeddings for each generation per prompt, using mps friendly method
@@ -371,15 +367,13 @@ class StableDiffusionPipeline(DiffusionPipeline):
 
     def decode_latents(self, latents, vae_decoder_graph):
         latents = 1 / 0.18215 * latents
-        output=vae_decoder_graph.inference([latents])
-        
-        # result = np.allclose(output['sample:0'], self.vae.decode(latents).sample,atol=1e-3)
-        # if result == True:
-        #     print('vae deocder neural engine')
-        #     image = output = torch.from_numpy(output['sample:0'])
-        # else:
-        #     image = self.vae.decode(latents).sample
+        # pytorch vae_decoder
+        # image = self.vae.decode(latents).sample
+
+        # vae_decoder engine infernece
+        output = vae_decoder_graph.inference([latents])
         image = torch.from_numpy(output['sample:0'])
+
         image = (image / 2 + 0.5).clamp(0, 1)
         # we always cast to float32 as this does not cause significant overhead and is compatible with bfloa16
         image = image.cpu().permute(0, 2, 3, 1).float().numpy()
@@ -590,7 +584,6 @@ class StableDiffusionPipeline(DiffusionPipeline):
         )
 
         # 4. Prepare timesteps
-        num_inference_steps = 1
         self.scheduler.set_timesteps(num_inference_steps, device=device)
         timesteps = self.scheduler.timesteps
         # 5. Prepare latent variables
@@ -608,7 +601,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
 
         # 6. Prepare extra step kwargs. TODO: Logic should ideally just be moved out of the pipeline
         extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
-        
+
         # 7. Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
         with self.progress_bar(total=num_inference_steps) as progress_bar:
@@ -617,20 +610,13 @@ class StableDiffusionPipeline(DiffusionPipeline):
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
 
-                # predict the noise residual
-                #import pdb;pdb.set_trace()
-                
-                # start_1 = time.time()
+                # pytorch unet: predict the noise residual
                 # noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
-                # end_1 = time.time()
 
-                # engine
+                # unet engine infernece
                 t_1d = torch.tensor([t], dtype=torch.float32)
-                start_2 = time.time()
                 engine_output = engine_graph[1].inference([latent_model_input, t_1d, prompt_embeds])
-                end_2 = time.time()
-                noise_pred=torch.from_numpy(engine_output['out_sample:0'])
-                print('engine = ', end_2 - start_2)
+                noise_pred = torch.from_numpy(engine_output['out_sample:0'])
 
                 # perform guidance
                 if do_classifier_free_guidance:
@@ -648,8 +634,6 @@ class StableDiffusionPipeline(DiffusionPipeline):
                         callback(i, t, latents)
 
         # 8. Post-processing
-        # [1, 4, 64, 64]
-        print('latents shape = ', latents.shape)
         image = self.decode_latents(latents, engine_graph[2])
 
         # 9. Run safety checker
@@ -677,7 +661,6 @@ def neural_engine_init(ir_path):
     unet_conf = uent_path + 'conf.yaml'
     unet_bin = uent_path + 'model.bin'
     unet_graph.graph_init(unet_conf, unet_bin)
-
 
     vae_decoder_graph = Graph()
     vae_decoder_path = ir_path + '/vae_decoder/'

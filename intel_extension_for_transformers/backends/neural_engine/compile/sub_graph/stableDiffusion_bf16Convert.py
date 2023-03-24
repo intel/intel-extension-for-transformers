@@ -83,13 +83,4 @@ class StableDiffusion_bf16Convert(Pattern):
                 duplicate_list.append(node.name)
         model.remove_nodes(duplicate_list)
 
-        if duplicate_list:
-            for node in model.nodes:
-                next_op = node.output_tensors[0].dest_op
-                if node.op_type in EXECUTOR_TYPE and \
-                  EXECUTOR_TYPE[node.op_type] == "Matmul" and \
-                  model.get_node_by_name(next_op[0]).op_type == 'Softmax':
-                    node.attr['output_dtype'] = 'bf16'
-                    model.get_node_by_name(next_op[0]).attr['output_dtype'] = 'bf16'
-
         return model

@@ -65,10 +65,8 @@ class hash_t {
     return seed;
   }
 
-#ifdef WITH_GCC_FLAGS
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#endif
   uint64_t get_attr_hash(const std::unordered_map<std::string, std::string>& attrs, const kernel_kind& ker_kind) const {
     auto op_attrs = attrs;
     uint64_t seed = 0;
@@ -115,6 +113,11 @@ class hash_t {
       case kernel_kind::gather:
         hash_combine(seed, op_attrs["matrix_shape"]);
         break;
+      case kernel_kind::slice:
+        hash_combine(seed, op_attrs["begin"]);
+        hash_combine(seed, op_attrs["step"]);
+        hash_combine(seed, op_attrs["axis"]);
+        break;
       case kernel_kind::transpose_matmul:
         hash_combine(seed, op_attrs["alpha"]);
         hash_combine(seed, op_attrs["beta"]);
@@ -145,9 +148,7 @@ class hash_t {
     }
     return seed;
   }
-#ifdef WITH_GCC_FLAGS
 #pragma GCC diagnostic pop
-#endif
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNEL_HASHING_HPP_

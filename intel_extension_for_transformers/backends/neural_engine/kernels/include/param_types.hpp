@@ -35,6 +35,7 @@ enum class kernel_kind : uint8_t {
   transpose_mha,
   mha_dense,
   dyn_quantize_mha,
+  slice,
   dynamic_quant
 };
 

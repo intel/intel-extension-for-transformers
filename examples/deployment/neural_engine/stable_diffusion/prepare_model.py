@@ -1,3 +1,20 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import argparse
 import os
 import shutil
@@ -9,17 +26,7 @@ from diffusers import StableDiffusionPipeline
 
 
 @torch.no_grad()
-
-def _export_bf16_onnx_model(fp32_model_path):
-    #fp32_model_path = fp32_model_path.as_posix()
-    bf16_path = ''
-    for i, path in enumerate(fp32_model_path.split('/')):
-        if i == len(fp32_model_path.split('/')) - 1:
-            bf16_path += 'bf16-' + path
-        else:
-            bf16_path += path+'/'
-    # if 'unet' in fp32_model_path:
-    #     import pdb; pdb.set_trace()
+def _export_bf16_onnx_model(fp32_model_path, bf16_model_path):
     model = onnx.load(fp32_model_path)
     bf16_type_list = ['MatMul', 'Gemm', 'Conv']
     bf16_tensor_name_list = []
@@ -28,9 +35,10 @@ def _export_bf16_onnx_model(fp32_model_path):
             for inp in node.input:
                 bf16_tensor_name_list.append(inp)
     import numpy as np
-    from onnx import TensorProto, helper, numpy_helper
+    from onnx import TensorProto, numpy_helper
     for tensor in model.graph.initializer:
         if tensor.name in bf16_tensor_name_list:
+
             def fp32_to_bf16(fp32_np):
                 assert (fp32_np.dtype == np.float32)
                 int32_np = fp32_np.view(dtype=np.int32)
@@ -41,19 +49,16 @@ def _export_bf16_onnx_model(fp32_model_path):
             fp16_data = fp32_to_bf16(numpy_helper.to_array(tensor))
             tensor.raw_data = fp16_data.tobytes()
             tensor.data_type = TensorProto.BFLOAT16
-    onnx.save(model, bf16_path)
-    # os.remove(fp32_model_path)
-    print('*********bf16 onnx model exported!**************')
-    print(bf16_path)
-    print('*********bf16 onnx model exported!**************')
+    onnx.save(model, bf16_model_path)
 
 
-def prepare_model(model_name: str, output_path: Path, opset: int, bf16: bool = False):
+def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
     device = 'cpu'
     dtype = torch.float32
+    output_path = Path(output_path)
     pipeline = StableDiffusionPipeline.from_pretrained(model_name, torch_dtype=dtype).to(device)
 
-    # TEXT ENCODER
+    # # TEXT ENCODER
     num_tokens = pipeline.text_encoder.config.max_position_embeddings
     text_hidden_size = pipeline.text_encoder.config.hidden_size
     text_input = pipeline.tokenizer(
@@ -64,8 +69,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16: bool = F
         return_tensors="pt",
     )
 
-    output_path = Path(output_path)
-    text_encoder = output_path / "text_encoder" / "model.onnx"
+    text_encoder = output_path / "text_encoder_fp32" / "model.onnx"
     text_encoder.parent.mkdir(parents=True, exist_ok=True)
 
     torch.onnx.export(
@@ -84,15 +88,20 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16: bool = F
         opset_version=opset,
     )
 
-    if bf16 == True:
-        _export_bf16_onnx_model(text_encoder.as_posix())
+    if bf16:
+        text_encoder_bf16 = output_path / "text_encoder_bf16" / "model.onnx"
+        text_encoder_bf16_dir = output_path / "text_encoder_bf16"
+        if os.path.exists(text_encoder_bf16_dir):
+            shutil.rmtree(text_encoder_bf16_dir)
+        os.mkdir(text_encoder_bf16_dir)
+        _export_bf16_onnx_model(text_encoder.as_posix(), text_encoder_bf16.as_posix())
 
     del pipeline.text_encoder
 
     # UNET
     unet_in_channels = pipeline.unet.config.in_channels
     unet_sample_size = pipeline.unet.config.sample_size
-    unet_path = output_path / "unet" / "model.onnx"
+    unet_path = output_path / "unet_fp32" / "model.onnx"
     unet_path.parent.mkdir(parents=True, exist_ok=True)
     torch.onnx.export(
         pipeline.unet,
@@ -126,6 +135,16 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16: bool = F
     )
 
     unet_model_path = str(unet_path.absolute().as_posix())
+
+    if bf16:
+        unet_bf16_model_path = output_path / "unet_bf16" / "model.onnx"
+        unet_bf16_dir = output_path / "unet_bf16"
+        if os.path.exists(unet_bf16_dir):
+            shutil.rmtree(unet_bf16_dir)
+        os.mkdir(unet_bf16_dir)
+        _export_bf16_onnx_model(unet_path.as_posix(), unet_bf16_model_path.as_posix())
+        unet_bf16_model = onnx.load(unet_bf16_model_path)
+
     unet_dir = os.path.dirname(unet_model_path)
     unet = onnx.load(unet_model_path)
     # clean up existing tensor files
@@ -140,20 +159,14 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16: bool = F
         location="weights.pb",
         convert_attribute=False,
     )
-    if bf16 == True:
-        _export_bf16_onnx_model(unet_path.as_posix())
-        fp32_path = unet_model_path
-        bf16_path = ''
-        for i, path in enumerate(fp32_path.split('/')):
-            if i == len(fp32_path.split('/')) - 1:
-                bf16_path += 'bf16-' + path
-            else:
-                bf16_path += path+'/'
-        unet_bf16 = onnx.load(bf16_path)
+    if bf16:
+        unet_bf16_model_path = str(unet_bf16_model_path.absolute().as_posix())
         onnx.save_model(
-            unet_bf16,
-            bf16_path,
-            location="weights_bf16.pb",
+            unet_bf16_model,
+            unet_bf16_model_path,
+            save_as_external_data=True,
+            all_tensors_to_one_file=True,
+            location="weights.pb",
         )
     del pipeline.unet
 
@@ -163,7 +176,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16: bool = F
     # forward only through the decoder part
     vae_decoder.forward = pipeline.vae.decode
 
-    vae_decoder_path = output_path / "vae_decoder" / "model.onnx"
+    vae_decoder_path = output_path / "vae_decoder_fp32" / "model.onnx"
     vae_decoder_path.parent.mkdir(parents=True, exist_ok=True)
     torch.onnx.export(
         vae_decoder,
@@ -187,8 +200,13 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16: bool = F
         opset_version=opset,
     )
 
-    if bf16 == True:
-        _export_bf16_onnx_model(vae_decoder_path.as_posix())
+    if bf16:
+        vae_decoder_bf16_model = output_path / "vae_decoder_bf16" / "model.onnx"
+        vae_decoder_bf16_dir = output_path / "vae_decoder_bf16"
+        if os.path.exists(vae_decoder_bf16_dir):
+            shutil.rmtree(vae_decoder_bf16_dir)
+        os.mkdir(vae_decoder_bf16_dir)
+        _export_bf16_onnx_model(vae_decoder_path.as_posix(), vae_decoder_bf16_model.as_posix())
     del pipeline.vae
 
 
@@ -211,9 +229,7 @@ if __name__ == "__main__":
         type=int,
         help="The version of the ONNX operator set to use.",
     )
-    parser.add_argument("--bf16",
-                        default=False,
-                        help="Export the models in `float16` mode")
+    parser.add_argument("--bf16", action="store_true", help="Export the models in `bfloat16` mode")
 
     args = parser.parse_args()
 

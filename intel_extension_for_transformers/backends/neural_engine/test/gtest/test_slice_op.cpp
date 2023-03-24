@@ -207,6 +207,7 @@ bool CheckResult(const TestParams& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   executor::SliceOperator slice(p.conf);
+  slice.Prepare(p.input, p.output);
   slice.Reshape(p.input, p.output);
   slice.Forward(p.input, p.output);
 
@@ -214,8 +215,12 @@ bool CheckResult(const TestParams& t) {
     GetTrueData(q.input, q.output, q.conf);
     // Should compare buffer with different addresses
     EXPECT_NE(p.output[0]->data(), q.output[0]->data());
-    return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
-                                        q.output[0]->size());
+    if (q.output[0]->dtype() == "fp32")
+      return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
+                                          q.output[0]->size());
+    else
+      return executor::CompareData<uint16_t>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
+                                             q.output[0]->size());
   }
   return false;
 }
@@ -233,15 +238,15 @@ TEST_P(SliceTest, TestPostfix) {
   EXPECT_TRUE(CheckResult(t));
 }
 
-std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape,
-                                           const std::string& starts, const std::string& ends, const std::string& axes,
-                                           const std::string& steps) {
+std::pair<OpArgs, OpArgs> GenerateCase(const std::vector<std::vector<int64_t>>& input_shape, const std::string& starts,
+                                       const std::string& ends, const std::string& axes, const std::string& steps,
+                                       const std::string& dtype) {
   // Step 1: Construct Tensor config ptr
   const auto& src_shape = input_shape[0];
-  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape, dtype);
   std::vector<shared_ptr<TensorConfig>> input_config = {src_config};
   std::vector<int64_t> dst_shape = {};
-  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape, dtype);
   std::vector<shared_ptr<TensorConfig>> output_config = {dst_config, dst_config};
 
   // Step 1.1: Construct Operator config obj
@@ -249,7 +254,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   attr_map = {{"axes", axes}, {"starts", starts}, {"ends", ends}, {"steps", steps}};
 
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
-  auto op_config = std::make_shared<OperatorConfig>("slice", "fp32", input_config, output_config, op_attr);
+  auto op_config = std::make_shared<OperatorConfig>("slice", dtype, input_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
@@ -259,8 +264,10 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     a_tensor->add_tensor_life(1);
     // step3: library buffer can only be obtained afterwards
     auto tensor_data = a_tensor->mutable_data();
-    executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
-
+    if (dtype == "fp32")
+      executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
+    else
+      executor::InitVector<uint16_t>(static_cast<uint16_t*>(tensor_data), a_tensor->size());
     Tensor* a_tensor_copy = new Tensor(*a_tensor_config);
     a_tensor_copy->add_tensor_life(1);
     auto tensor_data_copy = a_tensor_copy->mutable_data();
@@ -290,11 +297,14 @@ std::pair<Tensor*, Tensor*> make_tensor_obj(const shared_ptr<TensorConfig>& a_te
   // step3: library buffer can only be obtained afterwards
   auto tensor_data = a_tensor->mutable_data();
   if (!value.empty()) {
-    for (int i = 0 ; i < a_tensor->size(); ++i) {
+    for (int i = 0; i < a_tensor->size(); ++i) {
       (static_cast<T*>(tensor_data))[i] = value[i];
     }
   } else {
-    executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
+    if (a_tensor_config->dtype() == "bf16")
+      executor::InitVector<uint16_t>(static_cast<uint16_t*>(tensor_data), a_tensor->size());
+    else
+      executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
   }
 
   Tensor* a_tensor_copy = new Tensor(*a_tensor_config);
@@ -304,11 +314,12 @@ std::pair<Tensor*, Tensor*> make_tensor_obj(const shared_ptr<TensorConfig>& a_te
   return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
 }
 
-std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape,
-                                           const std::vector<std::vector<int>>& values) {
-// Step 1: Construct Tensor config ptr
+std::pair<OpArgs, OpArgs> GenerateCase(const std::vector<std::vector<int64_t>>& input_shape,
+                                       const std::vector<std::vector<int>>& values, const std::string& dtype) {
+  // Step 1: Construct Tensor config ptr
   const auto& src_shape = input_shape[0];
-  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape);
+  shared_ptr<TensorConfig> src_config = std::make_shared<TensorConfig>("src", src_shape, dtype);
+
   const auto& starts_shape = input_shape[1];
   shared_ptr<TensorConfig> starts_config = std::make_shared<TensorConfig>("starts", starts_shape);
   const auto& ends_shape = input_shape[2];
@@ -325,13 +336,14 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     input_config.push_back(steps_config);
   }
   std::vector<int64_t> dst_shape = {};
-  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape);
+  shared_ptr<TensorConfig> dst_config = std::make_shared<TensorConfig>("dst", dst_shape, dtype);
+
   std::vector<shared_ptr<TensorConfig>> output_config = {dst_config, dst_config};
 
   // Step 1.1: Construct Operator config obj
   std::map<std::string, std::string> attr_map;
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
-  auto op_config = std::make_shared<OperatorConfig>("slice", "fp32", input_config, output_config, op_attr);
+  auto op_config = std::make_shared<OperatorConfig>("slice", dtype, input_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
   std::vector<Tensor*> input_tensors;
@@ -339,9 +351,12 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   for (int i = 0; i < input_config.size(); ++i) {
     std::pair<Tensor*, Tensor*> tensor;
     if (i == 0) {
-      tensor = make_tensor_obj<float>(input_config[i]);
+      if (dtype == "fp32")
+        tensor = make_tensor_obj<float>(input_config[i]);
+      else
+        tensor = make_tensor_obj<uint16_t>(input_config[i]);
     } else {
-      tensor = make_tensor_obj<int>(input_config[i], values[i-1]);
+      tensor = make_tensor_obj<int>(input_config[i], values[i - 1]);
     }
     input_tensors.push_back(tensor.first);
     input_tensors_cpy.push_back(tensor.second);
@@ -357,7 +372,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   return {op_args, op_args_copy};
 }
 
-static auto CasesFp32 = []() {
+static auto Cases = []() {
   std::string memory_strategy = getenv("DIRECT_BUFFER") == NULL ? "cycle_buffer" : "direct_buffer";
   MemoryAllocator::SetStrategy(memory_strategy);
   std::vector<TestParams> cases;
@@ -377,102 +392,143 @@ static auto CasesFp32 = []() {
   std::vector<int> ends_val;
   std::vector<int> axes_val;
   std::vector<int> steps_val;
+  for (std::string dtype : {"bf16", "fp32"}) {
+    // case: 1d slice
+    src_shape = {10};
+    starts = "3";
+    ends = "8";
+    axes = "0";
+    steps = "2";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 1d slice
-  src_shape = {10};
-  starts = "3";
-  ends = "8";
-  axes = "0";
-  steps = "2";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 1d slice, ends=-1
+    src_shape = {10};
+    starts = "0";
+    ends = "-1";
+    axes = "0";
+    steps = "3";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 1d slice, ends=-1
-  src_shape = {10};
-  starts = "0";
-  ends = "-1";
-  axes = "0";
-  steps = "3";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 1d slice, ends=-2
+    src_shape = {10};
+    starts = "0";
+    ends = "-2";
+    axes = "0";
+    steps = "3";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 1d slice, ends=-2
-  src_shape = {10};
-  starts = "0";
-  ends = "-2";
-  axes = "0";
-  steps = "3";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 1d slice, start=end
+    src_shape = {10};
+    starts = "5";
+    ends = "-4";
+    axes = "0";
+    steps = "3";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 1d slice, start=end
-  src_shape = {10};
-  starts = "5";
-  ends = "-4";
-  axes = "0";
-  steps = "3";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 2d slice, axes=0
+    src_shape = {3, 2};
+    starts = "1";
+    ends = "-1";
+    axes = "0";
+    steps = "1";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 2d slice, axes=0
-  src_shape = {3, 2};
-  starts = "1";
-  ends = "-1";
-  axes = "0";
-  steps = "1";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 2d slice, axes=1
+    src_shape = {3, 2};
+    starts = "0";
+    ends = "-1";
+    axes = "1";
+    steps = "1";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 2d slice, axes=1
-  src_shape = {3, 2};
-  starts = "0";
-  ends = "-1";
-  axes = "1";
-  steps = "1";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 3d slice, axes=0
+    src_shape = {3, 2, 3};
+    starts = "1";
+    ends = "-1";
+    axes = "0";
+    steps = "1";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 3d slice, axes=0
-  src_shape = {3, 2, 3};
-  starts = "1";
-  ends = "-1";
-  axes = "0";
-  steps = "1";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 3d slice, axes=1
+    src_shape = {3, 2, 3};
+    starts = "0";
+    ends = "-1";
+    axes = "1";
+    steps = "1";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 3d slice, axes=1
-  src_shape = {3, 2, 3};
-  starts = "0";
-  ends = "-1";
-  axes = "1";
-  steps = "1";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 3d slice, axes=2
+    src_shape = {3, 2, 3};
+    starts = "1";
+    ends = "-1";
+    axes = "2";
+    steps = "1";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 3d slice, axes=2
-  src_shape = {3, 2, 3};
-  starts = "1";
-  ends = "-1";
-  axes = "2";
-  steps = "1";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 3d slice, axes=1,2
+    src_shape = {3, 2, 3};
+    starts = "0,1";
+    ends = "-1,-1";
+    axes = "1,2";
+    steps = "1,1";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 3d slice, axes=1,2
-  src_shape = {3, 2, 3};
-  starts = "0,1";
-  ends = "-1,-1";
-  axes = "1,2";
-  steps = "1,1";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 3d slice, axes=0,2
+    src_shape = {3, 2, 3};
+    starts = "1,0";
+    ends = "-1,-1";
+    axes = "0,2";
+    steps = "1,1";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 3d slice, axes=0,2
-  src_shape = {3, 2, 3};
-  starts = "1,0";
-  ends = "-1,-1";
-  axes = "0,2";
-  steps = "1,1";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 3d slice, axes=0,2，step=2
+    src_shape = {4, 2, 4};
+    starts = "0,0";
+    ends = "-1,-1";
+    axes = "0,2";
+    steps = "2,2";
+    cases.push_back({GenerateCase({src_shape}, starts, ends, axes, steps, dtype), false});
 
-  // case: 3d slice, axes=0,2，step=2
-  src_shape = {4, 2, 4};
-  starts = "0,0";
-  ends = "-1,-1";
-  axes = "0,2";
-  steps = "2,2";
-  cases.push_back({GenerateFp32Case({src_shape}, starts, ends, axes, steps), false});
+    // case: 3d slice, axes=2, step=2
+    src_shape = {2, 3, 4};
+    starts_shape = {1};
+    ends_shape = {1};
+    axes_shape = {1};
+    steps_shape = {1};
+    starts_val = {0};
+    ends_val = {3};
+    axes_val = {2};
+    steps_val = {2};
+    cases.push_back({GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
+                                  {starts_val, ends_val, axes_val, steps_val}, dtype),
+                     false});
+
+    // case: 3d slice, axes=2，step=2, invalid indices inputs
+    src_shape = {2, 3, 4};
+    starts_shape = {1};
+    ends_shape = {1};
+    axes_shape = {1};
+    steps_shape = {1};
+    starts_val = {-5};
+    ends_val = {5};
+    axes_val = {2};
+    steps_val = {2};
+    cases.push_back({GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
+                                  {starts_val, ends_val, axes_val, steps_val}, dtype),
+                     false});
+
+    // case: 3d slice, axes=0,1,2，step=1,1,1
+    src_shape = {2, 3, 4};
+    starts_shape = {3};
+    ends_shape = {3};
+    axes_shape = {};
+    steps_shape = {};
+    starts_val = {0, 0, 0};
+    ends_val = {1, 1, 1};
+    cases.push_back(
+        {GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape}, {starts_val, ends_val}, dtype),
+         false});
+  }
 
   // case: 3d slice, axes=2，step=2
   src_shape = {2, 3, 4};
@@ -484,8 +540,9 @@ static auto CasesFp32 = []() {
   ends_val = {3};
   axes_val = {2};
   steps_val = {2};
-  cases.push_back({GenerateFp32Case({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
-                                    {starts_val, ends_val, axes_val, steps_val}), false});
+  cases.push_back({GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
+                                {starts_val, ends_val, axes_val, steps_val}, "fp32"),
+                   false});
 
   // case: 3d slice, axes=2，step=2, invalid indices inputs
   src_shape = {2, 3, 4};
@@ -497,8 +554,9 @@ static auto CasesFp32 = []() {
   ends_val = {5};
   axes_val = {2};
   steps_val = {2};
-  cases.push_back({GenerateFp32Case({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
-                                    {starts_val, ends_val, axes_val, steps_val}), false});
+  cases.push_back({GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
+                                {starts_val, ends_val, axes_val, steps_val}, "fp32"),
+                   false});
 
   // case: 3d slice, axes=0,1,2，step=1,1,1
   src_shape = {2, 3, 4};
@@ -508,10 +566,11 @@ static auto CasesFp32 = []() {
   steps_shape = {};
   starts_val = {0, 0, 0};
   ends_val = {1, 1, 1};
-  cases.push_back({GenerateFp32Case({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
-                                    {starts_val, ends_val}), false});
+  cases.push_back(
+      {GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape}, {starts_val, ends_val}, "fp32"),
+       false});
 
   return ::testing::ValuesIn(cases);
 };
 
-INSTANTIATE_TEST_SUITE_P(Prefix, SliceTest, CasesFp32());
+INSTANTIATE_TEST_SUITE_P(Prefix, SliceTest, Cases());

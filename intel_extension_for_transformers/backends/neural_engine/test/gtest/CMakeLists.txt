@@ -32,7 +32,6 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/operators/embeddingbag.cpp
     ${HOST_SRC_DIR}/src/operators/split.cpp
     ${HOST_SRC_DIR}/src/operators/convolution.cpp
-    ${HOST_SRC_DIR}/src/operators/slice.cpp
     ${HOST_SRC_DIR}/src/operators/group_norm.cpp
     ${HOST_SRC_DIR}/src/operators/range.cpp
     ${HOST_SRC_DIR}/src/operators/expand_indices.cpp
@@ -42,6 +41,7 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/operators/squeeze.cpp
     ${HOST_SRC_DIR}/src/operators/pow.cpp
     ${HOST_SRC_DIR}/src/operators/shape.cpp
+    ${HOST_SRC_DIR}/src/operators/slice.cpp
     ${HOST_SRC_DIR}/src/operators/dequantize.cpp
     ${HOST_SRC_DIR}/src/operators/binary_op.cpp
     ${HOST_SRC_DIR}/src/sparse_operators/sparse_inner_product.cpp

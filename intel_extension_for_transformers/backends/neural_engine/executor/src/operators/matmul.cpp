@@ -70,6 +70,10 @@ MatmulOperator::MatmulOperator(const shared_ptr<OperatorConfig>& conf)
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&reshape_, attrs_map["reshape"], ",");
   }
+  iter = attrs_map.find("reshape_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_dims_, attrs_map["reshape_dims"], ",");
+  }
   iter = attrs_map.find("append_op");
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
   binary_add_ = (iter != attrs_map.end() && iter->second == "binary_add") ? true : false;
@@ -85,6 +89,9 @@ MatmulOperator::~MatmulOperator() {}
 
 void MatmulOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int input_size = input.size();
+  if (!reshape_dims_.empty()) {
+    input_size -= 1;
+  }
   dst_ = output[0];
   if (output.size() > 1) {
     dst_min_ = output[1];
@@ -207,13 +214,22 @@ void MatmulOperator::SetTransposeMode() {
 void MatmulOperator::DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (!reshape_.empty()) {
     vector<int64_t> pre_dst_shape;
+
     vector<int64_t> reshape(reshape_);
     if (output[0]->shape().size() == 5 && output[0]->tensor_format() == TensorFormat::BmHnHsBbS) {
       int64_t micro_bs = output[0]->shape()[0];
       reshape.insert(reshape.begin(), micro_bs);
     }
-    vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), pre_dst_shape, pre_dst_shape);
-    output[0]->set_shape(dst_shape);
+
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+      vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), ref_shape, reshape_dims_);
+      output[0]->set_shape(dst_shape);
+    } else {
+      vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), pre_dst_shape, pre_dst_shape);
+      output[0]->set_shape(dst_shape);
+    }
   }
 }
 

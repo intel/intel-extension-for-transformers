@@ -158,7 +158,14 @@ class SPARSE_API_ softmax_desc : public kernel_desc_proxy {
   virtual ~softmax_desc() {}
 };
 
-class attention_desc : public kernel_desc_proxy {
+class SPARSE_API_ logsoftmax_desc : public kernel_desc_proxy {
+ public:
+  logsoftmax_desc() {}
+  explicit logsoftmax_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~logsoftmax_desc() {}
+};
+
+class SPARSE_API_ attention_desc : public kernel_desc_proxy {
  public:
   attention_desc() {}
   explicit attention_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
@@ -184,6 +191,13 @@ class SPARSE_API_ dyn_quantize_mha_desc : public kernel_desc_proxy {
   dyn_quantize_mha_desc() {}
   explicit dyn_quantize_mha_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~dyn_quantize_mha_desc() {}
+};
+
+class SPARSE_API_ slice_desc : public kernel_desc_proxy {
+ public:
+  slice_desc() {}
+  explicit slice_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~slice_desc() {}
 };
 
 /**
@@ -251,6 +265,13 @@ class SPARSE_API_ softmax : public kernel_proxy {
   virtual ~softmax() {}
 };
 
+class SPARSE_API_ logsoftmax : public kernel_proxy {
+ public:
+  logsoftmax() {}
+  explicit logsoftmax(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~logsoftmax() {}
+};
+
 class SPARSE_API_ attention : public kernel_proxy {
  public:
   attention() {}
@@ -277,6 +298,13 @@ class SPARSE_API_ dyn_quantize_mha : public kernel_proxy {
   dyn_quantize_mha() {}
   explicit dyn_quantize_mha(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~dyn_quantize_mha() {}
+};
+
+class SPARSE_API_ slice : public kernel_proxy {
+ public:
+  slice() {}
+  explicit slice(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~slice() {}
 };
 
 }  // namespace jd

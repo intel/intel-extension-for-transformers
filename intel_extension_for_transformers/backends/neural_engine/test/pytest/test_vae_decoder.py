@@ -40,7 +40,7 @@ class TestVaeDecoder(unittest.TestCase):
 
     def test_vae_decoder(self):
         os.environ['GLOG_minloglevel'] = '2'
-        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/vae_decoder/'
+        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/vae_decoder_fp32/'
         if is_win():
             root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
         model_dir = root_dir + 'model.onnx'

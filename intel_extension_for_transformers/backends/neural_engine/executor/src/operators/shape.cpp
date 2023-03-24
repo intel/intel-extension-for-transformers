@@ -19,7 +19,7 @@
 namespace executor {
 
 void ShapeOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  output[0]->set_dtype("int64");
+  output[0]->set_dtype("int32");
 }
 
 void ShapeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -38,7 +38,7 @@ void ShapeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>&
 }
 
 void ShapeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  auto dst_data = reinterpret_cast<int64_t*>(output[0]->mutable_data());
+  auto dst_data = reinterpret_cast<int32_t*>(output[0]->mutable_data());
   auto src_shape = input[0]->shape();
   int index = 0;
   for (int i = start_; i < end_; i++) {

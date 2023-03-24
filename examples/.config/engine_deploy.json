@@ -974,5 +974,26 @@
         }
       }
     }
+  },
+  "stable_diffusion": {
+    "working_dir": "deployment/neural_engine/stable_diffusion",
+    "data_dir": " ",
+    "hf_model_name": "CompVis/stable-diffusion-v1-4",
+    "prepare": {
+      "cmd": "bash -x export_model.sh",
+      "params": {
+         "input_model": "/tf_dataset2/models/nlp_toolkit/stable-diffusion",
+         "precision": "fp32/bf16"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_executor.py",
+      "params": {
+        "ir_path": "_ir",
+        "mode": "benchmark"        
+      }
+    },
+    "launcher": {
+    }
   }
 }

@@ -40,7 +40,7 @@ class TestUnet(unittest.TestCase):
 
     def test_unet(self):
         os.environ['GLOG_minloglevel'] = '2'
-        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/unet/'
+        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/unet_fp32/'
         #root_dir = '/tf_dataset2/inc-ut/nlptoolkit_ut_model/'
         if is_win():
             root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'

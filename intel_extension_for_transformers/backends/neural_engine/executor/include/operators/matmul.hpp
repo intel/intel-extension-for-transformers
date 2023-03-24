@@ -85,6 +85,7 @@ class MatmulOperator : public Operator {
   vector<int64_t> src1_perm_;
   vector<int64_t> dst_perm_;
   vector<int64_t> reshape_;
+  vector<int64_t> reshape_dims_;
   vector<float> rescales_;
   dnnl::primitive_attr attr_;
   memory scale_f32_mem_;

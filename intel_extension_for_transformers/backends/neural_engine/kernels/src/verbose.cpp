@@ -223,6 +223,21 @@ static std::string init_info_dyn_quantize_mha(std::vector<dim_t> shape) {
   return ss.str();
 }
 
+static std::string init_info_slice(std::vector<dim_t> shape) {
+  std::stringstream ss;
+  ss << "cpu"
+     << ","
+     << "slice"
+     << ",";
+
+  ss << "shape";
+  for (auto& kd_shape_dim : shape) {
+    ss << "_" << std::to_string(kd_shape_dim);
+  }
+
+  return ss.str();
+}
+
 static std::string init_info_dynamic_quant_matmul(std::vector<dim_t> shape) {
   std::stringstream ss;
   ss << "cpu"
@@ -273,6 +288,7 @@ void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
       CASE(softmax);
       CASE(gather);
       CASE(mha_dense);
+      CASE(slice);
       CASE(dynamic_quant_matmul);
       CASE(dynamic_quant);
       default:

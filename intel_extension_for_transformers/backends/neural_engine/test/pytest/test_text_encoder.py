@@ -40,7 +40,7 @@ class TestTextEncoder(unittest.TestCase):
 
     def test_text_encoder(self):
         os.environ['GLOG_minloglevel'] = '2'
-        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/text_encoder/'
+        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/text_encoder_fp32/'
         if is_win():
             root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
         model_dir = root_dir + 'model.onnx'
