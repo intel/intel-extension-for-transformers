@@ -29,7 +29,7 @@ def is_win():
     return sys.platform.startswith('win')
 
 
-class TestTextEncoder(unittest.TestCase):
+class TestTextEncoderBF16(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         pass

@@ -29,7 +29,7 @@ def is_win():
     return sys.platform.startswith('win')
 
 
-class TestVaeDecoder(unittest.TestCase):
+class TestVaeDecoderBF16(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         pass

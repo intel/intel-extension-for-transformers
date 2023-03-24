@@ -29,7 +29,7 @@ def is_win():
     return sys.platform.startswith('win')
 
 
-class TestUnet(unittest.TestCase):
+class TestUnetBF16(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         pass
@@ -60,8 +60,9 @@ class TestUnet(unittest.TestCase):
             print(node_name, ', shape = ', output[node_name].shape)
 
         # onnxruntime
-        model_dir = root_dir + 'model.onnx'
-        session = ort.InferenceSession(model_dir)
+        fp32_model_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/unet_fp32/'
+        model = fp32_model_dir + 'model.onnx'
+        session = ort.InferenceSession(model)
         x = torch.load(input_0_path).numpy()
         y = torch.tensor([301], dtype=torch.float32).numpy()
         z = torch.load(input_2_path).numpy()

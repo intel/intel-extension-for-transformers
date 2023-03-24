@@ -50,7 +50,7 @@ export INST_NUM=<inst num>
 
 The stable diffusion mainly includes three onnx models: text_encoder, unet, vae_decoder.
 
-The pretrained model [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) and [runwayml/stable-diffusion-v1-5](https://github.com/runwayml/stable-diffusion) provied by diffusers are be the same in the default config.
+The pretrained model [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) and [runwayml/stable-diffusion-v1-5](https://github.com/runwayml/stable-diffusion) provied by diffusers are the same in the default config.
 
 Here we take CompVis/stable-diffusion-v1-4 as an example.
 
@@ -113,31 +113,41 @@ Text-to-image: using one sentence to create a picture!
 # Running FP32 models or BF16 models, just import differnt IRs.
 # FP32 models
 GLOG_minloglevel=2 python run_executor.py --ir_path=./fp32_ir
+```
+![picture1](./images/astronaut_rides_horse.png)
 
+```python
 # BF16 models
 GLOG_minloglevel=2 python run_executor.py --ir_path=./bf16_ir
 ```
+![picture2](./images/astronaut_rides_horse_from_engine_1.png)
+
 > Note: 
 > 1. The default pretrained model is "CompVis/stable-diffusion-v1-4".
 > 2. The default prompt is "a photo of an astronaut riding a horse on mars" and the default output name is "astronaut_rides_horse.png".
 > 3. The ir directory should include three IRs for text_encoder, unet and vae_decoder.
+## 2.4 Benchmark
 
-## Benchmark
-
-### 2.1 Performance
+### Performance
 
 Python API command as follows:
-```shell
+```python
+# FP32 IR
 GLOG_minloglevel=2 python run_executor.py --ir_path=./fp32_ir --mode=performance
+
+# BF16 IR
 GLOG_minloglevel=2 python run_executor.py --ir_path=./bf16_ir --mode=performance
 ```
 
-### 2.2 Accuracy
+### Accuracy
 Frechet Inception Distance(FID) metric is used to evaluate the accuracy. This case we check the FID scores between the pytorch image and engine image.
 
 By setting --accuracy to check FID socre.
 Python API command as follows:
-```shell
+```python
+# FP32 IR
 GLOG_minloglevel=2 python run_executor.py --ir_path=./fp32_ir --mode=accuracy
+
+# BF16 IR
 GLOG_minloglevel=2 python run_executor.py --ir_path=./bf16_ir --mode=accuracy
 ```
