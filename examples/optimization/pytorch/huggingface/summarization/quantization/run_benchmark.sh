@@ -75,6 +75,16 @@ function run_benchmark {
     elif [ "${topology}" == "t5_large_cnn_dynamic" ]; then
         DATASET_NAME="cnn_dailymail"
         model_name_or_path="sysresearch101/t5-large-finetuned-xsum-cnn"
+    elif [ "${topology}" == "flan_t5_large_samsum_dynamic" ]; then
+        DATASET_NAME="samsum"
+        model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
+        approach="PostTrainingDynamic"
+        pip install transformers==4.25.1
+    elif [ "${topology}" == "flan_t5_large_samsum_static" ]; then
+        DATASET_NAME="samsum"
+        model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
+        approach="PostTrainingStatic"
+        pip install transformers==4.25.1
     else
         echo "unsupport topology: ${topology}"
         exit 1
