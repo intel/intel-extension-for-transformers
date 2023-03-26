@@ -22,35 +22,27 @@ from datasets import load_metric
 from transformers import EvalPrediction
 import sys
 import os
-common_dir = os.path.join(sys.path[0],"../..")
+
+common_dir = os.path.join(sys.path[0], "../..")
 sys.path.append(common_dir)
 from utils_qa import postprocess_qa_predictions
 from executor_dataloader import DataLoader
-from common import (
-    log, 
-    set_log_file,
-    load_graph, 
-    DummyDataLoader,
-    compute_performance
-)
+from common import (log, DummyDataLoader, compute_performance, Neural_Engine_base)
 
-class Neural_Engine(object):
-    def __init__(self, model_path, log_file):
-        set_log_file(log, log_file)
-        self.graph = load_graph(model_path)
-        self.log_file = log_file
 
-    def accuracy(self, batch_size, max_eval_samples,
-                 dataset_name, data_dir, tokenizer_dir):
+class Neural_Engine(Neural_Engine_base):
+
+    def accuracy(self, batch_size, max_eval_samples, dataset_name, data_dir, tokenizer_dir):
         # load dataset
         log.info("Load dataset ......")
-        dataset = DataLoader(batch_size, max_eval_samples,
-                            dataset_name, data_dir, tokenizer_dir)
+        dataset = DataLoader(batch_size, max_eval_samples, dataset_name, data_dir, tokenizer_dir)
         # load metric
         log.info("Load metric ......")
         metric = load_metric(dataset_name)
+
         def compute_metrics(p: EvalPrediction):
             return metric.compute(predictions=p.predictions, references=p.label_ids)
+
         # execute
         log.info("Start engine ......")
         start_logits_list = []
@@ -68,32 +60,40 @@ class Neural_Engine(object):
             predictions = list(predictions.values())[0]
             start_logits_list.append(predictions[..., 0])
             end_logits_list.append(predictions[..., 1])
-            
+
             # predictions_onnx = model.run(None, {'input_ids': inputs[0],
             #                     'attention_mask': inputs[1]})
             # start_logits_list.append(predictions_onnx[0])
             # end_logits_list.append(predictions_onnx[1])
         start_logits = np.concatenate(start_logits_list, axis=0)
-        end_logits = np.concatenate(end_logits_list, axis=0)  
+        end_logits = np.concatenate(end_logits_list, axis=0)
         results = (start_logits, end_logits)
 
         # post process
         log.info("Post process ......")
-        def post_processing_function(examples, features, predictions, answer_column_name, stage="eval"):
+
+        def post_processing_function(examples,
+                                     features,
+                                     predictions,
+                                     answer_column_name,
+                                     stage="eval"):
             # Post-processing: we match the start logits and end logits to answers in the original context.
-            predictions = postprocess_qa_predictions(
-                examples=examples,
-                features=features,
-                predictions=predictions,
-                max_answer_length=30,
-                prefix=stage
-            )
-             # Format the result to the format the metric expects.
-            formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
+            predictions = postprocess_qa_predictions(examples=examples,
+                                                     features=features,
+                                                     predictions=predictions,
+                                                     max_answer_length=30,
+                                                     prefix=stage)
+            # Format the result to the format the metric expects.
+            formatted_predictions = [{
+                "id": k,
+                "prediction_text": v
+            } for k, v in predictions.items()]
             references = [{"id": ex["id"], "answers": ex[answer_column_name]} for ex in examples]
             return EvalPrediction(predictions=formatted_predictions, label_ids=references)
-        eval_dataset, eval_examples, answer_column_name = dataset.get_eval() 
-        eval_preds = post_processing_function(eval_examples, eval_dataset, results, answer_column_name)
+
+        eval_dataset, eval_examples, answer_column_name = dataset.get_eval()
+        eval_preds = post_processing_function(eval_examples, eval_dataset, results,
+                                              answer_column_name)
         # compute metrics
         log.info("Compute metrics ......")
         eval_metric = compute_metrics(eval_preds)
@@ -111,8 +111,8 @@ class Neural_Engine(object):
         log.info("Generate dummy dataset ......")
         shape = [batch_size, seq_len]
         dataset = DummyDataLoader(shapes=[shape, shape],
-                                 lows=[0, 0],
-                                 highs=[384, 1],
-                                 dtypes=['int32', 'int32'],
-                                 iteration=iteration)
+                                  lows=[0, 0],
+                                  highs=[384, 1],
+                                  dtypes=['int32', 'int32'],
+                                  iteration=iteration)
         compute_performance(dataset, self.graph, log, self.log_file, warm_up, batch_size, seq_len)

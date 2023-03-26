@@ -17,7 +17,7 @@
 
 import unittest
 from collections import OrderedDict
-from intel_extension_for_transformers.backends.neural_engine.compile import dynamic_quantization
+from intel_extension_for_transformers.backends.neural_engine.compile.compile import _dynamic_quantization
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS, Operator
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
@@ -227,7 +227,7 @@ class TestDynamicQuantization(unittest.TestCase):
         ])
         input_data = np.ones((32, 256), dtype="float32")
         fp32_result = graph.inference([input_data])
-        int8_model = dynamic_quantization(graph)
+        int8_model = _dynamic_quantization(graph)
         int8_result = int8_model.inference([input_data])
         flag = np.allclose(int8_result["qk"], fp32_result["qk"], rtol=2)
         self.assertEqual(True, flag)

@@ -63,7 +63,7 @@ bash prepare_model.sh --input_model=bhadresh-savani/distilbert-base-uncased-emot
 ```
 
 ### Benchmark
-
+Throught setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
   2.1 accuracy  
   run python
   ```shell

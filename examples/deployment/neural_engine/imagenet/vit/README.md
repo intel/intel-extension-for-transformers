@@ -67,6 +67,7 @@ bash prepare_model.sh --input_model=google/vit-base-patch16-224  --task_name=ima
 Note: the input_model could be changed from a vit base model to a vit large model.
 
 ## Benchmark
+Throught setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
 ### 2.1 accuracy  
 Python API command as follows:
   ```shell

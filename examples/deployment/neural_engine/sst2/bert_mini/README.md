@@ -70,7 +70,7 @@ graph.save('./ir')
 ```
 
 # Benchmark
-
+Throught setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
 ## 1.Accuracy  
 Python API Command as follows:
 ```shell

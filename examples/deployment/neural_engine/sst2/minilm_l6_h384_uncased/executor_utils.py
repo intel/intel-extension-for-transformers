@@ -22,28 +22,18 @@ from datasets import load_metric
 from executor_dataloader import DataLoader
 import sys
 import os
-common_dir = os.path.join(sys.path[0],"../..")
+
+common_dir = os.path.join(sys.path[0], "../..")
 sys.path.append(common_dir)
-from common import (
-    log, 
-    set_log_file,
-    load_graph, 
-    DummyDataLoader,
-    compute_performance 
-)
+from common import (log, DummyDataLoader, compute_performance, Neural_Engine_base)
 
-class Neural_Engine(object):
-    def __init__(self, model_path, log_file):
-        set_log_file(log, log_file)
-        self.graph = load_graph(model_path)
-        self.log_file = log_file
 
-    def accuracy(self, batch_size, seq_len, 
-                 dataset_name, task_name, data_dir, tokenizer_dir):
+class Neural_Engine(Neural_Engine_base):
+
+    def accuracy(self, batch_size, seq_len, dataset_name, task_name, data_dir, tokenizer_dir):
         # load dataset
         log.info("Load dataset ......")
-        dataset = DataLoader(batch_size, seq_len, dataset_name,
-            task_name, data_dir, tokenizer_dir)
+        dataset = DataLoader(batch_size, seq_len, dataset_name, task_name, data_dir, tokenizer_dir)
         # load metric
         log.info("Load metric ......")
         if dataset_name and task_name is not None:
@@ -59,9 +49,9 @@ class Neural_Engine(object):
             predictions = list(predictions.values())[0]
             predictions = np.argmax(predictions, axis=1)
             metric.add_batch(
-                    predictions=predictions,
-                    references=labels,
-                )
+                predictions=predictions,
+                references=labels,
+            )
         # compute metrics
         log.info("Compute metrics ......")
         eval_metric = metric.compute()
@@ -76,8 +66,8 @@ class Neural_Engine(object):
         log.info("Generate dummy dataset ......")
         shape = [batch_size, seq_len]
         dataset = DummyDataLoader(shapes=[shape, shape, shape],
-                                 lows=[0, 0, 0],
-                                 highs=[128, 1, 1],
-                                 dtypes=['int32', 'int32', 'int32'],
-                                 iteration=iteration)
+                                  lows=[0, 0, 0],
+                                  highs=[128, 1, 1],
+                                  dtypes=['int32', 'int32', 'int32'],
+                                  iteration=iteration)
         compute_performance(dataset, self.graph, log, self.log_file, warm_up, batch_size, seq_len)

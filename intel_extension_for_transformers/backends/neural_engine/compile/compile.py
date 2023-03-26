@@ -32,6 +32,26 @@ COMPILES = OrderedDict({
     'sub_graph': SubGraphMatcher,
 })
 
+_NEAURAL_ENGINE_AUTOCAST_TYPE = "native"
+
+
+class autocast:
+
+    def __init__(self, dtype: str) -> None:
+        self.prev_dtype = _NEAURAL_ENGINE_AUTOCAST_TYPE
+        self.dtype = dtype
+
+    def __enter__(self) -> None:
+        self.prev_dtype = _NEAURAL_ENGINE_AUTOCAST_TYPE
+        _set_ne_autocast_dtype(self.dtype)
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        _set_ne_autocast_dtype(self.prev_dtype)
+
+
+def _set_ne_autocast_dtype(dtype: str):
+    _NEAURAL_ENGINE_AUTOCAST_TYPE = dtype
+
 
 def _config_validation(config):
     """The validation of the input config."""
@@ -64,7 +84,7 @@ def start_pipeline(model, config=None):
     return model
 
 
-def compile(model, config=None):
+def compile(model, config=None) -> Graph:
     """The compile interface.
 
     Firstly, use model loader to get the computation graph with corresponding framework.
@@ -76,18 +96,21 @@ def compile(model, config=None):
         There may have different computation flow in one subgraph.
     Finally, convert them to .yaml file and .bin file for model configuration and inference.
     """
-    if get_model_fwk_name(model) == 'neural engine':
-        from .graph import Graph
-        graph = Graph()
-        graph.graph_init(model + '/conf.yaml', model + '/model.bin')
-        model = graph
-    else:
-        config = _config_validation(config)
-        model = start_pipeline(model, config=config)
+    from .graph import Graph
+    if not isinstance(model, Graph):
+        if get_model_fwk_name(model) == 'neural engine':
+            graph = Graph()
+            graph.graph_init(model + '/conf.yaml', model + '/model.bin')
+            model = graph
+        else:
+            config = _config_validation(config)
+            model = start_pipeline(model, config=config)
+    if _NEAURAL_ENGINE_AUTOCAST_TYPE == "dynamic_int8":
+        model = _dynamic_quantization(model)
     return model
 
 
-def insert_Q(graph: Graph):
+def _insert_Q(graph: Graph):
 
     def quantize_src_tensor(input_tensor_idx: int, quantize_type: str):
         input_tensor = node.input_tensors[input_tensor_idx]
@@ -157,21 +180,20 @@ def insert_Q(graph: Graph):
         weight_tensor.name = node.input_tensors[1].name + "_quant"
         node.input_tensors.extend([tensor_min, tensor_scale])
 
-    model_weights = [tensor.name for tensor in graph.nodes[0].output_tensors]
     for node in filter(lambda x: x.op_type in ["InnerProduct", "Matmul"], reversed(graph.nodes)):
         reshape_tensor = []
         if "reshape_dims" in node.attr:
             reshape_tensor = [node.input_tensors[-1]]
             node.input_tensors = node.input_tensors[:-1]
         quantize_src_tensor(0, "s8" if node.op_type == "Matmul" else "u8")
-        if node.input_tensors[1].name in model_weights:
+        if isinstance(node.input_tensors[1].data, np.ndarray):
             quantize_weight_tensor(node.input_tensors[1])
         else:
             quantize_src_tensor(1, "s8")
         node.input_tensors.extend(reshape_tensor)
 
 
-def fuse_quatize(graph: Graph):
+def _fuse_quatize(graph: Graph):
     pattern = {
         "patterns": {
             'in': [[(0, "ANY"), (1, 'Quantize')]],
@@ -213,7 +235,7 @@ def fuse_quatize(graph: Graph):
                         "output_dtype"]
 
 
-def remove_unused_input(graph):
+def _remove_unused_input(graph):
     new_input_tensors = []
     for input_ternsor in graph.nodes[0].output_tensors:
         if input_ternsor.location == [] or input_ternsor.location is None:
@@ -221,7 +243,7 @@ def remove_unused_input(graph):
     graph.nodes[0].output_tensors = new_input_tensors
 
 
-def dynamic_quantization(fp32_model):
+def _dynamic_quantization(fp32_model):
     """
     fp32_model is a engine ir path or a fp32 graph
     """
@@ -232,7 +254,7 @@ def dynamic_quantization(fp32_model):
         graph = Graph()
         graph.graph_init(fp32_model + '/conf.yaml', fp32_model + '/model.bin')
 
-    insert_Q(graph)
-    fuse_quatize(graph)
-    remove_unused_input(graph)
+    _insert_Q(graph)
+    _fuse_quatize(graph)
+    _remove_unused_input(graph)
     return graph
