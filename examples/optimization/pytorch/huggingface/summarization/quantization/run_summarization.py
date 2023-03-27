@@ -51,6 +51,9 @@ from transformers.utils import check_min_version, is_offline_mode
 from transformers.utils.versions import require_version
 from typing import Optional
 
+from intel_extension_for_transformers.optimization import BenchmarkConfig
+from intel_extension_for_transformers.optimization.benchmark import benchmark
+
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.19.0.dev0")
@@ -698,7 +701,7 @@ def main():
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        elif optim_args.quantization_approach == "QuantizationAwareTraining":
+        if optim_args.quantization_approach == "QuantizationAwareTraining":
             early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
@@ -731,7 +734,22 @@ def main():
             num_of_instance=optim_args.num_of_instance,
         )
 
-    if optim_args.benchmark or optim_args.accuracy_only:
+    if optim_args.benchmark:
+        benchmark_config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=-1,
+        )
+        benchmark(model_args.model_name_or_path, benchmark_config, example_inputs=eval_dataset)
+        #logger.info("metrics keys: {}".format(results.keys()))
+        #throughput = results.get("eval_samples_per_second")
+        #print('Batch size = {:d}'.format(training_args.per_device_eval_batch_size))
+        #print("Finally Eval {} Accuracy: {:.5f}".format(metric_name, results[metric_name]))
+        #print("Latency: {:.5f} ms".format(1000 / throughput))
+        #print("Throughput: {:.5f} samples/sec".format(throughput))
+        exit(0)
+    
+    if optim_args.accuracy_only:
         results = trainer.evaluate(max_length=max_length, num_beams=num_beams)
         logger.info("metrics keys: {}".format(results.keys()))
         throughput = results.get("eval_samples_per_second")

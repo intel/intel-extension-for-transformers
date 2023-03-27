@@ -4,8 +4,7 @@ This document describes the end-to-end workflow for Huggingface model [BERT Larg
 
 # Prerequisite
 
-## 1. Installation
-### 1.1 Prepare Python Environment
+## Prepare Python Environment
 Create a python environment
 ```shell
 conda create -n <env name> python=3.8
@@ -37,7 +36,7 @@ pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
-### 1.2 Environment Variables
+## Environment Variables
 Preload libjemalloc.so can improve the performance when multi instance.
 ```
 export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
@@ -47,27 +46,22 @@ Using weight sharing can save memory and improve the performance when multi inst
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
-## 2. Prepare Dataset and Pretrained Model
-
-### 2.1 Get Dataset
+# Inference Pipeline
+Neural Engine can parse ONNX model and Neural Engine IR. 
+We provide with three mode: accuracy, throughput or latency. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+You can run fp32 model inference by setting `precision=fp32`, command as follows:
 
 ```shell
-python prepare_dataset.py --dataset_name=squad --output_dir=./data
+bash run_bert_large.sh --model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset=squad --precision=fp32
 ```
 
-### 2.2 Get Model
-You can get a fp32 pytorch model from the optimization module by setting precision=fp32, command is as follows:
+By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=fp32
+bash run_bert_large.sh --model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset=squad --precision=int8
 ```
 
-By setting precision=int8, you can get PTQ int8 JIT model.
-```
-bash prepare_model.sh --input_model=bert-large-uncased-whole-word-masking-finetuned-squad --dataset_name=squad --task_name=squad --output_dir=./model_and_tokenizer --precision=int8
-```
-
-## Benchmark
-### 2.1 Accuracy  
+# Benchmark
+## Accuracy  
 Python API command as follows:
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=1
@@ -78,7 +72,7 @@ GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer --
 ```
 But the accuracy of quick start is unauthentic.
 
-### 2.2 Performance
+## Performance
 Python API command as follows:
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer --mode=performance --batch_size=1 --seq_len=384

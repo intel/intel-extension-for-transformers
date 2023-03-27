@@ -276,9 +276,9 @@ class OptimizationArguments:
     onnx: bool = field(
         default=False,
     )
-    to_onnx: str = field(
-        default=None,
-    )
+    to_onnx: bool = field(
+        default=False,
+        metadata={"help":"Transfer pytorch model to onnx model."})
     measure_rate: str = field(
         default=None
     )
@@ -386,14 +386,6 @@ def main():
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
         )
-        model = AutoModelForQuestionAnswering.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
@@ -406,6 +398,15 @@ def main():
     if optim_args.int8:
     # Load the model obtained after Intel Neural Compressor (INC) quantization
         model = OptimizedModel.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
+    else:
+        model = AutoModelForQuestionAnswering.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
@@ -731,10 +732,6 @@ def main():
                 logger.info(res_str)
         return
 
-    if optim_args.to_onnx:
-        trainer.enable_executor = True
-        trainer.export_to_onnx(optim_args.to_onnx)
-
     # Set Length-Adaptive configuration
     if optim_args.length_adaptive:
 
@@ -788,7 +785,7 @@ def main():
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        elif optim_args.quantization_approach == "QuantizationAwareTraining":
+        if optim_args.quantization_approach == "QuantizationAwareTraining":
             early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
@@ -803,7 +800,6 @@ def main():
             metrics=[tune_metric],
         )
         model = trainer.quantize(quant_config=quantization_config)
-        trainer.export_to_onnx()
 
     if optim_args.benchmark or optim_args.accuracy_only:
         if optim_args.int8:
@@ -888,7 +884,12 @@ def main():
         # run search
         trainer.run_evolutionary_search()
 
-
+    if optim_args.to_onnx:
+        trainer.enable_executor = True
+        if not optim_args.tune:
+            trainer.export_to_onnx()
+        else:
+            trainer.export_to_onnx(scale_mapping=True)
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)

@@ -4,8 +4,8 @@ This document describes the end-to-end workflow for Huggingface model [VIT](http
 
 # Prerequisite
 
-## 1. Installation
-### 1.1 Install python environment
+## Installation
+### Install python environment
 Create a new python environment
 ```shell
 conda create -n <env name> python=3.8
@@ -37,7 +37,7 @@ pip install -r requirements.txt
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
-### 1.2 Environment variables preload libjemalloc.so can improve the performance when multi instances.
+### Environment Variables
 ```
 export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
@@ -46,35 +46,31 @@ Using weight sharing can save memory and improve the performance when multi inst
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
-## 2. Prepare Dataset and Pretrained Model
-
-### 2.1 Get Dataset
-
+## Inference Pipeline
+Neural Engine can parse ONNX model and Neural Engine IR.
+We provide with three mode: accuracy, throughput or latency. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
-python prepare_dataset.py --task_name=image-classification --output_dir=./data
+bash run_vit.sh --input_model=google/vit-base-patch16-224  --task_name=imagenet-1k --precision=fp32
 ```
-
-### 2.2 Get model
-Neural Engine can parse Tensorflow/Pytorch/ONNX model and Neural Engine IR.
-You can get a fp32 ONNX model from the optimization module by setting precision=fp32, command as follows:
+By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash prepare_model.sh --input_model=google/vit-base-patch16-224  --task_name=imagenet-1k --output_dir=./model_and_tokenizer --precision=fp32
-```
-By setting precision=int8, you can get a PTQ int8 model or setting precision=bf16 to get a bf16 model.
-```shell
-bash prepare_model.sh --input_model=google/vit-base-patch16-224  --task_name=imagenet-1k --output_dir=./model_and_tokenizer --precision=int8
+bash run_vit.sh --input_model=google/vit-base-patch16-224  --task_name=imagenet-1k --precision=int8
 ```
 Note: the input_model could be changed from a vit base model to a vit large model.
 
 ## Benchmark
-Throught setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
-### 2.1 accuracy  
+If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
+
+By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model. 
+### Accuracy  
+
 Python API command as follows:
   ```shell
   GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=8
   ```
 
-### 2.2 Performance
+### Performance
 Python API command as follows:
   ```shell
   GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128

@@ -83,7 +83,7 @@ source env_sphinx/bin/activate
 cp -rf ../docs/ ./source
 cp -rf ../intel_extension_for_transformers ./source/docs
 rm -rf ./source/build_docs
-cp -f "../README.md" "./source/docs/Welcome.md"
+#cp -f "../README.md" "./source/docs/Welcome.md"
 cp -f "../SECURITY.md" "./source/docs/SECURITY.md"
 
 

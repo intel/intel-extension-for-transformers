@@ -54,8 +54,7 @@ source_suffix = ['.rst', '.md']
 # The master toctree document.
 master_doc = 'index'
 
-exclude_patterns = ['_build_doxygen',
-'*/intel_extension_for_transformers/backends/neural_engine/third_party/*']
+exclude_patterns = ['_build_doxygen', '*/intel_extension_for_transformers/backends/neural_engine/third_party/*']
 
 pygments_style = 'sphinx'
 

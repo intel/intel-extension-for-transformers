@@ -2,7 +2,7 @@
 This document describes the end-to-end workflow for Huggingface model [DistilBERT](https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english) with Neural Engine backend.
 # Prerequisite
 
-## 1.Environment
+## Environment
 
 Create a python environment
 ```shell
@@ -36,7 +36,7 @@ pip install -r requirements.txt
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
-### Environment Variables
+## Environment Variables
 Preload libjemalloc.so can improve the performance when multi instance.
 ```
 export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
@@ -46,22 +46,18 @@ Using weight sharing can save memory and improve the performance when multi inst
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
-## 2.Prepare Dataset
+# Inference Pipeline
+Neural Engine can parse ONNX model and Neural Engine IR. 
+We provide with three mode: accuracy, throughput or latency. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+You can run fp32 model inference by setting `precision=fp32`, command as follows:
 
 ```shell
-python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./data
+bash run_bert_mini.sh --model=distilbert-base-uncased-finetuned-sst-2-english --dataset=sst2 --precision=fp32
 ```
 
-## 3.Prepare Model
-
-Neural Engine can parse ONNX model and IR.  
-You could get fp32 ONNX model by setting precision=fp32, command is as follows:
+By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash prepare_model.sh --input_model=distilbert-base-uncased-finetuned-sst-2-english  --task_name=sst2 --output_dir=./model_and_tokenizer --precision=fp32
-```
-By setting precision=int8 you could get PTQ int8 model and setting precision=bf16 to get bf16 model.
-```shell
-bash prepare_model.sh --input_model=distilbert-base-uncased-finetuned-sst-2-english  --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
+bash run_bert_mini.sh --model=distilbert-base-uncased-finetuned-sst-2-english --dataset=sst2 --precision=int8
 ```
 You could also compile the model to IR using python API as follows:
 ```
@@ -71,8 +67,10 @@ graph.save('./ir')
 ```
 
 # Benchmark
-Throught setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
-## 1.Accuracy  
+If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
+
+By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
+## Accuracy  
 Python API Command as follows:
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
@@ -82,7 +80,7 @@ Shell script is also avaiable:
 bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
 ```
 
-## 2.Performance  
+## Performance  
 Python API command as follows:
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128

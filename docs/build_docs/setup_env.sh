@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sudo apt install doxygen
+sudo apt install doxygen -y
 
 ENV_NAME=env_sphinx
 deactivate
