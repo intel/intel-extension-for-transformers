@@ -40,9 +40,9 @@ void fp32_sum(int64_t norm_dim_elt_num, int dt_bytewidth, char* src, __m512* zmm
 }
 
 inline __m512 bf16_load(float* addr) {
-  auto bf16_data = _mm256_loadu_ps(addr);
-  auto shift_data = _mm512_cvtepu16_epi32((__m256i)bf16_data);
-  return (__m512)_mm512_slli_epi32(shift_data, 0x10);
+  auto bf16_data = _mm256_castps_si256(_mm256_loadu_ps(addr));
+  auto shift_data = _mm512_cvtepu16_epi32(bf16_data);
+  return _mm512_castsi512_ps(_mm512_slli_epi32(shift_data, 0x10));
 }
 
 void bf16_sum(int64_t norm_dim_elt_num, int dt_bytewidth, char* src, __m512* zmm_sum_x, __m512* zmm_sum_powx) {
@@ -100,20 +100,20 @@ void bf16_norm(int map_size, int dt_bytewidth, int channels_per_group, const flo
       __m512 zmm_dst = bf16_load(static_cast<float*>(static_cast<void*>((cur_channel_src + i * 16 * dt_bytewidth))));
       zmm_dst = _mm512_sub_ps(zmm_dst, *zmm_mean);
       zmm_dst = _mm512_fmadd_ps(zmm_dst, zmm_gamma, zmm_beta);
-      auto zmm_shift = _mm512_srli_epi32((__m512i)zmm_dst, 0x10);
+      auto zmm_shift = _mm512_srli_epi32(_mm512_castps_si512(zmm_dst), 0x10);
       return _mm512_cvtepi32_epi16(zmm_shift);
     };
     int64_t j = 0;
     for (; j < map_size / 16; j++) {
       auto ymm_bf16 = norm();
       _mm256_storeu_ps(static_cast<float*>(static_cast<void*>((cur_channel_dst + j * 16 * dt_bytewidth))),
-                       (__m256)ymm_bf16);
+                       _mm256_castsi256_ps(ymm_bf16));
     }
     if (tail != 0) {
       auto ymm_bf16 = norm();
       auto mask = _cvtu32_mask16(0xffff >> (16 - tail));
       _mm256_mask_storeu_ps(static_cast<float*>(static_cast<void*>((cur_channel_dst + j * 16 * dt_bytewidth))), mask,
-                            (__m256)ymm_bf16);
+                            _mm256_castsi256_ps(ymm_bf16));
     }
   }
 }
