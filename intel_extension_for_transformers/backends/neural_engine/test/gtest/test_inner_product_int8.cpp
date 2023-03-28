@@ -50,6 +50,11 @@ bool CheckResult(const TestParams& t) {
     } else {
       return false;
     }
+  } catch (const std::string& e) {
+    if (e == "Windows" && t.expect_to_fail)
+      return true;
+    else
+      return false;
   }
   if (!t.expect_to_fail) {
     bool is_equal;
@@ -319,15 +324,27 @@ static auto CasesInt8 = []() {
 
   src0_shape = {3840, 1024};
   src1_shape = {1024, 256};
+#ifdef _WIN32
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "s8"), true});
+#else
   cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "s8"), false});
+#endif
 
   src0_shape = {3840, 256};
   src1_shape = {256, 1024};
+#ifdef _WIN32
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "u8", "gelu_tanh"), true});
+#else
   cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "u8", "gelu_tanh"), false});
+#endif
 
   src0_shape = {3840, 256};
   src1_shape = {256, 256};
+#ifdef _WIN32
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "fp32", "sum"), true});
+#else
   cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "fp32", "sum"), false});
+#endif
 
   return ::testing::ValuesIn(cases);
 };

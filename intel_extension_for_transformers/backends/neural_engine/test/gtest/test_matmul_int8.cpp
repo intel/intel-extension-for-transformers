@@ -50,6 +50,11 @@ bool CheckResult(const TestParams& t) {
     } else {
       return false;
     }
+  } catch (const std::string& e) {
+    if (e == "Windows" && t.expect_to_fail)
+      return true;
+    else
+      return false;
   }
   if (!t.expect_to_fail) {
     bool is_equal;
@@ -310,11 +315,19 @@ static auto CasesInt8 = []() {
 
   src0_shape = {4, 2};
   src1_shape = {2, 3};
+#ifdef _WIN32
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "s8", "fp32"), true});
+#else
   cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "s8", "fp32"), false});
+#endif
 
   src0_shape = {4, 2};
   src1_shape = {2, 3};
+#ifdef _WIN32
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "u8"), true});
+#else
   cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "u8"), false});
+#endif
   return ::testing::ValuesIn(cases);
 };
 

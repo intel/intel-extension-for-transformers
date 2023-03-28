@@ -238,7 +238,13 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
   dst_->set_dtype(output_dtype_);
   is_dynamic_ =
       output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
-  if (is_dynamic_) LOG(INFO) << this->name() << " is DYNAMIC!!!";
+  if (is_dynamic_) {
+    LOG(INFO) << this->name() << " is DYNAMIC!!!";
+#ifdef _WIN32
+    LOG(ERROR) << "dynamic quantization did NOT support windows now!!!";
+    throw std::string("Windows");
+#endif
+  }
   if (!is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     int ic_dim = 0;
     vector<float> rescales;

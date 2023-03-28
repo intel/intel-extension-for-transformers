@@ -249,9 +249,15 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
     }
   }
 #endif
-  is_dynamic_ = (output.size() > 1) ||
-                (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
-  if (is_dynamic_) LOG(INFO) << this->name() << " is DYNAMIC!!!";
+  is_dynamic_ =
+      (output.size() > 1) || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
+  if (is_dynamic_) {
+    LOG(INFO) << this->name() << " is DYNAMIC!!!";
+#ifdef _WIN32
+    LOG(ERROR) << "dynamic quantization did NOT support windows now!!!";
+    throw std::string("Windows");
+#endif
+  }
   switch (kernel_type_) {
     case Dense:
       PrepareDense(input, output);
@@ -610,7 +616,7 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
         src1_shape = {src1_shape[1], src1_shape[0]};
       }
       dst_shape = {src0_->shape()[0], src1_shape[1]};
-    // 3D
+      // 3D
     } else if (input[1]->shape().size() == 3) {
       dst_shape = {src1_shape[0], src0_->shape()[0], src1_shape[2]};
     } else {
@@ -674,9 +680,9 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
       LOG(WARNING) << "post tensor will be used by multi node...";
     }
   }
-    std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr,
-                                             dst_data, rescales_.data()};
-    spmm_kern_.execute(runtime_data);
+  std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
+                                           rescales_.data()};
+  spmm_kern_.execute(runtime_data);
 }
 #endif
 
@@ -720,12 +726,11 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
     } else if (kernel_type_ == Dense) {
       // SparseLib 3D gemm - Dense gemm (no Reorder between)
       // BatchMatmul (receive SparseLib 3d format) - Reshape - Dense gemm (reshape does not change format)
-      if (input[0]->tensor_format() == TensorFormat::MmKMb ||
-          input[0]->tensor_format() == TensorFormat::BmHnHsBbS) {
-          if (input[0]->tensor_format() == TensorFormat::MmKMb) input[0]->reorder(input[0]->shape(), {0, 2, 1});
-          input[0]->set_tensor_format(TensorFormat::MK);
-          output[0]->set_tensor_format(TensorFormat::MK);
-          input[0]->set_shape({input[0]->shape()[0] * input[0]->shape()[1], input[0]->shape()[2]});
+      if (input[0]->tensor_format() == TensorFormat::MmKMb || input[0]->tensor_format() == TensorFormat::BmHnHsBbS) {
+        if (input[0]->tensor_format() == TensorFormat::MmKMb) input[0]->reorder(input[0]->shape(), {0, 2, 1});
+        input[0]->set_tensor_format(TensorFormat::MK);
+        output[0]->set_tensor_format(TensorFormat::MK);
+        input[0]->set_shape({input[0]->shape()[0] * input[0]->shape()[1], input[0]->shape()[2]});
       } else {
         return;
       }
