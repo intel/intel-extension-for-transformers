@@ -32,8 +32,7 @@ class InputOperator : public Operator {
  public:
   explicit InputOperator(const shared_ptr<OperatorConfig>& config) : Operator(config) {}
 
-  // Input operator only have no output, do nothing with Reshape .
-  virtual void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {}
+  void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
   // Input operator's output is assigned outside, Forward do nothing.
   virtual void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {}

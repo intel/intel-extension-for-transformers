@@ -336,7 +336,15 @@ class CollectQuantInfo(Pattern):
                 quant_min = np.array(quant_max - 255 * scale)
 
                 dtype = dtype + "_insert"
-                util.insert_quant_info(quant_node.input_tensors[0].name, [quant_min, quant_max, dtype])
+                map_name = quant_node.input_tensors[0].name
+                pre_node = quant_node
+                while True:
+                    pre_node = model.get_node_by_name(pre_node.input_tensors[0].source_op[0])
+                    if pre_node.op_type == 'Reorder':
+                        map_name = pre_node.input_tensors[0].name
+                    else:
+                        break
+                util.insert_quant_info(map_name, [quant_min, quant_max, dtype])
                 for dst_op in dquant_output.dest_op:
                     dst_node = model.get_node_by_name(dst_op)
                     for idx, input_tensor in enumerate(dst_node.input_tensors):

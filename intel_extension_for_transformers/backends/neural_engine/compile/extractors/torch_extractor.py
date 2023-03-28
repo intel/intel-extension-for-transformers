@@ -40,18 +40,18 @@ def removeUnusedNode(graph, unused_nodes):
 
     # remove ListConstruct followed by cat/stack/einsum
     for node in graph.nodes():
-        if node.kind() == 'prim::ListConstruct' and node.outputsAt(0).type().str() == 'Tensor[]':
+        if node.kind() == 'prim::ListConstruct' and node.outputsAt(0).type().str() in ['Tensor[]', 'int[]']:
             out_val = node.outputsAt(0)
             for val_user in out_val.uses():
                 next_node = val_user.user
-                if next_node.kind() == 'aten::cat' or next_node.kind() == 'aten::stack':
+                if next_node.kind() in ['aten::cat', 'aten::stack']:
                     for i in range(node.inputsSize()):
                         next_node.addInput(node.inputsAt(i))
                     next_node.addInput(next_node.inputsAt(1))
                     next_node.removeInput(0)
                     next_node.removeInput(0)
                     remove_list.append(node)
-                elif next_node.kind() == 'aten::einsum':
+                elif next_node.kind() in ['aten::einsum', 'aten::view']:
                     for i in range(node.inputsSize()):
                         next_node.addInput(node.inputsAt(i))
                     next_node.removeInput(1)
@@ -59,6 +59,26 @@ def removeUnusedNode(graph, unused_nodes):
 
     for node in remove_list:
         node.destroy()
+
+def fuse_padding_seq(graph):
+    old_g = """
+            graph(%input_ids.1, %attention_mask.1, %3, %4, %5, %6, %7, %8, %9, %10):
+                %11 : int = aten::size(%input_ids.1, %9)
+                %attention_mask0.1 : Tensor = aten::view(%attention_mask.1, %11, %8)
+                %14 : Tensor = aten::slice(%attention_mask0.1, %9, %9, %7, %6)
+                %15 : Tensor = aten::unsqueeze(%14, %6)
+                %16 : Tensor = aten::unsqueeze(%15, %5)
+                %17 : Tensor = aten::slice(%16, %4, %9, %7, %6)
+                %18 : Tensor = aten::rsub(%17, %3, %6)
+                %19 : Tensor = aten::mul(%18, %10)
+                return (%19)
+            """
+    new_g = """
+            graph(%input_ids.1, %attention_mask.1, %3, %4, %5, %6, %7, %8, %9, %10):
+                %19 = aten::padding_sequence(%attention_mask.1, %10)
+                return (%19)
+            """
+    torch._C._jit_pass_custom_pattern_based_rewrite_graph(old_g, new_g, graph)
 
 class TorchExtractor(object):
     """The TorchExtractor class.
@@ -84,6 +104,7 @@ class TorchExtractor(object):
         removeUnusedNode(graph, ['aten::dropout', 'prim::NumToTensor', 'aten::to', 'aten::contiguous',
                                  'aten::alias', 'aten::Int', 'aten::ScalarImplicit'])
         logger.info('Start to extarct torch model ops...')
+        fuse_padding_seq(graph)
         new_graph = Graph()
         new_graph.framework_modeling_config['framework'] = 'torch'
         graph_nodes_dict = {}

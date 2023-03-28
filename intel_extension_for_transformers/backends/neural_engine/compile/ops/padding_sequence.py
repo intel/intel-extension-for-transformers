@@ -17,25 +17,24 @@
 
 """The neural engine operator mapping file."""
 
-from .op import Operator, operator_registry, list2str, parseTorchListConstruct
+from .op import Operator, operator_registry
 from .tensor import Tensor
-import copy
+from ..graph_utils import list2str
 
-@operator_registry(operator_type='View')
-class View(Operator):
-    """Register the View operator."""
+# Fused_op Reshape, ExpandDims+Sub+Mul
+# This pattern is used for dealing with input_mask originally in bert model
+@operator_registry(operator_type='PaddingSequence')
+class PaddingSequence(Operator):
+    """Register the PaddingSequence operator."""
+
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
 
     def set_attr(self, framework, node):
-        """Extract the node attr from onnxruntime."""
-        if framework == 'torch':
-            shape_list = []
-            if node.inputsAt(1).type().kind() == 'ListType':
-                shape_list = parseTorchListConstruct(node.inputsAt(1))
-            else:
-                for i in range(1, node.inputsSize()):
-                    shape_list.append(node.inputsAt(i).toIValue())
-            shape_list = [-1 if x is None else x for x in shape_list]
-            self._attr['shape'] = list2str(shape_list)
+        """Extract the node attr."""
+        if framework == "torch":
+            self._attr['dst_shape'] = "-1,1,1,-1"
+            self._attr['dims'] = 1
+            self._attr['padding_value'] = node.inputsAt(1).toIValue().item()
+            del self.input_tensors[1]

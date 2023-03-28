@@ -31,6 +31,8 @@ class RemoveListConstruct(Pattern):
     """
     def __call__(self, model):
         """The __call__ function of this pattern class."""
+        if model.framework_modeling_config['framework'] != 'torch':
+            return model
         remove_list = []
         flag = False 
         for node in model.nodes:

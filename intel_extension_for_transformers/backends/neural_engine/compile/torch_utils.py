@@ -42,7 +42,8 @@ op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant', 'prim::List
            'aten::neg': 'Neg', 'aten::stack': 'Stack', 'aten::flatten': 'Flatten', 'aten::cat': 'Concat',
            'aten::rsub': 'Rsub', 'aten::mul': 'Mul', 'aten::add': 'Add', 'aten::add_': 'Add', 'aten::div': 'Div',
            'aten::sub': 'Sub', 'aten::gt': 'Greater', 'aten::lt': 'Less', 'aten::eq': 'Equal', 'aten::ne': 'NotEqual',
-           'aten::quantize_per_tensor': 'Quantize', 'aten::dequantize': 'Dequantize'}
+           'aten::quantize_per_tensor': 'Quantize', 'aten::dequantize': 'Dequantize',
+           'aten::padding_sequence': 'PaddingSequence'}
 
 def torch_extract_operator(node, model, nodes_dict, engine_graph=None):
     """Decorate the operator in Torch.

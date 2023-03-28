@@ -214,17 +214,6 @@ class Output(Operator):
         super().__init__()
 
 
-# Fused_op Reshape, ExpandDims+Sub+Mul
-# This pattern is used for dealing with input_mask originally in bert model
-@operator_registry(operator_type='PaddingSequence')
-class PaddingSequence(Operator):
-    """Register the PaddingSequence operator."""
-
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 @operator_registry(operator_type='QLinearMatMul')
 class QLinearMatMul(Operator):
     """Register the QLinearMatMul operator."""

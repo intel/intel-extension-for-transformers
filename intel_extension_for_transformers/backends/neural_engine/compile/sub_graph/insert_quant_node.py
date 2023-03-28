@@ -52,6 +52,7 @@ class InsertQuantNode(Pattern):
         if not quant_info:
             return model
 
+        unique_quant_nodes = {}
         node_idx = 0
         while node_idx < len(model.nodes):
             node = model.nodes[node_idx]
@@ -80,23 +81,30 @@ class InsertQuantNode(Pattern):
                             dtype="fp32")
 
                         if "insert" in quant_info[input_name][2]:
-                            quant_dtype = "u8" if "u8" in quant_info[input_name][2] else "s8"
-                            quant_dtype = "s8" if EXECUTOR_TYPE[
-                                node.op_type] == "Matmul" else quant_dtype
-                            quant_output = Tensor(name=input_name + "_quant",
-                                                  source_op=[node.name + "_quant_" + str(idx)],
-                                                  dest_op=[node.name],
-                                                  dtype=quant_dtype)
-                            quantize_op = util.construct_node(
-                                node_name=node.name + "_quant_" + str(idx),
-                                op_type='Quantize',
-                                input_tensors=[input_tensor, quant_min, quant_max],
-                                output_tensors=[quant_output],
-                                attr=OrderedDict({'output_dtype': quant_dtype}))
-                            node.input_tensors[idx] = quant_output
-                            insert_idx = model.get_node_id(node.name)
-                            model.insert_nodes(insert_idx, [quantize_op])
-                            node_idx += 1
+                            if input_name in unique_quant_nodes:
+                                quantize_op_name = unique_quant_nodes[input_name]
+                                quant_node = model.get_node_by_name(quantize_op_name)
+                                quant_node.output_tensors[0].dest_op.append(node.name)
+                                node.input_tensors[idx] = quant_node.output_tensors[0]
+                            else:
+                                quant_dtype = "u8" if "u8" in quant_info[input_name][2] else "s8"
+                                quant_dtype = "s8" if EXECUTOR_TYPE[
+                                    node.op_type] == "Matmul" else quant_dtype
+                                quant_output = Tensor(name=input_name + "_quant",
+                                                    source_op=[node.name + "_quant_" + str(idx)],
+                                                    dest_op=[node.name],
+                                                    dtype=quant_dtype)
+                                quantize_op = util.construct_node(
+                                    node_name=node.name + "_quant_" + str(idx),
+                                    op_type='Quantize',
+                                    input_tensors=[input_tensor, quant_min, quant_max],
+                                    output_tensors=[quant_output],
+                                    attr=OrderedDict({'output_dtype': quant_dtype}))
+                                unique_quant_nodes[input_name] = quantize_op.name
+                                node.input_tensors[idx] = quant_output
+                                insert_idx = model.get_node_id(node.name)
+                                model.insert_nodes(insert_idx, [quantize_op])
+                                node_idx += 1
                             # insert src0/src1 min and max tensor
                             model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 0,
                                                             quant_min, 'insert')
@@ -160,23 +168,7 @@ class InsertQuantNode(Pattern):
                                                     'remove')
         model.remove_nodes(remove_list)
 
-        # remove duplicate quant nodes and duplicate tensors
-        remove_duplicate_set = set()
-        quant_node_dict = {}
-        duplicate_list=[]
-        for node in model.nodes:
-            sz = len(remove_duplicate_set)
-            remove_duplicate_set.add(node.output_tensors[0].name)
-            new_sz = len(remove_duplicate_set)
-            if new_sz == sz:
-                duplicate_list.append(node.name)
-                remain_node_name = quant_node_dict[node.output_tensors[0].name]
-                dup_node = model.get_node_by_name(node.output_tensors[0].dest_op[0])
-                dup_node.input_tensors[0].source_op = [remain_node_name]
-            else:
-                quant_node_dict[node.output_tensors[0].name] = node.name
-        model.remove_nodes(duplicate_list)
-
+        # remove duplicate tensors
         for node in model.nodes:
             if node.name in quant_info:
                 input_tensor_set = set()

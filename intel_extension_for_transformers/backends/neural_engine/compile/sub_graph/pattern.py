@@ -102,9 +102,20 @@ supported_patterns = [
     'StartEndLogits',
     'CastTo',
 
-    'RemoveListConstruct',
-    'TorchPaddingSequence',
+    # GPT-J
+    # 'RemoveListConstruct',
+    'TorchEmbedding',
     'InnerproductReshapeFusion',
+    'MatMulWithTranspose',
+    'InnerproductWithBiasGelu',
+    'SliceMask',
+    'ArangewithReciprocal',
+    'InnerproductwithSlice',
+    'RoraryPosEmb',
+    'EinsumwithArange',
+    'RemoveSlice',
+    'RemoveRange',
+    'RemoveLastView',
     
     'InsertQuantNode',
     'InsertBF16Node',
