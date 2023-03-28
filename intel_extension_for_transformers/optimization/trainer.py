@@ -23,6 +23,7 @@ import os
 import copy
 import sys
 import time
+import json
 import warnings
 from functools import partial
 from neural_compressor import __version__ as nc_version
@@ -357,6 +358,11 @@ class BaseTrainer():
     def _save_inc_int8(self, opt_model, output_dir):
         weights_file = os.path.join(os.path.abspath(os.path.expanduser(output_dir)), WEIGHTS_NAME)
         if isinstance(opt_model, IPEXModel):
+            try:
+                with open(os.path.join(output_dir, "best_configure.json"), 'w') as f:
+                    json.dump(opt_model.tune_cfg, f, indent = 4)
+            except IOError as e:
+                logger.error("Fail to save ipex configure file due to {}.".format(e))
             opt_model.model.save(weights_file)
             self.model_config.backend = "ipex"
             self.model_config.save_pretrained(output_dir)
