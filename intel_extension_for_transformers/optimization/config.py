@@ -44,7 +44,8 @@ class Provider(Enum):
 def check_value(name, src, supported_type, supported_value=[]):  # pragma: no cover
     """Check if the given object is the given supported type and in the given supported value.
 
-    Example:
+    Example::
+
         def datatype(self, datatype):
             if check_value('datatype', datatype, list, ['fp32', 'bf16', 'uint8', 'int8']):
                 self._datatype = datatype

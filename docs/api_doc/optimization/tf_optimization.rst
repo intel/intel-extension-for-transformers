@@ -1,4 +1,4 @@
-Pipeline
+TensorFlow Optimizer
 ==============
 
 .. autoapisummary::

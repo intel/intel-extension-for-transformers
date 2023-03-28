@@ -256,7 +256,7 @@ class BaseTrainer():
         
         Args:
             quant_config: The path to the YAML configuration file or QuantizationConfig class containing 
-            accuracy goal, quantization objective and related dataloaders etc.
+                accuracy goal, quantization objective and related dataloaders etc.
             provider: The provider used to quantize.
         
         Returns:
@@ -331,10 +331,10 @@ class BaseTrainer():
 
         Args:
             quant_config: The path to the YAML configuration file or QuantizationConfig class containing 
-            accuracy goal, quantization objective and related dataloaders etc.
+                accuracy goal, quantization objective and related dataloaders etc.
             provider: The provider used to quantize.
             eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
-            train_func (:obj:`Callable`, optional: The function used to train the model.
+            train_func (:obj:`Callable`, optional): The function used to train the model.
             calib_dataloader: The dataloader for calibration dataset.
 
         Returns:

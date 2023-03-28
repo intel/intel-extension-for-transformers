@@ -1,4 +1,4 @@
-Optimizer
+PyTorch Optimizer
 ==============
 
 .. autoapisummary::

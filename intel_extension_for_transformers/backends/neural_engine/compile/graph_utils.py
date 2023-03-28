@@ -118,20 +118,23 @@ def search_straight_pattern(input_pattern, graph):
             the graph has 24 layers and each layer has a 'LayerNorm' pattern, then the length is
             24. Each match pattern result is still a list contains the node names, and the last
             element is the op_type list corresponding to the former node names.
-            For example, the return result maybe like this:
-            [
-                ['Mul' node name,
-                'Mul' node name,
-                'Add' node name,
-                ['Mul', 'Mul', 'Add']],
 
-                ['Mul' node name,
-                'Mul' node name,
-                'AddV2' node name,
-                ['Mul', 'Mul', 'AddV2']],
+            Here is the return result example::
 
-                ...
-            ]
+
+                [
+                    ['Mul' node name,
+                    'Mul' node name,
+                    'Add' node name,
+                    ['Mul', 'Mul', 'Add']],
+
+                    ['Mul' node name,
+                    'Mul' node name,
+                    'AddV2' node name,
+                    ['Mul', 'Mul', 'AddV2']],
+
+                    ...
+                ]
     """
     def _validate_input(data, creteria):
         """Validation of input data."""
@@ -280,10 +283,15 @@ def search_pattern(pattern_list, graph):
                       represents the main top-down computation flow (from pattern head op to tail
                       op), the left lists represent sub-graphs (their tail nodes must in the main
                       computation flow).
-                      e.g:  LayerNorm pattern from bert_large_squad.pb
-                      [ [(0, 'Mean'), (1, 'SquaredDifference'), (2, 'Mean'), (3, 'AddV2'),
-                        (4, 'Rsqrt'), (5, 'Mul'), (7 ,'Mul'), (8, 'Sub'), (9, 'AddV2')],
-                        [(5, 'Mul'), (6, 'Mul'), (9, 'AddV2')] ]
+
+                      Example::
+
+                          #LayerNorm pattern from bert_large_squad.pb
+                          [
+                              [(0, 'Mean'), (1, 'SquaredDifference'), (2, 'Mean'), (3, 'AddV2'),
+                              (4, 'Rsqrt'), (5, 'Mul'), (7 ,'Mul'), (8, 'Sub'), (9, 'AddV2')],
+                              [(5, 'Mul'), (6, 'Mul'), (9, 'AddV2')]
+                          ]
 
         graph: Graph Class, the new graph generated from extractor
 
@@ -321,15 +329,19 @@ def search_pattern(pattern_list, graph):
            chain length.
         7. Some pattern has several same sub-graphs, these sub-graphs have same tail node and op
            types are totally same.
-           For example:
-            a -- b -- c --d -- e --f
-                |             |
-                c1 -- d1 -----
-                |             |
-                c2 -- d2 -----
-                |             |
-                c3 -- d3 -----
-            So the splicing step need to check the node name
+
+           So the splicing step need to check the node name.
+
+           Example::
+
+                a -- b -- c --d -- e --f
+                     |             |
+                     c1 -- d1 -----
+                     |             |
+                     c2 -- d2 -----
+                     |             |
+                     c3 -- d3 -----
+
         For now, the algorithm just support the sub-graph's input /output ops are all in pattern.
         You can set the sub-graph input as (), but the results need you to check. Mostly, this
         sub-graph is a part of the pattern.
@@ -612,16 +624,16 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
         node list, the third is a list contains required old nodes need to be returned from origin
         pattern.
 
-    A example of mapping_dict:
-    mapping_dict: 
-                   {'patterns': {'in': [(0, 'Reshape), ...], 'out':[(0, 'PaddingSequence')]},
-                    'search_mode': op_type
-                    'node_names': {0: 'embeddings/reshape', 1: 0, ...},
-                    'input_tensors': {0:[{0:[0]}, [[0], 1]], 1:[{1:[0], 2:[1,2]},[[0,1], 3]],
-                                      2:[{},[[],1]], ..., m:[{'input_data':[1]}, [[0],1]},
-                    'output_tensors': {2:[{0:[0]}, [[0],1]], ...},
-                    'returns': [0, 1, 2],
-                    }                        # one representation of this pattern
+    Example of mapping_dict::
+
+        {'patterns': {'in': [(0, 'Reshape), ...], 'out':[(0, 'PaddingSequence')]},
+         'search_mode': op_type,
+         'node_names': {0: 'embeddings/reshape', 1: 0, ...},
+         'input_tensors': {0:[{0:[0]}, [[0], 1]], 1:[{1:[0], 2:[1,2]},[[0,1], 3]],
+                           2:[{},[[],1]], ..., m:[{'input_data':[1]}, [[0],1]},
+         'output_tensors': {2:[{0:[0]}, [[0],1]], ...},
+         'returns': [0, 1, 2],
+        }                        # one representation of this pattern
 
     'patterns': give the pattern representations before ('in') and after ('out') fusion. See the
                 search_pattern() function for more details about pattern representation.
