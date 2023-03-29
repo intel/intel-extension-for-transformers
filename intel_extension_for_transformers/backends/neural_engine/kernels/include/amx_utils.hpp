@@ -29,9 +29,9 @@ class tile_param_t {
   int K_tile;
   bool is_bf16;
   int K_pack;
-  int C_tile_num;
-  int A_tile_num;
-  int B_tile_num;
+  int C_tile_num = 4;
+  int A_tile_num = 2;
+  int B_tile_num = 2;
 
   tile_param_t() : M_tile(0), N_tile(0), K_tile(0), is_bf16(false), K_pack(0) {}
   tile_param_t(int m_tile, int n_tile, int k_tile, bool bf16, int k_pack, int c_tile_num = 4, int a_tile_num = 2,

@@ -41,7 +41,7 @@ class CosSinOperator : public Operator {
  private:
   string output_dtype_ = "fp32";
   string algorithm_ = "cos";
-  int array_size_;
+  int array_size_ = 0;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_COSSIN_HPP_

@@ -83,9 +83,9 @@ class operator_desc {
 
  private:
   jd::kernel_kind ker_kind_;
-  jd::kernel_prop ker_prop_;
-  jd::engine_kind engine_kind_;
-  jd::runtime_kind runtime_kind_;
+  jd::kernel_prop ker_prop_ = jd::kernel_prop::forward_inference;
+  jd::engine_kind engine_kind_ = jd::engine_kind::cpu;;
+  jd::runtime_kind runtime_kind_ = jd::runtime_kind::undef;
   uint64_t impl_nthr_;
   std::vector<tensor_desc> ts_descs_;
   std::unordered_map<std::string, std::string> attrs_;

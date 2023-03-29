@@ -191,7 +191,23 @@ void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<
       has_bias_ = true;
       break;
     }
+    default: {
+      LOG(ERROR) << "Convolution expect at most 10 inputs but receive " << input_size;
+      break;
+    }
   }
+}
+
+bool ConvolutionOperator::isDynamic(const vector<Tensor*>& output) {
+  if (output.size() > 1) return true;
+  if (src_min_ != nullptr || src_max_ != nullptr) {
+    if (src_min_ == nullptr || src_max_ == nullptr) {
+      LOG(ERROR) << "One of min/max tensor is null for static quantization";
+      return false;
+    }
+  }
+  return src_min_ != nullptr && src_max_ != nullptr && src_min_->raw_data() == nullptr && !src_min_->is_shared() &&
+         src_max_->raw_data() == nullptr && !src_max_->is_shared();
 }
 
 void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -199,9 +215,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   if (dispatch_from_ == "InnerProduct" && input[0]->dtype() != "fp32") return;
   if (dispatch_from_ == "InnerProduct" && (input[1]->location().empty() || input[1]->shape().empty())) return;
   MapTensors(input, output);
-  bool is_dynamic_ =
-      output.size() > 1 || (src_min_ != nullptr && src_min_->raw_data() == nullptr && !src_min_->is_shared());
-  if (is_dynamic_ && dispatch_from_ == "InnerProduct") return;
+  if (isDynamic(output) && dispatch_from_ == "InnerProduct") return;
   if (has_bias_) {
     LOG(INFO) << name_ << "Convolution has bias";
   }

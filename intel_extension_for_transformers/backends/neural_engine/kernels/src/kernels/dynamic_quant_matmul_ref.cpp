@@ -113,6 +113,10 @@ int8_t* reorder_back(const int8_t* reorder_mat, int k, int n) {
               reorder_mat[n_loop * trans_block_col * block_size + k_loop * 64 + i * trans_block_col * 64 + j];
   // step2. reorder back.
   int8_t* reorder_back_mat = reinterpret_cast<int8_t*>(malloc(k * n));
+  if (reorder_back_mat == nullptr) {
+    SPARSE_LOG(FATAL) << "Failed to malloc for reorder_back_mat";
+    return nullptr;
+  }
 #pragma omp parallel for
   for (int i = 0; i < k / 4; i++)
     for (int j = 0; j < n * 4; j++)

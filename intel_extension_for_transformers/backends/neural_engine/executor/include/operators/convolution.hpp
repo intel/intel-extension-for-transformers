@@ -46,6 +46,7 @@ class ConvolutionOperator : public Operator {
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  bool isDynamic(const vector<Tensor*>& output);
 
   bool weight_cached_;
   bool has_bias_;

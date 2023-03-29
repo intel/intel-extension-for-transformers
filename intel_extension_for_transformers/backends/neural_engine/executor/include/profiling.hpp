@@ -44,49 +44,62 @@ class ProfilingTracer {
   }
 
   void WriteProfileTrace(const vector<shared_ptr<Dispatcher>>& operators_, const vector<vector<Tensor*>>& input_tensors,
-                    const vector<vector<Tensor*>>& output_tensors) {
+                         const vector<vector<Tensor*>>& output_tensors) {
     IterationTotalTime(operators_);
     OutputStream << "{";
     OutputStream << "\"cat\":\"inference\",";
-    OutputStream << "\"dur\":" << TotalTime*1000<< ",";
-    OutputStream << "\"name\":\"" << "model_inference" << "\",";
+    OutputStream << "\"dur\":" << TotalTime * 1000 << ",";
+    OutputStream << "\"name\":\""
+                 << "model_inference"
+                 << "\",";
     OutputStream << "\"ph\":\"X\",";
     OutputStream << "\"pid\": 0,";
-    OutputStream << "\"tid\": \"" << "inference" << "\",";
+    OutputStream << "\"tid\": \""
+                 << "inference"
+                 << "\",";
     OutputStream << "\"ts\": " << 0;
     OutputStream << "}";
     float iter_start = 0;
     for (int i = 0; i < operators_[1]->latency().size(); ++i) {
       OutputStream << ",";
       OutputStream << "{";
-      OutputStream << "\"cat\":\"" << "iteration" << "\",";
-      OutputStream << "\"dur\":" << iterations_during[i]*1000 << ",";
-      OutputStream << "\"name\":\"" << "Iteration" << i << "\",";
+      OutputStream << "\"cat\":\""
+                   << "iteration"
+                   << "\",";
+      OutputStream << "\"dur\":" << iterations_during[i] * 1000 << ",";
+      OutputStream << "\"name\":\""
+                   << "Iteration" << i << "\",";
       OutputStream << "\"ph\":\"X\",";
       OutputStream << "\"pid\": 0,";
-      OutputStream << "\"tid\": \"" << "Iteration" << "\",";
-      OutputStream << "\"ts\":" << iter_start*1000;
+      OutputStream << "\"tid\": \""
+                   << "Iteration"
+                   << "\",";
+      OutputStream << "\"ts\":" << iter_start * 1000;
       OutputStream << "}";
       float op_start = 0;
-      for (int j = 1; j < operators_.size()-1; ++j) {
+      for (int j = 1; j < operators_.size() - 1; ++j) {
         const shared_ptr<Dispatcher>& op = operators_[j];
         vector<Tensor*> its = input_tensors[j];
         vector<Tensor*> ots = output_tensors[j];
         OutputStream << ",";
         OutputStream << "{";
         OutputStream << "\"cat\":\"" << op->type() << "\",";
-        OutputStream << "\"dur\":" << op->latency()[i]*1000 + op->get_reshape_time()[i]*1000<< ",";
+        OutputStream << "\"dur\":" << op->latency()[i] * 1000 + op->get_reshape_time()[i] * 1000 << ",";
         OutputStream << "\"name\":\"" << op->name() << "\",";
         OutputStream << "\"ph\":\"X\",";
         OutputStream << "\"pid\": 0,";
-        OutputStream << "\"tid\": \"" << "Operator" << "\",";
-        OutputStream << "\"ts\":" << (op_start + iter_start)*1000<< ",";
+        OutputStream << "\"tid\": \""
+                     << "Operator"
+                     << "\",";
+        OutputStream << "\"ts\":" << (op_start + iter_start) * 1000 << ",";
         OutputStream << "\"args\": {";
-        OutputStream << "\"reshape_time\" :\"" << op->get_reshape_time()[i] << "ms" << "\",";
-        OutputStream << "\"forward_time\" :\"" << op->latency()[i] << "ms" << "\",";
+        OutputStream << "\"reshape_time\" :\"" << op->get_reshape_time()[i] << "ms"
+                     << "\",";
+        OutputStream << "\"forward_time\" :\"" << op->latency()[i] << "ms"
+                     << "\",";
         OutputStream << "\"input_tensor_name\" :\"" << TensorsName(its) << "\",";
         OutputStream << "\"input_type\" :\"" << TensorsType(its) << "\",";
-        OutputStream << "\"input_shape\" :\"" << TensorsShape(op->get_it_shape(), i, its.size()) << "\",";;
+        OutputStream << "\"input_shape\" :\"" << TensorsShape(op->get_it_shape(), i, its.size()) << "\",";
         OutputStream << "\"output_tensor_name\" :\"" << TensorsName(ots) << "\",";
         OutputStream << "\"output_type\" :\"" << TensorsType(ots) << "\",";
         OutputStream << "\"output_shape\" :\"" << TensorsShape(op->get_ot_shape(), i, 1) << "\",";
@@ -114,7 +127,7 @@ class ProfilingTracer {
   void IterationTotalTime(const vector<shared_ptr<Dispatcher>>& operators_) {
     for (int i = 0; i < operators_[1]->latency().size(); ++i) {
       float PerIterTime = 0;
-      for (int j = 1; j < operators_.size()-1; ++j) {
+      for (int j = 1; j < operators_.size() - 1; ++j) {
         PerIterTime += operators_[j]->get_reshape_time()[i];
         PerIterTime += operators_[j]->latency()[i];
       }
@@ -128,7 +141,7 @@ class ProfilingTracer {
     int count = 0;
     for (auto iter = attrs.begin(); iter != attrs.end(); ++iter) {
       string attr;
-      if (count == attrs.size()-1) {
+      if (count == attrs.size() - 1) {
         attr = iter->first + ":" + iter->second;
       } else {
         attr = iter->first + ":" + iter->second + ";";
@@ -142,12 +155,12 @@ class ProfilingTracer {
   std::string TensorsName(const vector<Tensor*>& Tensors) {
     std::string result = "";
     for (int i = 0; i < Tensors.size(); ++i) {
-      if (i == Tensors.size() -1) {
+      if (i == Tensors.size() - 1) {
         result += Tensors[i]->name();
       } else {
-          result += Tensors[i]->name();
-          result += ",";
-        }
+        result += Tensors[i]->name();
+        result += ",";
+      }
     }
     return result;
   }
@@ -155,40 +168,39 @@ class ProfilingTracer {
   std::string TensorsType(const vector<Tensor*>& Tensors) {
     std::string result = "";
     for (int i = 0; i < Tensors.size(); ++i) {
-      if (i == Tensors.size() -1) {
+      if (i == Tensors.size() - 1) {
         result += Tensors[i]->dtype();
       } else {
         result += Tensors[i]->dtype();
         result += ",";
-        }
+      }
     }
     return result;
   }
 
-  std::string TensorsShape(const vector<vector<int64_t>>& tensor_shape,
-                           int iteration_time, int tensor_size ) {
+  std::string TensorsShape(const vector<vector<int64_t>>& tensor_shape, int iteration_time, int tensor_size) {
     std::string result = "";
-    for (int i = iteration_time*tensor_size; i < (iteration_time + 1)*tensor_size; ++i) {
-      if (i == (iteration_time + 1)*tensor_size -1) {
+    for (int i = iteration_time * tensor_size; i < (iteration_time + 1) * tensor_size; ++i) {
+      if (i == (iteration_time + 1) * tensor_size - 1) {
         for (int j = 0; j < tensor_shape[i].size(); ++j) {
-        if (j == tensor_shape[i].size()-1) {
-          result += std::to_string(tensor_shape[i][j]);
-        } else {
+          if (j == tensor_shape[i].size() - 1) {
+            result += std::to_string(tensor_shape[i][j]);
+          } else {
             result += std::to_string(tensor_shape[i][j]);
             result += "*";
           }
         }
       } else {
-          for (int j = 0; j < tensor_shape[i].size(); ++j) {
-            if (j == tensor_shape[i].size()-1) {
-              result += std::to_string(tensor_shape[i][j]);
-              result += ",";
-            } else {
-                result += std::to_string(tensor_shape[i][j]);
-                result += "*";
-              }
-            }
+        for (int j = 0; j < tensor_shape[i].size(); ++j) {
+          if (j == tensor_shape[i].size() - 1) {
+            result += std::to_string(tensor_shape[i][j]);
+            result += ",";
+          } else {
+            result += std::to_string(tensor_shape[i][j]);
+            result += "*";
+          }
         }
+      }
     }
     return result;
   }
@@ -201,10 +213,10 @@ class ProfilingTracer {
 
 class Profiling_ {
  public:
-  void WriteProfiling(const vector<shared_ptr<Dispatcher>>& operators_,
-    const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
+  void WriteProfiling(const vector<shared_ptr<Dispatcher>>& operators_, const vector<vector<Tensor*>>& input_vecs_,
+                      const vector<vector<Tensor*>>& output_vecs_) {
     // setting permission for shared memory created by boost
-    ipc::permissions  unrestricted_permissions;
+    ipc::permissions unrestricted_permissions;
     unrestricted_permissions.set_unrestricted();
     // in multi instance case, dump profiling for each instance
     ipc::managed_shared_memory shm(ipc::open_or_create, space_name, 1024, 0, unrestricted_permissions);
@@ -225,11 +237,16 @@ class Profiling_ {
     mtx->lock();
     char ch_curr_time[256] = {0};
     time_t curr_time = time(NULL);
-    strftime(ch_curr_time, sizeof(ch_curr_time), "%Y-%m-%d_%H-%M-%S", localtime(&curr_time));
-    std::string csv_file = profiling_csv_dir + "/profiling_" + ch_curr_time + "_" \
-                                 + std::to_string((*inst_count)) + ".csv";
-    std::string tracer_file = profiling_trace_dir + "/profiling_" + ch_curr_time + "_" \
-                                 + std::to_string((*inst_count)) + ".json";
+    auto timeinfo = localtime(&curr_time);  // NOLINT
+    if (timeinfo == nullptr) {
+      mtx->unlock();
+      return;
+    }
+    strftime(ch_curr_time, sizeof(ch_curr_time), "%Y-%m-%d_%H-%M-%S", timeinfo);
+    std::string csv_file =
+        profiling_csv_dir + "/profiling_" + ch_curr_time + "_" + std::to_string((*inst_count)) + ".csv";
+    std::string tracer_file =
+        profiling_trace_dir + "/profiling_" + ch_curr_time + "_" + std::to_string((*inst_count)) + ".json";
     WriteCSV(csv_file, operators_, input_vecs_, output_vecs_);
     WriteJSON(tracer_file, operators_, input_vecs_, output_vecs_);
     (*inst_count)++;
@@ -243,14 +260,14 @@ class Profiling_ {
     FILE* fp = fopen(csv_file.c_str(), "w");
     if (fp) {
       ProfilingSparse(fp, operators_, input_vecs_, output_vecs_);  // for sparse performance estimation
-      fprintf(fp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "operator type", "post op",
-              "operator name", "input tensor name", "input shape", "input dtype", "output tensor name", "output shape",
-              "output dtype", "weight shape", "weight sparse ratio", "sparse support", "operator latency (ms)",
+      fprintf(fp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "operator type", "post op", "operator name",
+              "input tensor name", "input shape", "input dtype", "output tensor name", "output shape", "output dtype",
+              "weight shape", "weight sparse ratio", "sparse support", "operator latency (ms)",
               "aim to weight sparse ratio", "sparse kernel pref ratio", "aim to sparse latency(ms)");
       float total_latency = 0;
       float enable_sparse_latency = 0.;
       // skip input and output node
-      for (int i = 1; i < operators_.size()-1; ++i) {
+      for (int i = 1; i < operators_.size() - 1; ++i) {
         const shared_ptr<Dispatcher>& op = operators_[i];
         // operator type, operator name, operator attributes
         ProfilingOperator(fp, op);
@@ -263,11 +280,11 @@ class Profiling_ {
         // weight shape, sparse enable, zero ratio
         ProfilingWeights(fp, op);
         // operator average iteration latency(exclude warm up)
-        float average_latency = op->latency().size() <= warm_up ? \
-                          accumulate(op->latency().begin(), op->latency().end(), 0.0)
-                          / (op->latency().size()) : \
-                          accumulate(op->latency().begin() + warm_up,
-                          op->latency().end(), 0.0) / (op->latency().size() - warm_up);
+        float average_latency =
+            op->latency().size() <= warm_up
+                ? accumulate(op->latency().begin(), op->latency().end(), 0.0) / (op->latency().size())
+                : accumulate(op->latency().begin() + warm_up, op->latency().end(), 0.0) /
+                      (op->latency().size() - warm_up);
         fprintf(fp, "%.3f, ", average_latency);
         // total latency
         total_latency += average_latency;
@@ -283,32 +300,26 @@ class Profiling_ {
     }
   }
   void WriteJSON(const std::string& tracer_file, const vector<shared_ptr<Dispatcher>>& operators_,
-                const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
+                 const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
     ProfilingTracer Tracer = ProfilingTracer();
     Tracer.BeginTrace(tracer_file);
     Tracer.WriteProfileTrace(operators_, input_vecs_, output_vecs_);
     Tracer.EndTrace();
   }
-  void ProfilingLatency(FILE* fp, const vector<shared_ptr<Dispatcher>>& operators_,
-                          float enable_sparse_latency, float total_latency) {
-    fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
-                    "total latency(ms)", total_latency);
+  void ProfilingLatency(FILE* fp, const vector<shared_ptr<Dispatcher>>& operators_, float enable_sparse_latency,
+                        float total_latency) {
+    fprintf(fp, ",,,,,,,,,,,%s,%.3f,", "total latency(ms)", total_latency);
     // sparse total latency
-    string aim_to_sparse_latency_id_begin = "P" + (*(operators_.begin()+1))->table_id();
-    string aim_to_sparse_latency_id_end = \
-                            "P" + (*(operators_.end()-2))->table_id();
-    fprintf(fp, ",%s,=SUM(%s:%s),", "total aim to sparse latency(ms)",
-                    aim_to_sparse_latency_id_begin.c_str(), aim_to_sparse_latency_id_end.c_str());
+    string aim_to_sparse_latency_id_begin = "P" + (*(operators_.begin() + 1))->table_id();
+    string aim_to_sparse_latency_id_end = "P" + (*(operators_.end() - 2))->table_id();
+    fprintf(fp, ",%s,=SUM(%s:%s),", "total aim to sparse latency(ms)", aim_to_sparse_latency_id_begin.c_str(),
+            aim_to_sparse_latency_id_end.c_str());
     // sparse improve
-    string dense_total_id = "M" + \
-            std::to_string(std::atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
-    string sparse_total_id = "P" + \
-            std::to_string(std::atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
-    fprintf(fp, "%s,=%s/%s\n", "sparse improve",
-                    dense_total_id.c_str(), sparse_total_id.c_str());
+    string dense_total_id = "M" + std::to_string(std::atoi((*(operators_.end() - 2))->table_id().c_str()) + 1);
+    string sparse_total_id = "P" + std::to_string(std::atoi((*(operators_.end() - 2))->table_id().c_str()) + 1);
+    fprintf(fp, "%s,=%s/%s\n", "sparse improve", dense_total_id.c_str(), sparse_total_id.c_str());
     // dense matmul/ip latency
-    fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
-                    "sparse support latency(ms)", enable_sparse_latency);
+    fprintf(fp, ",,,,,,,,,,,%s,%.3f,", "sparse support latency(ms)", enable_sparse_latency);
     // sparse matmul/ip latency
     string aim_sparse_latency = "=";
     for (auto op : operators_) {
@@ -317,26 +328,24 @@ class Profiling_ {
         aim_sparse_latency += sparse_tmp;
       }
     }
-    aim_sparse_latency = aim_sparse_latency.substr(0, aim_sparse_latency.length()-1) + ",";
+    aim_sparse_latency = aim_sparse_latency.substr(0, aim_sparse_latency.length() - 1) + ",";
     fprintf(fp, ",%s,%s\n", "aim to sparse support latency(ms)", aim_sparse_latency.c_str());
     // dense matmul/ip latency / totoal latency
-    fprintf(fp, ",,,,,,,,,,,%s,%.3f,",
-                    "sparse support latency ratio", enable_sparse_latency / (total_latency + 1e-6));
+    fprintf(fp, ",,,,,,,,,,,%s,%.3f,", "sparse support latency ratio", enable_sparse_latency / (total_latency + 1e-6));
     // sparse matmul/ip latency / totoal latency
-    string totol_aim_latency_id = "P" \
-                    + std::to_string(atoi((*(operators_.end()-2))->table_id().c_str()) + 1);
-    string aim_sparse_support_latency_id = "P" \
-                    + std::to_string(atoi((*(operators_.end()-2))->table_id().c_str()) + 2);
-    fprintf(fp, ",%s,=%s/%s\n", "aim to sparse support latency ratio",
-                aim_sparse_support_latency_id.c_str(), totol_aim_latency_id.c_str());
+    string totol_aim_latency_id = "P" + std::to_string(atoi((*(operators_.end() - 2))->table_id().c_str()) + 1);
+    string aim_sparse_support_latency_id =
+        "P" + std::to_string(atoi((*(operators_.end() - 2))->table_id().c_str()) + 2);
+    fprintf(fp, ",%s,=%s/%s\n", "aim to sparse support latency ratio", aim_sparse_support_latency_id.c_str(),
+            totol_aim_latency_id.c_str());
   }
   void ProfilingSparse(FILE* fp, const vector<shared_ptr<Dispatcher>>& operators_,
-                 const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
+                       const vector<vector<Tensor*>>& input_vecs_, const vector<vector<Tensor*>>& output_vecs_) {
     // weight shape, perf ratio, others
-    fprintf(fp, "%s,%s,%s,%s,%s\n", "weight shape", "90% 4x1 perf ratio",
-            "80% 4x1 perf ratio", "70% 4x1 perf ratio", "others");
+    fprintf(fp, "%s,%s,%s,%s,%s\n", "weight shape", "90% 4x1 perf ratio", "80% 4x1 perf ratio", "70% 4x1 perf ratio",
+            "others");
     map<vector<int64_t>, float> weight_map;  // need a prior table, now is constant
-    for (int i = 1; i < operators_.size()-1; ++i) {
+    for (int i = 1; i < operators_.size() - 1; ++i) {
       const shared_ptr<Dispatcher>& op = operators_[i];
       const vector<Tensor*>& tensors = input_vecs_[i];
       op->set_weight_shape(vector<int64_t>{});
@@ -357,16 +366,16 @@ class Profiling_ {
     }
     map<vector<int64_t>, string> perf_ratio_id_map;
     int perf_ratio_id_count = 1;
-    for (auto weight_it=weight_map.begin(); weight_it != weight_map.end(); weight_it++) {
+    for (auto weight_it = weight_map.begin(); weight_it != weight_map.end(); weight_it++) {
       vector<int64_t> weight_shape = weight_it->first;
       float perf_ratio = weight_it->second;
       perf_ratio_id_map[weight_shape] = std::to_string(++perf_ratio_id_count);
       // weight shape
-      for (int j = 0; j < weight_shape.size(); ++j) {
-        if (j == weight_shape.size()-1) {
-          fprintf(fp, "%lld,", weight_shape[j]);
+      for (size_t j = 0; j < weight_shape.size(); ++j) {
+        if (j == weight_shape.size() - 1) {
+          fprintf(fp, "%lu,", weight_shape[j]);
         } else {
-          fprintf(fp, "%lldx", weight_shape[j]);
+          fprintf(fp, "%lux", weight_shape[j]);
         }
       }
       // perf ratio
@@ -376,7 +385,7 @@ class Profiling_ {
       fprintf(fp, "1\n");
     }
 
-    for (int i = 1; i < operators_.size()-1; ++i) {
+    for (int i = 1; i < operators_.size() - 1; ++i) {
       const shared_ptr<Dispatcher>& op = operators_[i];
       vector<int64_t> weight_shape = op->weight_shape();
       string table_id = std::to_string(weight_map.size() + 2 + i);
@@ -405,35 +414,35 @@ class Profiling_ {
   void ProfilingTensors(FILE* fp, const vector<Tensor*>& tensors) {
     //  tensor name
     for (int i = 0; i < tensors.size(); ++i) {
-      if (i == tensors.size()-1) {
+      if (i == tensors.size() - 1) {
         fprintf(fp, "%s,", tensors[i]->name().c_str());
       } else {
         fprintf(fp, "%s;", tensors[i]->name().c_str());
       }
     }
     //  tensor shape
-    for (int i = 0; i < tensors.size(); ++i) {
-      if (i == tensors.size()-1) {
-        for (int j = 0; j < tensors[i]->shape().size(); ++j) {
-          if (j == tensors[i]->shape().size()-1) {
-            fprintf(fp, "%lld,", tensors[i]->shape()[j]);
+    for (size_t i = 0; i < tensors.size(); ++i) {
+      if (i == tensors.size() - 1) {
+        for (size_t j = 0; j < tensors[i]->shape().size(); ++j) {
+          if (j == tensors[i]->shape().size() - 1) {
+            fprintf(fp, "%lu,", tensors[i]->shape()[j]);
           } else {
-            fprintf(fp, "%lldx", tensors[i]->shape()[j]);
+            fprintf(fp, "%lux", tensors[i]->shape()[j]);
           }
         }
       } else {
         for (int j = 0; j < tensors[i]->shape().size(); ++j) {
-          if (j == tensors[i]->shape().size()-1) {
-            fprintf(fp, "%lld;", tensors[i]->shape()[j]);
+          if (j == tensors[i]->shape().size() - 1) {
+            fprintf(fp, "%lu;", tensors[i]->shape()[j]);
           } else {
-            fprintf(fp, "%lldx", tensors[i]->shape()[j]);
+            fprintf(fp, "%lux", tensors[i]->shape()[j]);
           }
         }
       }
     }
     //  tensor dtype
     for (int i = 0; i < tensors.size(); ++i) {
-      if (i == tensors.size()-1) {
+      if (i == tensors.size() - 1) {
         fprintf(fp, "%s,", tensors[i]->dtype().c_str());
       } else {
         fprintf(fp, "%s;", tensors[i]->dtype().c_str());
@@ -446,10 +455,10 @@ class Profiling_ {
       vector<int64_t> weight_shape = op->weight_shape();
       // weight shape
       for (int j = 0; j < weight_shape.size(); ++j) {
-        if (j == weight_shape.size()-1) {
-          fprintf(fp, "%lld,", weight_shape[j]);
+        if (j == weight_shape.size() - 1) {
+          fprintf(fp, "%lu,", weight_shape[j]);
         } else {
-          fprintf(fp, "%lldx", weight_shape[j]);
+          fprintf(fp, "%lux", weight_shape[j]);
         }
       }
       // weight sparse ratio
@@ -467,16 +476,13 @@ class Profiling_ {
     }
   }
 
-  void ProfilingSparseEstimate(FILE* fp, const shared_ptr<Dispatcher>& op,
-                                      const float average_latency) {
+  void ProfilingSparseEstimate(FILE* fp, const shared_ptr<Dispatcher>& op, const float average_latency) {
     if (op->enable_sparse() && op->weight_zero_ratio() < 0.5) {
       const string aim2sparse_id = "N" + op->table_id();
       fprintf(fp, "90%%,");
-      fprintf(fp, "\"=IF(%s=90%%,%s,IF(%s=80%%,%s,IF(%s=70%%,%s,%s)))\",",
-              aim2sparse_id.c_str(), ("B" + op->perf_ratio_id()).c_str(),
-              aim2sparse_id.c_str(), ("C" + op->perf_ratio_id()).c_str(),
-              aim2sparse_id.c_str(), ("D" + op->perf_ratio_id()).c_str(),
-              ("E" + op->perf_ratio_id()).c_str());
+      fprintf(fp, "\"=IF(%s=90%%,%s,IF(%s=80%%,%s,IF(%s=70%%,%s,%s)))\",", aim2sparse_id.c_str(),
+              ("B" + op->perf_ratio_id()).c_str(), aim2sparse_id.c_str(), ("C" + op->perf_ratio_id()).c_str(),
+              aim2sparse_id.c_str(), ("D" + op->perf_ratio_id()).c_str(), ("E" + op->perf_ratio_id()).c_str());
       fprintf(fp, "=%s/%s\n", ("M" + op->table_id()).c_str(), ("O" + op->table_id()).c_str());
     } else {
       fprintf(fp, ",,%.3f\n", average_latency);

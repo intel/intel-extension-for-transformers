@@ -47,7 +47,7 @@ class ConstantOfShapeOperator : public Operator {
   bool is_trilu_ = false;
   int trilu_k_ = 0;
   int trilu_upper = 1;
-  int array_size_;
+  int array_size_ = 0;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_CONSTANTOFSHAPE_HPP_

@@ -41,7 +41,7 @@ class SPARSE_API_ dynamic_quant_matmul_ref_kd_t : public kernel_desc_t {
   const std::vector<int>& get_prob_size() const { return prob_size_; }
 
  public:
-  bool has_bias;
+  bool has_bias = false;
 
  private:
   jd::operator_desc op_desc_;

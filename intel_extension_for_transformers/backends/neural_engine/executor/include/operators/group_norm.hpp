@@ -59,9 +59,9 @@ class GroupNormOperator : public Operator {
   int64_t channels_ = -1;
   int64_t channels_per_group_ = -1;
   bool affine_ = false;
-  int dt_bytewidth_;
-  sum_callback sum_func;
-  norm_callback norm_func;
+  int dt_bytewidth_ = 2;  // default bfloat16
+  sum_callback sum_func = nullptr;
+  norm_callback norm_func = nullptr;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_GROUP_NORM_HPP_

@@ -57,8 +57,8 @@ class MemoryAllocator {
   }
 
   static const int InstNum() {
-    static const int inst_num = (getenv("INST_NUM") != nullptr) ? std::atoi(getenv("INST_NUM")) : 1;
-    return inst_num;
+    if (getenv("INST_NUM") != nullptr) return std::atoi(getenv("INST_NUM"));
+    return 1;
   }
 
   static MemoryBuffer& Buffer() {

@@ -54,7 +54,7 @@ class MultiHeadAttenionOperator : public Operator {
          *V_max_ = nullptr, *QK_min_ = nullptr, *QK_max_ = nullptr, *dst_min_ = nullptr, *dst_max_ = nullptr;
   Tensor* dst_ = nullptr;
 
-  uint8_t* trans_mha_tmpbuf;
+  uint8_t* trans_mha_tmpbuf = nullptr;
   const int Size2M = 1 << 21;
   int inf_count = 0;
 

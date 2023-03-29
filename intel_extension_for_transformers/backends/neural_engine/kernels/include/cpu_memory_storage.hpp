@@ -40,7 +40,7 @@ class cpu_memory_storage_t : public memory_storage_t {
   size_t get_ptr_size() const override { return sizeof(void*); }
 
  private:
-  void* data_;
+  void* data_ = nullptr;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_CPU_MEMORY_MANAGER_HPP_
