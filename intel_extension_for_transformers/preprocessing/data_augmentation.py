@@ -69,6 +69,7 @@ class DataAugmentation:
 
     @augmenter_type.setter
     def augmenter_type(self, augmenter_type):
+        # pylint: disable=C0301
         """Set augmenter type.
 
         Please refer to https://github.com/intel/intel-extension-for-transformers/blob/main/docs/data_augmentation.md#supported-augmenter
@@ -92,12 +93,17 @@ class DataAugmentation:
 
     @input_dataset.setter
     def input_dataset(self, input_dataset):
+        # pylint: disable=C0301
         """Set original datasets.
 
-        input_dataset can be a file path, the file should be contained the samples as format: 'label' + '\t' + 'sentence' + EOS + '\n',please refer to https://github.com/intel/intel-extension-for-transformers/blob/1d20bcafc3a1f5953400c0c42dafbaa3f700ac1d/tests/test_data_augmentation.py#L9
-        input_dataset also can be a huggingface datasets name, like: "glue"..., if the datasets has task name or data config, you should set data_config_or_task_name:
-            aug.input_dataset = "glue"
-            aug.data_config_or_task_name = "sst2"
+        Input_dataset can be a file path, the file should be contained the samples as format: 'label' + '\t' + 'sentence' + EOS + '\n',please refer to
+        https://github.com/intel/intel-extension-for-transformers/blob/1d20bcafc3a1f5953400c0c42dafbaa3f700ac1d/tests/test_data_augmentation.py#L9.
+        Input_dataset also can be a huggingface datasets name, like: "glue"...,
+        if the datasets has task name or data config, you should set data_config_or_task_name:
+            example::
+
+                aug.input_dataset = "glue"
+                aug.data_config_or_task_name = "sst2"
         """
         self._input_dataset = input_dataset
 
@@ -138,6 +144,7 @@ class DataAugmentation:
 
     @augmenter_arguments.setter
     def augmenter_arguments(self, augmenter_arguments):
+        # pylint: disable=C0301
         """Set parameters dict for augmenters. Different augmenter has different parameters.
 
         For TextGenerationAug type, it is huggingface model name or a path, example: {'model_name_or_path': 'gpt2-medium'}.
