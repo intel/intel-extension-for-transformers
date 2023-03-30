@@ -23,7 +23,7 @@ import psutil
 from collections import UserDict
 from .utils.utility import remove_label
 from neural_compressor.utils import logger
-from neural_compressor import Benchmark as INCBenchmark
+from neural_compressor.benchmark import _Benchmark as INCBenchmark
 from neural_compressor.config import BenchmarkConfig as INCBenchmarkConfig
 from intel_extension_for_transformers.optimization.model import OptimizedModel
 
