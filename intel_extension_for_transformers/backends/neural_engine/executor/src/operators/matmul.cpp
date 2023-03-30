@@ -349,6 +349,18 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   // 1.1 Transpose tensor shape and get it
   vector<int64_t> src0_shape_origin = src0_->shape();
   vector<int64_t> src1_shape_origin = src1_->shape();
+
+  // std::cout <<  "here is matmul " << std::endl;
+  // for (int i = 0; i < input[0]->shape().size() ; ++i) {
+  //   std::cout <<  "here is matmul src0 shape "  << input[0]->shape()[i]<< std::endl;
+
+  // }
+  // for (int i = 0; i < input[1]->shape().size() ; ++i) {
+  //   std::cout <<  "here is matmul src1 shape "  << input[1]->shape()[i]<< std::endl;
+
+  // }
+
+
   vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
   vector<int64_t> src1_shape = GetShapes(src1_shape_origin, src1_perm_);
   vector<int64_t> src0_stride = GetStrides(src0_shape_origin, src0_perm_);
@@ -531,24 +543,27 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   }
   DstReshapeFusion(input, output);
 
-  any_src0_m_ = src0_m_;
-  any_src1_m_ = src1_m_;
-  any_dst_m_ = dst_m_;
-  if (matmul_pd_.src_desc() != src0_m_.get_desc()) {
-    any_src0_m_ = memory(matmul_pd_.src_desc(), eng_);
-    reorder_prim_src_ = dnnl::reorder(src0_m_, any_src0_m_);
-    src_reorder_ = true;
-  }
-  if (!cache_weight_ && (matmul_pd_.weights_desc() != src1_m_.get_desc())) {
-    any_src1_m_ = memory(matmul_pd_.weights_desc(), eng_);
-    reorder_prim_weight_ = dnnl::reorder(src1_m_, any_src1_m_);
-    weight_reorder_ = true;
-  }
-  if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
-    any_dst_m_ = memory(matmul_pd_.dst_desc(), eng_);
-    reorder_prim_dst_ = dnnl::reorder(any_dst_m_, dst_m_);
-    dst_reorder_ = true;
-  }
+  // any_src0_m_ = src0_m_;
+  // any_src1_m_ = src1_m_;
+  // any_dst_m_ = dst_m_;
+  // if (matmul_pd_.src_desc() != src0_m_.get_desc()) {
+  //   any_src0_m_ = memory(matmul_pd_.src_desc(), eng_);
+  //   reorder_prim_src_ = dnnl::reorder(src0_m_, any_src0_m_);
+
+  //   src_reorder_ = true;
+  // }
+  // if (!cache_weight_ && (matmul_pd_.weights_desc() != src1_m_.get_desc())) {
+  //   any_src1_m_ = memory(matmul_pd_.weights_desc(), eng_);
+  //   reorder_prim_weight_ = dnnl::reorder(src1_m_, any_src1_m_);
+
+  //   weight_reorder_ = true;
+  // }
+  // if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
+  //   any_dst_m_ = memory(matmul_pd_.dst_desc(), eng_);
+  //   reorder_prim_dst_ = dnnl::reorder(any_dst_m_, dst_m_);
+
+  //   dst_reorder_ = true;
+  // }
 }
 
 // 2. inference kernel(for int8 and f32)
@@ -592,13 +607,34 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   src1_m_.set_data_handle(const_cast<void*>(src1_data), eng_stream_);
   dst_m_.set_data_handle(dst_data, eng_stream_);
 
+
+
+
+
+
   // 2. Reorder the data when the primitive memory and user memory are different
-  if (src_reorder_) {
-    reorder_prim_src_.execute(eng_stream_, src0_m_, any_src0_m_);
+
+  memory any_src0_m = src0_m_;
+  memory any_src1_m = src1_m_;
+  memory any_dst_m = dst_m_;
+
+
+  if (matmul_pd_.src_desc() != src0_m_.get_desc()) {
+    any_src0_m = memory(matmul_pd_.src_desc(), eng_);
+    dnnl::reorder(src0_m_, any_src0_m).execute(eng_stream_, src0_m_, any_src0_m);
   }
-  if (weight_reorder_) {
-    reorder_prim_weight_.execute(eng_stream_, src1_m_, any_src1_m_);
+  if (!cache_weight_) {
+    if (matmul_pd_.weights_desc() != src1_m_.get_desc()) {
+      any_src1_m = memory(matmul_pd_.weights_desc(), eng_);
+      dnnl::reorder(src1_m_, any_src1_m).execute(eng_stream_, src1_m_, any_src1_m);
+    }
   }
+
+  if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
+    any_dst_m = memory(matmul_pd_.dst_desc(), eng_);
+  }
+
+
   // the runtime calculation of dynamic quantization
 
   vector<int32_t> src0_zero_points;
@@ -609,9 +645,13 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   }
 
   // 3. Insert memory args
-  memory_args_[DNNL_ARG_SRC_0] = any_src0_m_;
-  if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m_;
-  memory_args_[DNNL_ARG_DST] = any_dst_m_;
+  // memory_args_[DNNL_ARG_SRC_0] = any_src0_m_;
+  // if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m_;
+  // memory_args_[DNNL_ARG_DST] = any_dst_m_;
+  memory_args_[DNNL_ARG_SRC_0] = any_src0_m;
+  if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m;
+  memory_args_[DNNL_ARG_DST] = any_dst_m;
+
 
   // has post_op: binary_add
   if (post_ != nullptr && binary_add_) {
@@ -624,9 +664,13 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   matmul_p_.execute(eng_stream_, memory_args_);
 
   // 5. Reorder the data of dst memory (When it is format_any)
-  if (dst_reorder_) {
-    reorder_prim_dst_.execute(eng_stream_, any_dst_m_, dst_m_);
+  // if (dst_reorder_) {
+  //   reorder_prim_dst_.execute(eng_stream_, any_dst_m_, dst_m_);
+  // }
+  if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
+    dnnl::reorder(any_dst_m, dst_m_).execute(eng_stream_, any_dst_m, dst_m_);
   }
+
   eng_stream_.wait();
   // 6. unref tensors
   this->unref_tensors(input);

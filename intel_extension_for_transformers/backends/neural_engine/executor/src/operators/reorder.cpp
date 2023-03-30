@@ -21,7 +21,8 @@ static unordered_map<string, dnnl::memory::data_type> type2mem{{"fp32", dnnl::me
                                                                {"fp16", dnnl::memory::data_type::f16},
                                                                {"bf16", dnnl::memory::data_type::bf16},
                                                                {"u8", dnnl::memory::data_type::u8},
-                                                               {"s8", dnnl::memory::data_type::s8}};
+                                                               {"s8", dnnl::memory::data_type::s8},
+                                                               {"bf16", dnnl::memory::data_type::bf16}};
 
 ReorderOperator::ReorderOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
@@ -79,6 +80,10 @@ void ReorderOperator::MapTensors(const vector<Tensor*>& input, const vector<Tens
 
 void ReorderOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   MapTensors(input, output);
+  // reorder memory layout with same dtype by default
+  if (output_dtype_.empty()) {
+    output_dtype_ = src_->dtype();
+  }
   dst_->set_dtype(output_dtype_);
 
   dnnl::primitive_attr attr;

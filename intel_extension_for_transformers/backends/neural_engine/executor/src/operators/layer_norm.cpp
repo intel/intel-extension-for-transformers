@@ -33,6 +33,16 @@ LayerNormOperator::LayerNormOperator(const shared_ptr<OperatorConfig>& conf) : O
   if (attrs_map.find("quantize_fuse") != attrs_map.end()) {
     quantize_fuse_ = true;
   }
+  iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    output_dtype_ = attrs_map["output_dtype"];
+  }
+}
+
+void LayerNormOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (!transpose_mode_ || input[0]->dtype() != "fp32") {
+    PreparewithOnednn(input, output);
+  }
 }
 
 void LayerNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -109,6 +119,22 @@ void LayerNormOperator::ForwardwithTransMode(const vector<Tensor*>& input, const
   LOG(ERROR) << "Sparse lib is not loaded!\n";
 }
 #endif
+
+// The ONEDNN layer_norm primitive supports the following combinations of data types:
+// src0 f32, bf16, f16, u8, s8, dst: f32, bf16, f16, u8, s8
+// In-place mode requires the dst and src data types to be the same.
+// Different data types will unavoidably lead to correctness issues.
+// Mean, Variance and ScaleShift data types are always fp32 and independent of src or dst data types.
+void LayerNormOperator::PreparewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  LOG_IF(FATAL, (output_dtype_ == "s32" || input[0]->dtype() == "s32")) << "Unsupported dtype s32...";
+  LOG_IF(FATAL, (input[1]->dtype() != "fp32" || input[2]->dtype() != "fp32")) <<
+        "Onednn only support fp32 scale and shift...";
+  if (output_dtype_.empty()) {
+    output_dtype_ = input[0]->dtype();
+  }
+  output[0]->set_dtype(output_dtype_);
+}
+
 void LayerNormOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
   // 1.1: Prepare Tensor origin shape
@@ -184,7 +210,8 @@ void LayerNormOperator::ForwardwithOnednn(const vector<Tensor*>& input, const ve
   // Inplace Op
   Tensor* dst_ptr = output[0];
   vector<Tensor*> inputs(input);
-  if (input.size() == 3 && input[0] != nullptr && input[0]->left_life() == 1 && input[0]->size() >= dst_ptr->size()) {
+  if (input.size() == 3 && input[0] != nullptr && input[0]->left_life() == 1 &&
+      input[0]->size() >= dst_ptr->size() && input[0]->dtype() == output[0]->dtype()) {
     void* input_ptr = input[0]->mutable_data();
     input[0]->unref_data(true);
     dst_ptr->set_data(input_ptr);

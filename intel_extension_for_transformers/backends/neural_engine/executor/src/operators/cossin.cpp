@@ -16,7 +16,8 @@
 
 namespace executor {
 
-CosSinOperator::CosSinOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+CosSinOperator::CosSinOperator(const shared_ptr<OperatorConfig>& conf)
+    : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("algorithm");
   if (iter != attrs_map.end()) {
@@ -24,10 +25,10 @@ CosSinOperator::CosSinOperator(const shared_ptr<OperatorConfig>& conf) : Operato
   }
 }
 
-CosSinOperator::~CosSinOperator() {
-}
+CosSinOperator::~CosSinOperator() {}
 
-void CosSinOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void CosSinOperator::Reshape(const vector<Tensor*>& input,
+                             const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
   // 1.1: Prepare Tensor origin shape
   vector<int64_t> src_shape = input[0]->shape();
@@ -39,11 +40,15 @@ void CosSinOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   array_size_ = input[0]->size();
 }
 // 2. inference kernel(for int8 and f32)
-void CosSinOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void CosSinOperator::Forward(const vector<Tensor*>& input,
+                             const vector<Tensor*>& output) {
   auto src_data = input[0]->mutable_data();
   auto dst_data = output[0]->mutable_data();
-  Eigen::Map<Eigen::ArrayXf> input_array(reinterpret_cast<float*>(src_data), array_size_);
-  Eigen::Map<Eigen::ArrayXf> output_array(reinterpret_cast<float*>(dst_data), array_size_);
+
+  Eigen::Map<Eigen::ArrayXf> input_array(reinterpret_cast<float*>(src_data),
+                                         array_size_);
+  Eigen::Map<Eigen::ArrayXf> output_array(reinterpret_cast<float*>(dst_data),
+                                          array_size_);
   if (algorithm_ == "sin") {
     output_array = input_array.sin();
   } else {
@@ -54,4 +59,5 @@ void CosSinOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>
 }
 
 REGISTER_OPERATOR_CLASS(CosSin);
+
 }  // namespace executor

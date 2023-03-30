@@ -20,6 +20,7 @@ import unittest
 import numpy as np
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 import sys
+import copy
 
 def is_win():
     return sys.platform.startswith('win')
@@ -49,11 +50,11 @@ class TestGraphDispatch(unittest.TestCase):
             'INT8 IR model is not found, please set your own model path!')
         int8_model = compile(int8_model_path)
         int8_output_dict = int8_model.inference([input_0, input_1, input_2])
-        int8_output = list(int8_output_dict.values())[0]
+        int8_output = copy.deepcopy(list(int8_output_dict.values())[0])
         # sparse graph tuning
         int8_model.graph_dispatch(inputs_shape = [shape, shape, shape])
         int8_dispatch_output_dict = int8_model.inference([input_0, input_1, input_2])
-        int8_dispatch_output = list(int8_dispatch_output_dict.values())[0]
+        int8_dispatch_output = copy.deepcopy(list(int8_dispatch_output_dict.values())[0])
         # compare outputs
         self.assertTrue((int8_output == int8_dispatch_output).all())
 
@@ -65,11 +66,11 @@ class TestGraphDispatch(unittest.TestCase):
             'FP32 ONNX model is not found, please set your own model path!')
         fp32_model = compile(fp32_model_path)
         fp32_output_dict = fp32_model.inference([input_0, input_1, input_2])
-        fp32_output = list(fp32_output_dict.values())[0]
+        fp32_output = copy.deepcopy(list(fp32_output_dict.values())[0])
         # onednn graph tuning
         fp32_model.graph_dispatch(inputs_shape = [shape, shape, shape])
         fp32_dispatch_output_dict = fp32_model.inference([input_0, input_1, input_2])
-        fp32_dispatch_output = list(fp32_dispatch_output_dict.values())[0]
+        fp32_dispatch_output = copy.deepcopy(list(fp32_dispatch_output_dict.values())[0])
         # compare outputs
         self.assertTrue((fp32_output == fp32_dispatch_output).all())
         fp32_model._get_latency()

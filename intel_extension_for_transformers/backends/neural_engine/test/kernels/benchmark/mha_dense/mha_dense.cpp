@@ -23,8 +23,9 @@
 #include "utils.hpp"
 
 namespace jd {
+using dt = data_type;
 std::pair<const void*, const void*> make_tensor_obj(const tensor_desc& ts_desc, float min_value = -10,
-                                                    float max_value = -10) {
+                                                    float max_value = 10) {
   int64_t elem_num = std::accumulate(ts_desc.shape().begin(), ts_desc.shape().end(), 1LL, std::multiplies<int64_t>());
   int bytes_size = elem_num * type_size[ts_desc.dtype()];
   void* data_ptr = nullptr;
@@ -32,31 +33,36 @@ std::pair<const void*, const void*> make_tensor_obj(const tensor_desc& ts_desc, 
     data_ptr = aligned_allocator_t<uint8_t>::allocate(bytes_size, true);
     memset(data_ptr, 0, bytes_size);
   } else {
-    if (ts_desc.dtype() == data_type::fp32) {
-      data_ptr = aligned_allocator_t<float>::allocate(elem_num);
+    if (ts_desc.dtype() == dt::fp32) {
+      data_ptr = aligned_allocator_t<float>::allocate(pad_to(elem_num, 16));
       init_vector(static_cast<float*>(data_ptr), elem_num, min_value, max_value);
-    } else if (ts_desc.dtype() == data_type::s32) {
-      data_ptr = aligned_allocator_t<int32_t>::allocate(elem_num);
+    } else if (ts_desc.dtype() == dt::bf16) {
+      data_ptr = aligned_allocator_t<bfloat16_t>::allocate(pad_to(elem_num, 32));
+      init_vector(static_cast<bfloat16_t*>(data_ptr), elem_num, min_value, max_value);
+    } else if (ts_desc.dtype() == dt::s32) {
+      data_ptr = aligned_allocator_t<int32_t>::allocate(pad_to(elem_num, 16));
       init_vector(static_cast<int32_t*>(data_ptr), elem_num, min_value, max_value);
-    } else if (ts_desc.dtype() == data_type::u8) {
-      data_ptr = aligned_allocator_t<uint8_t>::allocate(elem_num);
+    } else if (ts_desc.dtype() == dt::u8) {
+      data_ptr = aligned_allocator_t<uint8_t>::allocate(pad_to(elem_num, 64));
       init_vector(static_cast<uint8_t*>(data_ptr), elem_num, min_value, max_value);
-    } else if (ts_desc.dtype() == data_type::s8) {
-      data_ptr = aligned_allocator_t<int8_t>::allocate(elem_num);
+    } else if (ts_desc.dtype() == dt::s8) {
+      data_ptr = aligned_allocator_t<int8_t>::allocate(pad_to(elem_num, 64));
       init_vector(static_cast<int8_t*>(data_ptr), elem_num, min_value, max_value);
+    } else {
+      SPARSE_LOG(FATAL) << "Unexpected dtype!";
     }
   }
 
-  void* data_ptr_copy = aligned_allocator_t<uint8_t>::allocate(bytes_size, true);
+  void* data_ptr_copy = aligned_allocator_t<uint8_t>::allocate(pad_to(bytes_size, 64), true);
   memcpy(data_ptr_copy, data_ptr, bytes_size);
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
 
 double mha_dense_bench::calc_flop() const {
   float flops = 0;
-  flops += 2 * seq_len * head_size * seq_len;  // Q x K
-  flops += 6 * seq_len * seq_len;              // softmax: 1max + 3reduction + 2softmax  ??copied from softmax benchmark
-  flops += 2 * seq_len * seq_len * head_size;  // A x V
+  flops += 2 * sl_m * head_size * sl_n;  // Q x K
+  flops += 6 * sl_m * sl_n;              // softmax: 1max + 3reduction + 2softmax  ??copied from softmax benchmark
+  flops += 2 * sl_n * sl_m * head_size;  // A x V
 
   flops *= head_num * batch_size;
   return flops;
@@ -70,20 +76,24 @@ bench_res_t mha_dense_bench::set_config(int argc, char** argv) {
   }
   LOG(INFO) << "mha_dense\n";
   batch_size = str_to_num<int64_t>(argv[0]);
-  seq_len = str_to_num<int64_t>(argv[1]);
+  sl_m = str_to_num<int64_t>(argv[1]);
   head_num = str_to_num<int64_t>(argv[2]);
   head_size = str_to_num<int64_t>(argv[3]);
-  dt_dst = (argc <= 4)                    ? data_type::u8
-           : strcmp(argv[4], "fp32") == 0 ? data_type::fp32
-           : strcmp(argv[4], "s8") == 0   ? data_type::s8
-           : strcmp(argv[4], "u8") == 0   ? data_type::u8
-                                          : data_type::undef;
+  dt_dst = (argc <= 4)                    ? dt::u8
+           : strcmp(argv[4], "fp32") == 0 ? dt::fp32
+           : strcmp(argv[4], "s8") == 0   ? dt::s8
+           : strcmp(argv[4], "u8") == 0   ? dt::u8
+           : strcmp(argv[4], "bf16") == 0 ? dt::bf16
+                                          : dt::undef;
   if (argc > 5) mask = str_to_num<int32_t>(argv[5]);
-  if (mask <= 0) mask = seq_len;
   if (argc > 6) badd_dim = str_to_num<int32_t>(argv[6]);
+  if (argc > 7) sl_n = str_to_num<int32_t>(argv[7]);
 
-  if (dt_dst == data_type::undef) return {bench_status::wrong_input};
-  if (mask > seq_len) return {bench_status::wrong_input};
+  if (argc > 8) return {bench_status::wrong_input};
+  if (sl_n <= 0) sl_n = sl_m;
+  if (mask <= 0) mask = sl_n;
+  if (dt_dst == dt::undef) return {bench_status::wrong_input};
+  if (mask > sl_n) return {bench_status::wrong_input};
   if (badd_dim > 4) return {bench_status::wrong_input};
 
   return {bench_status::success};
@@ -116,13 +126,15 @@ bool mha_dense_bench::check_result() {
   if (buf1 == buf2) return false;
 
   switch (p.op_desc.tensor_descs()[mha_dense_io::DST].dtype()) {
-    case data_type::fp32:
+    case dt::fp32:
       return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
-    case data_type::s32:
+    case dt::bf16:
+      return compare_data<bfloat16_t>(buf1, size1, buf2, size2, 5e-3);
+    case dt::s32:
       return compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
-    case data_type::u8:
+    case dt::u8:
       return compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
-    case data_type::s8:
+    case dt::s8:
       return compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
     default:
       SPARSE_LOG(ERROR) << "Unexpected dst type";
@@ -131,25 +143,25 @@ bool mha_dense_bench::check_result() {
 }
 
 void mha_dense_bench::gen_case() {
-  op_attrs = {
-      {"QK_rescale", "1.1"},
-      {"softmax_rescale", "255"},
-      {"QKV_rescale", "500"},
-      {"QKV_dstzp", "0"},
-  };
+  op_attrs.clear();
+  op_attrs["approx_exp"] = "True";
+  op_attrs["QK_rescale"] = "1.1";
+  op_attrs["softmax_rescale"] = "255";
+  op_attrs["QKV_rescale"] = "0.002";
+  op_attrs["QKV_dstzp"] = "10";
 
   // Step 1: Construct runtime data for equivalent merged spmm
-  std::vector<dim_t> badd_full = {batch_size, head_num, seq_len, seq_len};
-  ts_descs.assign(mha_dense_io::mha_dense_io_MAX + 1, tensor_desc{{}, data_type::undef, format_type::undef});
-  ts_descs[mha_dense_io::SRC_Q] = {{batch_size, seq_len, head_num, head_size}, data_type::s8, format_type::undef};
-  ts_descs[mha_dense_io::SRC_K] = {{batch_size, seq_len, head_num, head_size}, data_type::s8, format_type::undef};
-  ts_descs[mha_dense_io::SRC_V] = {{batch_size, seq_len, head_num, head_size}, data_type::s8, format_type::undef};
-  ts_descs[mha_dense_io::MASK] = {{batch_size}, data_type::s32, format_type::undef};
-  ts_descs[mha_dense_io::DST] = {{batch_size, seq_len, head_num, head_size}, data_type::u8, format_type::undef};
+  std::vector<dim_t> badd_full = {batch_size, head_num, sl_m, sl_n};
+  ts_descs.assign(mha_dense_io::mha_dense_io_MAX + 1, tensor_desc{{}, dt::undef, format_type::undef});
+  ts_descs[mha_dense_io::SRC_Q] = {{batch_size, sl_m, head_num, head_size}, dt::s8, format_type::abcd};
+  ts_descs[mha_dense_io::SRC_K] = {{batch_size, sl_n, head_num, head_size}, dt::s8, format_type::abcd};
+  ts_descs[mha_dense_io::SRC_V] = {{batch_size, sl_n, head_num, head_size}, dt::s8, format_type::abcd};
+  ts_descs[mha_dense_io::MASK] = {{batch_size}, dt::s32, format_type::ab};
+  ts_descs[mha_dense_io::DST] = {{batch_size, sl_m, head_num, head_size}, dt_dst, format_type::abcd};
   if (badd_dim > 0) {
-    SPARSE_LOG_IF(FATAL, badd_dim > 4) << "Unsupported binary add dimention";
-    ts_descs[mha_dense_io::BINARY_ADD] = {std::vector<dim_t>(badd_full.cend() - badd_dim, badd_full.cend()),
-                                          data_type::fp32, format_type::a};
+    SPARSE_LOG_IF(FATAL, badd_dim > 4) << "Unsupported binary add dimension";
+    ts_descs[mha_dense_io::BINARY_ADD] = {std::vector<dim_t>(badd_full.cend() - badd_dim, badd_full.cend()), dt::fp32,
+                                          format_type::a};
   }
 
   // Step 2: Construct Tensor ptr

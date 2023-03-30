@@ -18,15 +18,19 @@
 
 namespace executor {
 
-BinaryOpOperator::BinaryOpOperator(const shared_ptr<OperatorConfig>& conf) :
-                  Operator(conf), stream_(eng_), eng_(engine::kind::cpu, 0) {
+// binary op doesn't support int32
+static unordered_map<string, dnnl::memory::data_type> type2mem{
+    {"fp32", dnnl::memory::data_type::f32}, {"s32", dnnl::memory::data_type::f32},
+    {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
+    {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
+
+BinaryOpOperator::BinaryOpOperator(const shared_ptr<OperatorConfig>& conf)
+    : Operator(conf), stream_(eng_), eng_(engine::kind::cpu, 0) {
   static unordered_map<string, algorithm> str2algo{
-    {"add", algorithm::binary_add}, {"sub", algorithm::binary_sub},
-    {"mul", algorithm::binary_mul}, {"div", algorithm::binary_div},
-    {"gt", algorithm::binary_gt}, {"ge", algorithm::binary_ge},
-    {"lt", algorithm::binary_lt}, {"le", algorithm::binary_le},
-    {"eq", algorithm::binary_eq}, {"ne", algorithm::binary_ne},
-    {"min", algorithm::binary_min}, {"max", algorithm::binary_max}};
+      {"add", algorithm::binary_add}, {"sub", algorithm::binary_sub}, {"mul", algorithm::binary_mul},
+      {"div", algorithm::binary_div}, {"gt", algorithm::binary_gt},   {"ge", algorithm::binary_ge},
+      {"lt", algorithm::binary_lt},   {"le", algorithm::binary_le},   {"eq", algorithm::binary_eq},
+      {"ne", algorithm::binary_ne},   {"min", algorithm::binary_min}, {"max", algorithm::binary_max}};
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("algorithm");
   if (iter != attrs_map.end()) {
@@ -34,48 +38,51 @@ BinaryOpOperator::BinaryOpOperator(const shared_ptr<OperatorConfig>& conf) :
   } else {
     LOG(ERROR) << "Please provide algorithm for binary operator.";
   }
+  iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    output_dtype_ = attrs_map["output_dtype"];
+  }
 }
 
+// The ONEDNN binary primitive supports the following combinations of data types:
+// src0/1 f32, bf16, f16, u8, s8, dst: f32, bf16, f16, u8, s8
+// In-place mode requires the dst and src data types to be the same.
+// Different data types will unavoidably lead to correctness issues.
 void BinaryOpOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  output[0]->set_dtype(input[0]->dtype());
+  LOG_IF(FATAL, output_dtype_ == "s32") << "Unsupported dst dtype s32...";
+  if (input[0]->dtype() == "s32" || input[1]->dtype() == "s32") {
+    LOG(WARNING) << "int32 isn't supported by dnnl, which will be cast to float32.";
+  }
+  output[0]->set_dtype(output_dtype_);
 }
 
 void BinaryOpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   auto src0_shape = input[0]->shape();
   auto src1_shape = input[1]->shape();
+
   auto src0_shape_size = src0_shape.size();
   auto src1_shape_size = src1_shape.size();
   if (src0_shape_size < src1_shape_size) {
     int diff_len = src1_shape_size - src0_shape_size;
-    for (int i = 0; i < diff_len; i++) {
-      src0_shape.insert(src0_shape.begin(), 1);
-    }
+    vector<int64_t> padding(diff_len, 1);
+    src0_shape.insert(src0_shape.begin(), padding.begin(), padding.end());
     input[0]->set_shape(src0_shape);
   } else if (src0_shape_size > src1_shape_size) {
     int diff_len = src0_shape_size - src1_shape_size;
-    for (int i = 0; i < diff_len; i++) {
-      src1_shape.insert(src1_shape.begin(), 1);
-    }
+    vector<int64_t> padding(diff_len, 1);
+    src1_shape.insert(src1_shape.begin(), padding.begin(), padding.end());
     input[1]->set_shape(src1_shape);
   }
   vector<int64_t> out_shape;
   for (int i = 0; i < src1_shape.size(); i++) {
     if (src0_shape[i] != src1_shape[i] && src0_shape[i] != 1 && src1_shape[i] != 1) {
-      LOG(ERROR) << "can not broadcast! " << i  << "src 0 shape "  <<src0_shape[i] << "src1 shape" << src1_shape[i];
+      LOG(ERROR) << "can not broadcast! " << i << "src 0 shape " << src0_shape[i] << "src1 shape" << src1_shape[i];
       return;
     }
     out_shape.push_back(max(src0_shape[i], src1_shape[i]));
   }
   output[0]->set_shape(out_shape);
 
-  if (input[0]->dtype() == "s32" || input[1]->dtype() == "s32") {
-    LOG(WARNING) << "int32 isn't supported by dnnl, which will be cast to float32.";
-  }
-  static unordered_map<string, dnnl::memory::data_type> type2mem{
-    {"fp32", dnnl::memory::data_type::f32}, {"s32", dnnl::memory::data_type::f32},  // binary op doesn't support int32
-    {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
-    {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
-  auto datatype = type2mem[output[0]->dtype()];
   // Create src and dst memory descriptors.
   auto src_0_md = memory::desc(input[0]->shape(), type2mem[input[0]->dtype()], GetStrides(src0_shape));
   auto src_1_md = memory::desc(input[1]->shape(), type2mem[input[1]->dtype()], GetStrides(src1_shape));
@@ -118,13 +125,13 @@ void BinaryOpOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
   src_0_mem_.set_data_handle(src0_data, stream_);
   src_1_mem_.set_data_handle(src1_data, stream_);
 
-  if (input[0] != nullptr && input[0]->left_life() == 1 && input[0]->size() >= output[0]->size()
-                          && input[0]->dtype() != "s32") {
+  if (input[0] != nullptr && input[0]->left_life() == 1 && input[0]->size() >= output[0]->size() &&
+      input[0]->dtype() != "s32" && output[0]->dtype() == input[0]->dtype()) {
     input[0]->unref_data(true);
     output[0]->set_data(src0_data);
     inputs.push_back(input[1]);
-  } else if (input[1] != nullptr && input[1]->left_life() == 1 && input[1]->size() >= output[0]->size()
-                          && input[1]->dtype() != "s32") {
+  } else if (input[1] != nullptr && input[1]->left_life() == 1 && input[1]->size() >= output[0]->size() &&
+             input[1]->dtype() != "s32" && output[0]->dtype() == input[1]->dtype()) {
     input[1]->unref_data(true);
     output[0]->set_data(src1_data);
     inputs.push_back(input[0]);

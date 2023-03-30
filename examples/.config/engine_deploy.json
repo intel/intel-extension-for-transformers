@@ -496,5 +496,28 @@
     },
     "launcher": {
     }
+  },
+  "gpt-j-6b": {
+    "working_dir": "deployment/neural_engine/gpt-j",
+    "data_dir": " ",
+    "hf_model_name": "EleutherAI/gpt-j-6B",
+    "prepare": {
+      "cmd": "python gen_ir.py",
+      "params": {
+         "model": "EleutherAI/gpt-j-6B",
+         "dtype": "fp32/bf16/int8",
+         "output_model": "ir",
+         "pt_file": "pt"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_gptj.py",
+      "params": {
+        "max-new-tokens": "32",
+        "ir_path": "ir"        
+      }
+    },
+    "launcher": {
+    }
   }
 }

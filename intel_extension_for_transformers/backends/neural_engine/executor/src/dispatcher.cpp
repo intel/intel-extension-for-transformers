@@ -14,6 +14,7 @@
 
 #include "dispatcher.hpp"
 #include "op_tuning.hpp"
+#include "model.hpp"
 
 namespace executor {
 
@@ -60,6 +61,8 @@ void Dispatcher::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& ou
   int idx = 0;
   // let default kernel prepare first
   kernel_handler_[type_]->Prepare(input, output);
+  if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE && model_ != nullptr &&
+      !model_->has_dispatch_table_file()) return;
   for (const auto& k_pair : kernel_handler_) {
     auto kernel_name = k_pair.first;
     auto kernel = k_pair.second;

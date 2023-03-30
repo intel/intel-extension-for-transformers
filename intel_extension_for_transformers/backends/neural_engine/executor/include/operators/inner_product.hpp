@@ -87,6 +87,7 @@ class InnerProductOperator : public Operator {
   // While "perm" decide all dimensions, and is the external Trans OP. Both are transpose.
   bool weight_cached_;
   bool has_bias_;
+  bool beam_forward_;
   bool format_any_;
   bool append_sum_;
   bool binary_add_;
@@ -100,6 +101,7 @@ class InnerProductOperator : public Operator {
   bool append_eltwise_;
   bool is_dynamic_ = false;
   float output_scale_ = 1.f;
+  float fp8_scale_ = 1.f;
   vector<float> dst_scales_;
   vector<float> rescales_;
   string output_dtype_ = "fp32";
@@ -112,7 +114,7 @@ class InnerProductOperator : public Operator {
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
   memory scale_f32_mem_;
-
+  std::shared_ptr<void> jit_kernel_;
 #ifdef WITH_SPARSELIB
   jd::tensor_desc src0_desc_;
   jd::tensor_desc src1_desc_;

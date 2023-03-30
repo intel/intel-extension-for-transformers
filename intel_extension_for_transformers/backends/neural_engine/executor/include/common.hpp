@@ -121,6 +121,8 @@ void AddZeroPoints(const int size, const string& dtype, const float* src_data, c
                    const vector<float>& scales, float* dst_data);
 
 #if __AVX512F__
+void Quantize_bf16(const int size, const string& dtype, const void* src_data, const float* range_mins,
+                   const std::vector<float>& scales, void* dst_data);
 void Quantize_avx512(const int size, const string& dtype, const void* src_data, const float* range_mins,
                      const vector<float>& scales, void* dst_data);
 #else
@@ -128,6 +130,7 @@ void Quantize(const int size, const string& dtype, const void* src_data, const f
               const vector<float>& scales, void* dst_data);
 #endif
 
+void BF16_to_FP32(const int size, void* src_data, void* dst_data);
 template <typename T>
 float GetSparseRatio(const T* data, const vector<int64_t>& shape, const vector<int64_t>& blocksize);
 
@@ -158,6 +161,7 @@ void add_ker(float* inout, float* in, size_t len);
 #if __AVX512F__
 // Conversion from BF16 to FP32
 __m512 cvt_bf16_to_fp32(const __m256i src);
+__m512 cvt_bf16_to_fp32(__mmask16 mask, const __m256i src);
 // Conversion from FP32 to BF16
 __m256i trunc_fp32_to_bf16(const __m512 src);
 __m256i cvt_fp32_to_bf16(const __m512 src);

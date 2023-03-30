@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <string>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -37,10 +38,12 @@ class BinaryAddOperator : public Operator {
   explicit BinaryAddOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~BinaryAddOperator() {}
 
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
+  std::string output_dtype_ = "fp32";
   bool append_sum_;
   bool broadcast_ = false;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
@@ -50,11 +53,15 @@ class BinaryAddOperator : public Operator {
   memory user_src1_m_;
   memory user_dst_m_;
   unordered_map<int, memory> memory_args_;
-
+  algorithm algo_ = algorithm::undef;
   dnnl::binary::desc PrepareBroadcastBinaryDesc(const memory::dims& src0_shape_origin,
-                                                const memory::dims& src1_shape_origin);
+                                                const memory::dims& src1_shape_origin,
+                                                const vector<Tensor*>& input,
+                                                const vector<Tensor*>& output);
   dnnl::binary::desc PrepareStrideBinaryDesc(const memory::dims& src0_shape_origin,
-                                             const memory::dims& src1_shape_origin);
+                                             const memory::dims& src1_shape_origin,
+                                             const vector<Tensor*>& input,
+                                             const vector<Tensor*>& output);
   memory::dims GetBroadcastBinaryDstShape(const memory::dims& src0_shape_origin, const memory::dims& src1_shape_origin);
   memory::dims GetStrideBinaryDstShape(const memory::dims& src0_shape_origin, const memory::dims& src1_shape_origin);
   memory::format_tag SetFormatTag(int tensor_dim);

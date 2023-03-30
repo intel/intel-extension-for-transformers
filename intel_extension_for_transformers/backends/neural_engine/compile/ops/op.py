@@ -71,7 +71,6 @@ class Operator(object):
         self._attr = OrderedDict()
         # ['extract_from_framework', 'construct']
         self._filling_method = None
-        self._ori_node = None
 
     @property
     def name(self):
@@ -186,13 +185,3 @@ class Operator(object):
             conf_dict['attr'] = self._attr
 
         return conf_dict
-
-    @property
-    def ori_node(self):
-        """Get the original node."""
-        return self._ori_node
-
-    @ori_node.setter
-    def ori_node(self, node):
-        """node assignment."""
-        self._ori_node = node

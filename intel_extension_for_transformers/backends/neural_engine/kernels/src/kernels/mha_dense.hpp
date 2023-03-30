@@ -88,17 +88,17 @@ class mha_dense_k_t : public kernel_t {
 
  public:
   using kd_t = mha_dense_kd_t;
-  static constexpr int MAX_SEQLEN = 2048;
+  static constexpr int MAX_SL_N = 2048;
   explicit mha_dense_k_t(const std::shared_ptr<const kernel_desc_t>& kd);
   virtual ~mha_dense_k_t() {
-    for (int j = 1; j <= MAX_SEQLEN / 64; j++) {
+    for (int j = 1; j <= MAX_SL_N / 64; j++) {
       for (int i = 0; i < 16; i++) safe_delete(ker_softmax_[j][i]);
       safe_delete(ker_av_gemm_16x_[j]);
       safe_delete(ker_av_gemm_32x_[j]);
     }
     for (int j = 1; j <= 16; j++) safe_delete(ker_trans_k_[j]);
     for (int j = 0; j <= 4; j++) safe_delete(ker_trans_v_[j]);
-    for (int j = 1; j <= MAX_SEQLEN / 16; j++) {
+    for (int j = 1; j <= MAX_SL_N / 16; j++) {
       safe_delete(ker_qk_gemm_16x_[j]);
       safe_delete(ker_qk_gemm_32x_[j]);
     }
@@ -116,8 +116,10 @@ class mha_dense_k_t : public kernel_t {
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 
  private:
+  bool execute_tiny(const std::vector<const void*>& rt_data) const;
   const data_type dst_dt_;
-  const int src_bs_, src_seq_len_, head_num_, head_size_, ld_src_, ld_dst_;
+  const int src_bs_, src_sl_m_, src_sl_n_, head_num_, head_size_, ld_src_, ld_dst_;
+  const float softmax_rescale_f32_;
   const uint16_t softmax_rescale_;
   const float QK_rescale_, QKV_rescale_, QKV_dstzp_;
   const float Q_scale_, K_scale_, V_scale_, DST_scale_, QK_output_scale_;
@@ -134,11 +136,11 @@ class mha_dense_k_t : public kernel_t {
 
   jit_trans_AB16a4b* ker_trans_k_[17];
   jit_trans_BA16b4a* ker_trans_v_[5];
-  jit_softmax_Ab16a* ker_softmax_[MAX_SEQLEN / 64 + 1][16];
-  jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b* ker_qk_gemm_16x_[MAX_SEQLEN / 16 + 1];
-  jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b* ker_qk_gemm_32x_[MAX_SEQLEN / 16 + 1];
-  jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab* ker_av_gemm_16x_[MAX_SEQLEN / 64 + 1];
-  jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab* ker_av_gemm_32x_[MAX_SEQLEN / 64 + 1];
+  jit_softmax_Ab16a* ker_softmax_[MAX_SL_N / 64 + 1][16];
+  jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b* ker_qk_gemm_16x_[MAX_SL_N / 16 + 1];
+  jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b* ker_qk_gemm_32x_[MAX_SL_N / 16 + 1];
+  jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab* ker_av_gemm_16x_[MAX_SL_N / 64 + 1];
+  jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab* ker_av_gemm_32x_[MAX_SL_N / 64 + 1];
   inline void mha_per_head_32x(const jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::rt_data_t& rt_data_qk,
                                const jit_softmax_Ab16a::rt_data_t& rt_data_softmax1,
                                const jit_softmax_Ab16a::rt_data_t& rt_data_softmax2,

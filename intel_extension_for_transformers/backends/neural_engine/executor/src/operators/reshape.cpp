@@ -16,27 +16,37 @@
 
 namespace executor {
 
-ReshapeOperator::ReshapeOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+ReshapeOperator::ReshapeOperator(const shared_ptr<OperatorConfig>& conf)
+    : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("dst_shape");
-  if (iter != attrs_map.end()) StringSplit<int64_t>(&shape_, attrs_map["dst_shape"], ",");
+  if (iter != attrs_map.end())
+    StringSplit<int64_t>(&shape_, attrs_map["dst_shape"], ",");
   iter = attrs_map.find("dims");
-  if (iter != attrs_map.end()) StringSplit<int64_t>(&dims_, attrs_map["dims"], ",");
+  if (iter != attrs_map.end())
+    StringSplit<int64_t>(&dims_, attrs_map["dims"], ",");
   iter = attrs_map.find("mul");
-  if (iter != attrs_map.end()) StringSplit<int64_t>(&mul_, attrs_map["mul"], ",");
+  if (iter != attrs_map.end())
+    StringSplit<int64_t>(&mul_, attrs_map["mul"], ",");
   iter = attrs_map.find("unsqueeze");
-  unsqueeze_ = (iter != attrs_map.end() && iter->second != "") ? StringToNum<int>(iter->second) : -2;
+  unsqueeze_ = (iter != attrs_map.end() && iter->second != "")
+                   ? StringToNum<int>(iter->second)
+                   : -2;
   iter = attrs_map.find("squeeze");
-  squeeze_ = (iter != attrs_map.end() && iter->second != "") ? StringToNum<int>(iter->second) : -2;
+  squeeze_ = (iter != attrs_map.end() && iter->second != "")
+                 ? StringToNum<int>(iter->second)
+                 : -2;
 }
 
 ReshapeOperator::~ReshapeOperator() {}
 
-void ReshapeOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void ReshapeOperator::Prepare(const vector<Tensor*>& input,
+                              const vector<Tensor*>& output) {
   output[0]->set_dtype(input[0]->dtype());
 }
 
-void ReshapeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void ReshapeOperator::Reshape(const vector<Tensor*>& input,
+                              const vector<Tensor*>& output) {
   // Set dst tensor shape
   if (unsqueeze_ != -2) {
     auto before_dst_shape = input[0]->shape();
@@ -60,10 +70,13 @@ void ReshapeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
     dst_ptr->set_shape(before_dst_shape);
     return;
   }
+  auto temp_shape = input[0]->shape();
+  vector<int64_t> pre_dst_shape;
   if (shape_.empty()) {
-    shape_ = input[0]->shape();
+    pre_dst_shape = input[0]->shape();
+  } else {
+    pre_dst_shape = shape_;
   }
-  vector<int64_t> pre_dst_shape(shape_);
   if (input.size() == 2) {
     auto shape_vec = input[1]->shape();
     int j = 0;
@@ -125,7 +138,8 @@ void ReshapeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
 }
 
 // 2. inference kernel(for int8 and f32)
-void ReshapeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void ReshapeOperator::Forward(const vector<Tensor*>& input,
+                              const vector<Tensor*>& output) {
   Tensor* src_ptr = input[0];
   Tensor* dst_ptr = output[0];
   auto data = src_ptr->mutable_data();
@@ -141,7 +155,8 @@ void ReshapeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*
     int data_size = dst_ptr->size();
     string data_type = src_ptr->dtype();
     memcpy(dst_data_ptr, data, data_size * type2bytes[data_type]);
-    LOG(WARNING) << "input tensor" << src_ptr->name() << " will be used by multi node...";
+    LOG(WARNING) << "input tensor" << src_ptr->name()
+                 << " will be used by multi node...";
     this->unref_tensors(input);
   }
 }

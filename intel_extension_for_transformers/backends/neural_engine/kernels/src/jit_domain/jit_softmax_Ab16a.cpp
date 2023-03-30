@@ -74,6 +74,9 @@ void jit_softmax_Ab16a::generate() {
   // convert int32 to fp32 and scale by QK_rescale_
   mov(r15d, dword[reg_param + GET_OFF(QK_rescale)]);
   vpbroadcastd(zmm17, r15d);  // zmm17 is vscale
+  mov(r15d, bit_cast<uint32_t>(-10000.f));
+  vpbroadcastd(zmm18, r15d);
+
   if (param_.has_badd) mov(r11, qword[reg_param + GET_OFF(src_badd)]);
   if (param_.has_badd) mov(r12d, dword[reg_param + GET_OFF(ld_badd)]);
   if (param_.has_badd) lea(r12d, ptr[r12d * sizeof(float)]);
@@ -88,7 +91,8 @@ void jit_softmax_Ab16a::generate() {
         mov(r14, r11);
       else
         lea(r14, ptr[r14 + r12]);
-      vfmadd213ps(vreg_x, zmm17, zword[r14]);
+      vmaxps(zmm19, zmm18, zword[r14]);
+      vfmadd213ps(vreg_x, zmm17, zmm19);
     }
     vmovaps(zword[r13 + i * 16 * 4], vreg_x);
     vmaxps(Zmm(i), Zmm(i), vreg_x);
@@ -99,8 +103,6 @@ void jit_softmax_Ab16a::generate() {
   cmp(ebx, att_tile);
   jne("load_max_in_softmax");
   if (param_.att_tail) {
-    mov(r15d, bit_cast<uint32_t>(-10000.f));
-    vpbroadcastd(zmm18, r15d);
     for (int i = 0; i < 16; ++i) {
       const auto& vreg_x = zmm16;
       vmovaps(vreg_x, zmm18);
@@ -112,7 +114,8 @@ void jit_softmax_Ab16a::generate() {
           mov(r14, r11);
         else
           lea(r14, ptr[r14 + r12]);
-        vfmadd213ps(vreg_x | mask, zmm17, zword[r14]);
+        vmaxps(zmm19, zmm18, zword[r14]);
+        vfmadd213ps(vreg_x | mask, zmm17, zmm19);
       }
       vmovaps(zword[r13 + i * 16 * 4], vreg_x);
       vmaxps(Zmm(i), Zmm(i), vreg_x);

@@ -69,6 +69,13 @@ if (NE_WITH_SPARSELIB_VTUNE)
     message( STATUS "VTune enbled" )
 endif()
 
+# TODO(Yi): enable/disable kernel(s) with VNNI intrin given compile option(s)
+if(WIN32)
+    target_compile_options(${HOST_LIBRARY_NAME} PRIVATE /arch:AVX512)
+else()
+    target_compile_options(${HOST_LIBRARY_NAME} PRIVATE -march=icelake-server)
+endif()
+
 set(GIT_HASH "unknown")
 get_git_hash(GIT_HASH)
 message(STATUS "Git hash is ${GIT_HASH}")

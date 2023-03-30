@@ -41,9 +41,11 @@ class LayerNormOperator : public Operator {
   explicit LayerNormOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~LayerNormOperator() {}
 
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
+  void PreparewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
@@ -51,6 +53,7 @@ class LayerNormOperator : public Operator {
   void ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
  private:
+  std::string output_dtype_;
   bool weight_cached_;
   float epsilon_;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);

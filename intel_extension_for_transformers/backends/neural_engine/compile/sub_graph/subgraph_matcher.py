@@ -32,6 +32,7 @@ EXECUTOR_TYPE = {
     "MatMulWithBiasRelu": "InnerProduct",
     "MatMulWithBiasSigmoid": "InnerProduct",
     "Matmul": "Matmul",
+    "Einsum": "Matmul",
     "MatMul": "InnerProduct",
     "Conv": "Convolution",
     "QuantizedMatMulWithBiasAndDequantize": "InnerProduct",
@@ -116,7 +117,27 @@ pattern_default_setting = {
 
     # for all stable diffusion models
     'StableDiffusion_bf16Convert': False,
-    'StableDiffusion_ReshapeFusion': False
+    'StableDiffusion_ReshapeFusion': False,
+    
+    #GPT-J
+    'TorchEmbedding': True,
+    'InnerproductReshapeFusion': True,
+    'MatMulWithTranspose': True,
+    'InnerproductWithBiasGelu': True,
+    'SliceMask': True,
+    'ArangewithReciprocal': True,
+    'InnerproductwithSlice': True,
+    'RoraryPosEmb': True,
+    'EinsumwithArange': True,
+    'RemoveSlice': True,
+    'RemoveRange': True,
+    'RemoveLastView': True,
+    
+    
+    'TorchInsertBF16Node': True,
+    'MultiHeadAttention': False,
+    'Int8BF16MixedPrecisionChecker': False,
+    'QuantizedGraphDtypeRefactor': True,
 }
 
 class SubGraphMatcher(object):
@@ -125,9 +146,9 @@ class SubGraphMatcher(object):
         """The __call__ function of SubGraphMatcher class."""
         logger.info('Start to implement Sub-Graph matching and replacing...') 
         if tune:
-            self._tune_patterns(model)
+            model = self._tune_patterns(model)
         else:
-            self._fuse_patterns(model, pattern_config=pattern_config)
+            model = self._fuse_patterns(model, pattern_config=pattern_config)
         logger.info('Sub-Graph match and replace done...')
         return model
 
@@ -152,8 +173,9 @@ class SubGraphMatcher(object):
             if pattern in PATTERNS and pattern_mask[pattern_id]:
                 p_fusion = PATTERNS[pattern]()
                 model = p_fusion(model)
-        self._remove_identity(model)
-         
+        model = self._remove_identity(model)
+        return model
+
     def _tune_patterns(self, model, iterations = 10, warm_up = 5):
         # pattern tuning strategy(for superbert): 
         #    1. only one pattern off/on each time (pruning)
@@ -209,4 +231,5 @@ class SubGraphMatcher(object):
                     op_type = EXECUTOR_TYPE[node.op_type]
                     model.nodes[i].op_type = op_type
         model.remove_nodes(rm_node_names)
+        return model
 

@@ -76,7 +76,7 @@ class TestDynamicQuantization(unittest.TestCase):
 
         Q_node = OPERATORS['InnerProduct']()
         input_tensors = [
-            Tensor(name='layernorm_output', dest_op=['Q'], dtype="fp32"),
+            Tensor(name='layernorm_output',source_op=['layernorm'], dest_op=['Q'], dtype="fp32"),
             Tensor(name='weight_Q',
                    dest_op=['Q'],
                    shape=[256, 256],
@@ -101,7 +101,7 @@ class TestDynamicQuantization(unittest.TestCase):
                          }))
         K_node = OPERATORS['InnerProduct']()
         input_tensors = [
-            Tensor(name='layernorm_output', dest_op=['K'], dtype="fp32"),
+            Tensor(name='layernorm_output', source_op=['layernorm'], dest_op=['K'], dtype="fp32"),
             Tensor(name='weight_K',
                    dest_op=['K'],
                    shape=[256, 256],
@@ -126,7 +126,7 @@ class TestDynamicQuantization(unittest.TestCase):
                          }))
         V_node = OPERATORS['InnerProduct']()
         input_tensors = [
-            Tensor(name='layernorm_output', dest_op=['V'], dtype="fp32"),
+            Tensor(name='layernorm_output', source_op=['layernorm'], dest_op=['V'], dtype="fp32"),
             Tensor(name='weight_V',
                    dest_op=['V'],
                    shape=[256, 256],

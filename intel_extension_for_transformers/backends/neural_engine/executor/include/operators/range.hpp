@@ -39,6 +39,10 @@ class RangeOperator : public Operator {
   std::vector<int64_t> shape_;
   int step_;
   int start_;
+  int end_;
+  int end_with_tensor_;
+  int div_;
+  bool algo_ = false;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_RANGE_HPP_

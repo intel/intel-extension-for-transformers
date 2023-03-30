@@ -51,10 +51,7 @@ class InnerproductwithSlice(Pattern):
                             0: [1]
                         }, {
                             0: [2]
-                        }, {
-                            0: [3]
-                        }
-                        ], [[0, 1, 2, 3], 4]]
+                        }], [[0, 1, 2], 3]]
                     },
                     'output_tensors': {
                         0: [[{
@@ -73,9 +70,13 @@ class InnerproductwithSlice(Pattern):
         def _set_attr(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 mat_node_idx = model.get_node_id(new_node_names[i][0])
+                ret_mat_node = ret_old_nodes[i][0]
+                if len(ret_mat_node.input_tensors) == 4:
+                    model.nodes[mat_node_idx].input_tensors.append(copy.deepcopy(
+                        ret_mat_node.input_tensors[-1]))
                 model.nodes[mat_node_idx].attr = ret_old_nodes[i][0].attr
         pattern_dict = pattern_mapping_config['InnerproductwithSlice'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductwithSlice", 
+        model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductwithSlice",
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr(new_node_names, ret_old_nodes, model)

@@ -37,7 +37,7 @@ enum io {
 namespace ssd {
 struct mha_dense_param_t {
   data_type dst_dt_;
-  int src_bs_, src_seq_len_, head_num_, head_size_;
+  int src_bs_, src_sl_m_, src_sl_n_, head_num_, head_size_;
   float QK_rescale_, softmax_rescale_, QKV_rescale_, QKV_dstzp_;
   float Q_scale_, K_scale_, V_scale_, DST_scale_, QK_output_scale_;
   int DST_zp_;

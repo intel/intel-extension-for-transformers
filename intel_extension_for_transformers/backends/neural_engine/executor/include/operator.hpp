@@ -119,8 +119,9 @@ class Operator {
   inline const string& table_id() const { return table_id_; }
   inline void set_perf_ratio_id(const string& perf_ratio_id) { perf_ratio_id_ = perf_ratio_id; }
   inline const string& perf_ratio_id() const { return perf_ratio_id_; }
-  inline void set_it_shape(const vector<int64_t> input_shape) { input_tensor_shape_.emplace_back(input_shape); }
-  inline void set_ot_shape(const vector<int64_t> output_shape) { output_tensor_shape_.emplace_back(output_shape); }
+  inline void set_it_shape(const vector<int64_t> input_shape, int index) { input_tensor_shape_[index] = (input_shape); }
+  inline void append_it_shape(const vector<int64_t> input_shape) { input_tensor_shape_.emplace_back(input_shape); }
+  inline void append_ot_shape(const vector<int64_t> output_shape) { output_tensor_shape_.emplace_back(output_shape); }
   inline const vector<vector<int64_t>>& get_it_shape() const { return input_tensor_shape_; }
   inline const vector<vector<int64_t>>& get_ot_shape() const { return output_tensor_shape_; }
   // get executor kernel time add reshape time

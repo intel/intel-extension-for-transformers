@@ -143,4 +143,5 @@ static auto CasesFp32 = []() {
   return ::testing::ValuesIn(cases);
 };
 
+
 INSTANTIATE_TEST_SUITE_P(Prefix, CosSinTest, CasesFp32());

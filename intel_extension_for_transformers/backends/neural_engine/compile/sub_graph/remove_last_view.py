@@ -40,8 +40,10 @@ class RemoveLastView(Pattern):
         for node in model.nodes:
             if node.op_type == 'View':
                 pre_node = model.get_node_by_name(node.input_tensors[0].source_op[0])
+                dst_node = model.get_node_by_name(node.output_tensors[0].dest_op[0])
                 node.output_tensors[0].source_op = [pre_node.name]
                 pre_node.output_tensors[0] = node.output_tensors[0]
+                dst_node.input_tensors[0].source_op = [pre_node.name]
                 for in_tensor in node.input_tensors[1:]:
                     source_node = model.get_node_by_name(in_tensor.source_op[0])
                     if len(source_node.output_tensors) == 1 and len(source_node.output_tensors[0].dest_op) == 1 \

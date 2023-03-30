@@ -58,6 +58,9 @@ class jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab : public jit_generator {
         dt_dst(param.dst_dt),
         ld_dst(param.ld_dst),
         lb_dst(ld_dst * type_size.at(dt_dst)) {
+    SPARSE_LOG_IF(FATAL, is_all_of({data_type::u8, data_type::s8, data_type::fp32, data_type::bf16},
+                                   [dst = dt_dst](auto t) { return t != dst; }))
+        << "Unexpected dt_dst";
     SPARSE_LOG_IF(ERROR, N > ld_dst) << "N > ld_dst which may lead to unexpected behavior!";
     SPARSE_LOG_IF(FATAL, K_pad % 64 != 0) << "Currently only support K as a multiple of 64";
     SPARSE_LOG_IF(FATAL, M % 16 != 0) << "Currently only support M as a multiple of 16";

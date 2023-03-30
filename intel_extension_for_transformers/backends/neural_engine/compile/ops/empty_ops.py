@@ -555,3 +555,10 @@ class ListConstruct(Operator):
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
+@operator_registry(operator_type='LatRange')
+class LatRange(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()

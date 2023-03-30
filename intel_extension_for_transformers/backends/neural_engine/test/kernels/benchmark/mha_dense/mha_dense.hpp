@@ -33,7 +33,8 @@ class mha_dense_bench : public kernel_bench {
   int64_t head_num;
   int64_t head_size;
   int64_t batch_size;
-  int64_t seq_len;
+  int64_t sl_m;
+  int64_t sl_n;
   int32_t mask = -1;  // valid seqlen
   data_type dt_dst;
   int badd_dim;  // #dimention of the binary_add src tensor; Non-positive number for disabling binary_add

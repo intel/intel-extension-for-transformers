@@ -20,8 +20,14 @@ static unordered_map<string, jd::data_type> type2sparsemem{
     {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
     {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
 
-MultiHeadAttenionOperator::MultiHeadAttenionOperator(const shared_ptr<OperatorConfig>& conf)
-    : Operator(conf), Q_perm_({}), K_perm_({}), V_perm_({}), dst_perm_({}), output_scale_(1.) {
+MultiHeadAttentionOperator::MultiHeadAttentionOperator(const shared_ptr<OperatorConfig>& conf)
+    : Operator(conf),
+      Q_perm_({}),
+      K_perm_({}),
+      V_perm_({}),
+      dst_perm_({}),
+      output_scale_(1.),
+      rt_data_(jd::mha_dense_io::mha_dense_io_MAX + 1) {
   auto attrs_map = operator_conf_->attributes();
 
   auto iter = attrs_map.find("Q_perm");
@@ -56,45 +62,87 @@ MultiHeadAttenionOperator::MultiHeadAttenionOperator(const shared_ptr<OperatorCo
   }
 }
 
-MultiHeadAttenionOperator::~MultiHeadAttenionOperator() {
+MultiHeadAttentionOperator::~MultiHeadAttentionOperator() {
   if (is_sparse_) aligned_free(trans_mha_tmpbuf);
 }
 
-void MultiHeadAttenionOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttentionOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  int input_size = input.size();
   dst_ = output[0];
-  if (input.size() == 14) {
-    Q_ = input[0];
-    K_ = input[1];
-    V_ = input[2];
-    att_mask_ = input[3];
-    Q_min_ = input[4];
-    Q_max_ = input[5];
-    K_min_ = input[6];
-    K_max_ = input[7];
-    V_min_ = input[8];
-    V_max_ = input[9];
-    QK_min_ = input[10];
-    QK_max_ = input[11];
-    dst_min_ = input[12];
-    dst_max_ = input[13];
-  } else {
-    QKV_ = input[0];
-    att_mask_ = input[1];
-    Q_min_ = input[2];
-    Q_max_ = input[3];
-    K_min_ = input[4];
-    K_max_ = input[5];
-    V_min_ = input[6];
-    V_max_ = input[7];
-    QK_min_ = input[8];
-    QK_max_ = input[9];
-    dst_min_ = input[10];
-    dst_max_ = input[11];
+  switch (input_size) {
+    case 12: {
+      QKV_ = input[0];
+      att_mask_ = input[1];
+      Q_min_ = input[2];
+      Q_max_ = input[3];
+      K_min_ = input[4];
+      K_max_ = input[5];
+      V_min_ = input[6];
+      V_max_ = input[7];
+      QK_min_ = input[8];
+      QK_max_ = input[9];
+      dst_min_ = input[10];
+      dst_max_ = input[11];
+      break;
+    }
+    case 13: {
+      QKV_ = input[0];
+      att_mask_ = input[1];
+      binary_add_mask_ = input[2];
+      Q_min_ = input[3];
+      Q_max_ = input[4];
+      K_min_ = input[5];
+      K_max_ = input[6];
+      V_min_ = input[7];
+      V_max_ = input[8];
+      QK_min_ = input[9];
+      QK_max_ = input[10];
+      dst_min_ = input[11];
+      dst_max_ = input[12];
+      break;
+    }
+    case 14: {
+      Q_ = input[0];
+      K_ = input[1];
+      V_ = input[2];
+      att_mask_ = input[3];
+      Q_min_ = input[4];
+      Q_max_ = input[5];
+      K_min_ = input[6];
+      K_max_ = input[7];
+      V_min_ = input[8];
+      V_max_ = input[9];
+      QK_min_ = input[10];
+      QK_max_ = input[11];
+      dst_min_ = input[12];
+      dst_max_ = input[13];
+      break;
+    }
+    case 15: {
+      Q_ = input[0];
+      K_ = input[1];
+      V_ = input[2];
+      att_mask_ = input[3];
+      binary_add_mask_ = input[4];
+      Q_min_ = input[5];
+      Q_max_ = input[6];
+      K_min_ = input[7];
+      K_max_ = input[8];
+      V_min_ = input[9];
+      V_max_ = input[10];
+      QK_min_ = input[11];
+      QK_max_ = input[12];
+      dst_min_ = input[13];
+      dst_max_ = input[14];
+      break;
+    }
   }
 }
 
-void MultiHeadAttenionOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttentionOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   MapTensors(input, output);
+  LOG_IF(FATAL, binary_add_mask_ != nullptr && is_sparse_)
+      << "one more mask (binary_add_mask) is not supported for sparse MHA kernel!";
   dst_->set_dtype("u8");
   string dtype;
   if (Q_ != nullptr)
@@ -123,21 +171,21 @@ void MultiHeadAttenionOperator::Prepare(const vector<Tensor*>& input, const vect
   }
 }
 
-void MultiHeadAttenionOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttentionOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (is_sparse_)
     ReshapeSparse(input, output);
   else
     ReshapeDense(input, output);
 }
 
-void MultiHeadAttenionOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttentionOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (is_sparse_)
     ForwardSparse(input, output);
   else
     ForwardDense(input, output);
 }
 
-void MultiHeadAttenionOperator::ReshapeSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttentionOperator::ReshapeSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   std::unordered_map<std::string, std::string> op_attrs;
   src_shape_ = Q_->shape();
   if (Q_->tensor_format() != TensorFormat::MmKMb) {
@@ -231,16 +279,18 @@ static void ref_mm_row_NN_f32(T1* matA, T2* matB, float* matC, float* matD, int 
   }
 }
 
-void MultiHeadAttenionOperator::ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttentionOperator::ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   std::unordered_map<std::string, std::string> attr_map;
+  std::vector<int64_t> QK_shape;
+  std::vector<int64_t> attn_shape;
   if (Q_ != nullptr) {
-    auto& Q_shape = Q_->shape();
-    bs_ = Q_shape[0];
-    seq_len_ = Q_shape[1];
-    head_num_ = Q_shape[2];
-    head_size_ = Q_shape[3];
+    // for decoder-only transformers, Q, K, V may have different shapes
+    vector<int64_t> Q_shape = GetShapes(Q_->shape(), Q_perm_);
+    vector<int64_t> K_shape = GetShapes(K_->shape(), K_perm_);
+    vector<int64_t> V_shape = GetShapes(K_->shape(), V_perm_);
+    QK_shape = {Q_shape[0], Q_shape[1], Q_shape[2], K_shape[3]};
+    attn_shape = GetShapes({QK_shape[0], QK_shape[1], QK_shape[2], V_shape[3]}, dst_perm_);
     attr_map["merged_QKV"] = "False";
-
   } else {
     auto& QKV_shape = QKV_->shape();
     bs_ = QKV_shape[0];
@@ -248,8 +298,11 @@ void MultiHeadAttenionOperator::ReshapeDense(const vector<Tensor*>& input, const
     head_num_ = QKV_shape[3];
     head_size_ = QKV_shape[4];
     attr_map["merged_QKV"] = "True";
+    QK_shape = {bs_, head_num_, seq_len_, seq_len_};
+    attn_shape = {bs_, seq_len_, head_num_, head_size_};
+    hidden_size_ = head_num_ * head_size_;
   }
-  hidden_size_ = head_num_ * head_size_;
+  dst_->set_shape(attn_shape);
   attr_map["QK_rescale"] = std::to_string(QK_rescale_);
   attr_map["softmax_rescale"] = std::to_string(softmax_rescale_);
   attr_map["QKV_rescale"] = std::to_string(QKV_rescale_);
@@ -262,24 +315,40 @@ void MultiHeadAttenionOperator::ReshapeDense(const vector<Tensor*>& input, const
   std::vector<jd::tensor_desc> ts_descs;
   jd::data_type dt = jd::data_type::s8;
   jd::format_type ft = jd::format_type::undef;
-  ts_descs.push_back(jd::tensor_desc({bs_, seq_len_, head_num_, head_size_}, dt, ft));
-  ts_descs.push_back(jd::tensor_desc({bs_, seq_len_, head_num_, head_size_}, dt, ft));
-  ts_descs.push_back(jd::tensor_desc({bs_, seq_len_, head_num_, head_size_}, dt, ft));
-  ts_descs.push_back(jd::tensor_desc({bs_}, jd::data_type::s32, ft));
-  ts_descs.push_back(jd::tensor_desc({bs_, seq_len_, head_num_, head_size_},
-                                     (dst_->dtype() == "fp32") ? jd::data_type::fp32 : jd::data_type::u8, ft));
+  ts_descs.assign(jd::mha_dense_io::mha_dense_io_MAX + 1, jd::tensor_desc{{}, jd::data_type::undef, ft});
+  if (Q_ != nullptr) {
+    ts_descs[jd::mha_dense_io::SRC_Q] = {Q_->shape(), dt, ft};
+    ts_descs[jd::mha_dense_io::SRC_K] = {K_->shape(), dt, ft};
+    ts_descs[jd::mha_dense_io::SRC_V] = {V_->shape(), dt, ft};
+  } else {
+    ts_descs[jd::mha_dense_io::SRC_Q] = {attn_shape, dt, ft};
+    ts_descs[jd::mha_dense_io::SRC_K] = {attn_shape, dt, ft};
+    ts_descs[jd::mha_dense_io::SRC_V] = {attn_shape, dt, ft};
+  }
+  ts_descs[jd::mha_dense_io::MASK] = {{QK_shape[0]}, jd::data_type::s32, ft};
+  ts_descs[jd::mha_dense_io::DST] = {attn_shape, (dst_->dtype() == "fp32") ? jd::data_type::fp32 : jd::data_type::u8,
+                                     ft};
+  if (binary_add_mask_ != nullptr) {
+    std::vector<int64_t> badd_shape;
+    LOG_IF(FATAL, binary_add_mask_->shape().size() > QK_shape.size()) << "Unsupprt binary add mask dimension";
+    for (const auto& s : binary_add_mask_->shape()) {
+      if (s != 1) {
+        badd_shape.push_back(s);
+      }
+    }
+    ts_descs[jd::mha_dense_io::BINARY_ADD] = {badd_shape, jd::data_type::fp32, jd::format_type::undef};
+  }
   jd::operator_desc op_desc(jd::kernel_kind::mha_dense, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
                             ts_descs, attr_map);
   jd::mha_dense_desc mha_dense_d(op_desc);
   mha_dense_ = jd::mha_dense(mha_dense_d);
-  dst_->set_shape({bs_, seq_len_, head_num_, head_size_});
   if (!dst_reshape_.empty()) {
     vector<int64_t> dst_shape = GetDstShape(dst_reshape_, dst_->size(), {}, {});
     dst_->set_shape(dst_shape);
   }
 }
 
-void MultiHeadAttenionOperator::ForwardSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttentionOperator::ForwardSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int8_t *Q_data = nullptr, *K_data = nullptr, *V_data = nullptr;
   if (Q_->tensor_format() != TensorFormat::MmKMb) {
     vector<int64_t> src_prem = {2, 0, 1, 3};
@@ -314,12 +383,28 @@ void MultiHeadAttenionOperator::ForwardSparse(const vector<Tensor*>& input, cons
   this->unref_tensors(input);
 }
 
-void MultiHeadAttenionOperator::ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void MultiHeadAttentionOperator::ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int8_t *Q_data = nullptr, *K_data = nullptr, *V_data = nullptr;
   if (Q_ != nullptr) {
     Q_data = reinterpret_cast<int8_t*>(Q_->mutable_data());
     K_data = reinterpret_cast<int8_t*>(K_->mutable_data());
     V_data = reinterpret_cast<int8_t*>(V_->mutable_data());
+    // for decoder_only transformers, q_seq_len != k_seq_len
+    // bs x seq_len x head_num x head_size (Q, K, V)
+    bool decoder = (Q_->shape()[1] != K_->shape()[1]);
+    for (int i = 0; i < att_mask_->shape()[0]; ++i) {
+      if (*(reinterpret_cast<int32_t*>(att_mask_->mutable_data()) + i) != 1) {
+        decoder = false;
+        break;
+      }
+    }
+    if (decoder) {
+      int32_t k_seq_len = K_->shape()[1];
+#pragma omp parallel for
+      for (int i = 0; i < att_mask_->shape()[0]; ++i) {
+        *(reinterpret_cast<int32_t*>(att_mask_->mutable_data()) + i) = k_seq_len;
+      }
+    }
   } else {
     int8_t* QKV_data = reinterpret_cast<int8_t*>(QKV_->mutable_data());
     Q_data = QKV_data;
@@ -328,10 +413,21 @@ void MultiHeadAttenionOperator::ForwardDense(const vector<Tensor*>& input, const
   }
   int32_t* att_mask_data = reinterpret_cast<int32_t*>(att_mask_->mutable_data());
   int8_t* dst_data = reinterpret_cast<int8_t*>(dst_->mutable_data());
-  rt_data_ = {Q_data, K_data, V_data, att_mask_data, dst_data};
+  const auto workspace = MemoryAllocator::get().GetMemory(mha_dense_.get_workspace_size(), 1);
+  rt_data_[jd::mha_dense_io::SRC_Q] = Q_data;
+  rt_data_[jd::mha_dense_io::SRC_K] = K_data;
+  rt_data_[jd::mha_dense_io::SRC_V] = V_data;
+  rt_data_[jd::mha_dense_io::MASK] = att_mask_data;
+  rt_data_[jd::mha_dense_io::DST] = dst_data;
+  rt_data_[jd::mha_dense_io::WORKSPACE] = workspace;
+  if (binary_add_mask_ != nullptr) {
+    float* binary_add_mask_data = reinterpret_cast<float*>(binary_add_mask_->mutable_data());
+    rt_data_[jd::mha_dense_io::BINARY_ADD] = binary_add_mask_data;
+  }
   mha_dense_.execute(rt_data_);
+  MemoryAllocator::get().UnrefMemory(workspace, false);
   this->unref_tensors(input);
 }
 
-REGISTER_OPERATOR_CLASS(MultiHeadAttenion);
+REGISTER_OPERATOR_CLASS(MultiHeadAttention);
 }  // namespace executor

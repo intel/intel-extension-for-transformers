@@ -115,8 +115,6 @@ class TestTorchLinear(unittest.TestCase):
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
         out = newgraph.inference([example_in.numpy()])
         
-        print(ref_out)
-        print([*out.values()][0])
         self.assertTrue(cmpData(ref_out, [*out.values()][0]) < 0.01)
         os.remove('{}.pt'.format(file_name))
         shutil.rmtree(file_name)
@@ -169,8 +167,6 @@ class TestTorchLinear(unittest.TestCase):
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
         out = newgraph.inference([example_in.numpy()])
         
-        print(ref_out)
-        print([*out.values()][0])
         self.assertTrue(cmpData(ref_out, [*out.values()][0]) < 0.01)
         os.remove('{}.pt'.format(file_name))
         shutil.rmtree(file_name)

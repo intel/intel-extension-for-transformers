@@ -126,6 +126,10 @@ void jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::generate() {
                 case data_type::fp32:
                   vmovups(ptr[reg_dst + dst_disp], vreg_post[ii]);
                   break;
+                case data_type::bf16:
+                  vcvtneps2bf16(Ymm(vreg_post[ii].getIdx()), vreg_post[ii]);
+                  vmovdqu16(yword[reg_dst + dst_disp], Ymm(vreg_post[ii].getIdx()));
+                  break;
                 default:
                   SPARSE_LOG(FATAL) << "Unexpected dst type";
                   break;

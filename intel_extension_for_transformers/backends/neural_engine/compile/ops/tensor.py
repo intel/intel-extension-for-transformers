@@ -77,7 +77,8 @@ class Tensor(object):
     def data(self, data):
         """Data assignment."""
         self._data = data
-        self._dtype = util.get_data_dtype(data)
+        if data is not None:
+            self._dtype = util.get_data_dtype(data)
 
     @property
     def shape(self):

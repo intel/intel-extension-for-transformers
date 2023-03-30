@@ -15,7 +15,6 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_AMX_UTILS_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_AMX_UTILS_HPP_
 #include <omp.h>
-#include <immintrin.h>
 #include <mutex>  // NOLINT
 #include <cstdint>
 #include <vector>

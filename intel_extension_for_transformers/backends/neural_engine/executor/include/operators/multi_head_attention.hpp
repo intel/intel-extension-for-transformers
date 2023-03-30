@@ -24,15 +24,16 @@
 #include "../operator.hpp"
 #ifdef WITH_SPARSELIB
 #include "kernels/include/interface.hpp"
+#include "kernels/include/kernels/mha_dense_types.hpp"
 #endif
 
 namespace executor {
 
 // \brief MULTI_HEAD_ATTENTION operators
-class MultiHeadAttenionOperator : public Operator {
+class MultiHeadAttentionOperator : public Operator {
  public:
-  explicit MultiHeadAttenionOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~MultiHeadAttenionOperator();
+  explicit MultiHeadAttentionOperator(const shared_ptr<OperatorConfig>& conf);
+  virtual ~MultiHeadAttentionOperator();
 
  public:
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
@@ -49,6 +50,7 @@ class MultiHeadAttenionOperator : public Operator {
  protected:
   Tensor *Q_ = nullptr, *K_ = nullptr, *V_ = nullptr, *QKV_ = nullptr;
   Tensor* att_mask_ = nullptr;
+  Tensor* binary_add_mask_ = nullptr;
   // all scale is per_tensor now
   Tensor *Q_min_ = nullptr, *Q_max_ = nullptr, *K_min_ = nullptr, *K_max_ = nullptr, *V_min_ = nullptr,
          *V_max_ = nullptr, *QK_min_ = nullptr, *QK_max_ = nullptr, *dst_min_ = nullptr, *dst_max_ = nullptr;

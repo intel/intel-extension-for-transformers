@@ -345,6 +345,7 @@ std::pair<OpArgs, OpArgs> GenerateCase(const std::vector<std::vector<int64_t>>& 
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   auto op_config = std::make_shared<OperatorConfig>("slice", dtype, input_config, output_config, op_attr);
 
+
   // Step 2: Construct Tensor ptr
   std::vector<Tensor*> input_tensors;
   std::vector<Tensor*> input_tensors_cpy;
@@ -530,6 +531,7 @@ static auto Cases = []() {
          false});
   }
 
+
   // case: 3d slice, axes=2，step=2
   src_shape = {2, 3, 4};
   starts_shape = {1};
@@ -541,8 +543,7 @@ static auto Cases = []() {
   axes_val = {2};
   steps_val = {2};
   cases.push_back({GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
-                                {starts_val, ends_val, axes_val, steps_val}, "fp32"),
-                   false});
+                                    {starts_val, ends_val, axes_val, steps_val}, "fp32"), false});
 
   // case: 3d slice, axes=2，step=2, invalid indices inputs
   src_shape = {2, 3, 4};
@@ -555,8 +556,7 @@ static auto Cases = []() {
   axes_val = {2};
   steps_val = {2};
   cases.push_back({GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
-                                {starts_val, ends_val, axes_val, steps_val}, "fp32"),
-                   false});
+                                    {starts_val, ends_val, axes_val, steps_val}, "fp32"), false});
 
   // case: 3d slice, axes=0,1,2，step=1,1,1
   src_shape = {2, 3, 4};
@@ -566,9 +566,8 @@ static auto Cases = []() {
   steps_shape = {};
   starts_val = {0, 0, 0};
   ends_val = {1, 1, 1};
-  cases.push_back(
-      {GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape}, {starts_val, ends_val}, "fp32"),
-       false});
+  cases.push_back({GenerateCase({src_shape, starts_shape, ends_shape, axes_shape, steps_shape},
+                                    {starts_val, ends_val}, "fp32"), false});
 
   return ::testing::ValuesIn(cases);
 };

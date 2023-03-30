@@ -18,17 +18,47 @@
 
 namespace executor {
 
+// binary op doesn't support int32
+static unordered_map<string, dnnl::memory::data_type> type2mem{
+    {"fp32", dnnl::memory::data_type::f32}, {"fp16", dnnl::memory::data_type::f16},
+    {"u8", dnnl::memory::data_type::u8},    {"s8", dnnl::memory::data_type::s8},
+    {"bf16", dnnl::memory::data_type::bf16}};
+
 BinaryAddOperator::BinaryAddOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
+  static unordered_map<string, algorithm> str2algo{
+    {"add", algorithm::binary_add}, {"sub", algorithm::binary_sub},
+    {"mul", algorithm::binary_mul}, {"div", algorithm::binary_div},
+    {"gt", algorithm::binary_gt}, {"ge", algorithm::binary_ge},
+    {"lt", algorithm::binary_lt}, {"le", algorithm::binary_le},
+    {"eq", algorithm::binary_eq}, {"ne", algorithm::binary_ne},
+    {"min", algorithm::binary_min}, {"max", algorithm::binary_max}};
   auto iter = attrs_map.find("append_op");
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
+  iter = attrs_map.find("algorithm");
+  if (iter != attrs_map.end()) {
+    algo_ = str2algo[iter->second];
+  } else {
+    algo_ = algorithm::binary_add;
+  }
+  iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    output_dtype_ = attrs_map["output_dtype"];
+  }
+}
+
+// The ONEDNN binary primitive supports the following combinations of data types:
+// src0/1 f32, bf16, f16, u8, s8, dst: f32, bf16, f16, u8, s8
+// In-place mode requires the dst and src data types to be the same.
+// Different data types will unavoidably lead to correctness issues.
+void BinaryAddOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  output[0]->set_dtype(output_dtype_);
 }
 
 void BinaryAddOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 1: Prepare op descriptor and set dst tensor shape.
   const memory::dims& src0_shape_origin = input[0]->shape();
   const memory::dims& src1_shape_origin = input[1]->shape();
-
   // check broadcast optimization
   if (src0_shape_origin.size() == src1_shape_origin.size() && src0_shape_origin.size() > 1) {
     bool tag = true;
@@ -42,10 +72,10 @@ void BinaryAddOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   auto& dst_tensor_ptr = output[0];
 
   if (broadcast_) {
-    binary_d = PrepareBroadcastBinaryDesc(src0_shape_origin, src1_shape_origin);
+    binary_d = PrepareBroadcastBinaryDesc(src0_shape_origin, src1_shape_origin, input, output);
     dst_tensor_ptr->set_shape(GetBroadcastBinaryDstShape(src0_shape_origin, src1_shape_origin));
   } else {
-    binary_d = PrepareStrideBinaryDesc(src0_shape_origin, src1_shape_origin);
+    binary_d = PrepareStrideBinaryDesc(src0_shape_origin, src1_shape_origin, input, output);
     dst_tensor_ptr->set_shape(GetStrideBinaryDstShape(src0_shape_origin, src1_shape_origin));
   }
 
@@ -72,12 +102,13 @@ void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   Tensor* dst_ptr = output[0];
   vector<Tensor*> inputs(input);
   if (!append_sum_ && input.size() == 2 && input[0] != nullptr && input[0]->left_life() == 1 &&
-      input[0]->size() >= dst_ptr->size()) {
+      input[0]->size() >= dst_ptr->size() && input[0]->dtype() == output[0]->dtype()) {
     void* input_ptr = input[0]->mutable_data();
     input[0]->unref_data(true);
     dst_ptr->set_data(input_ptr);
     inputs = {input[1]};
-  } else if (append_sum_ && input.size() >= 3 && input[2] != nullptr && input[2]->size() >= dst_ptr->size()) {
+  } else if (append_sum_ && input.size() >= 3 && input[2] != nullptr && input[2]->size() >= dst_ptr->size() &&
+             input[2]->dtype() == output[0]->dtype()) {
     if (input[2]->left_life() == 1) {
       void* input_ptr = input[2]->mutable_data();
       input[2]->unref_data(true);
@@ -144,29 +175,34 @@ void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
 }
 
 dnnl::binary::desc BinaryAddOperator::PrepareBroadcastBinaryDesc(const memory::dims& src0_shape_origin,
-                                                                 const memory::dims& src1_shape_origin) {
+                                                                 const memory::dims& src1_shape_origin,
+                                                                 const vector<Tensor*>& input,
+                                                                 const vector<Tensor*>& output) {
   memory::dims jit_pass_src0_shape = src0_shape_origin, jit_pass_src1_shape = src1_shape_origin;
   memory::format_tag dt_tag;
+  memory::data_type src0_dt = type2mem[input[0]->dtype()];
+  memory::data_type src1_dt = type2mem[input[1]->dtype()];
   if (src0_shape_origin[0] < src1_shape_origin[0]) {
     jit_pass_src0_shape = src1_shape_origin;
     jit_pass_src1_shape = src0_shape_origin;
+    src0_dt = type2mem[input[1]->dtype()];
+    src1_dt = type2mem[input[0]->dtype()];
   }
 
   // set dt_tag
   dt_tag = SetFormatTag(jit_pass_src0_shape.size());
 
   // dst_shape is same as jit_pass_src0_shape, all 3 tensor's dt_tag are same.
-  memory::desc user_src0_md(jit_pass_src0_shape, memory::data_type::f32, dt_tag);
-  memory::desc user_src1_md(jit_pass_src1_shape, memory::data_type::f32, dt_tag);
-  memory::desc user_dst_md(jit_pass_src0_shape, memory::data_type::f32, dt_tag);
+  memory::desc user_src0_md(jit_pass_src0_shape, src0_dt, dt_tag);
+  memory::desc user_src1_md(jit_pass_src1_shape, src1_dt, dt_tag);
+  memory::desc user_dst_md(jit_pass_src0_shape, type2mem[output[0]->dtype()], dt_tag);
 
   //  Prepare memory objects (cached)
   user_src0_m_ = memory(user_src0_md, eng_);
   user_src1_m_ = memory(user_src1_md, eng_);
   user_dst_m_ = memory(user_dst_md, eng_);
 
-  dnnl::binary::desc binary_d(algorithm::binary_add, user_src0_md, user_src1_md, user_dst_md);
-
+  dnnl::binary::desc binary_d(algo_, user_src0_md, user_src1_md, user_dst_md);
   return binary_d;
 }
 
@@ -180,7 +216,9 @@ memory::dims BinaryAddOperator::GetBroadcastBinaryDstShape(const memory::dims& s
 }
 
 dnnl::binary::desc BinaryAddOperator::PrepareStrideBinaryDesc(const memory::dims& src0_shape_origin,
-                                                              const memory::dims& src1_shape_origin) {
+                                                              const memory::dims& src1_shape_origin,
+                                                              const vector<Tensor*>& input,
+                                                              const vector<Tensor*>& output) {
   // 1 Get tensor's adjusted shapes
   auto dst_shape = GetStrideBinaryDstShape(src0_shape_origin, src1_shape_origin);
 
@@ -190,9 +228,9 @@ dnnl::binary::desc BinaryAddOperator::PrepareStrideBinaryDesc(const memory::dims
   memory::dims dst_stride = GetStrides(dst_shape);
 
   // 3 Prepare memory descriptors
-  memory::desc user_src0_md(src0_shape_origin, memory::data_type::f32, src0_stride);
-  memory::desc user_src1_md(src1_shape_origin, memory::data_type::f32, src1_stride);
-  memory::desc user_dst_md(dst_shape, memory::data_type::f32, dst_stride);
+  memory::desc user_src0_md(src0_shape_origin, type2mem[input[0]->dtype()], src0_stride);
+  memory::desc user_src1_md(src1_shape_origin, type2mem[input[1]->dtype()], src1_stride);
+  memory::desc user_dst_md(dst_shape, type2mem[output[0]->dtype()], dst_stride);
 
   // 4 Prepare format_any memory descriptors
   memory::desc any_dst_md(user_dst_md.dims(), user_dst_md.data_type(), memory::format_tag::any);

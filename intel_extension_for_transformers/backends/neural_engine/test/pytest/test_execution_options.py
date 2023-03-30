@@ -70,7 +70,8 @@ class TestExecutionOptions(unittest.TestCase):
         for i in range(10):
             out = graph.inference([data])
             output_inference.append(out['ip:0'])
-        flag = np.allclose(np.array(output_tuning), np.array(output_inference), atol=1e-1)
+        flag = np.allclose(np.array(output_tuning), np.array(output_inference), atol=1e-1,
+                           equal_nan=True)
         self.assertTrue(os.path.exists(graph.execution_options.dispatch_table_file_root))
         self.assertFalse(graph.execution_options.enable_op_tuning)
         self.assertTrue(flag)

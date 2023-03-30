@@ -16,11 +16,6 @@
 
 namespace executor {
 
-void InputOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-    for (int i = 0; i < input.size(); i++)
-        output[i]->set_dtype(input[i]->dtype());
-}
-
 REGISTER_OPERATOR_CLASS(Input);
 
 }  // namespace executor

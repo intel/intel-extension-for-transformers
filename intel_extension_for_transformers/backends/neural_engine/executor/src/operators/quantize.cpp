@@ -100,6 +100,11 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
   }
   // quantize
   if (src_data != nullptr && dst_data != nullptr) {
+    if (src_->dtype() == "bf16") {
+      Quantize_bf16(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
+      this->unref_tensors(input);
+      return;
+    }
 #if __AVX512F__
     Quantize_avx512(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
 #else

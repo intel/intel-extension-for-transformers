@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <string>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -42,6 +43,7 @@ class BinaryOpOperator : public Operator {
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
+  std::string output_dtype_ = "fp32";
   dnnl::engine eng_;
   dnnl::stream stream_;
   algorithm algo_ = algorithm::undef;

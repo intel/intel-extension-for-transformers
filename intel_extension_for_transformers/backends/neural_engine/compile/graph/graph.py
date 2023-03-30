@@ -534,7 +534,8 @@ class Graph(object):
                     else:
                         tensorclass = Tensor(tensor_name, [], [], tensor_shape, tensor_data,
                                              tensor_dtype, tensor_location)
-                    tensor_name_2_class[tensor_name] = tensorclass
+                    tensor_name_2_class[tensor_name] = copy.deepcopy(tensorclass)
+                    tensorclass.data = None
                     output_tensors.append(tensorclass)
                 op = util.construct_node(node, 'Input', [], copy.deepcopy(output_tensors))
 

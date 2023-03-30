@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <stdint.h>
 #include "slice.hpp"
+
+#include <stdint.h>
+
 #include "common.hpp"
 #ifdef _MSC_VER
 #undef IN
@@ -21,12 +23,14 @@
 namespace executor {
 
 static unordered_map<string, jd::data_type> type2sparsemem{
-    {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
-    {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
+    {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32},
+    {"fp16", jd::data_type::fp16}, {"u8", jd::data_type::u8},
+    {"s8", jd::data_type::s8},     {"bf16", jd::data_type::bf16}};
 
 template <typename T>
-void SliceData(const T* src_data, T* dst_data, const vector<int64_t>& src_shape, const vector<int64_t>& dst_shape,
-               const vector<int64_t>& starts, const vector<int64_t>& ends, const vector<int64_t>& axes,
+void SliceData(const T* src_data, T* dst_data, const vector<int64_t>& src_shape,
+               const vector<int64_t>& dst_shape, const vector<int64_t>& starts,
+               const vector<int64_t>& ends, const vector<int64_t>& axes,
                const vector<int64_t>& steps) {
   int64_t src_size = 1;
   for (auto shape : src_shape) {
@@ -39,7 +43,8 @@ void SliceData(const T* src_data, T* dst_data, const vector<int64_t>& src_shape,
   vector<int64_t> src_shape_tmp = src_shape;
   vector<int64_t> dst_shape_tmp = src_shape;
   for (int64_t i = 0; i < axes.size(); ++i) {
-    dst_shape_tmp[axes[i]] = static_cast<int64_t>((ends[i] - starts[i] - 1) / steps[i]) + 1;
+    dst_shape_tmp[axes[i]] =
+        static_cast<int64_t>((ends[i] - starts[i] - 1) / steps[i]) + 1;
     int64_t IN = 1;
     int64_t IC = 1;
     int64_t IH = 1;
@@ -62,7 +67,8 @@ void SliceData(const T* src_data, T* dst_data, const vector<int64_t>& src_shape,
     for (int64_t on = 0; on < ON; ++on) {
 #pragma omp simd
       for (int64_t oc = 0; oc < OC; ++oc) {
-        memcpy(dst_data_tmp + on * OC * OH + oc * OH, src_data_tmp + start + on * IC * IH + (oc * step) * IH,
+        memcpy(dst_data_tmp + on * OC * OH + oc * OH,
+               src_data_tmp + start + on * IC * IH + (oc * step) * IH,
                OH * sizeof(T));
       }
     }
@@ -77,26 +83,44 @@ void SliceData(const T* src_data, T* dst_data, const vector<int64_t>& src_shape,
   free(src_data_tmp);
   free(dst_data_tmp);
 }
-template void SliceData<float>(const float* src_data, float* dst_data, const vector<int64_t>& src_shape,
-                               const vector<int64_t>& dst_shape, const vector<int64_t>& starts,
-                               const vector<int64_t>& ends, const vector<int64_t>& axes, const vector<int64_t>& steps);
-template void SliceData<int32_t>(const int32_t* src_data, int32_t* dst_data, const vector<int64_t>& src_shape,
-                                 const vector<int64_t>& dst_shape, const vector<int64_t>& starts,
-                                 const vector<int64_t>& ends, const vector<int64_t>& axes,
+template void SliceData<float>(const float* src_data, float* dst_data,
+                               const vector<int64_t>& src_shape,
+                               const vector<int64_t>& dst_shape,
+                               const vector<int64_t>& starts,
+                               const vector<int64_t>& ends,
+                               const vector<int64_t>& axes,
+                               const vector<int64_t>& steps);
+template void SliceData<int32_t>(const int32_t* src_data, int32_t* dst_data,
+                                 const vector<int64_t>& src_shape,
+                                 const vector<int64_t>& dst_shape,
+                                 const vector<int64_t>& starts,
+                                 const vector<int64_t>& ends,
+                                 const vector<int64_t>& axes,
                                  const vector<int64_t>& steps);
-template void SliceData<uint16_t>(const uint16_t* src_data, uint16_t* dst_data, const vector<int64_t>& src_shape,
-                                  const vector<int64_t>& dst_shape, const vector<int64_t>& starts,
-                                  const vector<int64_t>& ends, const vector<int64_t>& axes,
+template void SliceData<uint16_t>(const uint16_t* src_data, uint16_t* dst_data,
+                                  const vector<int64_t>& src_shape,
+                                  const vector<int64_t>& dst_shape,
+                                  const vector<int64_t>& starts,
+                                  const vector<int64_t>& ends,
+                                  const vector<int64_t>& axes,
                                   const vector<int64_t>& steps);
-template void SliceData<uint8_t>(const uint8_t* src_data, uint8_t* dst_data, const vector<int64_t>& src_shape,
-                                 const vector<int64_t>& dst_shape, const vector<int64_t>& starts,
-                                 const vector<int64_t>& ends, const vector<int64_t>& axes,
+template void SliceData<uint8_t>(const uint8_t* src_data, uint8_t* dst_data,
+                                 const vector<int64_t>& src_shape,
+                                 const vector<int64_t>& dst_shape,
+                                 const vector<int64_t>& starts,
+                                 const vector<int64_t>& ends,
+                                 const vector<int64_t>& axes,
                                  const vector<int64_t>& steps);
-template void SliceData<int8_t>(const int8_t* src_data, int8_t* dst_data, const vector<int64_t>& src_shape,
-                                const vector<int64_t>& dst_shape, const vector<int64_t>& starts,
-                                const vector<int64_t>& ends, const vector<int64_t>& axes, const vector<int64_t>& steps);
+template void SliceData<int8_t>(const int8_t* src_data, int8_t* dst_data,
+                                const vector<int64_t>& src_shape,
+                                const vector<int64_t>& dst_shape,
+                                const vector<int64_t>& starts,
+                                const vector<int64_t>& ends,
+                                const vector<int64_t>& axes,
+                                const vector<int64_t>& steps);
 
-SliceOperator::SliceOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+SliceOperator::SliceOperator(const shared_ptr<OperatorConfig>& conf)
+    : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("starts");
   if (iter != attrs_map.end()) {
@@ -116,31 +140,37 @@ SliceOperator::SliceOperator(const shared_ptr<OperatorConfig>& conf) : Operator(
   }
   iter = attrs_map.find("ends_with_tensor");
   if (iter != attrs_map.end()) {
-    StringSplit<int64_t>(&ends_with_tensor_, attrs_map["ends_with_tensor"], ",");
+    StringSplit<int64_t>(&ends_with_tensor_, attrs_map["ends_with_tensor"],
+                         ",");
   }
 
   iter = attrs_map.find("starts_with_tensor");
   if (iter != attrs_map.end()) {
-    StringSplit<int64_t>(&starts_with_tensor_, attrs_map["starts_with_tensor"], ",");
+    StringSplit<int64_t>(&starts_with_tensor_, attrs_map["starts_with_tensor"],
+                         ",");
   }
 }
 
-void SliceOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void SliceOperator::Prepare(const vector<Tensor*>& input,
+                            const vector<Tensor*>& output) {
   rt_data_.resize(2);
   output[0]->set_dtype(input[0]->dtype());
 }
 
-std::vector<int64_t> SliceOperator::GetIndicesFromTensor(const vector<Tensor*>& input, const int64_t& tensor_idx) {
+std::vector<int64_t> SliceOperator::GetIndicesFromTensor(
+    const vector<Tensor*>& input, const int64_t& tensor_idx) {
   vector<int64_t> ret_indices;
   for (int t = 0; t < input[tensor_idx]->size(); ++t) {
     // executor kernels have no int64_t dtype implementation, just int
     // convert it to int64_t for indices collection.
-    ret_indices.push_back(static_cast<int64_t>(*(static_cast<int*>(input[tensor_idx]->mutable_data()) + t)));
+    ret_indices.push_back(static_cast<int64_t>(
+        *(static_cast<int*>(input[tensor_idx]->mutable_data()) + t)));
   }
   return ret_indices;
 }
 
-void SliceOperator::ClampIndices(int64_t* v, const int64_t& min, const int64_t& max) {
+void SliceOperator::ClampIndices(int64_t* v, const int64_t& min,
+                                 const int64_t& max) {
   if (*v < min) {
     *v = min;
   } else if (*v > max) {
@@ -150,7 +180,8 @@ void SliceOperator::ClampIndices(int64_t* v, const int64_t& min, const int64_t& 
   }
 }
 
-void SliceOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void SliceOperator::Reshape(const vector<Tensor*>& input,
+                            const vector<Tensor*>& output) {
   if (!ends_with_tensor_.empty()) {
     if (ends_.empty()) {
       ends_.push_back(input[1]->shape()[ends_with_tensor_[0]]);
@@ -166,7 +197,11 @@ void SliceOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>&
     }
     int offset = 1;
     if (input[1]->shape()[starts_with_tensor_[0]] == 0) {
-      offset = 32;
+      if (input.size() > 2) {
+        offset = input[2]->shape()[1];
+      } else {
+        offset = 32;
+      }
     }
     if (ends_.empty()) {
       ends_.push_back(starts_[0] + offset);
@@ -210,10 +245,10 @@ void SliceOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>&
     ends_[i] = ends_[i] > 99999 ? src_shape[axes_[i]] : ends_[i];
     // convert invalid inputs to valid values
 
-
     ClampIndices(&starts_[i], 0, dst_shape[axes_[i]]);
     ClampIndices(&ends_[i], 0, dst_shape[axes_[i]]);
-    dst_shape[axes_[i]] = static_cast<int64_t>((ends_[i] - starts_[i] - 1) / steps_[i]) + 1;
+    dst_shape[axes_[i]] =
+        static_cast<int64_t>((ends_[i] - starts_[i] - 1) / steps_[i]) + 1;
   }
   output[0]->set_shape(dst_shape);
   std::unordered_map<std::string, std::string> attr_map;
@@ -225,14 +260,16 @@ void SliceOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>&
     jd::data_type dt = type2sparsemem[input[0]->dtype()];
     ts_descs.emplace_back(input[0]->shape(), dt, jd::format_type::undef);
     ts_descs.emplace_back(dst_shape, dt, jd::format_type::undef);
-    jd::operator_desc op_desc(jd::kernel_kind::slice, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
-                              ts_descs, attr_map);
+    jd::operator_desc op_desc(jd::kernel_kind::slice,
+                              jd::kernel_prop::forward_inference,
+                              jd::engine_kind::cpu, ts_descs, attr_map);
     jd::slice_desc slice_d(op_desc);
     slice_ = jd::slice(slice_d);
   }
 }
 
-void SliceOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void SliceOperator::Forward(const vector<Tensor*>& input,
+                            const vector<Tensor*>& output) {
   if (steps_.size() == 1 && steps_[0] <= 2) {
     rt_data_[0] = input[0]->data();
     rt_data_[1] = output[0]->data();
@@ -245,23 +282,28 @@ void SliceOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>&
     if (src->dtype() == "fp32") {
       const float* src_data = static_cast<const float*>(src->data());
       float* dst_data = static_cast<float*>(dst->mutable_data());
-      SliceData<float>(src_data, dst_data, src_shape, dst_shape, starts_, ends_, axes_, steps_);
+      SliceData<float>(src_data, dst_data, src_shape, dst_shape, starts_, ends_,
+                       axes_, steps_);
     } else if (src->dtype() == "s32") {
       const int32_t* src_data = static_cast<const int32_t*>(src->data());
       int32_t* dst_data = static_cast<int32_t*>(dst->mutable_data());
-      SliceData<int32_t>(src_data, dst_data, src_shape, dst_shape, starts_, ends_, axes_, steps_);
+      SliceData<int32_t>(src_data, dst_data, src_shape, dst_shape, starts_,
+                         ends_, axes_, steps_);
     } else if (src->dtype() == "bf16") {
       const uint16_t* src_data = static_cast<const uint16_t*>(src->data());
       uint16_t* dst_data = static_cast<uint16_t*>(dst->mutable_data());
-      SliceData<uint16_t>(src_data, dst_data, src_shape, dst_shape, starts_, ends_, axes_, steps_);
+      SliceData<uint16_t>(src_data, dst_data, src_shape, dst_shape, starts_,
+                          ends_, axes_, steps_);
     } else if (src->dtype() == "u8") {
       const uint8_t* src_data = static_cast<const uint8_t*>(src->data());
       uint8_t* dst_data = static_cast<uint8_t*>(dst->mutable_data());
-      SliceData<uint8_t>(src_data, dst_data, src_shape, dst_shape, starts_, ends_, axes_, steps_);
+      SliceData<uint8_t>(src_data, dst_data, src_shape, dst_shape, starts_,
+                         ends_, axes_, steps_);
     } else if (src->dtype() == "s8") {
       const int8_t* src_data = static_cast<const int8_t*>(src->data());
       int8_t* dst_data = static_cast<int8_t*>(dst->mutable_data());
-      SliceData<int8_t>(src_data, dst_data, src_shape, dst_shape, starts_, ends_, axes_, steps_);
+      SliceData<int8_t>(src_data, dst_data, src_shape, dst_shape, starts_,
+                        ends_, axes_, steps_);
     } else {
       LOG(ERROR) << "Dtype " << src->dtype() << "is not supported in slice op!";
     }

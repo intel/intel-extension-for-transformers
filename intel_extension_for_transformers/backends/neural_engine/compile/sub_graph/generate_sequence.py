@@ -40,7 +40,7 @@ class GenerateSequence(Pattern):
                            [(), (8, 'Shape'), (9, 'Gather'), (10, 'Cast'), (11, 'Range'),
                             (12, "Unsqueeze"), (6, "Expand")],
                            [(1, 'Gather'), (13, "Unsqueeze"), (14, "Concat"), (7, "Tile")]],
-                    'out': [[(0, 'Range')]]
+                    'out': [[(0, 'LatRange')]]
                 },
                 'search_mode': 'op_type',
                 'node_names': {
@@ -64,7 +64,7 @@ class GenerateSequence(Pattern):
                             (7, "Tile")],
                            [(0, "Shape"), (4, 'Gather'), (5, 'Range'),
                             (6, "Unsqueeze"), (7, "Tile")]],
-                    'out': [[(0, 'Range')]]
+                    'out': [[(0, 'LatRange')]]
                 },
                 'search_mode': 'op_type',
                 'node_names': {

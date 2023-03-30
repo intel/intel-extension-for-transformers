@@ -67,8 +67,9 @@ class TorchEmbedding(Pattern):
                 view_node.output_tensors[0] = out_tensor
                 view_node.input_tensors[1] = shape_node.input_tensors[0]
                 view_node.attr.clear()
-                view_node.attr['dst_shape'] = '-1,-1'
-                view_node.attr['dims'] = '1'
+                view_node.attr['dst_shape'] = '-1,-1,-1'
+                view_node.attr['dims'] = '0,1'
+                view_node.attr['mul'] = '0,1'
 
                 node_idx.append((model.get_node_id(view_node.name), model.get_node_id(node.name)))
         for idx1, idx2 in node_idx:

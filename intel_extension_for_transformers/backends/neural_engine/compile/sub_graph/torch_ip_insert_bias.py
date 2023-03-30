@@ -31,7 +31,7 @@ class TorchInnerProductInsertBias(Pattern):
     """
     def __call__(self, model):
         """The __call__ function of this pattern class."""
-        if model.framework_modeling_config['framework'] != 'torch':
+        if model.framework_modeling_config['framework'] != 'torch' or not util.get_quant_info():
             return model
         for node in model.nodes:
             if node.op_type == 'InnerProduct':

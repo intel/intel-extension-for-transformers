@@ -117,16 +117,20 @@ class TorchExtractor(object):
             for val_user in in_tensor.uses():
                 next_node = val_user.user
                 dest_ops.append(get_node_name(next_node))
-
+            dtype = 'fp32'
+            if in_tensor.debugName() == 'position_ids':
+                continue  # TODO: remove this
             input_tensor = Tensor(name=in_tensor.debugName(),
                 source_op=[],
                 dest_op=dest_ops,
                 shape=[-1, -1],
                 data=None,
-                dtype='fp32'  # TODO: check dtype
+                dtype=dtype
                 )
             graph_nodes_dict[in_tensor.debugName()] = input_tensor
             model_input_tensors.append(input_tensor)
+        for idx, out_tensor in enumerate(graph.outputs()):
+            new_graph.output_tensors_name.append(out_tensor.debugName())
 
         # parse weights
         for node in graph.nodes():
@@ -170,6 +174,11 @@ class TorchExtractor(object):
                     dtype=get_data_dtype(weight)
                     )
                 graph_nodes_dict[tensor_name] = weight_tensor
+        
+
+        for in_tensor in model_input_tensors:
+            if in_tensor.name.split('.')[0] in ['attention_mask', 'position_ids', 'input_ids']:
+                in_tensor.dtype = 'int32'  # TODO: refine this
         input_data_node = construct_node('input_data',
                                             'Input',
                                             output_tensors=model_input_tensors)
@@ -184,7 +193,6 @@ class TorchExtractor(object):
             if op_type not in OPERATORS.keys():
                     op_type = "OpAny"
             new_node = OPERATORS[op_type]()
-            new_node.ori_node = node
             new_node.extract('torch', node, model, graph_nodes_dict)
             new_graph.insert_nodes(len(new_graph.nodes), [new_node])
 

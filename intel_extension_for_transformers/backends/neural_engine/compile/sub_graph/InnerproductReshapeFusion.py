@@ -52,18 +52,16 @@ class InnerproductReshapeFusion(Pattern):
                         }, {
                             0: [1]
                         }, {
-                            0: [2]
-                        }, {
                             'input_data': [0]
                         }
-                        ], [[0, 1, 2, 3], 4]]
+                        ], [[0, 1, 2], 3]]
                     },
                     'output_tensors': {
                         0: [[{
                             3: [0]
                         }], [[0], 1]]
                     },
-                    'returns': [3]
+                    'returns': [3, 0]
                 },
             ]
         }
@@ -74,6 +72,10 @@ class InnerproductReshapeFusion(Pattern):
         def _set_attr(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 mat_node_idx = model.get_node_id(new_node_names[i][0])
+                ret_mat_node = ret_old_nodes[i][1]
+                if len(ret_mat_node.input_tensors) == 3:
+                    model.nodes[mat_node_idx].input_tensors.insert(-1, copy.deepcopy(
+                        ret_mat_node.input_tensors[-1]))
                 attr = OrderedDict()
                 if 'shape' in ret_old_nodes[i][0].attr.keys():
                     attr['reshape'] = ret_old_nodes[i][0].attr['shape']
@@ -82,7 +84,7 @@ class InnerproductReshapeFusion(Pattern):
         
         if model.framework_modeling_config['framework'] == 'torch':
             pattern_dict = pattern_mapping_config['InnerproductReshapeFusion'][0]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductReshapeFusion", 
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("InnerproductReshapeFusion",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
                 _set_attr(new_node_names, ret_old_nodes, model)

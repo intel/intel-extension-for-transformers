@@ -31,6 +31,7 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/operators/concat.cpp
     ${HOST_SRC_DIR}/src/operators/embeddingbag.cpp
     ${HOST_SRC_DIR}/src/operators/split.cpp
+    ${HOST_SRC_DIR}/src/operators/latrange.cpp
     ${HOST_SRC_DIR}/src/operators/convolution.cpp
     ${HOST_SRC_DIR}/src/operators/group_norm.cpp
     ${HOST_SRC_DIR}/src/operators/range.cpp

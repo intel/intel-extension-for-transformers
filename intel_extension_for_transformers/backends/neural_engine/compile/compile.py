@@ -24,7 +24,7 @@ from .graph_utils import get_model_fwk_name, construct_node, pattern_mapping
 from .ops.tensor import Tensor
 from .graph import Graph
 import numpy as np
-import pdb
+from . import graph_utils as util
 
 COMPILES = OrderedDict({
     'loader': Loader,
@@ -32,25 +32,20 @@ COMPILES = OrderedDict({
     'sub_graph': SubGraphMatcher,
 })
 
-_NEAURAL_ENGINE_AUTOCAST_TYPE = "native"
-
 
 class autocast:
 
-    def __init__(self, dtype: str) -> None:
-        self.prev_dtype = _NEAURAL_ENGINE_AUTOCAST_TYPE
-        self.dtype = dtype
+    def __init__(self, cast_type: str) -> None:
+        util.autocast_init()
+        self.prev_cast_type = util.get_autocast_info()['cast_type']
+        self.cast_type = cast_type
 
     def __enter__(self) -> None:
-        self.prev_dtype = _NEAURAL_ENGINE_AUTOCAST_TYPE
-        _set_ne_autocast_dtype(self.dtype)
+        self.prev_cast_type = util.get_autocast_info()['cast_type']
+        util.set_autocast("cast_type", self.cast_type)
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        _set_ne_autocast_dtype(self.prev_dtype)
-
-
-def _set_ne_autocast_dtype(dtype: str):
-    _NEAURAL_ENGINE_AUTOCAST_TYPE = dtype
+        util.set_autocast("cast_type", self.prev_cast_type)
 
 
 def _config_validation(config):
@@ -97,6 +92,10 @@ def compile(model, config=None) -> Graph:
     Finally, convert them to .yaml file and .bin file for model configuration and inference.
     """
     from .graph import Graph
+    try:
+        util.get_autocast_info()
+    except:
+        util.autocast_init()
     if not isinstance(model, Graph):
         if get_model_fwk_name(model) == 'neural engine':
             graph = Graph()
@@ -105,7 +104,7 @@ def compile(model, config=None) -> Graph:
         else:
             config = _config_validation(config)
             model = start_pipeline(model, config=config)
-    if _NEAURAL_ENGINE_AUTOCAST_TYPE == "dynamic_int8":
+    if util.get_autocast_info()['cast_type'] == "dynamic_int8":
         model = _dynamic_quantization(model)
     return model
 

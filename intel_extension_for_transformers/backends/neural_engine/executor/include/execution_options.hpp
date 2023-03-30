@@ -40,7 +40,7 @@ struct ExecutionOptions {
   // INFERENCE means inference model after compile or op tuning (deployment), and input tensors /
   // output tensors = framework model input tensors / output tensors.
   // DEBUG means user want to investigate the tensors value inside model (e.g.
-  // add intermediate tensors into Output node).
+  // add intermediate tensors into Output node.), it's helpful in sparse model debug process.
   // in DEBUG mode, model will add implicit reorder to make all tensors have same format as framework.
   // TUNING means model will implement op tuning mechanism for getting the best configuration of kernel
   // in you local machine.

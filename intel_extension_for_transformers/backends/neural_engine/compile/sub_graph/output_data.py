@@ -33,6 +33,22 @@ class OutputData(Pattern):
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         # make the output_data node in graph
+        if model.framework_modeling_config['framework'] == 'torch':
+            model_output_tensors = OrderedDict()
+            for name in model.output_tensors_name:
+                model_output_tensors[name] = None
+            for node in model.nodes:
+                for output_tensor in node.output_tensors:
+                    if output_tensor.name in model.output_tensors_name:
+                        model_output_tensors[output_tensor.name] = copy.deepcopy(output_tensor)
+            tensors = [v for k, v in model_output_tensors.items() if v]
+            output_data_node = util.construct_node('output_data',
+                                                'Output',
+                                                input_tensors=tensors)
+            model.insert_nodes(len(model.nodes), [output_data_node])
+            model.nodes[-1].attr = None
+            return model
+
         model_output_tensors = OrderedDict()
         for name in model.output_tensors_name:
             model_output_tensors[name] = None

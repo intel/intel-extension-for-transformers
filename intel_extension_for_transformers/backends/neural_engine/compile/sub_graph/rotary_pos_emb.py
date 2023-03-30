@@ -80,7 +80,10 @@ class RoraryPosEmb(Pattern):
                         }], [[0], 1]],
                         1: [[{
                             'input_data': [2]
-                        }], [[1], 2]]
+                        },
+                             {
+                            'input_data': [0]
+                        }], [[1,2], 3]]
                     },
                     'output_tensors': {
                         0: [[], [[], 1]],
@@ -156,10 +159,8 @@ class RoraryPosEmb(Pattern):
                 }
             ]
         }
-
         if model.framework_modeling_config['framework'] != 'torch':
             return model
-
         def _set_attr(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 in_reshape_node = model.get_node_by_name(new_node_names[i][0])
@@ -174,7 +175,9 @@ class RoraryPosEmb(Pattern):
                                         shape = [2],
                                         dtype="int32")
                 gather_node.input_tensors.insert(0, idx_tensor)
-
+            
+            #  batch_dims: 0
+                
         pattern_dict = pattern_mapping_config['RoraryPosEmb'][0]
         model, new_node_names, ret_old_nodes = util.pattern_mapping("RoraryPosEmb", 
                                                                     pattern_dict, model)
@@ -192,7 +195,7 @@ class RoraryPosEmb(Pattern):
                 reshape_node = model.get_node_by_name(new_node_names[i][0])
                 reshape_node.attr = OrderedDict({"dst_shape" : "1, -1, 1, 64"})
                 slice_node = model.get_node_by_name(new_node_names[i][1])
-                slice_node.attr = OrderedDict({"starts_with_tensor" : "2",
+                slice_node.attr = OrderedDict({"starts_with_tensor" : "1",
                                                "ends_add" : "1", "axes" : "1", "steps" : "1"})
             model.remove_nodes(remove_shape_list)
                 
@@ -248,5 +251,5 @@ class RoraryPosEmb(Pattern):
                                                                     pattern_dict, model)
         if len(new_node_names) != 0:
             _set_attr2(new_node_names, ret_old_nodes, model)
-
+            
         return model

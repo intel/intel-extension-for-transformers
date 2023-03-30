@@ -89,63 +89,74 @@ class MatMulWithTranspose(Pattern):
                 
                 {
                     'patterns': {
-                        'in': [[(0, 'Reorder'), (2, 'Matmul')],
-                               [(), (1, 'Reorder'), (2, 'Matmul')]
+                        'in': [[(0, 'Reorder'), (4, 'Matmul')],
+                               [(), (1, 'Reorder'), (2, 'Concat'), (3, 'Reorder'), (4, 'Matmul')]
                                ],
-                        'out': [[(0, 'MatmulwithTranspose')]]
+                        'out': [[(0, 'Concat'), (1, 'MatmulwithTranspose')]]
                     },
                     'search_mode': 'op_type',
                     'node_names': {
-                        0: 2
+                        0: 2,
+                        1: 4,
                     },
                     'input_tensors': {
                         0: [[{
-                            0: [0]
+                            2: [0]
                         }, {
                             1: [0]
-                        }], [[0, 1], 2]]
+                        }], [[0, 1], 2]],
+                        1: [[{
+                            0: [0]
+                        }], [[0], 2]]
                     },
                     'output_tensors': {
                         0: [[{
                             2: [0]
-                        }], [[0], 1]]
-                    },
-                    'returns': [0, 1]
-                },
-                
-                
-                
-                {
-                    'patterns': {
-                        'in': [[(0, 'Matmul'), (1, 'Reorder'), (2, 'Shape'), (4, 'View')],
-                               [ (1, 'Reorder'), (3, 'Shape'), (4, 'View')]
-                               ],
-                        'out': [[(0, 'MatmulwithTranspose')]]
-                    },
-                    'search_mode': 'op_type',
-                    'node_names': {
-                        0: 0
-                    },
-                    'input_tensors': {
-                        0: [[{
-                            0: [0]
-                        }, {
-                            0: [1]
-                        }], [[0, 1], 2]]
-                    },
-                    'output_tensors': {
-                        0: [[{
+                        }], [[0], 1]],
+                        1: [[{
                             4: [0]
                         }], [[0], 1]]
                     },
-                    'returns': [0, 1, 4]
+                    'returns': [0, 3, 1]
+                },
+
+                {
+                    'patterns': {
+                        'in': [[(0, 'Reorder'), (1, 'Concat'), (2, 'Matmul'), (3, 'Reorder'),
+                                (4, 'Shape'), (6, 'View')],
+                               [(3, 'Reorder'), (5, 'Shape'), (6, 'View')]
+                               ],
+                        'out': [[(0, 'Concat'), (1, 'MatmulwithTranspose')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 1,
+                        1: 2,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            1: [0]
+                        }, {
+                            0: [0]
+                        }], [[0, 1], 2]],
+                        1: [[{
+                            2: [0]
+                        }], [[0], 2]]
+                    },
+                    'output_tensors': {
+                         0: [[{
+                            1: [0]
+                        }], [[0], 1]],
+                        1: [[{
+                            6: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [0, 2, 3, 6]
                 },
             ]
         }
-
         if model.framework_modeling_config['framework'] != 'torch':
             return model
-
         def _set_attr(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 transpose_a = ret_old_nodes[i][0].attr['dst_perm']
@@ -203,11 +214,25 @@ class MatMulWithTranspose(Pattern):
         def _set_attr1(new_node_names, ret_old_nodes, model):
             for i in range(len(new_node_names)):
                 transpose_a = ret_old_nodes[i][0].attr['dst_perm']
-                transpose_b = "0,1,3,2"
-                mat_node_idx = model.get_node_id(new_node_names[i][0])
+                transpose_dims = util.str2list(ret_old_nodes[i][1].attr.get('transpose_dims',
+                                                                            '-1,-2'))
+                assert len(transpose_dims) == 2
+                b_dim_ori = util.str2list(ret_old_nodes[i][2].attr['dst_perm'])
+                b_dim_ori[transpose_dims[0]], b_dim_ori[transpose_dims[1]] = \
+                    b_dim_ori[transpose_dims[1]], b_dim_ori[transpose_dims[0]]
+                transpose_b = util.list2str(b_dim_ori) #"0,1,3,2"
+                # a_trans = ret_old_nodes[i][1].attr['transpose_dims']
+                # a_trans = util.str2list(a_trans)
+                mat_node_idx = model.get_node_id(new_node_names[i][1])
                 attr = OrderedDict()
                 if transpose_a:
                     attr['src0_perm'] = transpose_a
+                    # if a_trans:
+                    #     transpose_b = util.str2list(transpose_a)
+                    #     tmp = transpose_a[a_trans[0]]
+                    #     transpose_a[a_trans[0]] = transpose_a[a_trans[1]]
+                    #     transpose_a[a_trans[1]] = tmp
+                    #     attr['src1_perm'] = util.list2str(transpose_a)
                 if transpose_b:
                     attr['src1_perm'] = transpose_b
                 model.nodes[mat_node_idx].attr = attr
@@ -217,9 +242,9 @@ class MatMulWithTranspose(Pattern):
                 if concat_node.op_type == "Concat":
                     concat_node.attr = OrderedDict({'axis': '3'})
                 if concat1_node.op_type == "Concat":
-                    concat1_node.attr = OrderedDict({'axis': '2'})
-                    reorder_node1 = model.get_node_by_name(concat1_node.input_tensors[1].source_op[0])
-                    concat2 = model.get_node_by_name(reorder_node1.input_tensors[0].source_op[0])
+                    concat1_node.attr = OrderedDict({'axis': '1'})
+                    concat2 = model.get_node_by_name(concat1_node.input_tensors[1].source_op[0])
+                    # concat2 = model.get_node_by_name(reorder_node1.input_tensors[0].source_op[0])
                     concat2.attr = OrderedDict({'axis': '3'})
                     
         pattern_dict = pattern_mapping_config['MatMulWithTranspose'][2]
@@ -235,17 +260,20 @@ class MatMulWithTranspose(Pattern):
         if len(new_node_names) != 0:
             for i in range(len(new_node_names)):
 
-                mat_node_idx = model.get_node_id(new_node_names[i][0])
+                mat_node_idx = model.get_node_id(new_node_names[i][1])
                 attr = OrderedDict()
-                transpose_b = ret_old_nodes[i][1].attr['dst_perm']
+                transpose_b = ret_old_nodes[i][0].attr['dst_perm']
+                transpose_dst = ret_old_nodes[i][2].attr['dst_perm']
                 if transpose_b:
-                    attr['dst_perm'] = transpose_b
-                reshape_attr = util.str2list(ret_old_nodes[i][2].attr['shape'])
+                    attr['src1_perm'] = transpose_b
+                if transpose_dst:
+                    attr['dst_perm'] = transpose_dst
+                reshape_attr = util.str2list(ret_old_nodes[i][3].attr['shape'])
                 if reshape_attr:
                     attr['reshape'] = '-1, ' + str(reshape_attr[-1])
                 model.nodes[mat_node_idx].attr = attr
                 concat_node = model.get_node_by_name(model.nodes[mat_node_idx].input_tensors[1].source_op[0])
-                concat_node.attr = OrderedDict({'axis': '2'})
+                concat_node.attr = OrderedDict({'axis': '1'})
                 
             return model
         return model

@@ -103,7 +103,6 @@ supported_patterns = [
     'CastTo',
 
     # GPT-J
-    # 'RemoveListConstruct',
     'TorchEmbedding',
     'InnerproductReshapeFusion',
     'MatMulWithTranspose',
@@ -116,16 +115,22 @@ supported_patterns = [
     'RemoveSlice',
     'RemoveRange',
     'RemoveLastView',
+    # 'RemoveDuplicatedQuantNode',
     
     'InsertQuantNode',
     'InsertBF16Node',
+    'TorchInsertBF16Node',
     'QunatizeFusion',
     'QKVMerge',
     'ReshapeFusion',
     'StableDiffusion_bf16Convert',
     'StableDiffusion_ReshapeFusion',
     'OperatorAdaptor',
+
+    'MultiHeadAttention',
     'OutputData',
+    'QuantizedGraphDtypeRefactor',
+    'Int8BF16MixedPrecisionChecker',
 ]
 
 # for superbert, superbert patterns are huge patterns based on supported patterns

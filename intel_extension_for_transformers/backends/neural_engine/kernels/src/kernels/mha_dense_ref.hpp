@@ -65,7 +65,8 @@ class SPARSE_API_ mha_dense_ref_kd_t : public kernel_desc_t {
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   inline std::vector<dim_t> shape() const override { return op_desc_.tensor_descs()[io::DST].shape(); }
   inline dim_t bs() const { return op_desc_.tensor_descs()[io::SRC_Q].shape()[0]; }
-  inline dim_t seq_len() const { return op_desc_.tensor_descs()[io::SRC_Q].shape()[1]; }
+  inline dim_t sl_m() const { return op_desc_.tensor_descs()[io::SRC_Q].shape()[1]; }
+  inline dim_t sl_n() const { return op_desc_.tensor_descs()[io::SRC_K].shape()[1]; }
   inline dim_t head_num() const { return op_desc_.tensor_descs()[io::SRC_Q].shape()[2]; }
   inline dim_t head_size() const { return op_desc_.tensor_descs()[io::SRC_Q].shape()[3]; }
   inline bool merged_QKV() const { return merged_QKV_; }
@@ -105,7 +106,7 @@ class SPARSE_API_ mha_dense_ref_k_t : public kernel_t {
   const bool has_badd;
   const bool approx_exp;
   const data_type dst_dt_;
-  const int bs_, seq_len_, head_num_, head_size_, ld_src_, ld_dst_;
+  const int bs_, sl_m_, sl_n_, head_num_, head_size_, ld_src_, ld_dst_;
   const dim_t badd_stride[4];
 };
 

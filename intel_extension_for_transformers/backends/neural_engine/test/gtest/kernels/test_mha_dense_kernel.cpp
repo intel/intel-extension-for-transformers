@@ -34,16 +34,20 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
+static std::mt19937 rand_gen(1);
+
 inline static std::string TestParam2str(testing::TestParamInfo<test_params_t> tpi) {
   const auto& op_desc = tpi.param.args.first.op_desc;
   const auto& ts_desc = op_desc.tensor_descs();
   std::vector<std::string> params;
   params.push_back("c" + std::to_string(tpi.param.nthr));
   params.push_back(std::to_string(ts_desc[mha_dense_io::SRC_Q].shape()[0]));                       // bs
-  params.push_back(std::to_string(ts_desc[mha_dense_io::SRC_Q].shape()[1]));                       // seqlen
+  params.push_back(std::to_string(ts_desc[mha_dense_io::SRC_Q].shape()[1]));                       // sl_m
+  params.push_back(std::to_string(ts_desc[mha_dense_io::SRC_K].shape()[1]));                       // sl_n
   params.push_back(std::to_string(ts_desc[mha_dense_io::SRC_Q].shape()[2]));                       // head_num
   params.push_back(std::to_string(ts_desc[mha_dense_io::SRC_Q].shape()[3]));                       // head_size
   params.push_back("badddim" + std::to_string(ts_desc[mha_dense_io::BINARY_ADD].shape().size()));  // badddim
+  params.push_back(data_type_name.at(ts_desc[mha_dense_io::DST].dtype()) + std::string{"dst"});
   params.push_back(num2id(op_desc.attrs().at("QK_rescale")));
   params.push_back(num2id(op_desc.attrs().at("softmax_rescale")));
   params.push_back(num2id(op_desc.attrs().at("QKV_rescale")));
@@ -90,6 +94,8 @@ bool check_result(const test_params_t& t) {
         return compare_data<uint8_t>(buf1, size1, buf2, size2, 4e-3);
       case dt::s8:
         return compare_data<int8_t>(buf1, size1, buf2, size2, 4e-3);
+      case dt::bf16:
+        return compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-1);  // TODO(Yi): can we use samller tolerance?
       default:
         SPARSE_LOG(ERROR) << "Unexpected dst type";
     }
@@ -125,18 +131,19 @@ std::pair<const void*, const void*> make_tensor_obj(const tensor_desc& ts_desc, 
     data_ptr = new uint8_t[bytes_size];
     memset(data_ptr, 0, bytes_size);
   } else {
+    const auto seed = std::uniform_int_distribution<>()(rand_gen);
     if (ts_desc.dtype() == dt::fp32) {
       data_ptr = new float[elem_num];
-      init_vector(static_cast<float*>(data_ptr), elem_num, min_value, max_value);
+      init_vector(static_cast<float*>(data_ptr), elem_num, min_value, max_value, seed);
     } else if (ts_desc.dtype() == dt::s32) {
       data_ptr = new int32_t[elem_num];
-      init_vector(static_cast<int32_t*>(data_ptr), elem_num, min_value, max_value);
+      init_vector(static_cast<int32_t*>(data_ptr), elem_num, min_value, max_value, seed);
     } else if (ts_desc.dtype() == dt::u8) {
       data_ptr = new uint8_t[elem_num];
-      init_vector(static_cast<uint8_t*>(data_ptr), elem_num, min_value, max_value);
+      init_vector(static_cast<uint8_t*>(data_ptr), elem_num, min_value, max_value, seed);
     } else if (ts_desc.dtype() == dt::s8) {
       data_ptr = new int8_t[elem_num];
-      init_vector(static_cast<int8_t*>(data_ptr), elem_num, min_value, max_value);
+      init_vector(static_cast<int8_t*>(data_ptr), elem_num, min_value, max_value, seed);
     }
   }
 
@@ -146,16 +153,16 @@ std::pair<const void*, const void*> make_tensor_obj(const tensor_desc& ts_desc, 
 }
 
 std::pair<OpArgs, OpArgs> gen_case(  //
-    const dim_t bs, const dim_t seqlen, const dim_t head_num, const dim_t head_size, float QK_rescale,
-    float softmax_rescale, float QKV_rescale, int QKV_dstzp, int badd_dim = 0) {
-  std::vector<dim_t> badd_fullshape = {bs, head_num, seqlen, seqlen};
+    const dim_t bs, const dim_t sl_m, const dim_t sl_n, const dim_t head_num, const dim_t head_size, float QK_rescale,
+    float softmax_rescale, float QKV_rescale, int QKV_dstzp, int badd_dim = 0, const data_type dt_dst = data_type::u8) {
+  std::vector<dim_t> badd_fullshape = {bs, head_num, sl_m, sl_n};
   std::vector<tensor_desc> ts_descs(mha_dense_io::mha_dense_io_MAX + 1,
                                     tensor_desc{{}, data_type::undef, format_type::undef});
-  ts_descs[mha_dense_io::SRC_Q] = {{bs, seqlen, head_num, head_size}, data_type::s8, format_type::undef};
-  ts_descs[mha_dense_io::SRC_K] = {{bs, seqlen, head_num, head_size}, data_type::s8, format_type::undef};
-  ts_descs[mha_dense_io::SRC_V] = {{bs, seqlen, head_num, head_size}, data_type::s8, format_type::undef};
+  ts_descs[mha_dense_io::SRC_Q] = {{bs, sl_m, head_num, head_size}, data_type::s8, format_type::undef};
+  ts_descs[mha_dense_io::SRC_K] = {{bs, sl_n, head_num, head_size}, data_type::s8, format_type::undef};
+  ts_descs[mha_dense_io::SRC_V] = {{bs, sl_n, head_num, head_size}, data_type::s8, format_type::undef};
   ts_descs[mha_dense_io::MASK] = {{bs}, data_type::s32, format_type::undef};
-  ts_descs[mha_dense_io::DST] = {{bs, seqlen, head_num, head_size}, data_type::u8, format_type::undef};
+  ts_descs[mha_dense_io::DST] = {{bs, sl_m, head_num, head_size}, dt_dst, format_type::undef};
   if (badd_dim > 0) {
     SPARSE_LOG_IF(FATAL, badd_dim > 4) << "Unsupported binary add dimention";
     ts_descs[mha_dense_io::BINARY_ADD] = {std::vector<dim_t>(badd_fullshape.cend() - badd_dim, badd_fullshape.cend()),
@@ -169,12 +176,14 @@ std::pair<OpArgs, OpArgs> gen_case(  //
   attr_map["QKV_rescale"] = std::to_string(QKV_rescale);
   attr_map["QKV_dstzp"] = std::to_string(QKV_dstzp);
 
+  attr_map["approx_exp"] = "True";
+
   // Step 2: Construct Tensor ptr
   auto Qs = make_tensor_obj(ts_descs[mha_dense_io::SRC_Q]);
   auto Ks = make_tensor_obj(ts_descs[mha_dense_io::SRC_K]);
   auto Vs = make_tensor_obj(ts_descs[mha_dense_io::SRC_V]);
-  auto min_sl = std::max(dim_t(16), seqlen / 4);
-  auto masks = make_tensor_obj(ts_descs[mha_dense_io::MASK], min_sl, seqlen);
+  auto min_sl = std::max(dim_t(16), sl_n / 4);
+  auto masks = make_tensor_obj(ts_descs[mha_dense_io::MASK], min_sl, sl_n);
   auto dsts = make_tensor_obj(ts_descs[mha_dense_io::DST], 0, 0);
 
   auto badds = badd_dim > 0 ? make_tensor_obj(ts_descs[mha_dense_io::BINARY_ADD], -1.f, 1.f)
@@ -197,7 +206,6 @@ std::pair<OpArgs, OpArgs> gen_case(  //
   data_q[mha_dense_io::BINARY_ADD] = badds.second;
 
   operator_desc op_desc(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
-  attr_map["approx_exp"] = "True";
   operator_desc op_desc2(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
 
   OpArgs op_args_p = {data_p, op_desc};
@@ -211,30 +219,39 @@ static auto case_func = []() {
 
   // gencase: bs seqlen head_num head_size
 
-  cases.push_back({gen_case(1, 64, 1, 64, 1.1f, 255.f, 5e-2f, 110), 1, false});
-  cases.push_back({gen_case(2, 64, 1, 32, 1.1f, 255.f, 5e-2f, 110), 1, false});
+  cases.push_back({gen_case(1, 64, 64, 1, 64, 1.1f, 255.f, 5e-2f, 110), 1, false});
+  cases.push_back({gen_case(2, 64, 64, 1, 32, 1.1f, 255.f, 5e-2f, 110), 1, false});
 
   // headsize 256
-  cases.push_back({gen_case(1, 64, 1, 256, 1.1f, 255.f, 5e-2f, 110), 1, false});
+  cases.push_back({gen_case(1, 64, 64, 1, 256, 1.1f, 255.f, 5e-2f, 110), 1, false});
 
   // binary add
-  cases.push_back({gen_case(3, 64, 2, 256, 1.1f, 255.f, 5e-2f, 110, 1), 1, false});
-  cases.push_back({gen_case(3, 64, 2, 256, 1.1f, 255.f, 5e-2f, 110, 2), 1, false});
-  cases.push_back({gen_case(3, 64, 2, 256, 1.1f, 255.f, 5e-2f, 110, 3), 1, false});
-  cases.push_back({gen_case(3, 64, 2, 256, 1.1f, 255.f, 5e-2f, 110, 4), 1, false});
+  cases.push_back({gen_case(3, 64, 64, 2, 256, 1.1f, 255.f, 5e-2f, 110, 1), 1, false});
+  cases.push_back({gen_case(3, 64, 64, 2, 256, 1.1f, 255.f, 5e-2f, 110, 2), 1, false});
+  cases.push_back({gen_case(3, 64, 64, 2, 256, 1.1f, 255.f, 5e-2f, 110, 3), 1, false});
+  cases.push_back({gen_case(3, 64, 64, 2, 256, 1.1f, 255.f, 5e-2f, 110, 4), 1, false});
+
+  // dt_dst
+  cases.push_back({gen_case(1, 64, 64, 1, 256, 1.1f, 255.f, 5e-2f, 110, 0, dt::bf16), 1, false});
 
   // seqlen 2k
-  cases.push_back({gen_case(1, 2048, 1, 32, 1.1f, 255.f, 5e-2f, 110), 1, false});
-  cases.push_back({gen_case(1, 2041, 1, 32, 1.1f, 255.f, 5e-2f, 110), 1, false});
-  cases.push_back({gen_case(1, 512, 1, 256, 1.1f, 255.f, 5e-2f, 110), 1, false});
+  cases.push_back({gen_case(1, 2048, 2048, 1, 32, 1.1f, 255.f, 5e-2f, 110), 0, false});
+  cases.push_back({gen_case(1, 2041, 2041, 1, 32, 1.1f, 255.f, 5e-2f, 110), 0, false});
+  cases.push_back({gen_case(1, 512, 512, 1, 256, 1.1f, 255.f, 5e-2f, 110), 0, false});
 
   // head_size = 64 / 32
-  cases.push_back({gen_case(4, 384, 16, 64, 1.1f, 255.f, 5e-2f, 110), 1, false});
-  cases.push_back({gen_case(4, 384, 16, 32, 1.1f, 255.f, 5e-2f, 110), 1, false});
+  cases.push_back({gen_case(4, 384, 384, 16, 64, 1.1f, 255.f, 5e-2f, 110), 0, false});
+  cases.push_back({gen_case(4, 384, 384, 16, 32, 1.1f, 255.f, 5e-2f, 110), 0, false});
 
   // a variety of seqlen
   for (int seq_len : {32, 33, 47, 48, 49, 63, 64, 65, 128, 384})
-    cases.push_back({gen_case(12, seq_len, 4, 32, 1.1f, 255.f, 5e-2f, 110), 1, false});
+    cases.push_back({gen_case(12, seq_len, seq_len, 4, 32, 1.1f, 255.f, 5e-2f, 110), 1, false});
+
+  // kv-cache
+  for (int sl_n : {32, 33, 37, 63, 64}) {
+    cases.push_back({gen_case(4, 1, sl_n, 16, 256, 1.1f, 255.f, 5e-2f, 110, 2), 0, false});
+    cases.push_back({gen_case(4, 1, sl_n, 16, 256, 1.1f, 255.f, 5e-2f, 110, 2, dt::bf16), 0, false});
+  }
 
   return ::testing::ValuesIn(cases);
 };

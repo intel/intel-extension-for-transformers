@@ -225,7 +225,7 @@ vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, 
 vector<float> GetRescales(const vector<float>& src0_scales, const vector<float>& src1_scales,
                           const vector<float>& dst_scales, const string& dst_dtype, const bool append_eltwise) {
   vector<float> rescales;
-  if (dst_dtype == "fp32") {
+  if (dst_dtype == "fp32" || dst_dtype == "bf16") {
     for (int i = 0; i < src1_scales.size(); i++) {
       rescales.emplace_back(1. / (src0_scales[0] * src1_scales[i]));
     }
@@ -322,7 +322,88 @@ void AddZeroPoints(const int size, const string& dtype, const float* src_data, c
   return;
 }
 
-#if __AVX512F__
+#ifdef __AVX512F__
+
+void Quantize_bf16(const int size, const string& dtype, const void* src_data, const float* range_mins,
+                   const std::vector<float>& scales, void* dst_data) {
+  const uint16_t* src_data_ = reinterpret_cast<const uint16_t*>(src_data);
+  if (dtype == "s8") {
+    int8_t* dst_data_ = reinterpret_cast<int8_t*>(dst_data);
+    __m512 min_with_scale_s8 = _mm512_set1_ps(0);
+    __m512 scale = _mm512_set1_ps(scales[0]);
+    __m512i zero = _mm512_setzero_epi32();
+    int offset = size / 16 * 16;
+#pragma omp parallel for
+    for (int i = 0; i < size; i += 16) {
+      if (i < offset) {
+#if __AVX512BF16__ && __GNUC__ > 11
+        __m256bh src_bf16 = (__m256bh)_mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
+        __m512 src_fp32 = _mm512_cvtpbh_ps(src_bf16);
+#else
+        __m256i src_bf16 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
+        __m512 src_fp32 = cvt_bf16_to_fp32(src_bf16);
+#endif
+        __m512 dst_fp32 = _mm512_fmsub_ps(src_fp32, scale, min_with_scale_s8);
+        __m512i dst_int32 = _mm512_cvt_roundps_epi32(dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        __m128i dst_int8 = _mm512_cvtsepi32_epi8(dst_int32);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + i), dst_int8);
+      } else {
+        __mmask16 mask = (1ULL << (size - offset)) - 1;
+#if __AVX512BF16__ && __GNUC__ > 11
+        __m256bh src_bf16 = (__m256bh)_mm256_maskz_loadu_epi16(mask, src_data_ + offset);
+        __m512 src_fp32 = _mm512_maskz_cvtpbh_ps(mask, src_bf16);
+#else
+        __m256i src_bf16 = _mm256_maskz_loadu_epi16(mask, src_data_ + offset);
+        __m512 src_fp32 = cvt_bf16_to_fp32(mask, src_bf16);
+#endif
+        __m512 dst_fp32 = _mm512_maskz_fmsub_ps(mask, src_fp32, scale, min_with_scale_s8);
+        __m512i dst_int32 =
+            _mm512_maskz_cvt_roundps_epi32(mask, dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        __m128i dst_int8 = _mm512_maskz_cvtsepi32_epi8(mask, dst_int32);
+        _mm_mask_storeu_epi8(reinterpret_cast<__m128i*>(dst_data_ + offset), mask, dst_int8);
+      }
+    }
+  } else if (dtype == "u8") {
+    uint8_t* dst_data_ = reinterpret_cast<uint8_t*>(dst_data);
+    __m512 _min_with_scale_u8 = _mm512_set1_ps(range_mins[0] * scales[0]);
+    __m512 scale = _mm512_set1_ps(scales[0]);
+    __m512i zero = _mm512_setzero_epi32();
+    int offset = size / 16 * 16;
+#pragma omp parallel for
+    for (int i = 0; i < size; i += 16) {
+      if (i < offset) {
+#if __AVX512BF16__ && __GNUC__ > 11
+        __m256bh src_bf16 = (__m256bh)_mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
+        __m512 src_fp32 = _mm512_cvtpbh_ps(src_bf16);
+#else
+        __m256i src_bf16 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
+        __m512 src_fp32 = cvt_bf16_to_fp32(src_bf16);
+#endif
+        __m512 dst_fp32 = _mm512_fmsub_ps(src_fp32, scale, _min_with_scale_u8);
+        __m512i dst_int32 = _mm512_cvt_roundps_epi32(dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        dst_int32 = _mm512_max_epi32(dst_int32, zero);
+        __m128i dst_int8 = _mm512_cvtusepi32_epi8(dst_int32);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + i), dst_int8);
+      } else {
+        __mmask16 mask = (1ULL << (size - offset)) - 1;
+#if __AVX512BF16__ && __GNUC__ > 11
+        __m256bh src_bf16 = (__m256bh)_mm256_maskz_loadu_epi16(mask, src_data_ + offset);
+        __m512 src_fp32 = _mm512_maskz_cvtpbh_ps(mask, src_bf16);
+#else
+        __m256i src_bf16 = _mm256_maskz_loadu_epi16(mask, src_data_ + offset);
+        __m512 src_fp32 = cvt_bf16_to_fp32(mask, src_bf16);
+#endif
+        __m512 dst_fp32 = _mm512_maskz_fmsub_ps(mask, src_fp32, scale, _min_with_scale_u8);
+        __m512i dst_int32 =
+            _mm512_maskz_cvt_roundps_epi32(mask, dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        dst_int32 = _mm512_max_epi32(dst_int32, zero);
+        __m128i dst_int8 = _mm512_maskz_cvtusepi32_epi8(mask, dst_int32);
+        _mm_mask_storeu_epi8(reinterpret_cast<__m128i*>(dst_data_ + offset), mask, dst_int8);
+      }
+    }
+  }
+}
+
 void Quantize_avx512(const int size, const string& dtype, const void* src_data, const float* range_mins,
                      const vector<float>& scales, void* dst_data) {
   const float* src_data_ = static_cast<const float*>(src_data);
@@ -334,7 +415,7 @@ void Quantize_avx512(const int size, const string& dtype, const void* src_data, 
 #pragma omp parallel for
     for (int i = 0; i < avx512_loop_len; ++i) {
       __m512 _src_data = _mm512_loadu_ps(src_data_ + (i << 4));
-#if __AVX512_BF16__
+#if __AVX512BF16__ && __GNUC__ > 11
       __m256i data_bf16 = (__m256i)_mm512_cvtneps_pbh(_src_data);
 #else
       auto y = _mm512_bsrli_epi128(_mm512_castps_si512(_src_data), 2);
@@ -438,6 +519,20 @@ void Quantize(const int size, const string& dtype, const void* src_data, const f
   return;
 }
 #endif
+
+void BF16_to_FP32(const int size, void* src_data, void* dst_data) {
+  union {
+    unsigned int u;
+    float f;
+  } typecast;
+  uint16_t* src_data_ = static_cast<uint16_t*>(src_data);
+  float* dst_data_ = static_cast<float*>(dst_data);
+#pragma omp parallel for
+  for (int i = 0; i < size; i++) {
+    typecast.u = src_data_[i] << 16;
+    dst_data_[i] = typecast.f;
+  }
+}
 
 // Transpose from A to default B.
 // e.g.: transpose from {2, 0, 1} to default {0, 1, 2} is {1, 2, 0}
@@ -652,12 +747,19 @@ void add_ker(float* inout, float* in, size_t len) {
 }
 
 /************* bf16 ************/
-#if __AVX512F__
+#ifdef __AVX512F__
 // Conversion from BF16 to FP32
 inline __m512 cvt_bf16_to_fp32(const __m256i src) {
   auto y = _mm512_cvtepu16_epi32(src);
   return _mm512_castsi512_ps(_mm512_bslli_epi128(y, 2));
 }
+
+inline __m512 cvt_bf16_to_fp32(__mmask16 mask, const __m256i src) {
+  __m512i y = _mm512_maskz_cvtepu16_epi32(mask, src);
+  auto x = _mm512_bslli_epi128(y, 2);
+  return _mm512_castsi512_ps(_mm512_bslli_epi128(y, 2));
+}
+
 // Conversion from FP32 to BF16
 inline __m256i trunc_fp32_to_bf16(const __m512 src) {
   auto y = _mm512_bsrli_epi128(_mm512_castps_si512(src), 2);
@@ -665,8 +767,8 @@ inline __m256i trunc_fp32_to_bf16(const __m512 src) {
 }
 
 inline __m256i cvt_fp32_to_bf16(const __m512 src) {
-#if __AVX512_BF16__
-  return _mm512_cvtneps_pbh(src);
+#if __AVX512BF16__ && __GNUC__ > 11
+  return (__m256i)_mm512_cvtneps_pbh(src);
 #else
   return trunc_fp32_to_bf16(src);
 #endif
