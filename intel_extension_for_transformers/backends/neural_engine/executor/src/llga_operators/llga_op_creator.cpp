@@ -273,11 +273,11 @@ bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const shared_ptr<O
   bool gelu_split_ = false;
   bool append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_;
   string append_op_ = (iter != attrs_map.end()) ? iter->second : "";
-  LOG(INFO) << "append_op: " << append_op_;
+  DLOG(INFO) << "append_op: " << append_op_;
 
   iter = attrs_map.find("reshape");
   if (iter != attrs_map.end()) {
-    LOG(INFO) << "reshape attribute is not supported by llga";
+    DLOG(INFO) << "reshape attribute is not supported by llga";
     return false;
   }
 
@@ -441,7 +441,7 @@ bool LLGAOPCreator::CreateLayerNormOp(LLGAINFO* llga_info, const shared_ptr<Oper
   float epsilon_ = StringToNum<float>(attrs_map["epsilon"]);
   auto iter = attrs_map.find("transpose_mode");
   if (iter != attrs_map.end()) {
-    LOG(INFO) << "transpose_mode attribute of LayerNorm is not supported by llga";
+    DLOG(INFO) << "transpose_mode attribute of LayerNorm is not supported by llga";
     return false;
   }
 

@@ -37,12 +37,13 @@ class NEURALENGINE_API_ LLGAOPCreator {
   void CreateOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index, bool fallback = false) {
     auto operator_name = op_conf->name();
     auto op_type = op_conf->type();
-    LOG(INFO) << "creating operator " << operator_name << ", " << op_type;
+    DLOG(INFO) << "creating operator " << operator_name << ", " << op_type;
 
     if (fallback || !creator_list.count(op_conf->type())) {
       if (!fallback)
-        LOG(WARNING) << "Failed to create " << op_conf->name() << " by llga, " << op_conf->type() << " is not supported"
-                     << ", fallback will be executed";
+        DLOG(WARNING) << "Failed to create " << op_conf->name() << " by llga, " << op_conf->type()
+                      << " is not supported"
+                      << ", fallback will be executed";
       CreateWildcardOP(llga_info, op_conf, index);
     } else {
       Creator f = creator_list[op_conf->type()];
@@ -57,10 +58,10 @@ class NEURALENGINE_API_ LLGAOPCreator {
   void CreateWildcardOP(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
   bool CreateSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
   bool CreateLogSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
-  int CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
-                               bool has_bias, bool transpose_a_, bool transpose_b_);
-  int CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<logical_tensor> &inputs, int index,
-                               bool has_bias, bool transpose_a_, bool transpose_b_, bool append_sum);
+  int CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<logical_tensor>& inputs, int index, bool has_bias,
+                               bool transpose_a_, bool transpose_b_);
+  int CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<logical_tensor>& inputs, int index, bool has_bias,
+                               bool transpose_a_, bool transpose_b_, bool append_sum);
   bool CreateInnerProductOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
   bool CreateQuantizeOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);
   bool CreateBinaryAddOp(LLGAINFO* llga_info, const shared_ptr<OperatorConfig>& op_conf, int index = 0);

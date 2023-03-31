@@ -145,7 +145,7 @@ void ReorderOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
 // 2. inference kernel(for int8 and f32)
 void ReorderOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (post_ != nullptr) {
-    LOG(INFO) << "reorder has post op " << post_->name();
+    DLOG(INFO) << "reorder has post op " << post_->name();
     void* post_ptr = post_->mutable_data();
     if (post_->left_life() == 1) {
       post_->unref_data(true);
@@ -196,7 +196,7 @@ void ReorderOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Te
       input[0]->set_tensor_format(TensorFormat::KM);
       input[0]->set_shape({input[0]->shape()[0], input[0]->shape()[1] * input[0]->shape()[2]});
       output[0]->set_tensor_format(TensorFormat::MK);
-      LOG(INFO) << "Reorder src tensor from MmKMb to KM of operator " << name_;
+      DLOG(INFO) << "Reorder src tensor from MmKMb to KM of operator " << name_;
     }
   } else if (stage == "out") {
     return;

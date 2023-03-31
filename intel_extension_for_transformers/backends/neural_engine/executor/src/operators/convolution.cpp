@@ -87,7 +87,7 @@ ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
   relu_ = (iter != attrs_map.end() && iter->second == "relu") ? true : false;
   append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
-  LOG(INFO) << "append_op: " << append_op_;
+  DLOG(INFO) << "append_op: " << append_op_;
 }
 
 void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -217,7 +217,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   MapTensors(input, output);
   if (isDynamic(output) && dispatch_from_ == "InnerProduct") return;
   if (has_bias_) {
-    LOG(INFO) << name_ << "Convolution has bias";
+    DLOG(INFO) << name_ << "Convolution has bias";
   }
   dst_->set_dtype(output_dtype_);
 
@@ -558,7 +558,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
 void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // has post_op: append_sum
   if (post_ != nullptr && !binary_add_) {
-    LOG(INFO) << "Convolution has post op " << post_->name();
+    DLOG(INFO) << "Convolution has post op " << post_->name();
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life

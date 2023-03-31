@@ -42,7 +42,7 @@ class OperatorRegistry {
   // Adds a creator.
   static void AddCreator(const string& type, const string& kernel_name, Creator creator) {
     CreatorRegistry& registry = Registry();
-    LOG(INFO) << "Gonna register " << type << ", dispatch kernel " << kernel_name
+    DLOG(INFO) << "Gonna register " << type << ", dispatch kernel " << kernel_name
               <<  "....";
     if (registry.count(type) > 0) {
       CHECK_EQ(registry[type].count(kernel_name), 0)

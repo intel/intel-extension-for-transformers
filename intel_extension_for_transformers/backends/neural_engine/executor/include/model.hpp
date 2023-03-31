@@ -98,7 +98,7 @@ class NEURALENGINE_API_ Model {
   }
 
   inline vector<Tensor>& output_tensors() {
-    LOG(INFO) << "Output tensor size is " << model_output_tensors_.size();
+    DLOG(INFO) << "Output tensor size is " << model_output_tensors_.size();
     for (int i = 0; i < model_output_tensors_.size(); ++i) {
       output_tensors_[i].set_dtype(model_output_tensors_[i]->dtype());
       auto data_buffer = model_output_tensors_[i]->mutable_data();

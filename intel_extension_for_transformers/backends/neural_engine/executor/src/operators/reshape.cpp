@@ -155,7 +155,7 @@ void ReshapeOperator::Forward(const vector<Tensor*>& input,
     int data_size = dst_ptr->size();
     string data_type = src_ptr->dtype();
     memcpy(dst_data_ptr, data, data_size * type2bytes[data_type]);
-    LOG(WARNING) << "input tensor" << src_ptr->name()
+    DLOG(WARNING) << "input tensor" << src_ptr->name()
                  << " will be used by multi node...";
     this->unref_tensors(input);
   }

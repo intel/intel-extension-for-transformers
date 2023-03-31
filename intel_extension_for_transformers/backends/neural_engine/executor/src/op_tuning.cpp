@@ -60,7 +60,7 @@ void OpTuning::BaseTune(std::shared_ptr<Operator> kernel, const vector<Tensor*>&
   end_time = Time();
   float forward_time = Duration(start_time, end_time);
   best_execute_time_ = forward_time + reshape_time;
-  LOG(INFO) << "BaseTune forward time is " << best_execute_time_ << "ms";
+  DLOG(INFO) << "BaseTune forward time is " << best_execute_time_ << "ms";
 }
 
 // MxK x KxN to
@@ -124,7 +124,7 @@ void OpTuning::IpToConvTune(std::shared_ptr<Operator> kernel, const vector<Tenso
     float execute_time = Duration(start_time, end_time);
     if (reshape_model) execute_time += reshape_time;
     input_shape_timer[execute_time] = comb;
-    LOG(INFO) << "IpToConvTune forward time is " << execute_time << "ms with src0 shape " << comb;
+    DLOG(INFO) << "IpToConvTune forward time is " << execute_time << "ms with src0 shape " << comb;
   }
   if (input_shape_timer.size() > 0) {
     best_execute_time_ = input_shape_timer.begin()->first;
@@ -222,7 +222,7 @@ void OpTuning::IpToSparseLibTune(std::shared_ptr<Operator> kernel, const vector<
     float execute_time = Duration(start_time, end_time);
     if (reshape_model) execute_time += reshape_time;
     bs_attr_timer[execute_time] = kernel_config_cpy;
-    LOG(INFO) << "IpToSparseLibTune forward time is " << execute_time << "ms, activation shape: " << comb[0]
+    DLOG(INFO) << "IpToSparseLibTune forward time is " << execute_time << "ms, activation shape: " << comb[0]
             << ", micro_oc: " << comb[1] << ", sub_func: " << comb[2];
   }
   if (bs_attr_timer.size() > 0) {

@@ -47,7 +47,7 @@ InnerProductGraphOperator::InnerProductGraphOperator(const shared_ptr<OperatorCo
   relu_ = (iter != attrs_map.end() && iter->second == "relu") ? true : false;
   append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
-  LOG(INFO) << "append_op: " << append_op_;
+  DLOG(INFO) << "append_op: " << append_op_;
 }
 
 void InnerProductGraphOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -183,4 +183,3 @@ void InnerProductGraphOperator::Forward(const vector<Tensor*>& input, const vect
 
 REGISTER_OPERATOR_CLASS(InnerProductGraph);
 }  // namespace executor
-

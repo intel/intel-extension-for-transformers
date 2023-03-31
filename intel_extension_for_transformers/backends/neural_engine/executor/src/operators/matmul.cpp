@@ -82,7 +82,7 @@ MatmulOperator::MatmulOperator(const shared_ptr<OperatorConfig>& conf)
   tanh_ = (iter != attrs_map.end() && iter->second == "tanh") ? true : false;
   append_eltwise_ = gelu_erf_ || gelu_tanh_ || tanh_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
-  LOG(INFO) << "append_op: " << append_op_;
+  DLOG(INFO) << "append_op: " << append_op_;
 }
 
 MatmulOperator::~MatmulOperator() {}
@@ -239,7 +239,7 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
   is_dynamic_ =
       output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
   if (is_dynamic_) {
-    LOG(INFO) << this->name() << " is DYNAMIC!!!";
+    DLOG(INFO) << this->name() << " is DYNAMIC!!!";
 #ifdef _WIN32
     LOG(ERROR) << "dynamic quantization did NOT support windows now!!!";
     throw std::string("Windows");
@@ -583,7 +583,7 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   }
   // has post_op: append_sum
   if (post_ != nullptr && !binary_add_) {
-    LOG(INFO) << "matmul has post op " << post_->name();
+    DLOG(INFO) << "matmul has post op " << post_->name();
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
@@ -834,7 +834,7 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
     // 1. Q x K (both SparseLib 3D format)
     if (input[0]->tensor_format() == TensorFormat::MmKMb && input[0]->shape().size() == 5 &&
         input[1]->tensor_format() == TensorFormat::MmKMb && input[1]->shape().size() == 5) {
-      LOG(INFO) << "Operator " << name_ << " gonna modify QK Matmul related attrs for SparseLib 3D format...";
+      DLOG(INFO) << "Operator " << name_ << " gonna modify QK Matmul related attrs for SparseLib 3D format...";
       UnsqueezePerm(&src0_perm_);
       UnsqueezePerm(&src1_perm_);
       transpose_mode_ = false;
@@ -843,7 +843,7 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
       // 2. Softmax(QK) x V (both SparseLib 3D format)
     } else if (input[0]->tensor_format() == TensorFormat::BmBbHnSHs && input[0]->shape().size() == 5 &&
                input[1]->tensor_format() == TensorFormat::MmKMb && input[1]->shape().size() == 5) {
-      LOG(INFO) << "Operator " << name_ << " gonna modify QKV Matmul related attrs for SparseLib 3D format...";
+      DLOG(INFO) << "Operator " << name_ << " gonna modify QKV Matmul related attrs for SparseLib 3D format...";
       UnsqueezePerm(&src1_perm_);
       UnsqueezePerm(&dst_perm_);
       transpose_mode_ = false;
@@ -854,7 +854,7 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
                  input[0]->tensor_format() == TensorFormat::BmBbHnSHs) &&
                 input[1]->tensor_format() != TensorFormat::MmKMb) ||
                (input[1]->tensor_format() == TensorFormat::MmKMb && input[0]->tensor_format() != TensorFormat::MmKMb)) {
-      LOG(INFO) << "FALL BACK...";
+      DLOG(INFO) << "FALL BACK...";
       output[0]->set_tensor_format(TensorFormat::BHnSHs);
       InputShapeFallBack(input);
       // Dense
@@ -899,17 +899,17 @@ void MatmulOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Ten
       input[1]->reorder(src1_shape_bfb_, {0, 3, 1, 2, 4});
       vector<int64_t> src1_shape = input[1]->shape();
       input[1]->set_shape({src1_shape[0] * src1_shape[1], src1_shape[2], src1_shape[3], src1_shape[4]});
-      LOG(INFO) << "Reorder src1 tensor of operator " << name_;
+      DLOG(INFO) << "Reorder src1 tensor of operator " << name_;
       // Q SparseLib 3D format, K Dense format
     } else if (input[0]->tensor_format() == TensorFormat::MmKMb && input[0]->shape().size() == 4 &&
                input[1]->tensor_format() == TensorFormat::MK && input[1]->shape().size() == 4) {
       input[0]->reorder(src0_shape_bfb_, {0, 3, 1, 2, 4});
       vector<int64_t> src0_shape = input[0]->shape();
       input[0]->set_shape({src0_shape[0] * src0_shape[1], src0_shape[2], src0_shape[3], src0_shape[4]});
-      LOG(INFO) << "Reorder src0 tensor of operator " << name_;
+      DLOG(INFO) << "Reorder src0 tensor of operator " << name_;
       // QK BatchMatmul SparseLib 3D format, V Dense format, no need reorder
     } else {
-      LOG(INFO) << "Run with SparseLib 3D format without reorder in operator " << name_;
+      DLOG(INFO) << "Run with SparseLib 3D format without reorder in operator " << name_;
     }
   } else if (stage == "out") {
     return;

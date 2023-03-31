@@ -83,7 +83,7 @@ InnerProductOperator::InnerProductOperator(const shared_ptr<OperatorConfig>& con
   relu_ = (iter != attrs_map.end() && iter->second == "relu") ? true : false;
   append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
-  LOG(INFO) << "append_op: " << append_op_;
+  DLOG(INFO) << "append_op: " << append_op_;
 }
 
 InnerProductOperator::~InnerProductOperator() {}
@@ -211,24 +211,24 @@ static inline uint16_t float2bf16(float a) { return (reinterpret_cast<uint16_t*>
 void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // set output dtype and primitive attr(without post_ops) in Prepare
   MapTensors(input, output);
-  LOG(INFO) << "inner product has bias add " << has_bias_;
+  DLOG(INFO) << "inner product has bias add " << has_bias_;
   dst_->set_dtype(output_dtype_);
   if (src0_->dtype() == "fp32" && src1_->dtype() == "fp32") {
     kernel_type_ = Dense;
     weight_zero_ratio_ = GetSparseRatio<float>(static_cast<const float*>(src1_->data()), src1_->shape(), blocksize_);
     if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = Dense;
-    LOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
+    DLOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
   } else if (src0_->dtype() == "u8" && src1_->dtype() == "s8") {
     kernel_type_ = Dense;
     blocksize_ = {4, 16};
     weight_zero_ratio_ = GetSparseRatio<int8_t>(static_cast<const int8_t*>(src1_->data()), src1_->shape(), blocksize_);
     if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = Dense;
-    LOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
+    DLOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
   } else if (src0_->dtype() == "s8" && src1_->dtype() == "u8") {
     blocksize_ = {4, 1};
     weight_zero_ratio_ = GetSparseRatio<int8_t>(static_cast<const int8_t*>(src0_->data()), src0_->shape(), blocksize_);
     if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = SparseLib;
-    LOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
+    DLOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
   } else if (src1_->dtype() == "bf16") {
     kernel_type_ = Dense;
     auto shape = src1_->shape();
@@ -280,7 +280,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
       kernel_type_ = Unsupported;
   }
 
-  LOG(INFO) << "Innerproduct " << name_ << " execute kenel: " << kernel_type_;
+  DLOG(INFO) << "Innerproduct " << name_ << " execute kenel: " << kernel_type_;
   if (kernel_type_ == Unsupported)
     LOG(ERROR) << "Innerproduct not support: " << src0_->dtype() << " X " << src1_->dtype() << " = " << dst_->dtype();
 
@@ -300,7 +300,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
   is_dynamic_ =
       (output.size() > 1) || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
   if (is_dynamic_) {
-    LOG(INFO) << this->name() << " is DYNAMIC!!!";
+    DLOG(INFO) << this->name() << " is DYNAMIC!!!";
 #ifdef _WIN32
     LOG(ERROR) << "dynamic quantization did NOT support windows now!!!";
     throw std::string("Windows");
@@ -478,7 +478,7 @@ void InnerProductOperator::ForwardSparse(const vector<Tensor*>& input, const vec
       } else if (append_op_ == "sigmoid") {
         sparse_gemm_bsc_bias_sigmod_f32(M, N, K, A, B, rowidxs, colptr, ncolptr, blocksize_, bias, C, M_NBLK_);
       } else {
-        LOG(INFO) << "inner product has no such sparse kernel, output tensor is" << output[0]->name();
+        DLOG(INFO) << "inner product has no such sparse kernel, output tensor is" << output[0]->name();
       }
     } else {
       if (append_op_ == "") {
@@ -602,7 +602,7 @@ void InnerProductOperator::ShapeInferSparseLib(const vector<Tensor*>& input, con
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
         << "InnerProduct to SparseLib has wrong dispatch kernel config...";
-    LOG(INFO) << "Operator " << name_ << " dispatch configs are " << dispatch_config_[0] << "," << dispatch_config_[1]
+    DLOG(INFO) << "Operator " << name_ << " dispatch configs are " << dispatch_config_[0] << "," << dispatch_config_[1]
               << "," << dispatch_config_[2] << "," << dispatch_config_[3];
     // pass 3D shape and tensor_format
     vector<int64_t> src1_3d_shape;
@@ -713,7 +713,7 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
   void* dst_data = dst_->mutable_data();
   // has op: append_sum
   if (post_ != nullptr && !binary_add_) {
-    LOG(INFO) << "inner product has post op " << post_->name();
+    DLOG(INFO) << "inner product has post op " << post_->name();
     // The sum primitive requires all source and destination tensors to have the
     // same shape. Implicit broadcasting is not supported.
     void* post_data_ptr = const_cast<void*>(post_->data());
@@ -761,13 +761,13 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
           vector<int64_t> src1_3d_shape_origin = {src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]};
           input[1]->reorder(src1_3d_shape_origin);
           input[1]->set_tensor_format(TensorFormat::MmKMb);
-          LOG(INFO) << "Reorder src1 tensor from KM to MmKMb of operator " << name_;
+          DLOG(INFO) << "Reorder src1 tensor from KM to MmKMb of operator " << name_;
         }
         if (post_ != nullptr && !binary_add_ && post_->tensor_format() == TensorFormat::KM) {
           vector<int64_t> post_3d_shape_origin = {src0_->shape()[0], src1_3d_shape[0], src1_3d_shape[2]};
           post_->reorder(post_3d_shape_origin);
           post_->set_tensor_format(TensorFormat::MmKMb);
-          LOG(INFO) << "Reorder post tensor from KM to MmKMb of operator " << name_;
+          DLOG(INFO) << "Reorder post tensor from KM to MmKMb of operator " << name_;
         }
         // set dst activation tensor format
         output[0]->set_tensor_format(TensorFormat::MmKMb);
@@ -805,17 +805,17 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
           output[0]->set_tensor_format(TensorFormat::KM);
           output[0]->set_shape({output[0]->shape()[0], output[0]->shape()[1] * output[0]->shape()[2]});
           DstReshapeFusion(input, output);
-          LOG(INFO) << "Reorder dst tensor from MmKMb to KM of operator " << name_;
+          DLOG(INFO) << "Reorder dst tensor from MmKMb to KM of operator " << name_;
           // reorder src and post back
           input[1]->set_tensor_format(TensorFormat::KM);
           if (input[1]->left_life() > 0) input[1]->reorder(src1_3d_shape);
           input[1]->set_shape({src1_3d_shape[1], src1_3d_shape[0] * src1_3d_shape[2]});
-          LOG(INFO) << "Reorder src1 tensor from MmKMb to KM of operator " << name_;
+          DLOG(INFO) << "Reorder src1 tensor from MmKMb to KM of operator " << name_;
           if (post_ != nullptr && !binary_add_) {
             post_->set_tensor_format(TensorFormat::KM);
             if (post_->left_life() > 0) post_->reorder(dst_3d_shape_origin);
             post_->set_shape(output[0]->shape());
-            LOG(INFO) << "Reorder post tensor from MmKMb to KM of operator " << name_;
+            DLOG(INFO) << "Reorder post tensor from MmKMb to KM of operator " << name_;
           }
         }
       }
@@ -1137,7 +1137,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   }
   // has post_op: append_sum
   if (post_ != nullptr && !binary_add_) {
-    LOG(INFO) << "inner product has post op " << post_->name();
+    DLOG(INFO) << "inner product has post op " << post_->name();
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life

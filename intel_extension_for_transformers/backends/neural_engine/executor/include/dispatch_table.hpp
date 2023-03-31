@@ -211,14 +211,14 @@ class DispatchTable {
     if (state == "begin") {
       int* ins_begin = utils_shm.find_or_construct<int>("ins_begin")(0);
       (*ins_begin)++;
-      LOG(INFO) << "Constructing dispatch table singleton in instance " << *ins_begin;
+      DLOG(INFO) << "Constructing dispatch table singleton in instance " << *ins_begin;
       if (*ins_begin == 1) ipc::shared_memory_object::remove("DispatchTableSegment");
       if (*ins_begin == MemoryAllocator::InstNum()) utils_shm.destroy_ptr(ins_begin);
     } else if (state == "end") {
       int* ins_end = utils_shm.find_or_construct<int>("ins_end")(0);
       (*ins_end)++;
       if (*ins_end == MemoryAllocator::InstNum()) {
-        LOG(INFO) << "Deconstructing shared dispatch table memory object in instance " << *ins_end \
+        DLOG(INFO) << "Deconstructing shared dispatch table memory object in instance " << *ins_end \
                   << ", the total instance num is " << MemoryAllocator::InstNum();
         ipc::shared_memory_object::remove("DispatchTableSegment");
         ipc::shared_memory_object::remove("UtilsShm");

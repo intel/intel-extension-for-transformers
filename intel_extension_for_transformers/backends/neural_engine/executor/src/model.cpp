@@ -40,7 +40,7 @@ Model::Model(const ModelConfig& conf, const string& weight_root,
 
 Model::~Model() {
   if (engine_profiling_) {
-    LOG(INFO) << "Neural engine profiling ...";
+    DLOG(INFO) << "Neural engine profiling ...";
     Profiling_ ProfilingWriter = Profiling_();
     ProfilingWriter.WriteProfiling(operators_, input_vecs_, output_vecs_);
   }
@@ -190,10 +190,10 @@ void Model::Init(const ModelConfig& conf) {
 
   // for debug tensor life
   for (size_t i = 0; i < tensors_.size(); ++i) {
-    LOG(INFO) << "tensor name is " << tensors_[i]->name() << " tensor life is  "
+    DLOG(INFO) << "tensor name is " << tensors_[i]->name() << " tensor life is  "
               << tensors_[i]->life();
   }
-  LOG(INFO) << "Model Execution Mode is "
+  DLOG(INFO) << "Model Execution Mode is "
             << int(execution_options_.execution_mode)
             << ", (0: INFERENCE, 1: DEBUG, 2: TUNING)...";
 #ifdef WIN32
@@ -209,13 +209,13 @@ void Model::Init(const ModelConfig& conf) {
       (access(execution_options_.dispatch_table_file_root.c_str(), F_OK) != -1);
 #endif
   if (!has_dispatch_table_file_) {
-    LOG(INFO) << "Missing dispatch table file, "
+    DLOG(INFO) << "Missing dispatch table file, "
                  "all operators will use their own default kernels."
                  "Recommend to turn on the tuning mode for better performance."
                  "Ignore above info if you are doing tuning...";
   } else {
     if (execution_options_.execution_mode == ExecutionMode::DEBUG) {
-      LOG(INFO)
+      DLOG(INFO)
           << "In DEBUG MODE, ignore dispatch table file even if there is it...";
     }
   }
@@ -252,7 +252,7 @@ void Model::Init(const ModelConfig& conf) {
                          ? total_available_threads
                          : tp_max_threads;
     tp.begin(tp_max_threads);
-    LOG(INFO) << "Thread pool is initialized with " << tp_max_threads
+    DLOG(INFO) << "Thread pool is initialized with " << tp_max_threads
               << " threads. ("
               << "Total avaiable threads: " << total_available_threads << ")";
   }
@@ -263,7 +263,7 @@ void Model::Init(const ModelConfig& conf) {
 void Model::RemoveSharedWeight(bool is_begin, char* count_space_name,
                                char* count_name, char* count_mtx_name,
                                char* space_name) {
-  LOG(INFO) << "Shared instance number: " << MemoryAllocator::InstNum();
+  DLOG(INFO) << "Shared instance number: " << MemoryAllocator::InstNum();
   ipc::managed_shared_memory count_shm(ipc::open_or_create, count_space_name,
                                        512);
   int* removed_count =
@@ -434,7 +434,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
     // here we use model input configs to get the configured shape
     vector<int64_t> model_input_shape = model_input_configs_[i]->shape();
     vector<int64_t> origin_model_input = model_input_tensors_[i]->shape();
-    LOG(INFO) << "data shape is " << data_shape[0] << " model config is "
+    DLOG(INFO) << "data shape is " << data_shape[0] << " model config is "
               << model_input_shape[0] << " origin shape is "
               << origin_model_input[0];
     // CHECK_EQ(data_shape.size(), model_input_shape.size()) << "input data
@@ -464,7 +464,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
   if (execution_options_.execution_mode != ExecutionMode::TUNING) {
     if (reshape_model && engine_profiling_) {
       for (int i = 0; i < operators_.size(); ++i) {
-        LOG(INFO) << "operator " << operators_[i]->name()
+        DLOG(INFO) << "operator " << operators_[i]->name()
                   << " gonna reshape with type " << operators_[i]->type();
         // get reshape time for profiling
         int64_t start = Time();
@@ -493,7 +493,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
       }
     } else if (reshape_model) {
       for (int i = 0; i < operators_.size(); ++i) {
-        LOG(INFO) << "operator " << operators_[i]->name()
+        DLOG(INFO) << "operator " << operators_[i]->name()
                   << " gonna reshape with type " << operators_[i]->type();
         if (operators_[i]->get_it_shape().size() == 0) {
           operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
@@ -515,7 +515,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
     int thread_count = 1;
     if (engine_profiling_) {
       for (int i = 0; i < operators_.size(); ++i) {
-        LOG(INFO) << "operator " << operators_[i]->name()
+        DLOG(INFO) << "operator " << operators_[i]->name()
                   << " gonna forward with type " << operators_[i]->type();
         if (multi_stream_flag &&
             multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
@@ -532,7 +532,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
             operators_[i]->append_ot_shape(
                 output_vecs_[i][0]->shape());  // the last output is not exsit
           }
-          LOG(INFO) << "operator: " << operators_[i]->name()
+          DLOG(INFO) << "operator: " << operators_[i]->name()
                     << ", latency: " << forward_time << " ms";
           if (thread_count >= multi_stream_tasks_[i]) {
             tp.waitAllTaskRunOver();
@@ -552,13 +552,13 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
           if (i != operators_.size() - 1) {
             operators_[i]->append_ot_shape(output_vecs_[i][0]->shape());
           }
-          LOG(INFO) << "operator: " << operators_[i]->name()
+          DLOG(INFO) << "operator: " << operators_[i]->name()
                     << ", latency: " << forward_time << " ms";
         }
       }
     } else {
       for (int i = 0; i < operators_.size(); ++i) {
-        LOG(INFO) << "operator " << operators_[i]->name()
+        DLOG(INFO) << "operator " << operators_[i]->name()
                   << " gonna forward with type " << operators_[i]->type();
         if (multi_stream_flag &&
             multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
@@ -646,9 +646,9 @@ shared_ptr<Operator> Model::CreateLLGAKernel(
 void Model::ConstructLLGA(
     const vector<shared_ptr<OperatorConfig>>& op_configs) {
   bool llga_disable = (getenv("LLGA_DISABLE") != NULL);
-  LOG(INFO) << "LLGA_DISABLE: " << llga_disable;
+  DLOG(INFO) << "LLGA_DISABLE: " << llga_disable;
   if (llga_disable) {
-    LOG(INFO) << "Constructing original graph...";
+    DLOG(INFO) << "Constructing original graph...";
     for (int i = 0; i < op_configs.size(); i++) {
       operators_.push_back(std::make_shared<Dispatcher>(
           op_configs[i], &execution_options_, this));
@@ -656,7 +656,7 @@ void Model::ConstructLLGA(
     return;
   }
 
-  LOG(INFO) << "Constructing LLGA graph...";
+  DLOG(INFO) << "Constructing LLGA graph...";
   for (int i = 0; i < op_configs.size() - 1; ++i) {
     if (op_configs[i]->type() == "Input") {
       llga_info_.InitLTFromTensorConf(op_configs[i]);

@@ -54,7 +54,7 @@ void* read_file_to_type(const string& root, const string& type, const vector<int
                         const vector<int64_t>& location) {
   int b = type2bytes[type];
   if (b == 0) {
-    LOG(INFO) << type << " not implemented yet...";
+    DLOG(INFO) << type << " not implemented yet...";
   }
 
   int64_t size = Product(shape);
