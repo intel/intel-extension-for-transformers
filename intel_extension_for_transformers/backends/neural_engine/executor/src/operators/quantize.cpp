@@ -94,43 +94,47 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
     min_data = static_cast<const float*>(dst_min_->data());
     memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
   }
-  if (min_data == nullptr && dst_->dtype() != "bf16") {
+  if (min_data == nullptr && src_->dtype() != "bf16" && dst_->dtype() != "s8") {
     LOG(ERROR) << "Neither choose dynamic quantization or passed min/max tensor for static ";
     return;
   }
   // quantize
   if (src_data != nullptr && dst_data != nullptr) {
     if (src_->dtype() == "bf16") {
-      Quantize_bf16(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
-      this->unref_tensors(input);
-      return;
-    }
+      if (dst_->dtype() == "s8") {
+        Quantize_bf16_s8(src_->size(), dst_->dtype(), src_data, scales_, dst_data);
+        this->unref_tensors(input);
+      } else {
+        Quantize_bf16_u8(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
+        this->unref_tensors(input);
+        return;
+      }
 #if __AVX512F__
-    Quantize_avx512(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
+      Quantize_avx512(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
 #else
-    Quantize(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
+      Quantize(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
 #endif
+    }
+    this->unref_tensors(input);
   }
-  this->unref_tensors(input);
-}
-void QuantizeOperator::RuntimeMinmax() {
-  // use onednn reduction calculate min/max
-  memory::desc src_md(src_->shape(), memory::data_type::f32, GetStrides(src_->shape()));
-  memory src_m(src_md, eng_);
-  src_m.set_data_handle(src_->mutable_data());
-  vector<int64_t> reduce_shape(dst_->shape().size(), 1);
-  vector<int64_t> reduce_stride = GetStrides(reduce_shape);
-  memory::desc dst_md(reduce_shape, memory::data_type::f32, reduce_stride);
-  memory reduce_min(dst_md, eng_);
-  memory reduce_max(dst_md, eng_);
-  reduce_min.set_data_handle(dst_min_->mutable_data());
-  reduce_max.set_data_handle(dst_max_->mutable_data());
-  dnnl::reduction::desc reduce_min_d(algorithm::reduction_min, src_md, dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_min_pd(reduce_min_d, eng_);
-  dnnl::reduction(reduce_min_pd).execute(eng_stream_, {{DNNL_ARG_SRC, src_m}, {DNNL_ARG_DST, reduce_min}});
-  dnnl::reduction::desc reduce_max_d(algorithm::reduction_max, src_md, dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_max_pd(reduce_max_d, eng_);
-  dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, src_m}, {DNNL_ARG_DST, reduce_max}});
-}
-REGISTER_OPERATOR_CLASS(Quantize);
+  void QuantizeOperator::RuntimeMinmax() {
+    // use onednn reduction calculate min/max
+    memory::desc src_md(src_->shape(), memory::data_type::f32, GetStrides(src_->shape()));
+    memory src_m(src_md, eng_);
+    src_m.set_data_handle(src_->mutable_data());
+    vector<int64_t> reduce_shape(dst_->shape().size(), 1);
+    vector<int64_t> reduce_stride = GetStrides(reduce_shape);
+    memory::desc dst_md(reduce_shape, memory::data_type::f32, reduce_stride);
+    memory reduce_min(dst_md, eng_);
+    memory reduce_max(dst_md, eng_);
+    reduce_min.set_data_handle(dst_min_->mutable_data());
+    reduce_max.set_data_handle(dst_max_->mutable_data());
+    dnnl::reduction::desc reduce_min_d(algorithm::reduction_min, src_md, dst_md, 0.f, 0.f);
+    dnnl::reduction::primitive_desc reduce_min_pd(reduce_min_d, eng_);
+    dnnl::reduction(reduce_min_pd).execute(eng_stream_, {{DNNL_ARG_SRC, src_m}, {DNNL_ARG_DST, reduce_min}});
+    dnnl::reduction::desc reduce_max_d(algorithm::reduction_max, src_md, dst_md, 0.f, 0.f);
+    dnnl::reduction::primitive_desc reduce_max_pd(reduce_max_d, eng_);
+    dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, src_m}, {DNNL_ARG_DST, reduce_max}});
+  }
+  REGISTER_OPERATOR_CLASS(Quantize);
 }  // namespace executor
