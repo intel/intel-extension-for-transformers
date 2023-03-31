@@ -57,8 +57,7 @@ class MemoryAllocator {
   }
 
   static const int InstNum() {
-    auto inst_num = getenv("INST_NUM");
-    if (inst_num != nullptr) return std::atoi(inst_num);
+    if (getenv("INST_NUM") != nullptr) return std::atoi(getenv("INST_NUM"));
     return 1;
   }
 

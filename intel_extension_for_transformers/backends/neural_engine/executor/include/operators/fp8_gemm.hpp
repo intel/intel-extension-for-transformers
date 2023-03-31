@@ -985,7 +985,7 @@ struct Parallel2DGemmV2 : Parallel2D {
     int rownum = updiv(mRows, mMinRow);
     int colnum = updiv(mCols, mMinCol);
     int NRow = updiv(_adapter.mNMax, mMinCol);
-    int maxN = 1;
+    int maxN = 0;
     float maxScore = std::numeric_limits<float>::min();
     int core_enum = std::sqrt(mThreadsCount);
     for (int i = 1; i <= core_enum; i += 1) {

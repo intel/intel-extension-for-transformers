@@ -121,10 +121,8 @@ void AddZeroPoints(const int size, const string& dtype, const float* src_data, c
                    const vector<float>& scales, float* dst_data);
 
 #if __AVX512F__
-void Quantize_bf16_s8(const int size, const string& dtype, const void* src_data, const std::vector<float>& scales,
-                      void* dst_data);
-void Quantize_bf16_u8(const int size, const string& dtype, const void* src_data, const float* range_mins,
-                      const std::vector<float>& scales, void* dst_data);
+void Quantize_bf16(const int size, const string& dtype, const void* src_data, const float* range_mins,
+                   const std::vector<float>& scales, void* dst_data);
 void Quantize_avx512(const int size, const string& dtype, const void* src_data, const float* range_mins,
                      const vector<float>& scales, void* dst_data);
 #else
