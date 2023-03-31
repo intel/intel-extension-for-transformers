@@ -112,7 +112,6 @@ int8_t* reorder_back(const int8_t* reorder_mat, int k, int n) {
           trans_back_buf[k_loop * trans_block_row * block_size + n_loop * 64 + i * pad_n * 4 + j] =
               reorder_mat[n_loop * trans_block_col * block_size + k_loop * 64 + i * trans_block_col * 64 + j];
   // step2. reorder back.
-  // TODO(Zhe): leave malloc outside the kernels if optimization needed
   int8_t* reorder_back_mat = reinterpret_cast<int8_t*>(malloc(k * n));
   if (reorder_back_mat == nullptr) {
     SPARSE_LOG(FATAL) << "Failed to malloc for reorder_back_mat";
