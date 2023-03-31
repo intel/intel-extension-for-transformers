@@ -17,6 +17,7 @@
 """Optimization: provides the orchestrate optimizer for Pytorch."""
 import logging
 import os
+import shlex
 
 from neural_compressor.experimental import(
     common,
@@ -104,8 +105,8 @@ class Orchestrate_optimizer:
             tokenizer (object, optional): the tokenizer object, use it if you want to 
                                           save tokenizer.json in output_dir. Defaults to None.
         """
-        os.makedirs(output_dir, exist_ok=True)
-        torch.save(self.opt_model.quantized_state_dict(), os.path.join(output_dir, WEIGHTS_NAME))
+        os.makedirs(shlex.quote(output_dir), exist_ok=True)
+        torch.save(self.opt_model.quantized_state_dict(), os.path.join(shlex.quote(output_dir), WEIGHTS_NAME))
         if self.enable_inc_quant == True:
             self.model_config.torch_dtype = "int8"
         self.model_config.save_pretrained(output_dir)
@@ -445,8 +446,8 @@ class NoTrainerOptimizer:   # pragma: no cover
             tokenizer (object, optional): the tokenizer object, use it if you want to 
                                           save tokenizer.json in output_dir. Defaults to None.
         """
-        os.makedirs(output_dir, exist_ok=True)
-        torch.save(self.opt_model.quantized_state_dict(), os.path.join(output_dir, WEIGHTS_NAME))
+        os.makedirs(shlex.quote(output_dir), exist_ok=True)
+        torch.save(self.opt_model.quantized_state_dict(), os.path.join(shlex.quote(output_dir), WEIGHTS_NAME))
         if self.enable_inc_quant and self.opt_model:
             self._save_inc_int8(self.opt_model, output_dir)
         else:

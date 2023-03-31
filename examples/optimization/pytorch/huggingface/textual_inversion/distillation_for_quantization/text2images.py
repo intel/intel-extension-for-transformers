@@ -8,6 +8,8 @@ from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
 from neural_compressor.utils.pytorch import load
 from PIL import Image
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
+import shlex
+from shlex import quote
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple example of a training script.")
@@ -48,6 +50,7 @@ def parse_args():
         help="cuda_id.",
     )
     args = parser.parse_args()
+    args.pretrained_model_name_or_path = shlex.quote(args.pretrained_model_name_or_path)
     return args
 
 
@@ -118,6 +121,6 @@ grid.save(
     os.path.join(args.pretrained_model_name_or_path, "{}.png".format("_".join(args.caption.split())))
 )
 dirname = os.path.join(args.pretrained_model_name_or_path, "_".join(args.caption.split()))
-os.makedirs(dirname, exist_ok=True)
+os.makedirs(shlex.quote(dirname), exist_ok=True)
 for idx, image in enumerate(images):
     image.save(os.path.join(dirname, "{}.png".format(idx+1)))
