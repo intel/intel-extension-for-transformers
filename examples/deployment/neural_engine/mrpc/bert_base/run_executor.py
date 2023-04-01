@@ -57,7 +57,10 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
-    executor = Neural_Engine(args.input_model, args.log_file, args.dynamic_quantize)
+    if args.dynamic_quantize:
+        executor = Neural_Engine(args.input_model, args.log_file, "dynamic_int8")
+    else:
+        executor = Neural_Engine(args.input_model, args.log_file, "native")
     if args.mode == "accuracy":
         executor.accuracy(args.batch_size, args.seq_len, args.dataset_name, args.task_name,
                           args.data_dir, args.tokenizer_dir)
