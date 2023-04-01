@@ -22,7 +22,7 @@ from datasets import load_metric
 from transformers import EvalPrediction
 import sys
 import os
-
+import copy
 common_dir = os.path.join(sys.path[0], "../..")
 sys.path.append(common_dir)
 from utils_qa import postprocess_qa_predictions
@@ -56,7 +56,7 @@ class Neural_Engine(Neural_Engine_base):
         # model = ort.InferenceSession("fp32_11.onnx", sess_options)
         for idx in tqdm(range(len(dataset))):
             inputs = dataset[idx]
-            predictions = self.graph.inference([inputs[0], inputs[1]])
+            predictions = copy.deepcopy(self.graph.inference([inputs[0], inputs[1]]))
             predictions = list(predictions.values())[0]
             start_logits_list.append(predictions[..., 0])
             end_logits_list.append(predictions[..., 1])

@@ -56,8 +56,9 @@ class QunatizeFusion(Pattern):
                 return (None, False)
 
         quant_info = util.get_quant_info()
-        if not quant_info:
-            return model
+        if model.inquire_config_item("framework") == 'torch':
+            if not quant_info:
+                return model
 
         remove_node_name = []
         # fuse quant nodes to previous innerproduct or matmul output dtype to enhance perf
@@ -68,11 +69,20 @@ class QunatizeFusion(Pattern):
                 if can_fuse:
                     if dtype == 'u8' or dtype == 's8':
                         if quant_node.op_type == "Softmax":
-                            model.change_node_input_tensors(quant_node.name, 1, node.input_tensors[1],
-                                                            'insert')
-                            model.change_node_input_tensors(quant_node.name, 2, node.input_tensors[2],
-                                                            'insert')
-                            quant_node.attr['output_dtype'] = "u8"
+                            def is_lat_model(model, p=None):
+                                if p == None:
+                                    p = [[(0, 'TopK'),(1, 'GatherElements')]]
+                                match_result = util.search_pattern(p, model)
+                                return len(match_result) != 0
+                            if is_lat_model(model):
+                                node.attr = OrderedDict({'output_dtype': "u8"})
+                                continue
+                            else:
+                                model.change_node_input_tensors(quant_node.name, 1, node.input_tensors[1],
+                                                                'insert')
+                                model.change_node_input_tensors(quant_node.name, 2, node.input_tensors[2],
+                                                                'insert')
+                                quant_node.attr['output_dtype'] = "u8"
                         else:
                             if model.inquire_config_item("framework") == 'torch':
                                 t_len = len(quant_node.input_tensors)
