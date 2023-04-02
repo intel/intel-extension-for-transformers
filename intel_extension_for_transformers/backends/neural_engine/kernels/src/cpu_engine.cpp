@@ -13,8 +13,10 @@
 //  limitations under the License.
 
 #include "cpu_engine.hpp"
+#include "cpu_memory_storage.hpp"
+
 namespace jd {
-const std::vector<impl_list_item_t> cpu_engine::empty_list = {};
+const std::vector<impl_list_item_t> cpu_engine_t::empty_list = {};
 
 // C API forward declaration.
 #define DECLARE_IMPL_LIST(kind) \
@@ -24,16 +26,20 @@ DECLARE_IMPL_LIST(sparse_matmul);
 DECLARE_IMPL_LIST(eltwiseop);
 DECLARE_IMPL_LIST(layernorm_ba);
 DECLARE_IMPL_LIST(transpose_matmul);
+DECLARE_IMPL_LIST(dynamic_quant_matmul);
 DECLARE_IMPL_LIST(layernormalized_spmm);
 DECLARE_IMPL_LIST(softmax);
 DECLARE_IMPL_LIST(gather);
 DECLARE_IMPL_LIST(attention);
 DECLARE_IMPL_LIST(transpose_mha);
+DECLARE_IMPL_LIST(mha_dense);
 DECLARE_IMPL_LIST(dyn_quantize_mha);
+DECLARE_IMPL_LIST(slice);
+DECLARE_IMPL_LIST(dynamic_quant);
 
 #undef DECLARE_IMPL_LIST
 
-const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const operator_desc& op_desc) const {
+const std::vector<impl_list_item_t>* cpu_engine_t::get_implementation_list(const operator_desc& op_desc) const {
   // Call C API.
 #define CASE(kind)        \
   case kernel_kind::kind: \
@@ -49,11 +55,19 @@ const std::vector<impl_list_item_t>* cpu_engine::get_implementation_list(const o
     CASE(softmax);
     CASE(attention);
     CASE(transpose_mha);
+    CASE(mha_dense);
     CASE(dyn_quantize_mha);
+    CASE(slice);
+    CASE(dynamic_quant_matmul);
+    CASE(dynamic_quant);
     default:
-      return &cpu_engine::empty_list;
+      return &cpu_engine_t::empty_list;
   }
 
 #undef CASE
+}
+bool cpu_engine_t::create_memory_storage(memory_storage_t** storage) const {
+  *storage = new cpu_memory_storage_t(this);
+  return true;
 }
 }  // namespace jd

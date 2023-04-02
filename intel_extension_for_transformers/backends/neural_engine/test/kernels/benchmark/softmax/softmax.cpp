@@ -118,17 +118,17 @@ bool softmax_bench::check_result() {
 }
 
 void softmax_bench::gen_case() {
-  operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs,
-                             postop_attrs);
+  operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
+                             op_attrs, postop_attrs);
 
   int num = get_element_num(softmax_desc);
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
 
-  void* src = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num);
-  void* dst = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num, true);
-  void* src_ref = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num);
-  void* dst_ref = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num, true);
+  void* src = malloc(get_data_size(in_dt) * num);
+  void* dst = malloc(get_data_size(out_dt) * num);
+  void* src_ref = malloc(get_data_size(in_dt) * num);
+  void* dst_ref = malloc(get_data_size(out_dt) * num);
 
   for (int i = 0; i < num; i++) {
     float rand_val = std::rand() % 256 - 128;

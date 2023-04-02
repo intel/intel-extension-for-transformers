@@ -44,7 +44,7 @@ function init_params {
 
 # run_tuning
 function run_tuning {
-
+    extra_cmd = ''
     framework=$(echo $topology | grep "ipex")
     if [[ "$framework" != "" ]];then
         extra_cmd=$extra_cmd" --framework ipex"
@@ -66,6 +66,16 @@ function run_tuning {
         model_name_or_path="deepset/roberta-base-squad2"
         approach="PostTrainingStatic"
         # extra_cmd=$extra_cmd" --version_2_with_negative"
+    elif [ "${topology}" = "longformer_base_squad_static" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="valhalla/longformer-base-4096-finetuned-squadv1"
+        approach="PostTrainingStatic"
+        extra_cmd=$extra_cmd" --strategy mse_v2"
+    elif [ "${topology}" = "longformer_base_squad_dynamic" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="valhalla/longformer-base-4096-finetuned-squadv1"
+        approach="PostTrainingDynamic"
+        extra_cmd=$extra_cmd" --strategy mse_v2"
     elif [ "${topology}" = "distilbert_base_squad_ipex" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"

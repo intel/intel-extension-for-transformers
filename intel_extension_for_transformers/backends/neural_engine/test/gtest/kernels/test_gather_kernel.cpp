@@ -46,8 +46,11 @@ bool CheckResult(const test_params_t& t) {
   // Should compare buffer with different addresses
   if (p.conf.tensor_descs()[2].dtype() == data_type::s8) {
     return compare_data<int8_t>(p.data[2], p.conf.tensor_descs()[2].size(), q.data[2], q.conf.tensor_descs()[2].size());
-  } else {
+  } else if (p.conf.tensor_descs()[2].dtype() == data_type::fp32) {
     return compare_data<float>(p.data[2], p.conf.tensor_descs()[2].size(), q.data[2], q.conf.tensor_descs()[2].size());
+  } else {
+    return compare_data<uint16_t>(p.data[2], p.conf.tensor_descs()[2].size(), q.data[2],
+                                  q.conf.tensor_descs()[2].size());
   }
 }
 
@@ -83,6 +86,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
   std::unordered_map<std::string, std::string> attr_map;
   attr_map["idx_axis"] = static_cast<char>(idx_axis + '0');
   attr_map["src_axis"] = static_cast<char>(src_axis + '0');
+
   // Step 2: Construct Tensor ptr
   auto make_tensor_obj = [&](const tensor_desc a_tensor_config, const bool is_idx) {
     void* tensor_data = sparselib_ut_memo(nullptr, a_tensor_config.size(), a_tensor_config.dtype(), memo_mode::MALLOC);
@@ -101,8 +105,10 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
       // init other tensor
       if (input_dt == data_type::s8 || input_dt == data_type::u8)
         init_vector(static_cast<int8_t*>(tensor_data), a_tensor_config.size());
-      else
+      else if (input_dt == data_type::fp32)
         init_vector(static_cast<float*>(tensor_data), a_tensor_config.size());
+      else
+        init_vector(static_cast<uint16_t*>(tensor_data), a_tensor_config.size());
       memcpy(tensor_data_copy, tensor_data, a_tensor_config.size() * get_data_size(input_dt));
     }
     return std::pair<void*, void*>{tensor_data, tensor_data_copy};
@@ -219,7 +225,7 @@ static auto CasesFp32 = []() {
   dst = {dst_shape, data_type::fp32, jd::format_type::undef};
   cases.push_back({GenerateFp32Case({src0, src1, dst}, {}, 0, 2), false});
 
-  for (data_type dt : {data_type::fp32, data_type::s8}) {
+  for (data_type dt : {data_type::fp32, data_type::bf16, data_type::s8}) {
     for (int inner_size : {1024, 1000}) {
       src_shape = {30522, inner_size, 1, 1};
       idx_shape = {256};
@@ -270,6 +276,9 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
         break;
       case data_type::u8:
         params.push_back(tensor_dt + "_u8");
+        break;
+      case data_type::bf16:
+        params.push_back(tensor_dt + "_bf16");
         break;
       default:
         assert(false);

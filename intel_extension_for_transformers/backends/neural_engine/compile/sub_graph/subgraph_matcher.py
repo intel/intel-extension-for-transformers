@@ -17,24 +17,27 @@
 
 """The neural engine subgraph matcher file."""
 
-import time
 import copy
-import numpy as np
 from tqdm import tqdm
+from collections import namedtuple, OrderedDict
 from .pattern import supported_patterns, superbert_patterns, PATTERNS
 from .. import logger
 
 EXECUTOR_TYPE = {
+    "InnerProduct": "InnerProduct",
     "MatMulWithBias": "InnerProduct",
     "MatMulWithBiasAdd": "InnerProduct",
     "MatMulWithBiasGelu": "InnerProduct",
     "MatMulWithBiasTanh": "InnerProduct",
     "MatMulWithBiasRelu": "InnerProduct",
     "MatMulWithBiasSigmoid": "InnerProduct",
+    "Matmul": "Matmul",
+    "Einsum": "Matmul",
     "MatMul": "InnerProduct",
     "Conv": "Convolution",
     "QuantizedMatMulWithBiasAndDequantize": "InnerProduct",
     "TransposeBatchMatMul": "Matmul",
+    "MatmulwithTranspose" : "Matmul", 
     "BatchMatMul": "Matmul",
     "BatchMatMulV2": "Matmul",
     "Add": "BinaryAdd",
@@ -65,6 +68,76 @@ EXECUTOR_TYPE = {
     "NotEqual": "BinaryOp",
     'Not': "BinaryOp",
     'Neg': "BinaryOp",
+    "Sin": "CosSin",
+    "Cos": "CosSin",
+}
+
+pattern_default_setting = {
+    # General Pattern
+    'PaddingSequence': True,
+    'AttentionReshape': True,
+    'QKVReshape': True,
+    'ReshapeFusion': True,
+    'InsertBF16Node': True,
+    'OperatorAdaptor': True,
+
+    'GroupNorm': True,
+
+    # transpose_mode_int8
+     'QKVMerge': False,
+
+    # 'TextEncoder
+    'TextEncoder_WordEmbedding': False,
+    'TextEncoder_QReshape': False,
+    'TextEncoder_KVReshape': False,
+    'TextEncoder_AttentionMaskAddReshape': False,
+    'TextEncoder_SoftmaxReshape': False,
+    'TextEncoder_MulReshape': False,
+    'TextEncoder_AttentionReshape': False,
+    'TextEncoder_CasualAttentionMask': False,
+
+    # vae deocder & Transformer2Dmodel
+    'AttentionBlock_Resize2Gather': False,
+    'AttentionBlock_QKVPreReshape': False,
+    'AttentionBlock_AttentionMaskAddReshape': False,
+    'AttentionBlock_ConstantOfShapeWithMul': False,
+
+    'Transformer2Dmodel_GetSampleBatch': False,
+    'Transformer2Dmodel_SampleSlice': False,
+    'Transformer2Dmodel_EncoderHiddenStatesReshape': False,
+    'Transformer2Dmodel_ConstantOfShapeWithMul': False,
+    'Transformer2Dmodel_QKVPreReshape': False,
+    'Transformer2Dmodel_QKVReshape': False,
+    'AttentionBlock_QKVReshape': False,
+    'Transformer2Dmodel_QKVReshapeTo4D': False,
+    'Transformer2Dmodel_AttentionMaskAddReshape': False,
+    'Transformer2Dmodel_FFNInputSlice': False,
+    'Transformer2Dmodel_FFNInputSlice_1': False,
+    'Transformer2DModel_UpBlockResize': False,
+
+    # for all stable diffusion models
+    'StableDiffusion_bf16Convert': False,
+    'StableDiffusion_ReshapeFusion': False,
+    
+    #GPT-J
+    'TorchEmbedding': True,
+    'InnerproductReshapeFusion': True,
+    'MatMulWithTranspose': True,
+    'InnerproductWithBiasGelu': True,
+    'SliceMask': True,
+    'ArangewithReciprocal': True,
+    'InnerproductwithSlice': True,
+    'RoraryPosEmb': True,
+    'EinsumwithArange': True,
+    'RemoveSlice': True,
+    'RemoveRange': True,
+    'RemoveLastView': True,
+    
+    
+    'TorchInsertBF16Node': True,
+    'MultiHeadAttention': False,
+    'Int8BF16MixedPrecisionChecker': False,
+    'QuantizedGraphDtypeRefactor': True,
 }
 
 class SubGraphMatcher(object):
@@ -73,9 +146,9 @@ class SubGraphMatcher(object):
         """The __call__ function of SubGraphMatcher class."""
         logger.info('Start to implement Sub-Graph matching and replacing...') 
         if tune:
-            self._tune_patterns(model)
+            model = self._tune_patterns(model)
         else:
-            self._fuse_patterns(model, pattern_config=pattern_config)
+            model = self._fuse_patterns(model, pattern_config=pattern_config)
         logger.info('Sub-Graph match and replace done...')
         return model
 
@@ -85,8 +158,8 @@ class SubGraphMatcher(object):
         
         for index in range(len(supported_patterns)):
             pattern_name = supported_patterns[index]
-            if pattern_name == 'QKVMerge':
-                pattern_mask[index] = False
+            if pattern_name in pattern_default_setting:
+                pattern_mask[index] = pattern_default_setting[pattern_name]
 
         # modify the pattern mask according to pattern_config
         if pattern_config != None:
@@ -100,8 +173,9 @@ class SubGraphMatcher(object):
             if pattern in PATTERNS and pattern_mask[pattern_id]:
                 p_fusion = PATTERNS[pattern]()
                 model = p_fusion(model)
-        self._remove_identity(model) 
-         
+        model = self._remove_identity(model)
+        return model
+
     def _tune_patterns(self, model, iterations = 10, warm_up = 5):
         # pattern tuning strategy(for superbert): 
         #    1. only one pattern off/on each time (pruning)
@@ -150,7 +224,12 @@ class SubGraphMatcher(object):
                 rm_node_names.append(node.name)
             else:
                 if node.op_type in EXECUTOR_TYPE.keys():
+                    if node.op_type == "Cos":
+                        node.attr = OrderedDict({'algorithm': 'cos'})
+                    if node.op_type == "Sin":
+                        node.attr = OrderedDict({'algorithm': 'sin'})                           
                     op_type = EXECUTOR_TYPE[node.op_type]
                     model.nodes[i].op_type = op_type
         model.remove_nodes(rm_node_names)
+        return model
 

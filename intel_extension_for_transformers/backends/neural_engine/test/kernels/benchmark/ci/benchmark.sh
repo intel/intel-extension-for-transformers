@@ -151,10 +151,20 @@ fi
 
 # For each line in the batch file
 while read -r config || [[ -n "${config}" ]]; do
+    # set env
+    if [[ -n $(echo $config | grep -E '^\$') ]]; then
+        env_chnage=$(echo $config | sed -e "s/^\$\s*//")
+        echo "export $env_chnage" >> $raw_log
+        export $env_chnage
+        continue
+    fi
+    # print line
     if [[ -n $(echo $config | grep -E '^###') ]]; then
         echo $config | sed -e "s/###\s*//" | xargs -d"\n" printf "%s %s\n" ">>>>>>>###"
     fi
+    # skip comment line and empty line
     if [[ -n $(echo $config | grep -E '^#') ]] || [[ -z $config ]]; then continue; fi
+
     printf "%s %s\n" ">>>>>>>>>>" "$config"
     ncores_per_instance=$(echo $config | cut -d' ' -f1)
     spmm_params=$(echo $config | cut -d' ' -f2-)

@@ -128,37 +128,45 @@ class AttentionReshape(Pattern):
                 # Shira new model Reshape_128, 373, 618
                 {
                     'patterns': {
-                        'in': [[(0, 'Transpose'), (1, 'Shape'), (2, 'Gather'), (3, 'Unsqueeze'), (4, 'Concat'),
-                                (5, 'Reshape'),(6, 'MatMulWithBias')]
+                        'in': [[(0, ['MatMul', 'BatchMatMul']), (1, 'Transpose'), (2, 'Shape'),
+                                (3, 'Gather'), (4, 'Unsqueeze'), (5, 'Concat'), (6, 'Reshape'),
+                                (7, 'MatMulWithBias')]
                                 ],
-                        'out': [[(0, 'Transpose'), (1, 'Reshape'), (2, 'MatMulWithBias')]]
+                        'out': [[(0, 'BatchMatMul'), (1, 'Transpose'), (2, 'Reshape'),
+                                 (3, 'MatMulWithBias')]]
                     },
                     'search_mode': 'op_type',
                     'node_names': {
                         0: 0,
-                        1: 5,
+                        1: 1,
                         2: 6,
+                        3: 7,
                     },
                     'input_tensors': {
                         0: [[{
                             0: [0]
-                        }], [[0], 1]],
-                        1: [[], [[],1]],
-                        2: [[
-                        {6: [1]},{6: [2]}
-                        ],[[1, 2],3]],
+                        }, {
+                            0: [1]
+                        }], [[0, 1], 2]],
+                        1: [[], [[], 1]],
+                        2: [[], [[], 1]],
+                        3: [[{
+                            7: [1]
+                        },{
+                            7: [2]
+                        }],[[1, 2], 3]],
                     },
                     'output_tensors': {
-                        0: [[], [[],1]],
-
-                        1: [[{
-                        5:[0]
-                        }],[[0],1]],
+                        0: [[], [[], 1]],
+                        1: [[], [[], 1]],
                         2: [[{
                             6: [0]
+                        }],[[0], 1]],
+                        3: [[{
+                            7: [0]
                         }], [[0], 1]]
                     },
-                    'returns': [0,4,6]
+                    'returns': [1, 5, 7, 0]
                 },
 
                 # bert_mini_int8
@@ -270,18 +278,25 @@ class AttentionReshape(Pattern):
 
             if len(new_node_names) != 0:
                 for j in range(len(new_node_names)):
-                    if len(ret_old_nodes[j]) == 3:
+                    if len(ret_old_nodes[j]) == 3 or len(ret_old_nodes[j]) == 4:
                         pack_node = ret_old_nodes[j][1]
                         hidden_size = int(pack_node.input_tensors[-1].data)
-                        _set_attr(hidden_size, new_node_names[j], model,reshape_idx=1)
+                        reshape_idx = 1 if len(ret_old_nodes[j]) == 3 else 2
+                        _set_attr(hidden_size, new_node_names[j], model,reshape_idx=reshape_idx)
 
                         assert ret_old_nodes[j][0].op_type == 'Transpose'
-                        trans_node_idx = model.get_node_id(new_node_names[j][0])
+                        idx_get = 0 if len(ret_old_nodes[j]) == 3 else 1
+                        trans_node_idx = model.get_node_id(new_node_names[j][idx_get])
                         model.nodes[trans_node_idx].attr = ret_old_nodes[j][0].attr
 
                         assert ret_old_nodes[j][2].op_type == 'MatMulWithBias'
-                        mat_node_idx = model.get_node_id(new_node_names[j][2])
+                        idx_get = 2 if len(ret_old_nodes[j]) == 3 else 3
+                        mat_node_idx = model.get_node_id(new_node_names[j][idx_get])
                         model.nodes[mat_node_idx].attr = ret_old_nodes[j][2].attr
+
+                        if ret_old_nodes[j][-1].op_type == 'BatchMatMul':
+                            bmat_node_idx = model.get_node_id(new_node_names[j][0])
+                            model.nodes[bmat_node_idx].attr = ret_old_nodes[j][-1].attr
 
                     elif len(ret_old_nodes[j]) == 2:
                         pack_node = ret_old_nodes[j][0]
@@ -290,7 +305,7 @@ class AttentionReshape(Pattern):
                         assert ret_old_nodes[j][1].op_type == 'MatMulWithBias'
                         mat_node_idx = model.get_node_id(new_node_names[j][1])
                         model.nodes[mat_node_idx].attr = ret_old_nodes[j][1].attr
-
+                return model
         # special reshape node, like has '0,0,768' or '-1,369,384' dst_shape attr
         pattern_dict = pattern_mapping_config['AttentionReshape'][-1]
         model, new_node_names, ret_old_nodes = util.pattern_mapping("AttentionReshape",

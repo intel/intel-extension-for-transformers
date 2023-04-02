@@ -23,16 +23,20 @@ namespace jd {
 enum class kernel_kind : uint8_t {
   undef,
   sparse_matmul,
+  matmul,
   eltwiseop,
   layernorm_ba,
   layernormalized_spmm,
   transpose_matmul,
+  dynamic_quant_matmul,
   softmax,
-  logsoftmax,
   gather,
   attention,
   transpose_mha,
+  mha_dense,
   dyn_quantize_mha,
+  slice,
+  dynamic_quant
 };
 
 enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };
@@ -98,6 +102,15 @@ enum class format_type : uint8_t {
 enum class engine_kind : uint8_t {
   undef,
   cpu,
+  gpu,
+};
+
+// Runtime kind.
+enum class runtime_kind : uint8_t {
+  undef,
+  opencl,
+  sycl,
+  thread_pool
 };
 
 // postop attribute for op-fusion

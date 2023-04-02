@@ -1,0 +1,5 @@
+### ncores_per_inst channel_num quantize_dim_elt_num src_data_type
+4 320 320 fp32
+4 320 320 bf16
+4 319 319 fp32
+4 319 319 bf16

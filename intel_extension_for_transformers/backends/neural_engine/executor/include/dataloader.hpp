@@ -125,14 +125,11 @@ class ConstDataLoader : public DataLoader {
       if (dtype_[i] == "fp32") {
         float* data = new float[size];
         batch_data_.push_back(data);
-      } else if (dtype_[i] == "int32") {
+      } else if (dtype_[i] == "int32" || dtype_[i] == "s32") {
         int32_t* data = new int32_t[size];
         batch_data_.push_back(data);
       } else if (dtype_[i] == "u8") {
         unsigned char* data = new unsigned char[size];
-        batch_data_.push_back(data);
-      } else if (dtype_[i] == "int32") {
-        unsigned int* data = new unsigned int[size];
         batch_data_.push_back(data);
       }
     }
@@ -153,7 +150,7 @@ class ConstDataLoader : public DataLoader {
         for (int idx = 0; idx < size_[i]; ++idx) {
           *(data++) = static_cast<float>(idx % static_cast<int>(value_range_[i][1]));
         }
-      } else if (dtype_[i] == "int32") {
+      } else if (dtype_[i] == "int32" || dtype_[i] == "s32") {
         auto data = static_cast<int32_t*>(batch_data_[i]);
         for (int idx = 0; idx < size_[i]; ++idx) {
           *(data++) = static_cast<int32_t>(idx % static_cast<int>(value_range_[i][1]));
@@ -162,11 +159,6 @@ class ConstDataLoader : public DataLoader {
         auto data = static_cast<unsigned char*>(batch_data_[i]);
         for (int idx = 0; idx < size_[i]; ++idx) {
           *(data++) = static_cast<unsigned char>(idx % static_cast<int>(value_range_[i][1]));
-        }
-      } else if (dtype_[i] == "int32") {
-        auto data = static_cast<int*>(batch_data_[i]);
-        for (int idx = 0; idx < size_[i]; ++idx) {
-          *(data++) = static_cast<int>(idx % static_cast<int>(value_range_[i][1]));
         }
       }
     }
@@ -196,14 +188,11 @@ class DummyDataLoader : public DataLoader {
       if (dtype_[i] == "fp32") {
         float* data = new float[size];
         batch_data_.push_back(data);
-      } else if (dtype_[i] == "int32") {
+      } else if (dtype_[i] == "int32" || dtype_[i] == "s32") {
         int32_t* data = new int32_t[size];
         batch_data_.push_back(data);
       } else if (dtype_[i] == "u8") {
         unsigned char* data = new unsigned char[size];
-        batch_data_.push_back(data);
-      } else if (dtype_[i] == "int32") {
-        unsigned int* data = new unsigned int[size];
         batch_data_.push_back(data);
       }
     }
@@ -223,7 +212,7 @@ class DummyDataLoader : public DataLoader {
         for (int idx = 0; idx < size_[i]; ++idx) {
           *(data++) = u(generator_);
         }
-      } else if (dtype_[i] == "int32") {
+      } else if (dtype_[i] == "int32" || dtype_[i] == "s32") {
         auto data = static_cast<int32_t*>(batch_data_[i]);
         for (int idx = 0; idx < size_[i]; ++idx) {
           *(data++) = static_cast<int32_t>(u(generator_));
@@ -232,11 +221,6 @@ class DummyDataLoader : public DataLoader {
         auto data = static_cast<unsigned char*>(batch_data_[i]);
         for (int idx = 0; idx < size_[i]; ++idx) {
           *(data++) = static_cast<unsigned char>(u(generator_));
-        }
-      } else if (dtype_[i] == "int32") {
-        auto data = static_cast<int*>(batch_data_[i]);
-        for (int idx = 0; idx < size_[i]; ++idx) {
-          *(data++) = static_cast<int>(u(generator_));
         }
       }
     }

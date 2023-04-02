@@ -92,9 +92,19 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
                    reinterpret_cast<float*>(dst_max_->mutable_data()));
     scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
     min_data = static_cast<const float*>(dst_min_->data());
+    memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
+  }
+  if (min_data == nullptr && dst_->dtype() != "bf16") {
+    LOG(ERROR) << "Neither choose dynamic quantization or passed min/max tensor for static ";
+    return;
   }
   // quantize
   if (src_data != nullptr && dst_data != nullptr) {
+    if (src_->dtype() == "bf16") {
+      Quantize_bf16(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
+      this->unref_tensors(input);
+      return;
+    }
 #if __AVX512F__
     Quantize_avx512(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
 #else

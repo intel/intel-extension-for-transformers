@@ -1,4 +1,4 @@
-neural-compressor==1.14.2
+git+https://github.com/intel/neural-compressor.git
 transformers==4.23.1
 accelerate
 datasets >= 1.8.0
@@ -7,4 +7,4 @@ protobuf
 torch==1.13.1
 onnx>=1.12
 onnxruntime==1.13.1
-onnxruntime-extensions
+

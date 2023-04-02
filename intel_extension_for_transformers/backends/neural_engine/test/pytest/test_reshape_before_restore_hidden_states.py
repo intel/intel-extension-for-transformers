@@ -35,6 +35,7 @@ class TestLayerNormWithReduceMean(unittest.TestCase):
 
     def test_layer_norm_with_reduce_mean_1(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(name='input0', shape=[768]), Tensor(name='input1',shape=[768]), Tensor(name='input2',shape=[768])]

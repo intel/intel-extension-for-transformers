@@ -262,8 +262,8 @@ std::pair<op_args_t, op_args_t> gen_case(jd::dim_t M, jd::dim_t K, jd::dim_t N, 
     jd::postop_attr attr(dt_dst, jd::postop_type::eltwise, jd::postop_alg::quantize, zero_point, 0.0, scale);
     apply_postops_list.push_back(attr);
   }
-  jd::operator_desc an_op_desc(jd::kernel_kind::sparse_matmul, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
-                               ts_descs, op_attrs, apply_postops_list);
+  jd::operator_desc an_op_desc(jd::kernel_kind::sparse_matmul, jd::kernel_prop::forward_inference,
+                               jd::engine_kind::cpu, ts_descs, op_attrs, apply_postops_list);
 
   // Step 3: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1, sparsity, nthr};

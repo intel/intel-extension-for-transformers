@@ -14,6 +14,7 @@
 
 #include "dispatcher.hpp"
 #include "op_tuning.hpp"
+#include "model.hpp"
 
 namespace executor {
 
@@ -60,6 +61,8 @@ void Dispatcher::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& ou
   int idx = 0;
   // let default kernel prepare first
   kernel_handler_[type_]->Prepare(input, output);
+  if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE && model_ != nullptr &&
+      !model_->has_dispatch_table_file()) return;
   for (const auto& k_pair : kernel_handler_) {
     auto kernel_name = k_pair.first;
     auto kernel = k_pair.second;
@@ -113,7 +116,7 @@ void Dispatcher::AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>&
 void Dispatcher::AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {
   kernel_handler_[execute_kernel_]->AdaptTensors(input, output, stage);
   if (!output.empty() && stage == "out") {
-    LOG(INFO) << "Operator " << name_ << " output tensor's format is " << int(output[0]->tensor_format())
+    DLOG(INFO) << "Operator " << name_ << " output tensor's format is " << int(output[0]->tensor_format())
               << " (please see tensor.hpp for format details)...";
   }
 }
@@ -127,7 +130,7 @@ void Dispatcher::ResetOpStatus(const vector<Tensor*>& input, const vector<Tensor
 
 void Dispatcher::GetExecuteKernel(const vector<Tensor*>& input, const vector<Tensor*>& output,
                                   const bool& reshape_model, const bool& has_dispatch_table_file) {
-  LOG(INFO) << "Operator " << name_ << " with type " << type_ << " is ready to get execute kernel...";
+  DLOG(INFO) << "Operator " << name_ << " with type " << type_ << " is ready to get execute kernel...";
   // reset
   execute_kernel_ = type_;
   if (!do_tuning_) {
@@ -136,7 +139,7 @@ void Dispatcher::GetExecuteKernel(const vector<Tensor*>& input, const vector<Ten
       dispatch_table_file_exists_ = true;
       // dispatch table only load once
       if (DispatchTable::Size() == 0) {
-        LOG(INFO) << "Loading diapatch table file...";
+        DLOG(INFO) << "Loading diapatch table file...";
         DispatchTable::Load(execution_options_ptr_->dispatch_table_file_root);
       }
       // get input tensor info if is under dynamic model inputs
@@ -175,17 +178,17 @@ void Dispatcher::GetExecuteKernel(const vector<Tensor*>& input, const vector<Ten
     } else {
       adapt_action_ = false;
     }
-    LOG(INFO) << "Operator " << name_ << " with type " << type_ << " gonna dispatch by kernel "
+    DLOG(INFO) << "Operator " << name_ << " with type " << type_ << " gonna dispatch by kernel "
               << (kernel_config.empty() ? execute_kernel_ : kernel_config[0]);
   } else {
-    LOG(INFO) << "Dispatcher tuning mode is ON, operator " << name_ << " gonna tune kernel...";
+    DLOG(INFO) << "Dispatcher tuning mode is ON, operator " << name_ << " gonna tune kernel...";
     // skip Input and Output op
     if (type_ == "Input" || type_ == "Output") return;
     // skip same input_hash
     size_t input_hash = GetHash(input);
     iter_cnt_ += 1;
     // consider warmup when tuning
-    LOG(INFO) << "tuning warm up iterations is " << (execution_options_ptr_->warmup_iter);
+    DLOG(INFO) << "tuning warm up iterations is " << (execution_options_ptr_->warmup_iter);
     if (!no_tuning_space_ && (iter_cnt_<= (execution_options_ptr_->warmup_iter + 1) ||
         DispatchTable::Find(type_, input_hash).empty())) {
       // keep kernel with the least time as first pair
@@ -231,11 +234,11 @@ void Dispatcher::GetExecuteKernel(const vector<Tensor*>& input, const vector<Ten
       }
       if (timer.size() > 0) {
         execute_kernel_ = timer.begin()->second[0];
-        LOG(INFO) << "best kernel is " << execute_kernel_ << " with time " << timer.begin()->first << "ms";
+        DLOG(INFO) << "best kernel is " << execute_kernel_ << " with time " << timer.begin()->first << "ms";
         if (execute_kernel_ != type_) DispatchTable::Insert(type_, input_hash, timer.begin()->second);
       }
     } else {
-      LOG(INFO) << "Skip tuning function due to existing input hash or no tuning space...";
+      DLOG(INFO) << "Skip tuning function due to existing input hash or no tuning space...";
       vector<string> kernel_config = DispatchTable::Find(type_, input_hash);
       string kernel_name = (!kernel_config.empty() && kernel_config[0] != "SparseLib") ? kernel_config[0] : type_;
       kernel_handler_[kernel_name]->set_dispatch_config(kernel_config);

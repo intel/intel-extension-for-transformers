@@ -13,7 +13,6 @@ function init_params {
   topology="gpt"
   tuned_checkpoint="saved_results"
   DATASET_NAME="wikitext"
-  DATASET_CONFIG_NAME="wikitext-2-raw-v1"
   model_name_or_path="EleutherAI/gpt-neo-125M"
   extra_cmd=""
   batch_size=8
@@ -116,21 +115,44 @@ function run_tuning {
         DATASET_CONFIG_NAME="unshuffled_original_ast"
         model_name_or_path="abeja/gpt-neox-japanese-2.7b"
         approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bloom_clm_static" ]; then
+        script="run_clm.py"
+        DATASET_NAME="lambada"
+        model_name_or_path="bigscience/bloom-560m"
+        approach="PostTrainingStatic"
+        extra_cmd=$extra_cmd" --smooth_quant --sampling_size 400 --torchscript"
     fi
-    python -u ./${script} \
-        --model_name_or_path ${model_name_or_path} \
-        --dataset_name ${DATASET_NAME} \
-        --dataset_config_name ${DATASET_CONFIG_NAME} \
-        --do_eval \
-        --do_train \
-        --per_device_eval_batch_size ${batch_size} \
-        --output_dir ${tuned_checkpoint} \
-        --no_cuda \
-        --tune \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --quantization_approach ${approach} \
-        ${extra_cmd}
+
+    if [ -z ${DATASET_CONFIG_NAME} ];then
+        python -u ./${script} \
+            --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${DATASET_NAME} \
+            --do_eval \
+            --do_train \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --no_cuda \
+            --tune \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --quantization_approach ${approach} \
+            ${extra_cmd}
+    else
+        python -u ./${script} \
+            --model_name_or_path ${model_name_or_path} \
+            --dataset_name ${DATASET_NAME} \
+            --dataset_config_name ${DATASET_CONFIG_NAME} \
+            --do_eval \
+            --do_train \
+            --per_device_eval_batch_size ${batch_size} \
+            --output_dir ${tuned_checkpoint} \
+            --no_cuda \
+            --tune \
+            --overwrite_output_dir \
+            --overwrite_cache \
+            --quantization_approach ${approach} \
+            ${extra_cmd}
+    fi
 }
 
 main "$@"

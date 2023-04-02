@@ -68,6 +68,7 @@ python run_mlm.py \
 |CLM|EleutherAI/gpt-neo-125M| ✅| ✅| ✅
 |CLM|abeja/gpt-neox-japanese-2.7b| ✅| ✅| Stay tuned
 |CLM|EleutherAI/gpt-j-6B| ✅| ✅| Stay tuned
+|CLM|bigscience/bloom-560m| ✅| ✅| Stay tuned
 |MLM|bert-base-uncased| ✅| ✅| ✅
 |PLM|xlnet-base-cased| ✅| ✅| ✅
 
@@ -82,4 +83,4 @@ bash run_benchmark.sh --topology=topology --mode=benchmark
 ```
 > NOTE
 >
-> topology should be one of: {"gpt_neo_clm_static", "gpt_neo_clm_dynamic", "gptj_clm_static", "gptj_clm_dynamic", "gpt_neox_clm_static", "gpt_neox_clm_dynamic", "bert_mlm_static", "bert_mlm_dynamic", "xlnet_plm_static", "xlnet_plm_dynamic", "reformer_crime_and_punishment_static", "ctrl_wikitext_static"}
+> topology should be one of: {"gpt_neo_clm_static", "gpt_neo_clm_dynamic", "gptj_clm_static", "gptj_clm_dynamic", "gpt_neox_clm_static", "gpt_neox_clm_dynamic", "bert_mlm_static", "bert_mlm_dynamic", "xlnet_plm_static", "xlnet_plm_dynamic", "reformer_crime_and_punishment_static", "ctrl_wikitext_static", "bloom_clm_static"}

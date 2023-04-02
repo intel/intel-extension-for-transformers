@@ -19,8 +19,10 @@ namespace executor {
 static unordered_map<string, dnnl::memory::data_type> type2mem{{"fp32", dnnl::memory::data_type::f32},
                                                                {"s32", dnnl::memory::data_type::s32},
                                                                {"fp16", dnnl::memory::data_type::f16},
+                                                               {"bf16", dnnl::memory::data_type::bf16},
                                                                {"u8", dnnl::memory::data_type::u8},
-                                                               {"s8", dnnl::memory::data_type::s8}};
+                                                               {"s8", dnnl::memory::data_type::s8},
+                                                               {"bf16", dnnl::memory::data_type::bf16}};
 
 ReorderOperator::ReorderOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
@@ -32,6 +34,10 @@ ReorderOperator::ReorderOperator(const shared_ptr<OperatorConfig>& conf) : Opera
   iter = attrs_map.find("dst_perm");
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&dst_perm_, attrs_map["dst_perm"], ",");
+  }
+  iter = attrs_map.find("transpose_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&transpose_dims_, attrs_map["transpose_dims"], ",");
   }
   iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
@@ -74,6 +80,10 @@ void ReorderOperator::MapTensors(const vector<Tensor*>& input, const vector<Tens
 
 void ReorderOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   MapTensors(input, output);
+  // reorder memory layout with same dtype by default
+  if (output_dtype_.empty()) {
+    output_dtype_ = src_->dtype();
+  }
   dst_->set_dtype(output_dtype_);
 
   dnnl::primitive_attr attr;
@@ -97,6 +107,23 @@ void ReorderOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*
 void ReorderOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   const memory::dims& src_shape = src_->shape();
   memory::dims dst_shape_origin = src_shape;
+
+  if (transpose_dims_.size()) {
+    src_perm_.clear();
+    dst_perm_.clear();
+    auto dims = src_shape.size();
+    for (int i = 0; i < dims; i++) {
+      src_perm_.push_back(i);
+      dst_perm_.push_back(i);
+    }
+    auto dim0 = transpose_dims_[0];
+    auto dim1 = transpose_dims_[1];
+    if (dim0 < 0) dim0 += dims;
+    if (dim1 < 0) dim1 += dims;
+    dst_perm_[dim0] = src_perm_[dim1];
+    dst_perm_[dim1] = src_perm_[dim0];
+  }
+
   vector<int64_t> dst_shape = GetShapes(dst_shape_origin, dst_perm_);
 
   memory::dims src_stride = GetStrides(src_shape, src_perm_);
@@ -118,7 +145,7 @@ void ReorderOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
 // 2. inference kernel(for int8 and f32)
 void ReorderOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (post_ != nullptr) {
-    LOG(INFO) << "reorder has post op " << post_->name();
+    DLOG(INFO) << "reorder has post op " << post_->name();
     void* post_ptr = post_->mutable_data();
     if (post_->left_life() == 1) {
       post_->unref_data(true);
@@ -169,7 +196,7 @@ void ReorderOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Te
       input[0]->set_tensor_format(TensorFormat::KM);
       input[0]->set_shape({input[0]->shape()[0], input[0]->shape()[1] * input[0]->shape()[2]});
       output[0]->set_tensor_format(TensorFormat::MK);
-      LOG(INFO) << "Reorder src tensor from MmKMb to KM of operator " << name_;
+      DLOG(INFO) << "Reorder src tensor from MmKMb to KM of operator " << name_;
     }
   } else if (stage == "out") {
     return;

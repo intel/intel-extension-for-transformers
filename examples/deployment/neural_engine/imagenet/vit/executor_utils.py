@@ -23,17 +23,15 @@ from datasets import load_metric
 from executor_dataloader import dataloader_wrapper
 import sys
 import os
-common_dir = os.path.join(sys.path[0],"../..")
+
+common_dir = os.path.join(sys.path[0], "../..")
 sys.path.append(common_dir)
-from common import (
-    log, 
-    set_log_file,
-    load_graph, 
-    DummyDataLoader
-)
+from common import (log, Neural_Engine_base, DummyDataLoader)
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self, name, fmt=':f'):
         self.name = name
         self.fmt = fmt
@@ -55,7 +53,9 @@ class AverageMeter(object):
         fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
         return fmtstr.format(**self.__dict__)
 
+
 class ProgressMeter(object):
+
     def __init__(self, num_batches, *meters, prefix=""):
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
         self.meters = meters
@@ -71,27 +71,27 @@ class ProgressMeter(object):
         fmt = '{:' + str(num_digits) + 'd}'
         return '[' + fmt + '/' + fmt.format(num_batches) + ']'
 
+
 def accuracy(output, target, topk=(1,)):
     """Computes the accuracy over the k top predictions for the specified values of k"""
 
     res = []
     for k in topk:
         max_k_preds = output.argsort(axis=1)[:, -k:][:, ::-1]
-        correct_k = np.logical_or.reduce(max_k_preds==target, axis=1)
+        correct_k = np.logical_or.reduce(max_k_preds == target, axis=1)
         res.append(correct_k.sum() / correct_k.shape[0] * 100)
     return res
+
 
 def validate(val_loader, session, print_freq=10):
     batch_time = AverageMeter('Time', ':6.3f')
     top1 = AverageMeter('Acc@1', ':6.2f')
     top5 = AverageMeter('Acc@5', ':6.2f')
-    progress = ProgressMeter(len(val_loader), batch_time, top1, top5,
-                             prefix='Test: ')
+    progress = ProgressMeter(len(val_loader), batch_time, top1, top5, prefix='Test: ')
 
     for i, batch in enumerate(val_loader):
         start = time.time()
         inputs_onnx = {k: v.detach().numpy() for k, v in batch.items() if k != 'labels'}
-        import pdb;pdb.set_trace()
         output = session.run(None, inputs_onnx)
         target = batch['labels'].numpy().reshape(-1, 1)
         # [batch_size, num_labels]
@@ -106,24 +106,23 @@ def validate(val_loader, session, print_freq=10):
         if i % print_freq == 0:
             progress.print(i)
 
-    print('Accuracy: {top1:.5f} Accuracy@5 {top5:.5f}'.format(top1=(top1.avg / 100), top5=(top5.avg / 100)))
+    print('Accuracy: {top1:.5f} Accuracy@5 {top5:.5f}'.format(top1=(top1.avg / 100),
+                                                              top5=(top5.avg / 100)))
 
-class Neural_Engine(object):
-    def __init__(self, model_path, log_file):
-        set_log_file(log, log_file)
-        self.graph = load_graph(model_path)
-        self.log_file = log_file
+
+class Neural_Engine(Neural_Engine_base):
 
     def accuracy(self, batch_size, feature_extractor_name, data_dir):
         # load dataset
         log.info("Load dataset ......")
-        eval_dataloader = dataloader_wrapper(batch_size, feature_extractor_name, data_dir).get_eval_data()
+        eval_dataloader = dataloader_wrapper(batch_size, feature_extractor_name,
+                                             data_dir).get_eval_data()
+
         def validate(val_loader, graph, print_freq=10):
             batch_time = AverageMeter('Time', ':6.3f')
             top1 = AverageMeter('Acc@1', ':6.2f')
             top5 = AverageMeter('Acc@5', ':6.2f')
-            progress = ProgressMeter(len(val_loader), batch_time, top1, top5,
-                                    prefix='Test: ')
+            progress = ProgressMeter(len(val_loader), batch_time, top1, top5, prefix='Test: ')
 
             for i, batch in enumerate(val_loader):
                 start = time.time()
@@ -140,9 +139,11 @@ class Neural_Engine(object):
                 if i % print_freq == 0:
                     progress.print(i)
 
-            print('Accuracy: {top1:.5f} Accuracy@5 {top5:.5f}'.format(top1=(top1.avg / 100), top5=(top5.avg / 100)))
-        validate(eval_dataloader, graph= self.graph, print_freq=10)
-        
+            print('Accuracy: {top1:.5f} Accuracy@5 {top5:.5f}'.format(top1=(top1.avg / 100),
+                                                                      top5=(top5.avg / 100)))
+
+        validate(eval_dataloader, graph=self.graph, print_freq=10)
+
     def performance(self, batch_size, iteration, warm_up):
         if warm_up >= iteration:
             log.error("Warm up should less than iteration.")
@@ -154,10 +155,11 @@ class Neural_Engine(object):
         Width = 224
         shape = [batch_size, Channel, Height, Width]
         dataset = DummyDataLoader(shapes=[shape, shape, shape, shape],
-                                 lows=[0, 0, 0, 0],
-                                 highs=[1, 3, 255, 255],
-                                 dtypes=['float32', 'float32', 'float32', 'float32'],
-                                 iteration=iteration)
+                                  lows=[0, 0, 0, 0],
+                                  highs=[1, 3, 255, 255],
+                                  dtypes=['float32', 'float32', 'float32', 'float32'],
+                                  iteration=iteration)
+
         def compute_performance(dataset, graph, log, log_file, warm_up, batch_size):
             log.info("Start executor ......")
             duration = []
@@ -170,16 +172,16 @@ class Neural_Engine(object):
             log.info("End executor ......")
             duration_w = duration[warm_up:]
             all_latency = log_file.replace('.log', '.npy')
-            _,file_name = os.path.split(all_latency)
+            _, file_name = os.path.split(all_latency)
             _ = os.getcwd() + '/all_latency'
             try:
-                if os.path.exists(_) == False :
+                if os.path.exists(_) == False:
                     os.mkdir(_)
             except:
                 pass
-            all_latency = os.path.join(_,file_name)
-            All_latency = np.array(duration_w) 
-            np.save(all_latency,All_latency,allow_pickle=True, fix_imports=True)
+            all_latency = os.path.join(_, file_name)
+            All_latency = np.array(duration_w)
+            np.save(all_latency, All_latency, allow_pickle=True, fix_imports=True)
             ave_latency = np.array(duration_w).mean() / batch_size
             p50_latency = np.percentile(duration_w, 50) / batch_size
             p90_latency = np.percentile(duration_w, 90) / batch_size
@@ -190,4 +192,5 @@ class Neural_Engine(object):
             log.info("P99 Latency: {:.3f} ms".format(p99_latency * 1000))
             log.info("Average Latency: {:.3f} ms".format(ave_latency * 1000))
             log.info("Throughput: {:.3f} samples/sec".format(1. / ave_latency))
+
         compute_performance(dataset, self.graph, log, self.log_file, warm_up, batch_size)

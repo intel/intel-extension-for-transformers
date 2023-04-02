@@ -132,17 +132,18 @@ class AddClsToken(Pattern):
             ]
         }
 
-        for i in range(len(pattern_mapping_config['AddClsToken'])):
-            pattern_dict = pattern_mapping_config['AddClsToken'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping('AddClsToken',
-                                                                        pattern_dict, model)
-            if len(new_node_names) != 0:
-                for j in range(len(new_node_names)):
-                    transpose_node_idx = model.get_node_id(new_node_names[j][0])
-                    model.nodes[transpose_node_idx].attr = ret_old_nodes[j][0].attr
-                    concat_node_idx = model.get_node_id(new_node_names[j][1])
-                    model.nodes[concat_node_idx].attr = ret_old_nodes[j][1].attr
-
-                return model
+        if model.framework_modeling_config['framework'] == 'onnxruntime':
+          for i in range(len(pattern_mapping_config['AddClsToken'])):
+              pattern_dict = pattern_mapping_config['AddClsToken'][i]
+              model, new_node_names, ret_old_nodes = util.pattern_mapping('AddClsToken',
+                                                                          pattern_dict, model)
+              if len(new_node_names) != 0:
+                  for j in range(len(new_node_names)):
+                      transpose_node_idx = model.get_node_id(new_node_names[j][0])
+                      model.nodes[transpose_node_idx].attr = ret_old_nodes[j][0].attr
+                      concat_node_idx = model.get_node_id(new_node_names[j][1])
+                      model.nodes[concat_node_idx].attr = ret_old_nodes[j][1].attr
+  
+                  return model
 
         return model

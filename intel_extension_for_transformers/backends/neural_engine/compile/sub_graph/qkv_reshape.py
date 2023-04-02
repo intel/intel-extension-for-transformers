@@ -157,29 +157,40 @@ class QKVReshape(Pattern):
 
 
                 # distil_bert_base
-                {
+               {
                     'patterns': {
                         'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Unsqueeze'), (3, 'Concat'),
-                                (4, 'Reshape')]],
-                        'out': [[(0, 'Reshape')]]
+                                (5, 'Reshape')],
+                               [(), (4, 'MatMulWithBias'), (5, 'Reshape')]],
+                        'out': [[(0, 'MatMulWithBias'), (1, 'Reshape')]]
                     },
                     'search_mode': 'op_type',
                     'node_names': {
-                        0: 4
+                        0: 4,
+                        1: 5,
                     },
                     'input_tensors': {
                         0: [[{
                             4: [0]
                         }, {
-                            'input_data': [0]
-                        }], [[0, 1], 2]]
+                            4: [1]
+                        }, {
+                            4: [2]
+                        }], [[0, 1, 2], 3]],
+
+                        1: [[
+                            {'input_data': [0]
+                        }], [[1], 2]],
                     },
                     'output_tensors': {
                         0: [[{
                             4: [0]
-                        }], [[0], 1]]
+                        }], [[0], 1]],
+                        1: [[{
+                            5: [0]
+                        }], [[0], 1]],
                     },
-                    'returns': [3]
+                    'returns': [3, 4, 0]
                 },
 
 
@@ -219,12 +230,13 @@ class QKVReshape(Pattern):
             ]
         }
 
-        def _set_attr(head_num, head_size, node_names, model):
+        def _set_attr(head_num, head_size, node_names, model, reshape_pos=0):
             attr = OrderedDict()
             attr['dst_shape'] = '-1,-1,' + str(head_num) + ',' + str(head_size)
-            attr['dims'] = '0'
+            seq_len_first_dim = model.framework_modeling_config.get('seq_len_first_dim', False)
+            attr['dims'] = '1' if seq_len_first_dim else '0'
 
-            reshape_node_idx = model.get_node_id(node_names[0])
+            reshape_node_idx = model.get_node_id(node_names[reshape_pos])
             model.nodes[reshape_node_idx].attr = attr
 
         for i in range(len(pattern_mapping_config['QKVReshape']) - 1):
@@ -232,22 +244,30 @@ class QKVReshape(Pattern):
             model, new_node_names, ret_old_nodes = util.pattern_mapping(
                 "QKVReshape", pattern_dict, model)
             if len(new_node_names) != 0:
-
                 for j in range(len(new_node_names)):
-
                     pack_node = ret_old_nodes[j][0]
-                    head_size = int(pack_node.input_tensors[-1].data) # 32
-                    head_num = int(pack_node.input_tensors[-2].data)  # 12
-                    _set_attr(head_num, head_size, new_node_names[j], model)
-                    if len(ret_old_nodes[j]) == 2:
+                    head_size = int(pack_node.input_tensors[-1].data)
+                    head_num = int(pack_node.input_tensors[-2].data)
+                    if len(ret_old_nodes[j]) == 2 or len(ret_old_nodes[j]) == 3:
                         assert ret_old_nodes[j][1].op_type == 'MatMulWithBias'
                         mat_node_idx = model.get_node_id(new_node_names[j][0])
                         model.nodes[mat_node_idx].attr = ret_old_nodes[j][1].attr
-                        reshape_node_idx = model.get_node_id(new_node_names[j][1])
-                        model.nodes[reshape_node_idx].attr = OrderedDict({
-                            'dst_shape': '-1,-1,' + str(head_num) + ',' + str(head_size),
-                            'dims': '0'
-                        })
+                        _set_attr(head_num, head_size, new_node_names[j], model, reshape_pos=1)
+                        # get QKV reshape dst shape from model input tensors
+                        # modify model nodes if original framework graph use other nodes to get
+                        # the dst shape
+                        if ret_old_nodes[j][-1].op_type == "Shape":
+                            try:
+                                pre_node = model.get_node_by_name(
+                                    ret_old_nodes[j][-1].input_tensors[0].source_op[0])
+                            except:
+                                pre_node = None
+                            if pre_node and pre_node.op_type in ['Transpose']:
+                                dest_op = pre_node.output_tensors[0].dest_op
+                                if len(dest_op) == 0:
+                                    model.remove_nodes([pre_node.name])
+                    else:
+                        _set_attr(head_num, head_size, new_node_names[j], model)
                 return model
 
         # special reshape node, like has '0,0,12,64' dst_shape attr

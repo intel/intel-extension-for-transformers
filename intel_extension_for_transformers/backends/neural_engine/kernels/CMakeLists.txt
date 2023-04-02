@@ -17,6 +17,7 @@ project(kernellibs)
 set(HOST_LIBRARY_NAME "kernellibs")
 
 option(NE_WITH_SPARSELIB_VTUNE "Enable VTune profiling in kernels" OFF)
+option(NE_WITH_SPARSELIB_GPU "Enable GPU" OFF)
 set(CMAKE_VTUNE_HOME)
 
 set(EXTERNAL_INCLUDE_PATH "")
@@ -27,20 +28,30 @@ file(GLOB SOURCES
   ${PROJECT_SOURCE_DIR}/src/kernels/*.cpp
   ${PROJECT_SOURCE_DIR}/src/jit_domain/*.cpp
 )
-file(GLOB HEADERS
-  ${PROJECT_SOURCE_DIR}/src/*.hpp
-  ${PROJECT_SOURCE_DIR}/src/kernels/*.hpp
-  ${PROJECT_SOURCE_DIR}/src/jit_domain/*.hpp
-  ${PROJECT_SOURCE_DIR}/include/*.hpp
-  ${PROJECT_SOURCE_DIR}/include/kernels/*.hpp
-  ${PROJECT_SOURCE_DIR}/include/jit_domain/*.hpp
+
+file(GLOB GPU_SOURCES
+  ${PROJECT_SOURCE_DIR}/src/gpu/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/gpu/engine/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/gpu/memory_storage/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/gpu/kernels/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/gpu/kernels/opencl/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/gpu/kernels/opencl/gemm/*.cpp
 )
 
+if (NE_WITH_SPARSELIB_GPU)
+  message( STATUS "GPU enbled" )
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-operator-names")
+  find_package(OpenCL REQUIRED)
+  set(SOURCES ${SOURCES} ${GPU_SOURCES})
+  add_definitions(-DSPARSELIB_GPU)
+endif()
+
 if (NE_DYNAMIC_LINK)
-    add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
+    add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES})
     target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_KERNEL_BUILD)
 else()
-    add_library(${HOST_LIBRARY_NAME} STATIC ${SOURCES} ${HEADERS})
+    add_library(${HOST_LIBRARY_NAME} STATIC ${SOURCES})
     if (WIN32)
         target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_API_)
     endif()
@@ -56,6 +67,13 @@ include(cmake/Utility.cmake)
 if (NE_WITH_SPARSELIB_VTUNE)
     include(cmake/FindVTune.cmake)
     message( STATUS "VTune enbled" )
+endif()
+
+# TODO(Yi): enable/disable kernel(s) with VNNI intrin given compile option(s)
+if(WIN32)
+    target_compile_options(${HOST_LIBRARY_NAME} PRIVATE /arch:AVX512)
+else()
+    target_compile_options(${HOST_LIBRARY_NAME} PRIVATE -march=icelake-server)
 endif()
 
 set(GIT_HASH "unknown")
@@ -85,6 +103,7 @@ message( STATUS "EXTERNAL_INCLUDE_PAYH ${EXTERNAL_INCLUDE_PAYH}" )
 target_include_directories(${HOST_LIBRARY_NAME}
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/include/gpu
         ${PROJECT_SOURCE_DIR}/src
 )
 
@@ -92,8 +111,8 @@ target_include_directories(${HOST_LIBRARY_NAME}
 target_link_libraries(${HOST_LIBRARY_NAME}
     PUBLIC
         ${CMAKE_THREAD_LIBS_INIT}
+        ${OpenCL_LIBRARY}
+        # OpenCL::OpenCL
         glog
         xbyak
 )
-
-

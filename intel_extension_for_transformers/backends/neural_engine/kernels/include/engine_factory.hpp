@@ -17,39 +17,23 @@
 #include <memory>
 #include <unordered_map>
 
-#include "cpu_engine.hpp"
 #include "param_types.hpp"
 
 namespace jd {
+class engine_t;
 class engine_factory {
  public:
-  static engine_factory& instance() {
-    static engine_factory inst;
-    return inst;
-  }
-  const engine* create(const engine_kind& eng_kind) {
-    const auto& it = mp_.find(eng_kind);
-    if (it != mp_.end()) {
-      return (*(it->second))();
-    } else {
-      return nullptr;
-    }
-  }
+  static engine_factory& instance();
+  const engine_t* create(const engine_kind& engine_kind, const runtime_kind& runtime_kind);
 
  private:
-  void register_class() {
-    if (!mp_.count(engine_kind::cpu)) {
-      mp_[engine_kind::cpu] = &engine_factory::create_cpu_engine;
-    }
-  }
-  static const engine* create_cpu_engine() {
-    static std::shared_ptr<const cpu_engine> obj = std::make_shared<const cpu_engine>();
-    return reinterpret_cast<const engine*>(obj.get());
-  }
+  void register_class();
+  static const engine_t* create_cpu_engine(const runtime_kind& runtime_kind);
+  static const engine_t* create_gpu_engine(const runtime_kind& runtime_kind);
 
  private:
-  engine_factory() { register_class(); }
-  using create_fptr = const engine* (*)();
+  engine_factory();
+  using create_fptr = const engine_t* (*)(const runtime_kind&);
   std::unordered_map<engine_kind, create_fptr> mp_;
 };
 

@@ -34,11 +34,12 @@ class DummyDataset(data.Dataset):
         self.encoded_dict['labels'] = 1
 
     def __len__(self):
-        return 1
+        return 10
 
     def __getitem__(self, index):
         """Returns one data pair (source and target)."""
-        return self.encoded_dict
+        if index < 10:
+            return self.encoded_dict
 
 
 def check_onnx(model_path, dataloader):
@@ -73,7 +74,6 @@ class TestQuantization(unittest.TestCase):
         )
         self.optimizer = NoTrainerOptimizer(self.model)
 
-
     @classmethod
     def tearDownClass(self):
         shutil.rmtree('./mlruns', ignore_errors=True)
@@ -98,6 +98,7 @@ class TestQuantization(unittest.TestCase):
                 self.trainer.export_to_onnx('fp32-model.onnx')
                 self.assertTrue(check_onnx('fp32-model.onnx', self.trainer.get_eval_dataloader()))
 
+            self.trainer.benchmark(num_of_instance=1)
             tune_metric = metrics.Metric(
                 name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
             )
@@ -107,6 +108,7 @@ class TestQuantization(unittest.TestCase):
                 objectives=[objectives.performance]
             )
             quantized_model = self.trainer.quantize(quant_config=quantization_config, provider="inc")
+            self.trainer.benchmark(self.trainer.args.output_dir, num_of_instance=1)
             # By default, model will be saved into tmp_trainer dir.
             self.trainer.save_model('./quantized_model')
 
@@ -127,7 +129,7 @@ class TestQuantization(unittest.TestCase):
             if mode == QuantizationMode.QUANTIZATIONAWARETRAINING:
                 model = onnx.load('int8-model.onnx')
                 tensor_list = {tensor.name:tensor for tensor in model.graph.initializer}
-                torch_data = quantized_model.model.classifier.state_dict()\
+                torch_data = quantized_model.classifier.state_dict()\
                                 ['module._packed_params._packed_params'][0].\
                                 dequantize().detach().cpu().numpy().T
                 from onnx.numpy_helper import to_array
@@ -146,6 +148,53 @@ class TestQuantization(unittest.TestCase):
             # check loaded model
             self.assertTrue((output_1 == output_2).all())
 
+    def test_fx_model_with_smooth_quant(self):
+        def eval_func(model):
+            return 1
+
+        def train_func(model):
+            return model
+
+        trainer = NLPTrainer(
+            model=self.model,
+            train_dataset=self.dummy_dataset,
+            eval_dataset=self.dummy_dataset,
+        )
+
+        tune_metric = metrics.Metric(
+            name="eval_loss", greater_is_better=False, is_relative=False, criterion=0.5
+        )
+        quantization_config = QuantizationConfig(
+            approach="PostTrainingStatic",
+            metrics=[tune_metric],
+            objectives=[objectives.performance],
+            recipes={"smooth_quant": True,
+                     "smooth_quant_args": {"alpha": 0.6},
+                     }
+        )
+        recipes = quantization_config.recipes
+        self.assertTrue(recipes["smooth_quant"])
+        quantized_model = trainer.quantize(quant_config=quantization_config)
+        self.assertTrue("quantize" in str(type(quantized_model.classifier.module)))
+        quantization_config = QuantizationConfig(
+            approach="PostTrainingStatic",
+            metrics=[tune_metric],
+            objectives=[objectives.performance],
+            recipes={}
+        )
+        quantized_model = trainer.quantize(quant_config=quantization_config,
+                                           train_func=train_func,
+                                           eval_func=eval_func)
+        self.assertTrue("quantize" in str(type(quantized_model.classifier.module)))
+
+        with self.assertRaises(ValueError):
+            quantization_config = QuantizationConfig(
+                approach="PostTrainingStatic",
+                metrics=[tune_metric],
+                objectives=[objectives.performance],
+                recipes=[]
+            )
+
     def test_functional_quant(self):
         def eval_func(model):
             return 1
@@ -158,7 +207,7 @@ class TestQuantization(unittest.TestCase):
             approach='PostTrainingStatic',
             objectives=[objectives.performance]
         )
-        self.trainer.quantize(quant_config=quantization_config, 
+        self.trainer.quantize(quant_config=quantization_config,
                               provider="inc",
                               train_func = train_func,
                               eval_func = eval_func,)
@@ -183,7 +232,7 @@ class TestQuantization(unittest.TestCase):
         self.optimizer.provider = "INC"
         self.optimizer.calib_dataloader = self.trainer.get_eval_dataloader()
 
-        opt_model = self.optimizer.quantize(quant_config=quantization_config, 
+        opt_model = self.optimizer.quantize(quant_config=quantization_config,
                               provider="inc",
                               train_func = train_func,
                               eval_func = eval_func)

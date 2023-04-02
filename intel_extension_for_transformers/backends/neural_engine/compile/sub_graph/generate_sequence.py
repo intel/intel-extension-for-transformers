@@ -40,7 +40,7 @@ class GenerateSequence(Pattern):
                            [(), (8, 'Shape'), (9, 'Gather'), (10, 'Cast'), (11, 'Range'),
                             (12, "Unsqueeze"), (6, "Expand")],
                            [(1, 'Gather'), (13, "Unsqueeze"), (14, "Concat"), (7, "Tile")]],
-                    'out': [[(0, 'Range')]]
+                    'out': [[(0, 'LatRange')]]
                 },
                 'search_mode': 'op_type',
                 'node_names': {
@@ -57,8 +57,34 @@ class GenerateSequence(Pattern):
                     }], [[0], 1]],
                 },
                 'returns': [11]
-            }]
+            },
+            {
+                'patterns': {
+                    'in': [[(0, "Shape"), (1, 'Gather'), (2, "Unsqueeze"), (3, "Concat"),
+                            (7, "Tile")],
+                           [(0, "Shape"), (4, 'Gather'), (5, 'Range'),
+                            (6, "Unsqueeze"), (7, "Tile")]],
+                    'out': [[(0, 'LatRange')]]
+                },
+                'search_mode': 'op_type',
+                'node_names': {
+                    0: 5
+                },
+                'input_tensors': {
+                    0: [[{
+                        'input_data': [0]
+                    }], [[0], 1]],
+                },
+                'output_tensors': {
+                    0: [[{
+                        7: [0]
+                    }], [[0], 1]],
+                },
+                'returns': [5, 0]
+            }                   
+            ]
         }
+        collect_node = []
 
         for i in range(len(pattern_mapping_config['GenerateSequence'])):
             pattern_dict = pattern_mapping_config['GenerateSequence'][i]
@@ -72,6 +98,10 @@ class GenerateSequence(Pattern):
                     attr["step"] = int(old_node.input_tensors[2].data)
                     new_node_idx = model.get_node_id(new_node_names[j][0])
                     model.nodes[new_node_idx].attr = attr
+                    
+                    if i == 1:
+                        collect_node.append(ret_old_nodes[j][1])
+                model.insert_nodes(10, collect_node)
                 return model
 
         return model

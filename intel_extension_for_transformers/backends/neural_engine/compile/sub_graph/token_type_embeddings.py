@@ -245,6 +245,9 @@ class TokenTypeEmbeddings(Pattern):
             reshape_2_node_idx = model.get_node_id(node_names[3])
             model.nodes[reshape_2_node_idx].attr = attr4
 
+        if model.framework_modeling_config['framework'] != 'onnxruntime':
+            return model
+
         pattern_dict = pattern_mapping_config['TokenTypeEmbeddings'][0]
         model, new_node_names, ret_old_nodes = util.pattern_mapping("TokenTypeEmbeddings", 
                                                                     pattern_dict, model)

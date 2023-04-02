@@ -4,7 +4,7 @@ Intel® Extension for Transformers provided a high-performance sparse matrix mul
 This sparse solution is a software-based solution and utilizes the Intel instructions. More sparse examples will be released in the future.
 # Prerequisite
 
-### 1\. Installation
+## Installation
 
 1.1 Install python environment
 Create a new python environment
@@ -42,35 +42,30 @@ pip install -r requirements.txt
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
-1.2 Environment variables Preload libjemalloc.so can improve the performance when multi instances.
-
+## Environment Variables
+Preload libjemalloc.so can improve the performance when multi instance.
 ```
 export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
 ```
-
-Using weight sharing can save memory and improve the performance when multi instances.
-
+Using weight sharing can save memory and improve the performance when multi instance.
 ```
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
-
-### 2\. Prepare Dataset and pretrained model
-
-### 2.1 Get dataset
+# Inference Pipeline
+Neural Engine can parse ONNX model and Neural Engine IR. 
+We provide with three mode: accuracy, throughput or latency. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+You can run fp32 model inference by setting `precision=fp32`, command as follows:
 
 ```shell
-python prepare_dataset.py --dataset_name=glue --task_name=sst2 --output_dir=./data
+bash run_bert_mini.sh --model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block --dataset=sst2 --precision=fp32
 ```
 
-### 2.2 Get sparse model
-
-Neural Engine can parse Sparse ONNX model and Neural Engine IR.
-You can use the [sparse model](https://huggingface.co/Intel/bert-mini-sst2-distilled-sparse-90-1X4-block) we publiced on huggingface which is bert mini on sst2 with sparse ratio 90% 1X4 block(include int8 onnx model and int8 Neural Engine IR).
-You can also get INT8 ONNX sparse model from optimization module by setting precision=int8, command as follows:
+By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash prepare_model.sh --input_model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block --task_name=sst2 --output_dir=./model_and_tokenizer --precision=int8
+bash run_bert_mini.sh --model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block --dataset=sst2 --precision=int8
 ```
+
 Then you can generate transposed sparse model to get better performance, command as follows:
 ```shell
 python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
@@ -79,7 +74,7 @@ python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onn
 ### Benchmark
 Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/kernels) and high performance layernorm op with transpose mode to improve inference performance.
 
-  2.1 accuracy
+## Accuracy
   run python
   ```shell
   GLOG_minloglevel=2 python run_executor.py --input_model=./sparse_int8_ir  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
@@ -89,7 +84,7 @@ Neural Engine will automatically detect weight structured sparse ratio, as long 
   bash run_benchmark.sh --input_model=./sparse_int8_ir  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
   ```
 
-  2.2 performance
+## Performance
   run python
   
   ```shell

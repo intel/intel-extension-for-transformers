@@ -34,6 +34,7 @@ class TestAttentionReshape(unittest.TestCase):
     
     def test_attention_reshape_1(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]

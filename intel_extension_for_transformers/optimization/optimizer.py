@@ -17,11 +17,14 @@
 """Optimization: provides the orchestrate optimizer for Pytorch."""
 import logging
 import os
+import shlex
 
 from neural_compressor.experimental import(
     common,
     Component,
     Distillation,
+    Quantization,
+    Pruning,
 )
 from neural_compressor.experimental.scheduler import Scheduler
 from intel_extension_for_transformers.optimization import(
@@ -49,6 +52,7 @@ class Orchestrate_optimizer:
         components: Optional[List[Component]] = [],
         eval_func: Optional[Callable] = None,
         train_func: Optional[Callable] = None,
+        output_dir: Optional[str] = "saved_results",
     ):
         """Init an orchestrate optimizer.
 
@@ -61,7 +65,10 @@ class Orchestrate_optimizer:
         if len(components) == 0:
             raise RuntimeError("`NLPOptimizer` requires at least one `Quantization`, "
                                "`Pruning` or `Distillation` object")
-
+        self.output_dir = output_dir
+        self.model_config = model.config
+        self.enable_inc_quant = False
+        self.enable_inc_pruning = False
         self.scheduler = Scheduler()
         self.scheduler.model = common.Model(model)
 
@@ -72,16 +79,41 @@ class Orchestrate_optimizer:
             for component in components:
                 if isinstance(component, Distillation) and hasattr(component, 'criterion'):
                     agent.criterion = component.criterion
-            print(agent)
+                if isinstance(component, Quantization):
+                    self.enable_inc_quant = True
+                if isinstance(component, Pruning):
+                    self.enable_inc_pruning = True
             self.scheduler.append(agent)
         else:
             self.scheduler.append(*components)
 
     def fit(self):
         """Run the scheduler."""
-        opt_model = self.scheduler()
-        return opt_model
+        self.opt_model = self.scheduler()
+        self.save_model(self.output_dir)
+        if self.enable_inc_pruning == True:
+            stats, sparsity = self.opt_model.report_sparsity()
+            logger.info(stats)
+            logger.info(sparsity)
+        return self.opt_model.model
 
+    def save_model(self, output_dir, tokenizer=None):
+        """Save the model and tokenizer in the output directory.
+
+        Args:
+            output_dir: the path to save config.json and pytorch_model.bin.
+            tokenizer (object, optional): the tokenizer object, use it if you want to 
+                                          save tokenizer.json in output_dir. Defaults to None.
+        """
+        os.makedirs(shlex.quote(output_dir), exist_ok=True)
+        torch.save(self.opt_model.quantized_state_dict(), os.path.join(shlex.quote(output_dir), WEIGHTS_NAME))
+        if self.enable_inc_quant == True:
+            self.model_config.torch_dtype = "int8"
+        self.model_config.save_pretrained(output_dir)
+        if tokenizer:   # pragma: no cover
+            tokenizer.save_pretrained(output_dir)
+        logger.info("orchestrate_optimizations model and configure file have saved to {}".format(
+                    output_dir))
 
 
 class NoTrainerOptimizer:   # pragma: no cover
@@ -112,6 +144,7 @@ class NoTrainerOptimizer:   # pragma: no cover
         self.quantizer = None
         self.distiller = None
         self.in_training = False
+        self.enable_inc_quant = False
 
     @property
     def eval_func(self):
@@ -227,12 +260,9 @@ class NoTrainerOptimizer:   # pragma: no cover
                 "Please pass train_func to NoTrainerOptimizer.train_func"
             self.quantizer.q_func = self._train_func
         self.opt_model = self.quantizer.fit()
-        self.inc_int8_flag = True
-        self._save_inc_int8(self.opt_model, self.output_dir)
-        logger.info(
-            "quantized model and configure file have saved to {}".format(self.output_dir)
-        )
-        return self.opt_model
+        self.enable_inc_quant = True
+        self.save_model(self.output_dir)
+        return self.opt_model.model
 
     def quantize(
         self,
@@ -322,8 +352,12 @@ class NoTrainerOptimizer:   # pragma: no cover
         self.pruner.pruning_func = self._train_func
 
         self.opt_model = self.pruner.fit()
+        self.save_model(self.output_dir)
+        stats, sparsity = self.opt_model.report_sparsity()
+        logger.info(stats)
+        logger.info(sparsity)
 
-        return self.opt_model
+        return self.opt_model.model
 
     def init_distiller(
         self,
@@ -386,8 +420,8 @@ class NoTrainerOptimizer:   # pragma: no cover
         self.distiller.create_criterion()
 
         self.opt_model = self.distiller.fit()
-
-        return self.opt_model
+        self.save_model(self.output_dir)
+        return self.opt_model.model
 
     def _save_inc_int8(self, opt_model, output_dir):
         """Save the optimized model in the output directory.
@@ -396,7 +430,6 @@ class NoTrainerOptimizer:   # pragma: no cover
             opt_model: optimized model.
             output_dir: output path.
         """
-        os.makedirs(output_dir, exist_ok=True)
         self.model.config.architectures = [self.model.__class__.__name__]
         self.model.config.torch_dtype = "int8"
         if isinstance(self.model.config, PretrainedConfig):
@@ -404,6 +437,23 @@ class NoTrainerOptimizer:   # pragma: no cover
         weights_file = os.path.join(os.path.abspath(
           os.path.expanduser(output_dir)), WEIGHTS_NAME)
         torch.save(opt_model.quantized_state_dict(), weights_file)
-        logger.info(
-            "quantized model and configure file have saved to {}".format(weights_file)
-        )
+
+    def save_model(self, output_dir, tokenizer=None):
+        """Save the model and tokenizer in the output directory.
+
+        Args:
+            output_dir: the path to save config.json and pytorch_model.bin.
+            tokenizer (object, optional): the tokenizer object, use it if you want to 
+                                          save tokenizer.json in output_dir. Defaults to None.
+        """
+        os.makedirs(shlex.quote(output_dir), exist_ok=True)
+        torch.save(self.opt_model.quantized_state_dict(), os.path.join(shlex.quote(output_dir), WEIGHTS_NAME))
+        if self.enable_inc_quant and self.opt_model:
+            self._save_inc_int8(self.opt_model, output_dir)
+        else:
+            self.model.save_pretrained(output_dir)
+            self.model.config.save_pretrained(output_dir)
+        if tokenizer:   # pragma: no cover
+            tokenizer.save_pretrained(output_dir)
+        logger.info("Optimized model and configure file have saved to {}".format(
+                    output_dir))

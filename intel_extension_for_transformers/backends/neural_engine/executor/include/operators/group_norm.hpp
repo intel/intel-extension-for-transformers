@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_GROUP_NORM_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_GROUP_NORM_HPP_
 #include <assert.h>
+#include <immintrin.h>
 
 #include <cstring>
 #include <string>
@@ -37,6 +38,9 @@ void GroupNormRef(const float* src_data, const float* gamma_data, const float* b
                   const bool affine);
 
 class GroupNormOperator : public Operator {
+  typedef void (*sum_callback)(int64_t, int, char*, __m512*, __m512*);
+  typedef void (*norm_callback)(int, int, int, const float*, const float*, char*, char*, __m512*, __m512*);
+
  public:
   explicit GroupNormOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~GroupNormOperator() {}
@@ -44,12 +48,20 @@ class GroupNormOperator : public Operator {
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  void GroupNormParallelG(const void* src_data, const float* gamma_data, const float* beta_data, void* dst_data,
+                          const vector<int64_t>& src_shape);
+
+  void NormGroup(char* src_data, const float* gamma_data, const float* beta_data, char* dst_data, int map_size);
 
  private:
   float epsilon_ = 1e-05;
   int64_t group_ = 1;
   int64_t channels_ = -1;
+  int64_t channels_per_group_ = -1;
   bool affine_ = false;
+  int dt_bytewidth_ = 2;  // default bfloat16
+  sum_callback sum_func = nullptr;
+  norm_callback norm_func = nullptr;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_GROUP_NORM_HPP_

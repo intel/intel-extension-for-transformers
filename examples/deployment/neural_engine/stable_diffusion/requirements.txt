@@ -1,0 +1,11 @@
+git+https://github.com/intel/neural-compressor.git
+transformers==4.23.1
+accelerate
+datasets >= 1.8.0
+sentencepiece != 0.1.92
+protobuf
+torch==1.13.1
+onnx>=1.12
+onnxruntime==1.13.1
+diffusers==0.12.1
+pytorch_fid

@@ -113,16 +113,34 @@ class hash_t {
       case kernel_kind::gather:
         hash_combine(seed, op_attrs["matrix_shape"]);
         break;
+      case kernel_kind::slice:
+        hash_combine(seed, op_attrs["begin"]);
+        hash_combine(seed, op_attrs["step"]);
+        hash_combine(seed, op_attrs["axis"]);
+        break;
       case kernel_kind::transpose_matmul:
         hash_combine(seed, op_attrs["alpha"]);
         hash_combine(seed, op_attrs["beta"]);
         hash_combine(seed, op_attrs["m_tile"]);
         hash_combine(seed, op_attrs["n_tile"]);
         break;
+      case kernel_kind::dynamic_quant_matmul:
+        hash_combine(seed, op_attrs["large_wei_threshold"]);
+        break;
       case kernel_kind::softmax:
         hash_combine(seed, op_attrs["spec_type"]);
         hash_combine(seed, op_attrs["vec_len"]);
         hash_combine(seed, op_attrs["quant_factor"]);
+        break;
+      case kernel_kind::mha_dense:
+        hash_combine(seed, op_attrs["QK_rescale"]);
+        hash_combine(seed, op_attrs["softmax_rescale"]);
+        hash_combine(seed, op_attrs["QKV_rescale"]);
+        hash_combine(seed, op_attrs["QKV_dstzp"]);
+        hash_combine(seed, op_attrs["merged_QKV"]);
+        hash_combine(seed, op_attrs["is_package"]);
+      case kernel_kind::dynamic_quant:
+        hash_combine(seed, op_attrs["input_dt"]);
         break;
       case kernel_kind::eltwiseop:
       default:

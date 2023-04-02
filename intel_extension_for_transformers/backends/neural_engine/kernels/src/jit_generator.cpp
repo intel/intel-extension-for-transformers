@@ -91,4 +91,36 @@ void jit_generator::dump_asm() {
   out_file.write(reinterpret_cast<const char*>(getCode()), getSize());
   out_file.close();
 }
+
+void jit_generator::transpose_16x16_ps(const std::array<Xbyak::Zmm, 16UL>& src, const std::array<Xbyak::Zmm, 16UL>& tmp,
+                                       const int N) {
+  for (int i = 0; i < 8; ++i) {
+    vpunpckldq(tmp[2 * i + 0], src[2 * i], src[2 * i + 1]);
+    vpunpckhdq(tmp[2 * i + 1], src[2 * i], src[2 * i + 1]);
+  }
+
+  for (int i = 0; i < 4; ++i) {
+    vpunpcklqdq(src[4 * i + 0], tmp[4 * i + 0], tmp[4 * i + 2]);
+    vpunpckhqdq(src[4 * i + 1], tmp[4 * i + 0], tmp[4 * i + 2]);
+    vpunpcklqdq(src[4 * i + 2], tmp[4 * i + 1], tmp[4 * i + 3]);
+    vpunpckhqdq(src[4 * i + 3], tmp[4 * i + 1], tmp[4 * i + 3]);
+  }
+
+  for (int i = 0; i < 2; ++i) {
+    vshufi32x4(tmp[8 * i + 0], src[8 * i + 0], src[8 * i + 4], 0x88);
+    vshufi32x4(tmp[8 * i + 1], src[8 * i + 1], src[8 * i + 5], 0x88);
+    vshufi32x4(tmp[8 * i + 2], src[8 * i + 2], src[8 * i + 6], 0x88);
+    vshufi32x4(tmp[8 * i + 3], src[8 * i + 3], src[8 * i + 7], 0x88);
+    vshufi32x4(tmp[8 * i + 4], src[8 * i + 0], src[8 * i + 4], 0xdd);
+    vshufi32x4(tmp[8 * i + 5], src[8 * i + 1], src[8 * i + 5], 0xdd);
+    vshufi32x4(tmp[8 * i + 6], src[8 * i + 2], src[8 * i + 6], 0xdd);
+    vshufi32x4(tmp[8 * i + 7], src[8 * i + 3], src[8 * i + 7], 0xdd);
+  }
+
+  // last step and move out
+  for (int i = 0; i < N; ++i) {
+    vshufi32x4(src[i], tmp[i % 8], tmp[8 + i % 8], i < 8 ? 0x88 : 0xdd);
+  }
+}
+
 }  // namespace jd

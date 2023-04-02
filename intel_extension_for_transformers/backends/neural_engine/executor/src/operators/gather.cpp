@@ -43,6 +43,8 @@ GatherOperator::GatherOperator(const shared_ptr<OperatorConfig>& conf) : Operato
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&mul_, attrs_map["mul"], ",");
   }
+  iter = attrs_map.find("keep_dims");
+  keep_dims_ = (iter != attrs_map.end() && iter->second != "true")? false : true;
 }
 
 void GatherOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -125,6 +127,18 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
       }
     }
     output[0]->set_shape(dst_shape);
+  }
+  if (!keep_dims_ && input[0]->shape() == vector<int64_t>({1}) && input[1]->shape().size() > 1) {
+    vector<int64_t> dst_shape = output[0]->shape();
+    auto axis = stoi(src_axis_);
+    auto dim_val = dst_shape[axis];
+    if (dim_val == 1) {
+      dst_shape.erase(dst_shape.begin() + axis);
+      output[0]->set_shape(dst_shape);
+    } else {
+      LOG(WARNING) << "Cannot squeeze dims at axis " << src_axis_ << ", which dim val is " << dim_val
+                   << ", rather than 1";
+    }
   }
 #endif
 }

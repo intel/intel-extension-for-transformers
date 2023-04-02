@@ -45,24 +45,24 @@ enum class TensorFormat {
   undef = 0,
 
   /* Domain-agnostic format */
-  ab,  ///< plain 2D tensor
-  ba,  ///< permuted 2D tensor
-  abc,  ///< plain 3D tensor
-  acb,  ///< permuted 3D tensor
-  bac,  ///< permuted 3D tensor
-  bca,  ///< permuted 3D tensor
-  cab,  ///< permuted 3D tensor
-  cba,  ///< permuted 3D tensor
-  abcd,  ///< plain 4D tensor
-  abdc,  ///< permuted 4D tensor
-  acbd,  ///< permuted 4D tensor
-  acdb,  ///< permuted 4D tensor
-  adbc,  ///< permuted 4D tensor
-  bacd,  ///< permuted 4D tensor
-  bcda,  ///< permuted 4D tensor
-  cdab,  ///< permuted 4D tensor
-  cdba,  ///< permuted 4D tensor
-  dcab,  ///< permuted 4D tensor
+  ab,     ///< plain 2D tensor
+  ba,     ///< permuted 2D tensor
+  abc,    ///< plain 3D tensor
+  acb,    ///< permuted 3D tensor
+  bac,    ///< permuted 3D tensor
+  bca,    ///< permuted 3D tensor
+  cab,    ///< permuted 3D tensor
+  cba,    ///< permuted 3D tensor
+  abcd,   ///< plain 4D tensor
+  abdc,   ///< permuted 4D tensor
+  acbd,   ///< permuted 4D tensor
+  acdb,   ///< permuted 4D tensor
+  adbc,   ///< permuted 4D tensor
+  bacd,   ///< permuted 4D tensor
+  bcda,   ///< permuted 4D tensor
+  cdab,   ///< permuted 4D tensor
+  cdba,   ///< permuted 4D tensor
+  dcab,   ///< permuted 4D tensor
   abcde,  ///< plain 5D tensor
   abdec,  ///< permuted 5D tensor
   abdce,  ///< permuted 5D tensor
@@ -230,9 +230,9 @@ class Tensor {
   // [a, b, c] -> [b, a, c], dst_perm: [1, 0 ,2]
   void reorder(const vector<int64_t>& src_shape, const vector<int64_t>& dst_perm = {1, 0, 2}) {
     static unordered_map<string, dnnl::memory::data_type> type2mem{
-    {"fp32", dnnl::memory::data_type::f32}, {"s32", dnnl::memory::data_type::s32},
-    {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
-    {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
+        {"fp32", dnnl::memory::data_type::f32}, {"s32", dnnl::memory::data_type::s32},
+        {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
+        {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
     // execute reorder primitive
     vector<int64_t> src_stride = GetStrides(src_shape);
     vector<int64_t> dst_shape = GetShapes(src_shape, dst_perm);

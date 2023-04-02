@@ -92,6 +92,62 @@ class TransposeBatchMatMul(Pattern):
                 'returns': [0, 2, 3, 1]
             },
 
+            # opennmt encoder
+            {
+                'patterns': {
+                    'in': [[(0, 'Transpose'), (1, 'Div'), (3, ['MatMul', 'BatchMatMul']),
+                            (4, 'Cast'), (5, ['AddV2', 'Add'])],
+                           [(), (2, 'Transpose'), (3, ['MatMul', 'BatchMatMul'])]],
+                    'out': [[(0, 'TransposeBatchMatMul')]]
+                },
+                'search_mode': 'op_type',
+                'node_names': {
+                    0: 5
+                },
+                'input_tensors': {
+                    0: [[{
+                        0: [0]
+                    }, {
+                        2: [0]
+                    }, {
+                        5: [0, 1]
+                    }], [[0, 1, 2], 3]]
+                },
+                'output_tensors': {
+                    0: [[{
+                        5: [0]
+                    }], [[0], 1]]
+                },
+                'returns': [0, 2, 3, 1]
+            },
+
+            # opennmt decoder
+            {
+                'patterns': {
+                    'in': [[(0, 'Transpose'), (1, 'Div'), (3, ['MatMul', 'BatchMatMul']),
+                            (4, 'Cast')],
+                           [(), (2, 'Transpose'), (3, ['MatMul', 'BatchMatMul'])]],
+                    'out': [[(0, 'TransposeBatchMatMul')]]
+                },
+                'search_mode': 'op_type',
+                'node_names': {
+                    0: 4
+                },
+                'input_tensors': {
+                    0: [[{
+                        0: [0]
+                    }, {
+                        2: [0]
+                    }], [[0, 1], 2]]
+                },
+                'output_tensors': {
+                    0: [[{
+                        4: [0]
+                    }], [[0], 1]]
+                },
+                'returns': [0, 2, 3, 1]
+            },
+
             # bert_base_sparse
             {
                 'patterns': {
@@ -181,6 +237,36 @@ class TransposeBatchMatMul(Pattern):
                 'returns': [0, 1, 2]
             },
 
+            # transpose, transpose - BatchMatMul-transpose
+            {
+                'patterns': {
+                    'in': [
+                        [(0, 'Transpose'), (2, ['BatchMatMul', 'BatchMatMulV2', 'MatMul']),
+                         (3, 'Transpose')],
+                        [(), (1, 'Transpose'), (2, ['BatchMatMul', 'BatchMatMulV2', 'MatMul'])]
+                        ],
+                    'out': [[(0, 'TransposeBatchMatMul')]]
+                },
+                'search_mode': 'op_type',
+                'node_names': {
+                    0: 3
+                },
+                'input_tensors': {
+                    0: [[{
+                        0: [0]
+                    }, {
+                        1: [0]
+                    }], [[0, 1], 2]]
+                },
+                'output_tensors': {
+                    0: [[{
+                        3: [0]
+                    }], [[0], 1]]
+                },
+                'returns': [0, 1, 2, 3]
+            },
+            # transpose-BatchMatMul-transpose
+            # remove one input_tensor after fusion
             {
                 'patterns': {
                     'in': [[(0, 'Transpose'), (1, ['BatchMatMul', 'BatchMatMulV2', 'MatMul']),
@@ -193,9 +279,38 @@ class TransposeBatchMatMul(Pattern):
                 },
                 'input_tensors': {
                     0: [[{
+                        0: [0]
+                    }, {
                         1: [0]
                     }, {
+                        1: [1]
+                    }], [[0, 1, 2], 3]]
+                },
+                'output_tensors': {
+                    0: [[{
+                        2: [0]
+                    }], [[0], 1]]
+                },
+                'returns': [0, 1, 2]
+            },
+            # transpose, transpose - BatchMatMul
+            {
+                'patterns': {
+                    'in': [
+                        [(0, 'Transpose'), (2, ['BatchMatMul', 'BatchMatMulV2', 'MatMul'])],
+                        [(), (1, 'Transpose'), (2, ['BatchMatMul', 'BatchMatMulV2', 'MatMul'])]
+                        ],
+                    'out': [[(0, 'TransposeBatchMatMul')]]
+                },
+                'search_mode': 'op_type',
+                'node_names': {
+                    0: 2
+                },
+                'input_tensors': {
+                    0: [[{
                         0: [0]
+                    }, {
+                        1: [0]
                     }], [[0, 1], 2]]
                 },
                 'output_tensors': {
@@ -205,7 +320,57 @@ class TransposeBatchMatMul(Pattern):
                 },
                 'returns': [0, 1, 2]
             },
-
+            # transpose-BatchMatMul
+            # remove one input_tensor after fusion
+            {
+                'patterns': {
+                    'in': [[(0, 'Transpose'), (1, ['BatchMatMul', 'BatchMatMulV2', 'MatMul'])]],
+                    'out': [[(0, 'TransposeBatchMatMul')]]
+                },
+                'search_mode': 'op_type',
+                'node_names': {
+                    0: 1
+                },
+                'input_tensors': {
+                    0: [[{
+                        0: [0]
+                    }, {
+                        1: [0]
+                    }, {
+                        1: [1]
+                    }], [[0, 1, 2], 3]]
+                },
+                'output_tensors': {
+                    0: [[{
+                        1: [0]
+                    }], [[0], 1]]
+                },
+                'returns': [0, 1]
+            },
+            # BatchMatMul-transpose
+            {
+                'patterns': {
+                    'in': [[(0, ['BatchMatMul', 'BatchMatMulV2', 'MatMul']), (1, 'Transpose')]],
+                    'out': [[(0, 'TransposeBatchMatMul')]]
+                },
+                'search_mode': 'op_type',
+                'node_names': {
+                    0: 1
+                },
+                'input_tensors': {
+                    0: [[{
+                        0: [0]
+                    }, {
+                        0: [1]
+                    }], [[0, 1], 2]]
+                },
+                'output_tensors': {
+                    0: [[{
+                        1: [0]
+                    }], [[0], 1]]
+                },
+                'returns': [0, 1]
+            },
             ]
         }
 
@@ -215,7 +380,7 @@ class TransposeBatchMatMul(Pattern):
             ret = perm[:-2] + _x[::-1]
             return ret
 
-        for i in range(0, len(pattern_mapping_config['TransposeBatchMatMul'])-1):
+        for i in range(0, len(pattern_mapping_config['TransposeBatchMatMul'])-5):
             pattern_dict = pattern_mapping_config['TransposeBatchMatMul'][i]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("TransposeBatchMatMul", 
                                                                         pattern_dict, model)
@@ -249,34 +414,49 @@ class TransposeBatchMatMul(Pattern):
                         softmax_node_idx = model.get_node_id(new_node_names[j][1])
                         model.nodes[softmax_node_idx].attr = ret_old_nodes[j][4].attr
                     else:
-                        attr['append_op'] = 'binary_add'
+                        if len(model.get_node_by_name(new_node_names[j][0]).input_tensors) == 3:
+                            attr['append_op'] = 'binary_add'
                     tb_node_idx = model.get_node_id(new_node_names[j][0])
                     model.nodes[tb_node_idx].attr = attr
 
-        pattern_dict = pattern_mapping_config['TransposeBatchMatMul'][-1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("TransposeBatchMatMul",
-                                                                    pattern_dict, model)
-        if len(new_node_names) != 0:
-            for i in range(len(new_node_names)):
-                transpose_list = []
-                attr = OrderedDict()
-                transpose_list.append(util.str2list(ret_old_nodes[i][0].attr['dst_perm']))
-                transpose_list.append(util.str2list(ret_old_nodes[i][2].attr['dst_perm']))
-                transpose_a = ret_old_nodes[i][1].attr['transpose_a']
-                transpose_b = ret_old_nodes[i][1].attr['transpose_b']
-                m_x = ret_old_nodes[i][1].input_tensors[0]
+        for pattern_dict in pattern_mapping_config['TransposeBatchMatMul'][-5:]:
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("TransposeBatchMatMul",
+                                                                        pattern_dict, model)
+            if len(new_node_names) != 0:
+                for i in range(len(new_node_names)):
+                    tb_node_idx = model.get_node_id(new_node_names[i][0])
+                    perm_dict = OrderedDict()
+                    # eliminate one input tensor
+                    tb_input_tensors = model.nodes[tb_node_idx].input_tensors
+                    if len(tb_input_tensors) == 3:
+                        src_t = ret_old_nodes[i][0].output_tensors[0]
+                        if src_t.name == tb_input_tensors[1].name:
+                            model.nodes[tb_node_idx].input_tensors = [tb_input_tensors[0],
+                                                                      tb_input_tensors[2]]
+                            perm_dict['src0_perm'] = ret_old_nodes[i][0].attr['dst_perm']
+                        else:
+                            model.nodes[tb_node_idx].input_tensors = [tb_input_tensors[1],
+                                                                      tb_input_tensors[0]]
+                            perm_dict['src1_perm'] = ret_old_nodes[i][0].attr['dst_perm']
+                    else:
+                        if ret_old_nodes[i][0].op_type == 'Transpose':
+                            perm_dict['src0_perm'] = ret_old_nodes[i][0].attr['dst_perm']
+                            perm_dict['src1_perm'] = ret_old_nodes[i][1].attr['dst_perm']
+                    if ret_old_nodes[i][-1].op_type == 'Transpose':
+                        perm_dict['dst_perm'] = ret_old_nodes[i][-1].attr['dst_perm']
 
-                if transpose_a:
-                    src0_perm = [i for i in range(len(m_x.shape))]
-                    src0_perm = _adj_perm(src0_perm)
-                    attr['src0_perm'] = util.list2str(src0_perm)
-                if transpose_b:
-                    transpose_list[0] = _adj_perm(transpose_list[0])
-                attr['src1_perm'] = util.list2str(transpose_list[0])
-                attr['dst_perm'] = util.list2str(transpose_list[1])
-
-                tb_node_idx = model.get_node_id(new_node_names[i][0])
-                model.nodes[tb_node_idx].attr = attr
-
+                    for n in ret_old_nodes[i]:
+                        if n.op_type in ['BatchMatMul', 'BatchMatMulV2', 'MatMul']:
+                            transpose_a = n.attr.get('transpose_a', False)
+                            transpose_b = n.attr.get('transpose_b', False)
+                            m_x = n.input_tensors[0]
+                            if transpose_a:
+                                src0_perm = [j for j in range(len(m_x.shape))]
+                                src0_perm = _adj_perm(src0_perm)
+                                perm_dict['src0_perm'] = src0_perm
+                            if transpose_b:
+                                perm_dict['src1_perm'] = _adj_perm(perm_dict['src1_perm'])
+                            break
+                    model.nodes[tb_node_idx].attr = perm_dict
 
         return model

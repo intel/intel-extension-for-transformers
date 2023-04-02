@@ -11,6 +11,8 @@ import version as ver
 version= ver.__version__
 release = version
 
+repo_url = "https://github.com/intel/intel-extension-for-transformers/tree/v{}".format(version)
+
 with open("version.txt", "w") as f:
     f.write(version)
 
@@ -33,6 +35,7 @@ extensions = [
         'autoapi.extension',
         'sphinx.ext.napoleon',
         'sphinx.ext.githubpages',
+        "sphinx.ext.linkcode",
         'breathe'
         ]
 
@@ -41,9 +44,9 @@ autoapi_root = "autoapi"
 autoapi_keep_files = True
 autoapi_add_toctree_entry = False
 autosummary_generate = True
-autoapi_options = ['members',  'show-inheritance',
-                   'show-module-summary', 'imported-members', ]
-autoapi_ignore = []
+autoapi_options = ['members',
+                   'show-module-summary' ]
+autoapi_ignore = ['*/intel_extension_for_transformers/backends/neural_engine/third_party/*']
 
 templates_path = ['_templates']
 
@@ -54,7 +57,7 @@ source_suffix = ['.rst', '.md']
 # The master toctree document.
 master_doc = 'index'
 
-exclude_patterns = ['_build_doxygen']
+exclude_patterns = ['_build_doxygen', '*/intel_extension_for_transformers/backends/neural_engine/third_party/*']
 
 pygments_style = 'sphinx'
 
@@ -66,10 +69,24 @@ html_theme = 'sphinx_rtd_theme'
 
 html_static_path = ['_static']
 
-html_static_path = ['_static']
+
+def skip_util_classes(app, what, name, obj, skip, options):
+    if what=='property':
+        skip = True
+    return skip
 
 def setup(app):
    app.add_css_file("custom.css")
+   app.connect("autoapi-skip-member", skip_util_classes)
+
+def linkcode_resolve(domain, info):
+    if domain != 'py':
+        return None
+    if not info['module']:
+        return None
+    filename = info['module'].replace('.', '/')
+    res = "{}/{}.py".format(repo_url, filename)
+    return res
 
 # -- Breathe configuration -------------------------------------------------
 breathe_projects = {

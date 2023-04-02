@@ -56,7 +56,7 @@ struct type_caster<executor::Tensor> {
     if (py::isinstance<py::array_t<float>>(buf)) dtype = "fp32";
     if (py::isinstance<py::array_t<char>>(buf)) dtype = "s8";
     if (py::isinstance<py::array_t<unsigned char>>(buf)) dtype = "u8";
-    if (py::isinstance<py::array_t<uint16_t>>(buf)) dtype = "bf16";
+    if (py::isinstance<py::array_t<int16_t>>(buf)) dtype = "bf16";
     if (py::isinstance<py::array_t<int64_t>>(buf)) {
       int32_t* buf_cast = new int32_t[buf.size()];
       int item_size = buf.itemsize();
@@ -82,15 +82,25 @@ struct type_caster<executor::Tensor> {
   static py::handle cast(const executor::Tensor& src, py::return_value_policy policy, py::handle parent) {
     py::array a;
     if (src.dtype() == "fp32") {
-      a = py::array(std::move(src.shape()), reinterpret_cast<const float*>(src.raw_data()));
-    } else if (src.dtype() == "int32") {
-      a = py::array(std::move(src.shape()), reinterpret_cast<const int32_t*>(src.raw_data()));
+      a = py::array(std::move(src.shape()), reinterpret_cast<const float*>(src.raw_data()), py::capsule(
+        new auto(&src),  // <- can leak
+        [](void* p){ delete reinterpret_cast<decltype(&src)*>(p); }));
+    } else if (src.dtype() == "int32" || src.dtype() == "s32") {
+      a = py::array(std::move(src.shape()), reinterpret_cast<const int32_t*>(src.raw_data()), py::capsule(
+        new auto(&src),  // <- can leak
+        [](void* p){ delete reinterpret_cast<decltype(&src)*>(p); }));
     } else if (src.dtype() == "u8") {
-      a = py::array(std::move(src.shape()), reinterpret_cast<const uint8_t*>(src.raw_data()));
+      a = py::array(std::move(src.shape()), reinterpret_cast<const uint8_t*>(src.raw_data()), py::capsule(
+        new auto(&src),  // <- can leak
+        [](void* p){ delete reinterpret_cast<decltype(&src)*>(p); }));
     } else if (src.dtype() == "s8") {
-      a = py::array(std::move(src.shape()), reinterpret_cast<const int8_t*>(src.raw_data()));
+      a = py::array(std::move(src.shape()), reinterpret_cast<const int8_t*>(src.raw_data()), py::capsule(
+        new auto(&src),  // <- can leak
+        [](void* p){ delete reinterpret_cast<decltype(&src)*>(p); }));
     } else if (src.dtype() == "bf16") {
-      a = py::array(std::move(src.shape()), reinterpret_cast<const uint16_t*>(src.raw_data()));
+      a = py::array(std::move(src.shape()), reinterpret_cast<const int16_t*>(src.raw_data()), py::capsule(
+        new auto(&src),  // <- can leak
+        [](void* p){ delete reinterpret_cast<decltype(&src)*>(p); }));
     }
     return a.release();
   }

@@ -24,6 +24,7 @@ from .. import logger
 onnx = LazyImport('onnx')
 tf = LazyImport('tensorflow')
 onnxoptimizer = LazyImport('onnxoptimizer')
+torch = LazyImport('torch')
 
 class Loader(object):
     """Load the model into the frontend of different inference frameworks."""
@@ -58,4 +59,8 @@ class Loader(object):
                                     "optimize passes are {}".format(passes))
                 except BaseException:
                     pass
+        if framework == 'torch':
+            if isinstance(model, str):
+                model = torch.jit.load(model)
+                model = torch.jit.freeze(model.eval())
         return model, framework

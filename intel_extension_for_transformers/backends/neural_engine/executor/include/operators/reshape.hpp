@@ -40,6 +40,8 @@ class ReshapeOperator : public Operator {
   vector<int64_t> shape_;
   vector<int64_t> dims_;
   vector<int64_t> mul_;
+  int unsqueeze_;
+  int squeeze_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_RESHAPE_HPP_

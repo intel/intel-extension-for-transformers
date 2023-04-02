@@ -18,30 +18,43 @@
 import argparse
 from executor_utils import log, Neural_Engine
 
+
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_model", default="./model_and_tokenizer/int8-model.onnx",
-                        type=str, help="Input model path.")
-    parser.add_argument("--mode", default="accuracy", type=str,
+    parser.add_argument("--input_model",
+                        default="./model_and_tokenizer/int8-model.onnx",
+                        type=str,
+                        help="Input model path.")
+    parser.add_argument("--mode",
+                        default="accuracy",
+                        type=str,
                         help="Benchmark mode of performance or accuracy.")
-    parser.add_argument("--batch_size", default=8,
-                         type=int, help="Batch size.")
-    parser.add_argument("--warm_up", default=5, type=int,
+    parser.add_argument("--batch_size", default=8, type=int, help="Batch size.")
+    parser.add_argument("--warm_up",
+                        default=5,
+                        type=int,
                         help="Warm up iteration in performance mode.")
-    parser.add_argument("--iteration", default=10, type=int,
-                        help="Iteration in performance mode.")
-    parser.add_argument("--data_dir", default="./data", type=str,
-                        help="Data cache directory.")
-    parser.add_argument("--feature_extractor_name", default="google/vit-large-patch16-224", type=str,
+    parser.add_argument("--iteration", default=10, type=int, help="Iteration in performance mode.")
+    parser.add_argument("--data_dir", default="./data", type=str, help="Data cache directory.")
+    parser.add_argument("--feature_extractor_name",
+                        default="google/vit-large-patch16-224",
+                        type=str,
                         help="the feature extractor name")
-    parser.add_argument("--log_file", default="executor.log", type=str,
+    parser.add_argument("--log_file",
+                        default="executor.log",
+                        type=str,
                         help="File path to log information.")
+    parser.add_argument("--dynamic_quantize",
+                        default=False,
+                        type=bool,
+                        help="dynamic quantize for fp32 model.")
     args = parser.parse_args()
     return args
 
+
 if __name__ == '__main__':
     args = get_args()
-    executor = Neural_Engine(args.input_model, args.log_file)
+    executor = Neural_Engine(args.input_model, args.log_file, args.dynamic_quantize)
     if args.mode == "accuracy":
         executor.accuracy(args.batch_size, args.feature_extractor_name, args.data_dir)
     elif args.mode == "performance":

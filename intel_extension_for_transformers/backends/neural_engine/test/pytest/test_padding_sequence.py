@@ -34,6 +34,7 @@ class TestPaddingSequence(unittest.TestCase):
     
     def test_padding_sequence_1(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -147,6 +148,7 @@ class TestPaddingSequence(unittest.TestCase):
 
     def test_padding_sequence_2(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -239,6 +241,7 @@ class TestPaddingSequence(unittest.TestCase):
 
     def test_padding_sequence_3(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -339,6 +342,106 @@ class TestPaddingSequence(unittest.TestCase):
         graph = PaddingSequence()(graph)
         self.assertEqual(3, len(graph.nodes))
         self.assertEqual('-1,12,0,-1', graph.nodes[1].attr['dst_shape'])
+        self.assertEqual('AddV2', graph.nodes[2].op_type)
+
+    def test_padding_sequence_4(self):
+        graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
+        input_data_node = OPERATORS['Input']()
+        input_tensors = []
+        output_tensors = [Tensor(name='src', source_op=['input_data'],
+                                 dest_op=['reducemax', 'unsqueeze1']), Tensor(), Tensor()]
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        reducemax_node = OPERATORS['OpAny']()
+        input_tensors = [Tensor(name='src', source_op=['input_data'], dest_op=['reducemax'])]
+        output_tensors = [Tensor(name='reducemax:0', source_op=['reducemax'], dest_op=['cast1'])]
+        reducemax_node.construct('reducemax', 'ReduceMax', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        cast1_node = OPERATORS['Cast']()
+        input_tensors = [Tensor(name='reducemax:0', source_op=['reducemax'], dest_op=['cast1'])]
+        output_tensors = [Tensor(name='cast1:0', source_op=['cast1'], dest_op=['range'])]
+        cast1_node.construct('cast1', 'Cast', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        range_node = OPERATORS['Range']()
+        input_tensors = [Tensor(name='cast1:0', source_op=['cast1'], dest_op=['range'])]
+        output_tensors = [Tensor(name='range:0', source_op=['range'], dest_op=['expand'])]
+        range_node.construct('range', 'Range', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        conshape_node = OPERATORS['ConstantOfShape']()
+        input_tensors = [Tensor(name='cons_src0:0')]
+        output_tensors = [Tensor(name='conshape:0', source_op=['conshape'], dest_op=['expand'])]
+        conshape_node.construct('conshape', 'ConstantOfShape', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        expand_node = OPERATORS['Expand']()
+        input_tensors = [Tensor(name='range:0', source_op=['range'], dest_op=['expand']),
+                         Tensor(name='conshape:0', source_op=['conshape'], dest_op=['expand'])]
+        output_tensors = [Tensor(name='expand:0', source_op=['expand'], dest_op=['tile'])]
+        expand_node.construct('expand', 'Expand', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        tile_node = OPERATORS['Tile']()
+        input_tensors = [Tensor(name='expand:0', source_op=['expand'], dest_op=['tile'])]
+        output_tensors = [Tensor(name='tile:0', source_op=['tile'], dest_op=['less'])]
+        tile_node.construct('tile', 'Tile', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        unsqueeze1_node = OPERATORS['Unsqueeze']()
+        input_tensors = [Tensor(name='src', source_op=['input_data'], dest_op=['unsqueeze1'])]
+        output_tensors = [Tensor(name='unsqueeze1:0', source_op=['unsqueeze1'], dest_op=['less'])]
+        unsqueeze1_node.construct('unsqueeze1', 'Unsqueeze', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        less_node = OPERATORS['Less']()
+        input_tensors = [Tensor(name='tile:0', source_op=['tile'], dest_op=['less']),
+                         Tensor(name='unsqueeze1:0', source_op=['unsqueeze1'], dest_op=['less'])]
+        output_tensors = [Tensor(name='less:0', source_op=['less'], dest_op=['unsqueeze2'])]
+        less_node.construct('less', 'Less', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        unsqueeze2_node = OPERATORS['Unsqueeze']()
+        input_tensors = [Tensor(name='less:0', source_op=['less'], dest_op=['unsqueeze2'])]
+        output_tensors = [Tensor(name='unsqueeze2:0', source_op=['unsqueeze2'], dest_op=['not'])]
+        unsqueeze2_node.construct('unsqueeze2', 'Unsqueeze', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        not_node = OPERATORS['Not']()
+        input_tensors = [Tensor(name='unsqueeze2:0', source_op=['unsqueeze2'], dest_op=['not'])]
+        output_tensors = [Tensor(name='not:0', source_op=['not'], dest_op=['unsqueeze3'])]
+        not_node.construct('not', 'Not', input_tensors=input_tensors, 
+                            output_tensors=output_tensors)
+        
+        unsqueeze3_node = OPERATORS['Unsqueeze']()
+        input_tensors = [Tensor(name='not:0', source_op=['not'], dest_op=['unsqueeze2'])]
+        output_tensors = [Tensor(name='unsqueeze3:0', source_op=['unsqueeze3'], dest_op=['cast2'])]
+        unsqueeze3_node.construct('unsqueeze3', 'Unsqueeze', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        cast2_node = OPERATORS['Cast']()
+        input_tensors = [Tensor(name='unsqueeze3:0', source_op=['unsqueeze3'], dest_op=['cast2'])]
+        output_tensors = [Tensor(name='cast2:0', source_op=['cast2'], dest_op=['where'])]
+        cast2_node.construct('cast2', 'Cast', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        where_node = OPERATORS['Where']()
+        input_tensors = [Tensor(name='cast2:0', source_op=['cast2'], dest_op=['where']),
+                         Tensor(name='where_src1'), Tensor(name='where_src2')]
+        output_tensors = [Tensor(name='where:0', source_op=['where'], dest_op=[])]
+        where_node.construct('where', 'Where', input_tensors=input_tensors, 
+                                output_tensors=output_tensors)
+
+        graph.insert_nodes(len(graph.nodes), [input_data_node, reducemax_node, cast1_node,
+                                              range_node, conshape_node, expand_node, tile_node,
+                                              unsqueeze1_node, less_node, unsqueeze2_node,
+                                              not_node, unsqueeze3_node, cast2_node, where_node])
+        graph = PaddingSequence()(graph)
+        self.assertEqual(3, len(graph.nodes))
+        self.assertEqual(True, graph.nodes[1].attr['seq_len_first'])
         self.assertEqual('AddV2', graph.nodes[2].op_type)
 
 

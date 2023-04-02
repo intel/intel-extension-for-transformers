@@ -16,7 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_SLICE_HPP_
 #include <vector>
 #include <memory>
-
+#include "kernels/include/interface.hpp"
 #include "../operator.hpp"
 
 namespace executor {
@@ -41,10 +41,17 @@ class SliceOperator : public Operator {
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
+  std::vector<int64_t> GetIndicesFromTensor(const vector<Tensor*>& input, const int64_t& tensor_idx);
+  void ClampIndices(int64_t* v, const int64_t& min, const int64_t& max);
+
   std::vector<int64_t> starts_;
   std::vector<int64_t> ends_;
   std::vector<int64_t> axes_;
   std::vector<int64_t> steps_;
+  std::vector<int64_t> ends_with_tensor_;
+  std::vector<int64_t> starts_with_tensor_;
+  jd::slice slice_;
+  std::vector<const void*> rt_data_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_SLICE_HPP_

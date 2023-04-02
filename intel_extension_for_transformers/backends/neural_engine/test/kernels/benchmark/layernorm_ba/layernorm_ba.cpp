@@ -128,6 +128,7 @@ void layernorm_ba_bench::get_true_data() {
   if (op_attr.count("spec_type") == 0) {
     op_attr["spec_type"] = "normal";
     SPARSE_LOG(INFO) << "layernorm_ba spec_type set to normal by default.";
+    normal_translnorm();
   } else if (op_attr["spec_type"] == "normal") {
     normal_translnorm();
   } else if (op_attr["spec_type"] == "direct") {
@@ -204,8 +205,8 @@ void layernorm_ba_bench::gen_case() {
   rt_data2.push_back(alpha);
   rt_data2.push_back(beta);
 
-  operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                                  op_attrs, postop_attrs);
+  operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu,
+                                  ts_descs, op_attrs, postop_attrs);
 
   op_args_t p = {layernorm_ba_desc, rt_data1};
   op_args_t q = {layernorm_ba_desc, rt_data2};

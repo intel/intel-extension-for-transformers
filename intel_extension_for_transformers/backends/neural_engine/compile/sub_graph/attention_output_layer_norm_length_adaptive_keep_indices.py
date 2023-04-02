@@ -159,6 +159,33 @@ class AttentionOutputLayerNormLengthAdaptiveExpandIndices(Pattern):
                     },
                     'returns': [5,6]
                 },
+                
+                # int8 lat
+                {
+                    'patterns': {
+                        'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Unsqueeze'), (3, 'Concat'),
+                                (4, 'Reshape'), (5, 'Equal'), (6, 'Where'), (8, 'Expand')],
+                               [(), (7, 'Unsqueeze'), (8, 'Expand')]],
+                        'out': [[(0, 'ExpandIndices')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 7,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            7: [0]
+                        }, {
+                            0: [0]
+                        }], [[0, 1], 2]],
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            8: [0]
+                        }], [[0], 1]],
+                    },
+                    'returns': [7]
+                },
             ]
         }
 
@@ -179,7 +206,7 @@ class AttentionOutputLayerNormLengthAdaptiveExpandIndices(Pattern):
                     axis_gather = []
                     for ret_old_node in ret_old_nodes[i]:
                         if ret_old_node.op_type == 'Unsqueeze':
-                           input_indices.append(int(ret_old_node.attr['axis']))
+                           input_indices.append(int(ret_old_node.attr['axes']))
                         elif ret_old_node.op_type == 'GatherElements':
                             axis_gather.append(int(ret_old_node.attr['axis']))
 

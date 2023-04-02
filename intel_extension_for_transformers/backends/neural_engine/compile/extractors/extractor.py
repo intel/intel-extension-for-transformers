@@ -23,12 +23,14 @@
 
 from .tf_extractor import TensorflowExtractor
 from .onnx_extractor import ONNXExtractor
+from .torch_extractor import TorchExtractor
 from .. import logger
 from ..graph_utils import get_model_fwk_name
 
 EXTRACTORS = {
     'tensorflow': TensorflowExtractor,
     'onnxruntime': ONNXExtractor,
+    'torch': TorchExtractor,
 }
 
 

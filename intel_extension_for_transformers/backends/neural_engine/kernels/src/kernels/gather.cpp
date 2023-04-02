@@ -43,11 +43,12 @@ bool gather_kd_t::init() {
         dst_shape.push_back(src_shape[i]);
       }
     } else {
-      if (idx_axis != 0)
+      if (idx_axis != 0) {
         for (size_t i = 0; i < idx_axis; i++) {
           param_.outer_size *= idx_shape[i];
           dst_shape.push_back(idx_shape[i]);
         }
+      }
     }
   }
   dst_shape.push_back(param_.dst_axis_size);

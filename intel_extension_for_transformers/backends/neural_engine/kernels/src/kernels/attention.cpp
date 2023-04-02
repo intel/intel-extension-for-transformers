@@ -213,7 +213,8 @@ bool attention_kd_t::init() {
                             softmax_out_scale);
   tensor_desc softmax_output = tensor_desc({qk_out_desc.shape(), data_type::u8, jd::format_type::undef});
   jd::operator_desc softmax_desc = jd::operator_desc(
-      kernel_kind::softmax, op_desc_.kernel_prop(), op_desc_.engine_kind(), {qk_out_desc, softmax_output},
+      kernel_kind::softmax, op_desc_.kernel_prop(), op_desc_.engine_kind(), op_desc_.runtime_kind(),
+      {qk_out_desc, softmax_output},
       {{"spec_type", "lut"}, {"vec_len", std::to_string(seq_len)}, {"postop_list", "attention_dequantize+quantize"}},
       {dequantize_s8_attr, quant_u8_attr});
   if (!add_kernel_desc<softmax_kd_t>(softmax_desc, "softmax")) {
@@ -226,7 +227,7 @@ bool attention_kd_t::init() {
   tensor_desc v_out_desc = tensor_desc({head_num, head_size, batch_size, seq_len}, data_type::s8, format_type::ab);
   jd::operator_desc spmm_v_desc =
       jd::operator_desc(kernel_kind::sparse_matmul, op_desc_.kernel_prop(), op_desc_.engine_kind(),
-                        {v_weight_desc, src_desc, v_bias_desc, v_out_desc, v_scales_desc},
+                        op_desc_.runtime_kind(), {v_weight_desc, src_desc, v_bias_desc, v_out_desc, v_scales_desc},
                         {{"sparse_ptr", std::to_string(reinterpret_cast<uint64_t>(v_sparse_ptr_))},
                          {"bias_addr", std::to_string(reinterpret_cast<uint64_t>(v_bias_addr))},
                          {"scales_addr", std::to_string(reinterpret_cast<uint64_t>(v_scales_addr))}});

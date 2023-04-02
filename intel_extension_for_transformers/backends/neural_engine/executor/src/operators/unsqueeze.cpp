@@ -32,7 +32,7 @@ void UnsqueezeOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   vector<int64_t> out_shape(output_rank, -1);
   for (auto item : axes_) {
     if (item < 0) item = output_rank + item;
-    if (out_shape[item] != 1) {
+    if (out_shape[item] == 1) {
       LOG(ERROR) << "Axis duplicates";
     }
     out_shape[item] = 1;

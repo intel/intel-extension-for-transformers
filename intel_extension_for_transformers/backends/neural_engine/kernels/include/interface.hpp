@@ -109,6 +109,20 @@ class SPARSE_API_ transpose_matmul_desc : public kernel_desc_proxy {
   virtual ~transpose_matmul_desc() {}
 };
 
+class SPARSE_API_ dynamic_quant_matmul_desc : public kernel_desc_proxy {
+ public:
+  dynamic_quant_matmul_desc() {}
+  explicit dynamic_quant_matmul_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~dynamic_quant_matmul_desc() {}
+};
+
+class SPARSE_API_ dynamic_quant_desc : public kernel_desc_proxy {
+ public:
+  dynamic_quant_desc() {}
+  explicit dynamic_quant_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~dynamic_quant_desc() {}
+};
+
 class SPARSE_API_ eltwiseop_desc : public kernel_desc_proxy {
  public:
   eltwiseop_desc() {}
@@ -130,28 +144,28 @@ class SPARSE_API_ layernormalized_spmm_desc : public kernel_desc_proxy {
   virtual ~layernormalized_spmm_desc() {}
 };
 
-class gather_desc : public kernel_desc_proxy {
+class SPARSE_API_ gather_desc : public kernel_desc_proxy {
  public:
   gather_desc() {}
   explicit gather_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~gather_desc() {}
 };
 
-class softmax_desc : public kernel_desc_proxy {
+class SPARSE_API_ softmax_desc : public kernel_desc_proxy {
  public:
   softmax_desc() {}
   explicit softmax_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~softmax_desc() {}
 };
 
-class logsoftmax_desc : public kernel_desc_proxy {
+class SPARSE_API_ logsoftmax_desc : public kernel_desc_proxy {
  public:
   logsoftmax_desc() {}
   explicit logsoftmax_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~logsoftmax_desc() {}
 };
 
-class attention_desc : public kernel_desc_proxy {
+class SPARSE_API_ attention_desc : public kernel_desc_proxy {
  public:
   attention_desc() {}
   explicit attention_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
@@ -165,11 +179,25 @@ class SPARSE_API_ transpose_mha_desc : public kernel_desc_proxy {
   virtual ~transpose_mha_desc() {}
 };
 
+class SPARSE_API_ mha_dense_desc : public kernel_desc_proxy {
+ public:
+  mha_dense_desc() {}
+  explicit mha_dense_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~mha_dense_desc() {}
+};
+
 class SPARSE_API_ dyn_quantize_mha_desc : public kernel_desc_proxy {
  public:
   dyn_quantize_mha_desc() {}
   explicit dyn_quantize_mha_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
   virtual ~dyn_quantize_mha_desc() {}
+};
+
+class SPARSE_API_ slice_desc : public kernel_desc_proxy {
+ public:
+  slice_desc() {}
+  explicit slice_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~slice_desc() {}
 };
 
 /**
@@ -187,6 +215,19 @@ class SPARSE_API_ transpose_matmul : public kernel_proxy {
   transpose_matmul() {}
   explicit transpose_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~transpose_matmul() {}
+};
+class SPARSE_API_ dynamic_quant_matmul : public kernel_proxy {
+ public:
+  dynamic_quant_matmul() {}
+  explicit dynamic_quant_matmul(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~dynamic_quant_matmul() {}
+};
+
+class SPARSE_API_ dynamic_quant : public kernel_proxy {
+ public:
+  dynamic_quant() {}
+  explicit dynamic_quant(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~dynamic_quant() {}
 };
 
 class SPARSE_API_ eltwiseop : public kernel_proxy {
@@ -245,11 +286,25 @@ class SPARSE_API_ transpose_mha : public kernel_proxy {
   virtual ~transpose_mha() {}
 };
 
+class SPARSE_API_ mha_dense : public kernel_proxy {
+ public:
+  mha_dense() {}
+  explicit mha_dense(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~mha_dense() {}
+};
+
 class SPARSE_API_ dyn_quantize_mha : public kernel_proxy {
  public:
   dyn_quantize_mha() {}
   explicit dyn_quantize_mha(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~dyn_quantize_mha() {}
+};
+
+class SPARSE_API_ slice : public kernel_proxy {
+ public:
+  slice() {}
+  explicit slice(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~slice() {}
 };
 
 }  // namespace jd

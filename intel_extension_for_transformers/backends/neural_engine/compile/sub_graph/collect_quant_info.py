@@ -47,6 +47,19 @@ class CollectQuantInfo(Pattern):
                     },
                 },
             ],
+            'CollectTorchInfo': [
+                {
+                    'patterns': {
+                        'in': [[(0, 'Quantize'), (1, ['Dequantize'])]],
+                    },
+                    
+                },
+                {
+                    'patterns': {
+                        'in': [[(0, 'Dequantize')]],
+                    },
+                },
+            ],
             'RemoveQuantDequant': [
                 {
                     'patterns': {
@@ -305,6 +318,64 @@ class CollectQuantInfo(Pattern):
                                     [qmatmul_in_min, qmatmul_in_max, qmatmul_in_dtype])
                 # matmul has tranpose attr, but qlinear matmul has not
                 set_attr(matmul_nodes_name, model)
+
+        def CollectTorchInfo(model):
+            # Collect the activation quant info
+            pattern = pattern_mapping_config['CollectTorchInfo'][0]['patterns']['in']
+            patterns_nodes_name = util.search_pattern(pattern, model)
+            new_dict = {}
+            for pattern_nodes_name in patterns_nodes_name:
+                quant_node = model.get_node_by_name(pattern_nodes_name[0])
+                dquant_node = model.get_node_by_name(pattern_nodes_name[1])
+                scale = quant_node.attr['scale']
+                zp = quant_node.attr['zero_point']
+                dquant_output = dquant_node.output_tensors[0]
+                dtype = "u8" if quant_node.attr['dtype'] == 13 else "s8"
+                max_range = 127 if dtype == "s8" else 255
+                quant_max = np.array((max_range - zp) * scale)
+                quant_min = np.array(quant_max - 255 * scale)
+
+                dtype = dtype + "_insert"
+                map_name = quant_node.input_tensors[0].name
+                pre_node = quant_node
+                while True:
+                    pre_node = model.get_node_by_name(pre_node.input_tensors[0].source_op[0])
+                    if pre_node.op_type == 'Reorder':
+                        map_name = pre_node.input_tensors[0].name
+                    else:
+                        break
+                util.insert_quant_info(map_name, [quant_min, quant_max, dtype])
+                for dst_op in dquant_output.dest_op:
+                    dst_node = model.get_node_by_name(dst_op)
+                    for idx, input_tensor in enumerate(dst_node.input_tensors):
+                        if input_tensor.name == dquant_output.name:
+                            for pre_quant_name in quant_node.input_tensors[0].source_op:
+                                pre_quant_node = model.get_node_by_name(pre_quant_name)
+                                for pre_quant_node_out_tensor in pre_quant_node.output_tensors:
+                                    if pre_quant_node_out_tensor.name == quant_node.input_tensors[0].name:
+                                        if quant_node.name in pre_quant_node_out_tensor.dest_op:
+                                            pre_quant_node_out_tensor.dest_op.remove(quant_node.name)
+                                        pre_quant_node_out_tensor.dest_op.append(dst_node.name)
+                                        dst_node.input_tensors[idx] = pre_quant_node_out_tensor
+                model.remove_nodes([pattern_nodes_name[0], pattern_nodes_name[1]])
+            # Collect the weight quant info
+            pattern = pattern_mapping_config['CollectTorchInfo'][1]['patterns']['in']
+            patterns_nodes_name = util.search_pattern(pattern, model)
+            for pattern_nodes_name in patterns_nodes_name:
+                dquant_node = model.get_node_by_name(pattern_nodes_name[0])
+                dquant_output = dquant_node.output_tensors[0]
+                for dst_op in dquant_output.dest_op:
+                    dst_node = model.get_node_by_name(dst_op)
+                    for idx, input_tensor in enumerate(dst_node.input_tensors):
+                        if input_tensor.name == dquant_output.name:
+                            dquant_node.input_tensors[0].dest_op.remove(dquant_node.name)
+                            dquant_node.input_tensors[0].dest_op.append(dst_node.name)
+                            dst_node.input_tensors[idx] = dquant_node.input_tensors[0]
+                model.remove_nodes([pattern_nodes_name[0]])
+
+        if model.framework_modeling_config['framework'] == 'torch':
+            CollectTorchInfo(model)
+            return model
 
         # if ONNX QDQ model, only CollectQDQInfo
         # if ONNX QLinear model, RemoveQuantDequant and QLinearMatMul

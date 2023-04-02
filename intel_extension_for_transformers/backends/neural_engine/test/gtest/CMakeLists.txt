@@ -26,11 +26,13 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/operators/gelu.cpp
     ${HOST_SRC_DIR}/src/operators/position_ids.cpp
     ${HOST_SRC_DIR}/src/operators/token_type_ids.cpp
+    ${HOST_SRC_DIR}/src/operators/cossin.cpp
+    ${HOST_SRC_DIR}/src/operators/constantofshape.cpp
     ${HOST_SRC_DIR}/src/operators/concat.cpp
     ${HOST_SRC_DIR}/src/operators/embeddingbag.cpp
     ${HOST_SRC_DIR}/src/operators/split.cpp
+    ${HOST_SRC_DIR}/src/operators/latrange.cpp
     ${HOST_SRC_DIR}/src/operators/convolution.cpp
-    ${HOST_SRC_DIR}/src/operators/slice.cpp
     ${HOST_SRC_DIR}/src/operators/group_norm.cpp
     ${HOST_SRC_DIR}/src/operators/range.cpp
     ${HOST_SRC_DIR}/src/operators/expand_indices.cpp
@@ -40,6 +42,7 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/operators/squeeze.cpp
     ${HOST_SRC_DIR}/src/operators/pow.cpp
     ${HOST_SRC_DIR}/src/operators/shape.cpp
+    ${HOST_SRC_DIR}/src/operators/slice.cpp
     ${HOST_SRC_DIR}/src/operators/dequantize.cpp
     ${HOST_SRC_DIR}/src/operators/binary_op.cpp
     ${HOST_SRC_DIR}/src/sparse_operators/sparse_inner_product.cpp
@@ -74,6 +77,7 @@ target_link_libraries(host_operators
         yaml-cpp
         glog
         xbyak::xbyak
+        Eigen3::Eigen
 )
 if(NE_WITH_SPARSELIB)
 target_link_libraries(host_operators

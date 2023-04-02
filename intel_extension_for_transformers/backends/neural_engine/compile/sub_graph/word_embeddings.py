@@ -207,10 +207,44 @@ class WordEmbeddings(Pattern):
                     'returns': [1, 0]
                 },
 
+                # opennmt encoder
+                {
+                    'patterns': {
+                        'in': [[(0, 'Input'), (1, 'Split'), (2, 'Shape'), (3, 'Gather'),
+                                (4, 'Equal'), (5, 'If'), (6, 'Gather'), (7, 'Concat')]],
+                        'out': [[(0, 'Reshape'), (1, 'Gather'), (2, 'Reshape')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 'word_embeddings/reshape',
+                        1: 6,
+                        2: 7,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            'input_data': [0]
+                        }], [[0], 1]],
+                        1: [[{
+                            6: [0]
+                        }], [[1], 2]],
+                        2: [[{
+                            'input_data': [0]
+                        }], [[1], 2]],
+                    },
+                    'output_tensors': {
+                        0: [[], [[], 1]],
+                        1: [[], [[], 1]],
+                        2: [[{
+                            7: [0]
+                        }], [[0], 1]],
+                    },
+                    'returns': [6, 0]
+                },
+
             ]
         }
 
-        def _set_attr(hidden_size, axis, batch_dims, node_names, model):
+        def _set_attr(hidden_size, axis, batch_dims, node_names, model, batch_idx=0):
             attr1 = OrderedDict()
             attr1['dst_shape'] = -1
             attr2 = OrderedDict()
@@ -219,10 +253,11 @@ class WordEmbeddings(Pattern):
             attr3 = OrderedDict()
             attr3['dst_shape'] = '-1,-1,' + str(hidden_size)
             attr3['dims'] = '0,1'
-            attr4 = OrderedDict()
-            attr4['dst_shape'] = '-1,-1,' + str(hidden_size)
-            attr4['dims'] = '0,1'
-            attr4['mul'] = '1,2'
+            if batch_idx == 0:
+                attr4 = OrderedDict()
+                attr4['dst_shape'] = '-1,-1,' + str(hidden_size)
+                attr4['dims'] = '0,1'
+                attr4['mul'] = '1,2'
 
             reshape_0_node_idx = model.get_node_id(node_names[0])
             model.nodes[reshape_0_node_idx].attr = attr1
@@ -233,9 +268,12 @@ class WordEmbeddings(Pattern):
             reshape_1_node_idx = model.get_node_id(node_names[2])
             model.nodes[reshape_1_node_idx].attr = attr3
 
-            reshape_2_node_idx = model.get_node_id(node_names[3])
-            model.nodes[reshape_2_node_idx].attr = attr4
+            if batch_idx == 0:
+                reshape_2_node_idx = model.get_node_id(node_names[3])
+                model.nodes[reshape_2_node_idx].attr = attr4
 
+        if model.framework_modeling_config['framework'] != 'onnxruntime':
+            return model
         for i in range(len(pattern_mapping_config['WordEmbeddings'])):
             pattern_dict = pattern_mapping_config['WordEmbeddings'][i]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("WordEmbeddings", 
@@ -246,7 +284,13 @@ class WordEmbeddings(Pattern):
                     hidden_size = int(gatherv2_node.input_tensors[0].shape[-1])
                     axis = gatherv2_node.attr['axis']
                     batch_dims = gatherv2_node.attr['batch_dims']
-                    _set_attr(hidden_size, axis, batch_dims, new_node_names[j], model)
+                    batch_idx = 0
+                    if len(new_node_names[j]) <= 3 or \
+                        (model.get_node_by_name(new_node_names[j][2]).op_type == "Reshape" and \
+                        model.get_node_by_name(new_node_names[j][3]).op_type != "Reshape"):
+                        batch_idx = 1
+                    _set_attr(hidden_size, axis, batch_dims, new_node_names[j], model,
+                              batch_idx=batch_idx)
                     if len(ret_old_nodes[j]) == 2:
                         assert ret_old_nodes[j][1].op_type == 'Input'
                         model.insert_nodes(0, [ret_old_nodes[j][1]])

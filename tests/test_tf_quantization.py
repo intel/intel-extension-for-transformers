@@ -95,9 +95,22 @@ class TestTFQuantization(unittest.TestCase):
 
         def train_func(model):
             return model
-        
+
         self.optimizer.quantize(quant_config=quantization_config,
-                                train_func=train_func, 
+                                train_func=train_func,
+                                eval_func=eval_func)
+
+        quantization_config = QuantizationConfig(
+            framework="tensorflow",
+            approach="POSTTRAININGSTATIC",
+            metrics=[tune_metric],
+            objectives=[objectives.performance],
+            recipes={"first_conv_or_matmul_quantization": True,
+                     "last_conv_or_matmul_quantization": True,
+                     }
+        )
+        self.optimizer.quantize(quant_config=quantization_config,
+                                train_func=train_func,
                                 eval_func=eval_func)
 
 

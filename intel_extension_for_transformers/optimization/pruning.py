@@ -22,10 +22,6 @@ from enum import Enum
 from neural_compressor.conf.config import Pruner as INCPruner
 from typing import Dict, List
 from neural_compressor import __version__ as nc_version
-if version.parse(nc_version).release < version.parse("2.0").release:
-    from neural_compressor.pruners import PRUNERS
-else:
-    from neural_compressor.experimental.pruner_legacy import PRUNERS  # pylint: disable=E0611
 
 
 class PruningMode(Enum):

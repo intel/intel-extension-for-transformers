@@ -183,6 +183,37 @@ class PositionEmbeddings(Pattern):
                     'returns': [4]
                 },
 
+                # opennmt encoder
+                {
+                    'patterns': {
+                        'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Unsqueeze'), (3, 'Slice'),
+                                (4, 'Add')]],
+                        'out': [[(0, 'Reshape'), (1, 'Add')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 3,
+                        1: 4,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            3: [0]
+                        }, {
+                            'input_data': [0]
+                        }], [[0, 1], 2]],
+                        1: [[{
+                            4: [0]
+                        }], [[0], 2]]
+                    },
+                    'output_tensors': {
+                        0: [[], [[], 1]],
+                        1: [[{
+                            4: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [3]
+                },
+
                 # bert_base_mrpc
                 {
                     'patterns': {
@@ -213,18 +244,24 @@ class PositionEmbeddings(Pattern):
             ]
         }
 
-        def _set_attr(hidden_size, node_names, model):
+        def _set_attr(hidden_size, node_names, model, batch_idx=0):
             attr1 = OrderedDict()
-            attr1['dst_shape'] = '1,-1,' + str(hidden_size)
-            attr1['dims'] = 1
-            attr2 = OrderedDict()
-            attr2['dst_shape'] = '1,-1'
+            if batch_idx == 0:
+                attr1['dst_shape'] = '1,-1,' + str(hidden_size)
+                attr1['dims'] = 1
+            else:
+                attr1['dst_shape'] = '-1,1,' + str(hidden_size)
+                attr1['dims'] = 0
+            if batch_idx == 0:
+                attr2 = OrderedDict()
+                attr2['dst_shape'] = '1,-1'
 
             reshape_0_node_idx = model.get_node_id(node_names[0])
             model.nodes[reshape_0_node_idx].attr = attr1
 
-            reshape_1_node_idx = model.get_node_id(node_names[1])
-            model.nodes[reshape_1_node_idx].attr = attr2
+            if batch_idx == 0:
+                reshape_1_node_idx = model.get_node_id(node_names[1])
+                model.nodes[reshape_1_node_idx].attr = attr2
 
         def _remove_assert(pattern, model):
             rm_rets = util.search_pattern(pattern, model)
@@ -240,7 +277,11 @@ class PositionEmbeddings(Pattern):
                 for j in range(len(new_node_names)):
                     slice_node = ret_old_nodes[j][0]
                     hidden_size = int(slice_node.input_tensors[0].shape[-1])
-                    _set_attr(hidden_size, new_node_names[j], model)
+                    batch_idx = 0
+                    if model.get_node_by_name(new_node_names[j][0]).op_type == "Reshape" and \
+                        model.get_node_by_name(new_node_names[j][1]).op_type != "Reshape":
+                        batch_idx = 1
+                    _set_attr(hidden_size, new_node_names[j], model, batch_idx=batch_idx)
 
                 return model
 

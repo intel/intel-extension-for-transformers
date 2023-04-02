@@ -69,6 +69,14 @@ ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
   if (iter != attrs_map.end()) {
     gelu_split_ = attrs_map["gelu_split"] == "true";
   }
+  iter = attrs_map.find("reshape");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_, attrs_map["reshape"], ",");
+  }
+  iter = attrs_map.find("reshape_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_dims_, attrs_map["reshape_dims"], ",");
+  }
   iter = attrs_map.find("append_op");
   binary_add_ = (iter != attrs_map.end() && iter->second == "binary_add") ? true : false;
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
@@ -79,11 +87,14 @@ ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
   relu_ = (iter != attrs_map.end() && iter->second == "relu") ? true : false;
   append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
-  LOG(INFO) << "append_op: " << append_op_;
+  DLOG(INFO) << "append_op: " << append_op_;
 }
 
 void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int input_size = input.size();
+  if (!reshape_dims_.empty()) {
+    input_size -= 1;
+  }
   dst_ = output[0];
   switch (input_size) {
     case 2: {
@@ -129,14 +140,27 @@ void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<
       break;
     }
     case 8: {
-      src_ = input[0];
-      weight_ = input[1];
-      src_min_ = input[2];
-      src_max_ = input[3];
-      weight_min_ = input[4];
-      weight_max_ = input[5];
-      dst_min_ = input[6];
-      dst_max_ = input[7];
+      if (append_sum_ || binary_add_) {
+        // dynamic quantization
+        src_ = input[0];
+        weight_ = input[1];
+        bias_ = input[2];
+        post_ = input[3];
+        src_min_ = input[4];
+        src_max_ = input[5];
+        weight_min_ = input[6];
+        weight_max_ = input[7];
+        has_bias_ = true;
+      } else {
+        src_ = input[0];
+        weight_ = input[1];
+        src_min_ = input[2];
+        src_max_ = input[3];
+        weight_min_ = input[4];
+        weight_max_ = input[5];
+        dst_min_ = input[6];
+        dst_max_ = input[7];
+      }
       break;
     }
     case 9: {
@@ -167,15 +191,33 @@ void ConvolutionOperator::MapTensors(const vector<Tensor*>& input, const vector<
       has_bias_ = true;
       break;
     }
+    default: {
+      LOG(ERROR) << "Convolution expect at most 10 inputs but receive " << input_size;
+      break;
+    }
   }
+}
+
+bool ConvolutionOperator::isDynamic(const vector<Tensor*>& output) {
+  if (output.size() > 1) return true;
+  if (src_min_ != nullptr || src_max_ != nullptr) {
+    if (src_min_ == nullptr || src_max_ == nullptr) {
+      LOG(ERROR) << "One of min/max tensor is null for static quantization";
+      return false;
+    }
+  }
+  return src_min_ != nullptr && src_max_ != nullptr && src_min_->raw_data() == nullptr && !src_min_->is_shared() &&
+         src_max_->raw_data() == nullptr && !src_max_->is_shared();
 }
 
 void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // only for dense gemm dispatcher now
+  if (dispatch_from_ == "InnerProduct" && input[0]->dtype() != "fp32") return;
   if (dispatch_from_ == "InnerProduct" && (input[1]->location().empty() || input[1]->shape().empty())) return;
   MapTensors(input, output);
+  if (isDynamic(output) && dispatch_from_ == "InnerProduct") return;
   if (has_bias_) {
-    LOG(INFO) << "Convolution has bias";
+    DLOG(INFO) << name_ << "Convolution has bias";
   }
   dst_->set_dtype(output_dtype_);
 
@@ -275,7 +317,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
       weight_group_shape[1] /= group_;
       if (weight_group_shape[1] % group_ != 0) {
         LOG(ERROR) << "Output channel(" << weight_group_shape[1] << ") is not divisible by "
-                  << "group(" << group_ << ") in covolution!";
+                   << "group(" << group_ << ") in covolution!";
       }
     }
     vector<int64_t> weight_group_stride = GetStrides(weight_group_shape);
@@ -296,6 +338,18 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   }
 }
 
+void ConvolutionOperator::DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (!reshape_.empty()) {
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+    }
+    vector<int64_t> reshape(reshape_);
+    vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), ref_shape, reshape_dims_);
+    output[0]->set_shape(dst_shape);
+  }
+}
+
 // 1. Create primitive
 void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // Part1: Derive operator's user proper shape and strides
@@ -303,7 +357,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   vector<int64_t> src_shape_origin;
   if (dispatch_from_ == "InnerProduct") {
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_Convolution"].size(), dispatch_config_.size() - 1)
-            << "InnerProduct to Convolution has wrong dispatch kernel config...";
+        << "InnerProduct to Convolution has wrong dispatch kernel config...";
     StringSplit<int64_t>(&src_shape_origin, dispatch_config_[1], ",");
     CHECK_EQ(Product(src_shape_origin), Product(src_->shape())) << "Wrong dispatch input shape...";
     // consider if model transpose src0 or not
@@ -487,9 +541,9 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
 
   // If the convolution forward class in the cache pool, just get it from the pool.
   // Otherwise, do the reshape and send the related class into the cache pool
-  size_t key = ConvolutionPrimitiveFwdFactory::Key(src_->dtype(), weight_->dtype(), output_dtype_,
-    src_shape, weight_->shape(), dst_perm_, append_op_, post_->shape(), output_scale_, group_, pads_,
-    strides_, &eng_);
+  size_t key = ConvolutionPrimitiveFwdFactory::Key(src_->dtype(), weight_->dtype(), output_dtype_, src_shape,
+                                                   weight_->shape(), dst_perm_, append_op_, post_->shape(),
+                                                   output_scale_, group_, pads_, strides_, &eng_);
   if (ConvolutionPrimitiveFwdFactory::IsInFactory(key) && !ConvolutionPrimitiveFwdFactory::DoNotCache()) {
     convolution_p_ = ConvolutionPrimitiveFwdFactory::Get(key);
   } else {
@@ -497,13 +551,14 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
     convolution_p_ = dnnl::convolution_forward(convolution_pd_);
     ConvolutionPrimitiveFwdFactory::Set(key, convolution_p_);
   }
+  DstReshapeFusion(input, output);
 }
 
 // 2. inference kernel(for int8 and f32)
 void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // has post_op: append_sum
   if (post_ != nullptr && !binary_add_) {
-    LOG(INFO) << "Convolution has post op " << post_->name();
+    DLOG(INFO) << "Convolution has post op " << post_->name();
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life

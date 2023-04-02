@@ -82,22 +82,26 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
 
 ## 3. Bash Command
 ### PostTrainingQuantization
- - Topology: 
-    - BERT-MRPC: bert_base_mrpc_dynamic, bert_base_mrpc_static
-    - BERT-SST2: bert_base_SST-2_dynamic, bert_base_SST-2_static
-    - DISTILLBERT-SST2: distillbert_base_SST-2_dynamic, distillbert_base_SST-2_static
-    - ALBERT-SST2: albert_base_MRPC_dynamic, albert_base_MRPC_static
+
+|Category|Dataset|Topology
+|---|---|------------------------------------
+|BERT Base|MRPC|bert_base_mrpc_dynamic, bert_base_mrpc_static
+|BERT Base|SST2|bert_base_SST-2_dynamic, bert_base_SST-2_static
+|DISTILLBERT|SST2|distillbert_base_SST-2_dynamic, distillbert_base_SST-2_static
+|ALBERT Base|SST2|albert_base_MRPC_dynamic, albert_base_MRPC_stati
 
  - To get int8 model
 
     ```
-    bash ./ptq/run_tuning.sh  --topology=[topology] --output_model=./saved_int8
+    cd ptq
+    bash run_tuning.sh  --topology=[topology] --output_model=./saved_int8
     ```
 
  - To reload int8 model
 
     ```
-    bash ./ptq/run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
+    cd ptq
+    bash run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
     ```
 
 ### QuantizationAwareTraining
@@ -108,11 +112,13 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
  - To get int8 model
 
     ```
-    bash ./qat/run_tuning.sh  --topology=[topology] --output_model=./saved_int8
+    cd qat
+    bash run_tuning.sh  --topology=[topology] --output_model=./saved_int8
     ```
 
  - To reload int8 model
 
     ```
-    bash ./qat/run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
+    cd qat
+    bash run_benchmark.sh --topology=[topology] --config=./saved_int8 --mode=benchmark --int8=true
     ```

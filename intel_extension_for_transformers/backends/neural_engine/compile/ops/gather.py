@@ -19,6 +19,7 @@
 
 from .op import Operator, operator_registry
 from .tensor import Tensor
+import numpy as np
 
 
 @operator_registry(operator_type='Gather')
@@ -40,13 +41,22 @@ class Gather(Operator):
             self._attr['axis'] = axis
             
         if framework == 'onnxruntime':
-            self._attr['batch_dims'] = 0
+            # idx_axis
+            self._attr['axis'] = 0
             if len(node.attribute) != 0:
-                self._attr['axis'] = node.attribute[0].i
+                # src_axis
+                self._attr['batch_dims'] = node.attribute[0].i
             else:
+                self._attr['batch_dims'] = 0
+            if isinstance(self._input_tensors[1].data, np.ndarray) and \
+               len(self._input_tensors[1].data.shape) == 0:
+                self._attr['keep_dims'] = False
+
+
                 self._attr['axis'] = 0
             
-
+        if framework == 'torch':
+            pass
 # tf.gather(params, indices, validate_indices=None, axis=None, batch_dims=0, name=None)
 # argument validate_indices is deprecated
 # indices must be an integer tensor of any dimension (usually 0-D or 1-D).

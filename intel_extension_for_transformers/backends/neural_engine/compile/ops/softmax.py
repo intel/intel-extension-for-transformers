@@ -45,3 +45,5 @@ class Softmax(Operator):
                 self._attr['axis'] = axis
         if framework == "onnxruntime":
             axis = node.attribute[0].i
+        if framework == 'torch':
+            self._attr['axis'] = node.inputsAt(1).toIValue()

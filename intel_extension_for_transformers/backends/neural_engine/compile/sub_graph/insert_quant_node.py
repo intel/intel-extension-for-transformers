@@ -52,15 +52,22 @@ class InsertQuantNode(Pattern):
         if not quant_info:
             return model
 
-        for node in model.nodes:
+        unique_quant_nodes = {}
+        node_idx = 0
+        while node_idx < len(model.nodes):
+            node = model.nodes[node_idx]
             if node.op_type in EXECUTOR_TYPE and \
               (EXECUTOR_TYPE[node.op_type] == "InnerProduct" or \
                 EXECUTOR_TYPE[node.op_type] == "Matmul"):
-                for idx, input_tensor in enumerate(node.input_tensors):
+                input_size = len(node.input_tensors)
+                if "reshape_dims" in node.attr:
+                    input_size -= 1
+                insert_offset = input_size
+
+                idx = 0
+                while idx < input_size:
+                    input_tensor = node.input_tensors[idx]
                     input_name = input_tensor.name
-                    insert_offset = 1 if len(node.input_tensors) % 2 == 0 else 0
-                    insert_offset = insert_offset - 2 if "append_op" not in node.attr and \
-                                                    insert_offset == 1 else insert_offset
                     if input_name in quant_info and idx < 3:
                         quant_min = Tensor(
                             name=input_name + "_min",
@@ -74,32 +81,40 @@ class InsertQuantNode(Pattern):
                             dtype="fp32")
 
                         if "insert" in quant_info[input_name][2]:
-                            quant_dtype = "u8" if "u8" in quant_info[input_name][2] else "s8"
-                            quant_dtype = "s8" if EXECUTOR_TYPE[
-                                node.op_type] == "Matmul" else quant_dtype
-                            quant_output = Tensor(name=input_name + "_quant",
-                                                  source_op=[node.name + "_quant_" + str(idx)],
-                                                  dest_op=[node.name],
-                                                  dtype=quant_dtype)
-                            quantize_op = util.construct_node(
-                                node_name=node.name + "_quant_" + str(idx),
-                                op_type='Quantize',
-                                input_tensors=[input_tensor, quant_min, quant_max],
-                                output_tensors=[quant_output],
-                                attr=OrderedDict({'output_dtype': quant_dtype}))
-                            node.input_tensors[idx] = quant_output
-                            insert_idx = model.get_node_id(node.name)
-                            model.insert_nodes(insert_idx, [quantize_op])
+                            if input_name in unique_quant_nodes:
+                                quantize_op_name = unique_quant_nodes[input_name]
+                                quant_node = model.get_node_by_name(quantize_op_name)
+                                quant_node.output_tensors[0].dest_op.append(node.name)
+                                node.input_tensors[idx] = quant_node.output_tensors[0]
+                            else:
+                                quant_dtype = "u8" if "u8" in quant_info[input_name][2] else "s8"
+                                quant_dtype = "s8" if EXECUTOR_TYPE[
+                                    node.op_type] == "Matmul" else quant_dtype
+                                quant_output = Tensor(name=input_name + "_quant",
+                                                    source_op=[node.name + "_quant_" + str(idx)],
+                                                    dest_op=[node.name],
+                                                    dtype=quant_dtype)
+                                quantize_op = util.construct_node(
+                                    node_name=node.name + "_quant_" + str(idx),
+                                    op_type='Quantize',
+                                    input_tensors=[input_tensor, quant_min, quant_max],
+                                    output_tensors=[quant_output],
+                                    attr=OrderedDict({'output_dtype': quant_dtype}))
+                                unique_quant_nodes[input_name] = quantize_op.name
+                                node.input_tensors[idx] = quant_output
+                                insert_idx = model.get_node_id(node.name)
+                                model.insert_nodes(insert_idx, [quantize_op])
+                                node_idx += 1
                             # insert src0/src1 min and max tensor
-                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 3,
+                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 0,
                                                             quant_min, 'insert')
-                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
+                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 1,
                                                             quant_max, 'insert')
                         if "weight" in quant_info[input_name][2]:
                             # insert weight min and max tensor
-                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 3,
+                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 0,
                                                             quant_min, 'insert')
-                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
+                            model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 1,
                                                             quant_max, 'insert')
                         if "output" in quant_info[input_name][2]:
                             output_name = node.output_tensors[0].name
@@ -114,12 +129,13 @@ class InsertQuantNode(Pattern):
                                 data=np.array(quant_info[input_name][4].astype("float32")), 
                                 dtype="fp32")
                             # insert output min and max tensor
-                            model.change_node_input_tensors(node.name, insert_offset + 7,
+                            model.change_node_input_tensors(node.name, insert_offset + 4,
                                                             quant_min, 'insert')
-                            model.change_node_input_tensors(node.name, insert_offset + 8,
+                            model.change_node_input_tensors(node.name, insert_offset + 5,
                                                             quant_max, 'insert')
                             util.insert_quant_info(node.name, [])
-
+                    idx += 1
+            node_idx += 1
         # remove fall back quant nodes
         remove_list=[]
         for node in model.nodes:
@@ -152,23 +168,7 @@ class InsertQuantNode(Pattern):
                                                     'remove')
         model.remove_nodes(remove_list)
 
-        # remove duplicate quant nodes and duplicate tensors
-        remove_duplicate_set = set()
-        quant_node_dict = {}
-        duplicate_list=[]
-        for node in model.nodes:
-            sz = len(remove_duplicate_set)
-            remove_duplicate_set.add(node.output_tensors[0].name)
-            new_sz = len(remove_duplicate_set)
-            if new_sz == sz:
-                duplicate_list.append(node.name)
-                remain_node_name = quant_node_dict[node.output_tensors[0].name]
-                dup_node = model.get_node_by_name(node.output_tensors[0].dest_op[0])
-                dup_node.input_tensors[0].source_op = [remain_node_name]
-            else:
-                quant_node_dict[node.output_tensors[0].name] = node.name
-        model.remove_nodes(duplicate_list)
-
+        # remove duplicate tensors
         for node in model.nodes:
             if node.name in quant_info:
                 input_tensor_set = set()
@@ -190,7 +190,9 @@ class InsertQuantNode(Pattern):
                     node.op_type] == "InnerProduct" and len(node.input_tensors) > 4:
                 bias_fp32 = node.input_tensors[2].data
                 weight_s8 = node.input_tensors[1].data
-                offset = 1 if len(node.input_tensors) % 2 == 0 else 0
+                offset = 0
+                if 'append_op' in node.attr and node.attr['append_op'] in ['binary_add', 'sum']:
+                    offset = 1
                 input_data_min = node.input_tensors[offset + 3].data
                 dtype = node.input_tensors[0].dtype
                 input_scale, input_zero_point = get_scale_zp(node.input_tensors[offset + 3].data,

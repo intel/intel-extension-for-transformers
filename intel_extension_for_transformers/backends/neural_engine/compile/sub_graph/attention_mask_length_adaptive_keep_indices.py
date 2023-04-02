@@ -92,21 +92,48 @@ class AttentionMaskLengthAdaptiveExpandIndices(Pattern):
                     },
                     'returns': [13, 14]
                 },
+                # minilmv2-lat-roberta int8
+                {
+                    'patterns': {
+                        'in': [[(0, 'Shape'), (1, 'Gather'), (2, 'Unsqueeze'), (5, 'Concat'),
+                                (6, 'Reshape'), (7, 'Equal'), (8, 'Where'),  (11, 'Expand')],
+                               [(0, 'Shape'), (3, 'Gather'), (4, 'Unsqueeze'), (5, 'Concat')],
+                               [(), (9, 'Unsqueeze'), (10, 'Unsqueeze'), (11, 'Expand')]],
+                        'out': [[(0, 'ExpandIndices')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 11,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            9: [0]
+                        }, {
+                            0: [0]
+                        }], [[0, 1], 2]],
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            11: [0]
+                        }], [[0], 1]],
+                    },
+                    'returns': [9, 10]
+                },
             ]
         }
 
         # minilmv2-lat-roberta
         for idx, pattern_dict in enumerate(pattern_mapping_config['AttentionMaskLengthAdaptiveExpandIndices']):
-           model, new_node_names, ret_old_nodes = \
+            model, new_node_names, ret_old_nodes = \
              util.pattern_mapping('AttentionMaskLengthAdaptiveExpandIndices', pattern_dict, model)
-           if len(new_node_names) != 0:
-              for i in range(len(new_node_names)):
-                attr = OrderedDict()
-                input_indices = []
-                for unsqueeze_node in ret_old_nodes[i]:
-                  input_indices.append(int(unsqueeze_node.attr['axis']))
-                  attr['position'] = util.list2str(input_indices)
-                  keep_indices_node_idx = model.get_node_id(new_node_names[i][0])
-                  model.nodes[keep_indices_node_idx].attr = attr
+            if len(new_node_names) != 0:
+                for i in range(len(new_node_names)):
+                    attr = OrderedDict()
+                    input_indices = []
+                    for unsqueeze_node in ret_old_nodes[i]:
+                        input_indices.append(int(unsqueeze_node.attr['axes']))
+                        attr['position'] = util.list2str(input_indices)
+                        keep_indices_node_idx = model.get_node_id(new_node_names[i][0])
+                        model.nodes[keep_indices_node_idx].attr = attr
 
         return model

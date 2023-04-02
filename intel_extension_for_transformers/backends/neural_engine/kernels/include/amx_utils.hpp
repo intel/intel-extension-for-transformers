@@ -15,7 +15,6 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_AMX_UTILS_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_AMX_UTILS_HPP_
 #include <omp.h>
-#include <immintrin.h>
 #include <mutex>  // NOLINT
 #include <cstdint>
 #include <vector>
@@ -29,17 +28,34 @@ class tile_param_t {
   int K_tile;
   bool is_bf16;
   int K_pack;
+  int C_tile_num = 4;
+  int A_tile_num = 2;
+  int B_tile_num = 2;
 
-  tile_param_t() : M_tile(16), N_tile(16), K_tile(64), is_bf16(false), K_pack(4) {}
-  tile_param_t(int m_tile, int n_tile, int k_tile, bool bf16, int k_pack)
-      : M_tile(m_tile), N_tile(n_tile), K_tile(k_tile), is_bf16(bf16), K_pack(k_pack) {}
+  tile_param_t() : M_tile(0), N_tile(0), K_tile(0), is_bf16(false), K_pack(0) {}
+  tile_param_t(int m_tile, int n_tile, int k_tile, bool bf16, int k_pack, int c_tile_num = 4, int a_tile_num = 2,
+               int b_tile_num = 2)
+      : M_tile(m_tile),
+        N_tile(n_tile),
+        K_tile(k_tile),
+        is_bf16(bf16),
+        K_pack(k_pack),
+        C_tile_num(c_tile_num),
+        A_tile_num(a_tile_num),
+        B_tile_num(b_tile_num) {
+    SPARSE_LOG_IF(FATAL, (c_tile_num + a_tile_num + b_tile_num) != 8) << "sum of a,b,c tile must be 8.";
+  }
 
  public:
-  bool operator!=(const tile_param_t& rhs) {
+  bool operator!=(const tile_param_t& rhs) const {
     return (M_tile != rhs.M_tile) | (K_tile != rhs.K_tile) | (N_tile != rhs.N_tile) | (is_bf16 != rhs.is_bf16) |
            (K_pack != rhs.K_pack);
   }
 };
+
+struct tileconfig_t;
+
+void configure_tiles(tile_param_t param, tileconfig_t* sparselib_tc);
 
 // Tile configure structure
 struct tileconfig_t {
@@ -47,9 +63,9 @@ struct tileconfig_t {
   uint8_t reserved[15] = {0};
   uint16_t colb[16] = {64};
   uint8_t rows[16] = {16};
+  tileconfig_t() = default;
+  explicit tileconfig_t(const tile_param_t& param) : tileconfig_t() { configure_tiles(param, this); }
 };
-
-void configure_tiles(tile_param_t param, tileconfig_t* sparselib_tc);
 
 /**
  * The amx_tile_config_t is in amx_tile_config_t mode to ensure all primitive share the
@@ -100,7 +116,7 @@ class amx_tile_config_t {
    * executed on its instance.
    */
   void amx_tile_configure(int thread_x, tile_param_t param);
-  void amx_tile_release();
+  void amx_tile_release(int thread_x);
   jd::jit_amx_config_t tilecfg;
   jd::jit_amx_release_t tilerls;
 };

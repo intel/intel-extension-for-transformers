@@ -35,6 +35,7 @@ class TestTokenTypeEmbeddings(unittest.TestCase):
     
     def test_token_type_embeddings_1(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]
@@ -112,6 +113,7 @@ class TestTokenTypeEmbeddings(unittest.TestCase):
     
     def test_token_type_embeddings_2(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(name='segment_ids', dest_op=['gather']), Tensor()]

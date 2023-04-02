@@ -37,9 +37,9 @@ class tensor_desc {
   inline const std::vector<int64_t>& shape() const { return shape_; }
   inline const data_type& dtype() const { return dtype_; }
   inline const format_type& ftype() const { return ftype_; }
-  inline int64_t size() const { return std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<int64_t>()); }
+  inline int64_t size() const { return std::accumulate(shape_.begin(), shape_.end(), 1LL, std::multiplies<int64_t>()); }
   inline int64_t reduce_rows() const {
-    return std::accumulate(shape_.begin(), shape_.end() - 1, 1, std::multiplies<int64_t>());
+    return std::accumulate(shape_.begin(), shape_.end() - 1, 1LL, std::multiplies<int64_t>());
   }
 
  private:

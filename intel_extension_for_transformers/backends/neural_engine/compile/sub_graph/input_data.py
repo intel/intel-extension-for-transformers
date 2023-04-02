@@ -157,6 +157,74 @@ class InputData(Pattern):
                     },
                     'returns': []
                 },
+
+                # stale diffusion text encdoer
+                {
+                    'patterns': {
+                        'in': [[(0, 'input_ids')]],
+                        'out': [[(0, 'Input')]]
+                    },
+                    'search_mode': 'node_name',
+                    'node_names': {
+                        0: 'input_data'
+                    },
+                    'input_tensors': {
+                        0: [[], [[], 0]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            0: [0]
+                        }], [[], 1]]
+                    },
+                    'returns': []
+                },
+
+                # stale diffusion unet
+                {
+                    'patterns': {
+                        'in': [[(0, 'sample'), (1, 'timestep'), (2, 'encoder_hidden_states')]],
+                        'out': [[(0, 'Input')]]
+                    },
+                    'search_mode': 'node_name',
+                    'node_names': {
+                        0: 'input_data'
+                    },
+                    'input_tensors': {
+                        0: [[], [[], 0]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            0: [0]
+                        }, {
+                            1: [0]
+                        }, {
+                            2: [0]
+                        }], 
+                        [[0, 1, 2], 3]]
+                    },
+                    'returns': [0, 1, 2]
+                },
+
+                # stale diffusion vae decoder
+                {
+                    'patterns': {
+                        'in': [[(0, 'latent_sample')]],
+                        'out': [[(0, 'Input')]]
+                    },
+                    'search_mode': 'node_name',
+                    'node_names': {
+                        0: 'input_data'
+                    },
+                    'input_tensors': {
+                        0: [[], [[], 0]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            0: [0]
+                        }], [[], 1]]
+                    },
+                    'returns': []
+                },
                 
                 # minilmv2-lat-roberta
                 {
@@ -231,5 +299,5 @@ class InputData(Pattern):
             model.insert_nodes(0, [input_data_node])
             model.nodes[0].attr = None
             model.remove_nodes(onnx_input_nodes_list)
-        
+
         return model

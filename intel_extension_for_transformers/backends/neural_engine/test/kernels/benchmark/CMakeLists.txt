@@ -1,11 +1,11 @@
 # Copyright (c) 2022 Intel Corporation
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,6 +45,9 @@ add_subdirectory(transpose_matmul)
 add_subdirectory(softmax)
 add_subdirectory(attention)
 add_subdirectory(transpose_mha)
+add_subdirectory(mha_dense)
+add_subdirectory(dynamic_quant_matmul)
+add_subdirectory(dynamic_quant)
 
 add_executable(${BENCHMARK_EXE} ${SRCS})
 
@@ -56,7 +59,7 @@ target_include_directories(${BENCHMARK_EXE}
 target_link_libraries(${BENCHMARK_EXE}
     PRIVATE
         ${CMAKE_THREAD_LIBS_INIT}
-        kernellibs			
+        kernellibs
 )
 
 file(COPY ci DESTINATION "${CMAKE_BINARY_DIR}/bin")

@@ -1,8 +1,9 @@
-import json
 import os
 import sys
+import torch
 import unittest
 from unittest.mock import patch
+from intel_extension_for_transformers.optimization.model import OptimizedModel
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
@@ -18,17 +19,6 @@ sys.path.extend(SRC_DIRS)
 if SRC_DIRS is not None:
     import run_qa
 
-    def get_results(output_dir):
-        results = {}
-        path = os.path.join(output_dir, "best_configure.json")
-        if os.path.exists(path):
-            with open(path, "r") as f:
-                results = json.load(f)
-        else:
-            raise ValueError(f"Can't find {path}.")
-        return results
-
-
 class TestExamples(unittest.TestCase):
     def test_run_qa_ipex(self):
         test_args = f"""
@@ -39,7 +29,7 @@ class TestExamples(unittest.TestCase):
             --quantization_approach PostTrainingStatic
             --do_train
             --do_eval
-            --max_eval_samples 200
+            --max_eval_samples 100
             --max_train_samples 50
             --output_dir ./tmp/squad_output
             --overwrite_output_dir
@@ -48,7 +38,28 @@ class TestExamples(unittest.TestCase):
 
         with patch.object(sys, "argv", test_args):
             run_qa.main()
-            results = get_results("./tmp/squad_output")
+            int8_model = OptimizedModel.from_pretrained("./tmp/squad_output")
+            self.assertTrue(isinstance(int8_model, torch.jit.ScriptModule))
+        
+        test_args = f"""
+            run_qa.py
+            --model_name_or_path bert-large-uncased-whole-word-masking-finetuned-squad
+            --dataset_name squad
+            --quantization_approach PostTrainingStatic
+            --do_train
+            --do_eval
+            --max_eval_samples 100
+            --max_train_samples 50
+            --output_dir ./tmp/squad_output
+            --overwrite_output_dir
+            --framework ipex
+            --benchmark_only
+            --cores_per_instance 16
+            --num_of_instance 1
+            """.split()
+
+        with patch.object(sys, "argv", test_args):
+            run_qa.main()
 
 
 if __name__ == "__main__":

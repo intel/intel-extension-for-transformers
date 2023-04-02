@@ -1,9 +1,18 @@
-Python APIs
+API
 ####
 
-The following API information is available:
+**User API:**
 
 .. toctree::
    :maxdepth: 1
 
-   optimization/benchmark.rst
+   user_api.rst
+   engine_api.rst
+   kernel_api.rst
+
+**API document example:**
+
+.. toctree::
+   :maxdepth: 1
+
+   api_example.rst

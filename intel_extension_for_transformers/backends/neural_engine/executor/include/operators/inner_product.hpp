@@ -72,7 +72,7 @@ class InnerProductOperator : public Operator {
   void PrepareSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ShapeInferSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
-  void DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
+  void DynamicForward(vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
   void RuntimeMinmax();
   void CalculateCompensation(const vector<int64_t>& src1_shape, const vector<int64_t>& src1_stride,
                              const vector<int64_t>& zero_point_stride);
@@ -87,6 +87,7 @@ class InnerProductOperator : public Operator {
   // While "perm" decide all dimensions, and is the external Trans OP. Both are transpose.
   bool weight_cached_;
   bool has_bias_;
+  bool beam_forward_;
   bool format_any_;
   bool append_sum_;
   bool binary_add_;
@@ -100,6 +101,7 @@ class InnerProductOperator : public Operator {
   bool append_eltwise_;
   bool is_dynamic_ = false;
   float output_scale_ = 1.f;
+  float fp8_scale_ = 1.f;
   vector<float> dst_scales_;
   vector<float> rescales_;
   string output_dtype_ = "fp32";
@@ -111,9 +113,8 @@ class InnerProductOperator : public Operator {
   vector<int64_t> compensation_;
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
-  memory::desc scale_md_;
-  memory::desc compensation_md_;
-
+  memory scale_f32_mem_;
+  std::shared_ptr<void> jit_kernel_;
 #ifdef WITH_SPARSELIB
   jd::tensor_desc src0_desc_;
   jd::tensor_desc src1_desc_;

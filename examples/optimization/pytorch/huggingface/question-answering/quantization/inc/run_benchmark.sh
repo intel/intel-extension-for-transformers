@@ -60,6 +60,8 @@ function run_benchmark {
         mode_cmd=" --accuracy_only"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark"
+    elif [[ ${mode} == "benchmark_only" ]]; then
+        mode_cmd=" --benchmark_only "
     else
         echo "Error: No such mode: ${mode}"
         exit 1
@@ -82,6 +84,14 @@ function run_benchmark {
     elif [ "${topology}" = "roberta_base_SQuAD2_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="deepset/roberta-base-squad2"
+    elif [ "${topology}" = "longformer_base_squad_static" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="valhalla/longformer-base-4096-finetuned-squadv1"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "longformer_base_squad_dynamic" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="valhalla/longformer-base-4096-finetuned-squadv1"
+        approach="PostTrainingDynamic"
     elif [ "${topology}" = "distilbert_base_squad_ipex" ]; then
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
@@ -94,7 +104,8 @@ function run_benchmark {
 
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
-        model_name_or_path=${tuned_checkpoint}
+        # ipex need fp32 model to init trainer now.
+        # model_name_or_path=${tuned_checkpoint}
     fi
     echo $extra_cmd
 

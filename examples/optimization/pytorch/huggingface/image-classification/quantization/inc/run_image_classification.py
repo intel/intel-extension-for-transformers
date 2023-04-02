@@ -188,15 +188,24 @@ class OptimizationArguments:
     benchmark: bool = field(
         default=False,
         metadata={"help": "run benchmark."})
+    benchmark_only: bool = field(
+        default=False,
+        metadata={"help": "run benchmark only."})
     int8: bool = field(
         default=False,
-        metadata={"help":"run benchmark."})
+        metadata={"help":"load int8 model."})
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
     load_dataset_from_file: Optional[str] = field(
         default=None,
         metadata={"help":"Whether to load dataset from local file"})
+    cores_per_instance: int = field(
+        default=4,
+        metadata={"help":"the number of cores used for benchmark."})
+    num_of_instance: int = field(
+        default=-1,
+        metadata={"help":"the number of instance for benchmark."})
 
 
 def collate_fn(examples):
@@ -240,7 +249,7 @@ def main():
     # Log on each process the small summary:
     logger.warning(
         f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+        + f"\ndistributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
     )
     logger.info(f"Training/evaluation parameters {training_args}")
 
@@ -425,7 +434,7 @@ def main():
                     "do_train must be set to True for static and aware training quantization."
                 )
             model.config.save_pretrained(training_args.output_dir)
-        elif optim_args.quantization_approach == "QuantizationAwareTraining":
+        if optim_args.quantization_approach == "QuantizationAwareTraining":
             early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
@@ -444,6 +453,18 @@ def main():
         )
 
         model = trainer.quantize(quant_config=quantization_config)
+    
+    if optim_args.benchmark_only:
+        model_path = model_args.model_name_or_path
+        # to avoid wrong architecture from model name (only work for fp32).
+        if 'ImageClassification' not in config.architectures[0]:
+            model_path = model
+        trainer.benchmark(
+            model_path,
+            batch_size=training_args.per_device_eval_batch_size,
+            cores_per_instance=optim_args.cores_per_instance,
+            num_of_instance=optim_args.num_of_instance,
+        )
 
     if optim_args.benchmark or optim_args.accuracy_only:
 

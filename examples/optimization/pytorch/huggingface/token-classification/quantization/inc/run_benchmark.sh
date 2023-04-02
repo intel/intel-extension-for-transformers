@@ -59,6 +59,8 @@ function run_benchmark {
         mode_cmd=" --accuracy_only"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
+    elif [[ ${mode} == "benchmark_only" ]]; then
+        mode_cmd=" --benchmark_only "
     else
         echo "Error: No such mode: ${mode}"
         exit 1

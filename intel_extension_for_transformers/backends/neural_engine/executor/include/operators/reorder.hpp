@@ -47,11 +47,12 @@ class ReorderOperator : public Operator {
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
-  string output_dtype_ = "fp32";
+  string output_dtype_;
   dnnl::primitive_attr attr_;
   bool append_sum_;
   vector<int64_t> src_perm_;
   vector<int64_t> dst_perm_;
+  vector<int64_t> transpose_dims_;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::reorder reorder_prim_;
   memory src_m_;

@@ -33,8 +33,8 @@ class BinaryOp(Operator):
                                 'NonZero': 'ne', 'NotEqual': 'ne', 'Not': 'eq', 'Neg': 'mul'}
 
     def set_attr(self, framework, node):
-        self._attr['algorithm'] = self._algorithm_dict[self._op_type]
         if framework == "onnxruntime":
+            self._attr['algorithm'] = self._algorithm_dict[self._op_type]
             # deal with const input tensor
             if len(self._input_tensors) == 2:
                 const_idx = -1
@@ -71,3 +71,13 @@ class BinaryOp(Operator):
                                                   shape=[1],
                                                   dest_op=[self._name])
                                            )
+        if framework == 'torch':
+            algo_dict = {'aten::rsub': 'sub', 'aten::mul': 'mul', 'aten::add': 'add', 'aten::add_': 'add',
+                         'aten::div': 'div', 'aten::sub': 'sub', 'aten::gt': 'gt', 'aten::lt': 'lt',
+                         'aten::eq': 'eq', 'aten::ne': 'ne', 'aten::neg': 'mul'}
+            self._attr['algorithm'] = algo_dict[node.kind()]
+            if node.kind() == 'aten::neg':
+                self._input_tensors.append(Tensor(name=self._name + "_mul_val",
+                                                  data=np.array([-1]).astype(np.float32),
+                                                  shape=[1],
+                                                  dest_op=[self._name]))

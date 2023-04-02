@@ -210,6 +210,10 @@ class OptimizationArguments:
         default=False,
         metadata={"help": "Whether or not to apply quantization."},
     )
+    strategy: Optional[str] = field(
+        default="basic",
+        metadata={"help": "Tuning strategy. Supported strategies are basic, bayesian, mse, mse_v2."},
+    )
     quantization_approach: Optional[str] = field(
         default="PostTrainingStatic",
         metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
@@ -234,12 +238,21 @@ class OptimizationArguments:
     benchmark: bool = field(
         default=False,
         metadata={"help": "run benchmark."})
+    benchmark_only: bool = field(
+        default=False,
+        metadata={"help": "run benchmark only."})
     int8: bool = field(
         default=False,
-        metadata={"help":"run benchmark."})
+        metadata={"help":"load int8 model."})
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
+    cores_per_instance: int = field(
+        default=4,
+        metadata={"help":"the number of cores used for benchmark."})
+    num_of_instance: int = field(
+        default=-1,
+        metadata={"help":"the number of instance for benchmark."})
 
 
 def main():
@@ -276,7 +289,7 @@ def main():
     # Log on each process the small summary:
     logger.warning(
         f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+        + f"\ndistributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
     )
     logger.info(f"Training/evaluation parameters {training_args}")
 
@@ -640,13 +653,12 @@ def main():
         if not training_args.do_eval:
             raise ValueError("do_eval must be set to True for quantization.")
 
-        trainer.save_model(training_args.output_dir)
         if optim_args.quantization_approach != "PostTrainingDynamic":
             if not training_args.do_train:
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        elif optim_args.quantization_approach == "QuantizationAwareTraining":
+        if optim_args.quantization_approach == "QuantizationAwareTraining":
             early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
@@ -661,18 +673,31 @@ def main():
             metrics=[tune_metric],
             sampling_size = len(train_dataset)//20
         )
+        if optim_args.strategy == "mse_v2":
+            quantization_config.strategy = "mse_v2"
         if optim_args.framework == "ipex":
             quantization_config.framework = "pytorch_ipex" 
             trainer.calib_dataloader = calib_dataloader
         model = trainer.quantize(quant_config=quantization_config)
 
+    if optim_args.benchmark_only:
+        if optim_args.int8:
+            model_path = training_args.output_dir
+        else:
+            model_path = model_args.model_name_or_path
+        trainer.benchmark(
+            model_path,
+            backend='ipex' if optim_args.framework == "ipex" else 'torch',
+            batch_size=training_args.per_device_eval_batch_size,
+            cores_per_instance=optim_args.cores_per_instance,
+            num_of_instance=optim_args.num_of_instance,
+        )
+    
     if optim_args.benchmark or optim_args.accuracy_only:
         if optim_args.int8:
             # Load the model obtained after Intel Neural Compressor (INC) quantization
             model = OptimizedModel.from_pretrained(
                 training_args.output_dir,
-                from_tf=bool(".ckpt" in training_args.output_dir),
-                config=config,
                 cache_dir=model_args.cache_dir,
                 revision=model_args.model_revision,
                 use_auth_token=True if model_args.use_auth_token else None,
@@ -699,10 +724,6 @@ def main():
                 print("Throughput: {:.5f} samples/sec".format(samples/evalTime))
                 break
         assert ret, "No metric returned, Please check inference metric!"
-
-def _mp_fn(index):
-    # For xla_spawn (TPUs)
-    main()
 
 
 if __name__ == "__main__":

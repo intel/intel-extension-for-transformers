@@ -35,6 +35,7 @@ class TestAttentionReshape(unittest.TestCase):
 
     def test_attention_reshape_0(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(name='input_data'), Tensor(), Tensor()]
@@ -75,7 +76,7 @@ class TestAttentionReshape(unittest.TestCase):
                          Tensor(name='unsqueeze_input1', data=np.array(1), shape=[1])]
         output_tensors = [Tensor(name='unsqueeze_output', source_op=['unsqueeze'], dest_op=['expand'])]
         unsqueeze_node.construct('unsqueeze', 'Unsqueeze', input_tensors=input_tensors,
-                                output_tensors=output_tensors,attr=OrderedDict({'axis': '1'}))
+                                output_tensors=output_tensors,attr=OrderedDict({'axes': '1'}))
 
         expand_node = OPERATORS['Expand']()
         input_tensors = [Tensor(name='unsqueeze_output', source_op=['unsqueeze'], dest_op=['expand']),

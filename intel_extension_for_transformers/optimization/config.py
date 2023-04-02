@@ -17,18 +17,18 @@
 
 """Config: provide config classes for optimization processes."""
 
+import yaml
 from enum import Enum
 from neural_compressor.conf.config import (
     Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
 )
-from neural_compressor.conf.dotdict import DotDict
+from neural_compressor.conf.dotdict import DotDict, deep_set
 from intel_extension_for_transformers.optimization.utils.metrics import Metric
 from intel_extension_for_transformers.optimization.utils.objectives import Objective, performance
 from intel_extension_for_transformers.optimization.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from intel_extension_for_transformers.optimization.distillation import (
     Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
 )
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
 from typing import List, Union
 from xmlrpc.client import boolean
 
@@ -41,8 +41,73 @@ class Provider(Enum):
     INC = "inc"
 
 
+def check_value(name, src, supported_type, supported_value=[]):  # pragma: no cover
+    """Check if the given object is the given supported type and in the given supported value.
+
+    Example::
+
+        def datatype(self, datatype):
+            if check_value('datatype', datatype, list, ['fp32', 'bf16', 'uint8', 'int8']):
+                self._datatype = datatype
+    """
+    if isinstance(src, list) and any([not isinstance(i, supported_type) for i in src]):
+        assert False, ("Type of {} items should be {} but not {}".format(
+            name, str(supported_type), [type(i) for i in src]))
+    elif not isinstance(src, list) and not isinstance(src, supported_type):
+        assert False, ("Type of {} should be {} but not {}".format(
+            name, str(supported_type), type(src)))
+
+    if len(supported_value) > 0:
+        if isinstance(src, str) and src not in supported_value:
+            assert False, ("{} is not in supported {}: {}. Skip setting it.".format(
+                src, name, str(supported_value)))
+        elif isinstance(src, list) and all([isinstance(i, str) for i in src]) and \
+            any([i not in supported_value for i in src]):
+            assert False, ("{} is not in supported {}: {}. Skip setting it.".format(
+                src, name, str(supported_value)))
+
+    return True
+def constructor_register(cls):
+    yaml_key = "!{}".format(cls.__name__)
+
+    def constructor(loader, node):
+        instance = cls.__new__(cls)
+        yield instance
+
+        state = loader.construct_mapping(node, deep=True)
+        instance.__init__(**state)
+
+    yaml.add_constructor(
+        yaml_key,
+        constructor,
+        yaml.SafeLoader,
+    )
+    return cls
+
+
 class DynamicLengthConfig(object):
-    """Configure the dynamic length config for Quantized Length Adaptive Transformer."""
+    """Configure the dynamic length config for Quantized Length Adaptive Transformer.
+
+    Args:
+        max_length: Limit the maximum length of each layer
+        length_config: The length number for each layer
+        const_rate: Length drop ratio
+        num_sandwich: Sandwich num used in training
+        length_drop_ratio_bound: Length dropout ratio list
+        layer_dropout_prob: The layer dropout with probability
+        layer_dropout_bound: Length dropout ratio
+        dynamic_training: Whether to use dynamic training
+        load_store_file: The path for store file
+        evo_iter: Iterations for evolution search
+        population_size: Population limitation for evolution search
+        mutation_size: Mutation limitation for evolution search
+        mutation_prob: Mutation probability used in evolution search
+        crossover_size: Crossover limitation for evolution search
+        num_cpus: The cpu nums used in evolution search
+        distributed_world_size: Distributed world size in evolution search training
+        latency_constraint: Latency constraint used in evolution search
+        evo_eval_metric: The metric name used in evolution search
+    """
     def __init__(
         self,
         max_length: int = None,
@@ -64,28 +129,7 @@ class DynamicLengthConfig(object):
         latency_constraint: bool = True,
         evo_eval_metric = 'eval_f1'
     ):
-        """Init a DynamicLengthConfig object.
-
-        Args:
-            max_length: Limit the maximum length of each layer
-            length_config: The length number for each layer
-            const_rate: Length drop ratio
-            num_sandwich: Sandwich num used in training
-            length_drop_ratio_bound: Length dropout ratio list
-            layer_dropout_prob: The layer dropout with probability
-            layer_dropout_bound: Length dropout ratio
-            dynamic_training: Whether to use dynamic training
-            load_store_file: The path for store file
-            evo_iter: Iterations for evolution search
-            population_size: Population limitation for evolution search
-            mutation_size: Mutation limitation for evolution search
-            mutation_prob: Mutation probability used in evolution search
-            crossover_size: Crossover limitation for evolution search
-            num_cpus: The cpu nums used in evolution search
-            distributed_world_size: Distributed world size in evolution search training
-            latency_constraint: Latency constraint used in evolution search
-            evo_eval_metric: The metric name used in evolution search
-        """
+        """Init a DynamicLengthConfig object."""
         super().__init__()
 
         self.length_config = length_config
@@ -109,7 +153,33 @@ class DynamicLengthConfig(object):
 
 
 class QuantizationConfig(object):
-    """Configure the quantization process."""
+    """Configure the quantization process.
+
+    Args:
+        framework: Which framework you used
+        approach: Which quantization approach to use
+        timeout: Tuning timeout(seconds), 0 means early stop. Combined with max_trials field to decide when to exit
+        max_trials: Max tune times
+        metrics: Used to evaluate accuracy of tuning model, no need for NoTrainerOptimize
+        objectives: Objective with accuracy constraint guaranteed
+        config_file: Path to the config file
+        sampling_size: How many samples to use
+        use_bf16: Whether to use bf16
+        recipes: apply recipes for quantization, neural_compressor support below recipes:
+            'smooth_quant': whether do smooth quant
+            'smooth_quant_args': parameters for smooth_quant
+            'fast_bias_correction': whether do fast bias correction
+            'weight_correction': whether do weight correction
+            'gemm_to_matmul': whether convert gemm to matmul and add, only valid for onnx models
+            'graph_optimization_level': support 'DISABLE_ALL', 'ENABLE_BASIC', 'ENABLE_EXTENDED', 'ENABLE_ALL'
+                                      only valid for onnx models
+            'first_conv_or_matmul_quantization': whether quantize the first conv or matmul
+            'last_conv_or_matmul_quantization': whether quantize the last conv or matmul
+            'pre_post_process_quantization': whether quantize the ops in preprocess and postprocess
+            'add_qdq_pair_to_weight': whether add QDQ pair for weights, only vaild for onnxrt_trt_ep
+            'optypes_to_exclude_output_quant': don't quantize output of specified optypes
+            'dedicated_qdq_pair': whether dedicate QDQ pair, only vaild for onnxrt_trt_ep.
+    """
     def __init__(
         self,
         framework: str = "pytorch",
@@ -121,20 +191,9 @@ class QuantizationConfig(object):
         config_file: str = None,
         sampling_size: int = 100,
         use_bf16: bool = False,
+        recipes: dict = None,
     ):
-        """Init a QuantizationConfig object.
-
-        Args:
-            framework: Which framework you used
-            approach: Which quantization approach to use
-            timeout: Tuning timeout(seconds), 0 means early stop. Combined with max_trials field to decide when to exit
-            max_trials: Max tune times
-            metrics: Used to evaluate accuracy of tuning model, no need for NoTrainerOptimize
-            objectives: Objective with accuracy constraint guaranteed
-            config_file: Path to the config file
-            sampling_size: How many samples to use
-            use_bf16: Whether to use bf16
-        """
+        """Init a QuantizationConfig object."""
         super().__init__()
         if config_file is None:
             self.inc_config = Quantization_Conf()
@@ -158,6 +217,8 @@ class QuantizationConfig(object):
         if sampling_size is not None:
             self.sampling_size = sampling_size
         self.inc_config.usr_cfg.use_bf16 = use_bf16
+        if recipes is not None:
+            self.recipes = recipes
 
     @property
     def approach(self):
@@ -281,9 +342,11 @@ class QuantizationConfig(object):
     @strategy.setter
     def strategy(self, strategy):
         """Set the strategy."""
-        assert strategy in ["basic", "bayesian", "mse"], \
+        assert strategy in ["basic", "bayesian", "mse", "mse_v2"], \
             "strategy: {} is not support!".format(strategy)
         self.inc_config.usr_cfg.tuning.strategy.name = strategy
+        if strategy == "mse_v2":
+                 self.inc_config.usr_cfg.tuning.strategy_kwargs = {"confidence_batches": 1}
 
     @property
     def timeout(self):
@@ -387,9 +450,94 @@ class QuantizationConfig(object):
         else:
             assert False, "The sampling_size must be a list of int numbers"
 
+    @property
+    def recipes(self):
+        """Get the sampling size."""
+        return self.inc_config.usr_cfg.quantization.recipes
+
+    @recipes.setter
+    def recipes(self, recipes):
+        """Set recipes."""
+        if recipes is not None and not isinstance(recipes, dict):
+            raise ValueError("recipes should be a dict.")
+
+        # Support PyTorch only
+        def smooth_quant(val=None):
+            if val is not None:
+                return check_value("smooth_quant", val, bool)
+            else:
+                return False
+
+        # Support PyTorch only
+        def smooth_quant_args(val=None):
+            if val is not None:
+                check_value("smooth_quant_args", val, dict)
+                for k, v in val.items():
+                    if k == "alpha":
+                        assert isinstance(v, str) or isinstance(v, float),\
+                            "Smooth_quant_args.alpha should be a float or 'auto'."
+                return True
+            else:
+                return {}
+
+        # Support tensorflow, but not enabled now
+        def fast_bias_correction(val=None):  # pragma: no cover
+            if val is not None:
+                return check_value("fast_bias_correction", val, bool)
+            else:
+                return False
+
+        # Support tensorflow, but not enabled now
+        def weight_correction(val=None):  # pragma: no cover
+            if val is not None:
+                return check_value("weight_correction", val, bool)
+            else:
+                return False
+
+        # Support Tensorflow only
+        def first_conv_or_matmul_quantization(val=None):
+            if val is not None:
+                return check_value("first_conv_or_matmul_quantization", val, bool)
+            else:
+                return True
+
+        # Support Tensorflow only
+        def last_conv_or_matmul_quantization(val=None):
+            if val is not None:
+                return check_value("last_conv_or_matmul_quantization", val, bool)
+            else:
+                return True
+
+        RECIPES = {"smooth_quant": smooth_quant, # Only for PyTorch
+                   "smooth_quant_args": smooth_quant_args, # Only for PyTorch
+                   "fast_bias_correction": fast_bias_correction, # Support PyTorch and Tensorflow, not used now.
+                   "weight_correction": weight_correction, # Support PyTorch and Tensorflow, not used now.
+                   "first_conv_or_matmul_quantization": first_conv_or_matmul_quantization, # Only for Tensorflow
+                   "last_conv_or_matmul_quantization": last_conv_or_matmul_quantization, # Only for Tensorflow
+                   }
+        _recipes = {}
+        for k in RECIPES.keys():
+            if k in recipes and RECIPES[k](recipes[k]):
+                _recipes.update({k: recipes[k]})
+            else:
+                _recipes.update({k: RECIPES[k]()})
+        deep_set(self.inc_config.usr_cfg, 'quantization.recipes', _recipes)
+
 
 class PruningConfig(object):
-    """Configure the pruning process."""
+    """Configure the pruning process.
+
+    Args:
+        framework: Which framework you used
+        epochs: How many epochs to prune
+        epoch_range: Epoch range list
+        initial_sparsity_ratio: Initial sparsity goal, and not needed if pruner_config argument is defined
+        target_sparsity_ratio: Target sparsity goal, and not needed if pruner_config argument is defined
+        metrics: Used to evaluate accuracy of tuning model, not needed for NoTrainerOptimizer
+        pruner_config: Defined pruning behavior, if it is None, then NLP wil create a default pruner with
+            'BasicMagnitude' pruning typel
+        config_file: Path to the config file
+    """
     def __init__(
         self,
         framework: str = "pytorch",
@@ -401,19 +549,7 @@ class PruningConfig(object):
         pruner_config: Union[List, Pruner] = None,
         config_file: str = None
     ):
-        """Init a PruningConfig object.
-
-        Args:
-            framework: Which framework you used
-            epochs: How many epochs to prune
-            epoch_range: Epoch range list
-            initial_sparsity_ratio: Initial sparsity goal, and not needed if pruner_config argument is defined
-            target_sparsity_ratio: Target sparsity goal, and not needed if pruner_config argument is defined
-            metrics: Used to evaluate accuracy of tuning model, not needed for NoTrainerOptimizer
-            pruner_config: Defined pruning behavior, if it is None, then NLP wil create a default pruner with
-                'BasicMagnitude' pruning typel
-            config_file: Path to the config file
-        """
+        """Init a PruningConfig object."""
         super().__init__()
         self.inc_config = Pruning_Conf(config_file)
         self.framework = framework
@@ -527,7 +663,14 @@ class PruningConfig(object):
 
 
 class DistillationConfig(object):
-    """Configure the distillation process."""
+    """Configure the distillation process.
+
+    Args:
+        framework: Which framework you used
+        criterion: Criterion of training, example: "KnowledgeLoss"
+        metrics: Metrics for distillation
+        inc_config: Distillation config
+    """
     def __init__(
         self,
         framework: str = "pytorch",
@@ -535,14 +678,7 @@ class DistillationConfig(object):
         metrics: Metric = None,
         inc_config = None
     ):
-        """Init a DistillationConfig object.
-
-        Args:
-            framework: Which framework you used
-            criterion: Criterion of training, example: "KnowledgeLoss"
-            metrics: Metrics for distillation
-            inc_config: Distillation config
-        """
+        """Init a DistillationConfig object."""
         super().__init__()
         self.inc_config = Distillation_Conf(inc_config)
         self.framework = framework
@@ -622,7 +758,14 @@ class DistillationConfig(object):
 
 
 class TFDistillationConfig(object):
-    """Configure the distillation process for Tensorflow."""
+    """Configure the distillation process for Tensorflow.
+
+    Args:
+        loss_types: Type of loss
+        loss_weights: Weight ratio of loss
+        train_steps: Steps of training
+        temperature: Parameter for KnowledgeDistillationLoss
+    """
     def __init__(
         self,
         loss_types: list = [],
@@ -630,14 +773,7 @@ class TFDistillationConfig(object):
         train_steps: list = [],
         temperature: float = 1.0
     ):
-        """Init a TFDistillationConfig object.
-
-        Args:
-            loss_types: Type of loss
-            loss_weights: Weight ratio of loss
-            train_steps: Steps of training
-            temperature: Parameter for KnowledgeDistillationLoss
-        """
+        """Init a TFDistillationConfig object."""
         super().__init__()
         self.loss_types = loss_types
         self.loss_weights = loss_weights
@@ -667,7 +803,20 @@ class FlashDistillationConfig(object):
 
 
 class AutoDistillationConfig(object):
-    """Configure the auto disillation process."""
+    """Configure the auto disillation process.
+
+    Args:
+        framework: Which framework you used
+        search_space: Search space of NAS
+        search_algorithm: Search algorithm used in NAS, e.g. Bayesian Optimization
+        metrics: Metrics used to evaluate the performance of the model architecture candidate
+        max_trials: Maximum trials in NAS process
+        seed: Seed of random process
+        knowledge_transfer: Configuration controlling the behavior of knowledge transfer stage
+            in the autodistillation
+        regular_distillation: Configuration controlling the behavior of regular distillation stage
+            in the autodistillation
+    """
     def __init__(
         self,
         framework: str = "pytorch",
@@ -679,20 +828,7 @@ class AutoDistillationConfig(object):
         knowledge_transfer: FlashDistillationConfig = None,
         regular_distillation: FlashDistillationConfig = None,
     ):
-        """Init a AutoDistillationConfig object.
-
-        Args:
-            framework: Which framework you used
-            search_space: Search space of NAS
-            search_algorithm: Search algorithm used in NAS, e.g. Bayesian Optimization
-            metrics: Metrics used to evaluate the performance of the model architecture candidate
-            max_trials: Maximum trials in NAS process
-            seed: Seed of random process
-            knowledge_transfer: Configuration controlling the behavior of knowledge transfer stage
-                in the autodistillation
-            regular_distillation: Configuration controlling the behavior of regular distillation stage
-                in the autodistillation
-        """
+        """Init a AutoDistillationConfig object."""
         super().__init__()
         self.config = DotDict({
             'model':{'name': 'AutoDistillation'},
@@ -932,3 +1068,202 @@ class NASConfig(object):
             self.config.nas.search.higher_is_better.append(
                 metric.greater_is_better
                 )
+
+class BenchmarkConfig:
+    """Config Class for Benchmark.
+
+    Args:
+        backend (str, optional): the backend used for benchmark. Defaults to "torch".
+        warmup (int, optional): skip iters when collecting latency. Defaults to 5.
+        iteration (int, optional): total iters when collecting latency. Defaults to 20.
+        cores_per_instance (int, optional): the core number for 1 instance. Defaults to 4.
+        num_of_instance (int, optional): the instance number. Defaults to -1.
+        torchscript (bool, optional): Enable it if you want to jit trace it \
+                                      before benchmarking. Defaults to False.
+        generate (bool, optional): Enable it if you want to use model.generate \
+                                   when benchmarking. Defaults to False.
+    """
+    def __init__(
+        self,
+        backend: str = "torch",  # select from ["torch", "ipex", "neural_engine"]
+        batch_size: int = 1,
+        warmup: int = 5,
+        iteration: int = 20,
+        cores_per_instance: int = 4,
+        num_of_instance: int = -1,
+        torchscript: bool = False,
+        generate: bool = False,
+        **kwargs,
+    ):
+        """Init a BenchmarkConfig object."""
+        self.backend = backend
+        self.batch_size = batch_size
+        self.warmup = warmup
+        self.iteration = iteration
+        self.cores_per_instance = cores_per_instance
+        self.num_of_instance = num_of_instance
+        self.torchscript = torchscript
+        self.generate = generate
+        self.kwargs = kwargs
+
+    @property
+    def backend(self):
+        """Get backend."""
+        return self._backend
+
+    @backend.setter
+    def backend(self, backend):
+        """Set backend."""
+        self._backend = backend
+
+    @property
+    def batch_size(self):
+        """Get batch_size."""
+        return self._batch_size
+
+    @batch_size.setter
+    def batch_size(self, batch_size):
+        """Set batch_size."""
+        self._batch_size = batch_size
+
+    @property
+    def warmup(self):
+        """Get warmup."""
+        return self._warmup
+
+    @warmup.setter
+    def warmup(self, warmup):
+        """Set warmup."""
+        self._warmup = warmup
+
+    @property
+    def iteration(self):
+        """Get iteration."""
+        return self._iteration
+
+    @iteration.setter
+    def iteration(self, iteration):
+        """Set iteration."""
+        self._iteration = iteration
+
+    @property
+    def cores_per_instance(self):
+        """Get cores_per_instance."""
+        return self._cores_per_instance
+
+    @cores_per_instance.setter
+    def cores_per_instance(self, cores_per_instance):
+        """Set cores_per_instance."""
+        self._cores_per_instance = cores_per_instance
+
+    @property
+    def num_of_instance(self):
+        """Get num_of_instance."""
+        return self._num_of_instance
+
+    @num_of_instance.setter
+    def num_of_instance(self, num_of_instance):
+        """Set num_of_instance."""
+        self._num_of_instance = num_of_instance
+
+    @property
+    def torchscript(self):
+        """Get torchscript."""
+        return self._torchscript
+
+    @torchscript.setter
+    def torchscript(self, torchscript):
+        """Set torchscript."""
+        self._torchscript = torchscript
+
+    @property
+    def generate(self):
+        """Get generate."""
+        return self._generate
+
+    @generate.setter
+    def generate(self, generate):
+        """Set generate."""
+        self._generate = generate
+
+    @property
+    def kwargs(self):
+        """Get kwargs."""
+        return self._kwargs
+
+    @kwargs.setter
+    def kwargs(self, kwargs):
+        """Set kwargs."""
+        self._kwargs = kwargs
+        
+@constructor_register
+class PrunerV2:
+    """
+    similiar to torch optimizer's interface
+    """
+
+    def __init__(self,
+                 target_sparsity=None, pruning_type=None, pattern=None, op_names=None,
+                 excluded_op_names=None,
+                 start_step=None, end_step=None, pruning_scope=None, pruning_frequency=None,
+                 min_sparsity_ratio_per_op=None, max_sparsity_ratio_per_op=None,
+                 sparsity_decay_type=None, pruning_op_types=None, reg_type=None,
+                 criterion_reduce_type=None, parameters=None, resume_from_pruned_checkpoint=None):
+        self.pruner_config = DotDict({
+            'target_sparsity': target_sparsity,
+            'pruning_type': pruning_type,
+            'pattern': pattern,
+            'op_names': op_names,
+            'excluded_op_names': excluded_op_names,  ##global only
+            'start_step': start_step,
+            'end_step': end_step,
+            'pruning_scope': pruning_scope,
+            'pruning_frequency': pruning_frequency,
+            'min_sparsity_ratio_per_op': min_sparsity_ratio_per_op,
+            'max_sparsity_ratio_per_op': max_sparsity_ratio_per_op,
+            'sparsity_decay_type': sparsity_decay_type,
+            'pruning_op_types': pruning_op_types,
+            'reg_type': reg_type,
+            'criterion_reduce_type': criterion_reduce_type,
+            'parameters': parameters,
+            'resume_from_pruned_checkpoint': resume_from_pruned_checkpoint
+        })
+
+
+class WeightPruningConfig:
+    """Similiar to torch optimizer's interface."""
+    def __init__(self, pruning_configs=[{}],  ##empty dict will use global values
+                 target_sparsity=0.9, pruning_type="snip_momentum", pattern="4x1", op_names=[],
+                 excluded_op_names=[],
+                 start_step=0, end_step=0, pruning_scope="global", pruning_frequency=1,
+                 min_sparsity_ratio_per_op=0.0, max_sparsity_ratio_per_op=0.98,
+                 sparsity_decay_type="exp", pruning_op_types=['Conv', 'Linear'],
+                 **kwargs):
+        """Init a WeightPruningConfig object."""
+        self.pruning_configs = pruning_configs
+        self._weight_compression = DotDict({
+            'target_sparsity': target_sparsity,
+            'pruning_type': pruning_type,
+            'pattern': pattern,
+            'op_names': op_names,
+            'excluded_op_names': excluded_op_names,  ##global only
+            'start_step': start_step,
+            'end_step': end_step,
+            'pruning_scope': pruning_scope,
+            'pruning_frequency': pruning_frequency,
+            'min_sparsity_ratio_per_op': min_sparsity_ratio_per_op,
+            'max_sparsity_ratio_per_op': max_sparsity_ratio_per_op,
+            'sparsity_decay_type': sparsity_decay_type,
+            'pruning_op_types': pruning_op_types,
+        })
+        self._weight_compression.update(kwargs)
+
+    @property
+    def weight_compression(self):
+        """Get weight_compression."""
+        return self._weight_compression
+
+    @weight_compression.setter
+    def weight_compression(self, weight_compression):
+        """Set weight_compression."""
+        self._weight_compression = weight_compression

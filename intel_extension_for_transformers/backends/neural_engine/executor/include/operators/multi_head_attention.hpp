@@ -24,37 +24,39 @@
 #include "../operator.hpp"
 #ifdef WITH_SPARSELIB
 #include "kernels/include/interface.hpp"
+#include "kernels/include/kernels/mha_dense_types.hpp"
 #endif
 
 namespace executor {
 
 // \brief MULTI_HEAD_ATTENTION operators
-class MultiHeadAttenionOperator : public Operator {
+class MultiHeadAttentionOperator : public Operator {
  public:
-  explicit MultiHeadAttenionOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~MultiHeadAttenionOperator();
+  explicit MultiHeadAttentionOperator(const shared_ptr<OperatorConfig>& conf);
+  virtual ~MultiHeadAttentionOperator();
 
  public:
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
-  void mha(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  // void ref_transmha(int8_t* matAs8, int8_t* matBs8, int8_t* matDs8, float* matC, uint8_t* matEu8);
-
  private:
+  void ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ReshapeSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void ForwardSparse(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
   // Converting string variables from operators attrs to boolean, or int/float
  protected:
   Tensor *Q_ = nullptr, *K_ = nullptr, *V_ = nullptr, *QKV_ = nullptr;
   Tensor* att_mask_ = nullptr;
+  Tensor* binary_add_mask_ = nullptr;
   // all scale is per_tensor now
-  Tensor *Q_min_ = nullptr, *Q_max_ = nullptr;
-  Tensor *K_min_ = nullptr, *K_max_ = nullptr;
-  Tensor *V_min_ = nullptr, *V_max_ = nullptr;
-  Tensor *QK_min_ = nullptr, *QK_max_ = nullptr, *dst_min_ = nullptr, *dst_max_ = nullptr;
+  Tensor *Q_min_ = nullptr, *Q_max_ = nullptr, *K_min_ = nullptr, *K_max_ = nullptr, *V_min_ = nullptr,
+         *V_max_ = nullptr, *QK_min_ = nullptr, *QK_max_ = nullptr, *dst_min_ = nullptr, *dst_max_ = nullptr;
   Tensor* dst_ = nullptr;
-  uint8_t* trans_mha_tmpbuf;
+
+  uint8_t* trans_mha_tmpbuf = nullptr;
   const int Size2M = 1 << 21;
   int inf_count = 0;
 
@@ -68,7 +70,9 @@ class MultiHeadAttenionOperator : public Operator {
 
   float scaleQ = 0, scaleK = 0, scaleV = 0, scaleRet = 0;
   int bs_ = 0, seq_len_ = 0, head_num_ = 0, head_size_ = 0, hidden_size_ = 0, zeropointRet = 0;
-  //   jd::mha_dense mha_dense_;
+
+  bool is_sparse_ = false;
+  jd::mha_dense mha_dense_;
   jd::transpose_mha mha_transpose_;
   std::vector<const void*> rt_data_;
 };

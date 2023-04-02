@@ -59,6 +59,8 @@ function run_benchmark {
         mode_cmd=" --accuracy_only"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark --max_eval_samples 100"
+    elif [[ ${mode} == "benchmark_only" ]]; then
+        mode_cmd=" --benchmark_only --max_eval_samples 100"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
@@ -73,6 +75,16 @@ function run_benchmark {
     elif [ "${topology}" == "t5_large_cnn_dynamic" ]; then
         DATASET_NAME="cnn_dailymail"
         model_name_or_path="sysresearch101/t5-large-finetuned-xsum-cnn"
+    elif [ "${topology}" == "flan_t5_large_samsum_dynamic" ]; then
+        DATASET_NAME="samsum"
+        model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
+        approach="PostTrainingDynamic"
+        pip install transformers==4.25.1
+    elif [ "${topology}" == "flan_t5_large_samsum_static" ]; then
+        DATASET_NAME="samsum"
+        model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
+        approach="PostTrainingStatic"
+        pip install transformers==4.25.1
     else
         echo "unsupport topology: ${topology}"
         exit 1

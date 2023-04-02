@@ -40,7 +40,10 @@ class Tensor(object):
         # otherwise it will make a bloated new graph
         # but it still can be set when using the constructed new graph
         self._data = data
-        self._shape = shape
+        if shape is not None and len(shape) == 0:
+            self._shape = [1]
+        else:
+            self._shape = shape
         self._dtype = dtype
         if not dtype and isinstance(data, np.ndarray):
             self._dtype = util.get_data_dtype(data)
@@ -74,7 +77,8 @@ class Tensor(object):
     def data(self, data):
         """Data assignment."""
         self._data = data
-        self._dtype = util.get_data_dtype(data)
+        if data is not None:
+            self._dtype = util.get_data_dtype(data)
 
     @property
     def shape(self):
@@ -131,7 +135,7 @@ class Tensor(object):
         """Get the config dict in the graph."""
         conf_dict = OrderedDict()
         if self._dtype is not None:
-            conf_dict['dtype'] = self._dtype
+            conf_dict['dtype'] = util.DTYPES_DICT.get(self._dtype, self._dtype)
         if self._shape is not None:
             conf_dict['shape'] = self._shape
         if self._location is not None:

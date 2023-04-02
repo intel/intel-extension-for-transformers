@@ -57,8 +57,8 @@ class MemoryAllocator {
   }
 
   static const int InstNum() {
-    static const int inst_num = (getenv("INST_NUM") != nullptr) ? std::atoi(getenv("INST_NUM")) : 1;
-    return inst_num;
+    if (getenv("INST_NUM") != nullptr) return std::atoi(getenv("INST_NUM"));
+    return 1;
   }
 
   static MemoryBuffer& Buffer() {
@@ -89,7 +89,7 @@ class MemoryAllocator {
     if (iter != memory_buffer.end()) {
       name_buffer[iter->first] = name;
     } else {
-      LOG(WARNING) << "name a not existing pointer...";
+      DLOG(WARNING) << "name a not existing pointer...";
     }
   }
 
@@ -101,10 +101,10 @@ class MemoryAllocator {
       auto buffer_count = iter->second[0];
       if (buffer_count != 0) {
         alive++;
-        LOG(WARNING) << "have alive buffer name " << name_buffer[iter->first];
+        DLOG(WARNING) << "have alive buffer name " << name_buffer[iter->first];
       }
     }
-    LOG(WARNING) << "buffer alive count " << alive;
+    DLOG(WARNING) << "buffer alive count " << alive;
     return alive;
   }
 
@@ -113,7 +113,7 @@ class MemoryAllocator {
     for (auto iter = memory_buffer.begin(); iter != memory_buffer.end(); ++iter) {
       auto buffer_count = iter->second[0];
       if (buffer_count != 0) {
-        LOG(WARNING) << "buffer still have life, force release...";
+        DLOG(WARNING) << "buffer still have life, force release...";
         iter->second[0] = 0;
       }
     }
@@ -142,7 +142,7 @@ class MemoryAllocator {
         << "only support memory strategy cycle buffer, direct buffer and unified buffer";
     StrategyList& strategy_list = Strategy();
     strategy_list[strategy] = true;
-    LOG(INFO) << "strategy list set success " << strategy;
+    DLOG(INFO) << "strategy list set success " << strategy;
   }
 
   static int CheckMemory(void* data) {
@@ -151,7 +151,7 @@ class MemoryAllocator {
     if (iter != memory_buffer.end()) {
       return iter->second[0];
     } else {
-      LOG(WARNING) << "get life from a not existing memory pointer...";
+      DLOG(WARNING) << "get life from a not existing memory pointer...";
       return -1;
     }
   }
@@ -164,7 +164,7 @@ class MemoryAllocator {
     if (iter != memory_buffer.end()) {
       iter->second[0] = life_count;
     } else {
-      LOG(WARNING) << "reset a not existing memory pointer...";
+      DLOG(WARNING) << "reset a not existing memory pointer...";
     }
   }
 
@@ -176,7 +176,7 @@ class MemoryAllocator {
     int status = 0;
     if (iter != memory_buffer.end()) {
       if (iter->second[0] <= 0) {
-        LOG(WARNING) << "free a no-used memory...";
+        DLOG(WARNING) << "free a no-used memory...";
         iter->second[0] = 0;
         status = 0;
       } else {
@@ -195,7 +195,7 @@ class MemoryAllocator {
         }
       }
     } else {
-      LOG(WARNING) << "free not existing memory pointer...";
+      DLOG(WARNING) << "free not existing memory pointer...";
       status = -1;
     }
     return status;
@@ -205,11 +205,11 @@ class MemoryAllocator {
     static std::mutex getmem_lock;
     std::lock_guard<std::mutex> lock(getmem_lock);
     if (size == 0) {
-      LOG(INFO) << "please set the tensor size...";
+      DLOG(INFO) << "please set the tensor size...";
       return nullptr;
     }
     if (life_count <= 0) {
-      LOG(INFO) << "please set the tensor life...";
+      DLOG(INFO) << "please set the tensor life...";
       return nullptr;
     }
     StrategyList& strategy_list = Strategy();
@@ -227,7 +227,7 @@ class MemoryAllocator {
 
   static void* CycleBufferGetMemory(size_t size, const int life_count) {
     MemoryBuffer& memory_buffer = Buffer();
-    LOG(INFO) << "cycle buffer tensor size is " << memory_buffer.size();
+    DLOG(INFO) << "cycle buffer tensor size is " << memory_buffer.size();
     for (auto iter = memory_buffer.begin(); iter != memory_buffer.end(); ++iter) {
       auto buffer_count = iter->second[0];
       auto buffer_size = iter->second[1];
@@ -254,7 +254,7 @@ class MemoryAllocator {
 
   static void* DirectBufferGetMemory(size_t size, const int life_count) {
     MemoryBuffer& memory_buffer = Buffer();
-    LOG(INFO) << "direct buffer tensor size is " << memory_buffer.size();
+    DLOG(INFO) << "direct buffer tensor size is " << memory_buffer.size();
     void* buf = reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (size / ALIGNMENT + 1) * ALIGNMENT));
     memory_buffer.insert({buf, vector<size_t>({static_cast<size_t>(life_count), size})});
     return buf;
@@ -262,7 +262,7 @@ class MemoryAllocator {
 
   static void* UnifiedBufferGetMemory(size_t size, const int life_count) {
     MemoryBuffer& memory_buffer = Buffer();
-    LOG(INFO) << "unified buffer tensor size is " << memory_buffer.size();
+    DLOG(INFO) << "unified buffer tensor size is " << memory_buffer.size();
     void* buf = reinterpret_cast<void*>(i_malloc(size));
     memory_buffer.insert({buf, vector<size_t>({static_cast<size_t>(life_count), size})});
     return buf;

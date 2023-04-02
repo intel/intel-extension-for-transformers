@@ -76,6 +76,12 @@ class ReshapeBeforeRestoreHiddenStates(Pattern):
             model.nodes[scatter_elements_node_idx].attr = se_attr
         
         # minilmv2-lat-roberta
+        layer_norm_idx = []
+        remove_list = []
+        pattern = pattern_mapping_config['ReshapeBeforeRestoreHiddenStates'][0]['patterns']['in']
+        patterns_nodes_name = util.search_pattern(pattern, model)
+        for pattern_nodes_name in patterns_nodes_name:
+            layer_norm_idx.append(model.get_node_id(pattern_nodes_name[0]))
         pattern_dict = pattern_mapping_config['ReshapeBeforeRestoreHiddenStates'][0]
         model, new_node_names, ret_old_nodes = util.pattern_mapping(
                 'ReshapeBeforeRestoreHiddenStates', pattern_dict, model)
@@ -85,7 +91,15 @@ class ReshapeBeforeRestoreHiddenStates(Pattern):
                 ln_attr = ret_old_nodes[i][0].attr
                 se_attr = ret_old_nodes[i][1].attr
                 _set_attr(ln_attr, se_attr, hidden_size, new_node_names[i], model)
+                import copy
+                ln_node = copy.deepcopy(model.get_node_by_name(new_node_names[i][0]))
+                model.remove_nodes([new_node_names[i][0]])
+                model.insert_nodes(layer_norm_idx[i] + i, [ln_node])
+                
+                remove_list.append(new_node_names[i][0])
+                
             
+            # model.remove_nodes(remove_list)
             return model
         
         return model

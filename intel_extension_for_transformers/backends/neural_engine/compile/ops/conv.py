@@ -21,6 +21,22 @@ from .op import Operator, operator_registry
 from .tensor import Tensor
 from ..graph_utils import list2str
 
+def parseTorchListConstruct(lc_value):
+    node = lc_value.node()
+    values = []
+    for i in range(node.inputsSize()):
+        in_val = node.inputsAt(i)
+        values.append(in_val.toIValue())
+    return values
+
+def parseTorchConstant(lc_value):
+    node = lc_value.node()
+    values = []
+    for i in range(node.inputsSize()):
+        in_val = node.inputsAt(i)
+        values.append(in_val.toIValue())
+    return values
+
 @operator_registry(operator_type='Conv')
 class Conv(Operator):
     """Parse the Conv operator to the neural engine."""
@@ -42,4 +58,15 @@ class Conv(Operator):
                     self._attr['pads'] = list2str(attribute.ints)
                 if attribute.name == 'strides':
                     self._attr['strides'] = list2str(attribute.ints)
+        elif framework == "torch":
+            assert node.inputsSize() == 12
+            self._attr['strides'] = list2str(parseTorchListConstruct(node.inputsAt(3)))
+            self._attr['pads'] = list2str(parseTorchListConstruct(node.inputsAt(4)))
+            self._attr['dilations'] = list2str(parseTorchListConstruct(node.inputsAt(5)))
+            self._attr['transposed'] = node.inputsAt(6).toIValue()
+            self._attr['output_padding'] = list2str(parseTorchListConstruct(node.inputsAt(7)))
+            self._attr['group'] = node.inputsAt(8).toIValue()
+            self._attr['benchmark'] = node.inputsAt(9).toIValue()
+            self._attr['deterministic'] = node.inputsAt(10).toIValue()
+            self._attr['cudnn_enabled'] = node.inputsAt(11).toIValue()
 

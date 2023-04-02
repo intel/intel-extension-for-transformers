@@ -15,22 +15,34 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_ENGINE_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_ENGINE_HPP_
 #include <vector>
+#include <memory>
 
 #include "impl_list_item.hpp"
 #include "param_types.hpp"
 
 namespace jd {
-class engine {
+class memory_storage_t;
+class stream_t;
+class engine_t {
  public:
-  explicit engine(const engine_kind& eng_kind) : eng_kind_(eng_kind) {}
-  virtual ~engine() {}
+  engine_t(const engine_kind& engine_kind, const runtime_kind& runtime_kind)
+      : engine_kind_(engine_kind), runtime_kind_(runtime_kind) {}
+  virtual ~engine_t() {}
 
  public:
-  inline const engine_kind& kind() const { return eng_kind_; }
+  inline const engine_kind& get_engine_kind() const { return engine_kind_; }
+  inline const runtime_kind& get_runtime_kind() const { return runtime_kind_; }
   virtual const std::vector<impl_list_item_t>* get_implementation_list(const operator_desc& op_desc) const = 0;
+  virtual bool create_kernel(const operator_desc&, std::shared_ptr<kernel_t>&,  // NOLINT
+                             const stream_t*) const {
+    return true;
+  }
+  virtual bool create_stream(stream_t**) const { return true; }
+  virtual bool create_memory_storage(memory_storage_t**) const { return true; }
 
  protected:
-  engine_kind eng_kind_;
+  engine_kind engine_kind_;
+  runtime_kind runtime_kind_;
 };
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_ENGINE_HPP_
+#endif

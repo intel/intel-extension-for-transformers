@@ -70,6 +70,10 @@ MatmulOperator::MatmulOperator(const shared_ptr<OperatorConfig>& conf)
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&reshape_, attrs_map["reshape"], ",");
   }
+  iter = attrs_map.find("reshape_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_dims_, attrs_map["reshape_dims"], ",");
+  }
   iter = attrs_map.find("append_op");
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
   binary_add_ = (iter != attrs_map.end() && iter->second == "binary_add") ? true : false;
@@ -78,13 +82,16 @@ MatmulOperator::MatmulOperator(const shared_ptr<OperatorConfig>& conf)
   tanh_ = (iter != attrs_map.end() && iter->second == "tanh") ? true : false;
   append_eltwise_ = gelu_erf_ || gelu_tanh_ || tanh_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
-  LOG(INFO) << "append_op: " << append_op_;
+  DLOG(INFO) << "append_op: " << append_op_;
 }
 
 MatmulOperator::~MatmulOperator() {}
 
 void MatmulOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int input_size = input.size();
+  if (!reshape_dims_.empty()) {
+    input_size -= 1;
+  }
   dst_ = output[0];
   if (output.size() > 1) {
     dst_min_ = output[1];
@@ -195,35 +202,11 @@ void MatmulOperator::SetTransposeMode() {
   if (dst_->dtype() == "fp32" && binary_add_ && src0_->dtype() == "fp32") {
     vector<int64_t> src0_perm_transpose{2, 0, 3, 1};
     vector<int64_t> src1_perm_transpose{2, 0, 1, 3};
-    transpose_mode_ = true;
-    for (int i = 0; i < src0_perm_.size(); i++) {
-      if (src0_perm_[i] != src0_perm_transpose[i]) {
-        transpose_mode_ = false;
-        break;
-      }
-    }
-    for (int i = 0; i < src1_perm_.size(); i++) {
-      if (src1_perm_[i] != src1_perm_transpose[i]) {
-        transpose_mode_ = false;
-        break;
-      }
-    }
+    transpose_mode_ = (src0_perm_ == src0_perm_transpose) && (src1_perm_ == src1_perm_transpose);
   } else if (dst_->dtype() == "u8") {
     vector<int64_t> dst_perm_transpose{1, 3, 0, 2};
     vector<int64_t> src1_perm_transpose{2, 0, 3, 1};
-    transpose_mode_ = true;
-    for (int i = 0; i < dst_perm_.size(); i++) {
-      if (dst_perm_[i] != dst_perm_transpose[i]) {
-        transpose_mode_ = false;
-        break;
-      }
-    }
-    for (int i = 0; i < src1_perm_.size(); i++) {
-      if (src1_perm_[i] != src1_perm_transpose[i]) {
-        transpose_mode_ = false;
-        break;
-      }
-    }
+    transpose_mode_ = (dst_perm_ == dst_perm_transpose) && (src1_perm_ == src1_perm_transpose);
   }
 }
 #endif
@@ -231,13 +214,22 @@ void MatmulOperator::SetTransposeMode() {
 void MatmulOperator::DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (!reshape_.empty()) {
     vector<int64_t> pre_dst_shape;
+
     vector<int64_t> reshape(reshape_);
     if (output[0]->shape().size() == 5 && output[0]->tensor_format() == TensorFormat::BmHnHsBbS) {
       int64_t micro_bs = output[0]->shape()[0];
       reshape.insert(reshape.begin(), micro_bs);
     }
-    vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), pre_dst_shape, pre_dst_shape);
-    output[0]->set_shape(dst_shape);
+
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+      vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), ref_shape, reshape_dims_);
+      output[0]->set_shape(dst_shape);
+    } else {
+      vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), pre_dst_shape, pre_dst_shape);
+      output[0]->set_shape(dst_shape);
+    }
   }
 }
 
@@ -246,7 +238,13 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
   dst_->set_dtype(output_dtype_);
   is_dynamic_ =
       output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
-  if (is_dynamic_) LOG(INFO) << this->name() << " is DYNAMIC!!!";
+  if (is_dynamic_) {
+    DLOG(INFO) << this->name() << " is DYNAMIC!!!";
+#ifdef _WIN32
+    LOG(ERROR) << "dynamic quantization did NOT support windows now!!!";
+    throw std::string("Windows");
+#endif
+  }
   if (!is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     int ic_dim = 0;
     vector<float> rescales;
@@ -281,7 +279,9 @@ void MatmulOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
 
 void MatmulOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (transpose_mode_) {
+#if __AVX512F__
     ForwardwithTransMode(input, output);
+#endif
   } else {
     ForwardwithOnednn(input, output);
   }
@@ -329,7 +329,7 @@ void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input, const ve
   transpose_matmul_ = jd::transpose_matmul(matmul_desc);
   DstReshapeFusion(input, output);
 }
-
+#if __AVX512F__
 void MatmulOperator::ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   void* dst_data = dst_->mutable_data();
   std::vector<const void*> runtime_data = {src0_->data(),
@@ -342,21 +342,32 @@ void MatmulOperator::ForwardwithTransMode(const vector<Tensor*>& input, const ve
   transpose_matmul_.execute(runtime_data);
   this->unref_tensors(input);
 }
-
+#endif
 // 1. Create primitive
 void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
   // 1.1 Transpose tensor shape and get it
   vector<int64_t> src0_shape_origin = src0_->shape();
   vector<int64_t> src1_shape_origin = src1_->shape();
+
+  // std::cout <<  "here is matmul " << std::endl;
+  // for (int i = 0; i < input[0]->shape().size() ; ++i) {
+  //   std::cout <<  "here is matmul src0 shape "  << input[0]->shape()[i]<< std::endl;
+
+  // }
+  // for (int i = 0; i < input[1]->shape().size() ; ++i) {
+  //   std::cout <<  "here is matmul src1 shape "  << input[1]->shape()[i]<< std::endl;
+
+  // }
+
+
   vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
   vector<int64_t> src1_shape = GetShapes(src1_shape_origin, src1_perm_);
   vector<int64_t> src0_stride = GetStrides(src0_shape_origin, src0_perm_);
   vector<int64_t> src1_stride = GetStrides(src1_shape_origin, src1_perm_);
-  src0_->set_shape(src0_shape);
-  src1_->set_shape(src1_shape);
 
-  memory::dims bias_shape;
+  vector<int64_t> bias_shape;
+  vector<int64_t> bias_stride;
   if (has_bias_) bias_shape = bias_->shape();
 
   // 1.2 malloc tensor for output
@@ -376,9 +387,8 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   if (has_bias_ && bias_shape.size() != dst_shape.size()) {
     bias_shape = vector<int64_t>(dst_shape.size(), 1);
     bias_shape.back() = bias_->shape().back();
+    bias_stride = GetStrides(bias_shape, reverse_perm);
   }
-  vector<int64_t> bias_stride = GetStrides(bias_shape, reverse_perm);
-
   // 1.4 Prepare memory descriptors
   memory::desc any_src0_md = memory::desc(src0_shape, type2mem[src0_->dtype()], memory::format_tag::any);
   memory::desc src0_md = memory::desc(src0_shape, type2mem[src0_->dtype()], src0_stride);
@@ -429,15 +439,12 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   vector<float> dst_scales;
   vector<float> rescales;
   dnnl::post_ops po;
-  int ic_dim = 0;
+  int ic_dim = 0;  // matmul only support per_tensor now
   if (is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
-      ic_dim = src1_min_->size() > 1 ? 2 : 0;
-      // attr.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
-      vector<int64_t> scale_shape(src1_shape.size(), 1);
-      scale_shape[src1_shape.size() - 1] = src1_min_->size();
-      scale_md_ = memory::desc(scale_shape, memory::data_type::f32, GetStrides(scale_shape));
-      po.append_binary(algorithm::binary_mul, scale_md_);
+      attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
+      scale_f32_mem_ = memory({{1}, memory::data_type::f32, {1}}, eng_);
+      zp_src0_mem_ = memory({{1}, memory::data_type::s32, {1}}, eng_);
       // need zero point when src0 is u8
       if (src0_->dtype() == "u8") {
         attr_.set_zero_points(DNNL_ARG_SRC, ic_dim, {DNNL_RUNTIME_S32_VAL});
@@ -524,8 +531,9 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
 
   // If the matmul forward class in the cache pool, just get it from pool.
   // Otherwise, do the reshape and send the related class into the cache pool
-  size_t key = MatMulPrimitiveFwdFactory::Key(src0_->dtype(), src1_->dtype(), output_dtype_,
-    src0_->shape(), src1_->shape(), dst_perm_, append_op_, post_->shape(), output_scale_, &eng_);
+  size_t key = MatMulPrimitiveFwdFactory::Key(src0_->dtype(), src1_->dtype(), output_dtype_, src0_->shape(),
+                                              src1_->shape(), src0_perm_, src1_perm_, dst_perm_, append_op_,
+                                              post_->shape(), output_scale_, &eng_);
   if (MatMulPrimitiveFwdFactory::IsInFactory(key) && !MatMulPrimitiveFwdFactory::DoNotCache()) {
     matmul_p_ = MatMulPrimitiveFwdFactory::Get(key);
   } else {
@@ -535,24 +543,27 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   }
   DstReshapeFusion(input, output);
 
-  any_src0_m_ = src0_m_;
-  any_src1_m_ = src1_m_;
-  any_dst_m_ = dst_m_;
-  if (matmul_pd_.src_desc() != src0_m_.get_desc()) {
-    any_src0_m_ = memory(matmul_pd_.src_desc(), eng_);
-    reorder_prim_src_ = dnnl::reorder(src0_m_, any_src0_m_);
-    src_reorder_ = true;
-  }
-  if (!cache_weight_ && (matmul_pd_.weights_desc() != src1_m_.get_desc())) {
-    any_src1_m_ = memory(matmul_pd_.weights_desc(), eng_);
-    reorder_prim_weight_ = dnnl::reorder(src1_m_, any_src1_m_);
-    weight_reorder_ = true;
-  }
-  if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
-    any_dst_m_ = memory(matmul_pd_.dst_desc(), eng_);
-    reorder_prim_dst_ = dnnl::reorder(any_dst_m_, dst_m_);
-    dst_reorder_ = true;
-  }
+  // any_src0_m_ = src0_m_;
+  // any_src1_m_ = src1_m_;
+  // any_dst_m_ = dst_m_;
+  // if (matmul_pd_.src_desc() != src0_m_.get_desc()) {
+  //   any_src0_m_ = memory(matmul_pd_.src_desc(), eng_);
+  //   reorder_prim_src_ = dnnl::reorder(src0_m_, any_src0_m_);
+
+  //   src_reorder_ = true;
+  // }
+  // if (!cache_weight_ && (matmul_pd_.weights_desc() != src1_m_.get_desc())) {
+  //   any_src1_m_ = memory(matmul_pd_.weights_desc(), eng_);
+  //   reorder_prim_weight_ = dnnl::reorder(src1_m_, any_src1_m_);
+
+  //   weight_reorder_ = true;
+  // }
+  // if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
+  //   any_dst_m_ = memory(matmul_pd_.dst_desc(), eng_);
+  //   reorder_prim_dst_ = dnnl::reorder(any_dst_m_, dst_m_);
+
+  //   dst_reorder_ = true;
+  // }
 }
 
 // 2. inference kernel(for int8 and f32)
@@ -572,7 +583,7 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   }
   // has post_op: append_sum
   if (post_ != nullptr && !binary_add_) {
-    LOG(INFO) << "matmul has post op " << post_->name();
+    DLOG(INFO) << "matmul has post op " << post_->name();
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
@@ -596,50 +607,81 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   src1_m_.set_data_handle(const_cast<void*>(src1_data), eng_stream_);
   dst_m_.set_data_handle(dst_data, eng_stream_);
 
+
+
+
+
+
   // 2. Reorder the data when the primitive memory and user memory are different
-  if (src_reorder_) {
-    reorder_prim_src_.execute(eng_stream_, src0_m_, any_src0_m_);
+
+  memory any_src0_m = src0_m_;
+  memory any_src1_m = src1_m_;
+  memory any_dst_m = dst_m_;
+
+
+  if (matmul_pd_.src_desc() != src0_m_.get_desc()) {
+    any_src0_m = memory(matmul_pd_.src_desc(), eng_);
+    dnnl::reorder(src0_m_, any_src0_m).execute(eng_stream_, src0_m_, any_src0_m);
   }
-  if (weight_reorder_) {
-    reorder_prim_weight_.execute(eng_stream_, src1_m_, any_src1_m_);
+  if (!cache_weight_) {
+    if (matmul_pd_.weights_desc() != src1_m_.get_desc()) {
+      any_src1_m = memory(matmul_pd_.weights_desc(), eng_);
+      dnnl::reorder(src1_m_, any_src1_m).execute(eng_stream_, src1_m_, any_src1_m);
+    }
   }
+
+  if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
+    any_dst_m = memory(matmul_pd_.dst_desc(), eng_);
+  }
+
+
   // the runtime calculation of dynamic quantization
+
+  vector<int32_t> src0_zero_points;
+  vector<float> rescales;
+  vector<float> dynamic_bias;
   if (is_dynamic_) {
-    vector<int32_t> src0_zero_points;
-    vector<float> rescales;
-    vector<float> dynamic_bias;
     DynamicForward(&src0_zero_points, &rescales, &dynamic_bias);
   }
 
   // 3. Insert memory args
-  memory_args_[DNNL_ARG_SRC_0] = any_src0_m_;
-  if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m_;
-  memory_args_[DNNL_ARG_DST] = any_dst_m_;
+  // memory_args_[DNNL_ARG_SRC_0] = any_src0_m_;
+  // if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m_;
+  // memory_args_[DNNL_ARG_DST] = any_dst_m_;
+  memory_args_[DNNL_ARG_SRC_0] = any_src0_m;
+  if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m;
+  memory_args_[DNNL_ARG_DST] = any_dst_m;
+
 
   // has post_op: binary_add
   if (post_ != nullptr && binary_add_) {
     void* post_ptr = post_->mutable_data();
     binary_m_.set_data_handle(post_ptr, eng_stream_);
-    // dynamic quantization inserts additional post_ops
-    int op_idx = 0;
-    if (is_dynamic_) {
-      op_idx++;
-    }
-    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(op_idx) | DNNL_ARG_SRC_1] = binary_m_;
+    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = binary_m_;
   }
 
   // 4. Execute the primitive
   matmul_p_.execute(eng_stream_, memory_args_);
 
   // 5. Reorder the data of dst memory (When it is format_any)
-  if (dst_reorder_) {
-    reorder_prim_dst_.execute(eng_stream_, any_dst_m_, dst_m_);
+  // if (dst_reorder_) {
+  //   reorder_prim_dst_.execute(eng_stream_, any_dst_m_, dst_m_);
+  // }
+  if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
+    dnnl::reorder(any_dst_m, dst_m_).execute(eng_stream_, any_dst_m, dst_m_);
   }
+
   eng_stream_.wait();
   // 6. unref tensors
   this->unref_tensors(input);
 
   if (is_dynamic_) {
+    // float minx = *(float*)dst_data, maxx = *(float*)dst_data;
+    // for (int i = 0; i < matmul_fp32_res.size(); i++) {
+    //   minx = std::min(minx, *((float*)dst_data + i));
+    //   maxx = std::max(maxx, *((float*)dst_data + i));
+    // }
+    // std::cout << minx << "\t" << maxx << std::endl;
     // quantize the fp32 result of matmul
     if (output.size() > 1) {
       runtime_minmax(reinterpret_cast<float*>(matmul_fp32_res.mutable_data()), matmul_fp32_res.size(),
@@ -648,6 +690,7 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
       // quantize
       if (output_dtype_ == "u8" || output_dtype_ == "s8") {
         auto scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+        memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
 #if __AVX512F__
         Quantize_avx512(matmul_fp32_res.size(), dst_->dtype(), matmul_fp32_res.data(),
                         static_cast<const float*>(dst_min_->data()), scales_, dst_->mutable_data());
@@ -691,27 +734,24 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
                                     vector<float>* dynamic_bias_ptr) {
   auto& src0_zero_points = *src0_zero_points_ptr;
   auto& rescales = *rescales_ptr;
-  auto& dynamic_bias = *dynamic_bias_ptr;
-  memory scale_f32_mem(scale_md_, eng_);
-  memory zp_src0_mem({{1}, memory::data_type::s32, {1}}, eng_);
   int channel_size = src1_min_->size();  // channel_size=1 represent per_tensor
   rescales.resize(channel_size);
-  vector<float> src0_scales;
-  vector<float> src1_scales;
-  src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
-  src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
+  const float* src0_scales = reinterpret_cast<const float*>(src0_max_->data());
+  const float* src1_scales = reinterpret_cast<const float*>(src1_max_->data());
+  // std::cout << name_ << "\tsrc0:\t" << src0_scales[0] << std::endl;
+  // std::cout << name_ << "\tsrc1:\t" << src1_scales[0] << std::endl;
   if (channel_size == 1) {
     rescales[0] = output_scale_ / src0_scales[0] / src1_scales[0];
   } else {
 #pragma omp parallel for
     for (int i = 0; i < channel_size; i++) rescales[i] = output_scale_ / src0_scales[0] / src1_scales[i];
   }
-  scale_f32_mem.set_data_handle(reinterpret_cast<void*>(rescales.data()), eng_stream_);
-  memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = scale_f32_mem;
-  // memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem;
+  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales.data()), eng_stream_);
+  memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
 
   // The bias loaded from file is not scaled. So need rescaled runtime.
   if (has_bias_) {
+    auto& dynamic_bias = *dynamic_bias_ptr;
     dynamic_bias.resize(bias_->size());
     void* bias_m_data = bias_m_.get_data_handle();
     if (bias_m_data != nullptr) {
@@ -728,9 +768,10 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
   }
 
   if (src0_->dtype() == "u8") {
-    src0_zero_points = GetZeroPoints(src0_min_->data(), src0_scales, src0_->dtype());
-    zp_src0_mem.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);
-    memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = zp_src0_mem;
+    src0_zero_points = GetZeroPoints(reinterpret_cast<const float*>(src0_min_->data()), src0_scales, src0_->dtype(),
+                                     src0_min_->size());
+    zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);
+    memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = zp_src0_mem_;
   }
 }
 
@@ -755,13 +796,13 @@ void MatmulOperator::InputShapeFallBack(const vector<Tensor*>& input) {
     vector<int64_t> src1_shape = input[1]->shape();
     src1_shape_bfb_ = src1_shape;
     input[1]->set_shape({src1_shape[1], src1_shape[2], src1_shape[0] * src1_shape[3], src1_shape[4]});
-  // Q SparseLib 3D format, K Dense format
+    // Q SparseLib 3D format, K Dense format
   } else if (input[0]->tensor_format() == TensorFormat::MmKMb && input[0]->shape().size() == 5 &&
              input[1]->tensor_format() == TensorFormat::MK && input[1]->shape().size() == 4) {
     vector<int64_t> src0_shape = input[0]->shape();
     src0_shape_bfb_ = src0_shape;
     input[0]->set_shape({src0_shape[1], src0_shape[2], src0_shape[0] * src0_shape[3], src0_shape[4]});
-  // QK BatchMatmul SparseLib 3D format, V Dense format
+    // QK BatchMatmul SparseLib 3D format, V Dense format
   } else if (input[0]->tensor_format() == TensorFormat::BmBbHnSHs && input[0]->shape().size() == 5 &&
              input[1]->tensor_format() == TensorFormat::MK && input[1]->shape().size() == 4) {
     vector<int64_t> src0_shape = input[0]->shape();
@@ -793,30 +834,30 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
     // 1. Q x K (both SparseLib 3D format)
     if (input[0]->tensor_format() == TensorFormat::MmKMb && input[0]->shape().size() == 5 &&
         input[1]->tensor_format() == TensorFormat::MmKMb && input[1]->shape().size() == 5) {
-      LOG(INFO) << "Operator " << name_ <<" gonna modify QK Matmul related attrs for SparseLib 3D format...";
+      DLOG(INFO) << "Operator " << name_ << " gonna modify QK Matmul related attrs for SparseLib 3D format...";
       UnsqueezePerm(&src0_perm_);
       UnsqueezePerm(&src1_perm_);
       transpose_mode_ = false;
       adapt_attrs_ = true;
       output[0]->set_tensor_format(TensorFormat::BmBbHnSHs);
-    // 2. Softmax(QK) x V (both SparseLib 3D format)
+      // 2. Softmax(QK) x V (both SparseLib 3D format)
     } else if (input[0]->tensor_format() == TensorFormat::BmBbHnSHs && input[0]->shape().size() == 5 &&
                input[1]->tensor_format() == TensorFormat::MmKMb && input[1]->shape().size() == 5) {
-      LOG(INFO) << "Operator " << name_ <<" gonna modify QKV Matmul related attrs for SparseLib 3D format...";
+      DLOG(INFO) << "Operator " << name_ << " gonna modify QKV Matmul related attrs for SparseLib 3D format...";
       UnsqueezePerm(&src1_perm_);
       UnsqueezePerm(&dst_perm_);
       transpose_mode_ = false;
       adapt_attrs_ = true;
       output[0]->set_tensor_format(TensorFormat::BmHnHsBbS);
-    // mix sparsity
-    } else if (((input[0]->tensor_format() == TensorFormat::MmKMb || input[0]->tensor_format() ==
-               TensorFormat::BmBbHnSHs) && input[1]->tensor_format() != TensorFormat::MmKMb) ||
-               (input[1]->tensor_format() == TensorFormat::MmKMb && input[0]->tensor_format() !=
-               TensorFormat::MmKMb)) {
-      LOG(INFO) << "FALL BACK...";
+      // mix sparsity
+    } else if (((input[0]->tensor_format() == TensorFormat::MmKMb ||
+                 input[0]->tensor_format() == TensorFormat::BmBbHnSHs) &&
+                input[1]->tensor_format() != TensorFormat::MmKMb) ||
+               (input[1]->tensor_format() == TensorFormat::MmKMb && input[0]->tensor_format() != TensorFormat::MmKMb)) {
+      DLOG(INFO) << "FALL BACK...";
       output[0]->set_tensor_format(TensorFormat::BHnSHs);
       InputShapeFallBack(input);
-    // Dense
+      // Dense
     } else {
       return;
     }
@@ -826,8 +867,8 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
       int64_t bm = input[0]->shape()[0];
       post_shape.insert(post_shape.begin(), bm);
       post_shape[1] = model_->input_shape()[0] / bm;
-      CHECK_EQ(Product(post_shape), Product(post_->shape())) << "Wrong post shape in operator " << name_
-                                                             << " with SparseLib 3D format...";
+      CHECK_EQ(Product(post_shape), Product(post_->shape()))
+          << "Wrong post shape in operator " << name_ << " with SparseLib 3D format...";
       post_->set_shape(post_shape);
     }
   } else if (stage == "out") {
@@ -838,7 +879,7 @@ void MatmulOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tenso
       if (binary_add_ && post_ != nullptr) {
         vector<int64_t> post_shape(post_->shape().size() - 1, 0);
         post_shape[0] = model_->input_shape()[0];
-        for (int i = 1; i < post_shape.size(); ++i) post_shape[i] = post_->shape()[i+1];
+        for (int i = 1; i < post_shape.size(); ++i) post_shape[i] = post_->shape()[i + 1];
         post_->set_shape(post_shape);
       }
       adapt_attrs_ = false;
@@ -858,17 +899,17 @@ void MatmulOperator::AdaptTensors(const vector<Tensor*>& input, const vector<Ten
       input[1]->reorder(src1_shape_bfb_, {0, 3, 1, 2, 4});
       vector<int64_t> src1_shape = input[1]->shape();
       input[1]->set_shape({src1_shape[0] * src1_shape[1], src1_shape[2], src1_shape[3], src1_shape[4]});
-      LOG(INFO) << "Reorder src1 tensor of operator " << name_;
-    // Q SparseLib 3D format, K Dense format
+      DLOG(INFO) << "Reorder src1 tensor of operator " << name_;
+      // Q SparseLib 3D format, K Dense format
     } else if (input[0]->tensor_format() == TensorFormat::MmKMb && input[0]->shape().size() == 4 &&
                input[1]->tensor_format() == TensorFormat::MK && input[1]->shape().size() == 4) {
       input[0]->reorder(src0_shape_bfb_, {0, 3, 1, 2, 4});
       vector<int64_t> src0_shape = input[0]->shape();
       input[0]->set_shape({src0_shape[0] * src0_shape[1], src0_shape[2], src0_shape[3], src0_shape[4]});
-      LOG(INFO) << "Reorder src0 tensor of operator " << name_;
-    // QK BatchMatmul SparseLib 3D format, V Dense format, no need reorder
+      DLOG(INFO) << "Reorder src0 tensor of operator " << name_;
+      // QK BatchMatmul SparseLib 3D format, V Dense format, no need reorder
     } else {
-      LOG(INFO) << "Run with SparseLib 3D format without reorder in operator " << name_;
+      DLOG(INFO) << "Run with SparseLib 3D format without reorder in operator " << name_;
     }
   } else if (stage == "out") {
     return;

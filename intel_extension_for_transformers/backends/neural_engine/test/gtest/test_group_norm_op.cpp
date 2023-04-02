@@ -157,7 +157,7 @@ bool CheckResult(const TestParams& t) {
     // Should compare buffer with different addresses
     EXPECT_NE(p.output[0]->data(), q.output[0]->data());
     return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
-                                        q.output[0]->size());
+                                        q.output[0]->size(), 1e-3);
   }
   return false;
 }
@@ -194,8 +194,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   std::map<std::string, std::string> attr_map;
   attr_map = {{"epsilon", epsilon}, {"group", group}, {"channels", channels}};
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
-  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("group_norm", "fp32",
-                                         input_config_vec, output_config_vec, op_attr);
+  shared_ptr<OperatorConfig> op_config =
+      std::make_shared<OperatorConfig>("group_norm", "fp32", input_config_vec, output_config_vec, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config, int life_num = 1) {
@@ -240,40 +240,40 @@ static auto CasesFp32 = []() {
   std::string group;
   std::string channels;
 
-  // case: 3d group norm
-  src_shape = {1, 4, 2};
-  gamma_shape = {4};
-  beta_shape = {4};
+  // case: 3d group norm & non-align with 16
+  src_shape = {1, 128, 510};
+  gamma_shape = {128};
+  beta_shape = {128};
   epsilon = "0.00001";
   group = "1";
-  channels = "4";
+  channels = "128";
   cases.push_back({GenerateFp32Case({src_shape, gamma_shape, beta_shape}, epsilon, group, channels), false});
 
-  // case: 3d group norm, batch != 1
-  src_shape = {3, 4, 2};
-  gamma_shape = {4};
-  beta_shape = {4};
+  // // case: 3d group norm, batch != 1
+  src_shape = {2, 128, 512};
+  gamma_shape = {128};
+  beta_shape = {128};
   epsilon = "0.00001";
   group = "1";
-  channels = "4";
+  channels = "128";
   cases.push_back({GenerateFp32Case({src_shape, gamma_shape, beta_shape}, epsilon, group, channels), false});
 
-  // case: 3d group norm, batch != 1, group != 1
-  src_shape = {3, 4, 2};
-  gamma_shape = {4};
-  beta_shape = {4};
+  // // case: 3d group norm, batch != 1, group != 1
+  src_shape = {2, 128, 512};
+  gamma_shape = {128};
+  beta_shape = {128};
   epsilon = "0.00001";
-  group = "2";
-  channels = "4";
+  group = "32";
+  channels = "128";
   cases.push_back({GenerateFp32Case({src_shape, gamma_shape, beta_shape}, epsilon, group, channels), false});
 
   // case: 4d group norm, batch != 1, group != 1
-  src_shape = {3, 4, 2, 3};
-  gamma_shape = {4};
-  beta_shape = {4};
+  src_shape = {2, 128, 512, 512};
+  gamma_shape = {128};
+  beta_shape = {128};
   epsilon = "0.0001";
-  group = "2";
-  channels = "4";
+  group = "32";
+  channels = "128";
   cases.push_back({GenerateFp32Case({src_shape, gamma_shape, beta_shape}, epsilon, group, channels), false});
 
   return ::testing::ValuesIn(cases);

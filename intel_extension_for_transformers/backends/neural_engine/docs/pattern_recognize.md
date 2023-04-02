@@ -32,7 +32,7 @@ Finally, write the index and op_type of each node into a list and form the patte
 >
 > 2. `[op_type1, op_type2]` means the the op_type could be op_type1 or op_type2. It is optional. This feature would be useful for adding new pattern representation which just has some different op_types.
 >
-> 3. The sub-chains must have a tail node which is in the main chain, while the head node can be empty ('empty' means the head node is not in the main chain, mostly from the outside of the pattern, using `()` to indicate an empty head node). For example, if node `(6, 'Mul')` has node head node, then its representation list should be: `[(), (6, 'Mul'), (9, ['Add', 'AddV2'])]`
+> 3. The sub-chains must have a tail node which is in the main chain, while the head node can be empty ('empty' means the head node is not in the main chain, mostly from the outside of the pattern, using `()` to indicate an empty head node). For example, if node `(6, 'Mul')` has no head node, then its representation list should be: `[(), (6, 'Mul'), (9, ['Add', 'AddV2'])]`
 
 
 

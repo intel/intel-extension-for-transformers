@@ -30,7 +30,7 @@ PYBIND11_MODULE(neural_engine_py, m) {
       .def(py::init<std::string, std::string>())
       .def(py::init<executor::ModelConfig, std::string>())
       .def(py::init<executor::ModelConfig, std::string, executor::ExecutionOptions>())
-      .def("forward", &executor::Model::Forward, py::arg("input"));
+      .def("forward", &executor::Model::Forward, py::arg("input"), py::return_value_policy::take_ownership);
 
   py::class_<executor::TensorConfig, std::shared_ptr<executor::TensorConfig>>(m, "tensor_config")
       .def(py::init<std::string, const std::vector<int64_t>&, std::string, const std::vector<int64_t>&,

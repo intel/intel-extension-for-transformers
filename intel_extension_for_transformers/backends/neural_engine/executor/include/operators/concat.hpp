@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <string>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -37,11 +38,13 @@ class ConcatOperator : public Operator {
   explicit ConcatOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~ConcatOperator() {}
 
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
   int64_t axis_ = -1;
+  std::string output_dtype_;
   vector<int64_t> dst_shape_;
   bool keep_dims_ = false;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
@@ -49,7 +52,7 @@ class ConcatOperator : public Operator {
   std::vector<memory> src_m_;
   memory dst_m_;
   unordered_map<int, memory> memory_args_;
-  bool same_shape_ = true;
+  bool forward_with_dnnl_ = true;
   int64_t size_before_concat_dim_ = 0;
   int64_t dst_concat_bytes_ = 0;
   vector<int64_t> src_concat_bytes_;

@@ -51,6 +51,9 @@ from transformers.utils import check_min_version, is_offline_mode
 from transformers.utils.versions import require_version
 from typing import Optional
 
+from intel_extension_for_transformers.optimization import BenchmarkConfig
+from intel_extension_for_transformers.optimization.benchmark import benchmark
+
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.19.0.dev0")
@@ -283,12 +286,21 @@ class OptimizationArguments:
     benchmark: bool = field(
         default=False,
         metadata={"help": "run benchmark."})
+    benchmark_only: bool = field(
+        default=False,
+        metadata={"help": "run benchmark only."})
     int8: bool = field(
         default=False,
-        metadata={"help":"run benchmark."})
+        metadata={"help":"load int8 model."})
     accuracy_only: bool = field(
         default=False,
         metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
+    cores_per_instance: int = field(
+        default=4,
+        metadata={"help":"the number of cores used for benchmark."})
+    num_of_instance: int = field(
+        default=-1,
+        metadata={"help":"the number of instance for benchmark."})
 
 
 summarization_name_mapping = {
@@ -337,7 +349,7 @@ def main():
     # Log on each process the small summary:
     logger.warning(
         f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+        + f"\ndistributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
     )
     logger.info(f"Training/evaluation parameters {training_args}")
 
@@ -689,7 +701,7 @@ def main():
                 raise ValueError(
                     "do_train must be set to True for static and aware training quantization."
                 )
-        elif optim_args.quantization_approach == "QuantizationAwareTraining":
+        if optim_args.quantization_approach == "QuantizationAwareTraining":
             early_stopping_patience = 6
             early_stopping_threshold = 0.001 # optional
             trainer.add_callback(transformers.EarlyStoppingCallback(early_stopping_patience,
@@ -707,9 +719,37 @@ def main():
         trainer.max_length = max_length
         trainer.num_beams = num_beams
         model = trainer.quantize(quant_config=quantization_config)
-        exit(0)
 
-    if optim_args.benchmark or optim_args.accuracy_only:
+    if optim_args.benchmark_only:
+        model_path = model_args.model_name_or_path
+        # to avoid wrong architecture from model name (only work for fp32).
+        arch_list = [arch for model, arch in \
+            transformers.AutoModelForSeq2SeqLM._model_mapping._model_mapping.items()]
+        if config.architectures[0] not in arch_list:
+            model_path = model
+        trainer.benchmark(
+            model_path,
+            batch_size=training_args.per_device_eval_batch_size,
+            cores_per_instance=optim_args.cores_per_instance,
+            num_of_instance=optim_args.num_of_instance,
+        )
+
+    if optim_args.benchmark:
+        benchmark_config = BenchmarkConfig(
+            batch_size=16,
+            cores_per_instance=4,
+            num_of_instance=-1,
+        )
+        benchmark(model_args.model_name_or_path, benchmark_config, example_inputs=eval_dataset)
+        #logger.info("metrics keys: {}".format(results.keys()))
+        #throughput = results.get("eval_samples_per_second")
+        #print('Batch size = {:d}'.format(training_args.per_device_eval_batch_size))
+        #print("Finally Eval {} Accuracy: {:.5f}".format(metric_name, results[metric_name]))
+        #print("Latency: {:.5f} ms".format(1000 / throughput))
+        #print("Throughput: {:.5f} samples/sec".format(throughput))
+        exit(0)
+    
+    if optim_args.accuracy_only:
         results = trainer.evaluate(max_length=max_length, num_beams=num_beams)
         logger.info("metrics keys: {}".format(results.keys()))
         throughput = results.get("eval_samples_per_second")
@@ -717,86 +757,6 @@ def main():
         print("Finally Eval {} Accuracy: {:.5f}".format(metric_name, results[metric_name]))
         print("Latency: {:.5f} ms".format(1000 / throughput))
         print("Throughput: {:.5f} samples/sec".format(throughput))
-        exit(0)
-
-    # Training
-    if training_args.do_train:
-        checkpoint = None
-        if training_args.resume_from_checkpoint is not None:
-            checkpoint = training_args.resume_from_checkpoint
-        elif last_checkpoint is not None:
-            checkpoint = last_checkpoint
-        train_result = trainer.train(resume_from_checkpoint=checkpoint)
-        trainer.save_model()  # Saves the tokenizer too for easy upload
-
-        metrics = train_result.metrics
-        max_train_samples = (
-            data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
-        )
-        metrics["train_samples"] = min(max_train_samples, len(train_dataset))
-
-        trainer.log_metrics("train", metrics)
-        trainer.save_metrics("train", metrics)
-        trainer.save_state()
-
-    # Evaluation
-    if training_args.do_eval:
-        logger.info("*** Evaluate ***")
-        metrics = trainer.evaluate(max_length=max_length, num_beams=num_beams, metric_key_prefix="eval")
-        max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
-        metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
-
-        trainer.log_metrics("eval", metrics)
-        trainer.save_metrics("eval", metrics)
-
-    if training_args.do_predict:
-        logger.info("*** Predict ***")
-
-        predict_results = trainer.predict(
-            predict_dataset, metric_key_prefix="predict", max_length=max_length, num_beams=num_beams
-        )
-        metrics = predict_results.metrics
-        max_predict_samples = (
-            data_args.max_predict_samples if data_args.max_predict_samples is not None else len(predict_dataset)
-        )
-        metrics["predict_samples"] = min(max_predict_samples, len(predict_dataset))
-
-        trainer.log_metrics("predict", metrics)
-        trainer.save_metrics("predict", metrics)
-
-        if trainer.is_world_process_zero():
-            if training_args.predict_with_generate:
-                predictions = tokenizer.batch_decode(
-                    predict_results.predictions, skip_special_tokens=True, clean_up_tokenization_spaces=True
-                )
-                predictions = [pred.strip() for pred in predictions]
-                output_prediction_file = os.path.join(training_args.output_dir, "generated_predictions.txt")
-                with open(output_prediction_file, "w") as writer:
-                    writer.write("\n".join(predictions))
-
-    kwargs = {"finetuned_from": model_args.model_name_or_path, "tasks": "summarization"}
-    if data_args.dataset_name is not None:
-        kwargs["dataset_tags"] = data_args.dataset_name
-        if data_args.dataset_config_name is not None:
-            kwargs["dataset_args"] = data_args.dataset_config_name
-            kwargs["dataset"] = f"{data_args.dataset_name} {data_args.dataset_config_name}"
-        else:
-            kwargs["dataset"] = data_args.dataset_name
-
-    if data_args.lang is not None:
-        kwargs["language"] = data_args.lang
-
-    if training_args.push_to_hub:
-        trainer.push_to_hub(**kwargs)
-    else:
-        trainer.create_model_card(**kwargs)
-
-    return results
-
-
-def _mp_fn(index):
-    # For xla_spawn (TPUs)
-    main()
 
 
 if __name__ == "__main__":

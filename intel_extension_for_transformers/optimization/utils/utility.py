@@ -37,3 +37,13 @@ def distributed_init(backend="gloo", world_size=1, rank=-1, init_method=None,
         world_size=world_size, 
         rank=rank
     )
+
+
+def remove_label(input):
+    if "labels" in input:  # for GLUE
+        input.pop('labels')
+    elif "start_positions" in input and "end_positions" in input:  # for SQuAD
+        # pragma: no cover
+        input.pop('start_positions')
+        input.pop('end_positions')
+    return input

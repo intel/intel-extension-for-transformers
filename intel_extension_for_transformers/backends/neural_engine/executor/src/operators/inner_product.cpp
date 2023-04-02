@@ -13,8 +13,11 @@
 //  limitations under the License.
 
 #include "inner_product.hpp"
+#include "fp8_gemm.hpp"
 #include "model.hpp"
 
+static int ip_count = 0;
+int constexpr MAX_IP = 10000;
 namespace executor {
 
 static unordered_map<string, dnnl::memory::data_type> type2mem{
@@ -31,6 +34,7 @@ InnerProductOperator::InnerProductOperator(const shared_ptr<OperatorConfig>& con
       format_any_(true),
       gelu_split_(false),
       weight_cached_(false),
+      beam_forward_(false),
       has_bias_(false) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("src0_perm");
@@ -79,7 +83,7 @@ InnerProductOperator::InnerProductOperator(const shared_ptr<OperatorConfig>& con
   relu_ = (iter != attrs_map.end() && iter->second == "relu") ? true : false;
   append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
-  LOG(INFO) << "append_op: " << append_op_;
+  DLOG(INFO) << "append_op: " << append_op_;
 }
 
 InnerProductOperator::~InnerProductOperator() {}
@@ -196,29 +200,73 @@ void InnerProductOperator::MapTensors(const vector<Tensor*>& input, const vector
   }
 }
 
+static inline float bf162float(uint16_t a) {
+  uint32_t tmp = *(reinterpret_cast<uint32_t*>(&a));
+  tmp = tmp << 16;
+  return *(reinterpret_cast<float*>(&tmp));
+}
+
+static inline uint16_t float2bf16(float a) { return (reinterpret_cast<uint16_t*>(&a))[1]; }
+
 void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // set output dtype and primitive attr(without post_ops) in Prepare
   MapTensors(input, output);
-  LOG(INFO) << "inner product has bias add " << has_bias_;
+  DLOG(INFO) << "inner product has bias add " << has_bias_;
   dst_->set_dtype(output_dtype_);
   if (src0_->dtype() == "fp32" && src1_->dtype() == "fp32") {
     kernel_type_ = Dense;
     weight_zero_ratio_ = GetSparseRatio<float>(static_cast<const float*>(src1_->data()), src1_->shape(), blocksize_);
     if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = Dense;
-    LOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
+    DLOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
   } else if (src0_->dtype() == "u8" && src1_->dtype() == "s8") {
     kernel_type_ = Dense;
     blocksize_ = {4, 16};
     weight_zero_ratio_ = GetSparseRatio<int8_t>(static_cast<const int8_t*>(src1_->data()), src1_->shape(), blocksize_);
     if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = Dense;
-    LOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
+    DLOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
   } else if (src0_->dtype() == "s8" && src1_->dtype() == "u8") {
     blocksize_ = {4, 1};
     weight_zero_ratio_ = GetSparseRatio<int8_t>(static_cast<const int8_t*>(src0_->data()), src0_->shape(), blocksize_);
     if (weight_zero_ratio_ >= sparse_threshold_) kernel_type_ = SparseLib;
-    LOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
+    DLOG(INFO) << "weight zero ratio: " << weight_zero_ratio_;
   } else if (src1_->dtype() == "bf16") {
     kernel_type_ = Dense;
+    auto shape = src1_->shape();
+    if (shape.size() == 2) {
+      if ((shape[0] == 4096 || shape[0] == 16384) && (shape[1] == 4096 || shape[1] == 16384) && ip_count < MAX_IP) {
+        ip_count++;
+        beam_forward_ = true;
+        jit_kernel_.reset(new jit_avx512f_fp8_gemm::IWrapperAvx512f_row_Abf16Bfp8(4, shape[0], shape[1]),
+                          [](void* ptr) {
+                            if (ptr) {
+                              delete (jit_avx512f_fp8_gemm::IWrapperAvx512f_row_Abf16Bfp8*)ptr;
+                            }
+                          });
+        auto src1ptr = reinterpret_cast<uint16_t*>(const_cast<void*>(src1_->data()));
+
+        float minvalue = 1e20, maxvalue = -1e20;
+        for (int i = 0; i < shape[1] * shape[0]; i++) {
+          auto fval = bf162float(src1ptr[i]);
+          if (fval < minvalue) {
+            minvalue = fval;
+          }
+          if (fval > maxvalue) {
+            maxvalue = fval;
+          }
+        }
+        std::vector<uint16_t> rescale_(shape[1] * shape[0]);
+        float maxval = std::abs(minvalue);
+        maxval = std::max(maxval, std::abs(maxvalue));
+        float SCALE = 128.f / maxval;
+        for (int i = 0; i < rescale_.size(); i++) {
+          rescale_[i] = float2bf16(bf162float(src1ptr[i]) * SCALE);
+        }
+        FP8_PTR(jit_kernel_.get())->packBbf16_T(rescale_.data(), shape[0], shape[1], shape[1]);
+        fp8_scale_ = 1 / SCALE;
+      } else {
+        beam_forward_ = false;
+      }
+    }
   }
   int64_t M;
   if (kernel_type_ == SparseLib)
@@ -232,7 +280,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
       kernel_type_ = Unsupported;
   }
 
-  LOG(INFO) << "Innerproduct " << name_ << " execute kenel: " << kernel_type_;
+  DLOG(INFO) << "Innerproduct " << name_ << " execute kenel: " << kernel_type_;
   if (kernel_type_ == Unsupported)
     LOG(ERROR) << "Innerproduct not support: " << src0_->dtype() << " X " << src1_->dtype() << " = " << dst_->dtype();
 
@@ -249,9 +297,15 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
     }
   }
 #endif
-  is_dynamic_ = (output.size() > 1) ||
-                (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
-  if (is_dynamic_) LOG(INFO) << this->name() << " is DYNAMIC!!!";
+  is_dynamic_ =
+      (output.size() > 1) || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
+  if (is_dynamic_) {
+    DLOG(INFO) << this->name() << " is DYNAMIC!!!";
+#ifdef _WIN32
+    LOG(ERROR) << "dynamic quantization did NOT support windows now!!!";
+    throw std::string("Windows");
+#endif
+  }
   switch (kernel_type_) {
     case Dense:
       PrepareDense(input, output);
@@ -424,7 +478,7 @@ void InnerProductOperator::ForwardSparse(const vector<Tensor*>& input, const vec
       } else if (append_op_ == "sigmoid") {
         sparse_gemm_bsc_bias_sigmod_f32(M, N, K, A, B, rowidxs, colptr, ncolptr, blocksize_, bias, C, M_NBLK_);
       } else {
-        LOG(INFO) << "inner product has no such sparse kernel, output tensor is" << output[0]->name();
+        DLOG(INFO) << "inner product has no such sparse kernel, output tensor is" << output[0]->name();
       }
     } else {
       if (append_op_ == "") {
@@ -534,7 +588,8 @@ void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const 
   src0_->set_shape(src0_shape);
   src0_desc_ = {src0_->shape(), jd::data_type::s8, jd::format_type::bsr};
   if (has_bias_) bias_desc_ = {bias_->shape(), jd::data_type::s32, jd::format_type::ab};
-  // set sparse weight, src activation, dst activation and append_sum post activation tensor format
+  // set sparse weight, src activation, dst activation and append_sum post
+  // activation tensor format
   src0_->set_tensor_format(TensorFormat::NK);
   src1_->set_tensor_format(TensorFormat::KM);
   dst_->set_tensor_format(TensorFormat::KM);
@@ -547,7 +602,7 @@ void InnerProductOperator::ShapeInferSparseLib(const vector<Tensor*>& input, con
   if (dispatch_from_ == "InnerProduct" && !dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
         << "InnerProduct to SparseLib has wrong dispatch kernel config...";
-    LOG(INFO) << "Operator " << name_ << " dispatch configs are " << dispatch_config_[0] << "," << dispatch_config_[1]
+    DLOG(INFO) << "Operator " << name_ << " dispatch configs are " << dispatch_config_[0] << "," << dispatch_config_[1]
               << "," << dispatch_config_[2] << "," << dispatch_config_[3];
     // pass 3D shape and tensor_format
     vector<int64_t> src1_3d_shape;
@@ -610,11 +665,12 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
         src1_shape = {src1_shape[1], src1_shape[0]};
       }
       dst_shape = {src0_->shape()[0], src1_shape[1]};
-    // 3D
+      // 3D
     } else if (input[1]->shape().size() == 3) {
       dst_shape = {src1_shape[0], src0_->shape()[0], src1_shape[2]};
     } else {
-      LOG(FATAL) << "Wrong input shape for InnerProduct SparseLib, must be 2D or 3D...";
+      LOG(FATAL) << "Wrong input shape for InnerProduct SparseLib, must be 2D "
+                    "or 3D...";
     }
     src1_->set_shape(src1_shape);
     src1_desc_ = {src1_shape, jd::data_type::u8, jd::format_type::ab};
@@ -657,9 +713,9 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
   void* dst_data = dst_->mutable_data();
   // has op: append_sum
   if (post_ != nullptr && !binary_add_) {
-    LOG(INFO) << "inner product has post op " << post_->name();
-    // The sum primitive requires all source and destination tensors to have the same shape.
-    // Implicit broadcasting is not supported.
+    DLOG(INFO) << "inner product has post op " << post_->name();
+    // The sum primitive requires all source and destination tensors to have the
+    // same shape. Implicit broadcasting is not supported.
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
@@ -674,9 +730,10 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
       LOG(WARNING) << "post tensor will be used by multi node...";
     }
   }
-    std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr,
-                                             dst_data, rescales_.data()};
-    spmm_kern_.execute(runtime_data);
+
+  std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
+                                           rescales_.data()};
+  spmm_kern_.execute(runtime_data);
 }
 #endif
 
@@ -704,13 +761,13 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
           vector<int64_t> src1_3d_shape_origin = {src1_3d_shape[1], src1_3d_shape[0], src1_3d_shape[2]};
           input[1]->reorder(src1_3d_shape_origin);
           input[1]->set_tensor_format(TensorFormat::MmKMb);
-          LOG(INFO) << "Reorder src1 tensor from KM to MmKMb of operator " << name_;
+          DLOG(INFO) << "Reorder src1 tensor from KM to MmKMb of operator " << name_;
         }
         if (post_ != nullptr && !binary_add_ && post_->tensor_format() == TensorFormat::KM) {
           vector<int64_t> post_3d_shape_origin = {src0_->shape()[0], src1_3d_shape[0], src1_3d_shape[2]};
           post_->reorder(post_3d_shape_origin);
           post_->set_tensor_format(TensorFormat::MmKMb);
-          LOG(INFO) << "Reorder post tensor from KM to MmKMb of operator " << name_;
+          DLOG(INFO) << "Reorder post tensor from KM to MmKMb of operator " << name_;
         }
         // set dst activation tensor format
         output[0]->set_tensor_format(TensorFormat::MmKMb);
@@ -719,13 +776,13 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
       }
     } else if (kernel_type_ == Dense) {
       // SparseLib 3D gemm - Dense gemm (no Reorder between)
-      // BatchMatmul (receive SparseLib 3d format) - Reshape - Dense gemm (reshape does not change format)
-      if (input[0]->tensor_format() == TensorFormat::MmKMb ||
-          input[0]->tensor_format() == TensorFormat::BmHnHsBbS) {
-          if (input[0]->tensor_format() == TensorFormat::MmKMb) input[0]->reorder(input[0]->shape(), {0, 2, 1});
-          input[0]->set_tensor_format(TensorFormat::MK);
-          output[0]->set_tensor_format(TensorFormat::MK);
-          input[0]->set_shape({input[0]->shape()[0] * input[0]->shape()[1], input[0]->shape()[2]});
+      // BatchMatmul (receive SparseLib 3d format) - Reshape - Dense gemm
+      // (reshape does not change format)
+      if (input[0]->tensor_format() == TensorFormat::MmKMb || input[0]->tensor_format() == TensorFormat::BmHnHsBbS) {
+        if (input[0]->tensor_format() == TensorFormat::MmKMb) input[0]->reorder(input[0]->shape(), {0, 2, 1});
+        input[0]->set_tensor_format(TensorFormat::MK);
+        output[0]->set_tensor_format(TensorFormat::MK);
+        input[0]->set_shape({input[0]->shape()[0] * input[0]->shape()[1], input[0]->shape()[2]});
       } else {
         return;
       }
@@ -734,10 +791,12 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
     }
   } else if (stage == "out") {
     if (kernel_type_ == SparseLib) {
-      // INFERENCE mode will try to reduce order operations times as few as possible
+      // INFERENCE mode will try to reduce order operations times as few as
+      // possible
       if (execution_options_ptr_->execution_mode != ExecutionMode::INFERENCE) {
         // reorder dst, src and post activation back (optional)
-        // DEBUG and TUNING mode require all the tensors' format to keep same before and after the op
+        // DEBUG and TUNING mode require all the tensors' format to keep same
+        // before and after the op
         if (!dispatch_config_.empty() && dispatch_config_[0] == "SparseLib") {
           vector<int64_t> src1_3d_shape;
           StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
@@ -746,17 +805,17 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
           output[0]->set_tensor_format(TensorFormat::KM);
           output[0]->set_shape({output[0]->shape()[0], output[0]->shape()[1] * output[0]->shape()[2]});
           DstReshapeFusion(input, output);
-          LOG(INFO) << "Reorder dst tensor from MmKMb to KM of operator " << name_;
+          DLOG(INFO) << "Reorder dst tensor from MmKMb to KM of operator " << name_;
           // reorder src and post back
           input[1]->set_tensor_format(TensorFormat::KM);
           if (input[1]->left_life() > 0) input[1]->reorder(src1_3d_shape);
           input[1]->set_shape({src1_3d_shape[1], src1_3d_shape[0] * src1_3d_shape[2]});
-          LOG(INFO) << "Reorder src1 tensor from MmKMb to KM of operator " << name_;
+          DLOG(INFO) << "Reorder src1 tensor from MmKMb to KM of operator " << name_;
           if (post_ != nullptr && !binary_add_) {
             post_->set_tensor_format(TensorFormat::KM);
             if (post_->left_life() > 0) post_->reorder(dst_3d_shape_origin);
             post_->set_shape(output[0]->shape());
-            LOG(INFO) << "Reorder post tensor from MmKMb to KM of operator " << name_;
+            DLOG(INFO) << "Reorder post tensor from MmKMb to KM of operator " << name_;
           }
         }
       }
@@ -793,8 +852,9 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
       ic_dim = src1_min_->size() > 1 ? 0 | (1 << 1) : 0;
       vector<float> src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
       vector<float> src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
-      if (dst_min_ != nullptr)
+      if (dst_min_ != nullptr) {
         dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      }
       rescales_ = GetRescales(src0_scales, src1_scales, dst_scales_, dst_->dtype(), append_eltwise_);
     } else {
       rescales_ = vector<float>(1, 1.f);
@@ -817,14 +877,15 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
   if (!src1_perm_.empty() && src1_perm_ == vector<int64_t>{1, 0}) src1_->set_transpose();
   if (!src0_perm_.empty() && src0_perm_ == vector<int64_t>{1, 0}) src0_->set_transpose();
 
-  if (has_bias_) {
+  if (has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")) {
     vector<int64_t> bias_shape = {src1_shape[0]};
     vector<int64_t> bias_stride = GetStrides(bias_shape);
     bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
     any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
     bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
   }
-  // set src activation, dense weight, dst activation and append_sum post activationtensor format
+  // set src activation, dense weight, dst activation and append_sum post
+  // activationtensor format
   src0_->set_tensor_format(TensorFormat::MK);
   src1_->set_tensor_format(TensorFormat::KN);
   dst_->set_tensor_format(TensorFormat::MK);
@@ -874,11 +935,10 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   if (is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
       int ic_dim = src1_min_->size() > 1 ? 2 : 0;
-      // attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
-      vector<int64_t> scale_shape(src1_shape.size(), 1);
-      scale_shape[src1_shape.size() - 1] = src1_min_->size();
-      scale_md_ = memory::desc(scale_shape, memory::data_type::f32, GetStrides(scale_shape));
-      po.append_binary(algorithm::binary_mul, scale_md_);
+      attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
+      vector<int64_t> scale_shape;
+      scale_shape.push_back(src1_min_->size());
+      scale_f32_mem_ = memory({scale_shape, memory::data_type::f32, GetStrides(scale_shape)}, eng_);
       // need zero point when src0 is u8
       if (src0_->dtype() == "u8") {
         vector<int64_t> zero_point_shape(src1_shape);
@@ -886,9 +946,6 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
         zero_point_shape[src1_shape.size() - 2] = 1;
         vector<int64_t> zero_point_stride = GetStrides(zero_point_shape, {});
         CalculateCompensation(src1_shape, src1_stride, zero_point_stride);
-        // use binary_add to calculate zero_point
-        compensation_md_ = memory::desc(zero_point_shape, memory::data_type::f32, zero_point_stride);
-        po.append_binary(algorithm::binary_add, compensation_md_);
       }
     }
   }
@@ -949,11 +1006,12 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   vector<int64_t> dst_shape_origin = {src0_shape[0], src1_->shape()[0]};
 
   // Sub-step3: fused post transpose, notice it's different that
-  // pre transpose will use the tranposed shape and stride, it's straight forward
-  // post transpose will use origin shape and that means the dst buffer in matmul
-  // is a buffer transposed back from dst_perm(understand tranpose to and transpose back)
-  // pre_transpose: src0_buffer -> pre_transpose -> target_buffer in matmul
-  // post_transpose: target_buffer in matmul<- post transpose <-dst_buffer
+  // pre transpose will use the tranposed shape and stride, it's straight
+  // forward post transpose will use origin shape and that means the dst buffer
+  // in matmul is a buffer transposed back from dst_perm(understand tranpose to
+  // and transpose back) pre_transpose: src0_buffer -> pre_transpose ->
+  // target_buffer in matmul post_transpose: target_buffer in matmul<- post
+  // transpose <-dst_buffer
   vector<int64_t> dst_shape = GetShapes(dst_shape_origin, dst_perm_);
   vector<int64_t> reverse_perm = ReversePerm(dst_perm_);
   vector<int64_t> dst_stride = GetStrides(dst_shape, reverse_perm);
@@ -964,7 +1022,8 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
 
   memory::desc any_dst_md, dst_md;
   if (is_dynamic_) {
-    // inner_product output dtype in dynamic quantization should be fp32 and then manually quantize to u8/s8.
+    // inner_product output dtype in dynamic quantization should be fp32 and
+    // then manually quantize to u8/s8.
     any_dst_md = memory::desc(dst_shape_origin, type2mem["fp32"], memory::format_tag::any);
     dst_md = memory::desc(dst_shape_origin, type2mem["fp32"], dst_stride);
   } else {
@@ -1049,8 +1108,9 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     weight_cached_ = true;
   }
 
-  // If the inner product forward class in the cache pool, just get it from the pool.
-  // Otherwise, do the reshape and send the related class into the cache pool
+  // If the inner product forward class in the cache pool, just get it from the
+  // pool. Otherwise, do the reshape and send the related class into the cache
+  // pool
   size_t key =
       InnerProductPrimitiveFwdFactory::Key(src0_->dtype(), src1_->dtype(), output_dtype_, src0_->shape(),
                                            src1_->shape(), dst_perm_, append_op_, post_->shape(), output_scale_, &eng_);
@@ -1063,8 +1123,7 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   }
   DstReshapeFusion(input, output);
 }
-
-// 2. inference kernel(for int8 and f32)
+//  2. inference kernel(for int8 and f32)
 void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // create a dynamic quantization output with fp32.
   Tensor inner_product_fp32_res;
@@ -1078,7 +1137,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   }
   // has post_op: append_sum
   if (post_ != nullptr && !binary_add_) {
-    LOG(INFO) << "inner product has post op " << post_->name();
+    DLOG(INFO) << "inner product has post op " << post_->name();
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
@@ -1100,6 +1159,25 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   const auto& src0_data = src0_->data();
   // when change data value please use mutable_data
 
+  auto& src0_shape_ = input[0]->shape();
+  auto& dst_shape_ = output[0]->shape();
+  if (beam_forward_ && src0_shape_[0] == 4) {
+    auto& src1_shape = src1_->shape();
+    if (has_bias_) {
+      FP8_PTR(jit_kernel_.get())
+          ->forward(reinterpret_cast<uint16_t*>(const_cast<void*>(src0_->data())), NULL,
+                    reinterpret_cast<uint16_t*>(const_cast<void*>(dst_->data())),
+                    reinterpret_cast<uint16_t*>(const_cast<void*>(bias_->data())), src0_shape_[0], src1_shape[0],
+                    src0_shape_[1], src0_shape_[1], src0_shape_[1], src1_shape[0], 0, fp8_scale_, 1.f, gelu_tanh_);
+    } else {
+      FP8_PTR(jit_kernel_.get())
+          ->forward(reinterpret_cast<uint16_t*>(const_cast<void*>(src0_->data())), NULL,
+                    reinterpret_cast<uint16_t*>(const_cast<void*>(dst_->data())), NULL, src0_shape_[0], src1_shape[0],
+                    src0_shape_[1], src0_shape_[1], src0_shape_[1], src1_shape[0], 0, fp8_scale_, 0.f, gelu_tanh_);
+    }
+    return;
+  }
+
   // 1. Prepare memory objects with data_ptr
   src0_m_.set_data_handle(const_cast<void*>(src0_data), eng_stream_);
   dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), eng_stream_);
@@ -1119,9 +1197,8 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   }
 
   // the runtime calculation of dynamic quantization
-  vector<float> src0_compensation;
   vector<float> dynamic_bias;
-  if (is_dynamic_) DynamicForward(&src0_compensation, &dynamic_bias, &any_bias_m);
+  if (is_dynamic_) DynamicForward(&dynamic_bias, &any_bias_m);
 
   // 3. Insert memory args
   memory_args_[DNNL_ARG_SRC_0] = any_src0_m;
@@ -1130,13 +1207,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   if (post_ != nullptr && binary_add_) {
     void* post_ptr = post_->mutable_data();
     binary_m_.set_data_handle(post_ptr, eng_stream_);
-    // dynamic quantization inserts additional post_ops
-    int op_idx = 0;
-    if (is_dynamic_) {
-      op_idx++;
-      if (src0_->dtype() == "u8") op_idx++;
-    }
-    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(op_idx) | DNNL_ARG_SRC_1] = binary_m_;
+    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = binary_m_;
   }
 
   // 4. Execute the primitive
@@ -1157,6 +1228,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   }
   eng_stream_.wait();
   if (is_dynamic_) {
+    // inner_product_fp32_res.print();
     // quantize the fp32 result of inner_porduct
     if (output.size() > 1) {
       runtime_minmax(reinterpret_cast<float*>(inner_product_fp32_res.mutable_data()), inner_product_fp32_res.size(),
@@ -1165,6 +1237,8 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
       // quantize
       if (output_dtype_ == "u8" || output_dtype_ == "s8") {
         auto scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+        memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
+        // std::cout << name_ << "\tdst:\t" << scales_[0] << std::endl;
 #if __AVX512F__
         Quantize_avx512(inner_product_fp32_res.size(), dst_->dtype(), inner_product_fp32_res.data(),
                         static_cast<const float*>(dst_min_->data()), scales_, dst_->mutable_data());
@@ -1204,39 +1278,35 @@ void InnerProductOperator::RuntimeMinmax() {
   dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
 }
 
-void InnerProductOperator::DynamicForward(vector<float>* src0_compensation_ptr, vector<float>* dynamic_bias_ptr,
-                                          memory* any_bias_m_ptr) {
-  auto& src0_compensation = *src0_compensation_ptr;
+void InnerProductOperator::DynamicForward(vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr) {
   auto& dynamic_bias = *dynamic_bias_ptr;
   auto& any_bias_m = *any_bias_m_ptr;
   int channel_size = src1_min_->size();  // channel_size=1 represent per_tensor
-  memory scale_f32_mem(scale_md_, eng_);
-  memory compensation_mem(compensation_md_, eng_);
-  src0_compensation.resize(compensation_.size());
   rescales_.resize(channel_size);
-  vector<float> src0_scales;
-  vector<float> src1_scales;
-  src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
-  src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
+  const float* src0_scales = reinterpret_cast<const float*>(src0_max_->data());
+  const float* src1_scales = reinterpret_cast<const float*>(src1_max_->data());
+  // std::cout << name_ << "\tsrc0:\t" << src0_scales[0] << std::endl;
+  // std::cout << name_ << "\tsrc1:\t" << src1_scales[0] << std::endl;
   if (channel_size == 1) {
     rescales_[0] = output_scale_ / src0_scales[0] / src1_scales[0];
   } else {
 #pragma omp parallel for
     for (int i = 0; i < channel_size; i++) rescales_[i] = output_scale_ / src0_scales[0] / src1_scales[i];
   }
-  scale_f32_mem.set_data_handle(reinterpret_cast<void*>(rescales_.data()), eng_stream_);
-  // memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem;
-  memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = scale_f32_mem;
+  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales_.data()), eng_stream_);
+  memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
   // The bias loaded from file is not scaled. So need rescaled runtime.
-  if (has_bias_) {
+  // the compensation is src0_scale*sr0_min*ones_like(src0)*src1. compensation
+  // will be add as bias
+  if (has_bias_ || src0_->dtype() == "u8") {
     dynamic_bias.resize(bias_->size());
     float* bias_data = reinterpret_cast<float*>(bias_->mutable_data());
-    if (channel_size == 1) {
+    float com_scale = (*(reinterpret_cast<float*>(src0_min_->mutable_data()))) / output_scale_ * src0_scales[0];
 #pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales_[0];
-    } else {
-#pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales_[i];
+    for (int i = 0; i < bias_->size(); i++) {
+      dynamic_bias[i] = 0;
+      if (has_bias_) dynamic_bias[i] += bias_data[i] / rescales_[channel_size == 1 ? 0 : i];
+      if (src0_->dtype() == "u8") dynamic_bias[i] += compensation_[i] * com_scale;
     }
     bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
     if (inner_product_pd_.bias_desc() != bias_m_.get_desc()) {
@@ -1244,21 +1314,6 @@ void InnerProductOperator::DynamicForward(vector<float>* src0_compensation_ptr, 
       dnnl::reorder(bias_m_, any_bias_m).execute(eng_stream_, bias_m_, any_bias_m);
     }
     memory_args_[DNNL_ARG_BIAS] = any_bias_m;
-  }
-  if (src0_->dtype() == "u8") {
-    // the compensation is src0_scale*sr0_min*ones_like(src0)*src1
-    float src0_min = *(reinterpret_cast<float*>(src0_min_->mutable_data()));
-    if (channel_size == 1) {
-#pragma omp parallel for
-      for (int i = 0; i < compensation_.size(); i++)
-        src0_compensation[i] = compensation_[i] * src0_min / src1_scales[0];
-    } else {
-#pragma omp parallel for
-      for (int i = 0; i < compensation_.size(); i++)
-        src0_compensation[i] = compensation_[i] * src0_min / src1_scales[i];
-    }
-    compensation_mem.set_data_handle(reinterpret_cast<void*>(src0_compensation.data()), eng_stream_);
-    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(1) | DNNL_ARG_SRC_1] = compensation_mem;
   }
 }
 REGISTER_OPERATOR_CLASS(InnerProduct);

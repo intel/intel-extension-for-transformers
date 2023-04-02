@@ -4,7 +4,6 @@ nlpaug
 sacremoses
 onnx>=1.10
 onnxruntime>=1.11
-onnxruntime-extensions
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=1.10.0
 transformers
@@ -12,3 +11,5 @@ intel-tensorflow==2.10.0
 torchprofile
 intel-extension-for-pytorch
 tokenizers<=0.12.1
+transformers>=4.12.0, <=4.26.0
+sentencepiece != 0.1.92

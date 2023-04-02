@@ -22,7 +22,7 @@ mkdir -p $log_dir
 
 medium_n=5
 
-source $script_dir/benchmark.sh --modes=acc,perf --op=sparse_matmul --medium_n=$medium_n --it_per_core=200 \
+source $script_dir/benchmark.sh --modes=acc,perf --op=sparse_matmul --medium_n=$medium_n --it_per_core=500 \
     --batch="$script_dir/inputs/ci_vnni_input" |
     tee "$log_dir/vnni.log"
 source $script_dir/benchmark.sh --modes=acc,perf --op=sparse_matmul --medium_n=$medium_n --it_per_core=300 \
@@ -52,3 +52,12 @@ source $script_dir/benchmark.sh --modes=acc,perf --op=attention --medium_n=$medi
 source $script_dir/benchmark.sh --modes=acc,perf --op=transpose_mha --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_transpose_mha_input" |
     tee "$log_dir/transpose_mha.log"
+source $script_dir/benchmark.sh --modes=acc,perf --op=mha_dense --medium_n=$medium_n --it_per_core=100 \
+    --batch="$script_dir/inputs/ci_mha_dense_input" |
+    tee "$log_dir/mha_dense.log"
+source $script_dir/benchmark.sh --modes=acc,perf --op=dynamic_quant_matmul --medium_n=$medium_n --it_per_core=300 \
+    --batch="$script_dir/inputs/ci_dynamic_quant_matmul_input" |
+    tee "$log_dir/dynamic_quant_matmul.log"
+source $script_dir/benchmark.sh --modes=acc --op=dynamic_quant --medium_n=$medium_n --it_per_core=300 \
+    --batch="$script_dir/inputs/ci_dynamic_quant_input" |
+    tee "$log_dir/dynamic_quant.log"

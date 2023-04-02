@@ -44,4 +44,5 @@ class Unsqueeze(Operator):
                 else:
                    self._attr['axes'] = list2str(self._input_tensors[1].data)
                 self._input_tensors.pop()
-
+        if framework == 'torch':
+            self._attr['axes'] = node.inputsAt(1).toIValue()

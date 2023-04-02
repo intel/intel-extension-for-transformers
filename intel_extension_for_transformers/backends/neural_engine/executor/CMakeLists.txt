@@ -44,7 +44,7 @@ target_compile_definitions(neural_engine PRIVATE NEURALENGINE_SHARED_LIB_)
 if(WIN32)
 target_compile_options(neural_engine PRIVATE /arch:AVX512)
 else()
-target_compile_options(neural_engine PRIVATE -march=skylake-avx512)
+target_compile_options(neural_engine PRIVATE -march=native)
 endif()
 target_compile_definitions(neural_engine PRIVATE NEURALENGINE_BUILD)
 
@@ -52,6 +52,7 @@ set(DEP_LIBS
      dnnl
      yaml-cpp
      glog
+     Eigen3::Eigen
 )
 if(NE_WITH_ONEDNN_GRAPH)
 list(APPEND DEP_LIBS dnnl_graph)

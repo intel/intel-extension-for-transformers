@@ -34,6 +34,7 @@ class TestLastLayerShape(unittest.TestCase):
     
     def test_last_layer_shape_1(self):
         graph = Graph()
+        graph.framework_modeling_config['framework'] = 'onnxruntime'
         input_data_node = OPERATORS['Input']()
         input_tensors = []
         output_tensors = [Tensor(), Tensor(), Tensor()]

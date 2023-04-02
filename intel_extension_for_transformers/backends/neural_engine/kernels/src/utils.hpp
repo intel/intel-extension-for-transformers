@@ -15,10 +15,11 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_
 #include <glog/logging.h>
+#include <omp.h>
 #include <stdlib.h>
 
-#include <atomic>
 #include <algorithm>
+#include <atomic>
 #include <chrono>  // NOLINT
 #include <limits>
 #include <random>
@@ -73,6 +74,8 @@ namespace jd {
 typedef uint16_t bfloat16_t;  // NOLINT
 typedef int64_t dim_t;
 
+uint16_t fp32_to_fp16(const float x);
+float fp16_to_fp32(const uint16_t x);
 template <typename src_t, typename dst_t>
 dst_t cast_to(src_t x);
 
@@ -114,7 +117,8 @@ DECLARE_COMPARE_DATA(uint16_t)
 #endif
 
 template <typename T2, typename T1>
-inline const T2 bit_cast(typename std::enable_if<sizeof(T1) == sizeof(T2), const T1>::type i) {
+inline const T2 bit_cast(T1 i) {
+  static_assert(sizeof(T1) == sizeof(T2), "Bit-casting must preserve size.");
   T2 o;
   memcpy(&o, &i, sizeof(T2));
   return o;
@@ -133,6 +137,8 @@ inline bool is_all_of(std::initializer_list<value_type> il, predicate_type pred)
 }
 
 #define ceil_div(x, y) (((x) + (y)-1) / (y))
+#define pad_to(x, n) (ceil_div(x, n) * (n))
+
 #define pad_to(x, n) (ceil_div(x, n) * (n))
 
 #define is_nonzero(x) (fabs((x)) > (1e-3))
@@ -222,7 +228,7 @@ template <typename T>
 void SPARSE_API_ cast_to_float_array(const void* src, std::vector<float>* dst, int size);
 
 template <typename T>
-void SPARSE_API_ cast_from_float_array(std::vector<float> src, void* dst, int size);
+void SPARSE_API_ cast_from_float_array(const std::vector<float>& src, void* dst, int size);
 
 template <class T>
 inline void safe_delete(T*& ptr) {  // NOLINT(runtime/references)
@@ -315,5 +321,16 @@ inline std::vector<dim_t> dim2stride(const std::vector<dim_t>& dim) {
   }
   return stride;
 }
+
+class n_thread_t {
+ public:
+  explicit n_thread_t(int nthr, bool cap = false) : prev_nthr(omp_get_max_threads()) {
+    if (nthr > 0 && nthr != prev_nthr && (!cap || nthr < prev_nthr)) omp_set_num_threads(nthr);
+  }
+  ~n_thread_t() { omp_set_num_threads(prev_nthr); }
+
+ private:
+  int prev_nthr;
+};
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_UTILS_HPP_

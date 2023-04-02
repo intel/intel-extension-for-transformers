@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 #include "padding_sequence.hpp"
-
+#include <limits>
 #include "common.hpp"
 
 namespace executor {
@@ -27,6 +27,8 @@ PaddingSequenceOperator::PaddingSequenceOperator(const shared_ptr<OperatorConfig
     LOG(ERROR) << "dst_shape attr is empty.";
   }
   StringSplit<int64_t>(&dims_, attrs_map["dims"], ",");
+  iter = attrs_map.find("seq_len_first");
+  seq_len_first_ = (iter != attrs_map.end())? true : false;
 }
 
 void PaddingSequenceOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -37,11 +39,16 @@ void PaddingSequenceOperator::Reshape(const vector<Tensor*>& input, const vector
   // 1.2 Get tensor's adjusted shapes
   // dst shape
   int padding_idx = 0;
+  if (seq_len_first_) padding_idx = 1;
   int broadcast_idx = 0;
   vector<int64_t> dst_shape = attr_dst_shape_;
   for (int i = 0; i < attr_dst_shape_.size(); ++i) {
     if (attr_dst_shape_[i] == -1 && padding_idx < src0_shape.size()) {
-      dst_shape[i] = src0_shape[padding_idx++];
+      if (seq_len_first_) {
+        dst_shape[i] = src0_shape[padding_idx--];
+      } else {
+        dst_shape[i] = src0_shape[padding_idx++];
+      }
       continue;
     }
     if (attr_dst_shape_[i] == 0 && broadcast_idx < dims_.size()) {
@@ -51,7 +58,7 @@ void PaddingSequenceOperator::Reshape(const vector<Tensor*>& input, const vector
   }
 
   // 1.3 Get tensor's adjusted strides (cached)
-  src_shape_ = src0_shape;  // (batch_size, sequence_len)
+  src_shape_ = src0_shape;  // (batch_size, sequence_len) or (sequence_len, batch_size)
   src_stride_ = GetStrides(src0_shape);
 
   LOG_IF(ERROR, dst_shape.size() < 2) << "Padding Sequence dst dims should be greater than 1.";
@@ -84,11 +91,18 @@ void PaddingSequenceOperator::Forward(const vector<Tensor*>& input, const vector
       << "DST ptr should not be equal to SRC ptr.";
 
   // Prepare actual sequence length whose element is 1
-  std::vector<int> seqs_per_batch(src_shape_[0]);
+  int64_t bs = seq_len_first_? src_shape_[1] : src_shape_[0];
+  int64_t seq_len = seq_len_first_? src_shape_[0] : src_shape_[1];
+  std::vector<int> seqs_per_batch(bs);
 #pragma omp parallel for
-  for (int i = 0; i < src_shape_[0]; ++i) {
-    for (int j = src_shape_[1] - 1; j >= 0; --j) {
-      auto idx = i * src_stride_[0] + j;
+  for (int i = 0; i < bs; ++i) {
+    int64_t idx = 0;
+    for (int j = seq_len - 1; j >= 0; --j) {
+      if (seq_len_first_) {
+        idx = i + j * src_stride_[0];
+      } else {
+        idx = i * src_stride_[0] + j;
+      }
       if (mask_data[idx] == 0) {
         continue;
       }

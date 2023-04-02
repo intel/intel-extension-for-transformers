@@ -18,28 +18,61 @@
 
 namespace executor {
 
-RangeOperator::RangeOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+RangeOperator::RangeOperator(const shared_ptr<OperatorConfig>& conf)
+    : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("start");
-  start_ = (iter != attrs_map.end() && iter->second != "") ? StringToNum<int>(iter->second) : 0;
+  start_ = (iter != attrs_map.end() && iter->second != "")
+               ? StringToNum<int>(iter->second)
+               : 0;
   iter = attrs_map.find("step");
-  step_ = (iter != attrs_map.end() && iter->second != "") ? StringToNum<int>(iter->second) : 1;
+  step_ = (iter != attrs_map.end() && iter->second != "")
+              ? StringToNum<int>(iter->second)
+              : 1;
+  iter = attrs_map.find("end_with_shape");
+  end_with_tensor_ = (iter != attrs_map.end() && iter->second != "")
+                         ? StringToNum<int>(iter->second)
+                         : -1;
+  iter = attrs_map.find("end");
+  end_ = (iter != attrs_map.end() && iter->second != "")
+             ? StringToNum<int>(iter->second)
+             : -1;
+  iter = attrs_map.find("algorithm");
+  algo_ = (iter != attrs_map.end() && iter->second != "") ? true : false;
 }
 
-void RangeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+void RangeOperator::Reshape(const vector<Tensor*>& input,
+                            const vector<Tensor*>& output) {
   shape_ = input[0]->shape();
   output[0]->set_shape(shape_);
-  output[0]->set_dtype("int32");
+  output[0]->set_dtype("fp32");
+  if (end_ != -1) {
+    std::vector<int64_t> newshape;
+    newshape.push_back(end_ / step_);
+    output[0]->set_shape(newshape);
+  }
+  if (end_with_tensor_ != -1) {
+    end_ = input[0]->shape()[end_with_tensor_];
+    if (algo_) {
+      end_ += input[1]->shape()[1];
+    }
+    std::vector<int64_t> newshape;
+    newshape.push_back(end_ / step_);
+    output[0]->set_shape(newshape);
+  }
 }
 
-void RangeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  auto dst_data = static_cast<int*>(output[0]->mutable_data());
+void RangeOperator::Forward(const vector<Tensor*>& input,
+                            const vector<Tensor*>& output) {
+  std::vector<int64_t> tmp = output[0]->shape();
+  if (output[0]->shape()[0] < 128) {
+    std::vector<int64_t> newshape{128};
+    output[0]->set_shape(newshape);
+  }
+  auto dst_data = reinterpret_cast<float*>(output[0]->mutable_data());
 #pragma omp parallel for
-  for (int i = 0; i < shape_[1]; ++i) dst_data[i] = start_ + i * step_;
-  int stride = shape_[1] * type2bytes["int32"];
-#pragma omp parallel for
-  for (int i = 1; i < shape_[0]; ++i) memcpy(&dst_data[i * shape_[1]], dst_data, stride);
-  // 2. unref tensors
+  for (int i = 0; i < end_; ++i) dst_data[i] = start_ + i * step_;
+  output[0]->set_shape(tmp);
   this->unref_tensors(input);
 }
 
