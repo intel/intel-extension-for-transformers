@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.resnetBlock_instancenormReshapeFromdiv`
+==========================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.resnetBlock_instancenormReshapeFromdiv
+
+.. autoapi-nested-parse::
+
+   The ResnetBlock_InstanceNormReshapeFromDiv Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.resnetBlock_instancenormReshapeFromdiv.ResnetBlock_InstanceNormReshapeFromDiv
+
+
+
+
+.. py:class:: ResnetBlock_InstanceNormReshapeFromDiv
+
+
+
+   The ResnetBlock_InstanceNormReshapeFromDiv pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'ResnetBlock_InstanceNormReshapeFromDiv' graph.
+   This pattern is used for the reshape node after the QKV.
+
+

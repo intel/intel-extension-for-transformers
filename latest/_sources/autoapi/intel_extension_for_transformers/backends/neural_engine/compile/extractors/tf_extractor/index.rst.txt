@@ -29,7 +29,7 @@ Classes
 
 .. py:class:: TensorflowExtractor
 
-   Bases: :py:obj:`object`
+
 
    The tensorflowExtractor Class.
 

@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transformer2Dmodel_upBlockResize`
+====================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transformer2Dmodel_upBlockResize
+
+.. autoapi-nested-parse::
+
+   The Transformer2DModel_UpBlockResize Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transformer2Dmodel_upBlockResize.Transformer2DModel_UpBlockResize
+
+
+
+
+.. py:class:: Transformer2DModel_UpBlockResize
+
+
+
+   The Transformer2DModel_UpBlockResize pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'Transformer2DModel_UpBlockResize' graph.
+   The search strategy is based on the following pattern mapping configs for the stable diffusionV1-5.
+
+

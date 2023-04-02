@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transformer2Dmodel_instancenormReshapeFromConcat`
+====================================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transformer2Dmodel_instancenormReshapeFromConcat
+
+.. autoapi-nested-parse::
+
+   The Transformer2Dmodel_InstancenormReshapeFromConcat Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transformer2Dmodel_instancenormReshapeFromConcat.Transformer2Dmodel_InstancenormReshapeFromConcat
+
+
+
+
+.. py:class:: Transformer2Dmodel_InstancenormReshapeFromConcat
+
+
+
+   The Transformer2Dmodel_InstancenormReshapeFromConcat pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'Transformer2Dmodel_InstancenormReshapeFromConcat' graph.
+   This pattern is used for the reshape node after the QKV.
+
+

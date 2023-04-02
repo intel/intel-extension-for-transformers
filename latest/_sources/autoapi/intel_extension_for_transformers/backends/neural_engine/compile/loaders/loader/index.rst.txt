@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: Loader
 
-   Bases: :py:obj:`object`
+
 
    Load the model into the frontend of different inference frameworks.
 

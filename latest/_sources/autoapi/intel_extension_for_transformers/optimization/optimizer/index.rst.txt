@@ -23,7 +23,7 @@ Classes
 
 
 
-.. py:class:: Orchestrate_optimizer(model, components: Optional[List[neural_compressor.experimental.Component]] = [], eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+.. py:class:: Orchestrate_optimizer(model, components: Optional[List[neural_compressor.experimental.Component]] = [], eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, output_dir: Optional[str] = 'saved_results')
 
    Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation.
 
@@ -32,30 +32,20 @@ Classes
       Run the scheduler.
 
 
+   .. py:method:: save_model(output_dir, tokenizer=None)
+
+      Save the model and tokenizer in the output directory.
+
+      :param output_dir: the path to save config.json and pytorch_model.bin.
+      :param tokenizer: the tokenizer object, use it if you want to
+                        save tokenizer.json in output_dir. Defaults to None.
+      :type tokenizer: object, optional
+
+
 
 .. py:class:: NoTrainerOptimizer(model, output_dir: Optional[str] = 'saved_results')
 
    Optimizer without using Trainer.
-
-   .. py:property:: eval_func
-
-      Get the evaluation function.
-
-   .. py:property:: train_func
-
-      Get the train function.
-
-   .. py:property:: calib_func
-
-      Get the calib function.
-
-   .. py:property:: provider
-
-      Get the provider.
-
-   .. py:property:: calib_dataloader
-
-      Get the calibration dataloader.
 
    .. py:method:: init_quantizer(quant_config, provider: str = Provider.INC.value)
 
@@ -113,6 +103,16 @@ Classes
       :param provider: define the distillation provider.
       :param eval_func: evaluation function.
       :param train_func: train function.
+
+
+   .. py:method:: save_model(output_dir, tokenizer=None)
+
+      Save the model and tokenizer in the output directory.
+
+      :param output_dir: the path to save config.json and pytorch_model.bin.
+      :param tokenizer: the tokenizer object, use it if you want to
+                        save tokenizer.json in output_dir. Defaults to None.
+      :type tokenizer: object, optional
 
 
 

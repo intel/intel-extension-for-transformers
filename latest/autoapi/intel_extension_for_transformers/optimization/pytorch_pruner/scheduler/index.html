@@ -13,7 +13,6 @@
     <script src="../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
         <script src="../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -111,7 +114,7 @@
 </table>
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.register_scheduler">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">register_scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.register_scheduler" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">register_scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.register_scheduler" title="Permalink to this definition"></a></dt>
 <dd><p>Class decorator used to register a Scheduler subclass to the registry.</p>
 <p>Decorator function used before a Scheduler subclass.
 Make sure that the Scheduler class decorated by this function can be registered in SCHEDULERS.</p>
@@ -133,7 +136,7 @@ Make sure that the Scheduler class decorated by this function can be registered 
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.get_scheduler">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">get_scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.get_scheduler" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">get_scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.get_scheduler" title="Permalink to this definition"></a></dt>
 <dd><p>Get registered scheduler class.</p>
 <p>Get a scheduler object from SCHEDULERS.</p>
 <dl class="field-list simple">
@@ -148,7 +151,7 @@ Make sure that the Scheduler class decorated by this function can be registered 
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">Scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">Scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler" title="Permalink to this definition"></a></dt>
 <dd><p>Pruning Scheduler.</p>
 <p>The class which defines a sparsity changing process during pruning.
 Mainly contains two types:</p>
@@ -165,13 +168,13 @@ Mainly contains two types:</p>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler.config">
-<span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler.config" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">config</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler.config" title="Permalink to this definition"></a></dt>
 <dd><p>A config dict object. Contains the scheduler information.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler.update_sparsity_ratio">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_sparsity_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aggressive_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_prune_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_prune_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">masks</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler.update_sparsity_ratio" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update_sparsity_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aggressive_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_prune_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_prune_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">masks</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler.update_sparsity_ratio" title="Permalink to this definition"></a></dt>
 <dd><p>To be implemented in subclasses.</p>
 </dd></dl>
 
@@ -179,9 +182,8 @@ Mainly contains two types:</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">OneshotScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler" title="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Scheduler</span></code></a></p>
-<p>Pruning Scheduler.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">OneshotScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler" title="Permalink to this definition"></a></dt>
+<dd><p>Pruning Scheduler.</p>
 <p>A Scheduler class derived from Scheduler.
 Prune the model to target sparsity once.</p>
 <dl class="field-list simple">
@@ -196,7 +198,7 @@ Prune the model to target sparsity once.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler.update_sparsity_ratio">
-<span class="sig-name descname"><span class="pre">update_sparsity_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aggressive_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_prune_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_prune_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">masks</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler.update_sparsity_ratio" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">update_sparsity_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aggressive_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_prune_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_prune_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">masks</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.OneshotScheduler.update_sparsity_ratio" title="Permalink to this definition"></a></dt>
 <dd><p>Return the aggressive ratio.</p>
 </dd></dl>
 
@@ -204,9 +206,8 @@ Prune the model to target sparsity once.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">IterativeScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler" title="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.Scheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Scheduler</span></code></a></p>
-<p>Pruning Scheduler.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.</span></span><span class="sig-name descname"><span class="pre">IterativeScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler" title="Permalink to this definition"></a></dt>
+<dd><p>Pruning Scheduler.</p>
 <p>A Scheduler class derived from Scheduler.
 Prune the model to from dense to target sparsity in several steps.</p>
 <dl class="field-list simple">
@@ -221,7 +222,7 @@ Prune the model to from dense to target sparsity in several steps.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler.update_sparsity_ratio">
-<span class="sig-name descname"><span class="pre">update_sparsity_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_prune_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_prune_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">masks</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler.update_sparsity_ratio" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">update_sparsity_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_prune_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_prune_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">masks</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/scheduler.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.scheduler.IterativeScheduler.update_sparsity_ratio" title="Permalink to this definition"></a></dt>
 <dd><p>Obtain new target sparsity ratio according to the step.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

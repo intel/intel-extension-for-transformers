@@ -24,25 +24,19 @@ Classes
 
 .. py:class:: Graph
 
-   Bases: :py:obj:`object`
+
 
    The defintion of the neural engine graph.
 
-   .. py:property:: nodes
+   .. py:method:: add_config_item(key, val)
 
-      Get nodes.
+      Add a pair into framework_modeling_config
 
-   .. py:property:: execution_options
 
-      The options for execution.
+   .. py:method:: inquire_config_item(key)
 
-   .. py:property:: weight_data
+      Get a pair from framework_modeling_config
 
-      Get the weight_bytes to bin file.
-
-   .. py:property:: net_config
-
-      Get the network config dict to yaml file.
 
    .. py:method:: insert_nodes(index, nodes)
 
@@ -118,11 +112,12 @@ Classes
 
       The initialization of the neural engine graph.
 
-      for example:
-              from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
-              newgraph = Graph()
-              newgraph.graph_init('./ir/conf.yaml', './ir/model.bin')
-              out = newgraph.inference([input_0, input_1, input_2])
+      Example::
+
+          from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+          newgraph = Graph()
+          newgraph.graph_init('./ir/conf.yaml', './ir/model.bin')
+          out = newgraph.inference([input_0, input_1, input_2])
 
 
    .. py:method:: save(output_dir=None)

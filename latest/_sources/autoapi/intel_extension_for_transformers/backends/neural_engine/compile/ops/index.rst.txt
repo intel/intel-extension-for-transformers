@@ -23,6 +23,7 @@ Submodules
    cast/index.rst
    concat/index.rst
    conv/index.rst
+   cos/index.rst
    empty_ops/index.rst
    expand_dims/index.rst
    fused_batch_matmul_v2/index.rst
@@ -36,6 +37,7 @@ Submodules
    iterator_get_next/index.rst
    iterator_v2/index.rst
    layer_normalization/index.rst
+   log_softmax/index.rst
    map_and_batch_dataset/index.rst
    matmul/index.rst
    mean/index.rst
@@ -46,15 +48,23 @@ Submodules
    op/index.rst
    optimize_dataset/index.rst
    pack/index.rst
+   padding_sequence/index.rst
    placeholder/index.rst
+   pos_embed/index.rst
+   pow/index.rst
    quantize_linear/index.rst
    quantize_v2/index.rst
    quantized_fused_matmul_and_dequantize/index.rst
    quantized_matmul_with_bias_and_dequantize/index.rst
    reduce_mean/index.rst
    reduce_sum/index.rst
+   reorder/index.rst
    reshape/index.rst
+   rsub/index.rst
    scatter_elements/index.rst
+   shape/index.rst
+   sin/index.rst
+   size/index.rst
    softmax/index.rst
    split/index.rst
    squeeze/index.rst
@@ -64,6 +74,7 @@ Submodules
    transpose/index.rst
    unpack/index.rst
    unsqueeze/index.rst
+   view/index.rst
 
 
 Package Contents
@@ -96,62 +107,5 @@ Attributes
 
 
 
-.. py:class:: Operator
-
-   Bases: :py:obj:`object`
-
-   The class of neural engine operator.
-
-   .. py:property:: name
-
-      Get the operator name.
-
-   .. py:property:: op_type
-
-      Get op_type.
-
-   .. py:property:: input_tensors
-
-      Get input_tensors.
-
-   .. py:property:: output_tensors
-
-      Get output tensor.
-
-   .. py:property:: attr
-
-      Get attr.
-
-   .. py:property:: config
-
-      Get the op config in the graph.
-
-   .. py:method:: set_attr(framework, node)
-
-      Attr initialization.
-
-
-   .. py:method:: extract(framework, node, model, nodes_dict)
-
-      Extract the op from framework.
-
-
-   .. py:method:: construct(name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict())
-
-      Make the op by set the attributes.
-
-
-
-.. py:function:: operator_registry(operator_type)
-
-   The class decorator used to register all Algorithm subclasses.
-
-   :param cls: The class of register.
-   :type cls: class
-   :param operator_type: The operator registration name(s)
-   :type operator_type: str or str list
-
-   :returns: The class of register.
-   :rtype: cls
 
 

@@ -13,15 +13,12 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Kernels" href="../../../kernel.html" />
-    <link rel="prev" title="C++ APIs" href="../api_c_engine.html" /> 
+    <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,23 +44,15 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../../../neural_engine.html">Neural Engine</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/docs/Installation.html">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../api_engine.html">Python APIs</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../api_c_engine.html">C++ APIs</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Class dispatcher</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#_CPPv48executor">namespace executor</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -80,8 +69,6 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../../../neural_engine.html">Neural Engine</a></li>
-          <li class="breadcrumb-item"><a href="../api_c_engine.html">C++ APIs</a></li>
       <li class="breadcrumb-item active">Class dispatcher</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../_sources/docs/api_doc/engine/dispatcher.rst.txt" rel="nofollow"> View page source</a>
@@ -266,13 +253,18 @@
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tE">
-<span id="_CPPv3N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tE"></span><span id="_CPPv2N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tE"></span><span id="executor::Dispatcher::set_it_shape__vector:int64_t:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1a3a32b567140d620c161c8858b984bd06"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_it_shape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">input_shape</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tE" title="Permalink to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher15append_it_shapeEK6vectorI7int64_tE">
+<span id="_CPPv3N8executor10Dispatcher15append_it_shapeEK6vectorI7int64_tE"></span><span id="_CPPv2N8executor10Dispatcher15append_it_shapeEK6vectorI7int64_tE"></span><span id="executor::Dispatcher::append_it_shape__vector:int64_t:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1a920342ad1d98b4145c6274b1a37a3deb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">append_it_shape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">input_shape</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher15append_it_shapeEK6vectorI7int64_tE" title="Permalink to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12set_ot_shapeEK6vectorI7int64_tE">
-<span id="_CPPv3N8executor10Dispatcher12set_ot_shapeEK6vectorI7int64_tE"></span><span id="_CPPv2N8executor10Dispatcher12set_ot_shapeEK6vectorI7int64_tE"></span><span id="executor::Dispatcher::set_ot_shape__vector:int64_t:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1a36f7387944ba83c09f2e9d12a455bce2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_ot_shape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">output_shape</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12set_ot_shapeEK6vectorI7int64_tE" title="Permalink to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher15append_ot_shapeEK6vectorI7int64_tE">
+<span id="_CPPv3N8executor10Dispatcher15append_ot_shapeEK6vectorI7int64_tE"></span><span id="_CPPv2N8executor10Dispatcher15append_ot_shapeEK6vectorI7int64_tE"></span><span id="executor::Dispatcher::append_ot_shape__vector:int64_t:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1a5c431a6353d49a11803a5257d94f012a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">append_ot_shape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">output_shape</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher15append_ot_shapeEK6vectorI7int64_tE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tEi">
+<span id="_CPPv3N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tEi"></span><span id="_CPPv2N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tEi"></span><span id="executor::Dispatcher::set_it_shape__vector:int64_t:C.i"></span><span class="target" id="classexecutor_1_1Dispatcher_1a1a8ae8ce17ef07144c450d5ed1724ee3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_it_shape</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">int64_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">output_shape</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">index</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher12set_it_shapeEK6vectorI7int64_tEi" title="Permalink to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
@@ -297,7 +289,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE">
-<span id="_CPPv3N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE"></span><span id="_CPPv2N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE"></span><span id="executor::Dispatcher::set_attrs__std::map:string.string:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1a56f01f47396e7bdb086687382d3c89e9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_attrs</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">input_attrs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv3N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE"></span><span id="_CPPv2N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE"></span><span id="executor::Dispatcher::set_attrs__std::map:string.string:C"></span><span class="target" id="classexecutor_1_1Dispatcher_1aeb9d3e043536867e2d9d16f726ba2d40"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_attrs</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">input_attrs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8executor10Dispatcher9set_attrsEKNSt3mapI6string6stringEE" title="Permalink to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
@@ -406,10 +398,7 @@
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../api_c_engine.html" class="btn btn-neutral float-left" title="C++ APIs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../../../kernel.html" class="btn btn-neutral float-right" title="Kernels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 

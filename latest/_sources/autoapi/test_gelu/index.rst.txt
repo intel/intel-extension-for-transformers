@@ -14,14 +14,14 @@ Classes
 
 .. autoapisummary::
 
-   test_gelu.TestGelu
+   test_gelu.TestTorchOP
 
 
 
 
-.. py:class:: TestGelu(methodName='runTest')
+.. py:class:: TestTorchOP(methodName='runTest')
 
-   Bases: :py:obj:`unittest.TestCase`
+
 
    A class whose instances are single test cases.
 

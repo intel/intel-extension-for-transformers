@@ -27,7 +27,7 @@ Classes
 
 .. py:class:: Extractor
 
-   Bases: :py:obj:`object`
+
 
    Extractor base class.
 

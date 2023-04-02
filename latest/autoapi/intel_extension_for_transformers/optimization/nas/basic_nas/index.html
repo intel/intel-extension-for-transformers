@@ -13,7 +13,6 @@
     <script src="../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
         <script src="../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -92,9 +95,8 @@
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.nas.basic_nas.</span></span><span class="sig-name descname"><span class="pre">BasicNAS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_fname_or_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_builder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">neural_compressor.experimental.nas.nas.NASBase</span></code></p>
-<p>Basic NAS approach.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.nas.basic_nas.</span></span><span class="sig-name descname"><span class="pre">BasicNAS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_fname_or_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_builder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/nas/basic_nas.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS" title="Permalink to this definition"></a></dt>
+<dd><p>Basic NAS approach.</p>
 <p>Defining the pipeline for basic NAS approach.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -106,21 +108,9 @@ model architecture parameters.</p></li>
 </ul>
 </dd>
 </dl>
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.train_func">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">train_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.train_func" title="Permalink to this definition"></a></dt>
-<dd><p>Not support get train_func.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.eval_func">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">eval_func</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.eval_func" title="Permalink to this definition"></a></dt>
-<dd><p>Not support get eval_func.</p>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.execute">
-<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">res_save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.execute" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">res_save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/nas/basic_nas.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.execute" title="Permalink to this definition"></a></dt>
 <dd><p>Execute the search process.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -131,7 +121,7 @@ model architecture parameters.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.estimate">
-<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.estimate" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/nas/basic_nas.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.estimate" title="Permalink to this definition"></a></dt>
 <dd><p>Estimate performance of the model.</p>
 <p>Depends on specific NAS algorithm. Here we use train and evaluate.</p>
 <dl class="field-list simple">
@@ -143,7 +133,7 @@ model architecture parameters.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.init_by_cfg">
-<span class="sig-name descname"><span class="pre">init_by_cfg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_fname_or_obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.init_by_cfg" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">init_by_cfg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_fname_or_obj</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/nas/basic_nas.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.nas.basic_nas.BasicNAS.init_by_cfg" title="Permalink to this definition"></a></dt>
 <dd><p>Initialize the configuration.</p>
 </dd></dl>
 

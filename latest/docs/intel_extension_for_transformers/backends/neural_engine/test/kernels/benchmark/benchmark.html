@@ -13,7 +13,6 @@
     <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -99,6 +102,9 @@
 </li>
 <li><p><a class="reference external" href="#softmax">softmax</a></p></li>
 <li><p><a class="reference external" href="#attention">attention</a></p></li>
+<li><p><a class="reference external" href="#static-mha">Static MHA</a></p></li>
+<li><p><a class="reference external" href="#dynamic_quant_matmul">dynamic_quant_matmul</a></p></li>
+<li><p><a class="reference external" href="#dynamic_quant">dynamic_quant</a></p></li>
 </ul>
 </li>
 </ul>
@@ -337,6 +343,60 @@ make<span class="w"> </span>-j
 <section id="id8">
 <h4>Examples<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h4>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>attention<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">128</span><span class="w"> </span><span class="m">0</span>.5<span class="w"> </span><span class="m">1</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="static-mha">
+<h3>Static MHA<a class="headerlink" href="#static-mha" title="Permalink to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>mha_dense<span class="w"> </span>&lt;batch_size&gt;<span class="w"> </span>&lt;seq_len&gt;<span class="w"> </span>&lt;head_num&gt;<span class="w"> </span>&lt;head_size&gt;<span class="w"> </span><span class="o">[</span>dst_type<span class="o">]</span><span class="w"> </span><span class="o">[</span>padding_mask<span class="o">]</span><span class="w"> </span><span class="o">[</span>badd_dim<span class="o">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">batch_size</span></code> / <code class="docutils literal notranslate"><span class="pre">seq_len</span></code> / <code class="docutils literal notranslate"><span class="pre">head_num</span></code> / <code class="docutils literal notranslate"><span class="pre">head_size</span></code> are the the problem size.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dst_type</span></code> is the output data type, could be one of <code class="docutils literal notranslate"><span class="pre">u8</span></code> / <code class="docutils literal notranslate"><span class="pre">s8</span></code> / <code class="docutils literal notranslate"><span class="pre">fp32</span></code>; default to <code class="docutils literal notranslate"><span class="pre">u8</span></code> if leave blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">padding_mask</span></code> a positive integer which is the length of sequence(s) before padding; leave blank pr set to negative value so that it defaults to <code class="docutils literal notranslate"><span class="pre">seq_len</span></code> (no padding).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">badd_dim</span></code> dimension of the tensor to apply binary_add before performing softmax; leave blank pr set to non-positive value to disable the binary add; set to <code class="docutils literal notranslate"><span class="pre">1</span></code>-<code class="docutils literal notranslate"><span class="pre">4</span></code> to apply the binary_add with broadcasting if necessary.</p></li>
+</ul>
+<section id="id9">
+<h4>Examples<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>mha_dense<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2048</span><span class="w"> </span><span class="m">16</span><span class="w"> </span><span class="m">256</span><span class="w"> </span>u8<span class="w"> </span>-1<span class="w"> </span><span class="m">4</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="dynamic-quant-matmul">
+<h3>dynamic_quant_matmul<a class="headerlink" href="#dynamic-quant-matmul" title="Permalink to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>dynamic_quant_matmul<span class="w"> </span>&lt;batch_size&gt;<span class="w"> </span>&lt;m&gt;<span class="w"> </span>&lt;n&gt;<span class="w"> </span>&lt;k&gt;<span class="w"> </span>&lt;large_weight_threshold&gt;<span class="w"> </span>&lt;add_bias&gt;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">batch_size</span></code> / <code class="docutils literal notranslate"><span class="pre">m</span></code> / <code class="docutils literal notranslate"><span class="pre">n</span></code> / <code class="docutils literal notranslate"><span class="pre">k</span></code> are the the problem size.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">large_weight_threshold</span></code> should be 0-1, if weight*large_weight_threshold large than L2-cache size, kernel will select large_wei jit-path.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_bias</span></code> could be one of <code class="docutils literal notranslate"><span class="pre">true</span></code> / <code class="docutils literal notranslate"><span class="pre">false</span></code>, indicate whether add a bias value after gemm.</p></li>
+</ul>
+<p>Please note that dynamic_quant_matmul only supports s8-activation, s8-weight and s8-destination, so the user does not need to specify the data type.</p>
+<section id="id10">
+<h4>Examples<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>dynamic_quant_matmul<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">512</span><span class="w"> </span><span class="m">1280</span><span class="w"> </span><span class="m">1280</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="dynamic-quant">
+<h3>dynamic_quant<a class="headerlink" href="#dynamic-quant" title="Permalink to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>dynamic_quant<span class="w"> </span>&lt;channel_num&gt;<span class="w"> </span>&lt;quantize_dim_elt_num&gt;<span class="w"> </span>&lt;src_data_type&gt;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">channel_num</span></code> the number of channels in input-tensor.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">quantize_dim_elt_num</span></code> the number of elements in the quantized dim.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src_data_type</span></code> could be one of <code class="docutils literal notranslate"><span class="pre">fp32</span></code> / <code class="docutils literal notranslate"><span class="pre">bf16</span></code>, indicate the data type of input-tensor.</p></li>
+</ul>
+<p>Please note that dynamic_quant only supports per-channel symmetric quantization.</p>
+<section id="id11">
+<h4>Examples<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>dynamic_quant<span class="w"> </span><span class="m">1280</span><span class="w"> </span><span class="m">1280</span><span class="w"> </span>bf16
 </pre></div>
 </div>
 </section>

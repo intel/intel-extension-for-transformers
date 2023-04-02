@@ -13,4 +13,5 @@ Implementation Details
    docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_layernormalized_spmm.md  
    docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_matmul.md  
    docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_mha.md  
+   docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_dynamic_quant_matmul.md  
 

@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: QuantizationMode
 
-   Bases: :py:obj:`enum.Enum`
+
 
    Currently support three quantization modes.
 

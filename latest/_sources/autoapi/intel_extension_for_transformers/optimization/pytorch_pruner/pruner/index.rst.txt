@@ -205,7 +205,7 @@ Functions
 
 .. py:class:: MagnitudePruner(modules, config)
 
-   Bases: :py:obj:`Pruner`
+
 
    Pruning Pruner.
 
@@ -226,7 +226,7 @@ Functions
 
 .. py:class:: SnipPruner(modules, config)
 
-   Bases: :py:obj:`Pruner`
+
 
    Pruning Pruner.
 
@@ -251,7 +251,7 @@ Functions
 
 .. py:class:: SnipMomentumPruner(modules, config)
 
-   Bases: :py:obj:`Pruner`
+
 
    Pruning Pruner.
 
@@ -275,7 +275,7 @@ Functions
 
 .. py:class:: PatternLockPruner(modules, config)
 
-   Bases: :py:obj:`Pruner`
+
 
    Pruning Pruner.
 

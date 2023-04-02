@@ -1,0 +1,166 @@
+:py:mod:`intel_extension_for_transformers.optimization.pytorch_pruner.criteria`
+===============================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.pytorch_pruner.criteria
+
+.. autoapi-nested-parse::
+
+   pruning criterion.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.pytorch_pruner.criteria.PruningCriterion
+   intel_extension_for_transformers.optimization.pytorch_pruner.criteria.MagnitudeCriterion
+   intel_extension_for_transformers.optimization.pytorch_pruner.criteria.GradientCriterion
+   intel_extension_for_transformers.optimization.pytorch_pruner.criteria.SnipCriterion
+   intel_extension_for_transformers.optimization.pytorch_pruner.criteria.SnipMomentumCriterion
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.optimization.pytorch_pruner.criteria.register_criterion
+   intel_extension_for_transformers.optimization.pytorch_pruner.criteria.get_criterion
+
+
+
+.. py:function:: register_criterion(name)
+
+   Register a criterion to the registry.
+
+
+.. py:function:: get_criterion(config, modules)
+
+   Get registered criterion class.
+
+
+.. py:class:: PruningCriterion(modules, config)
+
+   Pruning base criterion.
+
+   :param config: A config dict object that includes information about pruner and pruning criterion.
+   :param modules: A dict {"module_name": Tensor} that stores the pruning modules' weights.
+
+   .. attribute:: scores
+
+      A dict {"module_name": Tensor} that stores the scores of pruning modules.
+
+   .. py:method:: on_step_begin()
+
+      Calculate and store the pruning scores of pruning modules at the beginning of a step.
+
+
+   .. py:method:: on_before_optimizer_step()
+
+      Calculate and store the pruning scores of pruning modules before the optimizer step.
+
+
+   .. py:method:: on_after_optimizer_step()
+
+      Calculate and store the pruning scores of pruning modules after the optimizer step.
+
+
+
+.. py:class:: MagnitudeCriterion(modules, config)
+
+
+
+   Pruning criterion.
+
+   The magnitude criterion_class is derived from PruningCriterion.
+   The magnitude value is used to score and determine if a weight is to be pruned.
+
+   :param config: A config dict object that includes information about pruner and pruning criterion.
+   :param modules: A dict {"module_name": Tensor} that stores the pruning modules' weights.
+
+   .. attribute:: scores
+
+      A dict {"module_name": Tensor} that stores the scores of pruning modules.
+
+   .. py:method:: on_step_begin()
+
+      Calculate and store the pruning scores based on magtinude criterion.
+
+
+
+.. py:class:: GradientCriterion(modules, config)
+
+
+
+   Pruning criterion.
+
+   The gradient criterion_class is derived from PruningCriterion.
+   The absolute value of gradient is used to score and determine if a weight is to be pruned.
+
+   :param config: A config dict object that includes information about pruner and pruning criterion.
+   :param modules: A dict {"module_name": Tensor} that stores the pruning modules' weights.
+
+   .. attribute:: scores
+
+      A dict {"module_name": Tensor} that stores the scores of pruning modules.
+
+   .. py:method:: on_before_optimizer_step()
+
+      Calculate and store the pruning scores based on gradient criterion.
+
+
+
+.. py:class:: SnipCriterion(modules, config)
+
+
+
+   Pruning criterion.
+
+   The snip criterion_class is derived from PruningCriterion.
+   The product of magnitude and gradient is used to score and determine if a weight is to be pruned.
+   Please refer to SNIP: Single-shot Network Pruning based on Connection Sensitivity.
+   (https://arxiv.org/abs/1810.02340)
+
+   :param config: A config dict object that includes information about pruner and pruning criterion.
+   :param modules: A dict {"module_name": Tensor} that stores the pruning modules' weights.
+
+   .. attribute:: scores
+
+      A dict {"module_name": Tensor} that stores the scores of pruning modules.
+
+   .. py:method:: on_before_optimizer_step()
+
+      Calculate and store the pruning scores based on snip criterion.
+
+
+
+.. py:class:: SnipMomentumCriterion(modules, config)
+
+
+
+   Pruning criterion.
+
+   The snip_momentum criterion_class is derived from PruningCriterion.
+   A momentum mechanism is used to calculate snip score, which determines if a weight is to be pruned.
+
+   :param config: A config dict object that includes information about pruner and pruning criterion.
+   :param modules: A dict {"module_name": Tensor} that stores the pruning modules' weights.
+   :param alpha: A parameter that determines how much of the snip score is preserved from last pruning step.
+   :param beta: A parameter that determines how much of the snip score is updated at the current step.
+
+   .. attribute:: scores
+
+      A dict {"module_name": Tensor} that stores the scores of pruning modules.
+
+   .. py:method:: on_before_optimizer_step()
+
+      Calculate and store the pruning scores based on snip_momentum criterion.
+
+
+

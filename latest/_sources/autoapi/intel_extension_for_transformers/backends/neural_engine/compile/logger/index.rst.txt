@@ -38,7 +38,7 @@ Functions
 
 .. py:class:: Logger
 
-   Bases: :py:obj:`object`
+
 
    The logger class.
 

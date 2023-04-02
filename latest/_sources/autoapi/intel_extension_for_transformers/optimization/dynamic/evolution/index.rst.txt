@@ -49,7 +49,7 @@ Functions
 
 .. py:class:: Evolution(model, max_seq_length, device, evaluate, lower_constraint=0, upper_constraint=None, eval_metric='eval_f1')
 
-   Bases: :py:obj:`object`
+
 
    Class of Evolution supports for evolutionary searching.
 

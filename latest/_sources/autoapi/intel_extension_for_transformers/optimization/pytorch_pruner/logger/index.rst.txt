@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.optimization.pytorch_pruner.logger`
+=============================================================================
+
+.. py:module:: intel_extension_for_transformers.optimization.pytorch_pruner.logger
+
+.. autoapi-nested-parse::
+
+   logger module.
+
+
+

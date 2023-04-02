@@ -13,7 +13,6 @@
     <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -88,16 +91,30 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QuantizeLinear</span></code></a></p></td>
 <td><p>Parse the QuantizeLinear operator to the neural engine.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.Quantize" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.Quantize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Quantize</span></code></a></p></td>
+<td><p>Register the Quantize operator.</p></td>
+</tr>
 </tbody>
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.</span></span><span class="sig-name descname"><span class="pre">QuantizeLinear</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Parse the QuantizeLinear operator to the neural engine.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.</span></span><span class="sig-name descname"><span class="pre">QuantizeLinear</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/quantize_linear.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear" title="Permalink to this definition"></a></dt>
+<dd><p>Parse the QuantizeLinear operator to the neural engine.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear.set_attr">
-<span class="sig-name descname"><span class="pre">set_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear.set_attr" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">set_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/quantize_linear.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear.set_attr" title="Permalink to this definition"></a></dt>
+<dd><p>Extract the node attr from onnxruntime.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.Quantize">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.</span></span><span class="sig-name descname"><span class="pre">Quantize</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/quantize_linear.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.Quantize" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Quantize operator.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.Quantize.set_attr">
+<span class="sig-name descname"><span class="pre">set_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/quantize_linear.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.Quantize.set_attr" title="Permalink to this definition"></a></dt>
 <dd><p>Extract the node attr from onnxruntime.</p>
 </dd></dl>
 

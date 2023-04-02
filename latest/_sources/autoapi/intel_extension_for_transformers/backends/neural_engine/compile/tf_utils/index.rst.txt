@@ -75,14 +75,15 @@ Attributes
    :rtype: dest_op_names
 
 
-.. py:function:: tf_extract_operator(node, model, nodes_dict)
+.. py:function:: tf_extract_operator(node, framework_model, nodes_dict, engine_graph=None)
 
    Decorate the operator in tensorflow.
 
    :param node: NodeDef
-   :param model: TensorflowModel
+   :param framework_model: TensorflowModel
    :param nodes_dict: dict, return value from graph_node_names_details
    :param tf_dtypes: dict, for get the dtype string
+   :param engine_graph: Engine Graph class
 
    :returns: node op type
              input_tensors: Tensor list, contains the node input tensors info

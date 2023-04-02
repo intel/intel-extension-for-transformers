@@ -13,15 +13,12 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Features" href="../feature.html" />
-    <link rel="prev" title="Intel® Extension for Transformers" href="../xtransformers.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,28 +44,15 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../xtransformers.html">Intel® Extension for Transformers</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#install-from-pypi">Install from Pypi</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#sentiment-analysis-with-quantization">Sentiment Analysis with Quantization</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#documentation">Documentation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#selected-publications-events">Selected Publications/Events</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../feature.html">Features</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api_doc/api.html">Python APIs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -85,7 +69,6 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../xtransformers.html">Intel® Extension for Transformers</a></li>
       <li class="breadcrumb-item active">Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/docs/Welcome.md.txt" rel="nofollow"> View page source</a>
@@ -102,128 +85,8 @@
 <ul class="simple">
 <li><p>Seamless user experience of model compressions on Transformers-based models by extending <a class="reference external" href="https://github.com/huggingface/transformers">Hugging Face transformers</a> APIs and leveraging <a class="reference external" href="https://github.com/intel/neural-compressor">Intel® Neural Compressor</a></p></li>
 <li><p>Advanced software optimizations and unique compression-aware runtime (released with NeurIPS 2022’s paper <a class="reference external" href="https://arxiv.org/abs/2211.07715">Fast Distilbert on CPUs</a> and <a class="reference external" href="https://arxiv.org/abs/2210.17114">QuaLA-MiniLM: a Quantized Length Adaptive MiniLM</a>, and NeurIPS 2021’s paper <a class="reference external" href="https://arxiv.org/abs/2111.05754">Prune Once for All: Sparse Pre-Trained Language Models</a>)</p></li>
-<li><p>Accelerated end-to-end Transformer-based applications such as <a class="reference external" href="./examples/optimization/pytorch/huggingface/textual_inversion">Stable Diffusion</a>, <a class="reference external" href="./examples/optimization/pytorch/huggingface/language-modeling/inference/README.html#GPT-J">GPT-J-6B</a>, <a class="reference external" href="./examples/optimization/pytorch/huggingface/language-modeling/inference/README.html#BLOOM-176B">BLOOM-176B</a>, <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/summarization/quantization">T5</a>, and <a class="reference external" href="./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb">SetFit</a> by leveraging Intel AI software such as <a class="reference external" href="https://github.com/intel/intel-extension-for-pytorch">Intel® Extension for PyTorch</a></p></li>
+<li><p>Accelerated end-to-end Transformer-based applications such as <a class="reference external" href="./examples/optimization/pytorch/huggingface/textual_inversion">Stable Diffusion</a>, <a class="reference external" href="./examples/optimization/pytorch/huggingface/language-modeling/inference/README.html#GPT-J">GPT-J-6B</a>, <a class="reference external" href="./examples/optimization/pytorch/huggingface/language-modeling/inference/README.html#BLOOM-176B">BLOOM-176B</a>, <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/summarization/quantization">T5</a>, and <a class="reference external" href="./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb">SetFit</a></p></li>
 </ul>
-<section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
-<section id="install-from-pypi">
-<h3>Install from Pypi<a class="headerlink" href="#install-from-pypi" title="Permalink to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
-</pre></div>
-</div>
-<blockquote>
-<div><p>For more installation method, please refer to <a class="reference external" href="installation.html">Installation Page</a></p>
-</div></blockquote>
-</section>
-</section>
-<section id="getting-started">
-<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h2>
-<section id="sentiment-analysis-with-quantization">
-<h3>Sentiment Analysis with Quantization<a class="headerlink" href="#sentiment-analysis-with-quantization" title="Permalink to this heading"></a></h3>
-<section id="prepare-dataset">
-<h4>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Permalink to this heading"></a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span><span class="p">,</span> <span class="n">load_metric</span>
-<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoConfig</span><span class="p">,</span><span class="n">AutoModelForSequenceClassification</span><span class="p">,</span><span class="n">AutoTokenizer</span>
-
-<span class="n">raw_datasets</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;glue&quot;</span><span class="p">,</span> <span class="s2">&quot;sst2&quot;</span><span class="p">)</span>
-<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;distilbert-base-uncased-finetuned-sst-2-english&quot;</span><span class="p">)</span>
-<span class="n">raw_datasets</span> <span class="o">=</span> <span class="n">raw_datasets</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;sentence&#39;</span><span class="p">],</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;max_length&#39;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">128</span><span class="p">),</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="quantization">
-<h4>Quantization<a class="headerlink" href="#quantization" title="Permalink to this heading"></a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">QuantizationConfig</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">objectives</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;distilbert-base-uncased-finetuned-sst-2-english&quot;</span><span class="p">,</span><span class="n">num_labels</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;distilbert-base-uncased-finetuned-sst-2-english&quot;</span><span class="p">,</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">label2id</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
-<span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">&#39;NEGATIVE&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;POSITIVE&#39;</span><span class="p">}</span>
-<span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
-<span class="c1"># trainer = transformers.Trainer(...)</span>
-<span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> 
-    <span class="n">train_dataset</span><span class="o">=</span><span class="n">raw_datasets</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">],</span> 
-    <span class="n">eval_dataset</span><span class="o">=</span><span class="n">raw_datasets</span><span class="p">[</span><span class="s2">&quot;validation&quot;</span><span class="p">],</span>
-    <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span>
-<span class="p">)</span>
-<span class="n">q_config</span> <span class="o">=</span> <span class="n">QuantizationConfig</span><span class="p">(</span><span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_loss&quot;</span><span class="p">,</span> <span class="n">greater_is_better</span><span class="o">=</span><span class="kc">False</span><span class="p">)])</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">quant_config</span><span class="o">=</span><span class="n">q_config</span><span class="p">)</span>
-
-<span class="nb">input</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">&quot;I like Intel Extension for Transformers&quot;</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span>
-<span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="nb">input</span><span class="p">)</span><span class="o">.</span><span class="n">logits</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-</pre></div>
-</div>
-<blockquote>
-<div><p>For more quick samples, please refer to <a class="reference external" href="get_started.html">Get Started Page</a>. For more validated examples, please refer to <a class="reference external" href="examples.html">Support Model Matrix</a></p>
-</div></blockquote>
-</section>
-</section>
-</section>
-<section id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading"></a></h2>
-<table>
-<thead>
-  <tr>
-    <th colspan="8" align="center">OVERVIEW</th>
-  </tr>
-</thead>
-<tbody>
-  <tr>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs">Model Compression</a></td>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Kernel Libraries</a></td>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples">Examples</a></td>
-  </tr>
-  <tr>
-    <th colspan="8" align="center">MODEL COMPRESSION</th>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><a href="quantization.html">Quantization</a></td>
-    <td colspan="2" align="center"><a href="pruning.html">Pruning</a></td>
-    <td colspan="2" align="center" colspan="2"><a href="distillation.html">Distillation</a></td>
-    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/text-classification/orchestrate_optimizations/README.html">Orchestration</a></td>
-  </tr>
-  <tr>
-    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/nas">Neural Architecture Search</a></td>
-    <td align="center" colspan="2"><a href="export.html">Export</a></td>
-    <td align="center" colspan="2"><a href="metrics.html">Metrics</a>/<a href="objectives.html">Objectives</a></td>
-    <td align="center" colspan="2"><a href="pipeline.html">Pipeline</a></td>
-  </tr>
-  <tr>
-    <th colspan="8" align="center">NEURAL ENGINE</th>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.html">Model Compilation</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.html">Custom Pattern</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/Deploy and Integration.html">Deployment</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.html">Profiling</a></td>
-  </tr>
-  <tr>
-    <th colspan="8" align="center">KERNEL LIBRARIES</th>
-  </tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.html">Profiling</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/benchmark.html">Benchmark</a></td>
-  <tr>
-    <th colspan="8" align="center">ALGORITHMS</th>
-  </tr>
-  <tr>
-    <td align="center" colspan="4"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/question-answering/dynamic/README.html">Length Adaptive</a></td>
-    <td align="center" colspan="4"><a href="data_augmentation.html">Data Augmentation</a></td>    
-  </tr>
-  <tr>
-    <th colspan="8" align="center">TUTORIALS AND RESULTS</a></th>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs/tutorials/pytorch">Tutorials</a></td>
-    <td colspan="2" align="center"><a href="examples.html">Supported Models</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.html">Model Performance</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.html">Kernel Performance</a></td>
-  </tr>
-</tbody>
-</table></section>
 <section id="selected-publications-events">
 <h2>Selected Publications/Events<a class="headerlink" href="#selected-publications-events" title="Permalink to this heading"></a></h2>
 <ul class="simple">
@@ -240,10 +103,7 @@
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../xtransformers.html" class="btn btn-neutral float-left" title="Intel® Extension for Transformers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../feature.html" class="btn btn-neutral float-right" title="Features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 

@@ -27,7 +27,7 @@ Classes
 
 .. py:class:: NAS
 
-   Bases: :py:obj:`object`
+
 
    Create object of different NAS approaches.
 

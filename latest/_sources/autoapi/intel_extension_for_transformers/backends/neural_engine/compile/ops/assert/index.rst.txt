@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: Assert
 
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
 
    Parse the Assert operator to the neural engine.
 

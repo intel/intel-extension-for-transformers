@@ -13,14 +13,14 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="Operator Specific Types" href="api_doc/kernel/types.html" /> 
+    <link rel="next" title="Neural Engine Support Matrix" href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.html" />
+    <link rel="prev" title="Example" href="../example.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,31 +47,39 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../kernel.html">Kernels</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#quantization">Quantization</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#stock-pytorch-examples">Stock PyTorch Examples</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#intel-extension-for-pytorch-ipex-examples">Intel Extension for Pytorch (IPEX) examples</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#intel-tensorflow-examples">Intel TensorFlow Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../example.html">Example</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#quantization">Quantization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stock-pytorch-examples">Stock PyTorch Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#intel-extension-for-pytorch-ipex-examples">Intel Extension for Pytorch (IPEX) examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#intel-tensorflow-examples">Intel TensorFlow Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#length-adaptive-transformers">Length Adaptive Transformers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#pruning">Pruning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#distillation">Distillation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#knowledge-distillation">Knowledge Distillation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#auto-distillation-nas-based">Auto Distillation (NAS Based)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#length-adaptive-transformers">Length Adaptive Transformers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pruning">Pruning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#distillation">Distillation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#knowledge-distillation">Knowledge Distillation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#auto-distillation-nas-based">Auto Distillation (NAS Based)</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#orchestrate">Orchestrate</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#reference-deployment-on-neural-engine">Reference Deployment on Neural Engine</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#dense-reference-deployment-on-neural-engine">Dense Reference Deployment on Neural Engine</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sparse-reference-deployment-on-neural-engine">Sparse Reference Deployment on Neural Engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#orchestrate">Orchestrate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reference-deployment-on-neural-engine">Reference Deployment on Neural Engine</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dense-reference-deployment-on-neural-engine">Dense Reference Deployment on Neural Engine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sparse-reference-deployment-on-neural-engine">Sparse Reference Deployment on Neural Engine</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.html">Neural Engine Support Matrix</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -88,6 +96,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../example.html">Example</a></li>
       <li class="breadcrumb-item active">Examples</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/docs/examples.md.txt" rel="nofollow"> View page source</a>
@@ -199,6 +208,13 @@
   </tr>
   <tr>
     <td><a href="https://huggingface.co/distilbert-base-uncased-distilled-squad">distilbert-base-uncased-distilled-squad</a></td>
+    <td>question-answering</td>
+    <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
+    <td>&#10004;</td>
+    <td>&#10004;</td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/valhalla/longformer-base-4096-finetuned-squadv1">valhalla/longformer-base-4096-finetuned-squadv1</a></td>
     <td>question-answering</td>
     <td><a href="https://huggingface.co/datasets/squad">SQuAD</a></td>
     <td>&#10004;</td>
@@ -730,7 +746,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="api_doc/kernel/types.html" class="btn btn-neutral float-left" title="Operator Specific Types" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../example.html" class="btn btn-neutral float-left" title="Example" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.html" class="btn btn-neutral float-right" title="Neural Engine Support Matrix" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

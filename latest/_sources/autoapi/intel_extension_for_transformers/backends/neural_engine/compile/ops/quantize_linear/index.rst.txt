@@ -18,15 +18,28 @@ Classes
 .. autoapisummary::
 
    intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.Quantize
 
 
 
 
 .. py:class:: QuantizeLinear
 
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
 
    Parse the QuantizeLinear operator to the neural engine.
+
+   .. py:method:: set_attr(framework, node)
+
+      Extract the node attr from onnxruntime.
+
+
+
+.. py:class:: Quantize
+
+
+
+   Register the Quantize operator.
 
    .. py:method:: set_attr(framework, node)
 

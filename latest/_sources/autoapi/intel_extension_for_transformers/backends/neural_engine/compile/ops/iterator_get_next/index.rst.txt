@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: IteratorGetNext
 
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
 
    Parse the IteratorGetNext operator to the neural engine.
 

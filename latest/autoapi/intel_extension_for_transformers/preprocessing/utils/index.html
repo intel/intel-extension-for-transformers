@@ -13,7 +13,6 @@
     <script src="../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
         <script src="../../../../_static/doctools.js"></script>
         <script src="../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -78,6 +81,7 @@
              
   <section id="module-intel_extension_for_transformers.preprocessing.utils">
 <span id="intel-extension-for-transformers-preprocessing-utils"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.preprocessing.utils" title="intel_extension_for_transformers.preprocessing.utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.preprocessing.utils</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.preprocessing.utils" title="Permalink to this heading"></a></h1>
+<p>Utility for data augmentation.</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
 <section id="classes">
@@ -85,16 +89,32 @@
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.preprocessing.utils.AugmenterType" title="intel_extension_for_transformers.preprocessing.utils.AugmenterType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AugmenterType</span></code></a></p></td>
-<td><p>Generic enumeration.</p></td>
+<td><p>Enumeration of types of augmentation.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.preprocessing.utils.get_augmenter_from_type" title="intel_extension_for_transformers.preprocessing.utils.get_augmenter_from_type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_augmenter_from_type</span></code></a>(aug_type)</p></td>
+<td><p>Get nlpaug's augmenter by augment_type name.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.preprocessing.utils.AugmenterType">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.preprocessing.utils.</span></span><span class="sig-name descname"><span class="pre">AugmenterType</span></span><a class="headerlink" href="#intel_extension_for_transformers.preprocessing.utils.AugmenterType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>Generic enumeration.</p>
-<p>Derive from this class to define new enumerations.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.preprocessing.utils.</span></span><span class="sig-name descname"><span class="pre">AugmenterType</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/preprocessing/utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.preprocessing.utils.AugmenterType" title="Permalink to this definition"></a></dt>
+<dd><p>Enumeration of types of augmentation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.preprocessing.utils.get_augmenter_from_type">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.preprocessing.utils.</span></span><span class="sig-name descname"><span class="pre">get_augmenter_from_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aug_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/preprocessing/utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.preprocessing.utils.get_augmenter_from_type" title="Permalink to this definition"></a></dt>
+<dd><p>Get nlpaug’s augmenter by augment_type name.</p>
+<p>The nlpaug is a library helps you with augmenting nlp for your machine learning projects.
+It provide many augmenter, please refer to <a class="reference external" href="https://github.com/makcedward/nlpaug#augmenter">https://github.com/makcedward/nlpaug#augmenter</a>.</p>
 </dd></dl>
 
 </section>

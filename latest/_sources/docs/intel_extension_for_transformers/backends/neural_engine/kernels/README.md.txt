@@ -56,3 +56,4 @@ Refer to corresponding [unit test](../test/gtest/kernels/) for examples.
 | MHA                         | Dense         | AMX-INT8          |
 | [Transposed MHA](docs/kernel_desc/kernel_transpose_mha.md)              | Sparse        | AMX-INT8, VNNI    |
 | Transposed Layernorm        | Sparse        | AVX512F           |
+| [Dynamic Quant Matmul](docs/kernel_desc/kernel_dynamic_quant_matmul.md) | Dense | AMX-INT8 |

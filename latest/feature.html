@@ -13,7 +13,6 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
@@ -21,7 +20,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Quantization" href="docs/quantization.html" />
-    <link rel="prev" title="Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms" href="docs/Welcome.html" /> 
+    <link rel="prev" title="User Guide" href="user_guide.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -48,19 +47,31 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="xtransformers.html">Intel® Extension for Transformers</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="docs/Welcome.html">Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="user_guide.html">User Guide</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Features</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="docs/quantization.html">Quantization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docs/distillation.html">Distillation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="docs/pruning.html">Pruning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docs/autodistillation.html">AutoDistillation Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docs/data_augmentation.html">Data Augmentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docs/benchmark.html">Benchmark</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docs/export.html">Export to ONNX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docs/metrics.html">Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docs/objectives.html">Objective</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docs/pipeline.html">Pipeline</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="docs/api_doc/api.html">Python APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">Kernels</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -77,7 +88,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="xtransformers.html">Intel® Extension for Transformers</a></li>
+          <li class="breadcrumb-item"><a href="user_guide.html">User Guide</a></li>
       <li class="breadcrumb-item active">Features</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/feature.rst.txt" rel="nofollow"> View page source</a>
@@ -94,7 +105,15 @@
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="docs/quantization.html">Quantization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/distillation.html">Distillation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/pruning.html">Pruning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/autodistillation.html">AutoDistillation Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/data_augmentation.html">Data Augmentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/benchmark.html">Benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/export.html">Export to ONNX</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/metrics.html">Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/objectives.html">Objective</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/pipeline.html">Pipeline</a></li>
 </ul>
 </div>
 </section>
@@ -103,7 +122,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="docs/Welcome.html" class="btn btn-neutral float-left" title="Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="user_guide.html" class="btn btn-neutral float-left" title="User Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="docs/quantization.html" class="btn btn-neutral float-right" title="Quantization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

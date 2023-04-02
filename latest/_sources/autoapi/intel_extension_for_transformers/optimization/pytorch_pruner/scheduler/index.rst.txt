@@ -83,7 +83,7 @@ Functions
 
 .. py:class:: OneshotScheduler(config)
 
-   Bases: :py:obj:`Scheduler`
+
 
    Pruning Scheduler.
 
@@ -104,7 +104,7 @@ Functions
 
 .. py:class:: IterativeScheduler(config)
 
-   Bases: :py:obj:`Scheduler`
+
 
    Pruning Scheduler.
 

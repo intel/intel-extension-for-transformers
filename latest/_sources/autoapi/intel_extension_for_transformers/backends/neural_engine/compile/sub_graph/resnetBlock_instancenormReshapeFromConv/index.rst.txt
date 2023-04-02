@@ -1,0 +1,33 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.resnetBlock_instancenormReshapeFromConv`
+===========================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.resnetBlock_instancenormReshapeFromConv
+
+.. autoapi-nested-parse::
+
+   The ResnetBlock_InstanceNormReshapeFromConv Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.resnetBlock_instancenormReshapeFromConv.ResnetBlock_InstanceNormReshapeFromConv
+
+
+
+
+.. py:class:: ResnetBlock_InstanceNormReshapeFromConv
+
+
+
+   The ResnetBlock_InstanceNormReshapeFromConv pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'ResnetBlock_InstanceNormReshapeFromConv' graph.
+
+

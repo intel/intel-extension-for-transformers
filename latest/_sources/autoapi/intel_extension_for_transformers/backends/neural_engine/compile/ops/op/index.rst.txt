@@ -45,40 +45,16 @@ Functions
 
 .. py:class:: Operator
 
-   Bases: :py:obj:`object`
+
 
    The class of neural engine operator.
-
-   .. py:property:: name
-
-      Get the operator name.
-
-   .. py:property:: op_type
-
-      Get op_type.
-
-   .. py:property:: input_tensors
-
-      Get input_tensors.
-
-   .. py:property:: output_tensors
-
-      Get output tensor.
-
-   .. py:property:: attr
-
-      Get attr.
-
-   .. py:property:: config
-
-      Get the op config in the graph.
 
    .. py:method:: set_attr(framework, node)
 
       Attr initialization.
 
 
-   .. py:method:: extract(framework, node, model, nodes_dict)
+   .. py:method:: extract(framework, node, framework_model, nodes_dict, engine_graph=None)
 
       Extract the op from framework.
 

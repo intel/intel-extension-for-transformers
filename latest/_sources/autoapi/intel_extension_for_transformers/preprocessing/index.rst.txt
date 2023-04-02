@@ -6,3 +6,13 @@
 .. py:module:: intel_extension_for_transformers.preprocessing
 
 
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   data_augmentation/index.rst
+   utils/index.rst
+
+

@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: AutoDistillation(model_builder, conf_fname_or_obj, framework='pytorch')
 
-   Bases: :py:obj:`neural_compressor.experimental.nas.nas.NASBase`
+
 
    The framework class is designed for handling the whole pipeline of AutoDistillation.
 
@@ -35,22 +35,6 @@ Classes
    Flash Distillation is the stage for training the searched model to discover its potential.
    In Evaluation stage, the trained model will be evaluated to measure its performances (e.g.
    the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.
-
-   .. py:property:: teacher_model
-
-      Getter of teacher model.
-
-   .. py:property:: student_model
-
-      Getter of student model.
-
-   .. py:property:: train_func
-
-      Getter of train function.
-
-   .. py:property:: eval_func
-
-      Getter of evaluation function.
 
    .. py:method:: search(res_save_path=None, model_cls=None)
 

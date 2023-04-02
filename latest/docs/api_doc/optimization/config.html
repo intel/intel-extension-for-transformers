@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Config &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Engine API" href="../engine_api.html" />
+    <link rel="prev" title="TensorFlow Optimizer" href="tf_optimization.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../user_api.html">User-facing API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="trainer.html">Trainer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimizer.html">PyTorch Optimizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model.html">Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tf_optimization.html">TensorFlow Optimizer</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../engine_api.html">Engine API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel_api.html">Kernel APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api_example.html">API Document Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Legal Information</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API</a></li>
+          <li class="breadcrumb-item"><a href="../user_api.html">User-facing API</a></li>
+      <li class="breadcrumb-item active">Config</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/docs/api_doc/optimization/config.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="config">
+<h1>Config<a class="headerlink" href="#config" title="Permalink to this heading"></a></h1>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/optimization/utils/metrics/index.html#module-intel_extension_for_transformers.optimization.utils.metrics" title="intel_extension_for_transformers.optimization.utils.metrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">metrics</span></code></a></p></td>
+<td><p>The class of metric for optimization.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/optimization/utils/objectives/index.html#module-intel_extension_for_transformers.optimization.utils.objectives" title="intel_extension_for_transformers.optimization.utils.objectives"><code class="xref py py-obj docutils literal notranslate"><span class="pre">objectives</span></code></a></p></td>
+<td><p>The class of objective for optimization.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/optimization/config/index.html#module-intel_extension_for_transformers.optimization.config" title="intel_extension_for_transformers.optimization.config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">config</span></code></a></p></td>
+<td><p>Config: provide config classes for optimization processes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/optimization/quantization/index.html#module-intel_extension_for_transformers.optimization.quantization" title="intel_extension_for_transformers.optimization.quantization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantization</span></code></a></p></td>
+<td><p>Quantization: specify the supported quantization mode.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/optimization/distillation/index.html#module-intel_extension_for_transformers.optimization.distillation" title="intel_extension_for_transformers.optimization.distillation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">distillation</span></code></a></p></td>
+<td><p>Distillation: set criterion mode to distillation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/optimization/pruning/index.html#module-intel_extension_for_transformers.optimization.pruning" title="intel_extension_for_transformers.optimization.pruning"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pruning</span></code></a></p></td>
+<td><p>Pruning: specify the supported pruning mode.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/optimization/mixture/auto_distillation/index.html#module-intel_extension_for_transformers.optimization.mixture.auto_distillation" title="intel_extension_for_transformers.optimization.mixture.auto_distillation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">auto_distillation</span></code></a></p></td>
+<td><p>AutoDistillation: handling the whole pipeline of AutoDistillation for both pytorch and tensorflow framework.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tf_optimization.html" class="btn btn-neutral float-left" title="TensorFlow Optimizer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../engine_api.html" class="btn btn-neutral float-right" title="Engine API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -13,13 +13,14 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Export to ONNX" href="export.html" />
+    <link rel="prev" title="Data Augmentation" href="data_augmentation.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,11 +46,37 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../feature.html">Features</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="quantization.html">Quantization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="distillation.html">Distillation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pruning.html">Pruning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autodistillation.html">AutoDistillation Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="data_augmentation.html">Data Augmentation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Benchmark</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-started-with-benchmark-api">Get Started with Benchmark API</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="export.html">Export to ONNX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="metrics.html">Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="objectives.html">Objective</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipeline.html">Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -66,6 +93,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../feature.html">Features</a></li>
       <li class="breadcrumb-item active">Benchmark</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/docs/benchmark.md.txt" rel="nofollow"> View page source</a>
@@ -78,110 +107,92 @@
              
   <section id="benchmark">
 <h1>Benchmark<a class="headerlink" href="#benchmark" title="Permalink to this heading"></a></h1>
-<ol class="simple">
+<ol>
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
-<li><p><a class="reference external" href="#pytorchbenchmark">PyTorch Benchmark</a></p></li>
-<li><p><a class="reference external" href="#executorbenchmark">ExecutorBenchmark</a></p></li>
+<li><p><a class="reference external" href="#get-started-with-benchmark-api">Get Started</a></p></li>
+<li><p><a class="reference external" href="#examples">Examples</a></p>
+<p>3.1. <a class="reference external" href="#stock-pytorch-model">Stock Pytorch Model</a></p>
+<p>3.2. <a class="reference external" href="#ipex-model">IPEX Model</a></p>
+<p>3.3. <a class="reference external" href="#benchmark-output">Benchmark Output</a></p>
+</li>
 </ol>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
-<p>The Benchmark is inherited from transformers <a class="reference external" href="https://github.com/huggingface/transformers/blob/main/docs/source/en/benchmarks.mdx">Benchmark</a>. Right now, the classes <code class="docutils literal notranslate"><span class="pre">PyTorchBenchmark</span></code> and <code class="docutils literal notranslate"><span class="pre">ExecutorBenchmark</span></code> can help users to check the performance improvement and the model size reduction of INT8 models compared to original FP32 models on PyTorch and Executor backends.</p>
-<p>The benchmark classes <code class="docutils literal notranslate"><span class="pre">PyTorchBenchmark</span></code> and <code class="docutils literal notranslate"><span class="pre">ExecutorBenchmark</span></code> expect an object of type <code class="docutils literal notranslate"><span class="pre">PyTorchBenchmarkArguments</span></code> and <code class="docutils literal notranslate"><span class="pre">ExecutorBenchmarkArguments</span></code>.</p>
+<p>The Benchmark is used to measure the model performance with the objective settings. It is inherited from Intel® Neural Compressor <a class="reference external" href="https://github.com/intel/neural-compressor/blob/master/docs/source/benchmark.md">Benchmark</a>.</p>
 </section>
-<section id="pytorchbenchmark">
-<h2>PyTorchBenchmark<a class="headerlink" href="#pytorchbenchmark" title="Permalink to this heading"></a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">PyTorchBenchmark</span></code> is only used for inference when the input model is an INT8 model.</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.benchmark</span> <span class="kn">import</span> <span class="n">PyTorchBenchmark</span><span class="p">,</span> <span class="n">PyTorchBenchmarkArguments</span>
-
-<span class="n">MODEL_ID_FP32</span> <span class="o">=</span> <span class="s2">&quot;distilbert-base-uncased-finetuned-sst-2-english&quot;</span>
-<span class="n">MODEL_ID_INT8</span> <span class="o">=</span> <span class="s2">&quot;Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static&quot;</span>
-<span class="n">benchmark_args</span> <span class="o">=</span> <span class="n">PyTorchBenchmarkArguments</span><span class="p">(</span>
-    <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="n">MODEL_ID_FP32</span><span class="p">,</span> <span class="n">MODEL_ID_INT8</span><span class="p">],</span>
-    <span class="n">training</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">memory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">inference</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">sequence_lengths</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span>
-    <span class="n">batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-    <span class="n">multi_process</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">only_pretrain_model</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">benchmark</span> <span class="o">=</span> <span class="n">PyTorchBenchmark</span><span class="p">(</span><span class="n">benchmark_args</span><span class="p">)</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">benchmark</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<section id="get-started-with-benchmark-api">
+<h2>Get Started with Benchmark API<a class="headerlink" href="#get-started-with-benchmark-api" title="Permalink to this heading"></a></h2>
+<p>The class <code class="docutils literal notranslate"><span class="pre">BenchmarkConfig</span></code> allows users to adjust the following parameters with objective settings to measure model performance:</p>
+<p><code class="docutils literal notranslate"><span class="pre">backend</span></code> (str, optional): the backend used for benchmark. Defaults to “torch”. <br /><code class="docutils literal notranslate"><span class="pre">warmup</span></code> (int, optional): number of iters to skip when collecting latency. Defaults to 5. <br /><code class="docutils literal notranslate"><span class="pre">iteration</span></code> (int, optional): total iters when collecting latency. Defaults to 20. <br /><code class="docutils literal notranslate"><span class="pre">cores_per_instance</span></code> (int, optional): the core number for 1 instance. Defaults to 4. <br /><code class="docutils literal notranslate"><span class="pre">num_of_instance</span></code> (int, optional): the instance number. Defaults to -1. <br /><code class="docutils literal notranslate"><span class="pre">torchscript</span></code> (bool, optional): enable it if you want to jit trace it before benchmarking. Defaults to False. <br /><code class="docutils literal notranslate"><span class="pre">generate</span></code> (bool, optional): enable it if you want to use model generate when benchmarking. Defaults to False.</p>
+<blockquote>
+<div><p><strong>Note</strong>: Benchmark provides capability to automatically run with multiple instance through <code class="docutils literal notranslate"><span class="pre">cores_per_instance</span></code> and <code class="docutils literal notranslate"><span class="pre">num_of_instance</span></code> config (CPU only). Please make sure <code class="docutils literal notranslate"><span class="pre">cores_per_instance</span> <span class="pre">*</span> <span class="pre">num_of_instance</span></code> must be less than CPU physical core numbers.</p>
+</div></blockquote>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h2>
+<p>Example inputs or a dataloader is required for benchmark.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_example_inputs</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">dataset_name</span><span class="o">=</span><span class="s1">&#39;sst2&#39;</span><span class="p">):</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">transformers</span><span class="o">.</span><span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s1">&#39;validation&#39;</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">dataset_name</span><span class="o">==</span><span class="s1">&#39;lambada&#39;</span> <span class="k">else</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;sentence&#39;</span><span class="p">]</span>
+    <span class="n">example_inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;max_length&#39;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">195</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s1">&#39;pt&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">example_inputs</span>
 </pre></div>
 </div>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="o">====================</span>       <span class="n">INFERENCE</span> <span class="o">-</span> <span class="n">SPEED</span> <span class="o">-</span> <span class="n">RESULT</span>       <span class="o">====================</span>
-<span class="o">--------------------------------------------------------------------------------</span>
-          <span class="n">Model</span> <span class="n">Name</span>             <span class="n">Batch</span> <span class="n">Size</span>     <span class="n">Seq</span> <span class="n">Length</span>     <span class="n">Time</span> <span class="ow">in</span> <span class="n">s</span>   
-<span class="o">--------------------------------------------------------------------------------</span>
-<span class="n">distilbert</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">uncased</span><span class="o">-</span><span class="n">finetu</span>       <span class="mi">1</span>               <span class="mi">32</span>            <span class="mf">0.017</span>     
-<span class="n">distilbert</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">uncased</span><span class="o">-</span><span class="n">finetu</span>       <span class="mi">1</span>               <span class="mi">64</span>            <span class="mf">0.021</span>     
-<span class="n">distilbert</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">uncased</span><span class="o">-</span><span class="n">finetu</span>       <span class="mi">1</span>              <span class="mi">128</span>            <span class="mf">0.029</span>     
-<span class="n">Intel</span><span class="o">/</span><span class="n">distilbert</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">uncased</span><span class="o">-</span>       <span class="mi">1</span>               <span class="mi">32</span>             <span class="mf">0.01</span>     
-<span class="n">Intel</span><span class="o">/</span><span class="n">distilbert</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">uncased</span><span class="o">-</span>       <span class="mi">1</span>               <span class="mi">64</span>            <span class="mf">0.013</span>     
-<span class="n">Intel</span><span class="o">/</span><span class="n">distilbert</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">uncased</span><span class="o">-</span>       <span class="mi">1</span>              <span class="mi">128</span>            <span class="mf">0.017</span>     
-<span class="o">--------------------------------------------------------------------------------</span>
+<section id="stock-pytorch-model">
+<h3>Stock Pytorch Model<a class="headerlink" href="#stock-pytorch-model" title="Permalink to this heading"></a></h3>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">BenchmarkConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.benchmark</span> <span class="kn">import</span> <span class="n">benchmark</span>
 
-<span class="o">====================</span>    <span class="n">INFERENCE</span> <span class="o">-</span> <span class="n">MODEL</span> <span class="n">SIZE</span> <span class="o">-</span> <span class="n">RESULT</span>     <span class="o">====================</span>
-<span class="o">--------------------------------------------------------------------------------</span>
-                         <span class="n">Model</span> <span class="n">Name</span>                         <span class="n">Model</span> <span class="n">Size</span> <span class="ow">in</span> <span class="n">MB</span>
-<span class="o">--------------------------------------------------------------------------------</span>
-      <span class="n">distilbert</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">uncased</span><span class="o">-</span><span class="n">finetuned</span><span class="o">-</span><span class="n">sst</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="n">english</span>             <span class="mf">255.45</span>    
-     <span class="n">Intel</span><span class="o">/</span><span class="n">distilbert</span><span class="o">-</span><span class="n">base</span><span class="o">-</span><span class="n">uncased</span><span class="o">-</span><span class="n">finetuned</span><span class="o">-</span><span class="n">sst</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="n">engl</span>           <span class="mf">65.026</span>    
-<span class="o">--------------------------------------------------------------------------------</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">BenchmarkConfig</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">cores_per_instance</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">num_of_instance</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">example_inputs</span> <span class="o">=</span> <span class="n">get_example_inputs</span><span class="p">(</span><span class="n">model_name_or_path</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">model_name_or_path</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">example_inputs</span><span class="o">=</span><span class="n">example_inputs</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<hr class="docutils" />
-<section id="executorbenchmark">
-<h2>ExecutorBenchmark<a class="headerlink" href="#executorbenchmark" title="Permalink to this heading"></a></h2>
-<p>The ExecutorBenchmark is only used for inference. The ONNX model is generated by our <code class="docutils literal notranslate"><span class="pre">export_to_onnx</span></code> API. For more details, please go to <a class="reference internal" href="export.html"><span class="doc">export.md</span></a>. The MODEL_NAME is the Pytorch model name you used for exporting the ONNX model.</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.benchmark</span> <span class="kn">import</span> <span class="n">ExecutorBenchmark</span><span class="p">,</span> <span class="n">ExecutorBenchmarkArguments</span>
-<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoConfig</span>
+<section id="ipex-model">
+<h3>IPEX Model<a class="headerlink" href="#ipex-model" title="Permalink to this heading"></a></h3>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">BenchmarkConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.benchmark</span> <span class="kn">import</span> <span class="n">benchmark</span>
 
-<span class="n">MODEL_ID_FP32</span> <span class="o">=</span> <span class="s1">&#39;fp32.onnx&#39;</span>
-<span class="n">MODEL_ID_INT8</span> <span class="o">=</span> <span class="s1">&#39;int8.onnx&#39;</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">MODEL_NAME</span><span class="p">)</span>
-<span class="n">benchmark_args</span> <span class="o">=</span> <span class="n">ExecutorBenchmarkArguments</span><span class="p">(</span>
-    <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="n">MODEL_ID_FP32</span><span class="p">,</span> <span class="n">MODEL_ID_INT8</span><span class="p">],</span>
-    <span class="n">memory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">inference</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">sequence_lengths</span><span class="o">=</span><span class="p">[</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span>
-    <span class="n">batch_sizes</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-    <span class="n">multi_process</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">only_pretrain_model</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">BenchmarkConfig</span><span class="p">(</span>
+    <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;ipex&#39;</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">cores_per_instance</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">num_of_instance</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">benchmark</span> <span class="o">=</span> <span class="n">ExecutorBenchmark</span><span class="p">(</span><span class="n">benchmark_args</span><span class="p">,</span> <span class="n">configs</span><span class="o">=</span><span class="p">[</span><span class="n">config</span><span class="p">,</span> <span class="n">config</span><span class="p">])</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">benchmark</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">example_inputs</span> <span class="o">=</span> <span class="n">get_example_inputs</span><span class="p">(</span><span class="n">model_name_or_path</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">model_name_or_path</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">example_inputs</span><span class="o">=</span><span class="n">example_inputs</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="o">====================</span>       <span class="n">INFERENCE</span> <span class="o">-</span> <span class="n">SPEED</span> <span class="o">-</span> <span class="n">RESULT</span>       <span class="o">====================</span>
-<span class="o">--------------------------------------------------------------------------------</span>
-          <span class="n">Model</span> <span class="n">Name</span>             <span class="n">Batch</span> <span class="n">Size</span>     <span class="n">Seq</span> <span class="n">Length</span>     <span class="n">Time</span> <span class="ow">in</span> <span class="n">s</span>   
-<span class="o">--------------------------------------------------------------------------------</span>
-          <span class="n">fp32</span><span class="o">.</span><span class="n">onnx</span>                  <span class="mi">1</span>               <span class="mi">32</span>            <span class="mf">0.008</span>     
-          <span class="n">fp32</span><span class="o">.</span><span class="n">onnx</span>                  <span class="mi">1</span>               <span class="mi">64</span>            <span class="mf">0.012</span>     
-          <span class="n">fp32</span><span class="o">.</span><span class="n">onnx</span>                  <span class="mi">1</span>              <span class="mi">128</span>            <span class="mf">0.023</span>     
-          <span class="n">int8</span><span class="o">.</span><span class="n">onnx</span>                  <span class="mi">1</span>               <span class="mi">32</span>            <span class="mf">0.003</span>     
-          <span class="n">int8</span><span class="o">.</span><span class="n">onnx</span>                  <span class="mi">1</span>               <span class="mi">64</span>            <span class="mf">0.004</span>     
-          <span class="n">int8</span><span class="o">.</span><span class="n">onnx</span>                  <span class="mi">1</span>              <span class="mi">128</span>            <span class="mf">0.008</span>     
-<span class="o">--------------------------------------------------------------------------------</span>
-
-<span class="o">====================</span>    <span class="n">INFERENCE</span> <span class="o">-</span> <span class="n">MODEL</span> <span class="n">SIZE</span> <span class="o">-</span> <span class="n">RESULT</span>     <span class="o">====================</span>
-<span class="o">--------------------------------------------------------------------------------</span>
-                         <span class="n">Model</span> <span class="n">Name</span>                         <span class="n">Model</span> <span class="n">Size</span> <span class="ow">in</span> <span class="n">MB</span>
-<span class="o">--------------------------------------------------------------------------------</span>
-                         <span class="n">fp32</span><span class="o">.</span><span class="n">onnx</span>                               <span class="mf">255.466</span>    
-                         <span class="n">int8</span><span class="o">.</span><span class="n">onnx</span>                                <span class="mf">132.53</span>    
-<span class="o">--------------------------------------------------------------------------------</span>
+</section>
+<section id="benchmark-output">
+<h3>Benchmark Output<a class="headerlink" href="#benchmark-output" title="Permalink to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>**********************************************
+<span class="p">|</span>****Multiple<span class="w"> </span>Instance<span class="w"> </span>Benchmark<span class="w"> </span>Summary*****<span class="p">|</span>
++---------------------------------+----------+
+<span class="p">|</span><span class="w">              </span>Items<span class="w">              </span><span class="p">|</span><span class="w">  </span>Result<span class="w">  </span><span class="p">|</span>
++---------------------------------+----------+
+<span class="p">|</span><span class="w"> </span>Latency<span class="w"> </span>average<span class="w"> </span><span class="o">[</span>second/sample<span class="o">]</span><span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">0</span>.003<span class="w">   </span><span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>Throughput<span class="w"> </span>sum<span class="w"> </span><span class="o">[</span>samples/second<span class="o">]</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">5071</span>.933<span class="w"> </span><span class="p">|</span>
++---------------------------------+----------+
 </pre></div>
 </div>
+</section>
 </section>
 </section>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="data_augmentation.html" class="btn btn-neutral float-left" title="Data Augmentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="export.html" class="btn btn-neutral float-right" title="Export to ONNX" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

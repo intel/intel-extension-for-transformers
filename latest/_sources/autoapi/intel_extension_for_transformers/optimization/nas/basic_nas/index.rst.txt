@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: BasicNAS(conf_fname_or_obj, search_space=None, model_builder=None)
 
-   Bases: :py:obj:`neural_compressor.experimental.nas.nas.NASBase`
+
 
    Basic NAS approach.
 
@@ -37,14 +37,6 @@ Classes
    :param model_builder: A function to build model instance with the specified
                          model architecture parameters.
    :type model_builder: function obj
-
-   .. py:property:: train_func
-
-      Not support get train_func.
-
-   .. py:property:: eval_func
-
-      Not support get eval_func.
 
    .. py:method:: execute(res_save_path=None)
 

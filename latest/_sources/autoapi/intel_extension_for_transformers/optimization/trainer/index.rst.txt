@@ -28,26 +28,6 @@ Classes
 
    The base class of trainer.
 
-   .. py:property:: resuming_checkpoint
-
-      Getter of the resuming checkpoint.
-
-   .. py:property:: provider
-
-      Getter of the provider.
-
-   .. py:property:: eval_func
-
-      Getter of the evaluation function.
-
-   .. py:property:: train_func
-
-      Getter of the training function.
-
-   .. py:property:: calib_dataloader
-
-      Getter of the calibration dataloader.
-
    .. py:method:: builtin_eval_func(model)
 
       Custom Evaluate function to inference the model for specified metric on validation dataset.
@@ -73,8 +53,7 @@ Classes
       Initialize the quantizer.
 
       :param quant_config: The path to the YAML configuration file or QuantizationConfig class containing
-      :param accuracy goal:
-      :param quantization objective and related dataloaders etc.:
+                           accuracy goal, quantization objective and related dataloaders etc.
       :param provider: The provider used to quantize.
 
       :returns: An objective of neural_compressor Quantization class, which can automativally searches for
@@ -87,13 +66,12 @@ Classes
       The main entry point of automatic quantization tuning.
 
       :param quant_config: The path to the YAML configuration file or QuantizationConfig class containing
-      :param accuracy goal:
-      :param quantization objective and related dataloaders etc.:
+                           accuracy goal, quantization objective and related dataloaders etc.
       :param provider: The provider used to quantize.
       :param eval_func: The function used to evaluate the model.
       :type eval_func: :obj:`Callable`, optional
-      :param train_func (:obj:`Callable`: The function used to train the model.
-      :param optional: The function used to train the model.
+      :param train_func: The function used to train the model.
+      :type train_func: :obj:`Callable`, optional
       :param calib_dataloader: The dataloader for calibration dataset.
 
       :returns: An objective of neural_compressor Quantization class, which can automativally searches for
@@ -385,6 +363,22 @@ Classes
       The function to tranfer model into jit model.
 
 
+   .. py:method:: benchmark(model_name_or_path=None, backend: str = 'torch', cores_per_instance: int = 4, num_of_instance: int = -1, torchscript: bool = False, generate: bool = False, **kwargs)
+
+      get performance of model
+
+      :param backend: Defaults to "torch".
+      :type backend: str, optional
+      :param cores_per_instance: Defaults to 4.
+      :type cores_per_instance: int, optional
+      :param num_of_instance: Defaults to -1.
+      :type num_of_instance: int, optional
+      :param torchscript: Defaults to False.
+      :type torchscript: bool, optional
+      :param generate: Defaults to False.
+      :type generate: bool, optional
+
+
    .. py:method:: set_dynamic_config(dynamic_config: intel_extension_for_transformers.optimization.DynamicLengthConfig)
 
       The function to set dynamic config.
@@ -400,24 +394,16 @@ Classes
 
 .. py:class:: NLPTrainer(*args, **kwargs)
 
-   Bases: :py:obj:`BaseTrainer`, :py:obj:`transformers.Trainer`
+
 
    Trainer for nlp base on class BaseTrainer and Trainer form Transformers.
 
 
 .. py:class:: NLPSeq2SeqTrainer(*args, **kwargs)
 
-   Bases: :py:obj:`BaseTrainer`, :py:obj:`transformers.Seq2SeqTrainer`
+
 
    Trainer for seq2seq model.
-
-   .. py:property:: max_length
-
-      Getter of the max lenght.
-
-   .. py:property:: num_beams
-
-      Getter of the numbert of beams.
 
    .. py:method:: builtin_eval_func(model)
 

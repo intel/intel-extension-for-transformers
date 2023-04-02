@@ -34,7 +34,7 @@ Functions
 
 .. py:class:: TFDataloader(dataset, batch_size=None)
 
-   Bases: :py:obj:`object`
+
 
    Tensorflow dataloader.
 

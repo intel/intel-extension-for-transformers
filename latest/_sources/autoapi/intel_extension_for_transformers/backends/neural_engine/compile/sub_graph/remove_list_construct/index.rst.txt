@@ -1,0 +1,33 @@
+:py:mod:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.remove_list_construct`
+=========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.remove_list_construct
+
+.. autoapi-nested-parse::
+
+   The RemoveListConstruct Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.remove_list_construct.RemoveListConstruct
+
+
+
+
+.. py:class:: RemoveListConstruct
+
+
+
+   The RemoveListConstruct pattern.
+
+   RemoveListConstruct
+
+

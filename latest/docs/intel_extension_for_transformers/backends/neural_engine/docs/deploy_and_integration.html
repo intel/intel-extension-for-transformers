@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deploy and Integration &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/doctools.js"></script>
+        <script src="../../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <link rel="next" title="Compile an ONNX model to Engine IR" href="onnx_compile.html" />
+    <link rel="prev" title="Neural Engine" href="../../../../../neural_engine.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../feature.html">Features</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Deploy and Integration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#architecture">1. Architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deploy-a-tf-onnx-model-using-engine-inference">2. Deploy a TF/ONNX model using Engine inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manual-customized-yaml-and-weight-binary-to-use-engine-inference">3. Manual customized yaml and weight binary to use Engine inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#integrate-neural-engine-as-backend">4. Integrate Neural Engine as Backend</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_quantize.html">Quantize a ONNX model to engine low precision/int8 IR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_profiling.html">Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_tuning.html">Engine Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="graph_fusion.html">Graph Fusion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pattern_recognize.html">Pattern Recognize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="operator_register.html">Customized Operators Register</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_customized_pattern.html">Add Customized Pattern</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../legal.html">Legal Information</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../neural_engine.html">Neural Engine</a></li>
+      <li class="breadcrumb-item active">Deploy and Integration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/docs/deploy_and_integration.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="deploy-and-integration">
+<h1>Deploy and Integration<a class="headerlink" href="#deploy-and-integration" title="Permalink to this heading"></a></h1>
+<p>In this tutorial, we will deploy a TF/ONNX model using Engine inference or through Manual customized yaml and weight binary to use Engine inference.</p>
+<p><a class="reference external" href="#1-architecture">1. Architecture</a></p>
+<p><a class="reference external" href="#2-deploy-a-tfonnx-model-using-engine-inference">2. Deploy a TF/ONNX model using Engine inference</a></p>
+<p><a class="reference external" href="#3-manual-customized-yaml-and-weight-binary-to-use-engine-inference">3. Manual customized yaml and weight binary to use Engine inference</a></p>
+<p><a class="reference external" href="#4-Integrate-Neural-Engine-as-Backend">4. Integrate Neural Engine as Backend</a></p>
+<section id="architecture">
+<h2>1. Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading"></a></h2>
+<p>Neural Engine support model optimizer, model executor and high performance kernel for multi device.</p>
+<a target="_blank" href="imgs/infrastructure.png">
+  <img src="imgs/infrastructure.png" alt="Architecture" width=762 height=672>
+</a></section>
+<section id="deploy-a-tf-onnx-model-using-engine-inference">
+<h2>2. Deploy a TF/ONNX model using Engine inference<a class="headerlink" href="#deploy-a-tf-onnx-model-using-engine-inference" title="Permalink to this heading"></a></h2>
+<section id="generate-the-engine-graph-through-tf-onnx-model">
+<h3>Generate the Engine Graph through TF/ONNX model<a class="headerlink" href="#generate-the-engine-graph-through-tf-onnx-model" title="Permalink to this heading"></a></h3>
+<p>Only support TensorFlow and ONNX models for now.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>from intel_extension_for_transformers.backends.neural_engine.compile import compile
+model = compile(&#39;/path/to/your/model&#39;)
+model.save(&#39;/ir/path&#39;)   # Engine graph could be saved to path
+</pre></div>
+</div>
+<p>Engine graph could be saved as yaml and weight bin.</p>
+</section>
+<section id="run-the-inference-by-engine">
+<h3>Run the inference by Engine<a class="headerlink" href="#run-the-inference-by-engine" title="Permalink to this heading"></a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>model.inference([input_ids, segment_ids, input_mask])  # input should be numpy array data
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">input_ids</span></code>, <code class="docutils literal notranslate"><span class="pre">segment_ids</span></code> and <code class="docutils literal notranslate"><span class="pre">input_mask</span></code> are the input numpy array data of a bert model, which have size (batch_size, seq_len). Note that the <code class="docutils literal notranslate"><span class="pre">out</span></code> is a dict contains the output tensor name and value(numpy array).</p>
+</section>
+</section>
+<section id="manual-customized-yaml-and-weight-binary-to-use-engine-inference">
+<h2>3. Manual customized yaml and weight binary to use Engine inference<a class="headerlink" href="#manual-customized-yaml-and-weight-binary-to-use-engine-inference" title="Permalink to this heading"></a></h2>
+<section id="build-the-yaml-and-weight-binary">
+<h3>Build the yaml and weight binary<a class="headerlink" href="#build-the-yaml-and-weight-binary" title="Permalink to this heading"></a></h3>
+<p>Engine could parse yaml structure network and load the weight from binary to do inference, yaml should like below</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>model:
+  name: bert_model
+  operator:
+    input_data:
+      type: Input                # define the input and weight shape/dtype/location
+      output:
+        input_ids:0:
+          dtype: int32
+          shape: [-1, -1]
+        segment_ids:0:
+          dtype: int32
+          shape: [-1, -1]
+        input_mask:0:
+          dtype: int32
+          shape: [-1, -1]
+        bert/embeddings/word_embeddings:0:
+          dtype: fp32
+          shape: [30522, 1024]
+          location: [0, 125018112]
+          ....
+    padding_sequence:                   # define the operators type/input/output/attr
+      type: PaddingSequence
+      input:
+        input_mask:0: {}
+      output:
+        padding_sequence:0: {}
+      attr:
+        dst_shape: -1,16,0,-1
+        dims: 1
+    bert/embeddings/Reshape:
+      type: Reshape
+      input:
+        input_ids:0: {}
+      output:
+        bert/embeddings/Reshape:0: {}
+      attr:
+        dst_shape: -1
+    ....
+    output_data:                       # define the output tensor
+      type: Output
+      input:
+        logits:0: {}
+</pre></div>
+</div>
+<p>All input tensors are in an operator typed Input. But slightly difference is some tensors have location while others not. A tensor with location means that is a frozen tensor or weight, it’s read from the bin file. A tensor without location means it’s activation, that should feed to the model during inference.</p>
+</section>
+<section id="id1">
+<h3>Run the inference by Engine<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<p>Parse the yaml and weight bin to Engine Graph throught Python API</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+model = Graph()
+model.graph_init(&#39;./ir/conf.yaml&#39;, &#39;./ir/model.bin&#39;)
+input_data = [input_0, input_1, input_2]
+out = model.inference(input_data)
+</pre></div>
+</div>
+<p>You can also use C++ API</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">.</span><span class="o">/</span><span class="n">neural_engine</span><span class="w"> </span><span class="o">--</span><span class="n">config</span><span class="o">=&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">yaml</span><span class="w"> </span><span class="n">file</span><span class="o">&gt;</span><span class="w"> </span><span class="o">--</span><span class="n">weight</span><span class="o">=&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">bin</span><span class="w"> </span><span class="n">file</span><span class="o">&gt;</span><span class="w"> </span><span class="o">--</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="w"> </span><span class="o">--</span><span class="n">iterations</span><span class="o">=</span><span class="mi">20</span>
+</pre></div>
+</div>
+<p>By using the numactl command to bind cpu cores and open multi-instances:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>OMP_NUM_THREADS=4 numactl -C &#39;0-3&#39; ./neural_engine ...
+</pre></div>
+</div>
+<p>Same as the previous session, the <em><strong>input_data</strong></em> should be numpy array data as a list, and <em><strong>out</strong></em> is a dict which pair the output tensor name and value(numpy array).</p>
+<p>If you want to close log information during inference, use the command <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">GLOG_minloglevel=2</span></code> before run the inference to set log level to ERROR.  <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">GLOG_minloglevel=1</span></code> set log level to info again.</p>
+</section>
+</section>
+<section id="integrate-neural-engine-as-backend">
+<h2>4. Integrate Neural Engine as Backend<a class="headerlink" href="#integrate-neural-engine-as-backend" title="Permalink to this heading"></a></h2>
+<p>Nerual Engine can also be integrated as a backend into other frameworks. There is a simple example to show the process how to build Neural Engine from source as submodule.<br />Actually, the nlp_executor.cc and the CMakeLists.txt under neural_engine folder are showed how to use C++ Neural Engine. We just reuse them and modify the CMakeLists.txt to use Neural Engine as submodule.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span><span class="w"> </span><span class="n">engine_integration</span>
+<span class="n">git</span><span class="w"> </span><span class="n">init</span>
+<span class="n">git</span><span class="w"> </span><span class="n">submodule</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit xtransformers</span>
+<span class="n">git</span><span class="w"> </span><span class="n">submoudle</span><span class="w"> </span><span class="n">update</span><span class="w"> </span><span class="o">--</span><span class="n">init</span><span class="w"> </span><span class="o">--</span><span class="n">recursive</span>
+<span class="n">cp</span><span class="w"> </span><span class="n">xtransformers</span><span class="o">/</span><span class="n">intel_extension_for_transformers</span><span class="o">/</span><span class="n">backends</span><span class="o">/</span><span class="n">neural_engine</span><span class="o">/</span><span class="n">CMakeLists</span><span class="p">.</span><span class="n">txt</span><span class="w"> </span><span class="p">.</span>
+<span class="n">cp</span><span class="w"> </span><span class="n">xtransformers</span><span class="o">/</span><span class="n">intel_extension_for_transformers</span><span class="o">/</span><span class="n">backends</span><span class="o">/</span><span class="n">neural_engine</span><span class="o">/</span><span class="n">executor</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">nlp_executor</span><span class="p">.</span><span class="n">cc</span><span class="w"> </span><span class="n">neural_engine_example</span><span class="p">.</span><span class="n">cc</span>
+</pre></div>
+</div>
+<p>Modify the NE_ROOT in the CmakeLists.txt.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">set</span><span class="p">(</span><span class="n">NE_ROOT</span><span class="w"> </span><span class="s">&quot;${PROJECT_SOURCE_DIR}/xtransformers/intel_extension_for_transformers/backends/neural_engine&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Compile neural_engine_example.cc as binary named neural_engine_example and link Nerual Engine include/lib into neural_engine_example.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp"># build neural_engine_example</span>
+<span class="n">add_executable</span><span class="p">(</span><span class="n">neural_engine_example</span>
+<span class="w">    </span><span class="n">neural_engine_example</span><span class="p">.</span><span class="n">cc</span>
+<span class="p">)</span>
+
+<span class="n">target_include_directories</span><span class="p">(</span><span class="n">neural_engine_example</span>
+<span class="w">    </span><span class="n">PRIVATE</span>
+<span class="w">        </span><span class="n">$</span><span class="p">{</span><span class="n">PROJECT_SOURCE_DIR</span><span class="p">}</span><span class="o">/</span><span class="n">include</span>
+<span class="w">        </span><span class="n">$</span><span class="p">{</span><span class="n">BOOST_INC_DIRS</span><span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">target_link_libraries</span><span class="p">(</span><span class="n">neural_engine_example</span>
+<span class="w">    </span><span class="n">PRIVATE</span>
+<span class="w">        </span><span class="n">$</span><span class="p">{</span><span class="n">CMAKE_THREAD_LIBS_INIT</span><span class="p">}</span>
+<span class="w">        </span><span class="n">gflags</span>
+<span class="w">        </span><span class="n">neural_engine</span>
+</pre></div>
+</div>
+<p>Build and run the neural_engine_example.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span><span class="w"> </span><span class="p">..</span>
+<span class="n">make</span><span class="w"> </span><span class="o">-</span><span class="n">j</span>
+<span class="p">.</span><span class="o">/</span><span class="n">neural_engine</span><span class="w"> </span><span class="o">--</span><span class="n">config</span><span class="o">=&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">yaml</span><span class="w"> </span><span class="n">file</span><span class="o">&gt;</span><span class="w"> </span><span class="o">--</span><span class="n">weight</span><span class="o">=&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">bin</span><span class="w"> </span><span class="n">file</span><span class="o">&gt;</span><span class="w"> </span><span class="o">--</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="w"> </span><span class="o">--</span><span class="n">iterations</span><span class="o">=</span><span class="mi">20</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../../../../../neural_engine.html" class="btn btn-neutral float-left" title="Neural Engine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="onnx_compile.html" class="btn btn-neutral float-right" title="Compile an ONNX model to Engine IR" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

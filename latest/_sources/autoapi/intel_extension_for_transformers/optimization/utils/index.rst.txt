@@ -15,6 +15,7 @@ Submodules
    :titlesonly:
    :maxdepth: 1
 
+   get_throughput/index.rst
    metrics/index.rst
    objectives/index.rst
    utility/index.rst

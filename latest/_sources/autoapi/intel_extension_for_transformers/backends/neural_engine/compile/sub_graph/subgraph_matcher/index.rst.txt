@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: SubGraphMatcher
 
-   Bases: :py:obj:`object`
+
 
    The SubGraphMatcher class.
 

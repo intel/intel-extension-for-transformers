@@ -21,7 +21,7 @@ Classes
 
 .. py:class:: TestTransposeBatchMatMul(methodName='runTest')
 
-   Bases: :py:obj:`unittest.TestCase`
+
 
    A class whose instances are single test cases.
 

@@ -13,15 +13,14 @@
     <script src="../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/doctools.js"></script>
         <script src="../../../_static/sphinx_highlight.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="C++ APIs" href="../api_c_engine.html" />
-    <link rel="prev" title="Python APIs" href="../api_engine.html" /> 
+    <link rel="next" title="Graph" href="graph.html" />
+    <link rel="prev" title="Python APIs" href="api_py_engine.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -48,19 +47,27 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../../../neural_engine.html">Neural Engine</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../intel_extension_for_transformers/backends/neural_engine/docs/Installation.html">Installation</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../api_engine.html">Python APIs</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Compile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../user_api.html">User-facing API</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../engine_api.html">Engine API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="api_py_engine.html">Python APIs</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Compile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="graph.html">Graph</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../api_c_engine.html">C++ APIs</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel_api.html">Kernel APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api_example.html">API Document Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -77,8 +84,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="../../../neural_engine.html">Neural Engine</a></li>
-          <li class="breadcrumb-item"><a href="../api_engine.html">Python APIs</a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API</a></li>
+          <li class="breadcrumb-item"><a href="../engine_api.html">Engine API</a></li>
+          <li class="breadcrumb-item"><a href="api_py_engine.html">Python APIs</a></li>
       <li class="breadcrumb-item active">Compile</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../_sources/docs/api_doc/engine/compile.rst.txt" rel="nofollow"> View page source</a>
@@ -93,11 +101,14 @@
 <h1>Compile<a class="headerlink" href="#compile" title="Permalink to this heading"></a></h1>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/backends/neural_engine/compile/index.html#intel_extension_for_transformers.backends.neural_engine.compile.compile" title="intel_extension_for_transformers.backends.neural_engine.compile.compile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code></a>(model[, config])</p></td>
-<td><p>The compile interface.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/backends/neural_engine/compile/compile/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.compile" title="intel_extension_for_transformers.backends.neural_engine.compile.compile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compile</span></code></a></p></td>
+<td><p>The neural engine compile module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.graph_utils" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils"><code class="xref py py-obj docutils literal notranslate"><span class="pre">graph_utils</span></code></a></p></td>
-<td><p>The neural engine graph utils.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/backends/neural_engine/compile/onnx_utils/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils" title="intel_extension_for_transformers.backends.neural_engine.compile.onnx_utils"><code class="xref py py-obj docutils literal notranslate"><span class="pre">onnx_utils</span></code></a></p></td>
+<td><p>The neural engine onnx utils.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../autoapi/intel_extension_for_transformers/backends/neural_engine/compile/torch_utils/index.html#module-intel_extension_for_transformers.backends.neural_engine.compile.torch_utils" title="intel_extension_for_transformers.backends.neural_engine.compile.torch_utils"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_utils</span></code></a></p></td>
+<td><p>The neural engine onnx utils.</p></td>
 </tr>
 </tbody>
 </table>
@@ -107,8 +118,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../api_engine.html" class="btn btn-neutral float-left" title="Python APIs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../api_c_engine.html" class="btn btn-neutral float-right" title="C++ APIs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="api_py_engine.html" class="btn btn-neutral float-left" title="Python APIs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="graph.html" class="btn btn-neutral float-right" title="Graph" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

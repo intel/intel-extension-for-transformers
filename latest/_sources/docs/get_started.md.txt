@@ -16,20 +16,25 @@
 from intel_extension_for_transformers.optimization import QuantizationConfig, metrics, objectives
 from intel_extension_for_transformers.optimization.trainer import NLPTrainer
 
+config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
+model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",config=config)
+model.config.label2id = {0: 0, 1: 1}
+model.config.id2label = {0: 'NEGATIVE', 1: 'POSITIVE'}
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
-trainer = NLPTrainer(...)
-metric = metrics.Metric(name="eval_f1", is_relative=True, criterion=0.01)
-q_config = QuantizationConfig(
-    approach="PostTrainingStatic",
-    metrics=[metric],
-    objectives=[objectives.performance]
+trainer = NLPTrainer(model=model, 
+    train_dataset=raw_datasets["train"], 
+    eval_dataset=raw_datasets["validation"],
+    tokenizer=tokenizer
 )
+q_config = QuantizationConfig(metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)])
 model = trainer.quantize(quant_config=q_config)
+
+input = tokenizer("I like Intel Extension for Transformers", return_tensors="pt")
+output = model(**input).logits.argmax().item()
 ```
 
-For other Please refer to [quantization document](./quantization.md) for more details.
-
+> For more quick samples, please refer to [Get Started Page](docs/get_started.md). For more validated examples, please refer to [Support Model Matrix](docs/examples.md)
 
 ## Pruning
 ```python
@@ -45,7 +50,7 @@ p_conf = PruningConfig(pruner_config=[pruner_config], metrics=metric)
 model = trainer.prune(pruning_config=p_conf)
 ```
 
-Please refer to [pruning document](./pruning.md) for more details.
+> Please refer to [pruning document](./pruning.md) for more details.
 
 
 ## Distillation
@@ -62,7 +67,7 @@ d_conf = DistillationConfig(metrics=metric)
 model = trainer.distill(distillation_config=d_conf, teacher_model=teacher_model)
 ```
 
-Please refer to [distillation document](./distillation.md) for more details.
+> Please refer to [distillation document](./distillation.md) for more details.
 
 
 ## Quantized Length Adaptive Transformer
@@ -87,7 +92,7 @@ trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
 model = trainer.quantize(quant_config=q_config)
 ```
 
-Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](../examples/optimization/pytorch/huggingface/question-answering/dynamic) for details
+> Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](../examples/optimization/pytorch/huggingface/question-answering/dynamic) for details
 
 
 ## Transformers-accelerated Neural Engine
@@ -101,4 +106,4 @@ inputs = ... # [input_ids, segment_ids, input_mask]
 model.inference(inputs)
 ```
 
-Please refer to [example](../examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](../examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.
+> Please refer to [example](../examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](../examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.

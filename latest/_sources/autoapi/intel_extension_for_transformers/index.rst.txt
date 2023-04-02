@@ -12,6 +12,7 @@ Submodules
    :titlesonly:
    :maxdepth: 1
 
+   api_doc_example/index.rst
    version/index.rst
 
 

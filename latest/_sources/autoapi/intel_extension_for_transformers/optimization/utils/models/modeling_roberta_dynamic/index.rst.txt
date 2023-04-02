@@ -51,7 +51,7 @@ Functions
 
 .. py:class:: RobertaEmbeddings(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
 
@@ -74,7 +74,7 @@ Functions
 
 .. py:class:: RobertaSelfAttention(config, position_embedding_type=None)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Roberta self attention.
 
@@ -91,7 +91,7 @@ Functions
 
 .. py:class:: RobertaSelfOutput(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Roberta self output.
 
@@ -103,7 +103,7 @@ Functions
 
 .. py:class:: RobertaAttention(config, position_embedding_type=None)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Roberta attenion.
 
@@ -120,7 +120,7 @@ Functions
 
 .. py:class:: RobertaIntermediate(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Roberta intermidiate.
 
@@ -132,7 +132,7 @@ Functions
 
 .. py:class:: RobertaOutput(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Roberta output.
 
@@ -144,7 +144,7 @@ Functions
 
 .. py:class:: RobertaLayer(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Basic layer of roberta.
 
@@ -161,7 +161,7 @@ Functions
 
 .. py:class:: RobertaEncoder(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    The encoder for Roberata.
 
@@ -173,7 +173,7 @@ Functions
 
 .. py:class:: RobertaPooler(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Roberta pooler.
 
@@ -185,7 +185,7 @@ Functions
 
 .. py:class:: RobertaPreTrainedModel
 
-   Bases: :py:obj:`transformers.modeling_utils.PreTrainedModel`
+
 
    Roberta pretrained model.
 
@@ -200,7 +200,7 @@ Functions
 
 .. py:class:: RobertaModel(config, add_pooling_layer=True)
 
-   Bases: :py:obj:`RobertaPreTrainedModel`
+
 
    Basic roberta model.
 
@@ -264,7 +264,7 @@ Functions
 
 .. py:class:: RobertaForCausalLM(config)
 
-   Bases: :py:obj:`RobertaPreTrainedModel`
+
 
    Roberta for causal language model task.
 
@@ -333,7 +333,7 @@ Functions
 
 .. py:class:: RobertaForMaskedLM(config)
 
-   Bases: :py:obj:`RobertaPreTrainedModel`
+
 
    Roberta for masked language model task.
 
@@ -362,7 +362,7 @@ Functions
 
 .. py:class:: RobertaLMHead(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Roberta Head for masked language modeling.
 
@@ -374,7 +374,7 @@ Functions
 
 .. py:class:: RobertaForSequenceClassification(config)
 
-   Bases: :py:obj:`RobertaPreTrainedModel`
+
 
    Roberta for sequence classification task.
 
@@ -391,7 +391,7 @@ Functions
 
 .. py:class:: RobertaForMultipleChoice(config)
 
-   Bases: :py:obj:`RobertaPreTrainedModel`
+
 
    Roberta for multiple choice task.
 
@@ -408,7 +408,7 @@ Functions
 
 .. py:class:: RobertaForTokenClassification(config)
 
-   Bases: :py:obj:`RobertaPreTrainedModel`
+
 
    Roberta for token classification task.
 
@@ -423,7 +423,7 @@ Functions
 
 .. py:class:: RobertaClassificationHead(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Head for sentence-level classification tasks.
 
@@ -435,7 +435,7 @@ Functions
 
 .. py:class:: RobertaForQuestionAnswering(config)
 
-   Bases: :py:obj:`RobertaPreTrainedModel`
+
 
    Roberta model for quanstion answering task.
 

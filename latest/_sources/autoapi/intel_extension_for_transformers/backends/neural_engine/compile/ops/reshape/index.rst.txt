@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: Reshape
 
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
 
    Parse the Reshape operator to the neural engine.
 

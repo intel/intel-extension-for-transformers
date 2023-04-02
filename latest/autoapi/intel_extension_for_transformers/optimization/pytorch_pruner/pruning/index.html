@@ -13,7 +13,6 @@
     <script src="../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
         <script src="../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -78,7 +81,7 @@
              
   <section id="module-intel_extension_for_transformers.optimization.pytorch_pruner.pruning">
 <span id="intel-extension-for-transformers-optimization-pytorch-pruner-pruning"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.optimization.pytorch_pruner.pruning" title="intel_extension_for_transformers.optimization.pytorch_pruner.pruning"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.pruning</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.optimization.pytorch_pruner.pruning" title="Permalink to this heading"></a></h1>
-<p>pruning module.</p>
+<p>Pruning.</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
 <section id="classes">
@@ -92,58 +95,52 @@
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.pruning.</span></span><span class="sig-name descname"><span class="pre">Pruning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.pytorch_pruner.pruning.</span></span><span class="sig-name descname"><span class="pre">Pruning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning" title="Permalink to this definition"></a></dt>
 <dd><p>Pruning.</p>
-<p>The main class that users will used in codes to do pruning.
-Contain at least one Pruner object.</p>
+<p>The main class to do pruning; it contains at least one Pruner object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> – a string. The path to a config file.</p>
+<dd class="field-odd"><p><strong>config</strong> – a string representing the path to a config file. For config file template, please refer to
+<a class="reference external" href="https://github.com/intel/neural-compressor/tree/master/examples/pytorch/nlp/huggingface_models/text-classification/pruning/pytorch_pruner/eager/">https://github.com/intel/neural-compressor/tree/master/examples/pytorch/nlp/huggingface_models/text-classification/pruning/pytorch_pruner/eager/</a></p>
 </dd>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.model">
-<span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.model" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">model</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.model" title="Permalink to this definition"></a></dt>
 <dd><p>The model object to prune.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.config_file_path">
-<span class="sig-name descname"><span class="pre">config_file_path</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.config_file_path" title="Permalink to this definition"></a></dt>
-<dd><p>A string. The path to a config file.</p>
+<span class="sig-name descname"><span class="pre">config_file_path</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.config_file_path" title="Permalink to this definition"></a></dt>
+<dd><p>A string representing the path to a config file.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.pruners">
-<span class="sig-name descname"><span class="pre">pruners</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.pruners" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">pruners</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.pruners" title="Permalink to this definition"></a></dt>
 <dd><p>A list. A list of Pruner objects.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.pruner_info">
-<span class="sig-name descname"><span class="pre">pruner_info</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.pruner_info" title="Permalink to this definition"></a></dt>
-<dd><p>A config dict object. Contains pruners’ information.</p>
+<span class="sig-name descname"><span class="pre">pruner_info</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.pruner_info" title="Permalink to this definition"></a></dt>
+<dd><p>A config dict object that contains pruners’ information.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.update_items_for_all_pruners">
-<span class="sig-name descname"><span class="pre">update_items_for_all_pruners</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.update_items_for_all_pruners" title="Permalink to this definition"></a></dt>
-<dd><p>Functions which add User-defined arguments to the original configurations.</p>
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.update_config">
+<span class="sig-name descname"><span class="pre">update_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.update_config" title="Permalink to this definition"></a></dt>
+<dd><p>Add user-defined arguments to the original configurations.</p>
 <p>The original config of pruning is read from a file.
 However, users can still modify configurations by passing key-value arguments in this function.
-Please note that the key-value arguments’ keys are analysable in current configuration.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.prepare">
-<span class="sig-name descname"><span class="pre">prepare</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.prepare" title="Permalink to this definition"></a></dt>
-<dd><p>Align with old API’s calling pipeline.</p>
+Please note that the key-value arguments’ keys could be processed in current configuration.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.get_sparsity_ratio">
-<span class="sig-name descname"><span class="pre">get_sparsity_ratio</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.get_sparsity_ratio" title="Permalink to this definition"></a></dt>
-<dd><p>Functions that calculate a modules/layers sparsity.</p>
+<span class="sig-name descname"><span class="pre">get_sparsity_ratio</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.get_sparsity_ratio" title="Permalink to this definition"></a></dt>
+<dd><p>Calculate sparsity ratio of a module/layer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Three floats.
@@ -156,63 +153,63 @@ blockwise_over_matmul_gemm_conv refers to all-zero blocks’ ratio in pruning la
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_train_begin">
-<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_train_begin" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called in the beginning of training process.</p>
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_train_begin" title="Permalink to this definition"></a></dt>
+<dd><p>Implement at the beginning of training process.</p>
 <p>Before training, ensure that pruners are generated.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_epoch_begin">
-<span class="sig-name descname"><span class="pre">on_epoch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_epoch_begin" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called in the beginning of every epoch.</p>
+<span class="sig-name descname"><span class="pre">on_epoch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_epoch_begin" title="Permalink to this definition"></a></dt>
+<dd><p>Implement at the beginning of every epoch.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_step_begin">
-<span class="sig-name descname"><span class="pre">on_step_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">local_step</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_step_begin" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called in the beginning of every step.</p>
+<span class="sig-name descname"><span class="pre">on_step_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">local_step</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_step_begin" title="Permalink to this definition"></a></dt>
+<dd><p>Implement at the beginning of every step.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_before_optimizer_step">
-<span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_before_optimizer_step" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called before optimizer.step().</p>
+<span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_before_optimizer_step" title="Permalink to this definition"></a></dt>
+<dd><p>Implement before optimizer.step().</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_step_end">
-<span class="sig-name descname"><span class="pre">on_step_end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_step_end" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called in the end of every step.</p>
+<span class="sig-name descname"><span class="pre">on_step_end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_step_end" title="Permalink to this definition"></a></dt>
+<dd><p>Implement at the end of every step.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_epoch_end">
-<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_epoch_end" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called in the end of every epoch.</p>
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_epoch_end" title="Permalink to this definition"></a></dt>
+<dd><p>Implement the end of every epoch.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_train_end">
-<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_train_end" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called in the end of training.</p>
+<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_train_end" title="Permalink to this definition"></a></dt>
+<dd><p>Implement the end of training phase.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_before_eval">
-<span class="sig-name descname"><span class="pre">on_before_eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_before_eval" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called in the beginning of evaluation.</p>
+<span class="sig-name descname"><span class="pre">on_before_eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_before_eval" title="Permalink to this definition"></a></dt>
+<dd><p>Implement at the beginning of evaluation phase.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_after_eval">
-<span class="sig-name descname"><span class="pre">on_after_eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_after_eval" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called in the end of evaluation.</p>
+<span class="sig-name descname"><span class="pre">on_after_eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_after_eval" title="Permalink to this definition"></a></dt>
+<dd><p>Implement at the end of evaluation phase.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_after_optimizer_step">
-<span class="sig-name descname"><span class="pre">on_after_optimizer_step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_after_optimizer_step" title="Permalink to this definition"></a></dt>
-<dd><p>Functions called after optimizer.step().</p>
+<span class="sig-name descname"><span class="pre">on_after_optimizer_step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/pytorch_pruner/pruning.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.pytorch_pruner.pruning.Pruning.on_after_optimizer_step" title="Permalink to this definition"></a></dt>
+<dd><p>Implement after optimizer.step().</p>
 </dd></dl>
 
 </dd></dl>

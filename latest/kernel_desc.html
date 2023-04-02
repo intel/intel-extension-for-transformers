@@ -13,7 +13,6 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
@@ -48,27 +47,36 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="kernel.html">Kernels</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Transformers-Accelerated Libraries</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernel_perf.html">Performance</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Implementation Details</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/3D_inference.html">3D Inference</a></li>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/binaryop_injector.html">Binary Injectors</a></li>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/eltwise_injector.html">Element-wise Injector</a></li>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_vnni.html">Sparse GEMM VNNI</a></li>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_amx.html">Sparse GEMM AMX</a></li>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_avx512f.html">Sparse GEMM AVX512F</a></li>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_matmul.html">Transposed MatMul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_mha.html">Transposed MHA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="feature.html">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kernel_perf.html">Performance</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Implementation Details</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/3D_inference.html">3D Inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/binaryop_injector.html">Binary Injectors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/eltwise_injector.html">Element-wise Injector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_vnni.html">Sparse GEMM VNNI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_amx.html">Sparse GEMM AMX</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_avx512f.html">Sparse GEMM AVX512F</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_matmul.html">Transposed MatMul</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_mha.html">Transposed MHA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_dynamic_quant_matmul.html">Dynamic Quant Matmul</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="docs/api_doc/kernel/api_c.html">Kernels C++ APIs</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="docs/examples.html">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -85,6 +93,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="user_guide.html">User Guide</a></li>
           <li class="breadcrumb-item"><a href="kernel.html">Kernels</a></li>
       <li class="breadcrumb-item active">Implementation Details</li>
       <li class="wy-breadcrumbs-aside">
@@ -109,6 +118,7 @@
 <li class="toctree-l1"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_matmul.html">Transposed MatMul</a></li>
 <li class="toctree-l1"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_transpose_mha.html">Transposed MHA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_dynamic_quant_matmul.html">Dynamic Quant Matmul</a></li>
 </ul>
 </div>
 </section>

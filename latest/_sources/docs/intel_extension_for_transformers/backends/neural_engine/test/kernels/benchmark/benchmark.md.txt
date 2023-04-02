@@ -12,6 +12,9 @@
       - [matmul\_vnni\_noperm\_p2031\_p1302](#matmul_vnni_noperm_p2031_p1302)
     - [softmax](#softmax)
     - [attention](#attention)
+    - [Static MHA](#static-mha)
+    - [dynamic\_quant\_matmul](#dynamic_quant_matmul)
+    - [dynamic\_quant](#dynamic_quant)
 - [For developers](#for-developers)
 
 # Benchmark for Kernels
@@ -197,6 +200,51 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf softmax lut 256x256 u
 #### Examples
 ```shell
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf attention 1 64 8 128 0.5 1
+```
+
+      
+### Static MHA
+```shell
+[<environment_variable>...] ./benchmark <mode> mha_dense <batch_size> <seq_len> <head_num> <head_size> [dst_type] [padding_mask] [badd_dim]
+```
+
+- `batch_size` / `seq_len` / `head_num` / `head_size` are the the problem size.
+- `dst_type` is the output data type, could be one of `u8` / `s8` / `fp32`; default to `u8` if leave blank.
+- `padding_mask` a positive integer which is the length of sequence(s) before padding; leave blank pr set to negative value so that it defaults to `seq_len` (no padding).
+- `badd_dim` dimension of the tensor to apply binary_add before performing softmax; leave blank pr set to non-positive value to disable the binary add; set to `1`-`4` to apply the binary_add with broadcasting if necessary.
+#### Examples
+```shell
+BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf mha_dense 1 2048 16 256 u8 -1 4
+```
+
+### dynamic_quant_matmul
+```shell
+[<environment_variable>...] ./benchmark <mode> dynamic_quant_matmul <batch_size> <m> <n> <k> <large_weight_threshold> <add_bias>
+```
+- `batch_size` / `m` / `n` / `k` are the the problem size.
+- `large_weight_threshold` should be 0-1, if weight*large_weight_threshold large than L2-cache size, kernel will select large_wei jit-path.
+- `add_bias` could be one of `true` / `false`, indicate whether add a bias value after gemm.
+
+Please note that dynamic_quant_matmul only supports s8-activation, s8-weight and s8-destination, so the user does not need to specify the data type.
+
+#### Examples
+```shell
+BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf dynamic_quant_matmul 1 512 1280 1280
+```
+
+### dynamic_quant
+```shell
+[<environment_variable>...] ./benchmark <mode> dynamic_quant <channel_num> <quantize_dim_elt_num> <src_data_type>
+```
+- `channel_num` the number of channels in input-tensor.
+- `quantize_dim_elt_num` the number of elements in the quantized dim.
+- `src_data_type` could be one of `fp32` / `bf16`, indicate the data type of input-tensor.
+
+Please note that dynamic_quant only supports per-channel symmetric quantization.  
+
+#### Examples
+```shell
+BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf dynamic_quant 1280 1280 bf16
 ```
 
 # For developers

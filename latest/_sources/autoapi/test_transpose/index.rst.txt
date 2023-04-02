@@ -14,14 +14,14 @@ Classes
 
 .. autoapisummary::
 
-   test_transpose.TestTranspose
+   test_transpose.TestTorchOP
 
 
 
 
-.. py:class:: TestTranspose(methodName='runTest')
+.. py:class:: TestTorchOP(methodName='runTest')
 
-   Bases: :py:obj:`unittest.TestCase`
+
 
    A class whose instances are single test cases.
 

@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: InteractFeatures
 
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern.Pattern`
+
 
    The InteractFeatures pattern.
 

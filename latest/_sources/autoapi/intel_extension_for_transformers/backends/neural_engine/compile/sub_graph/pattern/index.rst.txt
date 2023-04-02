@@ -45,7 +45,7 @@ Functions
 
 .. py:class:: Pattern
 
-   Bases: :py:obj:`object`
+
 
    The bass pattern class.
 

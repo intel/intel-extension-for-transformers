@@ -28,7 +28,7 @@ Functions
    The compile pipeline.
 
 
-.. py:function:: compile(model, config=None)
+.. py:function:: compile(model, config=None) -> intel_extension_for_transformers.backends.neural_engine.compile.graph.Graph
 
    The compile interface.
 

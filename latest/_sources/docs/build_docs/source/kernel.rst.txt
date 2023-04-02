@@ -8,5 +8,4 @@ Transformers-accelerated Libraries (formerly known as SparseLib) is a high-perfo
    docs/intel_extension_for_transformers/backends/neural_engine/kernels/README.md
    kernel_perf.rst
    kernel_desc.rst
-   docs/api_doc/kernel/api_c.rst
 

@@ -13,13 +13,14 @@
     <script src="../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
         <script src="../../../../../_static/sphinx_highlight.js"></script>
     <script src="../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../../../search.html" /> 
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <link rel="next" title="Profiling" href="engine_profiling.html" />
+    <link rel="prev" title="Compile an ONNX model to Engine IR" href="onnx_compile.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,11 +46,36 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../feature.html">Features</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../neural_engine.html">Neural Engine</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="deploy_and_integration.html">Deploy and Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Quantize a ONNX model to engine low precision/int8 IR</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#design">Design</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#prerequisite">Prerequisite</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-tuning-and-benchmark">Run tuning and benchmark</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="engine_profiling.html">Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_tuning.html">Engine Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="graph_fusion.html">Graph Fusion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pattern_recognize.html">Pattern Recognize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="operator_register.html">Customized Operators Register</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_customized_pattern.html">Add Customized Pattern</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -66,6 +92,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../neural_engine.html">Neural Engine</a></li>
       <li class="breadcrumb-item active">Quantize a ONNX model to engine low precision/int8 IR</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/docs/onnx_quantize.md.txt" rel="nofollow"> View page source</a>
@@ -131,7 +159,10 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="onnx_compile.html" class="btn btn-neutral float-left" title="Compile an ONNX model to Engine IR" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="engine_profiling.html" class="btn btn-neutral float-right" title="Profiling" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

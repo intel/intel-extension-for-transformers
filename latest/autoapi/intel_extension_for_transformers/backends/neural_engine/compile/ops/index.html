@@ -13,7 +13,6 @@
     <script src="../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -91,6 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="cast/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.cast</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="concat/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.concat</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="conv/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.conv</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="cos/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.cos</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="empty_ops/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="expand_dims/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.expand_dims</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="fused_batch_matmul_v2/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.fused_batch_matmul_v2</span></code></a></li>
@@ -104,6 +108,7 @@
 <li class="toctree-l1"><a class="reference internal" href="iterator_get_next/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.iterator_get_next</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="iterator_v2/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.iterator_v2</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="layer_normalization/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.layer_normalization</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="log_softmax/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.log_softmax</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="map_and_batch_dataset/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.map_and_batch_dataset</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="matmul/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.matmul</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="mean/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.mean</span></code></a></li>
@@ -114,15 +119,23 @@
 <li class="toctree-l1"><a class="reference internal" href="op/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimize_dataset/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.optimize_dataset</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="pack/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.pack</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="padding_sequence/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.padding_sequence</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="placeholder/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.placeholder</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="pos_embed/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.pos_embed</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="pow/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.pow</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="quantize_linear/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="quantize_v2/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_v2</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="quantized_fused_matmul_and_dequantize/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.quantized_fused_matmul_and_dequantize</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="quantized_matmul_with_bias_and_dequantize/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.quantized_matmul_with_bias_and_dequantize</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="reduce_mean/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.reduce_mean</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="reduce_sum/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.reduce_sum</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="reorder/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.reorder</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="reshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.reshape</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="rsub/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.rsub</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="scatter_elements/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.scatter_elements</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="shape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.shape</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="sin/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.sin</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="size/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.size</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="softmax/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.softmax</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="split/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.split</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="squeeze/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.squeeze</span></code></a></li>
@@ -132,6 +145,7 @@
 <li class="toctree-l1"><a class="reference internal" href="transpose/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.transpose</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="unpack/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.unpack</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="unsqueeze/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.unsqueeze</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="view/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.view</span></code></a></li>
 </ul>
 </div>
 </section>
@@ -141,7 +155,7 @@
 <h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Operator</span></code></a></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Operator</span></code></p></td>
 <td><p>The class of neural engine operator.</p></td>
 </tr>
 </tbody>
@@ -151,7 +165,7 @@
 <h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.operator_registry" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.operator_registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">operator_registry</span></code></a>(operator_type)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">operator_registry</span></code>(operator_type)</p></td>
 <td><p>The class decorator used to register all Algorithm subclasses.</p></td>
 </tr>
 </tbody>
@@ -166,87 +180,6 @@
 </tr>
 </tbody>
 </table>
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.</span></span><span class="sig-name descname"><span class="pre">Operator</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>The class of neural engine operator.</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.name">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.name" title="Permalink to this definition"></a></dt>
-<dd><p>Get the operator name.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.op_type">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">op_type</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.op_type" title="Permalink to this definition"></a></dt>
-<dd><p>Get op_type.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.input_tensors">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_tensors</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.input_tensors" title="Permalink to this definition"></a></dt>
-<dd><p>Get input_tensors.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.output_tensors">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_tensors</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.output_tensors" title="Permalink to this definition"></a></dt>
-<dd><p>Get output tensor.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.attr">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">attr</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.attr" title="Permalink to this definition"></a></dt>
-<dd><p>Get attr.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.config">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.config" title="Permalink to this definition"></a></dt>
-<dd><p>Get the op config in the graph.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.set_attr">
-<span class="sig-name descname"><span class="pre">set_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.set_attr" title="Permalink to this definition"></a></dt>
-<dd><p>Attr initialization.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.extract">
-<span class="sig-name descname"><span class="pre">extract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">framework</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.extract" title="Permalink to this definition"></a></dt>
-<dd><p>Extract the op from framework.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.construct">
-<span class="sig-name descname"><span class="pre">construct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">OrderedDict()</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.Operator.construct" title="Permalink to this definition"></a></dt>
-<dd><p>Make the op by set the attributes.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.operator_registry">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.</span></span><span class="sig-name descname"><span class="pre">operator_registry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operator_type</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.operator_registry" title="Permalink to this definition"></a></dt>
-<dd><p>The class decorator used to register all Algorithm subclasses.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>cls</strong> (<em>class</em>) – The class of register.</p></li>
-<li><p><strong>operator_type</strong> (<em>str</em><em> or </em><em>str list</em>) – The operator registration name(s)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The class of register.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>cls</p>
-</dd>
-</dl>
-</dd></dl>
-
 </section>
 </section>
 </section>

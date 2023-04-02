@@ -13,7 +13,6 @@
     <script src="../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -94,7 +97,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.get_tensor_dest_op" title="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.get_tensor_dest_op"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_tensor_dest_op</span></code></a>(node_name, tensor_name, nodes_dict)</p></td>
 <td><p>Get the tensor dest op name.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.tf_extract_operator" title="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.tf_extract_operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tf_extract_operator</span></code></a>(node, model, nodes_dict)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.tf_extract_operator" title="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.tf_extract_operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tf_extract_operator</span></code></a>(node, framework_model, nodes_dict)</p></td>
 <td><p>Decorate the operator in tensorflow.</p></td>
 </tr>
 </tbody>
@@ -111,7 +114,7 @@
 </table>
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.create_tf_node">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">create_tf_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.create_tf_node" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">create_tf_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.create_tf_node" title="Permalink to this definition"></a></dt>
 <dd><p>Create a nodedef object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -132,7 +135,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.graph_node_names_details">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">graph_node_names_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.graph_node_names_details" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">graph_node_names_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.graph_node_names_details" title="Permalink to this definition"></a></dt>
 <dd><p>Parse the graph nodes ans get the graph_nodes_dict.</p>
 <p>Be used for Grpah class when converting a tensorflow computation graph to an engine graph.
 The node_name is the key, node in value is for getting the Const
@@ -152,7 +155,7 @@ output_tensor dest op.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.get_tensor_dest_op">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">get_tensor_dest_op</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.get_tensor_dest_op" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">get_tensor_dest_op</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_dict</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.get_tensor_dest_op" title="Permalink to this definition"></a></dt>
 <dd><p>Get the tensor dest op name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -173,15 +176,16 @@ output_tensor dest op.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.tf_extract_operator">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">tf_extract_operator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.tf_extract_operator" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">tf_extract_operator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_graph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.tf_extract_operator" title="Permalink to this definition"></a></dt>
 <dd><p>Decorate the operator in tensorflow.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>node</strong> – NodeDef</p></li>
-<li><p><strong>model</strong> – TensorflowModel</p></li>
+<li><p><strong>framework_model</strong> – TensorflowModel</p></li>
 <li><p><strong>nodes_dict</strong> – dict, return value from graph_node_names_details</p></li>
 <li><p><strong>tf_dtypes</strong> – dict, for get the dtype string</p></li>
+<li><p><strong>engine_graph</strong> – Engine Graph class</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -197,7 +201,7 @@ output_tensors: Tensor list, contains the node output tensor info</p>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.TF_DTYPE_ID">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">TF_DTYPE_ID</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.TF_DTYPE_ID" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">TF_DTYPE_ID</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.tf_utils.TF_DTYPE_ID" title="Permalink to this definition"></a></dt>
 <dd><p>Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function</p>
 </dd></dl>
 

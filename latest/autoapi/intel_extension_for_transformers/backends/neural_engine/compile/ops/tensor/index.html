@@ -13,7 +13,6 @@
     <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -92,57 +95,8 @@
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.</span></span><span class="sig-name descname"><span class="pre">Tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_op</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest_op</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>The definition of the neural engine.</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.name">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.name" title="Permalink to this definition"></a></dt>
-<dd><p>Get the tensor name.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.data">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.data" title="Permalink to this definition"></a></dt>
-<dd><p>Get the tensor data.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.shape">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.shape" title="Permalink to this definition"></a></dt>
-<dd><p>Get the tensor shape.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.dtype">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.dtype" title="Permalink to this definition"></a></dt>
-<dd><p>Get the tensor dtype.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.location">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">location</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.location" title="Permalink to this definition"></a></dt>
-<dd><p>Get the tensor location.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.source_op">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source_op</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.source_op" title="Permalink to this definition"></a></dt>
-<dd><p>Get source_op.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.dest_op">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dest_op</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.dest_op" title="Permalink to this definition"></a></dt>
-<dd><p>Get dest_op.</p>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.config">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor.config" title="Permalink to this definition"></a></dt>
-<dd><p>Get the config dict in the graph.</p>
-</dd></dl>
-
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.</span></span><span class="sig-name descname"><span class="pre">Tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_op</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest_op</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/tensor.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor.Tensor" title="Permalink to this definition"></a></dt>
+<dd><p>The definition of the neural engine.</p>
 </dd></dl>
 
 </section>

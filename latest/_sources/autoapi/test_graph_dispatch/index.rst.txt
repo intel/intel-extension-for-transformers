@@ -21,7 +21,7 @@ Classes
 
 .. py:class:: TestGraphDispatch(methodName='runTest')
 
-   Bases: :py:obj:`unittest.TestCase`
+
 
    A class whose instances are single test cases.
 

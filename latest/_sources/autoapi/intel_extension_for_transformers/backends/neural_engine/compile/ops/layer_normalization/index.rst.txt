@@ -18,19 +18,32 @@ Classes
 .. autoapisummary::
 
    intel_extension_for_transformers.backends.neural_engine.compile.ops.layer_normalization.LayerNormalization
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.layer_normalization.LayerNorm
 
 
 
 
 .. py:class:: LayerNormalization
 
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
 
    Parse the LayerNormalization operator to the neural engine.
 
    .. py:method:: set_attr(framework, node)
 
       Extract the node attr from frameworks.
+
+
+
+.. py:class:: LayerNorm
+
+
+
+   Register the LayerNorm operator.
+
+   .. py:method:: set_attr(framework, node)
+
+      Attr initialization.
 
 
 

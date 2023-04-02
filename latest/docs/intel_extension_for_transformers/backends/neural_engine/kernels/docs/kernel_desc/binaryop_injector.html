@@ -13,7 +13,6 @@
     <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../../_static/sphinx_highlight.js"></script>
@@ -48,32 +47,36 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../../kernel.html">Kernels</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../../README.html">Transformers-Accelerated Libraries</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../../../kernel_perf.html">Performance</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../../kernel_desc.html">Implementation Details</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="3D_inference.html">3D Inference</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Binary Injectors</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#framework-features">Framework Features</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../../../../../../../kernel_desc.html">Implementation Details</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="3D_inference.html">3D Inference</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Binary Injectors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="eltwise_injector.html">Element-wise Injector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_vnni.html">Sparse GEMM VNNI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_amx.html">Sparse GEMM AMX</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_avx512f.html">Sparse GEMM AVX512F</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_transpose_matmul.html">Transposed MatMul</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_transpose_mha.html">Transposed MHA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_dynamic_quant_matmul.html">Dynamic Quant Matmul</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="eltwise_injector.html">Element-wise Injector</a></li>
-<li class="toctree-l3"><a class="reference internal" href="kernel_vnni.html">Sparse GEMM VNNI</a></li>
-<li class="toctree-l3"><a class="reference internal" href="kernel_amx.html">Sparse GEMM AMX</a></li>
-<li class="toctree-l3"><a class="reference internal" href="kernel_avx512f.html">Sparse GEMM AVX512F</a></li>
-<li class="toctree-l3"><a class="reference internal" href="kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
-<li class="toctree-l3"><a class="reference internal" href="kernel_transpose_matmul.html">Transposed MatMul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="kernel_transpose_mha.html">Transposed MHA</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../../api_doc/kernel/api_c.html">Kernels C++ APIs</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -90,6 +93,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../user_guide.html">User Guide</a></li>
           <li class="breadcrumb-item"><a href="../../../../../../../kernel.html">Kernels</a></li>
           <li class="breadcrumb-item"><a href="../../../../../../../kernel_desc.html">Implementation Details</a></li>
       <li class="breadcrumb-item active">Binary Injectors</li>

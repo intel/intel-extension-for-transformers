@@ -26,34 +26,6 @@ Classes
 
    TFOptimization is the entry class for Tensorflow to use the optimization techniques in neural compressor.
 
-   .. py:property:: inputs
-
-      Get the inputs.
-
-   .. py:property:: input_names
-
-      Get the input names.
-
-   .. py:property:: output_names
-
-      Get the output names.
-
-   .. py:property:: eval_func
-
-      Get the evaluation function.
-
-   .. py:property:: train_func
-
-      Get the training function.
-
-   .. py:property:: train_dataset
-
-      Get the training dataset.
-
-   .. py:property:: eval_dataset
-
-      Get the evaluation dataset.
-
    .. py:method:: builtin_eval_func(model)
 
       Customize Evaluate function to inference the model for specified metric on the validation dataset.

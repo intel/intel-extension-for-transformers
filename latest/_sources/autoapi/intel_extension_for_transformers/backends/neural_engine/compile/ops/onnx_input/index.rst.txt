@@ -24,11 +24,11 @@ Classes
 
 .. py:class:: ONNXINPUT
 
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
 
    Parse the ONNXINPUT operator to the neural engine.
 
-   .. py:method:: extract(framework, node, model, nodes_dict)
+   .. py:method:: extract(framework, node, framework_model, nodes_dict, engine_graph=None)
 
       Extract operators to the neural engine.
 

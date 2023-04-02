@@ -62,7 +62,7 @@ Functions
 
 .. py:class:: BertEmbeddings(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Construct the embeddings from word, position and token_type embeddings.
 
@@ -74,7 +74,7 @@ Functions
 
 .. py:class:: BertSelfAttention(config, position_embedding_type=None)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert self attention.
 
@@ -91,7 +91,7 @@ Functions
 
 .. py:class:: BertSelfOutput(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert self output.
 
@@ -103,7 +103,7 @@ Functions
 
 .. py:class:: BertAttention(config, position_embedding_type=None)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert attention.
 
@@ -120,7 +120,7 @@ Functions
 
 .. py:class:: BertIntermediate(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert intermediate.
 
@@ -132,7 +132,7 @@ Functions
 
 .. py:class:: BertOutput(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert output.
 
@@ -144,7 +144,7 @@ Functions
 
 .. py:class:: BertLayer(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert layer.
 
@@ -161,7 +161,7 @@ Functions
 
 .. py:class:: BertEncoder(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert encoder.
 
@@ -173,7 +173,7 @@ Functions
 
 .. py:class:: BertPooler(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert pooler.
 
@@ -185,7 +185,7 @@ Functions
 
 .. py:class:: BertPredictionHeadTransform(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert prediction head transform.
 
@@ -197,7 +197,7 @@ Functions
 
 .. py:class:: BertLMPredictionHead(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert language modeling prediction head.
 
@@ -209,7 +209,7 @@ Functions
 
 .. py:class:: BertOnlyMLMHead(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert only for masked language modeling head.
 
@@ -221,7 +221,7 @@ Functions
 
 .. py:class:: BertOnlyNSPHead(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert only for next sequence prediction head.
 
@@ -233,7 +233,7 @@ Functions
 
 .. py:class:: BertPreTrainingHeads(config)
 
-   Bases: :py:obj:`torch.nn.Module`
+
 
    Bert pretraining heads.
 
@@ -245,7 +245,7 @@ Functions
 
 .. py:class:: BertPreTrainedModel
 
-   Bases: :py:obj:`transformers.modeling_utils.PreTrainedModel`
+
 
    An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
    models.
@@ -253,7 +253,7 @@ Functions
 
 .. py:class:: BertForPreTrainingOutput
 
-   Bases: :py:obj:`transformers.utils.ModelOutput`
+
 
    Output type of [`BertForPreTraining`].
 
@@ -282,7 +282,7 @@ Functions
 
 .. py:class:: BertModel(config, add_pooling_layer=True)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    The model can behave as an encoder (with only self-attention) as well as a decoder, in which case a layer of
    cross-attention is added between the self-attention layers, following the architecture described in [Attention is
@@ -339,7 +339,7 @@ Functions
 
 .. py:class:: BertForPreTraining(config)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    Bert for pretrained model
 
@@ -390,7 +390,7 @@ Functions
 
 .. py:class:: BertLMHeadModel(config)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    Bert language modeling head model.
 
@@ -439,7 +439,7 @@ Functions
 
 .. py:class:: BertForMaskedLM(config)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    Bert for masked language modeling.
 
@@ -469,7 +469,7 @@ Functions
 
 .. py:class:: BertForNextSentencePrediction(config)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    Bert for next sentence prediction.
 
@@ -506,7 +506,7 @@ Functions
 
 .. py:class:: BertForSequenceClassification(config)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    Bert for sequence classification.
 
@@ -521,7 +521,7 @@ Functions
 
 .. py:class:: BertForMultipleChoice(config)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    Bert for multiple choice.
 
@@ -536,7 +536,7 @@ Functions
 
 .. py:class:: BertForTokenClassification(config)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    Bert for token classification.
 
@@ -549,7 +549,7 @@ Functions
 
 .. py:class:: BertForQuestionAnswering(config)
 
-   Bases: :py:obj:`BertPreTrainedModel`
+
 
    Bert for question answering.
 

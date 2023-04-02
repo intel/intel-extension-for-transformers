@@ -13,7 +13,6 @@
     <script src="../../../../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../../_static/doctools.js"></script>
         <script src="../../../../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -88,19 +91,19 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.AddV2" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.AddV2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AddV2</span></code></a></p></td>
 <td><p>Register the AddV2 operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MultiHeadAttenion" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MultiHeadAttenion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MultiHeadAttenion</span></code></a></p></td>
-<td><p>The class of neural engine operator.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Add" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Add</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Add" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Add</span></code></a></p></td>
 <td><p>Register the Add operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BinaryAdd</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BinaryAdd</span></code></a></p></td>
 <td><p>Register the BinaryAdd operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConstantOfShape</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConstantOfShape</span></code></a></p></td>
 <td><p>Register the ConstantOfShape operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.DequantizeLinear" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.DequantizeLinear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DequantizeLinear</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.DequantizeLinear" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.DequantizeLinear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DequantizeLinear</span></code></a></p></td>
+<td><p>Register the DequantizeLinear operator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Dequantize" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Dequantize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dequantize</span></code></a></p></td>
 <td><p>Register the DequantizeLinear operator.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Erf" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Erf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Erf</span></code></a></p></td>
@@ -124,92 +127,74 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Input" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Input</span></code></a></p></td>
 <td><p>Register the Input operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LayerNorm" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LayerNorm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LayerNorm</span></code></a></p></td>
-<td><p>Register the LayerNorm operator.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MakeIterator</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MakeIterator</span></code></a></p></td>
 <td><p>Register the MakeIterator operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasAdd" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasAdd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBiasAdd</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasAdd" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasAdd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBiasAdd</span></code></a></p></td>
 <td><p>Register the MatMulWithBiasAdd operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasGelu" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasGelu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBiasGelu</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasGelu" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasGelu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBiasGelu</span></code></a></p></td>
 <td><p>Register the MatMulWithBiasGelu operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasTanh" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasTanh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBiasTanh</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasTanh" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasTanh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBiasTanh</span></code></a></p></td>
 <td><p>Register the MatMulWithBiasTanh operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBias" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBias"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBias</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBias" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBias"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBias</span></code></a></p></td>
 <td><p>Register the MatMulWithBias operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Output" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Output</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Output" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Output</span></code></a></p></td>
 <td><p>Register the Output operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.PaddingSequence" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.PaddingSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PaddingSequence</span></code></a></p></td>
-<td><p>Register the PaddingSequence operator.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Pow" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Pow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pow</span></code></a></p></td>
-<td><p>Register the Pow operator.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMatMul" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMatMul"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QLinearMatMul</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMatMul" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMatMul"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QLinearMatMul</span></code></a></p></td>
 <td><p>Register the QLinearMatMul operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearAdd" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearAdd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QLinearAdd</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearAdd" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearAdd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QLinearAdd</span></code></a></p></td>
 <td><p>Register the QLinearAdd operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMul" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMul"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QLinearMul</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMul" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMul"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QLinearMul</span></code></a></p></td>
 <td><p>Register the QLinearMul operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.RealDiv" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.RealDiv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RealDiv</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.RealDiv" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.RealDiv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RealDiv</span></code></a></p></td>
 <td><p>Register the RealDiv operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Rsqrt" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Rsqrt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Rsqrt</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Rsqrt" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Rsqrt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Rsqrt</span></code></a></p></td>
 <td><p>Register the Rsqrt operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Shape" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Shape</span></code></a></p></td>
-<td><p>Register the Shape operator.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Slice" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Slice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Slice</span></code></a></p></td>
-<td><p>Register the Slice operator.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sqrt" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sqrt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sqrt</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sqrt" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sqrt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sqrt</span></code></a></p></td>
 <td><p>Register the Sqrt operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Square" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Square"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Square</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Square" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Square"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Square</span></code></a></p></td>
 <td><p>Register the Square operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SquaredDifference" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SquaredDifference"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SquaredDifference</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SquaredDifference" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SquaredDifference"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SquaredDifference</span></code></a></p></td>
 <td><p>Register the SquaredDifference operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.StopGradient" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.StopGradient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StopGradient</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.StopGradient" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.StopGradient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StopGradient</span></code></a></p></td>
 <td><p>Register the StopGradient operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tanh</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tanh</span></code></a></p></td>
 <td><p>Register the Tanh operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TensorSliceDataset</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TensorSliceDataset</span></code></a></p></td>
 <td><p>Register the TensorSliceDataset operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransposeBatchMatMul</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransposeBatchMatMul</span></code></a></p></td>
 <td><p>Register the TransposeBatchMatMul operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Where" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Where"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Where</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Where" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Where"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Where</span></code></a></p></td>
 <td><p>Register the Where operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Range" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Range</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Range" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Range</span></code></a></p></td>
 <td><p>Register the Range operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Relu" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Relu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Relu</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Relu" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Relu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Relu</span></code></a></p></td>
 <td><p>Register the Relu operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBiasRelu</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatMulWithBiasRelu</span></code></a></p></td>
 <td><p>Register the MatMulWithBiasRelu operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Matmul</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Matmul</span></code></a></p></td>
 <td><p>Register the Matmul operator.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Quantize" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Quantize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Quantize</span></code></a></p></td>
-<td><p>Register the Quantize operator.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.CumSum" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.CumSum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CumSum</span></code></a></p></td>
 <td><p>Register the CumSum operator.</p></td>
@@ -238,423 +223,402 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Flatten" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Flatten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Flatten</span></code></a></p></td>
 <td><p>Register the Flatten operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reorder" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reorder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Reorder</span></code></a></p></td>
-<td><p>Register the Reorder operator.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MergedEmbeddingbag" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MergedEmbeddingbag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MergedEmbeddingbag</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MergedEmbeddingbag" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MergedEmbeddingbag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MergedEmbeddingbag</span></code></a></p></td>
 <td><p>Register the MergedEmbeddingbag operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Convolution</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Convolution</span></code></a></p></td>
 <td><p>Register the Convolution operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ExpandIndices" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ExpandIndices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExpandIndices</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ExpandIndices" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ExpandIndices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExpandIndices</span></code></a></p></td>
 <td><p>Register the ExpandIndices operator.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tile" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tile</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tile" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tile</span></code></a></p></td>
 <td><p>Register the Tile operator.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OpAny</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OpAny</span></code></a></p></td>
 <td><p>Register the OpAny operator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SequenceLength" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SequenceLength"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SequenceLength</span></code></a></p></td>
+<td><p>Register the SequenceLength operator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Arange" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Arange"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Arange</span></code></a></p></td>
+<td><p>Register the Tile operator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reciprocal" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reciprocal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Reciprocal</span></code></a></p></td>
+<td><p>Register the Tile operator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Einsum" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Einsum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Einsum</span></code></a></p></td>
+<td><p>Register the Tile operator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Repeat" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Repeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Repeat</span></code></a></p></td>
+<td><p>Register the Tile operator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Stack" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Stack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Stack</span></code></a></p></td>
+<td><p>Register the Tile operator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Constant" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Constant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Constant</span></code></a></p></td>
+<td><p>Register the Tile operator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ListConstruct" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ListConstruct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ListConstruct</span></code></a></p></td>
+<td><p>Register the Tile operator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LatRange" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LatRange"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LatRange</span></code></a></p></td>
+<td><p>Register the Tile operator.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.AddV2">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">AddV2</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.AddV2" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the AddV2 operator.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MultiHeadAttenion">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MultiHeadAttenion</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MultiHeadAttenion" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>The class of neural engine operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">AddV2</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.AddV2" title="Permalink to this definition"></a></dt>
+<dd><p>Register the AddV2 operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Add">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Add</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Add" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Add operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Add</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Add" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Add operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">BinaryAdd</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the BinaryAdd operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">BinaryAdd</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.BinaryAdd" title="Permalink to this definition"></a></dt>
+<dd><p>Register the BinaryAdd operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">ConstantOfShape</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the ConstantOfShape operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">ConstantOfShape</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ConstantOfShape" title="Permalink to this definition"></a></dt>
+<dd><p>Register the ConstantOfShape operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.DequantizeLinear">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">DequantizeLinear</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.DequantizeLinear" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the DequantizeLinear operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">DequantizeLinear</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.DequantizeLinear" title="Permalink to this definition"></a></dt>
+<dd><p>Register the DequantizeLinear operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Dequantize">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Dequantize</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Dequantize" title="Permalink to this definition"></a></dt>
+<dd><p>Register the DequantizeLinear operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Erf">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Erf</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Erf" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Erf operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Erf</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Erf" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Erf operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Expand">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Expand</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Expand" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Expand operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Expand</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Expand" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Expand operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Fill">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Fill</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Fill" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Fill operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Fill</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Fill" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Fill operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.FlatMapDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">FlatMapDataset</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.FlatMapDataset" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the FlatMapDataset operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">FlatMapDataset</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.FlatMapDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Register the FlatMapDataset operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Identity">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Identity</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Identity" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Identity operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Identity</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Identity" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Identity operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.InnerProduct">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">InnerProduct</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.InnerProduct" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the InnerProduct operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">InnerProduct</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.InnerProduct" title="Permalink to this definition"></a></dt>
+<dd><p>Register the InnerProduct operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Input">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Input</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Input" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Input operator.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LayerNorm">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">LayerNorm</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LayerNorm" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the LayerNorm operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Input</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Input" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Input operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MakeIterator</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the MakeIterator operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MakeIterator</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MakeIterator" title="Permalink to this definition"></a></dt>
+<dd><p>Register the MakeIterator operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasAdd">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasAdd</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasAdd" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the MatMulWithBiasAdd operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasAdd</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasAdd" title="Permalink to this definition"></a></dt>
+<dd><p>Register the MatMulWithBiasAdd operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasGelu">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasGelu</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasGelu" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the MatMulWithBiasGelu operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasGelu</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasGelu" title="Permalink to this definition"></a></dt>
+<dd><p>Register the MatMulWithBiasGelu operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasTanh">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasTanh</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasTanh" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the MatMulWithBiasTanh operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasTanh</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasTanh" title="Permalink to this definition"></a></dt>
+<dd><p>Register the MatMulWithBiasTanh operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBias">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBias</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBias" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the MatMulWithBias operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBias</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBias" title="Permalink to this definition"></a></dt>
+<dd><p>Register the MatMulWithBias operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Output">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Output</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Output" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Output operator.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.PaddingSequence">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">PaddingSequence</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.PaddingSequence" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the PaddingSequence operator.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Pow">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Pow</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Pow" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Pow operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Output</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Output" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Output operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMatMul">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">QLinearMatMul</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMatMul" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the QLinearMatMul operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">QLinearMatMul</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMatMul" title="Permalink to this definition"></a></dt>
+<dd><p>Register the QLinearMatMul operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearAdd">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">QLinearAdd</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearAdd" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the QLinearAdd operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">QLinearAdd</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearAdd" title="Permalink to this definition"></a></dt>
+<dd><p>Register the QLinearAdd operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMul">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">QLinearMul</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMul" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the QLinearMul operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">QLinearMul</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.QLinearMul" title="Permalink to this definition"></a></dt>
+<dd><p>Register the QLinearMul operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.RealDiv">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">RealDiv</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.RealDiv" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the RealDiv operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">RealDiv</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.RealDiv" title="Permalink to this definition"></a></dt>
+<dd><p>Register the RealDiv operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Rsqrt">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Rsqrt</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Rsqrt" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Rsqrt operator.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Shape">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Shape</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Shape" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Shape operator.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Slice">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Slice</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Slice" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Slice operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Rsqrt</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Rsqrt" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Rsqrt operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sqrt">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Sqrt</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sqrt" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Sqrt operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Sqrt</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sqrt" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Sqrt operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Square">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Square</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Square" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Square operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Square</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Square" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Square operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SquaredDifference">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">SquaredDifference</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SquaredDifference" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the SquaredDifference operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">SquaredDifference</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SquaredDifference" title="Permalink to this definition"></a></dt>
+<dd><p>Register the SquaredDifference operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.StopGradient">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">StopGradient</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.StopGradient" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the StopGradient operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">StopGradient</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.StopGradient" title="Permalink to this definition"></a></dt>
+<dd><p>Register the StopGradient operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Tanh</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Tanh operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Tanh</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tanh operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">TensorSliceDataset</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the TensorSliceDataset operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">TensorSliceDataset</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Register the TensorSliceDataset operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">TransposeBatchMatMul</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the TransposeBatchMatMul operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">TransposeBatchMatMul</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul" title="Permalink to this definition"></a></dt>
+<dd><p>Register the TransposeBatchMatMul operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Where">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Where</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Where" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Where operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Where</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Where" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Where operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Range">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Range</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Range" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Range operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Range</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Range" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Range operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Relu">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Relu</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Relu" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Relu operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Relu</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Relu" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Relu operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasRelu</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the MatMulWithBiasRelu operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasRelu</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu" title="Permalink to this definition"></a></dt>
+<dd><p>Register the MatMulWithBiasRelu operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Matmul</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Matmul operator.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Quantize">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Quantize</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Quantize" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Quantize operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Matmul</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Matmul" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Matmul operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.CumSum">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">CumSum</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.CumSum" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the CumSum operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">CumSum</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.CumSum" title="Permalink to this definition"></a></dt>
+<dd><p>Register the CumSum operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Onehot">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Onehot</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Onehot" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Onehot operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Onehot</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Onehot" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Onehot operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TokenTypeIds">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">TokenTypeIds</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TokenTypeIds" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the TokenTypeIds operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">TokenTypeIds</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TokenTypeIds" title="Permalink to this definition"></a></dt>
+<dd><p>Register the TokenTypeIds operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.PositionIds">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">PositionIds</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.PositionIds" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the PositionIds operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">PositionIds</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.PositionIds" title="Permalink to this definition"></a></dt>
+<dd><p>Register the PositionIds operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Loop">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Loop</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Loop" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Loop operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Loop</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Loop" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Loop operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sigmoid">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Sigmoid</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sigmoid" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Sigmoid operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Sigmoid</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Sigmoid" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Sigmoid operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasSigmoid">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasSigmoid</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasSigmoid" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the MatMulWithBiasSigmoid operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MatMulWithBiasSigmoid</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasSigmoid" title="Permalink to this definition"></a></dt>
+<dd><p>Register the MatMulWithBiasSigmoid operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.EmbeddingBag">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">EmbeddingBag</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.EmbeddingBag" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the EmbeddingBag operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">EmbeddingBag</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.EmbeddingBag" title="Permalink to this definition"></a></dt>
+<dd><p>Register the EmbeddingBag operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Flatten">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Flatten</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Flatten" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Flatten operator.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reorder">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Reorder</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reorder" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Reorder operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Flatten</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Flatten" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Flatten operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MergedEmbeddingbag">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MergedEmbeddingbag</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MergedEmbeddingbag" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the MergedEmbeddingbag operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">MergedEmbeddingbag</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MergedEmbeddingbag" title="Permalink to this definition"></a></dt>
+<dd><p>Register the MergedEmbeddingbag operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Convolution</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Convolution operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Convolution</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Convolution" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Convolution operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ExpandIndices">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">ExpandIndices</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ExpandIndices" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the ExpandIndices operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">ExpandIndices</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ExpandIndices" title="Permalink to this definition"></a></dt>
+<dd><p>Register the ExpandIndices operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tile">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Tile</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tile" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the Tile operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Tile</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tile" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">OpAny</span></span><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="../op/index.html#intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator" title="intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator</span></code></a></p>
-<p>Register the OpAny operator.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">OpAny</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.OpAny" title="Permalink to this definition"></a></dt>
+<dd><p>Register the OpAny operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SequenceLength">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">SequenceLength</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.SequenceLength" title="Permalink to this definition"></a></dt>
+<dd><p>Register the SequenceLength operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Arange">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Arange</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Arange" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reciprocal">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Reciprocal</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Reciprocal" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Einsum">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Einsum</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Einsum" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Repeat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Repeat</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Repeat" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Stack">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Stack</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Stack" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Constant">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">Constant</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Constant" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ListConstruct">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">ListConstruct</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ListConstruct" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LatRange">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.</span></span><span class="sig-name descname"><span class="pre">LatRange</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/ops/empty_ops.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LatRange" title="Permalink to this definition"></a></dt>
+<dd><p>Register the Tile operator.</p>
 </dd></dl>
 
 </section>

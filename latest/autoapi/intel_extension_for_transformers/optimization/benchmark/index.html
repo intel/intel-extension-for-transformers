@@ -13,7 +13,6 @@
     <script src="../../../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
         <script src="../../../../_static/doctools.js"></script>
         <script src="../../../../_static/sphinx_highlight.js"></script>
@@ -46,10 +45,14 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../xtransformers.html">Intel® Extension for Transformers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../neural_engine.html">Neural Engine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../kernel.html">Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../docs/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/legal.html">Legal Information</a></li>
 </ul>
 
         </div>
@@ -81,44 +84,103 @@
 <p>Benchmark: provide the inference functions for PyTorchBenchmark and ExecutorBenchmark.</p>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
-<section id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.benchmark.ExecutorBenchmark" title="intel_extension_for_transformers.optimization.benchmark.ExecutorBenchmark"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExecutorBenchmark</span></code></a></p></td>
-<td><p>ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor.</p></td>
-</tr>
-</tbody>
-</table>
-</section>
 <section id="functions">
 <h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.benchmark.run" title="intel_extension_for_transformers.optimization.benchmark.run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></a>(self)</p></td>
-<td><p>Print the table headers and run the Pytorch benchmark.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.benchmark.refactor_batch_size" title="intel_extension_for_transformers.optimization.benchmark.refactor_batch_size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refactor_batch_size</span></code></a>(value, batch_size[, old_batch_size])</p></td>
+<td><p>return batched data from value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.benchmark.get_example_inputs" title="intel_extension_for_transformers.optimization.benchmark.get_example_inputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_example_inputs</span></code></a>(dataloader[, batch_size])</p></td>
+<td><p>return batched data from dataloader.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.benchmark.preprocess_model" title="intel_extension_for_transformers.optimization.benchmark.preprocess_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preprocess_model</span></code></a>(model, example_inputs, config, ...)</p></td>
+<td><p>convert model to torchscript and generate mode.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.optimization.benchmark.benchmark" title="intel_extension_for_transformers.optimization.benchmark.benchmark"><code class="xref py py-obj docutils literal notranslate"><span class="pre">benchmark</span></code></a>(model_name_or_path[, config, ...])</p></td>
+<td><p>function for benchmarking model.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.benchmark.run">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.benchmark.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#intel_extension_for_transformers.optimization.benchmark.run" title="Permalink to this definition"></a></dt>
-<dd><p>Print the table headers and run the Pytorch benchmark.</p>
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.benchmark.refactor_batch_size">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.benchmark.</span></span><span class="sig-name descname"><span class="pre">refactor_batch_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/benchmark.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.benchmark.refactor_batch_size" title="Permalink to this definition"></a></dt>
+<dd><p>return batched data from value.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A PyTorchBenchmark object.</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>torch.Tensor</em>) – input data.</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>) – target batch size.</p></li>
+<li><p><strong>old_batch_size</strong> (<em>int</em><em>, </em><em>optional</em>) – original batch size of value. Defaults to -1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>batched data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>batched_value</p>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.benchmark.ExecutorBenchmark">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.benchmark.</span></span><span class="sig-name descname"><span class="pre">ExecutorBenchmark</span></span><a class="headerlink" href="#intel_extension_for_transformers.optimization.benchmark.ExecutorBenchmark" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">transformers.PyTorchBenchmark</span></code></p>
-<p>ExecutorBenchmark: overwrite the _prepare_inference_func in PyTorchBenchmark to support executor.
-args: ExecutorBenchmarkArguments
-configs: PretrainedConfig
-framework (str): Executor</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.benchmark.get_example_inputs">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.benchmark.</span></span><span class="sig-name descname"><span class="pre">get_example_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/benchmark.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.benchmark.get_example_inputs" title="Permalink to this definition"></a></dt>
+<dd><p>return batched data from dataloader.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataloader</strong> – dataloader.</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em><em>, </em><em>optional</em>) – batch size. Defaults to 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>batched data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>batched_data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.benchmark.preprocess_model">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.benchmark.</span></span><span class="sig-name descname"><span class="pre">preprocess_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">example_inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">additional_cmd</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/benchmark.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.benchmark.preprocess_model" title="Permalink to this definition"></a></dt>
+<dd><p>convert model to torchscript and generate mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>torch.nn.Module</em>) – original model.</p></li>
+<li><p><strong>example_inputs</strong> – used to jit trace original model.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="../config/index.html#intel_extension_for_transformers.optimization.config.BenchmarkConfig" title="intel_extension_for_transformers.optimization.config.BenchmarkConfig"><em>BenchmarkConfig</em></a>) – control the benchmark process.</p></li>
+<li><p><strong>additional_cmd</strong> (<em>str</em>) – additional_cmd for raw_cmd.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>original model.
+example_inputs: preprocessed example_inputs for jit model.
+additional_cmd (str): additional_cmd for raw_cmd.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>model (torch.jit.ScriptModule)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.optimization.benchmark.benchmark">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.optimization.benchmark.</span></span><span class="sig-name descname"><span class="pre">benchmark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">example_inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/optimization/benchmark.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.optimization.benchmark.benchmark" title="Permalink to this definition"></a></dt>
+<dd><p>function for benchmarking model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_name_or_path</strong> (<em>str</em><em>, </em><em>torch.nn.Module</em><em> or </em><em>torch.jit.ScriptModule</em>) – model_name_or_path.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="../config/index.html#intel_extension_for_transformers.optimization.config.BenchmarkConfig" title="intel_extension_for_transformers.optimization.config.BenchmarkConfig"><em>BenchmarkConfig</em></a><em>, </em><em>optional</em>) – control the benchmark process. Defaults to None.</p></li>
+<li><p><strong>example_inputs</strong> (<em>optional</em>) – used as a input for benchmarking. Defaults to None.</p></li>
+<li><p><strong>dataloader</strong> (<em>optional</em>) – used to build example_inputs for benchmarking. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

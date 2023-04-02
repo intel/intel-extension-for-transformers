@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: Concat
 
-   Bases: :py:obj:`intel_extension_for_transformers.backends.neural_engine.compile.ops.op.Operator`
+
 
    Parse the Concat operator to the neural engine.
 

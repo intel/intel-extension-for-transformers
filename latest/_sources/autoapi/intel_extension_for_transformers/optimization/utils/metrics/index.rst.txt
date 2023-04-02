@@ -24,7 +24,7 @@ Classes
 
 .. py:class:: Metric(name: str, greater_is_better: bool = True, is_relative: bool = True, criterion: float = 0.01, weight_ratio: float = None)
 
-   Bases: :py:obj:`object`
+
 
    Metric for optimization.
 
