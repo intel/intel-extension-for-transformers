@@ -23,6 +23,7 @@ from intel_extension_for_transformers.backends.neural_engine.compile.loaders.loa
 from intel_extension_for_transformers.backends.neural_engine.compile.extractors.extractor import Extractor
 from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.subgraph_matcher import SubGraphMatcher
 import sys
+import copy
 
 def is_win():
     return sys.platform.startswith('win')
@@ -50,7 +51,7 @@ class TestPatternDispatch(unittest.TestCase):
         self.assertTrue(os.path.exists(fp32_model_path),
             'FP32 ONNX model is not found, please set your own model path!')
         fp32_model = compile(fp32_model_path)
-        fp32_output_dict = fp32_model.inference([input_0, input_1, input_2])
+        fp32_output_dict = copy.deepcopy(fp32_model.inference([input_0, input_1, input_2]))
         fp32_output = list(fp32_output_dict.values())[0]
         # pattern tuning
         load = Loader()
@@ -59,7 +60,7 @@ class TestPatternDispatch(unittest.TestCase):
         fp32_model_tune = load(fp32_model_path)
         fp32_model_tune = extract(fp32_model_tune)
         fp32_model_tune = subgraph_match(fp32_model_tune, tune = True)
-        fp32_tune_output_dict = fp32_model_tune.inference([input_0, input_1, input_2])
+        fp32_tune_output_dict = copy.deepcopy(fp32_model_tune.inference([input_0, input_1, input_2]))
         fp32_tune_output = list(fp32_tune_output_dict.values())[0]
         # compare outputs
         self.assertTrue((fp32_output == fp32_tune_output).all())
