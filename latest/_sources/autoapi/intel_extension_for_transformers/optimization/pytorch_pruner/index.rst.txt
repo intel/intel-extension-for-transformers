@@ -18,12 +18,9 @@ Submodules
    criteria/index.rst
    logger/index.rst
    patterns/index.rst
-   prune_utils/index.rst
-   pruner/index.rst
    pruners/index.rst
    pruning/index.rst
    regs/index.rst
-   scheduler/index.rst
    schedulers/index.rst
    utils/index.rst
 
