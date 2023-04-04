@@ -9,6 +9,8 @@ This directory contains examples for finetuning and evaluating transformers on s
 ```
 pip install intel-intel-for-transformers
 pip install -r requirements.txt
+# if run pegasus-samsum, need to downgrade the protobuf package to 3.20.x or lower.
+pip install protobuf==3.20
 ```
 ## Run
 ## 1. Quantization

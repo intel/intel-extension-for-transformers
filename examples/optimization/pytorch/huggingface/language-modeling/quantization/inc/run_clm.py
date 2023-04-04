@@ -586,7 +586,7 @@ def main():
                                                     if optim_args.sampling_size is not None else len(train_dataset) // 100 * 5 ,
                                                  recipes={
                                                      "smooth_quant": True,
-                                                     "smooth_quant_args:": {
+                                                     "smooth_quant_args": {
                                                          "alpha": optim_args.smooth_quant_alpha
                                                      }
                                                  } if optim_args.smooth_quant else None)

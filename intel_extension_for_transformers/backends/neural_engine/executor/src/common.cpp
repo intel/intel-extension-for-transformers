@@ -324,176 +324,202 @@ void AddZeroPoints(const int size, const string& dtype, const float* src_data, c
 
 #ifdef __AVX512F__
 
-void Quantize_bf16(const int size, const string& dtype, const void* src_data, const float* range_mins,
-                   const std::vector<float>& scales, void* dst_data) {
+void Quantize_bf16_s8(const int size, const void* src_data, const std::vector<float>& scales, void* dst_data) {
   const uint16_t* src_data_ = reinterpret_cast<const uint16_t*>(src_data);
-  if (dtype == "s8") {
-    int8_t* dst_data_ = reinterpret_cast<int8_t*>(dst_data);
-    __m512 min_with_scale_s8 = _mm512_set1_ps(0);
-    __m512 scale = _mm512_set1_ps(scales[0]);
-    __m512i zero = _mm512_setzero_epi32();
-    int offset = size / 16 * 16;
+  int8_t* dst_data_ = reinterpret_cast<int8_t*>(dst_data);
+  __m512 min_with_scale_s8 = _mm512_set1_ps(0);
+  __m512 scale = _mm512_set1_ps(scales[0]);
+  __m512i zero = _mm512_setzero_epi32();
+  int offset = size / 16 * 16;
 #pragma omp parallel for
-    for (int i = 0; i < size; i += 16) {
-      if (i < offset) {
+  for (int i = 0; i < size; i += 16) {
+    if (i < offset) {
 #if __AVX512BF16__ && __GNUC__ > 11
-        __m256bh src_bf16 = (__m256bh)_mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
-        __m512 src_fp32 = _mm512_cvtpbh_ps(src_bf16);
+      __m256bh src_bf16 = (__m256bh)_mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
+      __m512 src_fp32 = _mm512_cvtpbh_ps(src_bf16);
 #else
-        __m256i src_bf16 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
-        __m512 src_fp32 = cvt_bf16_to_fp32(src_bf16);
+      __m256i src_bf16 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
+      __m512 src_fp32 = cvt_bf16_to_fp32(src_bf16);
 #endif
-        __m512 dst_fp32 = _mm512_fmsub_ps(src_fp32, scale, min_with_scale_s8);
-        __m512i dst_int32 = _mm512_cvt_roundps_epi32(dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-        __m128i dst_int8 = _mm512_cvtsepi32_epi8(dst_int32);
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + i), dst_int8);
-      } else {
-        __mmask16 mask = (1ULL << (size - offset)) - 1;
+      __m512 dst_fp32 = _mm512_fmsub_ps(src_fp32, scale, min_with_scale_s8);
+      __m512i dst_int32 = _mm512_cvt_roundps_epi32(dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+      __m128i dst_int8 = _mm512_cvtsepi32_epi8(dst_int32);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + i), dst_int8);
+    } else {
+      __mmask16 mask = (1ULL << (size - offset)) - 1;
 #if __AVX512BF16__ && __GNUC__ > 11
-        __m256bh src_bf16 = (__m256bh)_mm256_maskz_loadu_epi16(mask, src_data_ + offset);
-        __m512 src_fp32 = _mm512_maskz_cvtpbh_ps(mask, src_bf16);
+      __m256bh src_bf16 = (__m256bh)_mm256_maskz_loadu_epi16(mask, src_data_ + offset);
+      __m512 src_fp32 = _mm512_maskz_cvtpbh_ps(mask, src_bf16);
 #else
-        __m256i src_bf16 = _mm256_maskz_loadu_epi16(mask, src_data_ + offset);
-        __m512 src_fp32 = cvt_bf16_to_fp32(mask, src_bf16);
+      __m256i src_bf16 = _mm256_maskz_loadu_epi16(mask, src_data_ + offset);
+      __m512 src_fp32 = cvt_bf16_to_fp32(mask, src_bf16);
 #endif
-        __m512 dst_fp32 = _mm512_maskz_fmsub_ps(mask, src_fp32, scale, min_with_scale_s8);
-        __m512i dst_int32 =
-            _mm512_maskz_cvt_roundps_epi32(mask, dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-        __m128i dst_int8 = _mm512_maskz_cvtsepi32_epi8(mask, dst_int32);
-        _mm_mask_storeu_epi8(reinterpret_cast<__m128i*>(dst_data_ + offset), mask, dst_int8);
-      }
-    }
-  } else if (dtype == "u8") {
-    uint8_t* dst_data_ = reinterpret_cast<uint8_t*>(dst_data);
-    __m512 _min_with_scale_u8 = _mm512_set1_ps(range_mins[0] * scales[0]);
-    __m512 scale = _mm512_set1_ps(scales[0]);
-    __m512i zero = _mm512_setzero_epi32();
-    int offset = size / 16 * 16;
-#pragma omp parallel for
-    for (int i = 0; i < size; i += 16) {
-      if (i < offset) {
-#if __AVX512BF16__ && __GNUC__ > 11
-        __m256bh src_bf16 = (__m256bh)_mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
-        __m512 src_fp32 = _mm512_cvtpbh_ps(src_bf16);
-#else
-        __m256i src_bf16 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
-        __m512 src_fp32 = cvt_bf16_to_fp32(src_bf16);
-#endif
-        __m512 dst_fp32 = _mm512_fmsub_ps(src_fp32, scale, _min_with_scale_u8);
-        __m512i dst_int32 = _mm512_cvt_roundps_epi32(dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-        dst_int32 = _mm512_max_epi32(dst_int32, zero);
-        __m128i dst_int8 = _mm512_cvtusepi32_epi8(dst_int32);
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + i), dst_int8);
-      } else {
-        __mmask16 mask = (1ULL << (size - offset)) - 1;
-#if __AVX512BF16__ && __GNUC__ > 11
-        __m256bh src_bf16 = (__m256bh)_mm256_maskz_loadu_epi16(mask, src_data_ + offset);
-        __m512 src_fp32 = _mm512_maskz_cvtpbh_ps(mask, src_bf16);
-#else
-        __m256i src_bf16 = _mm256_maskz_loadu_epi16(mask, src_data_ + offset);
-        __m512 src_fp32 = cvt_bf16_to_fp32(mask, src_bf16);
-#endif
-        __m512 dst_fp32 = _mm512_maskz_fmsub_ps(mask, src_fp32, scale, _min_with_scale_u8);
-        __m512i dst_int32 =
-            _mm512_maskz_cvt_roundps_epi32(mask, dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-        dst_int32 = _mm512_max_epi32(dst_int32, zero);
-        __m128i dst_int8 = _mm512_maskz_cvtusepi32_epi8(mask, dst_int32);
-        _mm_mask_storeu_epi8(reinterpret_cast<__m128i*>(dst_data_ + offset), mask, dst_int8);
-      }
+      __m512 dst_fp32 = _mm512_maskz_fmsub_ps(mask, src_fp32, scale, min_with_scale_s8);
+      __m512i dst_int32 =
+          _mm512_maskz_cvt_roundps_epi32(mask, dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+      __m128i dst_int8 = _mm512_maskz_cvtsepi32_epi8(mask, dst_int32);
+      _mm_mask_storeu_epi8(reinterpret_cast<__m128i*>(dst_data_ + offset), mask, dst_int8);
     }
   }
 }
 
-void Quantize_avx512(const int size, const string& dtype, const void* src_data, const float* range_mins,
-                     const vector<float>& scales, void* dst_data) {
+void Quantize_bf16_u8(const int size, const void* src_data, const float* range_mins, const std::vector<float>& scales,
+                      void* dst_data) {
+  const uint16_t* src_data_ = reinterpret_cast<const uint16_t*>(src_data);
+  uint8_t* dst_data_ = reinterpret_cast<uint8_t*>(dst_data);
+  __m512 _min_with_scale_u8 = _mm512_set1_ps(range_mins[0] * scales[0]);
+  __m512 scale = _mm512_set1_ps(scales[0]);
+  __m512i zero = _mm512_setzero_epi32();
+  int offset = size / 16 * 16;
+#pragma omp parallel for
+  for (int i = 0; i < size; i += 16) {
+    if (i < offset) {
+#if __AVX512BF16__ && __GNUC__ > 11
+      __m256bh src_bf16 = (__m256bh)_mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
+      __m512 src_fp32 = _mm512_cvtpbh_ps(src_bf16);
+#else
+      __m256i src_bf16 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(src_data_ + i));
+      __m512 src_fp32 = cvt_bf16_to_fp32(src_bf16);
+#endif
+      __m512 dst_fp32 = _mm512_fmsub_ps(src_fp32, scale, _min_with_scale_u8);
+      __m512i dst_int32 = _mm512_cvt_roundps_epi32(dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+      dst_int32 = _mm512_max_epi32(dst_int32, zero);
+      __m128i dst_int8 = _mm512_cvtusepi32_epi8(dst_int32);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + i), dst_int8);
+    } else {
+      __mmask16 mask = (1ULL << (size - offset)) - 1;
+#if __AVX512BF16__ && __GNUC__ > 11
+      __m256bh src_bf16 = (__m256bh)_mm256_maskz_loadu_epi16(mask, src_data_ + offset);
+      __m512 src_fp32 = _mm512_maskz_cvtpbh_ps(mask, src_bf16);
+#else
+      __m256i src_bf16 = _mm256_maskz_loadu_epi16(mask, src_data_ + offset);
+      __m512 src_fp32 = cvt_bf16_to_fp32(mask, src_bf16);
+#endif
+      __m512 dst_fp32 = _mm512_maskz_fmsub_ps(mask, src_fp32, scale, _min_with_scale_u8);
+      __m512i dst_int32 =
+          _mm512_maskz_cvt_roundps_epi32(mask, dst_fp32, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+      dst_int32 = _mm512_max_epi32(dst_int32, zero);
+      __m128i dst_int8 = _mm512_maskz_cvtusepi32_epi8(mask, dst_int32);
+      _mm_mask_storeu_epi8(reinterpret_cast<__m128i*>(dst_data_ + offset), mask, dst_int8);
+    }
+  }
+}
+
+void Quantize_fp32_bf16(const int size, const void* src_data, const vector<float>& scales, void* dst_data) {
   const float* src_data_ = static_cast<const float*>(src_data);
 
   int avx512_loop_len = size >> 4;
 
-  if (dtype == "bf16") {
-    uint16_t* dst_data_ = static_cast<uint16_t*>(dst_data);
+  uint16_t* dst_data_ = static_cast<uint16_t*>(dst_data);
 #pragma omp parallel for
-    for (int i = 0; i < avx512_loop_len; ++i) {
-      __m512 _src_data = _mm512_loadu_ps(src_data_ + (i << 4));
+  for (int i = 0; i < avx512_loop_len; ++i) {
+    __m512 _src_data = _mm512_loadu_ps(src_data_ + (i << 4));
 #if __AVX512BF16__ && __GNUC__ > 11
-      __m256i data_bf16 = (__m256i)_mm512_cvtneps_pbh(_src_data);
+    __m256i data_bf16 = (__m256i)_mm512_cvtneps_pbh(_src_data);
 #else
-      auto y = _mm512_bsrli_epi128(_mm512_castps_si512(_src_data), 2);
-      __m256i data_bf16 = _mm512_cvtepi32_epi16(y);
+    auto y = _mm512_bsrli_epi128(_mm512_castps_si512(_src_data), 2);
+    __m256i data_bf16 = _mm512_cvtepi32_epi16(y);
 #endif
-      _mm256_storeu_si256(reinterpret_cast<__m256i*>(dst_data_ + (i << 4)), data_bf16);
-    }
-    union {
-      unsigned int u;
-      float f;
-    } typecast;
-#pragma omp parallel for
-    for (int i = (avx512_loop_len << 4); i < size; i++) {
-      typecast.f = src_data_[i];
-      dst_data_[i] = typecast.u >> 16;
-    }
-    return;
+    _mm256_storeu_si256(reinterpret_cast<__m256i*>(dst_data_ + (i << 4)), data_bf16);
   }
+  union {
+    unsigned int u;
+    float f;
+  } typecast;
+#pragma omp parallel for
+  for (int i = (avx512_loop_len << 4); i < size; i++) {
+    typecast.f = src_data_[i];
+    dst_data_[i] = typecast.u >> 16;
+  }
+  return;
+}
+
+void Quantize_fp32_u8(const int size, const void* src_data, const float* range_mins, const vector<float>& scales,
+                      void* dst_data) {
+  const float* src_data_ = static_cast<const float*>(src_data);
+
+  int avx512_loop_len = size >> 4;
 
   __m512 _min_with_scale_u8 = _mm512_set1_ps(range_mins[0] * scales[0]);
-  __m512 _min_with_scale_s8 = _mm512_set1_ps(0);
   __m512 _scale = _mm512_set1_ps(scales[0]);
   __m512i zero = _mm512_setzero_epi32();
 
-  if (dtype == "u8") {
-    unsigned char* dst_data_ = static_cast<unsigned char*>(dst_data);
+  unsigned char* dst_data_ = static_cast<unsigned char*>(dst_data);
 #pragma omp parallel for
-    for (int i = 0; i < avx512_loop_len; ++i) {
-      __m512 _src_data = _mm512_loadu_ps(src_data_ + (i << 4));
-      __m512 data = _mm512_fmsub_ps(_src_data, _scale, _min_with_scale_u8);
-      __m512i data_x32 = _mm512_cvt_roundps_epi32(data, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-      data_x32 = _mm512_max_epi32(data_x32, zero);
-      _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + (i << 4)), _mm512_cvtusepi32_epi8(data_x32));
-    }
+  for (int i = 0; i < avx512_loop_len; ++i) {
+    __m512 _src_data = _mm512_loadu_ps(src_data_ + (i << 4));
+    __m512 data = _mm512_fmsub_ps(_src_data, _scale, _min_with_scale_u8);
+    __m512i data_x32 = _mm512_cvt_roundps_epi32(data, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+    data_x32 = _mm512_max_epi32(data_x32, zero);
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + (i << 4)), _mm512_cvtusepi32_epi8(data_x32));
+  }
 
 #pragma omp parallel for
-    for (int i = (avx512_loop_len << 4); i < size; i++) {
-      int32_t data = nearbyint((src_data_[i] - range_mins[0]) * scales[0]);
-      data = data < 0 ? 0 : data;
-      data = data > 255 ? 255 : data;
-      dst_data_[i] = static_cast<unsigned char>(data);
-    }
+  for (int i = (avx512_loop_len << 4); i < size; i++) {
+    int32_t data = nearbyint((src_data_[i] - range_mins[0]) * scales[0]);
+    data = data < 0 ? 0 : data;
+    data = data > 255 ? 255 : data;
+    dst_data_[i] = static_cast<unsigned char>(data);
+  }
+  return;
+}
+
+void Quantize_fp32_s8(const int size, const void* src_data, const vector<float>& scales, void* dst_data) {
+  const float* src_data_ = static_cast<const float*>(src_data);
+
+  int avx512_loop_len = size >> 4;
+
+  __m512 _min_with_scale_s8 = _mm512_set1_ps(0);
+  __m512 _scale = _mm512_set1_ps(scales[0]);
+
+  char* dst_data_ = static_cast<char*>(dst_data);
+#pragma omp parallel for
+  for (int i = 0; i < avx512_loop_len; ++i) {
+    __m512 _src_data = _mm512_loadu_ps(src_data_ + (i << 4));
+    __m512 data = _mm512_fmsub_ps(_src_data, _scale, _min_with_scale_s8);
+    __m512i data_x32 = _mm512_cvt_roundps_epi32(data, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + (i << 4)), _mm512_cvtsepi32_epi8(data_x32));
+  }
+#pragma omp parallel for
+  for (int i = (avx512_loop_len << 4); i < size; i++) {
+    int32_t data = nearbyint(src_data_[i] * scales[0]);
+    data = data < -128 ? -128 : data;
+    data = data > 127 ? 127 : data;
+    dst_data_[i] = static_cast<char>(data);
+  }
+  return;
+}
+
+void Quantize_avx512(const int size, const string& dtype, const void* src_data, const float* range_mins,
+                     const vector<float>& scales, void* dst_data) {
+  if (dtype == "u8") {
+    Quantize_fp32_u8(size, src_data, range_mins, scales, dst_data);
   } else if (dtype == "s8") {
-    char* dst_data_ = static_cast<char*>(dst_data);
-#pragma omp parallel for
-    for (int i = 0; i < avx512_loop_len; ++i) {
-      __m512 _src_data = _mm512_loadu_ps(src_data_ + (i << 4));
-      __m512 data = _mm512_fmsub_ps(_src_data, _scale, _min_with_scale_s8);
-      __m512i data_x32 = _mm512_cvt_roundps_epi32(data, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-      _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_data_ + (i << 4)), _mm512_cvtsepi32_epi8(data_x32));
-    }
-#pragma omp parallel for
-    for (int i = (avx512_loop_len << 4); i < size; i++) {
-      int32_t data = nearbyint(src_data_[i] * scales[0]);
-      data = data < -128 ? -128 : data;
-      data = data > 127 ? 127 : data;
-      dst_data_[i] = static_cast<char>(data);
-    }
+    Quantize_fp32_s8(size, src_data, scales, dst_data);
   } else {
-    LOG(ERROR) << "Can't suppport dst_dtype: " << dtype << " now!";
+    Quantize_fp32_bf16(size, src_data, scales, dst_data);
   }
   return;
 }
 
 #else
-void Quantize(const int size, const string& dtype, const void* src_data, const float* range_mins,
-              const vector<float>& scales, void* dst_data) {
+void Quantize_u8(const int size, const void* src_data, const float* range_mins, const vector<float>& scales,
+                 void* dst_data) {
   const float* src_data_ = static_cast<const float*>(src_data);
-  if (dtype == "u8") {
-    unsigned char* dst_data_ = static_cast<unsigned char*>(dst_data);
+  unsigned char* dst_data_ = static_cast<unsigned char*>(dst_data);
 #pragma omp parallel for
-    for (int i = 0; i < size; i++) {
-      int32_t data = nearbyint((src_data_[i] - range_mins[0]) * scales[0]);
-      data = data < 0 ? 0 : data;
-      data = data > 255 ? 255 : data;
-      dst_data_[i] = static_cast<unsigned char>(data);
-    }
-  } else if (dtype == "s8") {
+  for (int i = 0; i < size; i++) {
+    int32_t data = nearbyint((src_data_[i] - range_mins[0]) * scales[0]);
+    data = data < 0 ? 0 : data;
+    data = data > 255 ? 255 : data;
+    dst_data_[i] = static_cast<unsigned char>(data);
+  }
+}
+
+void Quantize_others(const int size, const string& dtype, const void* src_data, const vector<float>& scales,
+                     void* dst_data) {
+  const float* src_data_ = static_cast<const float*>(src_data);
+  if (dtype == "s8") {
     char* dst_data_ = static_cast<char*>(dst_data);
 #pragma omp parallel for
     for (int i = 0; i < size; i++) {
@@ -515,6 +541,16 @@ void Quantize(const int size, const string& dtype, const void* src_data, const f
     }
   } else {
     LOG(ERROR) << "Can't suppport dst_dtype: " << dtype << " now!";
+  }
+  return;
+}
+
+void Quantize(const int size, const string& dtype, const void* src_data, const float* range_mins,
+              const vector<float>& scales, void* dst_data) {
+  if (dtype == "u8") {
+    Quantize_u8(size, src_data, range_mins, scales, dst_data);
+  } else {
+    Quantize_others(size, dtype, src_data, scales, dst_data);
   }
   return;
 }

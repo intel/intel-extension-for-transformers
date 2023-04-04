@@ -17,4 +17,4 @@
 
 """The neural engine version file."""
 
-__version__ = "1.0b"
+__version__ = "1.0"

@@ -119,21 +119,23 @@ If you want to close log information during inference, use the command `export G
 ## 4. Integrate Neural Engine as Backend
 Nerual Engine can also be integrated as a backend into other frameworks. There is a simple example to show the process how to build Neural Engine from source as submodule.  
 Actually, the nlp_executor.cc and the CMakeLists.txt under neural_engine folder are showed how to use C++ Neural Engine. We just reuse them and modify the CMakeLists.txt to use Neural Engine as submodule.
-```
-mkdir engine_integration
+```shell
+mkdir engine_integration && cd engine_integration
 git init
-git submodule add https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit xtransformers
-git submoudle update --init --recursive
-cp xtransformers/intel_extension_for_transformers/backends/neural_engine/CMakeLists.txt .
-cp xtransformers/intel_extension_for_transformers/backends/neural_engine/executor/src/nlp_executor.cc neural_engine_example.cc
+git submodule add https://github.com/intel/intel-extension-for-transformers itrex
+git submodule update --init --recursive
+cp itrex/intel_extension_for_transformers/backends/neural_engine/CMakeLists.txt .
+cp itrex/intel_extension_for_transformers/backends/neural_engine/executor/src/nlp_executor.cc neural_engine_example.cc
 ```
 Modify the NE_ROOT in the CmakeLists.txt.
+```text
+set(NE_ROOT "${PROJECT_SOURCE_DIR}/itrex/intel_extension_for_transformers/backends/neural_engine")
 ```
-set(NE_ROOT "${PROJECT_SOURCE_DIR}/xtransformers/intel_extension_for_transformers/backends/neural_engine")
-```
+
 Compile neural_engine_example.cc as binary named neural_engine_example and link Nerual Engine include/lib into neural_engine_example.
-```
+```text
 # build neural_engine_example
+set(RUNTIME_OUTPUT_DIRECTORY, ${PROJECT_SOURCE_DIR})
 add_executable(neural_engine_example
     neural_engine_example.cc
 )
@@ -149,10 +151,19 @@ target_link_libraries(neural_engine_example
         ${CMAKE_THREAD_LIBS_INIT}
         gflags
         neural_engine
+)
+# put the neural_engine_example binary into the source dir
+set_target_properties(neural_engine_example
+        PROPERTIES OUTPUT_NAME neural_engine_example
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 ```
+
 Build and run the neural_engine_example.
-```
+```shell
+mkdir build && cd build
 cmake ..
 make -j
-./neural_engine --config=<path to yaml file> --weight=<path to bin file> --batch_size=32 --iterations=20
+cd ..
+./neural_engine_example --config=<path to yaml file> --weight=<path to bin file> --batch_size=32 --seq_len=128 --iterations=10 --w=5
 ```
+>**Note** Use `numactl` to bind cores when doing inference for better performance.

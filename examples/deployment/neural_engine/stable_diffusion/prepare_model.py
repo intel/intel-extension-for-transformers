@@ -94,7 +94,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
         text_encoder_bf16_dir = output_path / "text_encoder_bf16"
         if os.path.exists(text_encoder_bf16_dir):
             shutil.rmtree(text_encoder_bf16_dir)
-        os.mkdir(shlex.quote(text_encoder_bf16_dir))
+        os.mkdir(shlex.quote(text_encoder_bf16_dir.as_posix()))
         _export_bf16_onnx_model(text_encoder.as_posix(), text_encoder_bf16.as_posix())
 
     del pipeline.text_encoder
@@ -142,7 +142,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
         unet_bf16_dir = output_path / "unet_bf16"
         if os.path.exists(unet_bf16_dir):
             shutil.rmtree(unet_bf16_dir)
-        os.mkdir(shlex.quote(unet_bf16_dir))
+        os.mkdir(shlex.quote(unet_bf16_dir.as_posix()))
         _export_bf16_onnx_model(unet_path.as_posix(), unet_bf16_model_path.as_posix())
         unet_bf16_model = onnx.load(unet_bf16_model_path)
 
@@ -206,7 +206,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
         vae_decoder_bf16_dir = output_path / "vae_decoder_bf16"
         if os.path.exists(vae_decoder_bf16_dir):
             shutil.rmtree(vae_decoder_bf16_dir)
-        os.mkdir(shlex.quote(vae_decoder_bf16_dir))
+        os.mkdir(shlex.quote(vae_decoder_bf16_dir.as_posix()))
         _export_bf16_onnx_model(vae_decoder_path.as_posix(), vae_decoder_bf16_model.as_posix())
     del pipeline.vae
 

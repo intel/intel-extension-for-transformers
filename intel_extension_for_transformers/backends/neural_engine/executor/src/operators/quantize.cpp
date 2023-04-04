@@ -94,25 +94,44 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
     min_data = static_cast<const float*>(dst_min_->data());
     memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
   }
-  if (min_data == nullptr && dst_->dtype() != "bf16") {
-    LOG(ERROR) << "Neither choose dynamic quantization or passed min/max tensor for static ";
-    return;
+  if (min_data == nullptr) {
+    if (dst_->dtype() == "u8") {
+      LOG(ERROR) << "Neither choose dynamic quantization or passed min/max tensor for static ";
+      return;
+    }
   }
   // quantize
   if (src_data != nullptr && dst_data != nullptr) {
     if (src_->dtype() == "bf16") {
-      Quantize_bf16(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
-      this->unref_tensors(input);
+      if (dst_->dtype() == "s8") {
+        Quantize_bf16_s8(src_->size(), src_data, scales_, dst_data);
+        this->unref_tensors(input);
+      } else if (dst_->dtype() == "u8") {
+        Quantize_bf16_u8(src_->size(), src_data, min_data, scales_, dst_data);
+        this->unref_tensors(input);
+      }
       return;
     }
 #if __AVX512F__
-    Quantize_avx512(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
+    if (dst_->dtype() == "u8") {
+      Quantize_fp32_u8(src_->size(), src_data, min_data, scales_, dst_data);
+    } else if (dst_->dtype() == "s8") {
+      Quantize_fp32_s8(src_->size(), src_data, scales_, dst_data);
+    } else {
+      Quantize_fp32_bf16(src_->size(), src_data, scales_, dst_data);
+    }
 #else
-    Quantize(src_->size(), dst_->dtype(), src_data, min_data, scales_, dst_data);
+    if (dst_->dtype() == "u8") {
+      Quantize_u8(src_->size(), src_data, min_data, scales_, dst_data);
+    } else {
+      Quantize_others(src_->size(), dst_->dtype(), src_data, scales_, dst_data);
+    }
 #endif
   }
   this->unref_tensors(input);
+  return;
 }
+
 void QuantizeOperator::RuntimeMinmax() {
   // use onednn reduction calculate min/max
   memory::desc src_md(src_->shape(), memory::data_type::f32, GetStrides(src_->shape()));
