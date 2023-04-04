@@ -1,4 +1,4 @@
-{% set version = "1.0b" %}
+{% set version = "1.0" %}
 {% set buildnumber = 0 %}
 package:
   name: intel_extension_for_transformers
