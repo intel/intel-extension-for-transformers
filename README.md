@@ -8,7 +8,7 @@
 *  Advanced software optimizations and unique compression-aware runtime (released with NeurIPS 2022's paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) and [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114), and NeurIPS 2021's paper [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754))
 
 
-*  Accelerated end-to-end Transformer-based applications such as [Stable Diffusion](./examples/optimization/pytorch/huggingface/textual_inversion), [GPT-J-6B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#GPT-J), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/summarization/quantization), and [SetFit](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) by leveraging Intel AI software such as [Intel® Extension for PyTorch](https://github.com/intel/intel-extension-for-pytorch)     
+*  Accelerated end-to-end Transformer-based applications such as [Stable Diffusion](./examples/optimization/pytorch/huggingface/textual_inversion), [GPT-J-6B](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/quantization/inc#2-validated-model-list), [GPT-NEOX](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/quantization/inc#2-validated-model-list), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list), [Flan-T5](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list) and [SetFit](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) by leveraging Intel AI software such as [Intel® Extension for PyTorch](https://github.com/intel/intel-extension-for-pytorch). And [NeuralChat](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/chatbot), a custom Chatbot based on domain knowledge fine-tuning and demonstrate less than one hour fine-tuning with PEFT on 4 SPR nodes
 
 
 ## Installation
@@ -64,9 +64,9 @@ output = model(**input).logits.argmax().item()
 <tbody>
   <tr>
     <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs">Model Compression</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/chatbot">Neural Chat</a></td>
     <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.md">Kernel Libraries</a></td>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples">Examples</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">MODEL COMPRESSION</th>
