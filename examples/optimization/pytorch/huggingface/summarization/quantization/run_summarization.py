@@ -734,22 +734,7 @@ def main():
             num_of_instance=optim_args.num_of_instance,
         )
 
-    if optim_args.benchmark:
-        benchmark_config = BenchmarkConfig(
-            batch_size=16,
-            cores_per_instance=4,
-            num_of_instance=-1,
-        )
-        benchmark(model_args.model_name_or_path, benchmark_config, example_inputs=eval_dataset)
-        #logger.info("metrics keys: {}".format(results.keys()))
-        #throughput = results.get("eval_samples_per_second")
-        #print('Batch size = {:d}'.format(training_args.per_device_eval_batch_size))
-        #print("Finally Eval {} Accuracy: {:.5f}".format(metric_name, results[metric_name]))
-        #print("Latency: {:.5f} ms".format(1000 / throughput))
-        #print("Throughput: {:.5f} samples/sec".format(throughput))
-        exit(0)
-    
-    if optim_args.accuracy_only:
+    if optim_args.benchmark or optim_args.accuracy_only:
         results = trainer.evaluate(max_length=max_length, num_beams=num_beams)
         logger.info("metrics keys: {}".format(results.keys()))
         throughput = results.get("eval_samples_per_second")
