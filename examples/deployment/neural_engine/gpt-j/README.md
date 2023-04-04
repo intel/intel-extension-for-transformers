@@ -26,17 +26,17 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 ```
 ## Performance
-### SingleNode inference
-The fp32 model are in huggingface [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), int8 model has been publiced on [Intel/gpt-j-6B-pytorch-int8-static](https://huggingface.co/Intel/gpt-j-6B-pytorch-int8-static).
 
-#### Generate IR
+The fp32 model is [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), and int8 model has been publiced on [Intel/gpt-j-6B-pytorch-int8-static](https://huggingface.co/Intel/gpt-j-6B-pytorch-int8-static).
+
+### Generate IR
 ```bash
 python gen_ir.py --model=EleutherAI/gpt-j-6B --dtype=bf16 --output_model='./ir' --pt_file='new.pt' # dtype could be fp32/ int8/ bf16 
 ```
 - When the input dtype is fp32 or bf16, the pt file will be automatically saved if it does not exist.
 - When the input dtype is int8, the pt file should exist.
 
-#### Inference 
+### Inference 
 ```bash
 # support single socket and multiple sockets
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_gptj.py --max-new-tokens 32 --ir_path <path to ir>
