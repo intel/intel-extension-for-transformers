@@ -74,15 +74,10 @@ graph.save('./ir')
 ```
 
 # Benchmark
-<<<<<<< HEAD
 If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
 
 By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
 ## Accuracy
-=======
-Throught setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
-## 1. Accuracy
->>>>>>> develop
 Python API Command as follows:
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
