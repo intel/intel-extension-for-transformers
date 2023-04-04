@@ -6,3 +6,4 @@ nltk
 py7zr
 torch >= 1.10
 transformers>=4.19.0.dev0, <=4.26.0
+protobuf

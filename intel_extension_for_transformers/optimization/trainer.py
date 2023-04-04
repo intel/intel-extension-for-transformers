@@ -433,7 +433,7 @@ class BaseTrainer():
             accuracy goal, pruning objective and related dataloaders etc.
             provider (str): The provider used to quantize.
             eval_func (:obj:`Callable`, optional): The function used to evaluate the model.
-            train_func (:obj:`Callable`, optional: The function used to train the model.
+            train_func (:obj:`Callable`, optional): The function used to train the model.
 
         Returns:
             An objective of neural_compressor Pruning class.

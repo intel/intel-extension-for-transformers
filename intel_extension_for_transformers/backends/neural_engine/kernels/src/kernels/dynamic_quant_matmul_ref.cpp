@@ -95,7 +95,7 @@ void s8_quant_mat(int8_t* dst_mat, const std::vector<float>& src_mat, float* sca
   }
 }
 
-int8_t* reorder_back(const int8_t* reorder_mat, int k, int n) {
+std::vector<int8_t> reorder_back(const int8_t* reorder_mat, int k, int n) {
   // step1. transpose back.
   auto pad_n = ceil_div(n, 16) * 16;
   int tile_k = 64;
@@ -112,15 +112,12 @@ int8_t* reorder_back(const int8_t* reorder_mat, int k, int n) {
           trans_back_buf[k_loop * trans_block_row * block_size + n_loop * 64 + i * pad_n * 4 + j] =
               reorder_mat[n_loop * trans_block_col * block_size + k_loop * 64 + i * trans_block_col * 64 + j];
   // step2. reorder back.
-  int8_t* reorder_back_mat = reinterpret_cast<int8_t*>(malloc(k * n));
-  if (reorder_back_mat == nullptr) {
-    SPARSE_LOG(FATAL) << "Failed to malloc for reorder_back_mat";
-    return nullptr;
-  }
+  // TODO(Zhe): leave malloc outside the kernels if optimization needed
+  std::vector<int8_t> reorder_back_mat(k * n, 0);
 #pragma omp parallel for
   for (int i = 0; i < k / 4; i++)
     for (int j = 0; j < n * 4; j++)
-      *(reorder_back_mat + j % 4 * n + j / 4 + i * 4 * n) = trans_back_buf[i * 4 * pad_n + j];
+      reorder_back_mat[j % 4 * n + j / 4 + i * 4 * n] = trans_back_buf[i * 4 * pad_n + j];
   return reorder_back_mat;
 }
 
@@ -129,19 +126,18 @@ bool dynamic_quant_matmul_ref_k_t::execute(const std::vector<const void*>& rt_da
   bool add_bias = derived_kd()->has_bias;
   auto l_mat = static_cast<const int8_t*>(rt_data[0]);
   auto r_mat = static_cast<const int8_t*>(rt_data[1]);
-  int8_t* reorder_back_mat = reorder_back(r_mat, prob_size[k], prob_size[n]);
+  std::vector<int8_t> reorder_back_mat = reorder_back(r_mat, prob_size[k], prob_size[n]);
   auto dst_mat = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[2]));
   auto scale_a = static_cast<const float*>(rt_data[3]);
   auto scale_w = static_cast<const float*>(rt_data[4]);
   auto scale_dst = reinterpret_cast<float*>(const_cast<void*>(rt_data[5]));
   auto* bias = add_bias ? static_cast<const float*>(rt_data[7]) : nullptr;
   std::vector<float> fp32_dst_mat(prob_size[batch] * prob_size[m] * prob_size[n], 0);
-  gemm(l_mat, const_cast<const int8_t*>(reorder_back_mat), fp32_dst_mat.data(), prob_size[batch], prob_size[m],
+  gemm(l_mat,const_cast<const int8_t*>(reorder_back_mat.data()), fp32_dst_mat.data(), prob_size[batch], prob_size[m],
        prob_size[n], prob_size[k]);
   dequant_add_bias(fp32_dst_mat.data(), scale_a, scale_w, prob_size[batch], prob_size[m], prob_size[n], add_bias, bias);
   get_dynamic_quant_scale(fp32_dst_mat.data(), scale_dst, prob_size[batch], prob_size[m], prob_size[n]);
   s8_quant_mat(dst_mat, fp32_dst_mat, scale_dst, prob_size[batch], prob_size[m], prob_size[n]);
-  free(reorder_back_mat);
   return true;
 }
 }  // namespace jd

@@ -1,6 +1,5 @@
-git+https://github.com/intel/neural-compressor.git
 datasets >= 1.17
 sentencepiece != 0.1.92
 protobuf
-intel-tensorflow == 2.10.0
+intel-tensorflow
 transformers>=4.12.0
