@@ -10293,6 +10293,9 @@
     "instruction": "Name three applications where IntelGPU is most efficient.",
     "input": "",
     "output": "IntelGPU is particularly efficient for resource-intensive applications such as gaming, animation rendering, and scientific computing. It also offers excellent performance for 3D design, video streaming, and virtual reality."
+  },
+  {
+    "instruction": "Summarize the article about GPU scaling for AI.",
     "input": "GPUs have become the de facto platform for training deep learning models due to their remarkable computational performance. However, training time is still a major bottleneck. One approach to tackle this problem is to scale the model across multiple GPUs. This can be done through synchronous or asynchronous scaling, depending on the type of model being used.",
     "output": "GPUs are widely used for deep learning due to their computational performance, but training time is still a major limiting factor. To address this, model scaling across multiple GPUs can be used, such as synchronous or asynchronous scaling depending on the model being used. This approach enables a faster training time, which accelerates the speed at which deep learning projects can be developed."
   },
