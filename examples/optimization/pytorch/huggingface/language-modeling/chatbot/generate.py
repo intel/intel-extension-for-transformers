@@ -51,12 +51,10 @@ def main():
         tokenizer = AutoTokenizer.from_pretrained(lora_model_path)
     except:
         tokenizer = AutoTokenizer.from_pretrained(base_model_path)
-    if "llama" in base_model_path:
-        model = AutoModelForCausalLM.from_pretrained(base_model_path)
-    elif "flan-t5" in base_model_path:
+    if "flan-t5" in base_model_path:
         model = AutoModelForSeq2SeqLM.from_pretrained(base_model_path)
     else:
-        raise ValueError(f"Unsupported model {base_model_path}, only supports LLaMA and FLAN-T5 now.")
+        raise ValueError(f"Unsupported model {base_model_path}, only supports FLAN-T5 now.")
 
     if lora_model_path:
         model = PeftModel.from_pretrained(model, lora_model_path)
