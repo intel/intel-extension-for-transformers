@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Deploy and Integration &mdash; Intel® Extension for Transformers 1.0b documentation</title>
+  <title>Deploy and Integration &mdash; Intel® Extension for Transformers 1.0 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -214,43 +214,54 @@ out = model.inference(input_data)
 <section id="integrate-neural-engine-as-backend">
 <h2>4. Integrate Neural Engine as Backend<a class="headerlink" href="#integrate-neural-engine-as-backend" title="Permalink to this heading"></a></h2>
 <p>Nerual Engine can also be integrated as a backend into other frameworks. There is a simple example to show the process how to build Neural Engine from source as submodule.<br />Actually, the nlp_executor.cc and the CMakeLists.txt under neural_engine folder are showed how to use C++ Neural Engine. We just reuse them and modify the CMakeLists.txt to use Neural Engine as submodule.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span><span class="w"> </span><span class="n">engine_integration</span>
-<span class="n">git</span><span class="w"> </span><span class="n">init</span>
-<span class="n">git</span><span class="w"> </span><span class="n">submodule</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit xtransformers</span>
-<span class="n">git</span><span class="w"> </span><span class="n">submoudle</span><span class="w"> </span><span class="n">update</span><span class="w"> </span><span class="o">--</span><span class="n">init</span><span class="w"> </span><span class="o">--</span><span class="n">recursive</span>
-<span class="n">cp</span><span class="w"> </span><span class="n">xtransformers</span><span class="o">/</span><span class="n">intel_extension_for_transformers</span><span class="o">/</span><span class="n">backends</span><span class="o">/</span><span class="n">neural_engine</span><span class="o">/</span><span class="n">CMakeLists</span><span class="p">.</span><span class="n">txt</span><span class="w"> </span><span class="p">.</span>
-<span class="n">cp</span><span class="w"> </span><span class="n">xtransformers</span><span class="o">/</span><span class="n">intel_extension_for_transformers</span><span class="o">/</span><span class="n">backends</span><span class="o">/</span><span class="n">neural_engine</span><span class="o">/</span><span class="n">executor</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">nlp_executor</span><span class="p">.</span><span class="n">cc</span><span class="w"> </span><span class="n">neural_engine_example</span><span class="p">.</span><span class="n">cc</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>engine_integration<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>engine_integration
+git<span class="w"> </span>init
+git<span class="w"> </span>submodule<span class="w"> </span>add<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers<span class="w"> </span>itrex
+git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+cp<span class="w"> </span>itrex/intel_extension_for_transformers/backends/neural_engine/CMakeLists.txt<span class="w"> </span>.
+cp<span class="w"> </span>itrex/intel_extension_for_transformers/backends/neural_engine/executor/src/nlp_executor.cc<span class="w"> </span>neural_engine_example.cc
 </pre></div>
 </div>
 <p>Modify the NE_ROOT in the CmakeLists.txt.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">set</span><span class="p">(</span><span class="n">NE_ROOT</span><span class="w"> </span><span class="s">&quot;${PROJECT_SOURCE_DIR}/xtransformers/intel_extension_for_transformers/backends/neural_engine&quot;</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>set(NE_ROOT &quot;${PROJECT_SOURCE_DIR}/itrex/intel_extension_for_transformers/backends/neural_engine&quot;)
 </pre></div>
 </div>
 <p>Compile neural_engine_example.cc as binary named neural_engine_example and link Nerual Engine include/lib into neural_engine_example.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp"># build neural_engine_example</span>
-<span class="n">add_executable</span><span class="p">(</span><span class="n">neural_engine_example</span>
-<span class="w">    </span><span class="n">neural_engine_example</span><span class="p">.</span><span class="n">cc</span>
-<span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># build neural_engine_example
+set(RUNTIME_OUTPUT_DIRECTORY, ${PROJECT_SOURCE_DIR})
+add_executable(neural_engine_example
+    neural_engine_example.cc
+)
 
-<span class="n">target_include_directories</span><span class="p">(</span><span class="n">neural_engine_example</span>
-<span class="w">    </span><span class="n">PRIVATE</span>
-<span class="w">        </span><span class="n">$</span><span class="p">{</span><span class="n">PROJECT_SOURCE_DIR</span><span class="p">}</span><span class="o">/</span><span class="n">include</span>
-<span class="w">        </span><span class="n">$</span><span class="p">{</span><span class="n">BOOST_INC_DIRS</span><span class="p">}</span>
-<span class="p">)</span>
+target_include_directories(neural_engine_example
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
+        ${BOOST_INC_DIRS}
+)
 
-<span class="n">target_link_libraries</span><span class="p">(</span><span class="n">neural_engine_example</span>
-<span class="w">    </span><span class="n">PRIVATE</span>
-<span class="w">        </span><span class="n">$</span><span class="p">{</span><span class="n">CMAKE_THREAD_LIBS_INIT</span><span class="p">}</span>
-<span class="w">        </span><span class="n">gflags</span>
-<span class="w">        </span><span class="n">neural_engine</span>
+target_link_libraries(neural_engine_example
+    PRIVATE
+        ${CMAKE_THREAD_LIBS_INIT}
+        gflags
+        neural_engine
+)
+# put the neural_engine_example binary into the source dir
+set_target_properties(neural_engine_example
+        PROPERTIES OUTPUT_NAME neural_engine_example
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 </pre></div>
 </div>
 <p>Build and run the neural_engine_example.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span><span class="w"> </span><span class="p">..</span>
-<span class="n">make</span><span class="w"> </span><span class="o">-</span><span class="n">j</span>
-<span class="p">.</span><span class="o">/</span><span class="n">neural_engine</span><span class="w"> </span><span class="o">--</span><span class="n">config</span><span class="o">=&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">yaml</span><span class="w"> </span><span class="n">file</span><span class="o">&gt;</span><span class="w"> </span><span class="o">--</span><span class="n">weight</span><span class="o">=&lt;</span><span class="n">path</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">bin</span><span class="w"> </span><span class="n">file</span><span class="o">&gt;</span><span class="w"> </span><span class="o">--</span><span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="w"> </span><span class="o">--</span><span class="n">iterations</span><span class="o">=</span><span class="mi">20</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..
+make<span class="w"> </span>-j
+<span class="nb">cd</span><span class="w"> </span>..
+./neural_engine_example<span class="w"> </span>--config<span class="o">=</span>&lt;path<span class="w"> </span>to<span class="w"> </span>yaml<span class="w"> </span>file&gt;<span class="w"> </span>--weight<span class="o">=</span>&lt;path<span class="w"> </span>to<span class="w"> </span>bin<span class="w"> </span>file&gt;<span class="w"> </span>--batch_size<span class="o">=</span><span class="m">32</span><span class="w"> </span>--seq_len<span class="o">=</span><span class="m">128</span><span class="w"> </span>--iterations<span class="o">=</span><span class="m">10</span><span class="w"> </span>--w<span class="o">=</span><span class="m">5</span>
 </pre></div>
 </div>
+<blockquote>
+<div><p><strong>Note</strong> Use <code class="docutils literal notranslate"><span class="pre">numactl</span></code> to bind cores when doing inference for better performance.</p>
+</div></blockquote>
 </section>
 </section>
 

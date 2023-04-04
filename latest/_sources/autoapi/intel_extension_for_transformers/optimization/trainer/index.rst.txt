@@ -102,8 +102,8 @@ Classes
       :type provider: str
       :param eval_func: The function used to evaluate the model.
       :type eval_func: :obj:`Callable`, optional
-      :param train_func (:obj:`Callable`: The function used to train the model.
-      :param optional: The function used to train the model.
+      :param train_func: The function used to train the model.
+      :type train_func: :obj:`Callable`, optional
 
       :returns: An objective of neural_compressor Pruning class.
 
