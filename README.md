@@ -4,13 +4,13 @@ Intel® Extension for Transformers
 ===========================
 <h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
 
-[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Neural Chat](./examples/optimization/pytorch/huggingface/language-modeling/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./examples/optimization/pytorch/huggingface/language-modeling/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
 ---
 <div align="left">
 
-Intel® Extension for Transformers is an innovative toolkit to accelerateTransformer-based models on Intel platforms, in particular effective on 4th Intel XeonScalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the key features andexamples as below:
+Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel XeonScalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the key features andexamples as below:
 
 
 *  Seamless user experience of model compressions on Transformers-based models by extending [Hugging Face transformers](https://github.com/huggingface/transformers) APIs and leveraging [Intel® Neural Compressor](https://github.com/intel/neural-compressor)
@@ -77,7 +77,7 @@ output = model(**input).logits.argmax().item()
 <tbody>
   <tr>
     <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs">Model Compression</a></td>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/chatbot">Neural Chat</a></td>
+    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/chatbot">NeuralChat</a></td>
     <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.md">Kernel Libraries</a></td>
   </tr>
