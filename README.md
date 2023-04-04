@@ -1,4 +1,14 @@
-# Intel® Extension for Transformers: Accelerating Transformer-based Models on Intel Platforms
+<div align="center">
+  
+Intel® Extension for Transformers
+===========================
+<h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
+
+[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Neural Chat](./examples/optimization/pytorch/huggingface/language-modeling/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+</div>
+
+---
+<div align="left">
  Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the key features and examples as below:
 
 
@@ -8,9 +18,9 @@
 *  Advanced software optimizations and unique compression-aware runtime (released with NeurIPS 2022's paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) and [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114), and NeurIPS 2021's paper [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754))
 
 
-*  Accelerated end-to-end Transformer-based applications such as [Stable Diffusion](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/deployment/neural_engine/stable_diffusion), [GPT-J-6B](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/deployment/neural_engine/gpt-j), [GPT-NEOX](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/quantization/inc#2-validated-model-list), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list), [Flan-T5](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list) and [SetFit-based sentiment analysis](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) 
+*  Optimized Transformer-based model packages such as [Stable Diffusion](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/deployment/neural_engine/stable_diffusion), [GPT-J-6B](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/deployment/neural_engine/gpt-j), [GPT-NEOX](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/quantization/inc#2-validated-model-list), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list), [Flan-T5](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list) and end-to-end workflows such as [SetFit-based text classification](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/E2E-solution/DLSA) 
 
-*  [NeuralChat](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/chatbot), a custom Chatbot based on domain knowledge fine-tuning and demonstrate less than one hour fine-tuning with PEFT on 4 SPR nodes. End-to-end optimized workflow such as 
+*  [NeuralChat](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/chatbot), a custom Chatbot trained on Intel CPUs through parameter-efficient fine-tuning [PEFT](https://github.com/huggingface/peft) on domain knowledge
 
 
 ## Installation
