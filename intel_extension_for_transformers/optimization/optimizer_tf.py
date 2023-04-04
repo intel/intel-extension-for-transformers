@@ -880,6 +880,7 @@ class TFOptimization:
                 prune_model.save_pretrained(model_path, saved_model=True)
                 component.model = os.path.join(model_path, "saved_model/1")
                 component.model.model_type = "saved_model"
+                component.model.sess
                 hooks['on_epoch_end']()
 
             # pylint: disable=E1121
