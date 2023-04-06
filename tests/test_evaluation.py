@@ -20,6 +20,11 @@ class TestLmEvaluationHarness(unittest.TestCase):
             "hf-internal-testing/tiny-random-gptj",
             torchscript=True
         )
+        self.clm_tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-gptj")
+        self.seq2seq_model = AutoModelForSeq2SeqLM.from_pretrained(
+            "hf-internal-testing/tiny-random-t5",
+        )
+        self.seq2seq_tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-t5")
         tmp_model = torch.jit.trace(
             self.clm_model, self.clm_model.dummy_inputs["input_ids"]
         )
@@ -46,8 +51,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
 
     def test_evaluate_for_CasualLM(self):
-
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFCausalLM, evaluate
+        clm_model = HFCausalLM(model=self.clm_model, tokenizer=self.clm_tokenizer)
         results = evaluate(
             model=clm_model,
             tasks=["piqa"],
@@ -61,8 +66,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
         results = evaluate(
             model=seq2seq_model,
             tasks=["piqa"],
-            limit=20,
-            no_cache=True
             limit=5,
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 1.0)
@@ -140,7 +143,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 1.0)
 
     def test_evaluate_for_ort_CasualLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFCausalLM, evaluate
         cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
