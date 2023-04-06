@@ -565,6 +565,7 @@ class Finetuning:
             unwrapped_model.eval()
             from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate, HFCausalLM
             unwrapped_model = HFCausalLM(model=unwrapped_model, tokenizer=tokenizer)
+            unwrapped_model = unwrap_model(unwrapped_model)
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
