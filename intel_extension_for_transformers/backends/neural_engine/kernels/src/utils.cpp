@@ -41,18 +41,18 @@ uint16_t fp32_to_fp16(const float x) {  // IEEE-754 16-bit floating-point format
          ((e < 113) & (e > 101)) * ((((0x007FF000 + m) >> (125 - e)) + 1) >> 1) | (e > 143) * 0x7FFF;
 }
 
-template <typename src_t, typename dst_t>
+template <typename dst_t, typename src_t>
 dst_t cast_to(src_t x) {
   return static_cast<dst_t>(x);
 }
 
 template <>
-bfloat16_t cast_to<float, bfloat16_t>(float x) {
+bfloat16_t cast_to<bfloat16_t, float>(float x) {
   return make_bf16(x);
 }
 
 template <>
-float cast_to<bfloat16_t, float>(bfloat16_t x) {
+float cast_to<float, bfloat16_t>(bfloat16_t x) {
   return make_fp32(x);
 }
 
@@ -104,7 +104,7 @@ void init_vector(T* v, int num_size, float range1, float range2, int seed) {
   std::mt19937 gen(seed);
   std::uniform_real_distribution<float> u(low_value, range2);
   for (int i = 0; i < num_size; ++i) {
-    v[i] = cast_to<T, float>(u(gen));
+    v[i] = cast_to<T>(u(gen));
   }
 }
 
@@ -134,13 +134,12 @@ struct s_is_u8s8<uint8_t> {
 template <typename T>
 inline typename std::enable_if<!s_is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
   // we compare float relative error ratio here
-  return fabs(cast_to<T, float>(a) - cast_to<T, float>(b)) /
-         std::max(static_cast<float>(fabs(cast_to<T, float>(b))), 1.0f);
+  return fabs(cast_to<float>(a) - cast_to<float>(b)) / std::max(static_cast<float>(fabs(cast_to<float>(b))), 1.0f);
 }
 template <typename T>
 inline typename std::enable_if<s_is_u8s8<T>::value, float>::type get_err(const T& a, const T& b) {
   // for quantized value, error ratio was calcualted with its data range
-  return fabs(cast_to<T, float>(a) - cast_to<T, float>(b)) / UINT8_MAX;
+  return fabs(cast_to<float>(a) - cast_to<float>(b)) / UINT8_MAX;
 }
 
 template <typename T>
@@ -151,7 +150,7 @@ bool compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t siz
 
   for (int64_t i = 0; i < size1; ++i) {
     if (get_err(buf1_data[i], buf2_data[i]) > eps) {
-      SPARSE_LOG(ERROR) << cast_to<T, float>(buf1_data[i]) << "vs" << cast_to<T, float>(buf2_data[i]) << " idx=" << i;
+      SPARSE_LOG(ERROR) << cast_to<float>(buf1_data[i]) << "vs" << cast_to<float>(buf2_data[i]) << " idx=" << i;
       return false;
     }
   }
@@ -330,7 +329,7 @@ template <typename T>
 void cast_to_float_array(const void* src, std::vector<float>* dst, int size) {
   T* src_typed = reinterpret_cast<T*>(const_cast<void*>(src));
   for (int i = 0; i < size; ++i) {
-    (*dst)[i] = cast_to<T, float>(src_typed[i]);
+    (*dst)[i] = cast_to<float>(src_typed[i]);
   }
 }
 template void SPARSE_API_ cast_to_float_array<float>(const void*, std::vector<float>*, int);
@@ -343,7 +342,7 @@ template <typename T>
 void cast_from_float_array(const std::vector<float>& src, void* dst, int size) {
   T* dst_typed = reinterpret_cast<T*>(dst);
   for (int i = 0; i < size; ++i) {
-    dst_typed[i] = cast_to<float, T>(src[i]);
+    dst_typed[i] = cast_to<T>(src[i]);
   }
 }
 template void SPARSE_API_ cast_from_float_array<float>(const std::vector<float>&, void*, int);

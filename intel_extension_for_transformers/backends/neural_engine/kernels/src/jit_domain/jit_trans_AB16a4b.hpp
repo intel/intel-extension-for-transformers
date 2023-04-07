@@ -15,10 +15,11 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_TRANS_AB16A4B_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_TRANS_AB16A4B_HPP_
 
-#include <glog/logging.h>
 #include <vector>
-#include "utils.hpp"
+
 #include "jit_generator.hpp"
+#include "regs_pool.hpp"
+#include "utils.hpp"
 
 namespace jd {
 
@@ -53,8 +54,8 @@ class jit_trans_AB16a4b : public jit_generator {
 
  private:
   void generate() override;
-  void transpose_16x16_ps(const Xbyak::Reg64& src, const Xbyak::Reg64& dst, const Xbyak::Opmask& mask,
-                          bool is_tail = false);
+  void transpose_16x16_ps(regs_pool* const rp, const Xbyak::Reg64& src, const Xbyak::Reg64& dst,
+                          const Xbyak::Opmask& mask, bool is_tail = false);
 
   const int M, N, ld_src, pad_n;
 };

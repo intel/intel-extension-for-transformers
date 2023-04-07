@@ -19,10 +19,10 @@
 
 namespace jd {
 
-void jit_trans_BA16b4a::transpose_4x64(const Xbyak::Reg64& src, const Xbyak::Reg64& dst, const Xbyak::Reg64& ld_dst,
-                                       const Xbyak::Reg64& ld_dst3x, bool is_tail) {
-  const auto mat = regs<Xbyak::Zmm, 4>(24);
-  const auto tmp = regs<Xbyak::Zmm, 4>(28);
+void jit_trans_BA16b4a::transpose_4x64(regs_pool* const rp, const Xbyak::Reg64& src, const Xbyak::Reg64& dst,
+                                       const Xbyak::Reg64& ld_dst, const Xbyak::Reg64& ld_dst3x, bool is_tail) {
+  const auto mat = rp->regs<Zmm, 4>();
+  const auto tmp = rp->regs<Zmm, 4>();
 
   if (M == 0) {  // M == 0 is a special case where 4x64 memory are zeroed
     vxorps(Xmm(mat[0].getIdx()), Xmm(mat[0].getIdx()), Xmm(mat[0].getIdx()));
@@ -74,31 +74,31 @@ void jit_trans_BA16b4a::transpose_4x64(const Xbyak::Reg64& src, const Xbyak::Reg
 }
 
 void jit_trans_BA16b4a::generate() {
-  Xbyak::util::StackFrame sf(this, 1, 6);
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
-  const auto reg_src = sf.t[0];
-  const auto reg_dst = sf.t[1];
-  const auto reg_ld_dst = sf.t[2];
-  const auto reg_3ld_dst = sf.t[3];
+  const auto m_tiles = M / 4;
+  regs_pool rp(this, 1, {m_tiles <= 1 ? 4 : 6, 8, 0});
+  const auto reg_src = rp.reg<Reg64>();
+  const auto reg_dst = rp.reg<Reg64>();
+  const auto reg_ld_dst = rp.reg<Reg64>();
+  const auto reg_3ld_dst = rp.reg<Reg64>();
 
-  mov(reg_src, ptr[sf.p[0] + GET_OFF(src)]);
-  mov(reg_dst, ptr[sf.p[0] + GET_OFF(dst)]);
-  mov(reg_ld_dst.cvt32(), dword[sf.p[0] + GET_OFF(ld_dst)]);
+  mov(reg_src, ptr[rp.p[0] + GET_OFF(src)]);
+  mov(reg_dst, ptr[rp.p[0] + GET_OFF(dst)]);
+  mov(reg_ld_dst.cvt32(), dword[rp.p[0] + GET_OFF(ld_dst)]);
   imul(reg_3ld_dst, reg_ld_dst, 3);
 
-  const auto m_tiles = M / 4;
   if (m_tiles == 1) {
-    transpose_4x64(reg_src, reg_dst, reg_ld_dst, reg_3ld_dst);
+    transpose_4x64(&rp, reg_src, reg_dst, reg_ld_dst, reg_3ld_dst);
     lea(reg_src, ptr[reg_src + ld_src * 4]);
     lea(reg_dst, ptr[reg_dst + VEC * 4]);
   } else if (m_tiles > 1) {
     Xbyak::Label m_loop;
-    const auto reg_msize = sf.t[4];
-    const auto reg_iterm = sf.t[5];
+    const auto reg_msize = rp.reg<Reg64>();
+    const auto reg_iterm = rp.reg<Reg64>();
     mov(reg_msize, M / 4);
     xor_(reg_iterm, reg_iterm);
     L(m_loop);
-    transpose_4x64(reg_src, reg_dst, reg_ld_dst, reg_3ld_dst);
+    transpose_4x64(&rp, reg_src, reg_dst, reg_ld_dst, reg_3ld_dst);
     lea(reg_src, ptr[reg_src + ld_src * 4]);
     lea(reg_dst, ptr[reg_dst + VEC * 4]);
     lea(reg_iterm, ptr[reg_iterm + 1]);
@@ -108,7 +108,7 @@ void jit_trans_BA16b4a::generate() {
 
   const auto m_tail = M % 4;
   if (m_tail > 0 || M == 0)  // M == 0 is a special case where 4x64 memory are zeroed
-    transpose_4x64(reg_src, reg_dst, reg_ld_dst, reg_3ld_dst, true);
+    transpose_4x64(&rp, reg_src, reg_dst, reg_ld_dst, reg_3ld_dst, true);
 }
 
 }  // namespace jd

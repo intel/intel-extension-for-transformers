@@ -43,19 +43,19 @@ float rand_float_postfix() {
 void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
   switch (dtype) {
     case jd::data_type::fp32:
-      *(reinterpret_cast<float*>(ptr) + idx) = val;
+      reinterpret_cast<float*>(ptr)[idx] = val;
       break;
     case jd::data_type::bf16:
-      *(reinterpret_cast<bfloat16_t*>(ptr) + idx) = jd::make_bf16(val);
+      reinterpret_cast<bfloat16_t*>(ptr)[idx] = jd::make_bf16(val);
       break;
     case jd::data_type::u8:
-      *(reinterpret_cast<uint8_t*>(ptr) + idx) = (uint8_t)val;
+      reinterpret_cast<uint8_t*>(ptr)[idx] = (uint8_t)val;
       break;
     case jd::data_type::s8:
-      *(reinterpret_cast<int8_t*>(ptr) + idx) = (int8_t)val;
+      reinterpret_cast<int8_t*>(ptr)[idx] = (int8_t)val;
       break;
     default:
-      std::runtime_error(std::string("assign_val:unsupport this dtype."));
+      throw std::runtime_error("assign_val: unsupport this dtype.");
   }
 }
 

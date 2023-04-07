@@ -16,45 +16,46 @@
 
 #include <memory>
 
+#include "regs_pool.hpp"
+
 #define GET_OFF(field) offsetof(jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::rt_data_t, field)
 
 namespace jd {
 void jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::generate() {
   const auto tmp_dst_size = TH_ * TW_ * BYTES_TMM;
-  Xbyak::util::StackFrame sf(this, 1, 9, tmp_dst_size + 64);  // 64 extra for alignment
+  regs_pool rp(this, 1, {9, 19, 0}, tmp_dst_size + 64);  // 64 extra for alignment
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
-  std::shared_ptr<void> use_vregs = {(preserve_xmm(), nullptr), [&](...) { recover_xmm(); }};
 
-  const auto& reg_src0 = sf.t[0];
-  const auto& reg_src1 = sf.t[1];
-  const auto& reg_dst = sf.t[2];
-  const auto& reg_lb_dst = sf.t[3];
-  const auto& reg_stride64 = sf.t[4];
-  const auto& reg_dst_tmp = sf.t[5];
-  const auto& reg_tmp = sf.t[6];
-  const auto& reg_iterk = sf.t[7];
-  const auto& reg_maxk = sf.t[8];
-  const auto& vreg_0f = zmm0;
-  const auto& vreg_scale = zmm1;
-  const auto& vreg_zp = zmm2;
+  const auto reg_src0 = rp.reg<Reg64>();
+  const auto reg_src1 = rp.reg<Reg64>();
+  const auto reg_dst = rp.reg<Reg64>();
+  const auto reg_lb_dst = rp.reg<Reg64>();
+  const auto reg_stride64 = rp.reg<Reg64>();
+  const auto reg_dst_tmp = rp.reg<Reg64>();
+  const auto reg_tmp = rp.reg<Reg64>();
+  const auto reg_iterk = rp.reg<Reg64>();
+  const auto reg_maxk = rp.reg<Reg64>();
+  const auto vreg_0f = rp.reg<Zmm>();
+  const auto vreg_scale = rp.reg<Zmm>();
+  const auto vreg_zp = rp.reg<Zmm>();
   const auto reg_tmp32 = reg_tmp.cvt32();
   if (dt_dst == data_type::u8) {
     mov(reg_tmp32, 0);  // 0L is same as 0.f in binary
     vpbroadcastd(vreg_0f, reg_tmp32);
   }
 
-  const auto tmm_src0 = regs<Xbyak::Tmm, TH_>(0);
-  const auto tmm_src1 = regs<Xbyak::Tmm, TW_>(TH_);
-  const auto tmm_dst = regs<Xbyak::Tmm, TH_ * TW_>(TH_ + TW_);
+  const std::array<Tmm, 4> tmm_dst{tmm0, tmm1, tmm2, tmm3};
+  const std::array<Tmm, 2> tmm_src0{tmm4, tmm5};
+  const std::array<Tmm, 2> tmm_src1{tmm6, tmm7};
 
-  mov(reg_src0, ptr[sf.p[0] + GET_OFF(src0)]);
-  mov(reg_src1, ptr[sf.p[0] + GET_OFF(src1)]);
-  mov(reg_dst, ptr[sf.p[0] + GET_OFF(dst)]);
-  mov(reg_maxk.cvt32(), dword[sf.p[0] + GET_OFF(K)]);
+  mov(reg_src0, ptr[rp.p[0] + GET_OFF(src0)]);
+  mov(reg_src1, ptr[rp.p[0] + GET_OFF(src1)]);
+  mov(reg_dst, ptr[rp.p[0] + GET_OFF(dst)]);
+  mov(reg_maxk.cvt32(), dword[rp.p[0] + GET_OFF(K)]);
   mov(reg_lb_dst, lb_dst);
   mov(reg_stride64, 64);
-  vpbroadcastd(vreg_scale, dword[sf.p[0] + GET_OFF(rescale)]);
-  vpbroadcastd(vreg_zp, dword[sf.p[0] + GET_OFF(zp)]);
+  vpbroadcastd(vreg_scale, dword[rp.p[0] + GET_OFF(rescale)]);
+  vpbroadcastd(vreg_zp, dword[rp.p[0] + GET_OFF(zp)]);
 
   // align stack tmp mem
   mov(reg_dst_tmp, rsp);
@@ -100,7 +101,7 @@ void jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::generate() {
       jl(l_kloop);
 
       // quant & store
-      const auto vreg_post = regs<Xbyak::Zmm, 16>(16);
+      const auto vreg_post = rp.regs<Xbyak::Zmm, 16>();
       for (int i = 0; i < TH_; ++i)
         for (int j = 0; j < TW_; ++j)
           if (idx_m + i * 16 < M && idx_n + j * 16 < N) {

@@ -195,7 +195,7 @@ std::pair<op_args_t, uint8_t*> gen_case(const std::vector<tensor_desc>& ts_descs
   matf32_quantize_perlayer_s8(matAfp32, matA, aSize, &scaleA);
   matf32_quantize_perlayer_s8(matBfp32, matB, bSize, &scaleB);
   matf32_quantize_perlayer_s8(matDfp32, matD, dSize, &scaleD);
-  // calculate
+#pragma omp parallel for  // calculate
   for (int i = 0; i < batch * b; i++) {
     matrix_transpose(matA + i * m * k, k, m, trans_matA + i * m * k);
     ref_mm_row_NN_f32(trans_matA + i * m * k, matB + i * n * k, exp_out + i * m * n, exp_out, m, n, k, scaleA * scaleB,
