@@ -67,8 +67,8 @@
 
 #endif  // _WIN32
 
-#define SPARSE_LOG(level) LOG(level) << "Log from Sparselib \n"
-#define SPARSE_LOG_IF(level, f) LOG_IF(level, f) << "Log from Sparselib\n"
+#define SPARSE_LOG(level) LOG(level) << "Log from Sparselib: "
+#define SPARSE_LOG_IF(level, f) LOG_IF(level, f) << "Log from Sparselib: "
 namespace jd {
 
 typedef uint16_t bfloat16_t;  // NOLINT
@@ -76,7 +76,7 @@ typedef int64_t dim_t;
 
 uint16_t fp32_to_fp16(const float x);
 float fp16_to_fp32(const uint16_t x);
-template <typename src_t, typename dst_t>
+template <typename dst_t, typename src_t>
 dst_t cast_to(src_t x);
 
 float SPARSE_API_ make_fp32(bfloat16_t x);

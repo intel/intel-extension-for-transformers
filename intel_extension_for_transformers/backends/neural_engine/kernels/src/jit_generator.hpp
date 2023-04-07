@@ -59,13 +59,13 @@ static const Xbyak::Reg64 abi_param1(Xbyak::Operand::RDI), abi_param2(Xbyak::Ope
 #ifdef _WIN32
 // https://docs.microsoft.com/en-us/cpp/build/x64-software-conventions?redirectedfrom=MSDN&view=msvc-170
 // xmm6:xmm15 must be preserved as needed by caller
-const size_t xmm_to_preserve_start = 6;
-const size_t xmm_to_preserve = 10;
+constexpr size_t xmm_to_preserve_start = 6;
+constexpr size_t xmm_to_preserve = 10;
 #else
 // https://github.com/hjl-tools/x86-psABI/wiki/X86-psABI: page23
 // on Linux those are temporary registers, and therefore don't have to be preserved
-const size_t xmm_to_preserve_start = 0;
-const size_t xmm_to_preserve = 0;
+constexpr size_t xmm_to_preserve_start = 0;
+constexpr size_t xmm_to_preserve = 0;
 #endif
 
 namespace jd {
@@ -167,23 +167,12 @@ class jit_generator : public Xbyak::CodeGenerator {
   }
 
   /**
-   * @brief Get an array of registers
+   * @brief Transpose 16x16 of 32bit elements stored in 16 ZMMs
    *
-   * @tparam reg_t register type; should be a child type of Xbyak::Reg
-   * @tparam N number of registers
-   * @param start staring index
-   * @return std::array<reg_t, N>
+   * @param src the 16 ZMMs storing the matrix to transpose
+   * @param tmp 16 ZMMs for temporary use
+   * @param N the second dim of 16x16, could be less than 16 to save some cycles
    */
-  template <typename reg_t, size_t N,
-            typename = typename std::enable_if<std::is_base_of<Xbyak::Reg, reg_t>::value>::type>
-  static inline std::array<reg_t, N> regs(size_t start = 0) {
-    std::array<reg_t, N> result;
-    for (size_t i = 0; i < N; ++i) {
-      result[i] = reg_t(start + i);
-    }
-    return result;
-  }
-
   void transpose_16x16_ps(const std::array<Xbyak::Zmm, 16UL>& src, const std::array<Xbyak::Zmm, 16UL>& tmp,
                           const int N = 16);
 

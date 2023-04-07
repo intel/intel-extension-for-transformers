@@ -44,6 +44,7 @@ class operator_desc {
       : ker_kind_(ker_kind),
         ker_prop_(ker_prop),
         engine_kind_(eng_kind),
+        runtime_kind_(jd::runtime_kind::undef),
         impl_nthr_(omp_get_max_threads()),
         ts_descs_(ts_descs),
         attrs_(attrs),

@@ -16,6 +16,8 @@
 
 #include <memory>
 
+#include "regs_pool.hpp"
+
 #define GET_OFF(field) offsetof(jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::rt_data_t, field)
 
 namespace jd {
@@ -24,24 +26,24 @@ void jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::generate() {
 
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
   {
-    Xbyak::util::StackFrame sf(this, 1, 5, need_cfg_amx ? sizeof(tileconfig_t) : 0);
+    regs_pool rp(this, 1, {5, 0, 0}, need_cfg_amx ? sizeof(tileconfig_t) : 0);
     std::shared_ptr<void> local_cfg;
     if (need_cfg_amx) {  // create a local amx config environment
       local_cfg = {(sttilecfg(ptr[rsp]), ldtilecfg(ptr[rip + L_amx_cfg]), nullptr), [&](...) { ldtilecfg(ptr[rsp]); }};
     }
 
-    const auto reg_src0 = sf.t[0];
-    const auto reg_src1 = sf.t[1];
-    const auto reg_dst = sf.t[2];
-    const auto reg_ld_src0 = sf.t[3];
-    const auto reg_stride64 = sf.t[4];
-    const auto tmm_dst = regs<Xbyak::Tmm, TH_ * TW_>(0);
-    const auto tmm_src0 = regs<Xbyak::Tmm, TH_>(TH_ * TW_);
-    const auto tmm_src1 = regs<Xbyak::Tmm, TW_>(TH_ * TW_ + TH_);
+    const auto reg_src0 = rp.reg<Reg64>();
+    const auto reg_src1 = rp.reg<Reg64>();
+    const auto reg_dst = rp.reg<Reg64>();
+    const auto reg_ld_src0 = rp.reg<Reg64>();
+    const auto reg_stride64 = rp.reg<Reg64>();
+    const std::array<Tmm, 4> tmm_dst{tmm0, tmm1, tmm2, tmm3};
+    const std::array<Tmm, 2> tmm_src0{tmm4, tmm5};
+    const std::array<Tmm, 2> tmm_src1{tmm6, tmm7};
 
-    mov(reg_src0, ptr[sf.p[0] + GET_OFF(src0)]);
-    mov(reg_src1, ptr[sf.p[0] + GET_OFF(src1)]);
-    mov(reg_dst, ptr[sf.p[0] + GET_OFF(dst)]);
+    mov(reg_src0, ptr[rp.p[0] + GET_OFF(src0)]);
+    mov(reg_src1, ptr[rp.p[0] + GET_OFF(src1)]);
+    mov(reg_dst, ptr[rp.p[0] + GET_OFF(dst)]);
     mov(reg_ld_src0, ld_src0);
     mov(reg_stride64, 64);
 

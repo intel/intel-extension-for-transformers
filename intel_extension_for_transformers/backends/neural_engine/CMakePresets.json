@@ -21,6 +21,12 @@
       "vendor": { "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}/intel_extension_for_transformers/backends/neural_engine" } }
     },
     {
+      "name": "linux-debug-kernels",
+      "displayName": "Linux Debuge Kernels",
+      "inherits": "linux-debug",
+      "cacheVariables": { "NE_WITH_SPARSELIB_ONLY": "ON" }
+    },
+    {
       "name": "linux-release",
       "displayName": "Linux Release",
       "inherits": "linux-debug",
@@ -76,6 +82,13 @@
         "NE_WITH_ONEDNN_GRAPH": "ON",
         "NE_WITH_SPARSELIB_BENCHMARK": "ON"
       }
+    },
+    {
+      "name": "x64-debug-kernels",
+      "displayName": "x64 Debug Kernels",
+      "description": "Windows x64 Debug Kernels",
+      "inherits": "x64-debug",
+      "cacheVariables": { "NE_WITH_SPARSELIB_ONLY": "ON" }
     },
     {
       "name": "x64-release",
