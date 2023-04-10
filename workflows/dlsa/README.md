@@ -41,7 +41,7 @@ pip install intel-extension-for-transformers
 
 ### Install package for examples
 ```shell
-cd <intel_extension_for_transformers_folder>/examples/E2E-solution/DLSA
+cd <intel_extension_for_transformers_folder>/workflows/dlsa
 pip install -r requirements.txt
 ```
 
