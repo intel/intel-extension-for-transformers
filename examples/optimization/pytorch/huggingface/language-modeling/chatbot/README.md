@@ -68,10 +68,10 @@ For example, to finetune FLAN-T5 through Distributed Data Parallel training, bas
 <br>
 *`<NODE_RANK>`* is the rank of the current node, rank starts from 0 to *`<NUM_NODES>`*`-1`.
 <br>
-> Also please note that to use CPU for training in each node with multi nodes settings, argument `--no_cuda` is mandatory, and `--xpu_backend ccl` is required if to use ccl as the distributed backend. In multi nodes setting, following command needs to be launched in each node, and all the commands should be the same except for *`<NODE_RANK>`*, which should be integer from 0 to *`<NUM_NODES>`*`-1` assigned to each node.
+> Also please note that in multi nodes setting, following command needs to be launched in each node, and all the commands should be the same except for *`<NODE_RANK>`*, which should be integer from 0 to *`<NUM_NODES>`*`-1` assigned to each node.
 
 ``` bash
-python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_node=<NUM_PROCESSES_PER_NODE> --nnodes=<NUM_NODES> --node_rank=<NODE_RANK> \
+CCL_WORKER_COUNT=1 python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_node=<NUM_PROCESSES_PER_NODE> --nnodes=<NUM_NODES> --node_rank=<NODE_RANK> \
     finetune_seq2seq.py \
         --model_name_or_path "google/flan-t5-xl/" \
         --train_file "stanford_alpaca/alpaca_data.json" \
@@ -87,7 +87,10 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
         --save_steps 2000 \
         --save_total_limit 2 \
         --overwrite_output_dir \
-        --output_dir ./flan-t5-xl_peft_finetuned_model
+        --output_dir "./flan-t5-xl_peft_finetuned_model" \
+        --bf16 \
+        --no_cuda \
+        --xpu_backend ccl
 ```
 # Chat with the Finetuned Model
 
