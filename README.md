@@ -15,51 +15,6 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 *  Seamless user experience of model compressions on Transformer-based models by extending [Hugging Face transformers](https://github.com/huggingface/transformers) APIs and leveraging [Intel® Neural Compressor](https://github.com/intel/neural-compressor)
 
-*  Accelerated end-to-end Transformer-based applications such as [Stable Diffusion](./examples/optimization/pytorch/huggingface/textual_inversion), [GPT-J-6B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#GPT-J), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/summarization/quantization), and [SetFit](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) by leveraging Intel AI software such as [Intel® Extension for PyTorch](https://github.com/intel/intel-extension-for-pytorch)     
-
-
-## Installation
-### Install from Pypi
-```bash
-pip install intel-extension-for-transformers
-```
-> For more installation method, please refer to [Installation Page](docs/installation.md)
-
-## Getting Started
-### Sentiment Analysis with Quantization
-#### Prepare Dataset
-```python
-from datasets import load_dataset, load_metric
-from transformers import AutoConfig,AutoModelForSequenceClassification,AutoTokenizer
-
-raw_datasets = load_dataset("glue", "sst2")
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
-raw_datasets = raw_datasets.map(lambda e: tokenizer(e['sentence'], truncation=True, padding='max_length', max_length=128), batched=True)
-```
-#### Quantization
-```python
-from intel_extension_for_transformers.optimization import QuantizationConfig, metrics, objectives
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
-
-config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
-model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",config=config)
-model.config.label2id = {0: 0, 1: 1}
-model.config.id2label = {0: 'NEGATIVE', 1: 'POSITIVE'}
-# Replace transformers.Trainer with NLPTrainer
-# trainer = transformers.Trainer(...)
-trainer = NLPTrainer(model=model, 
-    train_dataset=raw_datasets["train"], 
-    eval_dataset=raw_datasets["validation"],
-    tokenizer=tokenizer
-)
-q_config = QuantizationConfig(metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)])
-model = trainer.quantize(quant_config=q_config)
-
-input = tokenizer("I like Intel Extension for Transformers", return_tensors="pt")
-output = model(**input).logits.argmax().item()
-```
-
-> For more quick samples, please refer to [Get Started Page](docs/get_started.md). For more validated examples, please refer to [Support Model Matrix](docs/examples.md)
 
 *  Advanced software optimizations and unique compression-aware runtime (released with NeurIPS 2022's paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) and [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114), and NeurIPS 2021's paper [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754))
 
