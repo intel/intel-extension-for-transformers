@@ -19,7 +19,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 *  Advanced software optimizations and unique compression-aware runtime (released with NeurIPS 2022's paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) and [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114), and NeurIPS 2021's paper [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754))
 
 
-*  Optimized Transformer-based model packages such as [Stable Diffusion](examples/deployment/neural_engine/stable_diffusion), [GPT-J-6B](examples/deployment/neural_engine/gpt-j), [GPT-NEOX](examples/optimization/pytorch/huggingface/language-modeling/quantization/inc#2-validated-model-list), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list), [Flan-T5](examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list) and end-to-end workflows such as [SetFit-based text classification](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](examples/E2E-solution/DLSA) 
+*  Optimized Transformer-based model packages such as [Stable Diffusion](examples/deployment/neural_engine/stable_diffusion), [GPT-J-6B](examples/deployment/neural_engine/gpt-j), [GPT-NEOX](examples/optimization/pytorch/huggingface/language-modeling/quantization/inc#2-validated-model-list), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list), [Flan-T5](examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list) and end-to-end workflows such as [SetFit-based text classification](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](workflows/dlsa) 
 
 *  [NeuralChat](examples/optimization/pytorch/huggingface/language-modeling/chatbot), a custom Chatbot trained on Intel CPUs through parameter-efficient fine-tuning [PEFT](https://github.com/huggingface/peft) on domain knowledge
 
@@ -133,6 +133,7 @@ output = model(**input).logits.argmax().item()
 
 
 ## Selected Publications/Events
+* Blog of Tech-Innovation Artificial-Intelligence(AI): [Intel® Xeon® Processors Are Still the Only CPU With MLPerf Results, Raising the Bar By 5x - Intel Communities](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Intel-Xeon-Processors-Are-Still-the-Only-CPU-With-MLPerf-Results/post/1472750) (April 2023)
 * Blog published on Medium: [MLefficiency — Optimizing transformer models for efficiency](https://medium.com/@kawapanion/mlefficiency-optimizing-transformer-models-for-efficiency-a9e230cff051) (Dec 2022)
 * NeurIPS'2022: [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (Nov 2022)
 * NeurIPS'2022: [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) (Nov 2022)
