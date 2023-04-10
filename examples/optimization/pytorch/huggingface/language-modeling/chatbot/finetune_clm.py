@@ -95,8 +95,16 @@ class DataArguments:
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
 
-    data_path: Optional[str] = field(
-        default=None, metadata={"help": "The input training data file (a text file)."}
+    dataset_name: Optional[str] = field(
+        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+    )
+    dataset_config_name: Optional[str] = field(
+        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+    )
+    train_file: Optional[str] = field(default=None, metadata={"help": "The input training data file (a text file)."})
+    validation_file: Optional[str] = field(
+        default=None,
+        metadata={"help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."},
     )
     max_seq_length: Optional[int] = field(
         default=512,
@@ -285,16 +293,91 @@ def main():
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
-    
-    # Preprocessing the datasets.
-    if data_args.data_path.endswith(".json"):
-        raw_datasets = load_dataset("json", data_files=data_args.data_path)
+
+    # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
+    # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
+    # (the dataset will be downloaded automatically from the datasets Hub).
+    #
+    # For CSV/JSON files, this script will use the column called 'text' or the first column if no column called
+    # 'text' is found. You can easily tweak this behavior (see below).
+    #
+    # In distributed training, the load_dataset function guarantee that only one local process can concurrently
+    # download the dataset.
+    if data_args.dataset_name is not None:
+        # Downloading and loading a dataset from the hub.
+        raw_datasets = load_dataset(
+            data_args.dataset_name,
+            data_args.dataset_config_name,
+            cache_dir=model_args.cache_dir,
+            use_auth_token=True if model_args.use_auth_token else None,
+            streaming=data_args.streaming,
+        )
+
+        if "validation" not in raw_datasets.keys() and training_args.do_eval:
+            raw_datasets["validation"] = load_dataset(
+                data_args.dataset_name,
+                data_args.dataset_config_name,
+                split=f"train[:{data_args.validation_split_percentage}%]",
+                cache_dir=model_args.cache_dir,
+                use_auth_token=True if model_args.use_auth_token else None,
+                streaming=data_args.streaming,
+            )
+            raw_datasets["train"] = load_dataset(
+                data_args.dataset_name,
+                data_args.dataset_config_name,
+                split=f"train[{data_args.validation_split_percentage}%:]",
+                cache_dir=model_args.cache_dir,
+                use_auth_token=True if model_args.use_auth_token else None,
+                streaming=data_args.streaming,
+            )
     else:
-        raw_datasets = load_dataset(data_args.data_path)
-    prompts = create_prompts(raw_datasets["train"])
-    columns_to_be_removed = list(raw_datasets["train"].features.keys())
-    raw_datasets["train"] = raw_datasets["train"].add_column("prompts", prompts)
-    raw_datasets["train"] = raw_datasets["train"].remove_columns(columns_to_be_removed)
+        data_files = {}
+        dataset_args = {}
+        if data_args.train_file is not None:
+            data_files["train"] = data_args.train_file
+        if data_args.validation_file is not None:
+            data_files["validation"] = data_args.validation_file
+        extension = (
+            data_args.train_file.split(".")[-1]
+            if data_args.train_file is not None
+            else data_args.validation_file.split(".")[-1]
+        )
+        if extension == "txt":
+            extension = "text"
+            dataset_args["keep_linebreaks"] = data_args.keep_linebreaks
+        raw_datasets = load_dataset(
+            extension,
+            data_files=data_files,
+            cache_dir=model_args.cache_dir,
+            use_auth_token=True if model_args.use_auth_token else None,
+            **dataset_args,
+        )
+
+        # If no validation data is there, validation_split_percentage will be used to divide the dataset.
+        if "validation" not in raw_datasets.keys() and training_args.do_eval:
+            raw_datasets["validation"] = load_dataset(
+                extension,
+                data_files=data_files,
+                split=f"train[:{data_args.validation_split_percentage}%]",
+                cache_dir=model_args.cache_dir,
+                use_auth_token=True if model_args.use_auth_token else None,
+                **dataset_args,
+            )
+            raw_datasets["train"] = load_dataset(
+                extension,
+                data_files=data_files,
+                split=f"train[{data_args.validation_split_percentage}%:]",
+                cache_dir=model_args.cache_dir,
+                use_auth_token=True if model_args.use_auth_token else None,
+                **dataset_args,
+            )
+
+    # Preprocessing the datasets.
+    for key in raw_datasets:
+        prompts = create_prompts(raw_datasets[key])
+        columns_to_be_removed = list(raw_datasets[key].features.keys())
+        raw_datasets[key] = raw_datasets[key].add_column("prompts", prompts)
+        raw_datasets[key] = raw_datasets[key].remove_columns(columns_to_be_removed)
 
     tokenizer.pad_token_id = (
         0  # unk. we want this to be different from the eos token
@@ -341,11 +424,6 @@ def main():
             return datasets.Dataset.from_dict(concatenated_dataset)
         tokenized_datasets_ = tokenized_datasets["train"].remove_columns("prompts")
         tokenized_datasets["train"] = concatenate_data(tokenized_datasets_, data_args.max_seq_length)
-
-    if data_args.validation_split_percentage > 0:
-        tokenized_datasets = tokenized_datasets["train"].train_test_split(
-            test_size=data_args.validation_split_percentage/100, shuffle=True, seed=training_args.seed
-        )
 
     if training_args.do_train:
         if "train" not in tokenized_datasets:
