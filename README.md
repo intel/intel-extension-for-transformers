@@ -19,9 +19,9 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 *  Advanced software optimizations and unique compression-aware runtime (released with NeurIPS 2022's paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) and [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114), and NeurIPS 2021's paper [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754))
 
 
-*  Optimized Transformer-based model packages such as [Stable Diffusion](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/deployment/neural_engine/stable_diffusion), [GPT-J-6B](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/deployment/neural_engine/gpt-j), [GPT-NEOX](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/quantization/inc#2-validated-model-list), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list), [Flan-T5](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list) and end-to-end workflows such as [SetFit-based text classification](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/E2E-solution/DLSA) 
+*  Optimized Transformer-based model packages such as [Stable Diffusion](examples/deployment/neural_engine/stable_diffusion), [GPT-J-6B](examples/deployment/neural_engine/gpt-j), [GPT-NEOX](examples/optimization/pytorch/huggingface/language-modeling/quantization/inc#2-validated-model-list), [BLOOM-176B](./examples/optimization/pytorch/huggingface/language-modeling/inference/README.md#BLOOM-176B), [T5](examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list), [Flan-T5](examples/optimization/pytorch/huggingface/summarization/quantization#2-validated-model-list) and end-to-end workflows such as [SetFit-based text classification](./docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](examples/E2E-solution/DLSA) 
 
-*  [NeuralChat](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/chatbot), a custom Chatbot trained on Intel CPUs through parameter-efficient fine-tuning [PEFT](https://github.com/huggingface/peft) on domain knowledge
+*  [NeuralChat](examples/optimization/pytorch/huggingface/language-modeling/chatbot), a custom Chatbot trained on Intel CPUs through parameter-efficient fine-tuning [PEFT](https://github.com/huggingface/peft) on domain knowledge
 
 
 ## Installation
@@ -76,9 +76,9 @@ output = model(**input).logits.argmax().item()
 </thead>
 <tbody>
   <tr>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/docs">Model Compression</a></td>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/chatbot">NeuralChat</a></td>
-    <td colspan="2" align="center"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
+    <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
+    <td colspan="2" align="center"><a href="examples/optimization/pytorch/huggingface/language-modeling/chatbot">NeuralChat</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.md">Kernel Libraries</a></td>
   </tr>
   <tr>
@@ -88,7 +88,7 @@ output = model(**input).logits.argmax().item()
     <td colspan="2" align="center"><a href="docs/quantization.md">Quantization</a></td>
     <td colspan="2" align="center"><a href="docs/pruning.md">Pruning</a></td>
     <td colspan="2" align="center" colspan="2"><a href="docs/distillation.md">Distillation</a></td>
-    <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/optimization/pytorch/huggingface/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
+    <td align="center" colspan="2"><a href="examples/optimization/pytorch/huggingface/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
   </tr>
   <tr>
     <td align="center" colspan="2"><a href="https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/language-modeling/nas">Neural Architecture Search</a></td>
@@ -102,7 +102,7 @@ output = model(**input).logits.argmax().item()
   <tr>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.md">Model Compilation</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.md">Custom Pattern</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/Deploy and Integration.md">Deployment</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/deploy_and_integration.md">Deployment</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.md">Profiling</a></td>
   </tr>
   <tr>
