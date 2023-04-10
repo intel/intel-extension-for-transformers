@@ -46,7 +46,7 @@ export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
 # End-to-End Workflow
-## Prepare Models
+## 1. Prepare Models
 
 The stable diffusion mainly includes three onnx models: text_encoder, unet, vae_decoder.
 
@@ -54,7 +54,7 @@ The pretrained model [CompVis/stable-diffusion-v1-4](https://huggingface.co/Comp
 
 Here we take CompVis/stable-diffusion-v1-4 as an example.
 
-### Download Models
+### 1.1 Download Models
 Export FP32 ONNX models from the hugginface diffusers module, command as follows:
 
 ```python
@@ -66,7 +66,7 @@ By setting --bf16 to export FP32 and BF16 models.
 python prepare_model.py --input_model=CompVis/stable-diffusion-v1-4 --output_path=./model --bf16
 ```
 
-### Compile Models
+### 1.2 Compile Models
 Export three FP32 onnx sub models of the stable diffusion to Nerual Engine IRs.
 
 ```bash
@@ -105,7 +105,7 @@ python export_ir.py --onnx_model=./model/unet_bf16/model.onnx --pattern_config=u
 python export_ir.py --onnx_model=./model/vae_decoder_bf16/bf16-model.onnx --pattern_config=vae_decoder_pattern.conf --output_path=./bf16_ir/vae_decoder/
 ```
 
-## Performance
+## 2. Performance
 
 Python API command as follows:
 ```python
@@ -116,7 +116,7 @@ GLOG_minloglevel=2 python run_executor.py --ir_path=./fp32_ir --mode=performance
 GLOG_minloglevel=2 python run_executor.py --ir_path=./bf16_ir --mode=performance
 ```
 
-## Accuracy
+## 3. Accuracy
 Frechet Inception Distance(FID) metric is used to evaluate the accuracy. This case we check the FID scores between the pytorch image and engine image.
 
 By setting --accuracy to check FID socre.
@@ -129,7 +129,7 @@ GLOG_minloglevel=2 python run_executor.py --ir_path=./fp32_ir --mode=accuracy
 GLOG_minloglevel=2 python run_executor.py --ir_path=./bf16_ir --mode=accuracy
 ```
 
-## Text-to-image
+## 4. Try Text to Image
 
 Try using one sentence to create a picture!
 
