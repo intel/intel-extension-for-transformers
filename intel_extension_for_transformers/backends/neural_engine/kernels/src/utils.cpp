@@ -113,8 +113,17 @@ void init_vector(T* v, int num_size, float range1, float range2, int seed) {
 DECLARE_INIT_VECTOR(float)
 DECLARE_INIT_VECTOR(int32_t)
 DECLARE_INIT_VECTOR(uint8_t)
-DECLARE_INIT_VECTOR(uint16_t)
 DECLARE_INIT_VECTOR(int8_t)
+
+// Range of bf16 should be almost the same as that of fp32
+template <>
+void init_vector<bfloat16_t>(bfloat16_t* v, int num_size, float range1, float range2, int seed) {
+  std::mt19937 gen(seed);
+  std::uniform_real_distribution<float> u(range1, range2);
+  for (int i = 0; i < num_size; ++i) {
+    v[i] = cast_to<bfloat16_t>(u(gen));
+  }
+}
 
 template <typename T>
 struct s_is_u8s8 {
@@ -235,7 +244,7 @@ inline bool all_zeros(const T* data, dim_t ld, dim_t nd1, dim_t nd2) {
 template bool all_zeros<float>(const float*, dim_t, dim_t, dim_t);
 
 int get_data_size(jd::data_type dt) {
-  // use at instead ofoperator[] to raise an exception for invalid type
+  // use at() instead of operator[] to raise an exception for invalid type
   return jd::type_size.at(dt);
 }
 

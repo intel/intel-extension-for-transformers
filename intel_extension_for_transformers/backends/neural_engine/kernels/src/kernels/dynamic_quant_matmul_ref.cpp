@@ -116,8 +116,7 @@ std::vector<int8_t> reorder_back(const int8_t* reorder_mat, int k, int n) {
   std::vector<int8_t> reorder_back_mat(k * n, 0);
 #pragma omp parallel for
   for (int i = 0; i < k / 4; i++)
-    for (int j = 0; j < n * 4; j++)
-      reorder_back_mat[j % 4 * n + j / 4 + i * 4 * n] = trans_back_buf[i * 4 * pad_n + j];
+    for (int j = 0; j < n * 4; j++) reorder_back_mat[j % 4 * n + j / 4 + i * 4 * n] = trans_back_buf[i * 4 * pad_n + j];
   return reorder_back_mat;
 }
 
@@ -133,7 +132,7 @@ bool dynamic_quant_matmul_ref_k_t::execute(const std::vector<const void*>& rt_da
   auto scale_dst = reinterpret_cast<float*>(const_cast<void*>(rt_data[5]));
   auto* bias = add_bias ? static_cast<const float*>(rt_data[7]) : nullptr;
   std::vector<float> fp32_dst_mat(prob_size[batch] * prob_size[m] * prob_size[n], 0);
-  gemm(l_mat,const_cast<const int8_t*>(reorder_back_mat.data()), fp32_dst_mat.data(), prob_size[batch], prob_size[m],
+  gemm(l_mat, const_cast<const int8_t*>(reorder_back_mat.data()), fp32_dst_mat.data(), prob_size[batch], prob_size[m],
        prob_size[n], prob_size[k]);
   dequant_add_bias(fp32_dst_mat.data(), scale_a, scale_w, prob_size[batch], prob_size[m], prob_size[n], add_bias, bias);
   get_dynamic_quant_scale(fp32_dst_mat.data(), scale_dst, prob_size[batch], prob_size[m], prob_size[n]);

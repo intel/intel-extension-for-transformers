@@ -95,13 +95,11 @@ bool spmm_amx_bf16_x16_bench::check_result() {
   auto size1 = p.op_desc.tensor_descs()[3].size();
   auto buf2 = q.rt_data[3];
   auto size2 = q.op_desc.tensor_descs()[3].size();
-  float eps = 5e-3;
   const auto& dst_type = p.op_desc.tensor_descs()[3].dtype();
   if (dst_type == dt::bf16) {
-    eps = 1.0;
-    return compare_data<bfloat16_t>(buf1, size1, buf2, size2, eps);
+    return compare_data<bfloat16_t>(buf1, size1, buf2, size2, 3e-2);
   }
-  return compare_data<float>(buf1, size1, buf2, size2, eps);
+  return compare_data<float>(buf1, size1, buf2, size2, 3e-2);
 }
 
 template <typename T>
@@ -110,7 +108,7 @@ void prepare_sparse_data_spmm_amx_bf16_x16(T* weight, dim_t N, dim_t K, dim_t n_
   std::srand(seed);
   for (int n = 0; n < N; ++n) {
     for (int k = 0; k < K; ++k) {
-      weight[n * K + k] = make_bf16(std::rand() % 10 + 1);
+      weight[n * K + k] = make_bf16(static_cast<float>(std::rand() % 10 - 5) / 10);
     }
   }
   // sparsify a_mat

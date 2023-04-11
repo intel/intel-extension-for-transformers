@@ -94,10 +94,12 @@ DECLARE_INIT_VECTOR(float)
 DECLARE_INIT_VECTOR(int)
 DECLARE_INIT_VECTOR(uint8_t)
 DECLARE_INIT_VECTOR(int8_t)
-DECLARE_INIT_VECTOR(uint16_t)
 
 #undef DECLARE_INIT_VECTOR
 #endif
+
+template <>
+SPARSE_API_ void init_vector<bfloat16_t>(bfloat16_t* v, int num_size, float range1, float range2, int seed);
 
 template <typename T>
 bool SPARSE_API_ compare_data(const void* buf1, int64_t size1, const void* buf2, int64_t size2, float eps = 1e-6);

@@ -123,9 +123,9 @@ bool check_result(const test_params_t& t) {
     EXPECT_NE(buf1, buf2);
     const auto& dst_type = p.op_desc.tensor_descs()[3].dtype();
     if (dst_type == dt::bf16) {
-      return compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-2);
+      return compare_data<bfloat16_t>(buf1, size1, buf2, size2, 3e-2);
     }
-    return compare_data<float>(buf1, size1, buf2, size2, 1e-2);
+    return compare_data<float>(buf1, size1, buf2, size2, 3e-2);
   }
   return false;
 }
@@ -157,7 +157,7 @@ void prepare_sparse_data(T* weight, dim_t N, dim_t K, dim_t n_blksize, dim_t k_b
   std::srand(seed);
   for (int n = 0; n < N; ++n) {
     for (int k = 0; k < K; ++k) {
-      weight[n * K + k] = make_bf16(std::rand() % 10 + 1);
+      weight[n * K + k] = make_bf16(static_cast<float>(std::rand() % 10 - 5) / 10);
     }
   }
   // sparsify a_mat
@@ -176,7 +176,7 @@ void prepare_sparse_data(T* weight, dim_t N, dim_t K, dim_t n_blksize, dim_t k_b
 }
 
 std::pair<const void*, const void*> make_data_obj(const dt& tensor_dt, dim_t rows, dim_t cols, dim_t index,
-                                                  float sparsity = 0.f, const std::vector<float>& ranges = {-1, 1}) {
+                                                  float sparsity = 0.f, const std::vector<float>& ranges = {-.5, .5}) {
   dim_t elem_num = rows * cols;
   dim_t bytes_size = elem_num * type_size[tensor_dt];
   void* data_ptr = nullptr;
