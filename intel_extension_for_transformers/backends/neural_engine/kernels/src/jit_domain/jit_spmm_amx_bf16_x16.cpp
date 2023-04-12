@@ -137,7 +137,7 @@ void jit_spmm_amx_bf16_x16_t::main_compute() {
     for (int i = 0; i < TILE_N; ++i) {
       vpbroadcastd(Xbyak::Zmm(i), ptr[reg_bia + (b_row * TILE_N + i) * size_of_out_t]);
       for (int j = 0; j < NUM_M * TILE_M; j += TILE_M) {
-        vmovdqu32(Xbyak::Zmm(j / TILE_M + TILE_N), ptr[rsp + (0x40) + (j * TILE_N + i * TILE_M) * size_of_dst_t]);
+        vmovdqu32(Xbyak::Zmm(j / TILE_M + TILE_N), ptr[rsp + (0x40) + (j * TILE_N + i * TILE_M) * size_of_out_t]);
         vaddps(Xbyak::Zmm(j / TILE_M + TILE_N), Xbyak::Zmm(j / TILE_M + TILE_N), Xbyak::Zmm(i));
         postop_and_store_dst(i, j);
       }
