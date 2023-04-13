@@ -22,6 +22,7 @@ from datasets import load_metric
 from transformers import EvalPrediction
 import sys
 import os
+import copy
 
 common_dir = os.path.join(sys.path[0], "../..")
 sys.path.append(common_dir)
@@ -49,7 +50,7 @@ class Neural_Engine(Neural_Engine_base):
         end_logits_list = []
         for idx in tqdm(range(len(dataset))):
             inputs = dataset[idx]
-            predictions = self.graph.inference(inputs)
+            predictions = copy.deepcopy(self.graph.inference(inputs))
             predictions = list(predictions.values())[0]
             start_logits_list.append(predictions[..., 0])
             end_logits_list.append(predictions[..., 1])
