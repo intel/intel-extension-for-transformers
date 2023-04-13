@@ -1,6 +1,6 @@
 {
   "gpt_neo_clm_static": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -21,7 +21,7 @@
     }
   },
   "bloom_text_static": {
-    "working_dir": "optimization/pytorch/huggingface/text_generation/quantization/inc",
+    "working_dir": "huggingface/pytorch/text_generation/quantization",
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -42,7 +42,7 @@
     }
   },
   "bloom_text_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/text_generation/quantization/inc",
+    "working_dir": "huggingface/pytorch/text_generation/quantization",
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -63,7 +63,7 @@
     }
   },
   "gpt_neo_clm_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -84,7 +84,7 @@
     }
   },
   "gptj_clm_static": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -105,7 +105,7 @@
     }
   },
   "gptj_clm_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -126,7 +126,7 @@
     }
   },
   "bert_mlm_static": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -147,7 +147,7 @@
     }
   },
   "bert_mlm_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -168,7 +168,7 @@
     }
   },
   "xlnet_plm_static": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -189,7 +189,7 @@
     }
   },
   "xlnet_plm_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -210,7 +210,7 @@
     }
   },
   "gpt_neox_clm_static": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -232,7 +232,7 @@
     }
   },
   "gpt_neox_clm_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -253,7 +253,7 @@
     }
   },
   "bloom_clm_static": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -274,7 +274,7 @@
     }
   },
   "bert_base_swag_static": {
-    "working_dir": "optimization/pytorch/huggingface/multiple-choice/quantization/inc",
+    "working_dir": "huggingface/pytorch/multiple-choice/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -295,7 +295,7 @@
     }
   },
   "bert_base_swag_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/multiple-choice/quantization/inc",
+    "working_dir": "huggingface/pytorch/multiple-choice/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -316,7 +316,7 @@
     }
   },
   "distilbert_base_squad_static": {
-    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "working_dir": "huggingface/pytorch/question-answering/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -337,7 +337,7 @@
     }
   },
   "distilbert_base_squad_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "working_dir": "huggingface/pytorch/question-answering/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -358,7 +358,7 @@
     }
   },
   "longformer_base_squad_static": {
-    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "working_dir": "huggingface/pytorch/question-answering/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -379,7 +379,7 @@
     }
   },
   "longformer_base_squad_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "working_dir": "huggingface/pytorch/question-answering/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -400,7 +400,7 @@
     }
   },
   "bert_base_mrpc_qat": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/qat",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/qat",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -421,7 +421,7 @@
     }
   },
   "bert_base_mrpc_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -442,7 +442,7 @@
     }
   },
   "bert_base_mrpc_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -463,7 +463,7 @@
     }
   },
   "bert_base_SST-2_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -484,7 +484,7 @@
     }
   },
   "bert_base_SST-2_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -505,7 +505,7 @@
     }
   },
   "bert_base_CoLA_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -526,7 +526,7 @@
     }
   },
   "bert_base_STS-B_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -547,7 +547,7 @@
     }
   },
   "bert_base_RTE_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -568,7 +568,7 @@
     }
   },
   "bert_large_CoLA_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -589,7 +589,7 @@
     }
   },
   "bert_large_MRPC_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -610,7 +610,7 @@
     }
   },
   "bert_large_QNLI_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -631,7 +631,7 @@
     }
   },
   "xlnet_base_SST-2_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -652,7 +652,7 @@
     }
   },
   "bert_large_SQuAD_static": {
-    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "working_dir": "huggingface/pytorch/question-answering/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -673,7 +673,7 @@
     }
   },
   "roberta_base_SST-2_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -694,7 +694,7 @@
     }
   },
   "camembert_base_XNLI_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -715,7 +715,7 @@
     }
   },
   "funnel_small_MRPC_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -736,7 +736,7 @@
     }
   },
   "xlm_roberta_large_XNLI_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -757,7 +757,7 @@
     }
   },
   "distillbert_base_SST-2_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -778,7 +778,7 @@
     }
   },
   "distillbert_base_SST-2_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -799,7 +799,7 @@
     }
   },
   "distilbert_base_ner_static": {
-    "working_dir": "optimization/pytorch/huggingface/token-classification/quantization/inc",
+    "working_dir": "huggingface/pytorch/token-classification/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -820,7 +820,7 @@
     }
   },
   "distilbert_base_ner_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/token-classification/quantization/inc",
+    "working_dir": "huggingface/pytorch/token-classification/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -841,7 +841,7 @@
     }
   },
   "ctrl_wikitext_static": {
-    "working_dir": "optimization/pytorch/huggingface/language-modeling/quantization/inc",
+    "working_dir": "huggingface/pytorch/language-modeling/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -862,7 +862,7 @@
     }
   },
   "pegasus_samsum_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/summarization/quantization",
+    "working_dir": "huggingface/pytorch/summarization/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -883,7 +883,7 @@
     }
   },
   "t5-small_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/translation/quantization",
+    "working_dir": "huggingface/pytorch/translation/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -904,7 +904,7 @@
     }
   },
   "marianmt_WMT_en_ro_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/translation/quantization",
+    "working_dir": "huggingface/pytorch/translation/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -925,7 +925,7 @@
     }
   },
   "bert_large_squad_ipex": {
-    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "working_dir": "huggingface/pytorch/question-answering/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -946,7 +946,7 @@
     }
   },
   "distilbert_base_squad_ipex": {
-    "working_dir": "optimization/pytorch/huggingface/question-answering/quantization/inc",
+    "working_dir": "huggingface/pytorch/question-answering/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -967,7 +967,7 @@
     }
   },
   "bert_base_SST-2_static_no_trainer": {
-    "working_dir": "optimization/pytorch/huggingface/text-classification/quantization/inc/ptq",
+    "working_dir": "huggingface/pytorch/text-classification/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -988,7 +988,7 @@
     }
   },
   "vit-base-patch16-224_static": {
-    "working_dir": "optimization/pytorch/huggingface/image-classification/quantization/inc",
+    "working_dir": "huggingface/pytorch/image-classification/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1010,7 +1010,7 @@
     }
   },
   "sd_pokemon_diffusers_static": {
-    "working_dir": "optimization/pytorch/huggingface/text-to-image/quantization/inc",
+    "working_dir": "huggingface/pytorch/text-to-image/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1031,7 +1031,7 @@
     }
   },
   "sd_pokemon_diffusers_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/text-to-image/quantization/inc",
+    "working_dir": "huggingface/pytorch/text-to-image/quantization/",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1052,7 +1052,7 @@
     }
   },
   "t5_base_cnn_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/summarization/quantization",
+    "working_dir": "huggingface/pytorch/summarization/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1073,7 +1073,7 @@
     }
   },
   "t5_large_cnn_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/summarization/quantization",
+    "working_dir": "huggingface/pytorch/summarization/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1094,7 +1094,7 @@
     }
   },
   "flan_t5_large_samsum_dynamic": {
-    "working_dir": "optimization/pytorch/huggingface/summarization/quantization",
+    "working_dir": "huggingface/pytorch/summarization/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1115,7 +1115,7 @@
     }
   },
   "flan_t5_large_samsum_static": {
-    "working_dir": "optimization/pytorch/huggingface/summarization/quantization",
+    "working_dir": "huggingface/pytorch/summarization/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
