@@ -32,7 +32,7 @@ def get_node_name(node):
         node_names[node] = name
         return name
 
-op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant', 'prim::ListConstruct': 'ListConstruct',
+op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant',
            'aten::linear': 'InnerProduct', 'aten::slice': 'Slice', 'aten::unsqueeze': 'Unsqueeze',
            'aten::embedding': 'Gather', 'aten::where': 'Where', 'aten::matmul': 'Matmul', 'aten::gelu': 'Gelu',
            'aten::layer_norm': 'LayerNorm', 'aten::size': 'Shape', 'aten::view': 'View',
@@ -43,7 +43,11 @@ op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant', 'prim::List
            'aten::rsub': 'Rsub', 'aten::mul': 'Mul', 'aten::add': 'Add', 'aten::add_': 'Add', 'aten::div': 'Div',
            'aten::sub': 'Sub', 'aten::gt': 'Greater', 'aten::lt': 'Less', 'aten::eq': 'Equal', 'aten::ne': 'NotEqual',
            'aten::quantize_per_tensor': 'Quantize', 'aten::dequantize': 'Dequantize',
-           'aten::padding_sequence': 'PaddingSequence'}
+           'aten::padding_sequence': 'PaddingSequence', 'aten::expand': 'Expand', 'aten::masked_fill': 'Masked_fill',
+           'aten::floor_divide': 'Floor_divide', 'aten::max': 'Max', 'aten::mean': 'Mean', 'aten::reshape': 'Reshape',
+           'aten::rsqrt': 'Rsqrt', 'aten::silu': 'Silu',
+           'prim::ListUnpack': 'ListUnpack', 'prim::ListConstruct': 'ListConstruct',
+           'prim::TupleUnpack': 'TupleUnpack', 'prim::TupleConstruct': 'TupleConstruct'}
 
 def torch_extract_operator(node, model, nodes_dict, engine_graph=None):
     """Decorate the operator in Torch.

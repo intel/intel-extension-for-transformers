@@ -38,25 +38,6 @@ def removeUnusedNode(graph, unused_nodes):
             out_val.replaceAllUsesWith(in_val)
             remove_list.append(node)
 
-    # remove ListConstruct followed by cat/stack/einsum
-    for node in graph.nodes():
-        if node.kind() == 'prim::ListConstruct' and node.outputsAt(0).type().str() in ['Tensor[]', 'int[]']:
-            out_val = node.outputsAt(0)
-            for val_user in out_val.uses():
-                next_node = val_user.user
-                if next_node.kind() in ['aten::cat', 'aten::stack']:
-                    for i in range(node.inputsSize()):
-                        next_node.addInput(node.inputsAt(i))
-                    next_node.addInput(next_node.inputsAt(1))
-                    next_node.removeInput(0)
-                    next_node.removeInput(0)
-                    remove_list.append(node)
-                elif next_node.kind() in ['aten::einsum', 'aten::view']:
-                    for i in range(node.inputsSize()):
-                        next_node.addInput(node.inputsAt(i))
-                    next_node.removeInput(1)
-                    remove_list.append(node)
-
     for node in remove_list:
         node.destroy()
 
@@ -64,7 +45,8 @@ def fuse_padding_seq(graph):
     old_g = """
             graph(%input_ids.1, %attention_mask.1, %3, %4, %5, %6, %7, %8, %9, %10):
                 %11 : int = aten::size(%input_ids.1, %9)
-                %attention_mask0.1 : Tensor = aten::view(%attention_mask.1, %11, %8)
+                %12 : int[] = prim::ListConstruct(%11, %8)
+                %attention_mask0.1 : Tensor = aten::view(%attention_mask.1, %12)
                 %14 : Tensor = aten::slice(%attention_mask0.1, %9, %9, %7, %6)
                 %15 : Tensor = aten::unsqueeze(%14, %6)
                 %16 : Tensor = aten::unsqueeze(%15, %5)
@@ -99,7 +81,7 @@ class TorchExtractor(object):
         graph, _ = torch._C._jit_pass_lower_graph(model.graph, model._c)
         torch._C._jit_pass_dce(graph)
         torch._C._jit_pass_remove_inplace_ops(graph)
-        torch._C._jit_pass_lower_all_tuples(graph)
+        # torch._C._jit_pass_lower_all_tuples(graph)
         torch._C._jit_pass_constant_propagation(graph)
         removeUnusedNode(graph, ['aten::dropout', 'prim::NumToTensor', 'aten::to', 'aten::contiguous',
                                  'aten::alias', 'aten::Int', 'aten::ScalarImplicit'])

@@ -103,6 +103,7 @@ supported_patterns = [
     'CastTo',
 
     # GPT-J
+    'LowerAllTuples',
     'TorchEmbedding',
     'InnerproductReshapeFusion',
     'MatMulWithTranspose',

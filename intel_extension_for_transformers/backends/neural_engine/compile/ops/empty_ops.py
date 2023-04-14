@@ -562,3 +562,38 @@ class LatRange(Operator):
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
+@operator_registry(operator_type='Masked_fill')
+class Masked_fill(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Floor_divide')
+class Floor_divide(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Max')
+class Max(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='ListUnpack')
+class ListUnpack(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+
+@operator_registry(operator_type='Silu')
+class Silu(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
