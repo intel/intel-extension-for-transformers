@@ -23,7 +23,6 @@
 #include <string>
 #include <thread>  // NOLINT
 #include <vector>
-#include <set>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 
@@ -51,8 +50,6 @@ class MemoryAllocator {
   typedef std::map<string, bool> StrategyList;
   typedef std::map<std::thread::id, MemoryBuffer*> TreadMemory;
   typedef std::map<std::thread::id, BufferName*> TreadName;
-  typedef std::map<size_t, std::set<void*>> FreeMemoryIndex;
-  typedef std::map<std::thread::id, FreeMemoryIndex*> ThreadFreeMemoryIndex;
 
   static char* SharedEnv(char* env_name = "WEIGHT_SHARING") {
     static char* shared_env = getenv(env_name);
@@ -74,17 +71,6 @@ class MemoryAllocator {
       t_memory[id] = new MemoryBuffer();
     }
     return *(t_memory[id]);
-  }
-
-  static FreeMemoryIndex* GetFreeMemoryIndex() {
-    static ThreadFreeMemoryIndex free_mem_index;
-    // (TODO) it's not good for each thread to obtain a MemoryBuffer
-    std::thread::id id = std::this_thread::get_id();
-    auto count = free_mem_index.count(id);
-    if (count == 0) {
-      free_mem_index[id] = new FreeMemoryIndex();
-    }
-    return free_mem_index[id];
   }
 
   static BufferName& Name() {
@@ -171,17 +157,6 @@ class MemoryAllocator {
     }
   }
 
-  static void feed_cycle_buffer(void* data, size_t size) {
-    auto free_mem_index = GetFreeMemoryIndex();
-    (*free_mem_index)[size].insert(data);
-  }
-
-  static void mark_cycle_buffer_used(void* data, size_t size) {
-    auto free_mem_index = GetFreeMemoryIndex();
-    auto free_mem_list = free_mem_index->find(size);
-    if (free_mem_list != free_mem_index->end()) free_mem_list->second.erase(data);
-  }
-
   // set the data buffer a new life count
   static void ResetMemory(void* data, const int life_count) {
     MemoryBuffer& memory_buffer = Buffer();
@@ -189,12 +164,6 @@ class MemoryAllocator {
     auto iter = memory_buffer.find(data);
     if (iter != memory_buffer.end()) {
       iter->second[0] = life_count;
-      auto size = iter->second[1];
-      if (life_count == 0 && strategy_list["cycle_buffer"] == true) {
-        feed_cycle_buffer(data, size);
-      } else if (life_count > 0 && strategy_list["cycle_buffer"] == true) {
-        mark_cycle_buffer_used(data, size);
-      }
     } else {
       DLOG(WARNING) << "reset a not existing memory pointer...";
     }
@@ -224,8 +193,6 @@ class MemoryAllocator {
           auto free_ptr = iter->first;
           i_free(free_ptr);
           memory_buffer.erase(free_ptr);
-        } else {
-          if (data != nullptr) feed_cycle_buffer(data, iter->second[1]);
         }
       }
     } else {
@@ -262,19 +229,25 @@ class MemoryAllocator {
   static void* CycleBufferGetMemory(size_t size, const int life_count) {
     MemoryBuffer& memory_buffer = Buffer();
     DLOG(INFO) << "cycle buffer tensor size is " << memory_buffer.size();
-    auto free_mem_index = GetFreeMemoryIndex();
-    auto good_size_mem_list = free_mem_index->lower_bound(size);
-    if (good_size_mem_list != free_mem_index->end()) {
-      auto iter = good_size_mem_list->second.begin();
-      while (iter != good_size_mem_list->second.end()) {
-        good_size_mem_list->second.erase(iter);
-        if (*iter != nullptr) {
-          memory_buffer[*iter] = vector<size_t>({static_cast<size_t>(life_count), good_size_mem_list->first});
-          return *iter;
+    for (auto iter = memory_buffer.begin(); iter != memory_buffer.end(); ++iter) {
+      auto buffer_count = iter->second[0];
+      auto buffer_size = iter->second[1];
+      if (buffer_count == 0) {
+        if (size > buffer_size) {
+          auto free_ptr = iter->first;
+          aligned_free(free_ptr);
+          memory_buffer.erase(free_ptr);
+          // allocate new buffer
+          void* buf = reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (size / ALIGNMENT + 1) * ALIGNMENT));
+          memory_buffer.insert({buf, vector<size_t>({static_cast<size_t>(life_count), size})});
+          return buf;
+        } else {
+          memory_buffer[iter->first] = vector<size_t>({static_cast<size_t>(life_count), buffer_size});
+          return iter->first;
         }
-        iter++;
       }
     }
+    // allocate new buffer
     void* buf = reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (size / ALIGNMENT + 1) * ALIGNMENT));
     memory_buffer.insert({buf, vector<size_t>({static_cast<size_t>(life_count), size})});
     return buf;
