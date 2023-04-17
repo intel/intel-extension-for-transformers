@@ -93,7 +93,7 @@ def parse_args():
                         type=str,
                         help="output picture name.")
     parser.add_argument("--mode", type=str,
-                        help="Benchmark mode of performance or accuracy.")
+                        help="Benchmark mode of latency or accuracy.")
     return parser.parse_args()
 
 
@@ -102,7 +102,7 @@ def main():
     pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model)
     neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path)
 
-    if args.mode == "performance":
+    if args.mode == "latency":
         benchmark(pipe, neural_engine_graph)
         return
 

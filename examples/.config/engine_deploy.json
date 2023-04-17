@@ -498,7 +498,7 @@
     }
   },
   "gpt-j-6b": {
-    "working_dir": "huggingface/pytorch/text-generation/deployment/gpt-j",
+    "working_dir": "huggingface/pytorch/text-generation/deployment",
     "data_dir": " ",
     "hf_model_name": "EleutherAI/gpt-j-6B",
     "prepare": {

@@ -23,7 +23,7 @@ from transformers import EvalPrediction
 import sys
 import os
 
-common_dir = os.path.join(sys.path[0], "../..")
+common_dir = os.path.join(sys.path[0], "../")
 sys.path.append(common_dir)
 from utils_qa import postprocess_qa_predictions
 from executor_dataloader import DataLoader
