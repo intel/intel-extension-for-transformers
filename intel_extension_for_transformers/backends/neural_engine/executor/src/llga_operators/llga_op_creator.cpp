@@ -685,7 +685,7 @@ bool LLGAOPCreator::CreateDequantizeOp(LLGAINFO* llga_info, const shared_ptr<Ope
   Tensor* scales = llga_info->GetTensorByID(inputs[1].get_id());
   float* scales_data = static_cast<float*>(scales->mutable_data());
   vector<float> scales_vec(scales_data, scales_data + scales_size);
-  dequantize_op.set_attr<vector<float>>("scales", scales_vec);
+  dequantize_op.set_attr<vector<float>>(llga_op::attr::scales, scales_vec);
 
   // set zps
   vector<int64_t> zps_vec;
@@ -716,12 +716,12 @@ bool LLGAOPCreator::CreateDequantizeOp(LLGAINFO* llga_info, const shared_ptr<Ope
       }
     }
   } else {  // zps is not optional
-    zps_vec.push_back(0);
+    zps_vec.resize(scales_vec.size(), 0);
   }
-  dequantize_op.set_attr<vector<int64_t>>("zps", zps_vec);
+  dequantize_op.set_attr<vector<int64_t>>(llga_op::attr::zps, zps_vec);
 
-  dequantize_op.set_attr<string>("qtype", qtype);
-  dequantize_op.set_attr<int64_t>("axis", axis);
+  dequantize_op.set_attr<string>(llga_op::attr::qtype, qtype);
+  dequantize_op.set_attr<int64_t>(llga_op::attr::axis, axis);
 
   llga_info->AddLLGAOP(dequantize_op, index);
   return true;
