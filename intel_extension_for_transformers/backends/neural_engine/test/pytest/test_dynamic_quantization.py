@@ -23,6 +23,7 @@ from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor 
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 import numpy as np
 import os
+import copy
 
 
 class TestDynamicQuantization(unittest.TestCase):
@@ -226,9 +227,9 @@ class TestDynamicQuantization(unittest.TestCase):
             av_node, output_node
         ])
         input_data = np.ones((32, 256), dtype="float32")
-        fp32_result = graph.inference([input_data])
+        fp32_result = copy.deepcopy(graph.inference([input_data]))
         int8_model = _dynamic_quantization(graph)
-        int8_result = int8_model.inference([input_data])
+        int8_result = copy.deepcopy(int8_model.inference([input_data]))
         flag = np.allclose(int8_result["qk"], fp32_result["qk"], rtol=2)
         self.assertEqual(True, flag)
 

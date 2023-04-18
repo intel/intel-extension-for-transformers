@@ -22,6 +22,7 @@ import os
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+import copy
 
 
 class TestExecutionOptions(unittest.TestCase):
@@ -62,13 +63,13 @@ class TestExecutionOptions(unittest.TestCase):
         graph.execution_options = options
         output_tuning = []
         for i in range(10):
-            out = graph.inference([data])
+            out = copy.deepcopy(graph.inference([data]))
             output_tuning.append(out['ip:0'])
         output_inference = []
         options.enable_op_tuning = False
         graph.execution_options = options
         for i in range(10):
-            out = graph.inference([data])
+            out = copy.deepcopy(graph.inference([data]))
             output_inference.append(out['ip:0'])
         flag = np.allclose(np.array(output_tuning), np.array(output_inference), atol=1e-1,
                            equal_nan=True)
