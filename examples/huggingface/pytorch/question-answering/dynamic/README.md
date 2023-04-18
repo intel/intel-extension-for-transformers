@@ -12,6 +12,7 @@ Quantized Length Adaptive Transformer is based on [Length Adaptive Transformer](
 pip install intel-extension-for-transformers
 pip install -r requirements.txt
 ```
+  >*Note: Suggest use PyTorch 1.12.0 and Intel Extension for PyTorch 1.12.0
 
 # Run
 
