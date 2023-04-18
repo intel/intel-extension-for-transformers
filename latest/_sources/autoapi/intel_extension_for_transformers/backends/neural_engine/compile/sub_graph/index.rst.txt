@@ -48,6 +48,7 @@ Submodules
    layer_norm/index.rst
    layer_norm_with_reduce_mean/index.rst
    layer_norm_with_transpose/index.rst
+   lower_all_tuples/index.rst
    matmul_with_bias/index.rst
    matmul_with_bias_add/index.rst
    matmul_with_bias_gelu/index.rst
@@ -68,7 +69,6 @@ Submodules
    quantized_graph_dtype_refactor/index.rst
    remove_constant_op/index.rst
    remove_last_view/index.rst
-   remove_list_construct/index.rst
    remove_range/index.rst
    removeslice/index.rst
    reshape_after_restore_hidden_states/index.rst

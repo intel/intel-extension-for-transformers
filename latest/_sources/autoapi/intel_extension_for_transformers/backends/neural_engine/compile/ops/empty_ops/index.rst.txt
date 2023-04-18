@@ -76,6 +76,11 @@ Classes
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Constant
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ListConstruct
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.LatRange
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Masked_fill
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Floor_divide
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Max
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ListUnpack
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Silu
 
 
 
@@ -487,6 +492,41 @@ Classes
 
 
 .. py:class:: LatRange
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Masked_fill
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Floor_divide
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Max
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: ListUnpack
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Silu
 
 
 
