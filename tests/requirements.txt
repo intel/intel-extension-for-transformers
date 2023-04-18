@@ -13,4 +13,4 @@ intel-extension-for-pytorch
 tokenizers<=0.12.1
 transformers>=4.12.0, <=4.26.0
 sentencepiece != 0.1.92
-git+https://github.com/EleutherAI/lm-evaluation-harness.git
+git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3

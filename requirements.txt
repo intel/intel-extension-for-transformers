@@ -3,4 +3,4 @@ numpy
 packaging
 protobuf --no-binary=protobuf
 transformers>=4.12.0
-git+https://github.com/EleutherAI/lm-evaluation-harness.git
+git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
