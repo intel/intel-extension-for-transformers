@@ -150,7 +150,7 @@ q_config = QuantizationConfig(
 )
 model = trainer.quantize(quant_config=q_config)
 ```
-Please refer to [quantization example](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimize/pytorch/huggingface/text-classification/quantization/inc/run_glue.py) for the details.
+Please refer to [quantization example](../examples/huggingface/pytorch/text-classification/quantization/run_glue.py) for the details.
 
 ### Create an Instance of Metric
 The Metric defines which metric will be used to measure the performance of tuned models.
