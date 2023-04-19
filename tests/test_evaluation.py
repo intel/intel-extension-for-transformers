@@ -2,7 +2,7 @@ import os
 import unittest
 import shutil
 import torch
-from intel_extension_for_transformers.evaluation.lm_evaluation_harness.evaluator import evaluate
+from intel_extension_for_transformers.evaluation import evaluate
 from transformers import (
     AutoModelForCausalLM
 )

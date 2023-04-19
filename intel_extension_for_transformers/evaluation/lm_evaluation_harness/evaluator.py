@@ -17,6 +17,7 @@
 
 import os
 import random
+import time
 import numpy as np
 import json
 
@@ -134,7 +135,10 @@ def evaluate(model,
     
     dumped = json.dumps(results, indent=2)
     if output_dir:
-        with open(os.path.abspath(os.path.expanduser(output_dir)) + "/results.json", "w") as f:
+        now = int(round(time.time()*1000))
+        date = now02 = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(now/1000))
+        results_name = model_args.split(",")[0].replace("/", "-") + "-" + date + "-"+ "results.json"
+        with open(os.path.abspath(os.path.expanduser(output_dir)) + "/" + results_name, "w") as f:
             f.write(dumped)
 
     return results

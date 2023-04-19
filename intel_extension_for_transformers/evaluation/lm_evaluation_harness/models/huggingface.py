@@ -400,9 +400,10 @@ class AutoCausalLM(HuggingFaceAutoLM):
     def _model_call(
         self, inputs: TokenSequence, labels: Optional[TokenSequence] = None
     ) -> TokenSequence:
-        if isinstance(self.model, torch.jit._script.RecursiveScriptModule):
-            return self.model(inputs)[0]
-        return self.model(inputs)["logits"]
+        output = self.model(inputs)
+        if isinstance(output, tuple):
+            return output[0]
+        return output["logits"]
 
     def _model_generate(
         self,
