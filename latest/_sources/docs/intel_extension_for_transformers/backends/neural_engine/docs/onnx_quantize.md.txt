@@ -1,12 +1,12 @@
 # Quantize a ONNX model to engine low precision/int8 IR
 
 ## Design
-Quantizing a ONNX model to engine low precision/int8 IR has two steps: 1. Convert ONNX model to engine float IR; 2. Quantize float IR to low precision/int8 IR. The first step will be finished in engine compile. We focus on the second step how to quantize a float engine IR to low precision IR in INC. The whole is in examples/engine/nlp/bert_base_mrpc.
+Quantizing a ONNX model to engine low precision/int8 IR has two steps: 1. Convert ONNX model to engine float IR; 2. Quantize float IR to low precision/int8 IR. The first step will be finished in engine compile. We focus on the second step how to quantize a float engine IR to low precision IR in INC.
 
 ## Prerequisite
 ### Install environment
 ```shell
-cd <nc_folder>/examples/deepengine/nlp/distilbert_base_uncased_mrpc
+cd ${HOME}/examples/huggingface/pytorch/text-classification/deployment/mrpc/distilbert_base_uncased
 conda create -n <env name> python=3.7
 conda activate <env name>
 pip install -r requirements.txt

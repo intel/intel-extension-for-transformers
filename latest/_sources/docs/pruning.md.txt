@@ -33,7 +33,7 @@ pruner_config = PrunerConfig(prune_type='BasicMagnitude', target_sparsity_ratio=
 p_conf = PruningConfig(pruner_config=[pruner_config], metrics=metric)
 model = trainer.prune(pruning_config=p_conf)
 ```
-Please refer to [example](https://github.com/intel/intel-extension-for-transformers/tree/main/examples/optimization/pytorch/huggingface/text-classification/pruning) for the details.
+Please refer to [example](../examples/huggingface/pytorch/text-classification/pruning) for the details.
 
 ### Create an instance of Metric
 The Metric defines which metric will be used to measure the performance of tuned models.

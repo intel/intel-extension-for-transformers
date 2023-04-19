@@ -61,7 +61,7 @@ model = trainer.distill(
 )
 ```
 
-Please refer to [example](../examples/optimize/pytorch/huggingface/text-classification/distillation/run_glue.py) for the details.
+Please refer to [example](../examples/huggingface/pytorch/text-classification/distillation/run_glue.py) for the details.
 
 ### Tensorflow Script:
 ```python
@@ -81,7 +81,7 @@ distilled_model = optimizer.distill(
             distillation_config=distillation_conf,
             teacher_model=teacher_model)
 ```
-Please refer to [example](../examples/optimization/tensorflow/huggingface/text-classification/distillation/run_glue.py) for the details.
+Please refer to [example](../examples/huggingface/tensorflow/text-classification/distillation/run_glue.py) for the details.
 ### Create an Instance of Metric
 The Metric defines which metric will be used to measure the performance of tuned models.
 - example:

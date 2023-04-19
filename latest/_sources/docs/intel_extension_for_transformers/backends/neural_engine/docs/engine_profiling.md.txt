@@ -19,7 +19,7 @@ In order to better analyze the performance of the model, we could evaluate the p
 
 ### You can get profile only with ENGINE_PROFILING=1 before running model by python/c++ API.
 
-Let's take [bert_mini_sst2](../../../../examples/deployment/neural_engine/sst2/bert_mini) for example. You can follow the steps in example README.md and just add ENGINE_PROFILING=1 before run executor like this:
+Let's take [bert_mini_sst2](../../../../examples/huggingface/pytorch/text-classification/deployment/sst2/bert_mini) for example. You can follow the steps in example README.md and just add ENGINE_PROFILING=1 before run executor like this:
 run python
 ```shell
 ENGINE_PROFILING=1 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128

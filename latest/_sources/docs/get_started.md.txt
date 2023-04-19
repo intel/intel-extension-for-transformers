@@ -92,7 +92,7 @@ trainer.set_dynamic_config(dynamic_config=dynamic_length_config)
 model = trainer.quantize(quant_config=q_config)
 ```
 
-> Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](../examples/optimization/pytorch/huggingface/question-answering/dynamic) for details
+> Please refer to paper [QuaLA-MiniLM](https://arxiv.org/pdf/2210.17114.pdf) and [code](../examples/huggingface/pytorch/question-answering/dynamic) for details
 
 
 ## Transformers-accelerated Neural Engine
@@ -106,4 +106,4 @@ inputs = ... # [input_ids, segment_ids, input_mask]
 model.inference(inputs)
 ```
 
-> Please refer to [example](../examples/deployment/neural_engine/sparse/distilbert_base_uncased/) in [Transformers-accelerated Neural Engine](../examples/deployment/) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.
+> Please refer to [example](../examples/huggingface/pytorch/text-classification/deployment/sparse/distilbert_base_uncased) and paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) for more details.

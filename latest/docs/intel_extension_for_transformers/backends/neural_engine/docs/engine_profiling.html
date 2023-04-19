@@ -119,7 +119,7 @@
 <h2>Profling API<a class="headerlink" href="#profling-api" title="Permalink to this heading"></a></h2>
 <section id="you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api">
 <h3>You can get profile only with ENGINE_PROFILING=1 before running model by python/c++ API.<a class="headerlink" href="#you-can-get-profile-only-with-engine-profiling-1-before-running-model-by-python-c-api" title="Permalink to this heading"></a></h3>
-<p>Let’s take <a class="reference external" href="../../../../examples/deployment/neural_engine/sst2/bert_mini">bert_mini_sst2</a> for example. You can follow the steps in example README.md and just add ENGINE_PROFILING=1 before run executor like this:
+<p>Let’s take <a class="reference external" href="../../../../examples/huggingface/pytorch/text-classification/deployment/sst2/bert_mini">bert_mini_sst2</a> for example. You can follow the steps in example README.md and just add ENGINE_PROFILING=1 before run executor like this:
 run python</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">ENGINE_PROFILING</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>run_executor.py<span class="w"> </span>--input_model<span class="o">=</span>./model_and_tokenizer/int8-model.onnx<span class="w"> </span>--mode<span class="o">=</span>performance<span class="w"> </span>--batch_size<span class="o">=</span><span class="m">8</span><span class="w"> </span>--seq_len<span class="o">=</span><span class="m">128</span>
 </pre></div>

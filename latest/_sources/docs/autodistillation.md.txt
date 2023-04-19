@@ -396,7 +396,7 @@ auto_distillation:
     # optional. required if user doesn't provide eval_func
     ...
 ```
-Please refer to [example](../examples/optimization/pytorch/huggingface/language-modeling/auto_distillation/run_mlm_autodistillation.py) for the details
+Please refer to [example](../examples/huggingface/pytorch/language-modeling/distillation/run_mlm_autodistillation.py) for the details
 
 ### Tensorflow
 #### AutoDistillation API in optimizer_tf
@@ -519,4 +519,4 @@ auto_distillation:
     ...
 ```
 
-Please refer to [example](../examples/optimization/tensorflow/huggingface/text-classification/auto_distillation/run_glue.py) for the details
+Please refer to [example](../examples/huggingface/pytorch/text-classification/distillation/run_glue.py) for the details

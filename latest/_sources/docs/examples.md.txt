@@ -355,7 +355,7 @@ Intel Extension for Transformers is a powerful toolkit with multiple model optim
 >**Note**: ** the multiplication and addition operation amount when model inference  (GFLOPS is obtained from torchprofile tool)
 
 
-Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration detail please refer to [examples](../examples/optimization/pytorch/huggingface/question-answering/dynamic/README.md)
+Data is tested on Intel Xeon Platinum 8280 Scalable processor. Configuration detail please refer to [examples](../examples/huggingface/pytorch/question-answering/dynamic/README.md)
 
 
 ## Pruning

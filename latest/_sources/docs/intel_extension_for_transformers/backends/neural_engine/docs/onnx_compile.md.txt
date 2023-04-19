@@ -25,7 +25,7 @@ The qdq model will insert QuantizeLinear before int8 operator and modify MatMul 
 ![](imgs/onnx_qlinear.png)
 
 ## Compile Examples
-Here is the example [distilbert_base_mrpc](../../../../examples/deployment/neural_engine/mrpc/distilbert_base_uncased) to show how to compile ONNX model to Neural Engine IR.
+Here is the example [distilbert_base_mrpc](../../../../examples/huggingface/pytorch/text-classification/deployment/mrpc/distilbert_base_uncased) to show how to compile ONNX model to Neural Engine IR.
 
 ### Prepare ONNX Model
 

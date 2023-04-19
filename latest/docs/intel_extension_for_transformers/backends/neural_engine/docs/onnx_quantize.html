@@ -108,13 +108,13 @@
 <h1>Quantize a ONNX model to engine low precision/int8 IR<a class="headerlink" href="#quantize-a-onnx-model-to-engine-low-precision-int8-ir" title="Permalink to this heading"></a></h1>
 <section id="design">
 <h2>Design<a class="headerlink" href="#design" title="Permalink to this heading"></a></h2>
-<p>Quantizing a ONNX model to engine low precision/int8 IR has two steps: 1. Convert ONNX model to engine float IR; 2. Quantize float IR to low precision/int8 IR. The first step will be finished in engine compile. We focus on the second step how to quantize a float engine IR to low precision IR in INC. The whole is in examples/engine/nlp/bert_base_mrpc.</p>
+<p>Quantizing a ONNX model to engine low precision/int8 IR has two steps: 1. Convert ONNX model to engine float IR; 2. Quantize float IR to low precision/int8 IR. The first step will be finished in engine compile. We focus on the second step how to quantize a float engine IR to low precision IR in INC.</p>
 </section>
 <section id="prerequisite">
 <h2>Prerequisite<a class="headerlink" href="#prerequisite" title="Permalink to this heading"></a></h2>
 <section id="install-environment">
 <h3>Install environment<a class="headerlink" href="#install-environment" title="Permalink to this heading"></a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>&lt;nc_folder&gt;/examples/deepengine/nlp/distilbert_base_uncased_mrpc
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/examples/huggingface/pytorch/text-classification/deployment/mrpc/distilbert_base_uncased
 conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>&lt;env<span class="w"> </span>name&gt;<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.7
 conda<span class="w"> </span>activate<span class="w"> </span>&lt;env<span class="w"> </span>name&gt;
 pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
