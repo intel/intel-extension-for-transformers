@@ -21,7 +21,7 @@ jobs:
         pip install pytest
         echo "${GITHUB_WORKSPACE}"
         pwd
-        cd ${GITHUB_WORKSPACE}/intel-extension-for-transformers/tests
+        cd ${GITHUB_WORKSPACE}/tests
         pip install requirements.txt
         find . -name "test*.py" | sed 's,\.\/,python ,g' | sed 's/$/ --verbose/'  > run.sh
         echo "This step runs in bash"
