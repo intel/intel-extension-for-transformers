@@ -14,6 +14,7 @@
 
 #include "transpose_matmul/transpose_matmul.hpp"
 #include "transpose_matmul/matmul_avx512f_p2031_p2013.hpp"
+#include "transpose_matmul/matmul_avx512f_8bit.hpp"
 #include "transpose_matmul/matmul_vnni_noperm_p2031_p1302.hpp"
 #include "transpose_matmul/matmul_vnni_p2031_p2013.hpp"
 #include "kernels/matmul_ref.hpp"
@@ -35,6 +36,8 @@ bench_res_t transpose_matmul_bench::set_config(int argc, char** argv) {
     smb = std::make_shared<matmul_vnni_noperm_p2031_p1302_bench>();
   } else if (!strcmp(argv[0], "vnni_p2031_p2013")) {
     smb = std::make_shared<matmul_vnni_p2031_p2013_bench>();
+  } else if (!strcmp(argv[0], "avx512f_fp8")) {
+    smb = std::make_shared<matmul_avx512f_8bit_bench>();
   } else {
     LOG(ERROR) << "unknown kernel specification";
     return {bench_status::wrong_input};

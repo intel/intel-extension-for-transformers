@@ -73,7 +73,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
     // step3. compute softmax
     if (dst_dt == data_type::bf16) {
       for (int j = 0; j < col; j++)
-        reinterpret_cast<bfloat16_t*>(dst)[i * col + j] = make_bf16(float_dst_data[i * col + j] * scale);
+        reinterpret_cast<bfloat16_t*>(dst)[i * col + j] = fp32_to_bf16(float_dst_data[i * col + j] * scale);
     } else if (dst_dt == data_type::u8) {
       for (int j = 0; j < col; j++) {
         reinterpret_cast<uint8_t*>(dst)[i * col + j] =

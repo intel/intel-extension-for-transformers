@@ -42,7 +42,7 @@ bool softmax_k_t::init() {
       } else {
         td[i]->tmp = malloc(param.scalar_num * sizeof(int32_t));
       }
-      td[i]->one = make_bf16(1.0);
+      td[i]->one = fp32_to_bf16(1.0);
     }
   }
   jit_softmax_t* ker = new jit_softmax_t(derived_kd()->param());

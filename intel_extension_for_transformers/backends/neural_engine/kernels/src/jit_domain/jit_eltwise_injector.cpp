@@ -104,6 +104,12 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
       case postop_alg::linear:
         linear_compute_vector_fwd(zmm_src);
         break;
+      case postop_alg::low_precision_exp:
+        low_precision_exp_compute_vector_fwd(zmm_src);
+        break;
+      case postop_alg::swish:
+        swish_compute_vector_fwd(zmm_src);
+        break;
       case postop_alg::eltop_int_lut:
         if (cur_postop_attr_.alpha == 8) bit8_lut_compute_vector_fwd(zmm_src);
         if (cur_postop_attr_.alpha == 16) bit16_lut_compute_vector_fwd(zmm_src);
@@ -182,6 +188,27 @@ void jit_eltwise_injector::linear_compute_vector_fwd(const Zmm& zmm_src) {
   auto key = get_attr_idx_key(cur_postop_attr_);
   h->vmovups(zmm_aux0, table_val(alpha, alpha_idx_map[key]));
   h->vfmadd213ps(zmm_src, zmm_aux0, table_val(beta, beta_idx_map[key]));
+}
+
+void jit_eltwise_injector::low_precision_exp_compute_vector_fwd(const Zmm& zmm_src) {
+  h->vmulps(zmm_aux1, zmm_src, table_val(exp_log2ef));
+  h->vrndscaleps(zmm_aux1, zmm_aux1, 0x2);
+  h->vmulps(zmm_aux2, zmm_aux1, table_val(ln2f));
+  h->vsubps(zmm_aux2, zmm_src, zmm_aux2);
+  h->vmovaps(zmm_src, table_val(low_precision_exp_const_v2));
+  h->vfmadd231ps(zmm_src, zmm_aux2, table_val(low_precision_exp_const_v1));
+  h->vfmadd213ps(zmm_src, zmm_aux2, table_val(one));
+  h->vscalefps(zmm_src, zmm_src, zmm_aux1);
+}
+
+void jit_eltwise_injector::swish_compute_vector_fwd(const Zmm& zmm_src) {
+  auto key = get_attr_idx_key(cur_postop_attr_);
+  h->vmovups(zmm_aux0, zmm_src);
+  h->vmulps(zmm_aux0, zmm_aux0, table_val(alpha, alpha_idx_map[key]));
+  low_precision_exp_compute_vector_fwd(zmm_aux0);
+  h->vaddps(zmm_aux0, zmm_aux0, table_val(one));
+  h->vrcp14ps(zmm_aux0, zmm_aux0);
+  h->vmulps(zmm_src, zmm_src, zmm_aux0);
 }
 
 void jit_eltwise_injector::quantize_compute_vector_fwd(const Zmm& zmm_src) {
@@ -382,6 +409,18 @@ void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& 
       reg64_tb_allocate.insert(&reg64_tmp);
       zmm_tb_allocate.insert(&zmm_tmp);
       zmm_tb_allocate.insert(&zmm_aux0);
+      mask_tb_allocate.insert(&k_mask);
+    }
+
+    if (i.op_alg == postop_alg::low_precision_exp) {
+      zmm_tb_allocate.insert(&zmm_aux1);
+      zmm_tb_allocate.insert(&zmm_aux2);
+    }
+
+    if (i.op_alg == postop_alg::swish) {
+      zmm_tb_allocate.insert(&zmm_aux0);
+      zmm_tb_allocate.insert(&zmm_aux1);
+      zmm_tb_allocate.insert(&zmm_aux2);
     }
 
     if (i.op_alg == postop_alg::exp) {
@@ -499,7 +538,7 @@ uint32_t jit_eltwise_injector::get_bit16_lut_term(int integer, const std::vector
   uint32_t ans = 0;
   uint16_t* u16 = new uint16_t(0);
   for (int i = 0; i < 2; i++) {
-    *u16 = make_bf16(apply_postop_list(integer + i, postop_attrs));
+    *u16 = fp32_to_bf16(apply_postop_list(integer + i, postop_attrs));
     ans |= *u16 << (i * 16);
   }
   delete u16;
@@ -542,6 +581,9 @@ std::string jit_eltwise_injector::get_attr_idx_key(const postop_attr& attr) {
     case postop_alg::relu:
       result += "relu";
       break;
+    case postop_alg::swish:
+      result += "swish";
+      break;
     default:
       std::runtime_error("this alg_type do not need alpha/beta/scale.");
   }
@@ -557,6 +599,9 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
                                      {minus_one, {0xbf800000, true}}, {minus_two, {0xc0000000, true}},
                                      {ln2f, {0x3f317218, true}},      {positive_mask, {0x7fffffff, true}},
                                      {sign_mask, {0x80000000, true}}, {exponent_bias, {0x0000007f, true}}};
+
+  static const table_t low_precision_exp_consts{{low_precision_exp_const_v1, {0x3eb75fa1, true}},
+                                                {low_precision_exp_const_v2, {0x3f7839d3, true}}};
 
   static const table_t bit8_lut_consts{{bit8_64, {0x40404040, true}}, {bit8_255, {0xffffffff, true}}};
 
@@ -861,17 +906,23 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
         if (attr.op_alg == postop_alg::exp) exp_ = true;
         if (attr.op_alg == postop_alg::tanh) tanh_ = true;
         if (attr.op_alg == postop_alg::gelu) gelu_ = true;
+        if (attr.op_alg == postop_alg::swish) swish_ = true;
+        if (attr.op_alg == postop_alg::low_precision_exp) low_precision_exp_ = true;
       }
     }
     bool bf16_ = false;
     bool exp_ = false;
     bool tanh_ = false;
     bool gelu_ = false;
+    bool low_precision_exp_ = false;
+    bool swish_ = false;
 
     bool bf16() const { return bf16_; }
     bool exp() const { return exp_; }
     bool tanh() const { return tanh_; }
     bool gelu() const { return gelu_; }
+    bool low_precision_exp() { return low_precision_exp_; }
+    bool swish() const { return swish_; }
   };
 
   need_t need(postop_attrs);
@@ -940,16 +991,26 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
     return;
   }
 
+  auto gain_fin_const = [&](float alpha, float beta, float scale, postop_alg alg) {
+    switch (alg) {
+      case postop_alg::swish:
+        alpha *= -1;
+        break;
+      case postop_alg::quantize:
+        scale = 1.f / scale;
+        break;
+      default:
+        break;
+    }
+    return std::vector<float>({alpha, beta, scale});
+  };
+
   size_t alpha_idx = 0, beta_idx = 0, scale_idx = 0;
   for (auto&& attr : postop_attrs) {
-    mapped_table_entry_t alpha_entry{alpha_idx, bit_cast<uint32_t, float>(attr.alpha), true};
-    mapped_table_entry_t beta_entry{beta_idx, bit_cast<uint32_t, float>(attr.beta), true};
-    float final_scale;
-    if (attr.op_alg == postop_alg::quantize)
-      final_scale = 1 / attr.scale;
-    else
-      final_scale = attr.scale;
-    mapped_table_entry_t scale_entry{scale_idx, bit_cast<uint32_t, float>(final_scale), true};
+    auto fin_const = gain_fin_const(attr.alpha, attr.beta, attr.scale, attr.op_alg);
+    mapped_table_entry_t alpha_entry{alpha_idx, bit_cast<uint32_t, float>(fin_const[0]), true};
+    mapped_table_entry_t beta_entry{beta_idx, bit_cast<uint32_t, float>(fin_const[1]), true};
+    mapped_table_entry_t scale_entry{scale_idx, bit_cast<uint32_t, float>(fin_const[2]), true};
     auto key = get_attr_idx_key(attr);
     if (attr.op_alg == postop_alg::quantize || attr.op_alg == postop_alg::dequantize) {
       alpha_idx_map[key] = alpha_idx++;
@@ -963,7 +1024,7 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
       entry_map.insert(std::make_pair(alpha, alpha_entry));
       entry_map.insert(std::make_pair(beta, beta_entry));
     }
-    if (attr.op_alg == postop_alg::relu) {
+    if (attr.op_alg == postop_alg::relu || attr.op_alg == postop_alg::swish) {
       alpha_idx_map[key] = alpha_idx++;
       entry_map.insert(std::make_pair(alpha, alpha_entry));
     }
@@ -973,6 +1034,10 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
   if (need.exp()) {
     push_entries_of(exp_consts);
     push_entries_of(exp_polynomial);
+  }
+  if (need.low_precision_exp() || need.swish()) {
+    push_entries_of(exp_consts);
+    push_entries_of(low_precision_exp_consts);
   }
   if (need.tanh() || need.gelu()) {
     push_entries_of(tanh_consts);

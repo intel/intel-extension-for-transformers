@@ -17,6 +17,7 @@
 #include "memory_storage/gpu_ocl_memory_storage.hpp"
 #include "kernel_cache.hpp"
 #include "../kernels/opencl/common.hpp"
+#include "singleton.hpp"
 
 #define MAX_NUM_DEVICES 16
 #define MAX_DEVICE_NAME 1024
@@ -103,11 +104,11 @@ bool gpu_ocl_engine_t::create_kernel(const operator_desc& op_desc, std::shared_p
     }
   }
   // step 2 create kernel
-  auto& global_primitive_cache = kernel_cache::instance();
+  kernel_cache* global_primitive_cache = Singleton<kernel_cache>::GetInstance();
   const auto& callback = std::bind(&kernel_desc_t::create_primitive, result_kd, std::placeholders::_1,
                                    result_kd);  // k_t->create() + k_t->init()
   std::shared_ptr<const kernel_t> value =
-      global_primitive_cache.find_or_construct(result_kd->get_operator_desc(), callback);
+      global_primitive_cache->find_or_construct(result_kd->get_operator_desc(), callback);
   if (value == nullptr) {
     return false;
   }

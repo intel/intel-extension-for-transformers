@@ -99,7 +99,7 @@ void softmax_bench::get_true_data() {
     float scale = 1 / exp_sum;
 
     // step3. compute softmax
-    for (int j = 0; j < col; j++) dst[i * col + j] = make_bf16(float_dst_data[i * col + j] * scale);
+    for (int j = 0; j < col; j++) dst[i * col + j] = fp32_to_bf16(float_dst_data[i * col + j] * scale);
   }
 }
 
@@ -112,7 +112,7 @@ bool softmax_bench::check_result() {
   auto buf2 = q.rt_data[1];
   auto size2 = q.op_desc.tensor_descs()[1].size();
   bool ans = false;
-  auto err_rate = make_bf16(0.1);
+  auto err_rate = fp32_to_bf16(0.1);
   ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, err_rate);
   return ans;
 }

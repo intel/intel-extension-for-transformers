@@ -72,16 +72,17 @@
 namespace jd {
 
 typedef uint16_t bfloat16_t;  // NOLINT
+typedef uint8_t float8_t;     // NOLINT
 typedef int64_t dim_t;
 
-uint16_t fp32_to_fp16(const float x);
-float fp16_to_fp32(const uint16_t x);
+SPARSE_API_ int8_t fp32_to_int8(const float fp32, const float scale = 1.f, const float zp = 0.f);
+SPARSE_API_ uint16_t fp32_to_fp16(const float x);
+SPARSE_API_ float fp16_to_fp32(const uint16_t x);
+SPARSE_API_ bfloat16_t fp32_to_bf16(const float fp32);
+SPARSE_API_ float bf16_to_fp32(const bfloat16_t bf16);
+
 template <typename dst_t, typename src_t>
 dst_t cast_to(src_t x);
-
-float SPARSE_API_ make_fp32(bfloat16_t x);
-
-bfloat16_t SPARSE_API_ make_bf16(float x);
 
 template <typename T>
 SPARSE_API_ void init_vector(T* v, int num_size, float bound1 = -10, float bound2 = 10, int seed = 5489u);
@@ -140,11 +141,9 @@ inline bool is_all_of(std::initializer_list<value_type> il, predicate_type pred)
 
 #define ceil_div(x, y) (((x) + (y)-1) / (y))
 #define pad_to(x, n) (ceil_div(x, n) * (n))
-
-#define pad_to(x, n) (ceil_div(x, n) * (n))
-
+#define pad_to_le(x, n) (x / n * (n))
 #define is_nonzero(x) (fabs((x)) > (1e-3))
-
+#define remainsize(x, size, n) (((x) + (n)) <= (size) ? (n) : ((size) - (x)))
 template <typename T>
 SPARSE_API_ T str_to_num(const std::string& s);
 

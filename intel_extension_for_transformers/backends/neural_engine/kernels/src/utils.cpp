@@ -18,6 +18,12 @@
 #include <iostream>
 
 namespace jd {
+int8_t fp32_to_int8(const float fp32, const float scale, const float zp) {
+  int32_t int32 = nearbyint(fp32 * scale + zp);
+  int32 = int32 < -128 ? -128 : int32;
+  int32 = int32 > 127 ? 127 : int32;
+  return static_cast<int8_t>(int32);
+}
 
 float fp16_to_fp32(const uint16_t x) {    // IEEE-754 16-bit floating-point format (without infinity): 1-5-10, exp-15,
                                           // +-131008.0, +-6.1035156E-5, +-5.9604645E-8, 3.311 digits
@@ -48,12 +54,12 @@ dst_t cast_to(src_t x) {
 
 template <>
 bfloat16_t cast_to<bfloat16_t, float>(float x) {
-  return make_bf16(x);
+  return fp32_to_bf16(x);
 }
 
 template <>
 float cast_to<float, bfloat16_t>(bfloat16_t x) {
-  return make_fp32(x);
+  return bf16_to_fp32(x);
 }
 
 // undefined behaviour, https://stackoverflow.com/questions/98650/what-is-the-strict-aliasing-rule
@@ -65,14 +71,14 @@ float cast_to<float, bfloat16_t>(bfloat16_t x) {
 // } union_b;
 //
 //
-// inline float make_fp32(bfloat16_t x) {
+// inline float bf16_to_fp32(bfloat16_t x) {
 //   union_b tmp;
 //   tmp.u = 0;
 //   tmp.b[1] = x;
 //   return tmp.f;
 // }
 //
-// inline bfloat16_t make_bf16(float x) {
+// inline bfloat16_t fp32_to_bf16(float x) {
 //   union_b tmp;
 //   tmp.f = x;
 //   return tmp.b[1];
@@ -82,14 +88,14 @@ float cast_to<float, bfloat16_t>(bfloat16_t x) {
 #pragma GCC push_options
 #pragma GCC optimize "no-strict-aliasing"
 #endif
-inline float make_fp32(bfloat16_t x) {
+inline float bf16_to_fp32(bfloat16_t x) {
   unsigned int y = static_cast<unsigned int>(x);
   y = y << 16;
   float* res = reinterpret_cast<float*>(&y);
   return *res;
 }
 
-inline bfloat16_t make_bf16(float x) {
+inline bfloat16_t fp32_to_bf16(float x) {
   int* res = reinterpret_cast<int*>(&x);
   *res = *res >> 16;
   return (bfloat16_t)*res;
@@ -301,6 +307,8 @@ float get_dequantize(float x, float alpha, float scale) {
 
 float get_linear(float x, float aplha, float beta) { return x * aplha + beta; }
 
+float get_swish(float x, float alpha) { return x / (1.f + get_exp(-1 * alpha * x)); }
+
 float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) {
   for (auto&& i : attrs) {
     if (i.op_type == jd::postop_type::eltwise) {
@@ -311,6 +319,7 @@ float apply_postop_list(float value, const std::vector<jd::postop_attr>& attrs) 
       if (i.op_alg == jd::postop_alg::dequantize) value = get_dequantize(value, i.alpha, i.scale);
       if (i.op_alg == jd::postop_alg::tanh) value = tanh(value);
       if (i.op_alg == jd::postop_alg::linear) value = get_linear(value, i.alpha, i.beta);
+      if (i.op_alg == jd::postop_alg::swish) value = get_swish(value, i.alpha);
       if (i.op_alg == jd::postop_alg::eltop_int_lut) continue;
     } else {
       SPARSE_LOG(ERROR) << "unsupported postop type.";

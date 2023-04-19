@@ -187,7 +187,7 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
               dst_f32[idx] = value;
               break;
             case dt::bf16:
-              dst_bf16[idx] = make_bf16(value);
+              dst_bf16[idx] = fp32_to_bf16(value);
               break;
             default:
               SPARSE_LOG(FATAL) << "Unexpected dst type!";

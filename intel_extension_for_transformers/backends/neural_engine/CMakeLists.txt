@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(NeuralEngine)
 
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 set(NE_ROOT "${PROJECT_SOURCE_DIR}")
 set(NE_THIRD_PARTY_DIR "${NE_ROOT}/third_party")
 set(NE_CMAKE_DIR "${NE_ROOT}/cmake")

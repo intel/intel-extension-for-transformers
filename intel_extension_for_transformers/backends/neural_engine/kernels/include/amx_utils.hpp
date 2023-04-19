@@ -15,7 +15,6 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_AMX_UTILS_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_AMX_UTILS_HPP_
 #include <omp.h>
-#include <mutex>  // NOLINT
 #include <cstdint>
 #include <vector>
 
@@ -74,11 +73,7 @@ struct tileconfig_t {
  * class over and over.
  */
 class amx_tile_config_t {
- private:
-  static amx_tile_config_t* atc_instance_;
-  static std::mutex mutex_;  // for thread safety
-
- protected:
+ public:
   amx_tile_config_t() {
     tilecfg.create_kernel();
     tilerls.create_kernel();
@@ -91,6 +86,8 @@ class amx_tile_config_t {
       config_ = nullptr;
     }
   }
+
+ protected:
   std::vector<tile_param_t> param_;
   tileconfig_t* config_ = new tileconfig_t();
 
@@ -103,14 +100,6 @@ class amx_tile_config_t {
    * amx_tile_config_ts should not be assignable.
    */
   void operator=(const amx_tile_config_t&) = delete;
-  /**
-   * This is the static method that controls the access to the singleton
-   * instance. On the first run, it creates a singleton object and places it
-   * into the static field. On subsequent runs, it returns the client existing
-   * object stored in the static field.
-   */
-
-  static amx_tile_config_t* GetInstance();
   /**
    * Finally, any singleton should define some business logic, which can be
    * executed on its instance.

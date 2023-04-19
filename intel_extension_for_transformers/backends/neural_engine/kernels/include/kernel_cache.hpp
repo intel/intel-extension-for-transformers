@@ -16,7 +16,6 @@
 #define ENGINE_SPARSELIB_INCLUDE_KERNEL_CACHE_HPP_
 #include <condition_variable>  // NOLINT
 #include <memory>
-#include <mutex>  // NOLINT
 #include <unordered_map>
 
 #include "kernel.hpp"
@@ -26,11 +25,7 @@
 namespace jd {
 class kernel_cache {
  public:
-  static kernel_cache& instance() {
-    static constexpr uint64_t capacity = 1024;
-    static kernel_cache inst(capacity);
-    return inst;
-  }
+  explicit kernel_cache(int64_t capacity = 1024) : capacity_(capacity) {}
   virtual ~kernel_cache() {}
 
  public:
@@ -39,7 +34,6 @@ class kernel_cache {
   const std::shared_ptr<const kernel_desc_t>& get_kd(const operator_desc& op_desc);
 
  private:
-  explicit kernel_cache(int64_t capacity) : capacity_(capacity) {}
   const std::shared_ptr<const kernel_t>& get(const operator_desc& op_desc);
   void set(const std::shared_ptr<const kernel_t>& kernel);
 

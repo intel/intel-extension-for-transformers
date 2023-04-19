@@ -23,7 +23,7 @@ namespace jd {
 class engine_t;
 class engine_factory {
  public:
-  static engine_factory& instance();
+  engine_factory();
   const engine_t* create(const engine_kind& engine_kind, const runtime_kind& runtime_kind);
 
  private:
@@ -32,7 +32,6 @@ class engine_factory {
   static const engine_t* create_gpu_engine(const runtime_kind& runtime_kind);
 
  private:
-  engine_factory();
   using create_fptr = const engine_t* (*)(const runtime_kind&);
   std::unordered_map<engine_kind, create_fptr> mp_;
 };

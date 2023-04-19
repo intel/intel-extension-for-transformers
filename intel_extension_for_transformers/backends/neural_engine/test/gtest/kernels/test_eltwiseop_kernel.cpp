@@ -38,7 +38,7 @@ template <>
 void cast_to_float_array<bfloat16_t>(const void* src, float* dst, int size) {
   bfloat16_t* src_typed = reinterpret_cast<bfloat16_t*>(const_cast<void*>(src));
   for (int i = 0; i < size; ++i) {
-    dst[i] = make_fp32(src_typed[i]);
+    dst[i] = bf16_to_fp32(src_typed[i]);
   }
 }
 
@@ -54,7 +54,7 @@ template <>
 void cast_from_float_array<bfloat16_t>(float* src, void* dst, int size) {
   bfloat16_t* dst_typed = reinterpret_cast<bfloat16_t*>(dst);
   for (int i = 0; i < size; ++i) {
-    dst_typed[i] = make_bf16(src[i]);
+    dst_typed[i] = fp32_to_bf16(src[i]);
   }
 }
 
@@ -218,6 +218,8 @@ static auto case_func = []() {
 
   postop_attr fp32_exp_attr{data_type::fp32, postop_type::eltwise, postop_alg::exp};
   postop_attr bf16_exp_attr{data_type::bf16, postop_type::eltwise, postop_alg::exp};
+  postop_attr fp32_swish_attr{data_type::fp32, postop_type::eltwise, postop_alg::swish, 2};
+  postop_attr bf16_swish_attr{data_type::bf16, postop_type::eltwise, postop_alg::swish, 2};
   postop_attr fp32_gelu_attr{data_type::fp32, postop_type::eltwise, postop_alg::gelu};
   postop_attr bf16_gelu_attr{data_type::bf16, postop_type::eltwise, postop_alg::gelu};
   postop_attr fp32_relu_attr{data_type::fp32, postop_type::eltwise, postop_alg::relu, 2.0};
@@ -285,6 +287,8 @@ static auto case_func = []() {
   cases.push_back({gen_case({data3_desc, data3_desc}, {{"postop_list", "bf16_exp"}}, {bf16_exp_attr}), false});
   cases.push_back({gen_case({data3_desc, data3_desc}, {{"postop_list", "bf16_gelu"}}, {bf16_gelu_attr}), false});
 
+  cases.push_back({gen_case({data2_desc, data2_desc}, {{"postop_list", "fp32_swish"}}, {fp32_swish_attr}), false});
+  cases.push_back({gen_case({data3_desc, data3_desc}, {{"postop_list", "bf16_swish"}}, {bf16_swish_attr}), false});
   return ::testing::ValuesIn(cases);
 };
 

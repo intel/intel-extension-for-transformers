@@ -23,15 +23,15 @@
 
 #include "gtest/gtest.h"
 #include "interface.hpp"
-#include "kernels/dyn_quantize_mha_ref.hpp"
-#include "kernels/dyn_quantize_mha_types.hpp"
+#include "kernels/dynamic_quantize_mha_ref.hpp"
+#include "kernels/dynamic_quantize_mha_types.hpp"
 #include "unit_test_utils.hpp"
 
 namespace jd {
 
 using dt = jd::data_type;
 using ft = jd::format_type;
-using io = ssd::dyn_quantize_mha_io::io;
+using io = ssd::dynamic_quantize_mha_io::io;
 
 static std::mt19937 rand_gen(1);
 
@@ -55,23 +55,23 @@ bool check_result(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   try {
-    std::shared_ptr<const kernel_desc_t> dyn_quantize_mha_ref_desc;
-    kernel_desc_t::create<dyn_quantize_mha_ref_kd_t>(dyn_quantize_mha_ref_desc, q.op_desc);
-    std::shared_ptr<const kernel_t> dyn_quantize_mha_ref_kernel;
-    kernel_t::create<dyn_quantize_mha_ref_k_t, dyn_quantize_mha_ref_kd_t>(dyn_quantize_mha_ref_kernel,
-                                                                          dyn_quantize_mha_ref_desc);
-    const auto tmp_q = aligned_allocator_t<char>::allocate(dyn_quantize_mha_ref_kernel->get_workspace_size());
+    std::shared_ptr<const kernel_desc_t> dynamic_quantize_mha_ref_desc;
+    kernel_desc_t::create<dynamic_quantize_mha_ref_kd_t>(dynamic_quantize_mha_ref_desc, q.op_desc);
+    std::shared_ptr<const kernel_t> dynamic_quantize_mha_ref_kernel;
+    kernel_t::create<dynamic_quantize_mha_ref_k_t, dynamic_quantize_mha_ref_kd_t>(dynamic_quantize_mha_ref_kernel,
+                                                                                  dynamic_quantize_mha_ref_desc);
+    const auto tmp_q = aligned_allocator_t<char>::allocate(dynamic_quantize_mha_ref_kernel->get_workspace_size());
     auto data_q = q.rt_data;
     data_q[io::TMP] = tmp_q;
-    dyn_quantize_mha_ref_kernel->execute(data_q);
+    dynamic_quantize_mha_ref_kernel->execute(data_q);
     aligned_allocator_t<char>::deallocate(tmp_q);
 
     n_thread_t with_n_thread(p.nthr);
-    dyn_quantize_mha_desc dyn_quantize_mha_desc(p.op_desc);
-    dyn_quantize_mha dyn_quantize_mha_kernel(dyn_quantize_mha_desc);
-    const auto tmp_p = aligned_allocator_t<char>::allocate(dyn_quantize_mha_ref_kernel->get_workspace_size());
+    dynamic_quantize_mha_desc dynamic_quantize_mha_desc(p.op_desc);
+    dynamic_quantize_mha dynamic_quantize_mha_kernel(dynamic_quantize_mha_desc);
+    const auto tmp_p = aligned_allocator_t<char>::allocate(dynamic_quantize_mha_ref_kernel->get_workspace_size());
     auto data_p = p.rt_data;
-    dyn_quantize_mha_kernel.execute(data_p);
+    dynamic_quantize_mha_kernel.execute(data_p);
     aligned_allocator_t<char>::deallocate(tmp_p);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
@@ -147,10 +147,11 @@ const void* copy_data_obj(const tensor_desc desc, const void* src) {
 }
 
 std::pair<op_args_t, op_args_t> gen_case(const dim_t batch_size, const dim_t head_size, const dim_t head_num,
-                                         const dim_t sl_M, const dim_t sl_N, const bool dyn_shape, const int nthr = 0,
+                                         const dim_t sl_M, const dim_t sl_N, const bool dynamic_shape,
+                                         const int nthr = 0,
                                          std::unordered_map<std::string, std::string> op_attrs = {}) {
   // Step 2: Configure tensor shape
-  std::vector<tensor_desc> ts_descs(io::dyn_quantize_mha_io_MAX + 1, {{}, dt::undef, ft::undef});
+  std::vector<tensor_desc> ts_descs(io::dynamic_quantize_mha_io_MAX + 1, {{}, dt::undef, ft::undef});
   ts_descs[io::Q] = {{batch_size, sl_M, head_num, head_size}, dt::s8, ft::abcd};
   ts_descs[io::K] = {{batch_size, sl_N, head_num, head_size}, dt::s8, ft::abcd};
   ts_descs[io::V] = {{batch_size, sl_N, head_num, head_size}, dt::s8, ft::abcd};
@@ -160,7 +161,7 @@ std::pair<op_args_t, op_args_t> gen_case(const dim_t batch_size, const dim_t hea
   ts_descs[io::K_SCALE] = {{batch_size, sl_N}, dt::fp32, ft::ab};
   ts_descs[io::V_SCALE] = {{batch_size, sl_N}, dt::fp32, ft::ab};
   ts_descs[io::DST_SCALE] = {{batch_size, sl_M}, dt::fp32, ft::ab};
-  if (dyn_shape) {
+  if (dynamic_shape) {
     const tensor_desc shape_ts_desc{{1}, dt::s32, ft::a};
     ts_descs[io::BATCH_SIZE] = shape_ts_desc;
     ts_descs[io::HEAD_NUM] = shape_ts_desc;
@@ -170,7 +171,7 @@ std::pair<op_args_t, op_args_t> gen_case(const dim_t batch_size, const dim_t hea
   }
 
   // Step 2: Construct runtime data
-  std::vector<const void*> rt_data(io::dyn_quantize_mha_io_MAX + 1, nullptr);
+  std::vector<const void*> rt_data(io::dynamic_quantize_mha_io_MAX + 1, nullptr);
   rt_data[io::Q] = make_data_obj(ts_descs[io::Q], -128, 127);
   rt_data[io::K] = make_data_obj(ts_descs[io::K], -128, 127);
   rt_data[io::V] = make_data_obj(ts_descs[io::V], -128, 127);
@@ -185,7 +186,7 @@ std::pair<op_args_t, op_args_t> gen_case(const dim_t batch_size, const dim_t hea
     const dim_t valid_sl = std::uniform_int_distribution<>(sl_N / 2, sl_N)(rand_gen);
     std::fill_n(batch_mask + valid_sl, sl_N - valid_sl, -1000);
   }
-  if (dyn_shape) {
+  if (dynamic_shape) {
     rt_data[io::BATCH_SIZE] = make_data_obj(ts_descs[io::BATCH_SIZE], batch_size, batch_size);
     rt_data[io::HEAD_NUM] = make_data_obj(ts_descs[io::HEAD_NUM], head_num, head_num);
     rt_data[io::HEAD_SIZE] = make_data_obj(ts_descs[io::HEAD_SIZE], head_size, head_size);
@@ -193,12 +194,12 @@ std::pair<op_args_t, op_args_t> gen_case(const dim_t batch_size, const dim_t hea
     rt_data[io::N] = make_data_obj(ts_descs[io::N], sl_N, sl_N);
   }
 
-  std::vector<const void*> rt_data_cpy(io::dyn_quantize_mha_io_MAX + 1, nullptr);
-  for (std::underlying_type<io>::type idx = 0; idx <= io::dyn_quantize_mha_io_MAX; ++idx)
+  std::vector<const void*> rt_data_cpy(io::dynamic_quantize_mha_io_MAX + 1, nullptr);
+  for (std::underlying_type<io>::type idx = 0; idx <= io::dynamic_quantize_mha_io_MAX; ++idx)
     if (rt_data[idx] != nullptr) rt_data_cpy[idx] = copy_data_obj(ts_descs[idx], rt_data[idx]);
 
   // hide shapes in ts_descs if use dynamic shape
-  if (dyn_shape)
+  if (dynamic_shape)
     for (io idx : {io::Q, io::K, io::V, io::DST, io::MASK, io::Q_SCALE, io::K_SCALE, io::V_SCALE, io::DST_SCALE})
       ts_descs[idx] = {
           std::vector<dim_t>(ts_descs[idx].shape().size(), -1),
@@ -206,7 +207,7 @@ std::pair<op_args_t, op_args_t> gen_case(const dim_t batch_size, const dim_t hea
           ts_descs[idx].ftype(),
       };
 
-  operator_desc op_desc(kernel_kind::dyn_quantize_mha, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
+  operator_desc op_desc(kernel_kind::dynamic_quantize_mha, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                         op_attrs);
 
   // Step 3: op_args_t testcase pair

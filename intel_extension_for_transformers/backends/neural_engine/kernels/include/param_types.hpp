@@ -34,12 +34,24 @@ enum class kernel_kind : uint8_t {
   attention,
   transpose_mha,
   mha_dense,
-  dyn_quantize_mha,
+  dynamic_quantize_mha,
   slice,
   dynamic_quant
 };
 
-enum class postop_alg : uint8_t { undef, exp, tanh, gelu, relu, quantize, dequantize, linear, eltop_int_lut };
+enum class postop_alg : uint8_t {
+  undef,
+  exp,
+  tanh,
+  gelu,
+  relu,
+  low_precision_exp,
+  swish,
+  quantize,
+  dequantize,
+  linear,
+  eltop_int_lut
+};
 
 enum class binaryop_alg : uint8_t { undef, add, sub, mul, per_channel_quant, per_channel_dequant };
 
@@ -50,7 +62,7 @@ static std::map<postop_alg, const char*> postop_alg_name = {
     {postop_alg::gelu, "gelu"},         {postop_alg::relu, "relu"},
     {postop_alg::quantize, "quantize"}, {postop_alg::dequantize, "dequantize"},
     {postop_alg::linear, "linear"},     {postop_alg::eltop_int_lut, "eltop_int_lut"},
-};
+    {postop_alg::swish, "swish"}};
 
 enum class reg_type : uint8_t { mask, zmm, reg64 };
 
@@ -65,7 +77,8 @@ enum class kernel_prop : uint8_t {
 // Data type.
 enum class data_type : uint8_t {
   undef,
-  f8,
+  f8_e4m3,
+  f8_e5m2,
   u8,
   s8,
   u16,
@@ -76,8 +89,10 @@ enum class data_type : uint8_t {
   s32,
 };
 const std::map<data_type, const char*> data_type_name{
-    {data_type::u8, "u8"},     {data_type::s8, "s8"},     {data_type::u16, "u16"},   {data_type::s16, "s16"},
-    {data_type::fp16, "fp16"}, {data_type::bf16, "bf16"}, {data_type::fp32, "fp32"}, {data_type::s32, "s32"},
+    {data_type::u8, "u8"},           {data_type::s8, "s8"},     {data_type::f8_e4m3, "f8_e4m3"},
+    {data_type::f8_e5m2, "f8_e5m2"}, {data_type::u16, "u16"},   {data_type::s16, "s16"},
+    {data_type::fp16, "fp16"},       {data_type::bf16, "bf16"}, {data_type::fp32, "fp32"},
+    {data_type::s32, "s32"},
 };
 
 // Format type.
@@ -106,12 +121,7 @@ enum class engine_kind : uint8_t {
 };
 
 // Runtime kind.
-enum class runtime_kind : uint8_t {
-  undef,
-  opencl,
-  sycl,
-  thread_pool
-};
+enum class runtime_kind : uint8_t { undef, opencl, sycl, thread_pool };
 
 // postop attribute for op-fusion
 class postop_attr {
@@ -152,7 +162,7 @@ class binaryop_attr {
 };
 
 static std::unordered_map<data_type, const int> type_size = {
-    {data_type::fp32, 4}, {data_type::s32, 4}, {data_type::fp16, 2}, {data_type::bf16, 2},
-    {data_type::u8, 1},   {data_type::s8, 1},  {data_type::f8, 1}};
+    {data_type::fp32, 4}, {data_type::s32, 4}, {data_type::fp16, 2},    {data_type::bf16, 2},
+    {data_type::u8, 1},   {data_type::s8, 1},  {data_type::f8_e4m3, 1}, {data_type::f8_e5m2, 1}};
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_

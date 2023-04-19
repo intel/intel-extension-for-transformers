@@ -20,11 +20,6 @@
 #endif
 
 namespace jd {
-engine_factory& engine_factory::instance() {
-  static engine_factory inst;
-  return inst;
-}
-
 const engine_t* engine_factory::create(const engine_kind& engine_kind, const runtime_kind& runtime_kind) {
   const auto& it = mp_.find(engine_kind);
   if (it != mp_.end()) {

@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_DYN_QUANTIZE_MHA_REF_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_KERNELS_DYN_QUANTIZE_MHA_REF_HPP_
+#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_dynamic_quantize_mha_REF_HPP_
+#define ENGINE_SPARSELIB_INCLUDE_KERNELS_dynamic_quantize_mha_REF_HPP_
 
 #include <memory>
 #include <vector>
@@ -22,7 +22,7 @@
 #include "cpu_isa.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
-#include "kernels/dyn_quantize_mha_types.hpp"
+#include "kernels/dynamic_quantize_mha_types.hpp"
 #include "operator_desc.hpp"
 #include "utils.hpp"
 
@@ -47,17 +47,17 @@ namespace jd {
  *               |
  *             Output
  */
-class dyn_quantize_mha_ref_k_t;
+class dynamic_quantize_mha_ref_k_t;
 
-class SPARSE_API_ dyn_quantize_mha_ref_kd_t : public kernel_desc_t {
+class SPARSE_API_ dynamic_quantize_mha_ref_kd_t : public kernel_desc_t {
  public:
-  using io = ssd::dyn_quantize_mha_io::io;
-  explicit dyn_quantize_mha_ref_kd_t(const jd::operator_desc& op_desc)
-      : kernel_desc_t(kernel_kind::dyn_quantize_mha), op_desc_(op_desc) {}
-  virtual ~dyn_quantize_mha_ref_kd_t() {}
+  using io = ssd::dynamic_quantize_mha_io::io;
+  explicit dynamic_quantize_mha_ref_kd_t(const jd::operator_desc& op_desc)
+      : kernel_desc_t(kernel_kind::dynamic_quantize_mha), op_desc_(op_desc) {}
+  virtual ~dynamic_quantize_mha_ref_kd_t() {}
 
   bool init() override;
-  DECLARE_COMMON_PD_T(dyn_quantize_mha_ref_k_t, dyn_quantize_mha_ref_kd_t);
+  DECLARE_COMMON_PD_T(dynamic_quantize_mha_ref_k_t, dynamic_quantize_mha_ref_kd_t);
 
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   inline std::vector<dim_t> shape() const override {
@@ -74,18 +74,18 @@ class SPARSE_API_ dyn_quantize_mha_ref_kd_t : public kernel_desc_t {
   jd::operator_desc op_desc_;
 };
 
-class SPARSE_API_ dyn_quantize_mha_ref_k_t : public kernel_t {
+class SPARSE_API_ dynamic_quantize_mha_ref_k_t : public kernel_t {
  public:
-  using io = ssd::dyn_quantize_mha_io::io;
-  using kd_t = dyn_quantize_mha_ref_kd_t;
-  explicit dyn_quantize_mha_ref_k_t(const std::shared_ptr<const kernel_desc_t>& kd);
-  virtual ~dyn_quantize_mha_ref_k_t() {}
+  using io = ssd::dynamic_quantize_mha_io::io;
+  using kd_t = dynamic_quantize_mha_ref_kd_t;
+  explicit dynamic_quantize_mha_ref_k_t(const std::shared_ptr<const kernel_desc_t>& kd);
+  virtual ~dynamic_quantize_mha_ref_k_t() {}
   // Delete move constructor and move operator
-  dyn_quantize_mha_ref_k_t(dyn_quantize_mha_ref_k_t&&) = delete;
-  dyn_quantize_mha_ref_k_t& operator=(dyn_quantize_mha_ref_k_t&&) = delete;
+  dynamic_quantize_mha_ref_k_t(dynamic_quantize_mha_ref_k_t&&) = delete;
+  dynamic_quantize_mha_ref_k_t& operator=(dynamic_quantize_mha_ref_k_t&&) = delete;
   // Delete copy constructor and copy operator
-  dyn_quantize_mha_ref_k_t(const dyn_quantize_mha_ref_k_t&) = delete;
-  dyn_quantize_mha_ref_k_t& operator=(const dyn_quantize_mha_ref_k_t&) = delete;
+  dynamic_quantize_mha_ref_k_t(const dynamic_quantize_mha_ref_k_t&) = delete;
+  dynamic_quantize_mha_ref_k_t& operator=(const dynamic_quantize_mha_ref_k_t&) = delete;
 
   bool init() override;
   bool execute(const std::vector<const void*>& rt_data) const override;
@@ -97,4 +97,4 @@ class SPARSE_API_ dyn_quantize_mha_ref_k_t : public kernel_t {
 };
 
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_DYN_QUANTIZE_MHA_REF_HPP_
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_dynamic_quantize_mha_REF_HPP_

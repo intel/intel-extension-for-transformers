@@ -192,15 +192,16 @@ bool spmm_ref_k_t::execute_bf16_(const std::vector<const void*>& rt_data) const 
       for (int n = 0; n < BN_; ++n) {
         auto dst_idx = num_n * dst_stride[0] + m * dst_stride[1] + n * dst_stride[2];
         for (int k = 0; k < K_; ++k) {
-          float_dst_data[dst_idx] += make_fp32(wei_data[m * wei_stride[0] + k * wei_stride[1]]) *
-                                     make_fp32(src_data[num_n * src_stride[0] + k * src_stride[1] + n * src_stride[2]]);
+          float_dst_data[dst_idx] +=
+              bf16_to_fp32(wei_data[m * wei_stride[0] + k * wei_stride[1]]) *
+              bf16_to_fp32(src_data[num_n * src_stride[0] + k * src_stride[1] + n * src_stride[2]]);
         }
         if (has_bias) {
           float_dst_data[dst_idx] += bia_data[m];
         }
         float_dst_data[dst_idx] = apply_postop_list(float_dst_data[dst_idx], postop_list);
         if (dst_dt == dt::bf16) {
-          bf_dst_data[dst_idx] = make_bf16(float_dst_data[dst_idx]);
+          bf_dst_data[dst_idx] = fp32_to_bf16(float_dst_data[dst_idx]);
         } else {
           fp_dst_data[dst_idx] = float_dst_data[dst_idx];
         }

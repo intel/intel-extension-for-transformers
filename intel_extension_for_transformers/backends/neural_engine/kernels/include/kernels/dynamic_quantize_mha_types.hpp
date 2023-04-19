@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_DYN_QUANTIZE_MHA_TYPES_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_KERNELS_DYN_QUANTIZE_MHA_TYPES_HPP_
+#ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_dynamic_quantize_mha_TYPES_HPP_
+#define ENGINE_SPARSELIB_INCLUDE_KERNELS_dynamic_quantize_mha_TYPES_HPP_
 
 #include <vector>
 
@@ -22,7 +22,7 @@
 
 namespace jd {
 namespace ssd {
-namespace dyn_quantize_mha_io {
+namespace dynamic_quantize_mha_io {
 enum io {
   Q,
   K,
@@ -45,10 +45,10 @@ enum io {
   HEAD_SIZE,
   M,  // "seq_len" for Q & DST
   N,  // "seq_len" for K & V
-  dyn_quantize_mha_io_MAX = N,
+  dynamic_quantize_mha_io_MAX = N,
 };
-}  // namespace dyn_quantize_mha_io
+}  // namespace dynamic_quantize_mha_io
 
 }  // namespace ssd
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_DYN_QUANTIZE_MHA_TYPES_HPP_
+#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_dynamic_quantize_mha_TYPES_HPP_

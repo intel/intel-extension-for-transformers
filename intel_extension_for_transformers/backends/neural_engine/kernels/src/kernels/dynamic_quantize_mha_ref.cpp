@@ -12,31 +12,32 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "kernels/dyn_quantize_mha_ref.hpp"
+#include "kernels/dynamic_quantize_mha_ref.hpp"
 
 #include <algorithm>
 
 namespace jd {
-using io = ssd::dyn_quantize_mha_io::io;
+using io = ssd::dynamic_quantize_mha_io::io;
 using dt = jd::data_type;
-
+namespace {
 inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
-  std::vector<std::vector<dim_t>> shapes(io::dyn_quantize_mha_io_MAX + 1);
+  std::vector<std::vector<dim_t>> shapes(io::dynamic_quantize_mha_io_MAX + 1);
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
   return shapes;
 }
 inline std::vector<dt> get_tensor_dtypes(const std::vector<tensor_desc>& descs) {
-  std::vector<dt> shapes(io::dyn_quantize_mha_io_MAX + 1);
+  std::vector<dt> shapes(io::dynamic_quantize_mha_io_MAX + 1);
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.dtype(); });
   return shapes;
 }
+}  // namespace
 
 #define KERNEL_INIT_CHECK(f)                                                     \
   if (!(f)) {                                                                    \
     SPARSE_LOG(ERROR) << "Dynamic _quantize ref kernel requires `" << #f << "`"; \
     return false;                                                                \
   }
-bool jd::dyn_quantize_mha_ref_kd_t::init() {
+bool jd::dynamic_quantize_mha_ref_kd_t::init() {
   const auto& descs = op_desc_.tensor_descs();
   const auto shapes = get_tensor_shapes(descs);
   const auto dtypes = get_tensor_dtypes(descs);
@@ -93,7 +94,7 @@ bool jd::dyn_quantize_mha_ref_kd_t::init() {
 }
 #undef KERNEL_INIT_CHECK
 
-dyn_quantize_mha_ref_k_t::dyn_quantize_mha_ref_k_t(const std::shared_ptr<const kernel_desc_t>& kd)
+dynamic_quantize_mha_ref_k_t::dynamic_quantize_mha_ref_k_t(const std::shared_ptr<const kernel_desc_t>& kd)
     : kernel_t(kd),
       t_shapes_(get_tensor_shapes(derived_kd()->get_operator_desc().tensor_descs())),
       batch_size_(t_shapes_[io::Q][0]),
@@ -102,9 +103,9 @@ dyn_quantize_mha_ref_k_t::dyn_quantize_mha_ref_k_t(const std::shared_ptr<const k
       head_size_(t_shapes_[io::Q][3]),
       N_(t_shapes_[io::K][1]) {}
 
-bool dyn_quantize_mha_ref_k_t::init() { return true; }
+bool dynamic_quantize_mha_ref_k_t::init() { return true; }
 
-bool dyn_quantize_mha_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool dynamic_quantize_mha_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   const auto src_q = reinterpret_cast<const int8_t*>(rt_data[io::Q]);
   const auto src_k = reinterpret_cast<const int8_t*>(rt_data[io::K]);
   const auto mask = reinterpret_cast<const float*>(rt_data[io::MASK]);

@@ -17,15 +17,17 @@
 #include "cpu_engine.hpp"
 #include "param_types.hpp"
 #include "impl_list_item.hpp"
-#include "kernels/dyn_quantize_mha_ref.hpp"
+#include "kernels/dynamic_quantize_mha_ref.hpp"
 
 namespace jd {
-static const std::map<kernel_prop, std::vector<impl_list_item_t>> dyn_quantize_mha_impl_list_map = {
-    {kernel_prop::forward_inference, {CPU_INSTANCE(dyn_quantize_mha_ref_k_t), NULL_INSTANCE()}},  // TODO(Yi): +kernel
+static const std::map<kernel_prop, std::vector<impl_list_item_t>> dynamic_quantize_mha_impl_list_map = {
+    {kernel_prop::forward_inference,
+     {CPU_INSTANCE(dynamic_quantize_mha_ref_k_t), NULL_INSTANCE()}},  // TODO(Yi): +kernel
 };
 
-const std::vector<impl_list_item_t>* get_dyn_quantize_mha_impl_list(const operator_desc& op_desc) {
-  const auto impl_list_it = dyn_quantize_mha_impl_list_map.find(op_desc.kernel_prop());
-  return (impl_list_it != dyn_quantize_mha_impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine_t::empty_list;
+const std::vector<impl_list_item_t>* get_dynamic_quantize_mha_impl_list(const operator_desc& op_desc) {
+  const auto impl_list_it = dynamic_quantize_mha_impl_list_map.find(op_desc.kernel_prop());
+  return (impl_list_it != dynamic_quantize_mha_impl_list_map.end()) ? &(impl_list_it->second)
+                                                                    : &cpu_engine_t::empty_list;
 }
 }  // namespace jd

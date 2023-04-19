@@ -14,6 +14,7 @@
 
 #include <immintrin.h>
 #include "kernels/spmm_amx_bf16_x16.hpp"
+#include "singleton.hpp"
 
 namespace jd {
 //// Part1: class spmm_amx_bf16_x16_kd_t
@@ -94,7 +95,7 @@ bool spmm_amx_bf16_x16_k_t::init() {
     jit_kers_[i] = ker;
     weights_[i] = param.weight;
   }
-  amx_config_ = amx_tile_config_t::GetInstance();
+  amx_config_ = Singleton<amx_tile_config_t>::GetInstance();
   return true;
 }
 

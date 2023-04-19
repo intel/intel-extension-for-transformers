@@ -36,13 +36,14 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_layernorm_ba_kernel.cpp
     test_gather_kernel.cpp
     test_matmul_avx512f_p2031_p2013.cpp
+    test_matmul_avx512f_8bit.cpp
     test_matmul_vnni_p2031_p2013.cpp
     test_matmul_vnni_noperm_p2031_p1302.cpp
     test_softmax_kernel.cpp
     test_layernormalized_spmm_kernel.cpp
     test_seq_cpy_2x8x8.cpp
     test_seq_cpy_48x4.cpp
-    test_dyn_quantize_mha.cpp
+    test_dynamic_quantize_mha.cpp
     test_mha_dense_kernel.cpp
     test_slice_kernel.cpp
     test_dynamic_quant_matmul.cpp

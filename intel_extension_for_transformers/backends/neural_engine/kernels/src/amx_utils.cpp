@@ -14,18 +14,8 @@
 
 #include "amx_utils.hpp"
 
-amx_tile_config_t* amx_tile_config_t::atc_instance_{nullptr};
-std::mutex amx_tile_config_t::mutex_;
 static const jd::jit_amx_config_t tilecfg;
 static const jd::jit_amx_release_t tilerls;
-
-amx_tile_config_t* amx_tile_config_t::GetInstance() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (atc_instance_ == nullptr) {
-    atc_instance_ = new amx_tile_config_t();
-  }
-  return atc_instance_;
-}
 
 void amx_tile_config_t::amx_tile_configure(int thread_x, tile_param_t param) {
   if (param != param_[thread_x]) {

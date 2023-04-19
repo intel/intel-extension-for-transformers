@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 #include "jit_domain/jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b.hpp"
 #include "unit_test_utils.hpp"
+#include "singleton.hpp"
 
 namespace jd {
 using dt = data_type;
@@ -78,7 +79,7 @@ TEST_P(MhaDenseMMQKTest, ) {
         }
 
   // prepare amx
-  auto amx_config_ = amx_tile_config_t::GetInstance();
+  auto amx_config_ = Singleton<amx_tile_config_t>::GetInstance();
   if (amx_config_ == nullptr) {
     SPARSE_LOG(ERROR) << "Unable to config AMX! Skipping...";
     return;

@@ -61,6 +61,8 @@ class jit_eltwise_injector {
  private:
   void assign_regs();
   void exp_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void low_precision_exp_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
+  void swish_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void tanh_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void gelu_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void relu_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
@@ -148,6 +150,8 @@ class jit_eltwise_injector {
     tanh_linear_ubound,
     tanh_saturation_lbound,
     tanh_pol_table,
+    low_precision_exp_const_v1,
+    low_precision_exp_const_v2,
     exchange_zmm_low256_high256,
     bit8_lut_term,
     bit8_64,

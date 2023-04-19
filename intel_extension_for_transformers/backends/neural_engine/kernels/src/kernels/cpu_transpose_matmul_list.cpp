@@ -18,6 +18,7 @@
 #include "cpu_engine.hpp"
 #include "impl_list_item.hpp"
 #include "kernels/matmul_avx512f_p2031_p2013.hpp"
+#include "kernels/matmul_avx512f_8bit.hpp"
 #include "kernels/matmul_vnni_noperm_p2031_p1302.hpp"
 #include "kernels/matmul_vnni_p2031_p2013.hpp"
 #include "kernels/matmul_ref.hpp"
@@ -40,6 +41,14 @@ using io = ssd::matmul_io::io;
 static const std::map<map_key_t, std::vector<impl_list_item_t>> impl_list_map = {
     {{kernel_prop::forward_inference, dt::fp32, dt::fp32, dt::fp32},
      {CPU_INSTANCE(matmul_avx512f_p2031_p2013_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::bf16, dt::bf16, dt::bf16},
+     {CPU_INSTANCE(matmul_avx512f_8bit_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::bf16, dt::s8, dt::bf16},
+     {CPU_INSTANCE(matmul_avx512f_8bit_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::bf16, dt::f8_e4m3, dt::bf16},
+     {CPU_INSTANCE(matmul_avx512f_8bit_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
+    {{kernel_prop::forward_inference, dt::bf16, dt::f8_e5m2, dt::bf16},
+     {CPU_INSTANCE(matmul_avx512f_8bit_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
     {{kernel_prop::forward_inference, dt::u8, dt::s8, dt::u8},
      {CPU_INSTANCE(matmul_vnni_noperm_p2031_p1302_k_t), CPU_INSTANCE(matmul_ref_k_t), NULL_INSTANCE()}},
     {{kernel_prop::forward_inference, dt::s8, dt::s8, dt::fp32},

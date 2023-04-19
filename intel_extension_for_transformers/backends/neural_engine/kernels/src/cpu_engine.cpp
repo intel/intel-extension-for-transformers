@@ -33,7 +33,7 @@ DECLARE_IMPL_LIST(gather);
 DECLARE_IMPL_LIST(attention);
 DECLARE_IMPL_LIST(transpose_mha);
 DECLARE_IMPL_LIST(mha_dense);
-DECLARE_IMPL_LIST(dyn_quantize_mha);
+DECLARE_IMPL_LIST(dynamic_quantize_mha);
 DECLARE_IMPL_LIST(slice);
 DECLARE_IMPL_LIST(dynamic_quant);
 
@@ -56,7 +56,7 @@ const std::vector<impl_list_item_t>* cpu_engine_t::get_implementation_list(const
     CASE(attention);
     CASE(transpose_mha);
     CASE(mha_dense);
-    CASE(dyn_quantize_mha);
+    CASE(dynamic_quantize_mha);
     CASE(slice);
     CASE(dynamic_quant_matmul);
     CASE(dynamic_quant);

@@ -28,7 +28,7 @@ template <>
 void eltwiseop_bench::cast_to_float_array<bfloat16_t>(const void* src, float* dst, int size) {
   bfloat16_t* src_typed = reinterpret_cast<bfloat16_t*>(const_cast<void*>(src));
   for (int i = 0; i < size; ++i) {
-    dst[i] = make_fp32(src_typed[i]);
+    dst[i] = bf16_to_fp32(src_typed[i]);
   }
 }
 
@@ -44,7 +44,7 @@ template <>
 void eltwiseop_bench::cast_from_float_array<bfloat16_t>(float* src, void* dst, int size) {
   bfloat16_t* dst_typed = reinterpret_cast<bfloat16_t*>(dst);
   for (int i = 0; i < size; ++i) {
-    dst_typed[i] = make_bf16(src[i]);
+    dst_typed[i] = fp32_to_bf16(src[i]);
   }
 }
 
@@ -157,7 +157,7 @@ bool eltwiseop_bench::check_result() {
   } else if (dst_type == data_type::s8) {
     ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1);
   } else if (dst_type == data_type::bf16) {
-    ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, make_bf16(1.0));
+    ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, fp32_to_bf16(1.0));
   } else if (dst_type == data_type::s32) {
     ans = compare_data<int>(buf1, size1, buf2, size2, 1);
   }

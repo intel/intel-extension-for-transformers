@@ -46,7 +46,7 @@ void assign_val(void* ptr, jd::data_type dtype, float val, int idx) {
       reinterpret_cast<float*>(ptr)[idx] = val;
       break;
     case jd::data_type::bf16:
-      reinterpret_cast<bfloat16_t*>(ptr)[idx] = jd::make_bf16(val);
+      reinterpret_cast<bfloat16_t*>(ptr)[idx] = jd::fp32_to_bf16(val);
       break;
     case jd::data_type::u8:
       reinterpret_cast<uint8_t*>(ptr)[idx] = (uint8_t)val;

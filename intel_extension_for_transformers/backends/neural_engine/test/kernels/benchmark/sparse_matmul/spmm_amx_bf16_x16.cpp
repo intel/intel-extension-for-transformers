@@ -72,12 +72,12 @@ void spmm_amx_bf16_x16_bench::get_true_data() {
 #pragma omp parallel for
         for (int k = 0; k < K; ++k) {
           float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] +=
-              make_fp32(wei_data[n * K + k]) * make_fp32(src_data[num_m * K * M_MICRO + k * M_MICRO + m]);
+              bf16_to_fp32(wei_data[n * K + k]) * bf16_to_fp32(src_data[num_m * K * M_MICRO + k * M_MICRO + m]);
         }
         float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] += bia_data[n];
         if (dst_dt == dt::bf16) {
           bf_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] =
-              make_bf16(float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m]);
+              fp32_to_bf16(float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m]);
         } else {
           fp_dst_data[num_m * N * M_MICRO + n * M_MICRO + m] = float_dst_data[num_m * N * M_MICRO + n * M_MICRO + m];
         }
@@ -108,7 +108,7 @@ void prepare_sparse_data_spmm_amx_bf16_x16(T* weight, dim_t N, dim_t K, dim_t n_
   std::srand(seed);
   for (int n = 0; n < N; ++n) {
     for (int k = 0; k < K; ++k) {
-      weight[n * K + k] = make_bf16(static_cast<float>(std::rand() % 10 - 5) / 10);
+      weight[n * K + k] = fp32_to_bf16(static_cast<float>(std::rand() % 10 - 5) / 10);
     }
   }
   // sparsify a_mat
@@ -118,7 +118,7 @@ void prepare_sparse_data_spmm_amx_bf16_x16(T* weight, dim_t N, dim_t K, dim_t n_
       if (fill_zero) {
         for (int n = 0; n < n_blksize; ++n) {
           for (int k = 0; k < k_blksize; ++k) {
-            weight[(nb * n_blksize + n) * K + kb * k_blksize + k] = make_bf16(0);
+            weight[(nb * n_blksize + n) * K + kb * k_blksize + k] = fp32_to_bf16(0);
           }
         }
       }

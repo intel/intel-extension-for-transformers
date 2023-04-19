@@ -45,6 +45,21 @@ struct matmul_param_t {
   dim_t m_tile = 8;
   dim_t n_tile = 2;
 };
+struct matmul_fp8_param_t {
+  dim_t M;
+  dim_t N;
+  dim_t K;
+  float alpha = 1.f, beta = 1.f;  // alpha * (src0 * src1) + beta * src_binary_add = dst
+  bfloat16_t* weight_bf16 = nullptr;
+  union {
+    int8_t* weight_int8;
+    float8_t* weight_fp8;
+  };
+  data_type weight_type = data_type::undef;
+  std::vector<postop_attr> postop_attrs;
+  bool has_gelu;
+  int thread_num;
+};
 
 struct matmul_data_t {
   const float* src0;
@@ -59,6 +74,14 @@ struct matmul_u8_data_t {
   uint8_t* dst;
   const float* scale;
   const float* zp;
+};
+struct matmul_fp8_data_t {
+  bfloat16_t* matA;
+  uint8_t* matB;
+  bfloat16_t *matC, *matD;
+  int k, n, astep, bstep, cstep, dstep;
+  int kpos;
+  float alpha, beta;
 };
 
 }  // namespace ssd
