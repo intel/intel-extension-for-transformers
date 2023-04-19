@@ -16,14 +16,15 @@
 # limitations under the License.
 
 import argparse
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.backends.neural_engine.compile import compile, autocast
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--onnx_model", default="./model", type=str, help="onnx model path.")
     parser.add_argument("--pattern_config", default="./", type=str, help="pattern graph path.")
     parser.add_argument("--output_path", default="./ir", type=str, help="pattern graph path.")
+    parser.add_argument("--cast_type", default="native", type=str, help="pattern graph path.")
     args = parser.parse_args()
-
-    graph = compile(args.onnx_model, args.pattern_config)
-    graph.save(args.output_path)
+    with autocast(args.cast_type):
+        graph = compile(args.onnx_model, args.pattern_config)
+        graph.save(args.output_path)

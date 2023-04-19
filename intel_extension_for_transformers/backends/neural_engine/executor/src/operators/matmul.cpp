@@ -13,8 +13,8 @@
 //  limitations under the License.
 
 #include "matmul.hpp"
-#include "model.hpp"
 
+#include "model.hpp"
 #include "operator_registry.hpp"
 namespace executor {
 
@@ -732,7 +732,6 @@ void MatmulOperator::RuntimeMinmax() {
 
 void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
                                     vector<float>* dynamic_bias_ptr) {
-  auto& src0_zero_points = *src0_zero_points_ptr;
   auto& rescales = *rescales_ptr;
   int channel_size = src1_min_->size();  // channel_size=1 represent per_tensor
   rescales.resize(channel_size);
@@ -768,6 +767,7 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
   }
 
   if (src0_->dtype() == "u8") {
+    auto& src0_zero_points = *src0_zero_points_ptr;
     src0_zero_points = GetZeroPoints(reinterpret_cast<const float*>(src0_min_->data()), src0_scales, src0_->dtype(),
                                      src0_min_->size());
     zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);

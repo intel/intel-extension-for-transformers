@@ -25,6 +25,7 @@ from .ops.tensor import Tensor
 from .graph import Graph
 import numpy as np
 from . import graph_utils as util
+from copy import deepcopy
 
 COMPILES = OrderedDict({
     'loader': Loader,
@@ -136,12 +137,14 @@ def _insert_Q(graph: Graph):
             quant_node = graph.nodes[quant_id]
             for output_tensor_idx in range(3):
                 quant_node.output_tensors[output_tensor_idx].dest_op.append(node.name)
+            graph.remove_nodes([quant_node.name])
+            graph.insert_nodes(graph.get_node_id(node.name), [quant_node])
         except ValueError:
             graph.insert_nodes(graph.get_node_id(node.name), [quantize_op])
         node.input_tensors[input_tensor_idx] = quant_output
         node.input_tensors.extend([quant_min, quant_scale])
 
-    def quantize_weight_tensor(weight_tensor: Tensor):
+    def quantize_weight_tensor(weight_tensor: Tensor,op_type: str):
         tensor_min = Tensor(name=node.input_tensors[1].name + "_min",
                             source_op=[],
                             dest_op=[node.name],
@@ -150,43 +153,54 @@ def _insert_Q(graph: Graph):
                               source_op=[],
                               dest_op=[node.name],
                               dtype='fp32')
-        weight_perm = node.attr['src1_perm']
+        weight_perm = node.attr.get('src1_perm', "")
         weight_data = weight_tensor.data
-        if weight_perm == "0,1":  #1,0?
-            tensor_min.data = np.min(weight_data, axis=-1).astype(np.float32)
-            max_data = np.max(weight_data, axis=-1).astype(np.float32)
-            # tensor_min.data = np.minimum(tensor_min.data, 0.)
-            # tensor_max.data = np.maximum(tensor_max.data, 0.)
+        if op_type=="Convolution":
+            axis=tuple(range(1,len(weight_data.shape)))
+            tensor_min.data = weight_data.min(axis,keepdims=True).astype(np.float32)
+            max_data = weight_data.max(axis,keepdims=True).astype(np.float32)
             tensor_scale.data = np.maximum(np.fabs(tensor_min.data), np.fabs(max_data))
             tensor_scale.data = np.where(tensor_scale.data == 0., 0.,
-                                         127. / tensor_scale.data)  #only support s8 now
-            zero_point = 0.
-            weight_tensor.data = \
-                (np.round((weight_tensor.data).T * tensor_scale.data).astype(np.int8)).T
-        else:
-            tensor_min.data = np.min(weight_data, axis=0).astype(np.float32)
-            max_data = np.max(weight_data, axis=0).astype(np.float32)
-            # tensor_min.data = np.minimum(tensor_min.data, 0.)
-            # tensor_max.data = np.maximum(tensor_max.data, 0.)
-            tensor_scale.data = np.maximum(np.fabs(tensor_min.data), np.fabs(max_data))
-            tensor_scale.data = np.where(tensor_scale.data == 0., 0.,
-                                         127. / tensor_scale.data)  #only support s8 now
+                                        127. / tensor_scale.data)  #only support s8 now
             zero_point = 0.
             weight_tensor.data = np.round(weight_tensor.data * tensor_scale.data).astype(np.int8)
+        else:    
+            if weight_perm == "0,1":
+                tensor_min.data = np.min(weight_data, axis=-1).astype(np.float32)
+                max_data = np.max(weight_data, axis=-1).astype(np.float32)
+                # tensor_min.data = np.minimum(tensor_min.data, 0.)
+                # tensor_max.data = np.maximum(tensor_max.data, 0.)
+                tensor_scale.data = np.maximum(np.fabs(tensor_min.data), np.fabs(max_data))
+                tensor_scale.data = np.where(tensor_scale.data == 0., 0.,
+                                            127. / tensor_scale.data)  #only support s8 now
+                zero_point = 0.
+                weight_tensor.data = \
+                    (np.round((weight_tensor.data).T * tensor_scale.data).astype(np.int8)).T
+            else:
+                tensor_min.data = np.min(weight_data, axis=0).astype(np.float32)
+                max_data = np.max(weight_data, axis=0).astype(np.float32)
+                # tensor_min.data = np.minimum(tensor_min.data, 0.)
+                # tensor_max.data = np.maximum(tensor_max.data, 0.)
+                tensor_scale.data = np.maximum(np.fabs(tensor_min.data), np.fabs(max_data))
+                tensor_scale.data = np.where(tensor_scale.data == 0., 0.,
+                                            127. / tensor_scale.data)  #only support s8 now
+                zero_point = 0.
+                weight_tensor.data = np.round(weight_tensor.data * tensor_scale.data).astype(np.int8)
         tensor_min.shape = list(tensor_min.data.shape)
         tensor_scale.shape = list(tensor_scale.data.shape)
         weight_tensor.dtype = 's8'
         weight_tensor.name = node.input_tensors[1].name + "_quant"
         node.input_tensors.extend([tensor_min, tensor_scale])
 
-    for node in filter(lambda x: x.op_type in ["InnerProduct", "Matmul"], reversed(graph.nodes)):
+    for node in filter(lambda x: x.op_type in ["InnerProduct", "Matmul", "Convolution"],
+                       reversed(graph.nodes)):
         reshape_tensor = []
         if "reshape_dims" in node.attr:
             reshape_tensor = [node.input_tensors[-1]]
             node.input_tensors = node.input_tensors[:-1]
         quantize_src_tensor(0, "s8" if node.op_type == "Matmul" else "u8")
         if isinstance(node.input_tensors[1].data, np.ndarray):
-            quantize_weight_tensor(node.input_tensors[1])
+            quantize_weight_tensor(node.input_tensors[1],node.op_type)
         else:
             quantize_src_tensor(1, "s8")
         node.input_tensors.extend(reshape_tensor)
@@ -219,7 +233,7 @@ def _fuse_quatize(graph: Graph):
         'returns': [0, 1]
     }
 
-    for any_op in ["InnerProduct", "Matmul", "Softmax"]:  #,"LayerNorm"
+    for any_op in ["InnerProduct", "Matmul", "Softmax"]:  #,"LayerNorm","Convolution"
         now_pattern = pattern.copy()
         now_pattern["patterns"]["in"][0][0] = (0, any_op)
         now_pattern["patterns"]["out"][0][0] = (0, any_op)
@@ -248,7 +262,7 @@ def _dynamic_quantization(fp32_model):
     """
     # load fp32model
     if isinstance(fp32_model, Graph):
-        graph = fp32_model
+        graph = deepcopy(fp32_model)
     else:
         graph = Graph()
         graph.graph_init(fp32_model + '/conf.yaml', fp32_model + '/model.bin')

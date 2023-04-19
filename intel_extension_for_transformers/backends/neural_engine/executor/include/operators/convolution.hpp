@@ -15,10 +15,10 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_CONVOLUTION_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_CONVOLUTION_HPP_
 #include <cstring>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
@@ -37,7 +37,7 @@ using dnnl::prop_kind;
 class ConvolutionOperator : public Operator {
  public:
   explicit ConvolutionOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~ConvolutionOperator() {}
+  virtual ~ConvolutionOperator() { MemoryAllocator::get().UnrefMemory(scratchpad_); }
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
@@ -46,7 +46,8 @@ class ConvolutionOperator : public Operator {
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  bool isDynamic(const vector<Tensor*>& output);
+  void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
+                      vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
 
   bool weight_cached_;
   bool has_bias_;
@@ -59,6 +60,7 @@ class ConvolutionOperator : public Operator {
   bool tanh_;
   bool sigmoid_;
   bool relu_;
+  bool is_dynamic_;
 
   bool append_eltwise_;
   float output_scale_ = 1.f;
@@ -95,6 +97,7 @@ class ConvolutionOperator : public Operator {
   memory dst_m_;
   memory gelu_m_;
   memory binary_m_;
+  memory scale_f32_mem_, zp_src0_mem_;
 
   Tensor* src_ = nullptr;
   Tensor* weight_ = nullptr;
@@ -110,6 +113,7 @@ class ConvolutionOperator : public Operator {
 
   Tensor* dst_min_ = nullptr;
   Tensor* dst_max_ = nullptr;
+  void* scratchpad_ = nullptr;
   string append_op_;
 };
 }  // namespace executor

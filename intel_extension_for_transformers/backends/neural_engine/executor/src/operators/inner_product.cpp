@@ -302,7 +302,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
   if (is_dynamic_) {
     DLOG(INFO) << this->name() << " is DYNAMIC!!!";
 #ifdef _WIN32
-    LOG(ERROR) << "dynamic quantization did NOT support windows now!!!";
+    DLOG(ERROR) << "dynamic quantization did NOT support windows now!!!";
     throw std::string("Windows");
 #endif
   }
@@ -603,7 +603,7 @@ void InnerProductOperator::ShapeInferSparseLib(const vector<Tensor*>& input, con
     CHECK_EQ(dispatch_kernel_config["InnerProduct_to_SparseLib"].size(), dispatch_config_.size() - 1)
         << "InnerProduct to SparseLib has wrong dispatch kernel config...";
     DLOG(INFO) << "Operator " << name_ << " dispatch configs are " << dispatch_config_[0] << "," << dispatch_config_[1]
-              << "," << dispatch_config_[2] << "," << dispatch_config_[3];
+               << "," << dispatch_config_[2] << "," << dispatch_config_[3];
     // pass 3D shape and tensor_format
     vector<int64_t> src1_3d_shape;
     StringSplit<int64_t>(&src1_3d_shape, dispatch_config_[1], ",");
@@ -730,7 +730,6 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
       LOG(WARNING) << "post tensor will be used by multi node...";
     }
   }
-
   std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
                                            rescales_.data()};
   spmm_kern_.execute(runtime_data);
@@ -880,9 +879,15 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
   if (has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")) {
     vector<int64_t> bias_shape = {src1_shape[0]};
     vector<int64_t> bias_stride = GetStrides(bias_shape);
-    bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
-    any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
-    bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
+    if (has_bias_) {
+      bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
+      any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
+      bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
+    } else {
+      bias_md_ = memory::desc(bias_shape, dnnl::memory::data_type::f32, bias_stride);
+      any_bias_md_ = memory::desc(bias_shape, dnnl::memory::data_type::f32, memory::format_tag::any);
+      bias_m_ = memory(bias_md_, eng_);
+    }
   }
   // set src activation, dense weight, dst activation and append_sum post
   // activationtensor format
@@ -985,12 +990,9 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     auto op_beta = 0.0;
     po.append_eltwise(op_scale, algorithm::eltwise_relu, op_alpha, op_beta);
   }
-  // this is to sub zero point in fp32 to make the output u8/s8
-  if (!is_dynamic_ && append_eltwise_ && (dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
+  // this is to sub zero point in fp32 to make the output u8
+  if (!is_dynamic_ && append_eltwise_ && dst_->dtype() == "u8") {
     float zero_point = -1 * static_cast<const float*>(dst_min_->data())[0];
-    if (dst_->dtype() == "s8") {
-      zero_point = 0;
-    }
     po.append_eltwise(dst_scales_[0], algorithm::eltwise_linear, 1., zero_point);
   }
 
@@ -1039,14 +1041,16 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
 
   // 2.2 Prepare op descriptors
   dnnl::inner_product_forward::desc inner_product_d =
-      has_bias_ ? dnnl::inner_product_forward::desc(prop_kind::forward_inference, src0_md, src1_md_, bias_md_, dst_md)
-                : dnnl::inner_product_forward::desc(prop_kind::forward_inference, src0_md, src1_md_, dst_md);
+      has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")
+          ? dnnl::inner_product_forward::desc(prop_kind::forward_inference, src0_md, src1_md_, bias_md_, dst_md)
+          : dnnl::inner_product_forward::desc(prop_kind::forward_inference, src0_md, src1_md_, dst_md);
 
   if (format_any_) {
-    inner_product_d = has_bias_ ? dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md,
-                                                                    any_src1_md_, any_bias_md_, any_dst_md)
-                                : dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md,
-                                                                    any_src1_md_, any_dst_md);
+    inner_product_d =
+        has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")
+            ? dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md, any_src1_md_, any_bias_md_,
+                                                any_dst_md)
+            : dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md, any_src1_md_, any_dst_md);
   }
 
   if (gelu_erf_ && gelu_split_) {
@@ -1125,6 +1129,7 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
 }
 //  2. inference kernel(for int8 and f32)
 void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  // 0. Alias variables part
   // create a dynamic quantization output with fp32.
   Tensor inner_product_fp32_res;
   void* dst_data;
@@ -1155,9 +1160,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
       LOG(WARNING) << "post tensor will be used by multi node...";
     }
   }
-  // 0. Alias variables part
   const auto& src0_data = src0_->data();
-  // when change data value please use mutable_data
 
   auto& src0_shape_ = input[0]->shape();
   auto& dst_shape_ = output[0]->shape();
@@ -1299,11 +1302,11 @@ void InnerProductOperator::DynamicForward(vector<float>* dynamic_bias_ptr, memor
   // the compensation is src0_scale*sr0_min*ones_like(src0)*src1. compensation
   // will be add as bias
   if (has_bias_ || src0_->dtype() == "u8") {
-    dynamic_bias.resize(bias_->size());
-    float* bias_data = reinterpret_cast<float*>(bias_->mutable_data());
+    dynamic_bias.resize(src1_->shape()[0]);
+    float* bias_data = has_bias_ ? reinterpret_cast<float*>(bias_->mutable_data()) : nullptr;
     float com_scale = (*(reinterpret_cast<float*>(src0_min_->mutable_data()))) / output_scale_ * src0_scales[0];
 #pragma omp parallel for
-    for (int i = 0; i < bias_->size(); i++) {
+    for (int i = 0; i < src1_->shape()[0]; i++) {
       dynamic_bias[i] = 0;
       if (has_bias_) dynamic_bias[i] += bias_data[i] / rescales_[channel_size == 1 ? 0 : i];
       if (src0_->dtype() == "u8") dynamic_bias[i] += compensation_[i] * com_scale;

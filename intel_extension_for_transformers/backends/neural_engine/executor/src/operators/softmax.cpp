@@ -244,12 +244,12 @@ void SoftmaxOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*
 #endif
 
   MapTensors(input, output);
+  is_dynamic_ = output.size() > 1;
 
   dst_->set_dtype(output_dtype_);
-  if (dst_min_ != nullptr && dst_max_ != nullptr) {
+  if (!is_dynamic_ && dst_min_ != nullptr && dst_max_ != nullptr) {
     dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
   }
-  is_dynamic_ = output.size() > 1;
 }
 
 void SoftmaxOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {

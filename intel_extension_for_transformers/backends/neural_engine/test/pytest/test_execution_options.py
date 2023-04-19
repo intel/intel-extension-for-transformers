@@ -63,14 +63,14 @@ class TestExecutionOptions(unittest.TestCase):
         graph.execution_options = options
         output_tuning = []
         for i in range(10):
-            out = copy.deepcopy(graph.inference([data]))
-            output_tuning.append(out['ip:0'])
+            out = graph.inference([data])
+            output_tuning.append(copy.deepcopy(out['ip:0']))
         output_inference = []
         options.enable_op_tuning = False
         graph.execution_options = options
         for i in range(10):
-            out = copy.deepcopy(graph.inference([data]))
-            output_inference.append(out['ip:0'])
+            out = graph.inference([data])
+            output_inference.append(copy.deepcopy(out['ip:0']))
         flag = np.allclose(np.array(output_tuning), np.array(output_inference), atol=1e-1,
                            equal_nan=True)
         self.assertTrue(os.path.exists(graph.execution_options.dispatch_table_file_root))

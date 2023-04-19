@@ -24,17 +24,20 @@ for var in "$@"
       --precision=*)
           precision=$(echo $var |cut -f2 -d=)
       ;;
+      --cast_type=*)
+          cast_type=$(echo $var |cut -f2 -d=)
+      ;;
     esac
   done
 
 # 1. text encoder
 echo "[INFO] Start to export text encoder ir..."
-python export_ir.py --onnx_model=${input_model}/text_encoder_${precision}/model.onnx --pattern_config=text_encoder_pattern.conf --output_path=./${precision}_ir/text_encoder/
+python export_ir.py --onnx_model=${input_model}/text_encoder_${precision}/model.onnx --pattern_config=text_encoder_pattern.conf --output_path=./${precision}_${cast_type}_ir/text_encoder/ --cast_type=${cast_type}
 
 # 2. unet
 echo "[INFO] Start to export unet ir..."
-python export_ir.py --onnx_model=${input_model}/unet_${precision}/model.onnx --pattern_config=unet_pattern.conf --output_path=./${precision}_ir/unet/
+python export_ir.py --onnx_model=${input_model}/unet_${precision}/model.onnx --pattern_config=unet_pattern.conf --output_path=./${precision}_${cast_type}_ir/unet/ --cast_type=${cast_type}
 
 # 3. vae_decoder
 echo "[INFO] start to export vae_decoder ir..."
-python export_ir.py --onnx_model=${input_model}/vae_decoder_${precision}/model.onnx --pattern_config=vae_decoder_pattern.conf --output_path=./${precision}_ir/vae_decoder/
+python export_ir.py --onnx_model=${input_model}/vae_decoder_${precision}/model.onnx --pattern_config=vae_decoder_pattern.conf --output_path=./${precision}_${cast_type}_ir/vae_decoder/ --cast_type=${cast_type}
