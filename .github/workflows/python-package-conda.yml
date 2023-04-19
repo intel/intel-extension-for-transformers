@@ -15,14 +15,10 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: '3.9'
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
 
     - name: Test with pytest
       run: |
-        conda install pytest
+        pip install pytest
         pip install tests/requirements.txt
         find . -name "test*.py" | sed 's,\.\/,python ,g' | sed 's/$/ --verbose/'  > run.sh
         echo "This step runs in bash"
