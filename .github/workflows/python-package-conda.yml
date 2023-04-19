@@ -19,7 +19,8 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest
-        pip install tests/requirements.txt
+        cd ../../tests
+        pip install requirements.txt
         find . -name "test*.py" | sed 's,\.\/,python ,g' | sed 's/$/ --verbose/'  > run.sh
         echo "This step runs in bash"
         ./run.sh
