@@ -37,6 +37,9 @@ function init_params {
       --int8=*)
           int8=$(echo ${var} |cut -f2 -d=)
       ;;
+      --bf16=*)
+          int8=$(echo ${var} |cut -f2 -d=)
+      ;;
       --config=*)
           tuned_checkpoint=$(echo $var |cut -f2 -d=)
       ;;
@@ -85,6 +88,10 @@ function run_benchmark {
         DATASET_NAME="wikitext"
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    elif [ "${topology}" = "gpt_j_6b_clm_ipex" ]; then
+        script="run_gptj.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_mlm_static" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
@@ -134,9 +141,24 @@ function run_benchmark {
         extra_cmd=$extra_cmd" --int8"
         model_name_or_path=${tuned_checkpoint}
     fi
+
+    if [[ ${int8} == "true" ]] && [ "${topology}" = "gpt_j_6b_clm_ipex" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    fi
+
+    if [[ ${bf16} == "true" ]]; then
+        extra_cmd=$extra_cmd" --bf16_ipex"
+    fi
+
     echo $extra_cmd
 
-    if [ -z ${DATASET_CONFIG_NAME} ];then
+    if [ -z ${DATASET_NAME} ];then
+        python -u ./${script} \
+            --model ${model_name_or_path} \
+            --output_dir ${tuned_checkpoint} \
+            ${mode_cmd} \
+            ${extra_cmd}
+    elif [ -z ${DATASET_CONFIG_NAME} ];then
         python -u ${script} \
             --model_name_or_path ${model_name_or_path} \
             --dataset_name ${DATASET_NAME} \

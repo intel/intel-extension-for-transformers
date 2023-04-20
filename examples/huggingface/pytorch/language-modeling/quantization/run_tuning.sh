@@ -68,6 +68,10 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         approach="PostTrainingDynamic"
+    elif [ "${topology}" = "gpt_j_6b_clm_ipex" ]; then
+        script="run_gptj.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_mlm_static" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
@@ -123,7 +127,13 @@ function run_tuning {
         extra_cmd=$extra_cmd" --smooth_quant --sampling_size 400 --torchscript"
     fi
 
-    if [ -z ${DATASET_CONFIG_NAME} ];then
+    if [ -z ${DATASET_NAME} ];then
+        python -u ./${script} \
+            --model ${model_name_or_path} \
+            --output_dir ${tuned_checkpoint} \
+            --quantize \
+            ${extra_cmd}
+    elif [ -z ${DATASET_CONFIG_NAME} ];then
         python -u ./${script} \
             --model_name_or_path ${model_name_or_path} \
             --dataset_name ${DATASET_NAME} \

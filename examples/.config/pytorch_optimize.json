@@ -1134,5 +1134,26 @@
         "config": "saved_results"
       }
     }
-  }
+  },
+  "gpt_j_6b_clm_ipex": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gpt_j_6b_clm_ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gpt_j_6b_ipex",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
 }

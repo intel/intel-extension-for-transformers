@@ -1,21 +1,53 @@
-Step-by-Step​
+Step-by-Step
 ============
-The scripts `run_clm.py`, `run_mlm.py` and `run_plm.py` provide three quantization approaches respectively (PostTrainingDynamic, PostTrainingStatic and QuantizationAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+This document describes the step-by-step instructions to run large language models (LLMs) on 4th Gen Intel® Xeon® Scalable Processor (codenamed Sapphire Rapids) with PyTorch and Intel® Extension for PyTorch.
 
-# Prerequisite​
-## 1. Create Environment​
-Recommend python 3.7 or higher version.
-```shell
-pip install intel-extension-for-transformers
-pip install -r requirements.txt
+The scripts `run_clm.py`, `run_mlm.py` and `run_plm.py` provide two quantization approaches respectively (PostTrainingDynamic, PostTrainingStatic) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+
+The script `evaluate_clm.py` supports `GPTJ`, `OPT`, `LLaMA`, `BLOOM` quantization and validates accuracy with [lm_evaluation_harness](https://github.com/EleutherAI/lm-evaluation-harness.git) now, and we are adding more models.
+
+# Prerequisite
+## 1. Create Environment
+```
+WORK_DIR=$PWD
+# Create Environment (conda)
+conda create -n llm python=3.9 -y
+conda install mkl mkl-include -y
+conda install gperftools jemalloc==5.2.1 -c conda-forge -y
+
+# Installation
+pip install git+https://github.com/intel/neural-compressor.git
+pip install intel_extension_for_pytorch transformers intel_extension_for_transformers datasets accelerate
+
+# Setup Environment Variables
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
+# IOMP
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
+# Tcmalloc is a recommended malloc implementation that emphasizes fragmentation avoidance and scalable concurrency support.
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 ```
 
 # Run
 ## 1. Quantization
+
 Here is how to run the scripts:
 
 **Causal Language Modeling (CLM)**
 
+`evaluate_clm.py` quantizes the large language models using the dataset [NeelNanda/pile-10k](https://huggingface.co/datasets/NeelNanda/pile-10k) calibration and validates `lambada_openai`, `piqa`, `winogrande`, `hellaswag` and other datasets accuracy provided by lm_evaluation_harness, an example command is as follows.
+```bash
+# "--sq" is used to enable smooth quant
+# "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+python evaluate_clm.py \
+    --model EleutherAI/gpt-j-6B \
+    --quantize \
+    --sq \
+    --int8_bf16_mixed \
+    --output_dir "saved_results"
+```
+To do quantization based transformers language-modeling example [`run_clm.py`](https://github.com/huggingface/transformers/blob/main/examples/pytorch/language-modeling/run_clm.py), please use the following command.
 ```
 python run_clm.py \
     --model_name_or_path EleutherAI/gpt-neo-125M \
@@ -60,17 +92,39 @@ python run_mlm.py \
     --overwrite_output_dir
 
 ```
+## 2. Accuracy
+```bash
+# FP32 Accuracy
+python evaluate_clm.py \
+    --model EleutherAI/gpt-j-6B \
+    --accuracy_only \
+    --batch_size 56
 
-## 2. Validated Model List
+# BF16 Accuracy
+python evaluate_clm.py \
+    --model EleutherAI/gpt-j-6B \
+    --accuracy_only \
+    --ipex_bf16 \
+    --batch_size 56
+
+# INT8 Accuracy
+python evaluate_clm.py \
+    --model EleutherAI/gpt-j-6B \
+    --accuracy_only \
+    --int8 \
+    --batch_size 56
+```
+
+## 3. Validated Model List
 
 |Type|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
-|CLM|EleutherAI/gpt-neo-125M| ✅| ✅| ✅
+|CLM|EleutherAI/gpt-neo-125M| ✅| ✅| Stay tuned
 |CLM|abeja/gpt-neox-japanese-2.7b| ✅| ✅| Stay tuned
 |CLM|EleutherAI/gpt-j-6B| ✅| ✅| Stay tuned
 |CLM|bigscience/bloom-560m| ✅| ✅| Stay tuned
-|MLM|bert-base-uncased| ✅| ✅| ✅
-|PLM|xlnet-base-cased| ✅| ✅| ✅
+|MLM|bert-base-uncased| ✅| ✅| Stay tuned
+|PLM|xlnet-base-cased| ✅| ✅| Stay tuned
 
 ## 3. Bash Command
 

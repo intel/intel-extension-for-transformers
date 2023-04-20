@@ -51,7 +51,6 @@ def evaluate(model,
              decontamination_ngrams_path=None,
              seed=1234,
              user_model=None,
-             output_dir=None,
             ):
     """Instantiate and evaluate a model on a list of tasks.
 
@@ -131,14 +130,6 @@ def evaluate(model,
         description_dict=description_dict,
         decontamination_ngrams_path=decontamination_ngrams_path
     )
-    print(make_table(results))
-    
-    dumped = json.dumps(results, indent=2)
-    if output_dir:
-        now = int(round(time.time()*1000))
-        date = now02 = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(now/1000))
-        results_name = model_args.split(",")[0].replace("/", "-") + "-" + date + "-"+ "results.json"
-        with open(os.path.abspath(os.path.expanduser(output_dir)) + "/" + results_name, "w") as f:
-            f.write(dumped)
 
+    print(make_table(results)) 
     return results

@@ -10,9 +10,6 @@ from transformers import (
 class TestLmEvaluationHarness(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        os.makedirs("./saved_results_clm", exist_ok=True)
-        os.makedirs("./saved_results_seq2seq", exist_ok=True)
-        os.makedirs("./saved_results_jit", exist_ok=True)
         self.clm_model = AutoModelForCausalLM.from_pretrained(
             "facebook/opt-125m",
             torchscript=True
@@ -22,9 +19,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        shutil.rmtree("./saved_results_clm", ignore_errors=True)
-        shutil.rmtree("./saved_results_seq2seq", ignore_errors=True)
-        shutil.rmtree("./saved_results_jit", ignore_errors=True)
         shutil.rmtree("./lm_cache", ignore_errors=True)
 
     def test_evaluate_for_casualLM(self):
@@ -33,7 +27,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
             model_args='pretrained="facebook/opt-125m",tokenizer="facebook/opt-125m",dtype=float32',
             tasks=["piqa"],
             limit=20,
-            output_dir="./saved_results_clm"
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.70)
 
@@ -43,7 +36,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
             model_args='pretrained="t5-small",tokenizer="t5-small",dtype=float32',
             tasks=["piqa"],
             limit=20,
-            output_dir="./saved_results_seq2seq"
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
 
@@ -54,7 +46,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
             user_model=self.jit_model,
             tasks=["piqa"],
             limit=20,
-            output_dir="./saved_results_jit"
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.70)
 
