@@ -1,0 +1,33 @@
+args:
+  model_name_or_path: "./models/hls/" # input the fine-tuned model path
+  tokenizer_name: "./models/hls/" # input the fine-tuned model path
+  dataset: "local" # local or huggingface datasets name
+  
+  # Add local dataset configurations below. Skip for HF datasets.
+  # Make sure to specify your local dataset . The code will fail otherwise.
+  local_dataset:
+    inference_input : '/workspace/dataset/annotation.csv'
+    delimiter: ","
+    features:
+      class_label: "label"
+      data_column: "symptoms"
+      id: "Patient_ID"
+    label_list: ["Malignant", "Normal", "Benign"]
+  
+  # Add the Inference configurations below
+  pipeline: "inference"   
+  infer_impl: "itrex"
+  dtype_inf: "fp32"
+  max_seq_len: 64
+  smoke_test: false
+  max_train_samples: null
+  max_test_samples: null
+  preprocessing_num_workers: 8
+  overwrite_cache: true
+  inference_output: inference_predictions_report.yaml
+  multi_instance: false
+
+training_args:
+  do_predict: true
+  per_device_eval_batch_size: 100
+  output:dir: "/.output"
