@@ -1,0 +1,13 @@
+metadata:
+  name: compression-aware
+proxy: nil
+workflow:
+  config: qat
+dataset:
+  type: <nfs/s3>
+  nfs:
+    server: nil
+    path: nil
+    subPath: nil
+  s3:
+    key: nil

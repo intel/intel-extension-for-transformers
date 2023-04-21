@@ -1,0 +1,83 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: {{ .Values.metadata.name }}
+spec:
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: compression-aware
+            template: compression-aware
+            arguments: 
+              parameters: 
+                - name: config
+                  value: '{{"{{workflow.parameters.config}}"}}'
+        failFast: true
+    - name: compression-aware
+      inputs:
+        {{- if eq .Values.dataset.type "s3" }}
+        artifacts:
+          - name: config
+            path: /workspace/configs
+            s3:
+              key: '{{ .Values.dataset.s3.key }}'
+        {{ end }}
+        parameters:
+          - name: config
+      outputs: 
+        artifacts:
+          - name: 'compression-aware-output'
+            path: /workspace/output
+      container:
+        name: ''
+        image: 'intel/ai-workflows:beta-compression-aware'
+        command:
+          - python
+        args:
+          - /workspace/src/run.py
+          - '/workspace/configs/{{"{{inputs.parameters.config}}"}}.yaml'
+        env:
+          - name: http_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+          - name: https_proxy
+            value: '{{"{{workflow.parameters.http_proxy}}"}}'
+        volumeMounts:
+          - name: output-dir
+            mountPath: /workspace/output
+          {{ if eq .Values.dataset.type "nfs" }}
+          - name: config-dir
+            mountPath: /workspace/configs
+            subPath: '{{ .Values.dataset.nfs.subPath }}'
+          {{ end }}
+        imagePullPolicy: Always
+      {{ if eq .Values.dataset.type "nfs" }}
+      volumes:
+      - name: config-dir
+        nfs: 
+          server: {{ .Values.dataset.nfs.server }}
+          path: {{ .Values.dataset.nfs.path }}
+          readOnly: true
+      {{ end }}
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: http_proxy
+        value: {{ .Values.proxy }}
+      - name: config
+        value: {{ .Values.workflow.config }}
+        enum:
+          - qat
+          - distillation
+          - distillation_with_qat
+          - config
+  volumeClaimTemplates:
+    - metadata:
+        name: output-dir
+        creationTimestamp: null
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi

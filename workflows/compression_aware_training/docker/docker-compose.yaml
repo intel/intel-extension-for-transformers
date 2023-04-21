@@ -1,0 +1,20 @@
+services:
+  dev:
+    build:
+      args:
+        http_proxy: ${http_proxy}
+        https_proxy: ${https_proxy}
+        no_proxy: ${no_proxy}
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    command: python /workspace/src/run.py /workspace/config/${CONFIG}.yaml
+    environment: 
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - no_proxy=${no_proxy}
+    image: intel/ai-workflows:beta-compression-aware
+    privileged: true
+    volumes:
+      - ../config:/workspace/config
+      - ./output:/workspace/output
+    working_dir: /workspace
