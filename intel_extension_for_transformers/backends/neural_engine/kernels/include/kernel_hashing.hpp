@@ -126,6 +126,7 @@ class hash_t {
         break;
       case kernel_kind::dynamic_quant_matmul:
         hash_combine(seed, op_attrs["large_wei_threshold"]);
+        hash_combine(seed, op_attrs["append_sum"]);
         break;
       case kernel_kind::softmax:
         hash_combine(seed, op_attrs["spec_type"]);

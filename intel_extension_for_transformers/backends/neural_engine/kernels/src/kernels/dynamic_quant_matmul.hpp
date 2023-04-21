@@ -26,7 +26,7 @@
 #include "kernels/dynamic_quant_matmul_types.hpp"
 #include "kernels/dynamic_quant_matmul_rt_data_idx.hpp"
 #include "jit_domain/jit_amx_s8s8_dynamic_quant_matmul.hpp"
-#include "jit_domain/jit_amx_s8s8bf16_matmul.hpp"
+#include "jit_domain/jit_amx_s8s8_dynamic_dequant_matmul.hpp"
 #include "jit_domain/jit_dynamic_quant.hpp"
 
 namespace jd {
@@ -46,8 +46,8 @@ class dynamic_quant_matmul_kd_t : public kernel_desc_t {
   inline std::vector<dim_t> shape() const override { return prob_size_; }
   const std::vector<ssd::dynamic_quant_matmul_param_t>& params() const { return params_; }
   const dynamic_quant_param_t& get_quant_param() const { return quant_param_; }
-  bool check_large_wei() const { return large_wei_; }
-  bool large_wei_init();
+  bool check_split_execute() const { return split_execute_; }
+  bool split_execute_init();
   const std::pair<int, int>& get_assign_cores() const { return assign_cores_; }
 
  private:
@@ -57,7 +57,7 @@ class dynamic_quant_matmul_kd_t : public kernel_desc_t {
   std::vector<dim_t> prob_size_;
   static constexpr int L2_size_ = 1 << 21;  // 2 Mb L2 cache.
   std::pair<int, int> assign_cores_;
-  bool large_wei_ = false;
+  bool split_execute_ = false;
 };
 
 class dynamic_quant_matmul_k_t : public kernel_t {
@@ -66,7 +66,7 @@ class dynamic_quant_matmul_k_t : public kernel_t {
   explicit dynamic_quant_matmul_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
   virtual ~dynamic_quant_matmul_k_t() {
     for (auto&& ker : jit_kers_) safe_delete(ker);
-    for (auto&& ker : jit_s8s8bf16_kers_) safe_delete(ker);
+    for (auto&& ker : jit_s8s8_dynamic_dequant_kers_) safe_delete(ker);
     for (auto&& ker : jit_quant_kers_) safe_delete(ker);
   }
   // Delete move constructor and move operator
@@ -84,8 +84,8 @@ class dynamic_quant_matmul_k_t : public kernel_t {
   size_t get_workspace_size() const override;
 
  private:
-  bool large_wei_init();
-  bool large_wei_execute(const std::vector<const void*>& rt_data) const;
+  bool split_execute_init();
+  bool split_execute(const std::vector<const void*>& rt_data) const;
   char* get_data_ptr(const void* ptr, int offset) const {
     return reinterpret_cast<char*>(const_cast<void*>(ptr)) + offset;
   }
@@ -95,7 +95,7 @@ class dynamic_quant_matmul_k_t : public kernel_t {
 
  private:
   std::vector<jit_amx_s8s8_dynamic_quant_matmul_t*> jit_kers_;
-  std::vector<jit_amx_s8s8bf16_matmul_t*> jit_s8s8bf16_kers_;
+  std::vector<jit_amx_s8s8_dynamic_dequant_matmul_t*> jit_s8s8_dynamic_dequant_kers_;
   std::vector<jit_dynamic_quant_t*> jit_quant_kers_;
   std::vector<int> m_offset_list_;
   std::vector<int> n_offset_list_;
@@ -104,7 +104,8 @@ class dynamic_quant_matmul_k_t : public kernel_t {
   int single_tmp_buf_size_;
   int bf16_tmp_buf_offset_;
   bool has_bias_;
-  bool large_wei_ = false;
+  bool split_execute_ = false;
+  bool quant_stage_ = true;
 };
 
 }  // namespace jd

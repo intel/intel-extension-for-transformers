@@ -39,6 +39,8 @@ class SPARSE_API_ dynamic_quant_matmul_ref_kd_t : public kernel_desc_t {
  public:
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   const std::vector<int>& get_prob_size() const { return prob_size_; }
+  const data_type& check_dst_dt() const { return dst_dt_; }
+  const bool& check_append_sum() const { return append_sum_; }
 
  public:
   bool has_bias = false;
@@ -46,6 +48,8 @@ class SPARSE_API_ dynamic_quant_matmul_ref_kd_t : public kernel_desc_t {
  private:
   jd::operator_desc op_desc_;
   std::vector<int> prob_size_;
+  bool append_sum_ = false;
+  data_type dst_dt_;
 };
 
 class SPARSE_API_ dynamic_quant_matmul_ref_k_t : public kernel_t {

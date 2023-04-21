@@ -37,10 +37,10 @@ dynamic_quant_matmul_kd_t::dynamic_quant_matmul_kd_t(const jd::operator_desc& op
   float large_wei_threshold = 1.f;
   if (op_attrs.count("large_wei_threshold") != 0)
     large_wei_threshold = std::stof(op_attrs["large_wei_threshold"]);  // tunable param for engine.
-  if (reuse_data_size > L2_size_ * large_wei_threshold) large_wei_ = true;
+  if (reuse_data_size > L2_size_ * large_wei_threshold || ts_desc[2].dtype() != data_type::s8) split_execute_ = true;
 }
 
-bool dynamic_quant_matmul_kd_t::large_wei_init() {
+bool dynamic_quant_matmul_kd_t::split_execute_init() {
   auto core_num = omp_get_max_threads();
   auto ts_descs = op_desc_.tensor_descs();
   // first integer in pairs represent cores assigned to the weight, second represent cores assigned to the activation.
@@ -64,6 +64,11 @@ bool dynamic_quant_matmul_kd_t::large_wei_init() {
   auto m_per_core = prob_size_[m] / activation_cores;
   auto remain_m = prob_size_[m] % activation_cores;
   bool add_bias = (ts_descs.size() - 1) == static_cast<int>(io::BIAS) ? true : false;
+  bool append_sum = op_desc_.attrs().count("append_sum") != 0 ? true : false;
+  auto dst_dt = ts_descs[2].dtype();
+  if (append_sum)
+    SPARSE_LOG_IF(FATAL, dst_dt != data_type::fp32)
+        << "only support fp32 dst data type when append sum feature enable.";
   for (int i = 0; i < activation_cores; i++) {
     for (int j = 0; j < weight_cores; j++) {
       ssd::dynamic_quant_matmul_param_t p;
@@ -81,6 +86,8 @@ bool dynamic_quant_matmul_kd_t::large_wei_init() {
       p.align_m_loop = p.m / 16;
       p.tail_m = p.m % 16;
       p.add_bias = add_bias;
+      p.append_sum = append_sum;
+      p.dst_dt = dst_dt;
 
       auto config_amx = [&](int M_tile, int N_tile, int K_tile, tileconfig_t* cfg) {
         tile_param_t p = {M_tile, N_tile, K_tile, false, 4, 3, 1, 4};
@@ -105,11 +112,11 @@ bool dynamic_quant_matmul_kd_t::init() {
   if (!isa_available(amx_int8)) return false;
   auto ts_descs = op_desc_.tensor_descs();
   bool add_bias = (ts_descs.size() - 1) == static_cast<int>(io::BIAS) ? true : false;
-  if (ts_descs[0].dtype() != data_type::s8 || ts_descs[1].dtype() != data_type::s8 ||
-      ts_descs[2].dtype() != data_type::s8)
-    SPARSE_LOG(FATAL) << "activation, weight, dst should be s8 in dynamic_quant_matmul";
+  if (ts_descs[0].dtype() != data_type::s8 || ts_descs[1].dtype() != data_type::s8)
+    SPARSE_LOG(FATAL) << "activation, weight should be s8 in dynamic_quant_matmul";
   SPARSE_LOG_IF(FATAL, prob_size_[k] % 4 != 0) << "k must pad with 4.";
-  if (large_wei_) return large_wei_init();
+  if (split_execute_) return split_execute_init();
+  SPARSE_LOG_IF(FATAL, ts_descs[2].dtype() != data_type::s8) << "dst must be s8 in non-split-execute mode.";
   auto core_num = omp_get_max_threads();
   auto m_per_core = prob_size_[m] / core_num;
   auto remain_m = prob_size_[m] % core_num;
@@ -148,19 +155,25 @@ bool dynamic_quant_matmul_kd_t::init() {
   return true;
 }
 
-bool dynamic_quant_matmul_k_t::large_wei_init() {
+bool dynamic_quant_matmul_k_t::split_execute_init() {
   auto prob_size = derived_kd()->shape();
   single_tmp_buf_size_ = 16 * 16 * 3 * sizeof(float);
   auto enable_thr = omp_get_max_threads();
   bf16_tmp_buf_offset_ = enable_thr * single_tmp_buf_size_;
   total_tmp_buf_size_ = bf16_tmp_buf_offset_ + prob_size[batch] * prob_size[m] * prob_size[n] * sizeof(bfloat16_t);
-  large_wei_ = true;
+  split_execute_ = true;
 
   auto quant_param = derived_kd()->get_quant_param();
   auto remain_channel = quant_param.channel_num % enable_thr;
   auto channel_per_thr = quant_param.channel_num / enable_thr;
   auto params = derived_kd()->params();
+  auto dst_dt = params[0].dst_dt;
+  SPARSE_LOG_IF(FATAL, !(dst_dt == data_type::fp32 || dst_dt == data_type::bf16 || dst_dt == data_type::s8));
   has_bias_ = params[0].add_bias;
+  if (dst_dt == data_type::fp32 || dst_dt == data_type::bf16) {
+    quant_stage_ = false;
+    total_tmp_buf_size_ = bf16_tmp_buf_offset_;
+  }
   auto assign_cores = derived_kd()->get_assign_cores();
   auto activation_cores = assign_cores.second;
   auto weight_cores = assign_cores.first;
@@ -178,24 +191,27 @@ bool dynamic_quant_matmul_k_t::large_wei_init() {
       jit_quant_kers_.push_back(new jit_dynamic_quant_t(quant_param, process_channel));
       quant_channel_offset_list_.push_back(channel_offset);
       channel_offset += process_channel * quant_param.quantized_dim_elt_num;
-      jit_s8s8bf16_kers_.push_back(new jit_amx_s8s8bf16_matmul_t(p, quant_param.quantized_dim_elt_num));
+      jit_s8s8_dynamic_dequant_kers_.push_back(
+          new jit_amx_s8s8_dynamic_dequant_matmul_t(p, quant_param.quantized_dim_elt_num));
     }
     m_offset += params[i * weight_cores].m;
   }
 
-  for (auto&& ker : jit_s8s8bf16_kers_) {
+  for (auto&& ker : jit_s8s8_dynamic_dequant_kers_) {
     if (!ker->create_kernel()) return false;
   }
 
-  for (auto&& ker : jit_quant_kers_) {
-    if (!ker->create_kernel()) return false;
+  if (quant_stage_) {
+    for (auto&& ker : jit_quant_kers_) {
+      if (!ker->create_kernel()) return false;
+    }
   }
 
   return true;
 }
 
 bool dynamic_quant_matmul_k_t::init() {
-  if (derived_kd()->check_large_wei()) return large_wei_init();
+  if (derived_kd()->check_split_execute()) return split_execute_init();
   int m_offset = 0;
   auto params = derived_kd()->params();
   single_tmp_buf_size_ = 16 * params[0].pad_n * sizeof(float);  // build 16xpad_n tile by default.
@@ -213,21 +229,28 @@ bool dynamic_quant_matmul_k_t::init() {
 
 size_t dynamic_quant_matmul_k_t::get_workspace_size() const { return total_tmp_buf_size_; }
 
-bool dynamic_quant_matmul_k_t::large_wei_execute(const std::vector<const void*>& rt_data) const {
+bool dynamic_quant_matmul_k_t::split_execute(const std::vector<const void*>& rt_data) const {
   auto prob_size = derived_kd()->shape();
+  auto dst_dt = derived_kd()->params()[0].dst_dt;
   // gemm stage
   for (int batch = 0; batch < prob_size[prob_size_idx::batch]; batch++) {
 #pragma omp parallel for
     for (int ker_idx = 0; ker_idx < static_cast<int>(m_offset_list_.size()); ker_idx++) {
-      auto ker = jit_s8s8bf16_kers_[ker_idx];
+      auto ker = jit_s8s8_dynamic_dequant_kers_[ker_idx];
       ssd::dynamic_quant_matmul_data_t data;
       data.activation = get_data_ptr(rt_data[io::ACTIVATION],
                                      batch * prob_size[m] * prob_size[k] + m_offset_list_[ker_idx] * prob_size[k]);
       data.reordered_weight = get_data_ptr(rt_data[io::WEIGHT], n_offset_list_[ker_idx] * prob_size[k]);
-      data.dst = get_data_ptr(rt_data[io::WORKSPACE],
-                              bf16_tmp_buf_offset_ + sizeof(bfloat16_t) * (batch * prob_size[m] * prob_size[n] +
+      if (quant_stage_) {
+        data.dst = get_data_ptr(rt_data[io::WORKSPACE],
+                                bf16_tmp_buf_offset_ + sizeof(bfloat16_t) * (batch * prob_size[m] * prob_size[n] +
+                                                                             m_offset_list_[ker_idx] * prob_size[n] +
+                                                                             n_offset_list_[ker_idx]));
+      } else {
+        data.dst = get_data_ptr(rt_data[io::DST], get_data_size(dst_dt) * (batch * prob_size[m] * prob_size[n] +
                                                                            m_offset_list_[ker_idx] * prob_size[n] +
                                                                            n_offset_list_[ker_idx]));
+      }
       data.scale_a =
           get_data_ptr(rt_data[io::SCALE_A], sizeof(float) * (m_offset_list_[ker_idx] + batch * prob_size[m]));
       data.scale_w = get_data_ptr(rt_data[io::SCALE_W], n_offset_list_[ker_idx] * sizeof(float));
@@ -236,24 +259,26 @@ bool dynamic_quant_matmul_k_t::large_wei_execute(const std::vector<const void*>&
       (*ker)(&data);
     }
   }
-  // quant stage.
-  auto quant_param = derived_kd()->get_quant_param();
+  if (quant_stage_) {
+    // quant stage.
+    auto quant_param = derived_kd()->get_quant_param();
 #pragma omp parallel for
-  for (int i = 0; i < static_cast<int>(jit_quant_kers_.size()); i++) {
-    auto offset = quant_channel_offset_list_[i];
-    dynamic_quant_data_t data;
-    auto ker = jit_quant_kers_[i];
-    data.src = get_data_ptr(rt_data[io::WORKSPACE], bf16_tmp_buf_offset_ + offset * get_data_size(data_type::bf16));
-    data.mat_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::DST])) + offset * sizeof(int8_t);
-    data.scale_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::SCALE_DST])) +
-                     offset / quant_param.quantized_dim_elt_num * sizeof(float);
-    (*ker)(&data);
+    for (int i = 0; i < static_cast<int>(jit_quant_kers_.size()); i++) {
+      auto offset = quant_channel_offset_list_[i];
+      dynamic_quant_data_t data;
+      auto ker = jit_quant_kers_[i];
+      data.src = get_data_ptr(rt_data[io::WORKSPACE], bf16_tmp_buf_offset_ + offset * get_data_size(data_type::bf16));
+      data.mat_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::DST])) + offset * sizeof(int8_t);
+      data.scale_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::SCALE_DST])) +
+                       offset / quant_param.quantized_dim_elt_num * sizeof(float);
+      (*ker)(&data);
+    }
   }
   return true;
 }
 
 bool dynamic_quant_matmul_k_t::execute(const std::vector<const void*>& rt_data) const {
-  if (large_wei_) return large_wei_execute(rt_data);
+  if (split_execute_) return split_execute(rt_data);
   auto prob_size = derived_kd()->shape();
   for (int batch = 0; batch < prob_size[prob_size_idx::batch]; batch++) {
 #pragma omp parallel for

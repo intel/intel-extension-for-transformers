@@ -22,6 +22,7 @@ struct op_args_t {
   std::shared_ptr<std::vector<int8_t>> activation;
   std::shared_ptr<std::vector<int8_t>> reordered_weight;
   std::shared_ptr<std::vector<int8_t>> dst;
+  std::shared_ptr<std::vector<float>> fp32_dst;
   std::shared_ptr<std::vector<float>> scale_a;
   std::shared_ptr<std::vector<float>> scale_w;
   std::shared_ptr<std::vector<float>> bias;
@@ -38,6 +39,7 @@ bool check_result(const test_params_t& t) {
   const auto& q = t.args.second;
   const auto& op_desc = p.op_desc;
   std::vector<const void*> data1, data2;
+  auto dst_dt = op_desc.tensor_descs()[2].dtype();
   try {
     dynamic_quant_matmul_desc dynamic_quant_matmul_desc(op_desc);
     dynamic_quant_matmul dynamic_quant_matmul_ker(dynamic_quant_matmul_desc);
@@ -49,7 +51,10 @@ bool check_result(const test_params_t& t) {
 
     data2 = {q.activation->data(), q.reordered_weight->data(), q.dst->data(), q.scale_a->data(),
              q.scale_w->data(),    q.scale_dst->data(),        tmp_buf.get(), q.bias->data()};
-
+    if (dst_dt == data_type::fp32) {
+      data1[2] = p.fp32_dst->data();
+      data2[2] = q.fp32_dst->data();
+    }
     dynamic_quant_matmul_ker.execute(data1);
     std::shared_ptr<const kernel_desc_t> dynamic_quant_matmul_ref_desc;
     kernel_desc_t::create<dynamic_quant_matmul_ref_kd_t>(dynamic_quant_matmul_ref_desc, q.op_desc);
@@ -69,7 +74,15 @@ bool check_result(const test_params_t& t) {
     auto buf1 = data1[2];
     auto size = p.dst->size();
     auto buf2 = data2[2];
-    auto ans1 = compare_data<int8_t>(buf1, size, buf2, size, 1e-2);
+    bool ans1 = false;
+    switch (dst_dt) {
+      case data_type::fp32:
+        ans1 = compare_data<float>(buf1, size, buf2, size, 5e-3);
+        return ans1;
+      default:
+        ans1 = compare_data<int8_t>(buf1, size, buf2, size, 1e-2);
+        break;
+    }
     auto buf3 = data1[5];
     auto size2 = p.scale_dst->size();
     auto buf4 = data2[5];
@@ -140,6 +153,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   auto activation = gen_data(static_cast<int8_t>(1), b * m * k, 0.f, 10.f);
   auto weight = gen_data(static_cast<int8_t>(1), k * n, 0.f, 10.f);
   auto dst_mat = gen_data(static_cast<int8_t>(1), b * m * n, 0.f, 0.f, true);
+  auto fp32_dst_mat = gen_data(static_cast<float>(1), b * m * n, 10.f, 20.f);
   auto scale_a = gen_data(static_cast<float>(1), b * m, 0.f, 1.f);
   auto scale_w = gen_data(static_cast<float>(1), n, 0.f, 1.f);
   auto bias = gen_data(static_cast<float>(1), n, 10.f, 20.f);
@@ -147,14 +161,25 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   auto correct_scale_dst = gen_data(static_cast<float>(1), b * m, 0.f, 0.f, true);
   auto correct_dst_mat = gen_data(static_cast<int8_t>(1), b * m * n, 0.f, 0.f, true);
   auto reorder_buf = gen_data(static_cast<int8_t>(1), k * pad_n, 0.f, 0.f, true);
+  auto correct_fp32_dst_mat = std::shared_ptr<std::vector<float>>(new std::vector<float>(b * m * n));
+  memcpy(correct_fp32_dst_mat->data(), fp32_dst_mat->data(), b * m * n * sizeof(float));
 
   reorder_stage(weight.get(), reorder_buf.get(), k, n, pad_n);
   auto trans_reorder_wei = transpose_amx_tileKx64_reorder_buf(reorder_buf.get()->data(), k, pad_n);
   operator_desc dynamic_quant_matmul_desc(kernel_kind::dynamic_quant_matmul, kernel_prop::forward_inference,
                                           engine_kind::cpu, ts_descs, op_attrs);
 
-  op_args_t p = {dynamic_quant_matmul_desc, activation, trans_reorder_wei, dst_mat, scale_a, scale_w, bias, scale_dst};
-  op_args_t q = {dynamic_quant_matmul_desc, activation, trans_reorder_wei, correct_dst_mat, scale_a, scale_w, bias,
+  op_args_t p = {dynamic_quant_matmul_desc,
+                 activation,
+                 trans_reorder_wei,
+                 dst_mat,
+                 fp32_dst_mat,
+                 scale_a,
+                 scale_w,
+                 bias,
+                 scale_dst};
+  op_args_t q = {dynamic_quant_matmul_desc, activation, trans_reorder_wei, correct_dst_mat,
+                 correct_fp32_dst_mat,      scale_a,    scale_w,           bias,
                  correct_scale_dst};
   return {p, q};
 }
@@ -165,20 +190,25 @@ static auto case_func = []() {
   std::vector<std::vector<int64_t>> shapes = {{512, 1280, 1280}, {512, 1280, 10240}, {77, 768, 1024}};
 
   std::vector<dim_t> batchs = {1, 2};
+  std::vector<data_type> dt_types = {data_type::s8, data_type::fp32};
   for (auto&& batch : batchs) {
     for (auto&& shape : shapes) {
-      tensor_desc activation_desc = {{batch, shape[0], shape[2]}, jd::data_type::s8, jd::format_type::undef};
-      tensor_desc weight_desc = {{shape[2], shape[1]}, jd::data_type::s8, jd::format_type::undef};
-      tensor_desc dst_desc = {{batch, shape[0], shape[1]}, jd::data_type::s8, jd::format_type::undef};
-      tensor_desc sclae_a_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
-      tensor_desc scale_w_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
-      tensor_desc scale_dst_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
-      tensor_desc workspace_desc = {{}, jd::data_type::undef, jd::format_type::undef};
-      tensor_desc bias_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
-      cases.push_back({gen_case({activation_desc, weight_desc, dst_desc, sclae_a_desc, scale_w_desc, scale_dst_desc,
-                                 workspace_desc, bias_desc},
-                                {{"large_wei_threshold", "0.8"}}),
-                       false});
+      for (auto&& dt : dt_types) {
+        tensor_desc activation_desc = {{batch, shape[0], shape[2]}, jd::data_type::s8, jd::format_type::undef};
+        tensor_desc weight_desc = {{shape[2], shape[1]}, jd::data_type::s8, jd::format_type::undef};
+        tensor_desc dst_desc = {{batch, shape[0], shape[1]}, dt, jd::format_type::undef};
+        tensor_desc sclae_a_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
+        tensor_desc scale_w_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
+        tensor_desc scale_dst_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
+        tensor_desc workspace_desc = {{}, jd::data_type::undef, jd::format_type::undef};
+        tensor_desc bias_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
+        std::unordered_map<std::string, std::string> op_attrs = {{"large_wei_threshold", "0.8"}};
+        if (dt == data_type::fp32) op_attrs["append_sum"] = true;
+        cases.push_back({gen_case({activation_desc, weight_desc, dst_desc, sclae_a_desc, scale_w_desc, scale_dst_desc,
+                                   workspace_desc, bias_desc},
+                                  op_attrs),
+                         false});
+      }
     }
   }
   return ::testing::ValuesIn(cases);

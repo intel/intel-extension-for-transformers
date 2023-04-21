@@ -23,6 +23,7 @@ using io = ssd::dynamic_quant_matmul_io::io;
 dynamic_quant_matmul_ref_kd_t::dynamic_quant_matmul_ref_kd_t(const jd::operator_desc& op_desc)
     : kernel_desc_t(kernel_kind::dynamic_quant_matmul), op_desc_(op_desc) {
   prob_size_.resize(4);
+  auto op_attrs = op_desc.attrs();
   auto ts_desc = op_desc.tensor_descs();
   auto activation_shape = ts_desc[0].shape();
   auto weight_shape = ts_desc[1].shape();
@@ -31,12 +32,16 @@ dynamic_quant_matmul_ref_kd_t::dynamic_quant_matmul_ref_kd_t(const jd::operator_
   prob_size_[m] = activation_shape.size() == 3 ? activation_shape[1] : activation_shape[0];
   prob_size_[n] = dst_shape[2];
   prob_size_[k] = weight_shape[0];
+  dst_dt_ = ts_desc[2].dtype();
+  if (op_attrs.count("append_sum") != 0) append_sum_ = true;
+  SPARSE_LOG_IF(FATAL, append_sum_ && dst_dt_ != data_type::fp32)
+      << "dst data type must be fp32 when append_sum enable.";
 }
 
 bool dynamic_quant_matmul_ref_kd_t::init() {
   auto ts_desc = op_desc_.tensor_descs();
-  if (ts_desc[0].dtype() != data_type::s8 || ts_desc[1].dtype() != data_type::s8 || ts_desc[2].dtype() != data_type::s8)
-    SPARSE_LOG(FATAL) << "activation, weight, dst should be s8 in dynamic_quant_matmul";
+  if (ts_desc[0].dtype() != data_type::s8 || ts_desc[1].dtype() != data_type::s8)
+    SPARSE_LOG(FATAL) << "activation, weight should be s8 in dynamic_quant_matmul";
   SPARSE_LOG_IF(FATAL, prob_size_[k] % 4 != 0) << "k must pad with 4.";
   has_bias = (ts_desc.size() - 1) == static_cast<int>(io::BIAS) ? true : false;
   return true;
@@ -95,6 +100,17 @@ void s8_quant_mat(int8_t* dst_mat, const std::vector<float>& src_mat, float* sca
   }
 }
 
+void fp32_append_sum(const float* src_mat, std::vector<float>* dst_mat, int b, int m, int n) {
+  for (int batch = 0; batch < b; batch++) {
+#pragma omp parallel for
+    for (int i = 0; i < m; i++) {
+      for (int j = 0; j < n; j++) {
+        (*dst_mat)[batch * m * n + i * n + j] += src_mat[batch * m * n + i * n + j];
+      }
+    }
+  }
+}
+
 std::vector<int8_t> reorder_back(const int8_t* reorder_mat, int k, int n) {
   // step1. transpose back.
   auto pad_n = ceil_div(n, 16) * 16;
@@ -123,6 +139,7 @@ std::vector<int8_t> reorder_back(const int8_t* reorder_mat, int k, int n) {
 bool dynamic_quant_matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto prob_size = derived_kd()->get_prob_size();
   bool add_bias = derived_kd()->has_bias;
+  bool append_sum = derived_kd()->check_append_sum();
   auto l_mat = static_cast<const int8_t*>(rt_data[0]);
   auto r_mat = static_cast<const int8_t*>(rt_data[1]);
   std::vector<int8_t> reorder_back_mat = reorder_back(r_mat, prob_size[k], prob_size[n]);
@@ -135,8 +152,17 @@ bool dynamic_quant_matmul_ref_k_t::execute(const std::vector<const void*>& rt_da
   gemm(l_mat, const_cast<const int8_t*>(reorder_back_mat.data()), fp32_dst_mat.data(), prob_size[batch], prob_size[m],
        prob_size[n], prob_size[k]);
   dequant_add_bias(fp32_dst_mat.data(), scale_a, scale_w, prob_size[batch], prob_size[m], prob_size[n], add_bias, bias);
-  get_dynamic_quant_scale(fp32_dst_mat.data(), scale_dst, prob_size[batch], prob_size[m], prob_size[n]);
-  s8_quant_mat(dst_mat, fp32_dst_mat, scale_dst, prob_size[batch], prob_size[m], prob_size[n]);
+  if (append_sum)
+    fp32_append_sum(reinterpret_cast<float*>(dst_mat), &fp32_dst_mat, prob_size[batch], prob_size[m], prob_size[n]);
+  if (derived_kd()->check_dst_dt() == data_type::s8) {
+    get_dynamic_quant_scale(fp32_dst_mat.data(), scale_dst, prob_size[batch], prob_size[m], prob_size[n]);
+    s8_quant_mat(dst_mat, fp32_dst_mat, scale_dst, prob_size[batch], prob_size[m], prob_size[n]);
+  } else {
+    if (derived_kd()->check_dst_dt() == data_type::fp32)
+      cast_from_float_array<float>(fp32_dst_mat, dst_mat, prob_size[m] * prob_size[n] * prob_size[batch]);
+    else
+      cast_from_float_array<bfloat16_t>(fp32_dst_mat, dst_mat, prob_size[m] * prob_size[n] * prob_size[batch]);
+  }
   return true;
 }
 }  // namespace jd

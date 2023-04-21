@@ -32,6 +32,8 @@ struct dynamic_quant_matmul_param_t {
   int tail_n_loop = 0;
   int write_mask = 0;
   int tile_k;
+  bool append_sum = false;
+  data_type dst_dt;
   tileconfig_t m_align_cfg;
   tileconfig_t m_tail_cfg;
 };

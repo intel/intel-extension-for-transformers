@@ -48,7 +48,7 @@ In this jit-path, the calculation of dynamic_quant_matmul will be done by two ke
 
 The `per_channel_dynamic_quantization` kernel can be directly called by users through the kernel proxy, which provides a more flexible way to implement matmul with dynamic quantization (e.g. matmul from other acceleration libraries + per-channel-dynamic-quantization).
 
-In the first step of s8s8bf16 matmul, the kernel will parallelize on both `M-dim` and `N-dim` as the weight is too large. It desides the `M` and `N` that each core is responsible for processing duing initialization. The principle is to make the sliced weight as large as possible under the premise of being smaller than L2-cache, so that:
+In the first step of s8s8_dynamic_dequant matmul, the kernel will parallelize on both `M-dim` and `N-dim` as the weight is too large. It desides the `M` and `N` that each core is responsible for processing duing initialization. The principle is to make the sliced weight as large as possible under the premise of being smaller than L2-cache, so that:
 
 1. It can improve the utilization rate of L2-cache
 2. It can allocate more cores for the `M-dim`, thereby reducing the number of memory accesses and write-backs of activation and dst matrix for each core.

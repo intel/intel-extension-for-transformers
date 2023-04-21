@@ -12,7 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "jit_domain/jit_amx_s8s8bf16_matmul.hpp"
+#include "jit_domain/jit_amx_s8s8_dynamic_dequant_matmul.hpp"
 
 #include "regs_pool.hpp"
 
@@ -20,7 +20,7 @@ namespace jd {
 
 #define GET_OFF(field) offsetof(ssd::dynamic_quant_matmul_data_t, field)
 
-void jit_amx_s8s8bf16_matmul_t::generate() {
+void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
   Xbyak::Label cfg_label;
   auto trans_block_col = param_.k / param_.tile_k;
   inLocalLabel();
@@ -55,14 +55,16 @@ void jit_amx_s8s8bf16_matmul_t::generate() {
         // prepare addr & stride;
         mov(reg_matA_addr, ptr[rp.p[0] + GET_OFF(activation)]);
         mov(reg_matB_addr, ptr[rp.p[0] + GET_OFF(reordered_weight)]);
-        imul(reg_tmp, reg_m_loop, 16 * param_.k);
+        imul(reg_tmp, reg_m_loop, align_build_M * param_.k);
         add(reg_matA_addr, reg_tmp);
-        imul(reg_tmp, reg_n_loop, param_.align_build_block_num * trans_block_col * 64 * (param_.tile_k / 4));
+        imul(reg_tmp, reg_n_loop,
+             param_.align_build_block_num * trans_block_col * reorder_block_col_eltnum * (param_.tile_k / 4));
         add(reg_matB_addr, reg_tmp);
         for (int k_loop = 0; k_loop < param_.k / param_.tile_k; k_loop++) {
           tileloadd(Tmm(3), ptr[reg_matA_addr + reg_strideA + k_loop * param_.tile_k]);
           for (int idx = 0; idx < block_num; idx++) {
-            int offset = (idx + no_mask_tail_n) * trans_block_col * 64 * (param_.tile_k / 4) + k_loop * 64;
+            int offset = (idx + no_mask_tail_n) * trans_block_col * reorder_block_col_eltnum * (param_.tile_k / 4) +
+                         k_loop * reorder_block_col_eltnum;
             tileloadd(Tmm(4 + idx), ptr[reg_matB_addr + reg_strideB + offset]);
             tdpbssd(Tmm(idx), Tmm(3), Tmm(4 + idx));
           }
@@ -71,33 +73,45 @@ void jit_amx_s8s8bf16_matmul_t::generate() {
       // store block
       {
         for (int idx = 0; idx < block_num; idx++)
-          tilestored(ptr[reg_tmpbuf + reg_strideTmpbuf + idx * 16 * sizeof(int)], Tmm(idx));
+          tilestored(ptr[reg_tmpbuf + reg_strideTmpbuf + idx * align_build_N * sizeof(int)], Tmm(idx));
         // dequant + add_bias
         const auto zmms = rp.regs<Zmm, 4>();
         const auto reg_tmp2 = rp.reg<Reg64>();
         const auto reg_dst_offset = rp.reg<Reg64>();
 
-        imul(reg_dst_offset, reg_m_loop, 16 * dst_n_dim_);
-        imul(reg_tmp, reg_n_loop, param_.align_build_block_num * 16);
+        imul(reg_dst_offset, reg_m_loop, align_build_M * dst_n_dim_);
+        imul(reg_tmp, reg_n_loop, param_.align_build_block_num * align_build_N);
         add(reg_dst_offset, reg_tmp);
-        imul(reg_tmp, reg_n_loop, 16 * param_.align_build_block_num * sizeof(int));  // offset of scale_w & bias
-        imul(reg_tmp2, reg_m_loop, 16 * sizeof(float));                              // offset of scale_a
+        imul(reg_tmp, reg_n_loop,
+             align_build_N * param_.align_build_block_num * sizeof(int));  // offset of scale_w & bias
+        imul(reg_tmp2, reg_m_loop, align_build_M * sizeof(float));         // offset of scale_a
         for (int idx = 0; idx < block_num; idx++) {
           vmovups(zmms[0], ptr[reg_scale_w + reg_tmp + (idx + no_mask_tail_n) * 16 * sizeof(float)]);
-          if (param_.add_bias) vmovups(zmms[1], ptr[reg_bias + reg_tmp + (idx + no_mask_tail_n) * 16 * sizeof(float)]);
+          if (param_.add_bias)
+            vmovups(zmms[1], ptr[reg_bias + reg_tmp + (idx + no_mask_tail_n) * align_build_N * sizeof(float)]);
           for (int row_loop = 0; row_loop < M; row_loop++) {
-            vcvtdq2ps(zmms[2], ptr[reg_tmpbuf + (idx + row_loop * param_.align_build_block_num) * 16 * sizeof(float)]);
+            vcvtdq2ps(
+                zmms[2],
+                ptr[reg_tmpbuf + (idx + row_loop * param_.align_build_block_num) * align_build_N * sizeof(float)]);
             vbroadcastss(zmms[3], dword[reg_scale_a + reg_tmp2 + row_loop * sizeof(float)]);
             vmulps(zmms[2], zmms[2], zmms[3]);
             if (param_.add_bias)
               vfmadd213ps(zmms[2], zmms[0], zmms[1]);
             else
               vmulps(zmms[2], zmms[2], zmms[0]);
-
-            fp32_cvt_bf16(zmms[2]);
-            RegExp write_back_addr = reg_dst + reg_dst_offset * sizeof(bfloat16_t) +
-                                     ((no_mask_tail_n + idx) * 16 + row_loop * dst_n_dim_) * sizeof(bfloat16_t);
-            vmovdqu16(need_mask ? ptr[write_back_addr] | matC_n_mask_ : ptr[write_back_addr], Ymm(zmms[2].getIdx()));
+            if (param_.dst_dt != data_type::fp32) {
+              fp32_cvt_bf16(zmms[2]);
+              RegExp write_back_addr =
+                  reg_dst + reg_dst_offset * sizeof(bfloat16_t) +
+                  ((no_mask_tail_n + idx) * align_build_N + row_loop * dst_n_dim_) * sizeof(bfloat16_t);
+              vmovdqu16(need_mask ? ptr[write_back_addr] | matC_n_mask_ : ptr[write_back_addr], Ymm(zmms[2].getIdx()));
+            } else {
+              RegExp write_back_addr = reg_dst + reg_dst_offset * sizeof(float) +
+                                       ((no_mask_tail_n + idx) * align_build_N + row_loop * dst_n_dim_) * sizeof(float);
+              // append sum
+              if (param_.append_sum) vaddps(zmms[2], zmms[2], ptr[write_back_addr]);
+              vmovups(need_mask ? ptr[write_back_addr] | matC_n_mask_ : ptr[write_back_addr], zmms[2]);
+            }
           }
         }
       }
@@ -117,8 +131,9 @@ void jit_amx_s8s8bf16_matmul_t::generate() {
         if (param_.align_n_loop > 0) align_loop_ip_Mx16(M, param_.align_n_loop, label_prefix);
         if (param_.tail_n_loop != 0) ip_Mx16(M, param_.tail_n_loop);
       } else {
-        int no_mask_align_n_loop = (param_.n - 16) / (16 * param_.align_build_block_num);
-        int no_mask_tail_n = ((param_.n - 16) % (16 * param_.align_build_block_num)) / 16;
+        int no_mask_align_n_loop = (param_.n - align_build_N) / (align_build_N * param_.align_build_block_num);
+        int no_mask_tail_n =
+            ((param_.n - align_build_N) % (align_build_N * param_.align_build_block_num)) / align_build_N;
         if (no_mask_align_n_loop > 0) align_loop_ip_Mx16(M, no_mask_align_n_loop, label_prefix);
         if (no_mask_tail_n != 0) ip_Mx16(M, no_mask_tail_n);
         ip_Mx16(M, 1, true, no_mask_tail_n);
@@ -128,8 +143,8 @@ void jit_amx_s8s8bf16_matmul_t::generate() {
     prepare_mask();
     xor_(reg_m_loop, reg_m_loop);
     mov(reg_strideA, param_.k);
-    mov(reg_strideB, trans_block_col * 64);
-    mov(reg_strideTmpbuf, 16 * param_.align_build_block_num * sizeof(int));
+    mov(reg_strideB, trans_block_col * reorder_block_col_eltnum);
+    mov(reg_strideTmpbuf, align_build_N * param_.align_build_block_num * sizeof(int));
     mov(reg_tmpbuf, ptr[rp.p[0] + GET_OFF(tmp_buf)]);
     mov(reg_scale_a, ptr[rp.p[0] + GET_OFF(scale_a)]);
     mov(reg_scale_w, ptr[rp.p[0] + GET_OFF(scale_w)]);
@@ -139,7 +154,7 @@ void jit_amx_s8s8bf16_matmul_t::generate() {
     if (param_.align_m_loop > 0) {
       ldtilecfg(ptr[rip + cfg_label]);
       L("align_m_loop");
-      build_MxN_tile(16);
+      build_MxN_tile(align_build_M);
       inc(reg_m_loop);
       cmp(reg_m_loop, param_.align_m_loop);
       jl("align_m_loop");
