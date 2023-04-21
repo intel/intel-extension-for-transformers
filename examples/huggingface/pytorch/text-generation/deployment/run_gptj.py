@@ -18,9 +18,9 @@ parser.add_argument("--ir_path",
         default="bfloat16",
     )
 parser.add_argument('--max-new-tokens', default=32, type=int, help="output max new tokens")
-parser.add_argument('--greedy', action='store_true')
 parser.add_argument('--input-tokens', default='32', type=str)
 parser.add_argument('--prompt', default=None, type=str)
+parser.add_argument('--batch-size', default=1, type=int)
 args = parser.parse_args()
 print(args)
 
@@ -29,7 +29,6 @@ if args.greedy:
 else:
     generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 generate_kwargs["past_kv_nums"] = 28
-generate_kwargs["output_file"] = "./torchoutput.pkl"
 
 # load model
 model_id = "EleutherAI/gpt-j-6B"
@@ -69,6 +68,7 @@ graph = compile(args.ir_path)
 print("Using IR file {}".format(args.ir_path))
 import numpy as np
 
+prompt = [prompt] * args.batch_size
 with torch.no_grad(), torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
     for i in range(num_iter):
         tic = time.time()

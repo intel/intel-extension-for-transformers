@@ -31,7 +31,12 @@ The fp32 model is [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-
 
 ### Generate IR
 ```bash
-python gen_ir.py --model=EleutherAI/gpt-j-6B --dtype=bf16 --output_model='./ir' --pt_file='new.pt' # dtype could be fp32/ int8/ bf16 
+# fp32 / bf16
+python gen_ir.py --model=EleutherAI/gpt-j-6B --dtype=[fp32|bf16] --output_model=<path to ir>
+
+# int8
+wget https://huggingface.co/Intel/gpt-j-6B-pytorch-int8-static/resolve/main/pytorch_model.bin -O <path to int8_model.pt>
+python gen_ir.py --model=EleutherAI/gpt-j-6B --dtype=int8 --output_model=<path to ir> --pt_file=<path to int8_model.pt>
 ```
 - When the input dtype is fp32 or bf16, the pt file will be automatically saved if it does not exist.
 - When the input dtype is int8, the pt file should exist.
@@ -39,5 +44,5 @@ python gen_ir.py --model=EleutherAI/gpt-j-6B --dtype=bf16 --output_model='./ir' 
 ### Inference 
 ```bash
 # support single socket and multiple sockets
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_gptj.py --max-new-tokens 32 --ir_path <path to ir>
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_gptj.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --ir_path <path to ir>
 ```

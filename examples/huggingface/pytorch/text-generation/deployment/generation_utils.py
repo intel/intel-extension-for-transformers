@@ -706,13 +706,7 @@ class GenerationMixin:
     def _extract_past_from_model_output(self, outputs: ModelOutput, standardize_cache_format: bool = False):
         past_key_values = None
         # To use torch.jit.trace, the output is no longer a Dict. outputs[1] corresponds to "past_key_values"
-        past_key_values = outputs[1]
-        if "past_key_values" in outputs:
-            past_key_values = outputs.past_key_values
-        elif "mems" in outputs:
-            past_key_values = outputs.mems
-        elif "past_buckets_states" in outputs:
-            past_key_values = outputs.past_buckets_states
+        past_key_values = outputs.past_key_values
 
         # Bloom fix: standardizes the cache format when requested
         if standardize_cache_format and hasattr(self, "_convert_to_standard_cache"):
@@ -2763,17 +2757,15 @@ class GenerationMixin:
                     for key in predictions:
                         predictions[key] = torch.from_numpy(predictions[key])
 
-                    outputs = tuple((list(predictions.values())[0], (list(predictions.values())[1:], list(predictions.values())[1:])))
-                    with open(model_kwargs["output_file"], 'rb') as f:
-                        torchout = pickle.load(f)
+                    torchout = CausalLMOutputWithPast()
                     torchout.logits = list(predictions.values())[0]
-                    torchout["past_key_values"] = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
+                    torchout.past_key_values = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
                     outputs = torchout
                 if first_token: 
                     outputs.logits = outputs.logits.expand(input_bs, seq_len, -1)
                     
                     past_key_values = []
-                    for key, value in outputs["past_key_values"]:
+                    for key, value in outputs.past_key_values:
                         key_dim = key.dim()
                         value_dim = value.dim()
                         key = key.expand(input_bs, -1, -1, -1).contiguous()
@@ -2804,14 +2796,15 @@ class GenerationMixin:
                 # ts=time.time()
                 for key in predictions:
                     predictions[key] = torch.from_numpy(predictions[key])
-                outputs = (list(predictions.values())[0].reshape(4,1,50400),
-                            [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])])
+                outputs = CausalLMOutputWithPast()
+                outputs.logits = list(predictions.values())[0].reshape(-1,1,50400)
+                outputs.past_key_values = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
 
                 # print(2,time.time()-ts)
                 if synced_gpus and this_peer_finished:
                     cur_len = cur_len + 1
                     continue  # don't waste resources running the code we don't need
-                next_token_logits = outputs[0][:, -1, :]
+                next_token_logits = outputs.logits[:, -1, :]
 
             # hack: adjust tokens for Marian. For Marian we have to make sure that the `pad_token_id`
             # cannot be generated both before and after the `nn.functional.log_softmax` operation.

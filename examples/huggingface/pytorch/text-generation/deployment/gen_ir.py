@@ -29,13 +29,12 @@ past_key_value_torch = tuple([(torch.zeros([1,16,32,256]), torch.zeros([1,16,32,
 input_ids = input_ids[0:1].unsqueeze(0)
 attention_mask = attention_mask.unsqueeze(0)
 
-model = AutoModelForCausalLM.from_pretrained(model_id, return_dict=False)
-model.eval()
-outputs = model(input_ids, past_key_value_torch, attention_mask)
-
 if os.path.exists(args.pt_file):
     print('PT model exists, compile will be executed.')
 else:
+    model = AutoModelForCausalLM.from_pretrained(model_id, return_dict=False)
+    model.eval()
+    outputs = model(input_ids, past_key_value_torch, attention_mask)
     if args.dtype in ['fp32', 'bf16']:
         traced_model = torch.jit.trace(model, (input_ids, past_key_value_torch, attention_mask))
         torch.jit.save(traced_model, args.pt_file)
