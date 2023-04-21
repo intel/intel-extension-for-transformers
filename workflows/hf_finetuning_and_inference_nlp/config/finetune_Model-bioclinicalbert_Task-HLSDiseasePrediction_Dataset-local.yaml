@@ -1,0 +1,36 @@
+args:
+  model_name_or_path: "emilyalsentzer/Bio_ClinicalBERT"
+  tokenizer_name: "emilyalsentzer/Bio_ClinicalBERT"
+  dataset: "local" # local or huggingface datasets name
+  
+  # Add local dataset configurations below. Skip for HF datasets.
+  # Make sure to specify your local dataset . The code will fail otherwise.
+  local_dataset:
+    finetune_input : '/workspace/dataset/annotation.csv'
+    inference_input : '/workspace/dataset/annotation.csv'
+    delimiter: ","
+    features:
+      class_label: "label"
+      data_column: "symptoms"
+      id: "Patient_ID"
+    label_list: ["Malignant", "Normal", "Benign"]
+  
+  # Add the fine tuning configurations below
+  pipeline: "finetune"
+  finetune_impl: "itrex"
+  dtype_ft: "fp32"
+  max_seq_len: 64
+  smoke_test: false
+  max_train_samples: null
+  max_test_samples: null
+  preprocessing_num_workers: 8
+  overwrite_cache: true
+  finetune_output: finetune_predictions_report.yaml
+
+training_args:
+  num_train_epochs: 1
+  do_train: true
+  do_predict: true
+  per_device_train_batch_size: 100
+  per_device_eval_batch_size: 100
+  output:dir: "/.output"

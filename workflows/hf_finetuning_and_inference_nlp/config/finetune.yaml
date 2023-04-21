@@ -1,0 +1,24 @@
+args:
+  model_name_or_path: "bert-base-uncased" # input the fine-tuned model path
+  tokenizer_name: "bert-base-uncased" # input the fine-tuned model path
+  dataset: "imdb" # local or huggingface datasets name
+
+  # Add the fine tuning configurations below
+  pipeline: "finetune"
+  finetune_impl: "itrex"
+  dtype_ft: "fp32"
+  max_seq_len: 64
+  smoke_test: false
+  max_train_samples: null
+  max_test_samples: null
+  preprocessing_num_workers: 8
+  overwrite_cache: true
+  finetune_output: finetune_predictions_report.yaml
+
+training_args:
+  num_train_epochs: 1
+  do_train: true
+  do_predict: true
+  per_device_train_batch_size: 100
+  per_device_eval_batch_size: 100
+  output:dir: "/.output"
