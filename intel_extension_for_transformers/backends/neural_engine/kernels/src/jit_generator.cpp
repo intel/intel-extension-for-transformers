@@ -122,5 +122,43 @@ void jit_generator::transpose_16x16_ps(const std::array<Xbyak::Zmm, 16UL>& src, 
     vshufi32x4(src[i], tmp[i % 8], tmp[8 + i % 8], i < 8 ? 0x88 : 0xdd);
   }
 }
+void jit_generator::tile_product_amx_bf16ps(const Xbyak::Operand& reg_ksize, const Reg64& src0, const Reg64& src1,
+                                            const Reg64& src0_stride, const Reg64& src1_stride, const Reg64& reg_tmp0,
+                                            const Reg64& reg_tmp1, std::function<Xbyak::Address(int, int)> dst_addr) {
+  constexpr int tile_k = TMM_MAX_COL / sizeof(bfloat16_t), TH = 2, TW = 2;
+  auto&& reg_iterk = reg_tmp0;
+  auto&& reg_src1_t1 = reg_tmp1;
+  imul(reg_src1_t1, src0_stride, 16);
+  lea(reg_src1_t1, ptr[src0 + reg_src1_t1]);
+
+  for (int i = 0; i < TH * TW; i++) tilezero(Tmm(i));
+  xor_(reg_iterk.cvt32(), reg_iterk.cvt32());
+  Xbyak::Label l_kloop;
+  L(l_kloop);
+
+  tileloaddt1(Tmm(6), ptr[src1 + src1_stride + 0]);
+  tileloadd(Tmm(4), ptr[src0 + src0_stride]);
+  add(src0, tile_k * sizeof(bfloat16_t));
+  tdpbf16ps(Tmm(0), Tmm(4), Tmm(6));
+  tileloaddt1(Tmm(7), ptr[src1 + src1_stride + 64]);
+  add(src1, BYTES_TMM * TW);
+  tdpbf16ps(Tmm(1), Tmm(4), Tmm(7));
+  tileloadd(Tmm(5), ptr[reg_src1_t1 + src0_stride]);
+  add(reg_src1_t1, tile_k * sizeof(bfloat16_t));
+  tdpbf16ps(Tmm(2), Tmm(5), Tmm(6));
+  tdpbf16ps(Tmm(3), Tmm(5), Tmm(7));
+
+  add(reg_iterk, tile_k);
+  cmp(reg_iterk, reg_ksize);
+  jb(l_kloop);
+  for (int i = 0; i < TH; i++)
+    for (int j = 0; j < TW; j++) tilestored(dst_addr(i, j), Tmm(i * 2 + j));
+}
+
+const std::array<uint16_t, 3> exp_approx_f16_coeff = {
+    fp32_to_fp16(exp_approx_f32_coeff[0]),
+    fp32_to_fp16(exp_approx_f32_coeff[1]),
+    fp32_to_fp16(exp_approx_f32_coeff[2]),
+};
 
 }  // namespace jd

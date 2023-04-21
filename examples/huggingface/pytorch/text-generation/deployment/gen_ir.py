@@ -11,8 +11,8 @@ parser.add_argument("--model",
         default="EleutherAI/gpt-j-6B",
     )
 parser.add_argument('--dtype', default=None, type=str)
-parser.add_argument('--output_model', type=str, default="./ir")
-parser.add_argument('--pt_file', default=None, type=str)
+parser.add_argument('--output_model', default="./ir", type=str)
+parser.add_argument('--pt_file', default="./model.pt", type=str)
 args = parser.parse_args()
 print(args)
 

@@ -174,7 +174,7 @@ void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, con
 std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_shape, const dt& a_dt,
                                                   bool is_clear = false, float sparsity = 0.f,  // 0 for dense
                                                   ft a_ft = ft::uncoded, const std::vector<float>& ranges = {-10, 10}) {
-  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
+  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), size_t{1}, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
   if (is_clear) {

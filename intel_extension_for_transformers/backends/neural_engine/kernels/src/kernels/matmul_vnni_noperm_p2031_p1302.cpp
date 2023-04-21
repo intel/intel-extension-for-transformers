@@ -26,7 +26,7 @@ using io = ssd::matmul_io::io;
  *   unified: transpose input while doing gemm. This optimization usually benefits small input.
  */
 
-inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
+static inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
   std::vector<std::vector<dim_t>> shapes(descs.size());
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
   return shapes;

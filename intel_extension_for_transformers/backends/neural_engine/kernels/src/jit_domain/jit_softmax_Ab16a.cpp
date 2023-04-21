@@ -17,18 +17,6 @@
 #define SHUFFLE(fp3, fp2, fp1, fp0) (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | (fp0))
 namespace jd {
 
-void jit_softmax_Ab16a::exp_ph_0_1(const Zmm& dst, const Zmm& src, const Zmm& tmp, const Zmm& magic_number0,
-                                   const Zmm& magic_number1, const Zmm& magic_number2, const Zmm& magic_number3,
-                                   const Reg64 bd) {
-  vfmadd132ph(src, magic_number3, zword_b[bd]);  // src is x1
-  vcvtph2w(dst, src | T_rd_sae);
-  vcvtw2ph(dst, dst);     // dst is z
-  vsubph(tmp, src, dst);  // tmp is f
-  vmovdqu16(src, tmp);    // src is f
-  vfmadd132ph(src, magic_number1, magic_number0);
-  vfmadd132ph(src, magic_number2, tmp);  // src is y
-  vscalefph(dst, src, dst);
-}
 void jit_softmax_Ab16a::scaleph2i16(const Zmm& zmm1, const Zmm& zmm_scale, const Zmm& zmm_max, const Zmm& zmm_min) {
   vmulph(zmm1, zmm1, zmm_scale);
   vrndscaleph(zmm1, zmm1, 0x00);
@@ -51,6 +39,10 @@ void jit_softmax_Ab16a::cvtepi16_epi8_shuffle_storeu(RegExp dst, const Zmm& zmm0
 }
 
 void jit_softmax_Ab16a::generate() {
+  Xbyak::Label l_exp_approx_coeff;
+  Xbyak::Label l_log2e;
+  Xbyak::Label l_ln2;
+
   this->preamble();
   mov(src_addr, ptr[reg_param + GET_OFF(src)]);         // r8
   mov(dst_addr, ptr[reg_param + GET_OFF(dst)]);         // r9
@@ -68,7 +60,9 @@ void jit_softmax_Ab16a::generate() {
   and_(rsp, 0xffffffc0);
 
   // load data from src and calculation max
-  for (int i = 0; i < 16; ++i) vpxorq(Zmm(i), Zmm(i), Zmm(i));  // zmm0~15 is vmax
+  mov(r15d, bit_cast<uint32_t>(-INFINITY));
+  vpbroadcastd(zmm0, r15d);
+  for (int i = 1; i < 16; ++i) vmovaps(Zmm(i), zmm0);  // zmm0~15 is vmax
   mov(ebx, 0);
   mov(r13, src_addr);
   // convert int32 to fp32 and scale by QK_rescale_
@@ -80,6 +74,8 @@ void jit_softmax_Ab16a::generate() {
   if (param_.has_badd) mov(r11, qword[reg_param + GET_OFF(src_badd)]);
   if (param_.has_badd) mov(r12d, dword[reg_param + GET_OFF(ld_badd)]);
   if (param_.has_badd) lea(r12d, ptr[r12d * sizeof(float)]);
+  cmp(att_tile, 0);
+  jle("load_max_in_softmax_end", T_NEAR);
   L("load_max_in_softmax");
   for (int i = 0; i < 16; ++i) {
     const auto& vreg_x = zmm16;
@@ -102,6 +98,7 @@ void jit_softmax_Ab16a::generate() {
   add(ebx, 1);
   cmp(ebx, att_tile);
   jne("load_max_in_softmax");
+  L("load_max_in_softmax_end");
   if (param_.att_tail) {
     for (int i = 0; i < 16; ++i) {
       const auto& vreg_x = zmm16;
@@ -136,18 +133,16 @@ void jit_softmax_Ab16a::generate() {
   }
   // calculation exp and sum
   for (int i = 16; i < 24; ++i) vpxorq(Zmm(i), Zmm(i), Zmm(i));  // zmm16~23 is vsum
-  mov(r12w, magic_number[1]);
-  vpbroadcastw(zmm27, r12w);  // 0.240226507f
-  mov(r13w, magic_number[2]);
-  vpbroadcastw(zmm28, r13w);  // 0.452920674f
-  mov(r14w, magic_number[3]);
-  vpbroadcastw(zmm29, r14w);  // 0.713483036f
-  mov(r15w, magic_number[4]);
-  vpbroadcastw(zmm30, r15w);               // 0.5f
-  mov(r13, (uint64_t)(&magic_number[0]));  // 1.442695f used by broadcast
+  vpbroadcastw(zmm26, word[rip + l_log2e]);
+  vpbroadcastw(zmm27, word[rip + l_ln2]);
+  vpbroadcastw(zmm28, word[rip + l_exp_approx_coeff]);
+  vpbroadcastw(zmm29, word[rip + l_exp_approx_coeff + 2]);
+  vpbroadcastw(zmm30, word[rip + l_exp_approx_coeff + 4]);
   mov(ebx, 0);
   mov(r11, src_addr);
   mov(r12, rsp);
+  cmp(att_tile, 0);
+  jle("load_sum_in_softmax_end", T_NEAR);
   L("load_sum_in_softmax");
   for (int i = 0; i < 16; i += 2) {
     vaddps(zmm24, Zmm(i), zword[r11 + i * 16 * 4]);  // subtract max
@@ -157,15 +152,16 @@ void jit_softmax_Ab16a::generate() {
     vcvtps2ph(ymm25, zmm25, 0x08);
 
     vshufi64x2(zmm25, zmm24, zmm25, SHUFFLE(1, 0, 1, 0));
-    exp_ph_0_1(zmm24, zmm25, zmm26, zmm27, zmm28, zmm29, zmm30, r13);
-    vmovaps(ptr[r12 + i * 16 * 2], zmm24);
-    vaddph(Zmm(16 + (i >> 1)), Zmm(16 + (i >> 1)), zmm24);
+    exp_approx_f16(zmm25, zmm25, zmm26, zmm27, {zmm28, zmm29, zmm30}, {zmm24, zmm31});
+    vmovaps(ptr[r12 + i * 16 * 2], zmm25);
+    vaddph(Zmm(16 + (i >> 1)), Zmm(16 + (i >> 1)), zmm25);
   }
   add(r11, 16 * 16 * 4);
   add(r12, 16 * 16 * 2);
   add(ebx, 1);
   cmp(ebx, att_tile);
   jne("load_sum_in_softmax");
+  L("load_sum_in_softmax_end");
 
   if (param_.att_tail) {
     mov(r15d, bit_cast<uint32_t>(-10000.f));
@@ -178,9 +174,9 @@ void jit_softmax_Ab16a::generate() {
       vaddps(zmm25 | mask, Zmm(i + 1), zword[r11 + (i + 1) * 16 * 4]);  // subtract max
       vcvtps2ph(ymm25, zmm25, 0x08);
       vshufi64x2(zmm25, zmm24, zmm25, SHUFFLE(1, 0, 1, 0));
-      exp_ph_0_1(zmm24, zmm25, zmm26, zmm27, zmm28, zmm29, zmm30, r13);
-      vmovaps(ptr[r12 + i * 16 * 2], zmm24);
-      vaddph(Zmm(16 + (i >> 1)), Zmm(16 + (i >> 1)), zmm24);
+      exp_approx_f16(zmm25, zmm25, zmm26, zmm27, {zmm28, zmm29, zmm30}, {zmm24, zmm31});
+      vmovaps(ptr[r12 + i * 16 * 2], zmm25);
+      vaddph(Zmm(16 + (i >> 1)), Zmm(16 + (i >> 1)), zmm25);
     }
   }
   // Zmm0 ~15 is free
@@ -310,6 +306,13 @@ void jit_softmax_Ab16a::generate() {
   putL(L_tail_1);
   putL(L_tail_2);
   putL(L_tail_3);
+
+  L(l_log2e);
+  db(bit_cast<uint16_t>(fp32_to_fp16(std::log2f(std::exp(1.f)))), sizeof(uint16_t));
+  L(l_ln2);
+  db(bit_cast<uint16_t>(fp32_to_fp16(std::log(2.f))), sizeof(uint16_t));
+  L(l_exp_approx_coeff);
+  db(reinterpret_cast<const uint8_t*>(exp_approx_f16_coeff.data()), sizeof(exp_approx_f16_coeff));
 }
 
 }  // namespace jd

@@ -64,3 +64,9 @@ source $script_dir/benchmark.sh --modes=acc,perf --op=dynamic_quant_matmul --med
 source $script_dir/benchmark.sh --modes=acc --op=dynamic_quant --medium_n=$medium_n --it_per_core=300 \
     --batch="$script_dir/inputs/ci_dynamic_quant_input" |
     tee "$log_dir/dynamic_quant.log"
+source $script_dir/benchmark.sh --modes=perf --op=mha_dense --medium_n=$medium_n --it_per_core=300 \
+    --batch="$script_dir/inputs/ci_mha_dense_dynamic_input" |
+    tee "$log_dir/mha_dense_dynamic.log"
+source $script_dir/benchmark.sh --modes=perf --op=mha_dense --medium_n=$medium_n --it_per_core=100 \
+    --batch="$script_dir/inputs/ci_mha_dense_bf16_input" |
+    tee "$log_dir/mha_dense_bf16.log"

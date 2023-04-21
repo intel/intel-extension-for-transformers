@@ -30,17 +30,35 @@ enum io {
   DST,
   WORKSPACE,
   BINARY_ADD,
-  mha_dense_io_MAX = BINARY_ADD,
+
+  ATT_SCALE,  // scale the QxK; the `1/sqrt(seqlen)`
+
+  Q_SCALE,
+  Q_ZP,
+  K_SCALE,
+  K_ZP,
+  V_SCALE,
+  V_ZP,
+  SRC_DST_SCALE,  // input scale for dst tensor
+  SRC_DST_ZP,     // input zp for dst tensor
+  DST_SCALE,      // output scale for dst tensor
+  DST_ZP,         // output zp for dst tensor
+
+  BATCH_SIZE,
+  HEAD_NUM,
+  HEAD_SIZE,
+  M,  // "seq_len" for Q & DST
+  N,  // "seq_len" for K & V
+
+  mha_dense_io_MAX = N,
 };
 }  // namespace mha_dense_io
 
 namespace ssd {
 struct mha_dense_param_t {
   data_type dst_dt_;
+  format_type kv_ft_;
   int src_bs_, src_sl_m_, src_sl_n_, head_num_, head_size_;
-  float QK_rescale_, softmax_rescale_, QKV_rescale_, QKV_dstzp_;
-  float Q_scale_, K_scale_, V_scale_, DST_scale_, QK_output_scale_;
-  int DST_zp_;
   int base_;
 };
 }  // namespace ssd

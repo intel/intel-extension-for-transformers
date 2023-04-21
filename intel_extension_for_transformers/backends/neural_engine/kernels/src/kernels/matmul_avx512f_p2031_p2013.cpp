@@ -30,7 +30,7 @@ using io = ssd::matmul_io::io;
  *   n_tile: n-size of a tile in terms of #registers; default is 2
  */
 
-inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
+static inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
   std::vector<std::vector<dim_t>> shapes(descs.size());
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
   return shapes;

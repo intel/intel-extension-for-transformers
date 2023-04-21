@@ -18,7 +18,7 @@
 namespace jd {
 using io = ssd::matmul_io::io;
 namespace {
-inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
+static inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
   std::vector<std::vector<dim_t>> shapes(descs.size());
   std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) {
     if (d.shape().size() < 4 && (d.shape().size() != 1 || d.shape()[0] != 1)) {
@@ -132,22 +132,6 @@ matmul_ref_k_t::matmul_ref_k_t(const std::shared_ptr<const kd_t>& kd)
       N_(derived_kd()->N()) {}
 
 bool matmul_ref_k_t::init() { return true; }
-
-template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-inline std::vector<T> dim2stride(const std::vector<T> dim) {
-  std::vector<T> out(dim.size());
-  out[dim.size() - 1] = 1;
-  for (int i = dim.size() - 2; i >= 0; --i) out[i] = out[i + 1] * dim[i + 1];
-  return out;
-}
-
-template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-inline std::vector<T> dim2step(const std::vector<T> dim) {
-  auto out = dim2stride(dim);
-  for (size_t i = 0; i < dim.size(); ++i)
-    if (dim[i] <= 1) out[i] = 0;
-  return out;
-}
 
 bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   using dt = jd::data_type;

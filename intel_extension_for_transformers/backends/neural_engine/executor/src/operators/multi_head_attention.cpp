@@ -15,10 +15,12 @@
 #include "multi_head_attention.hpp"
 
 #include "operator_registry.hpp"
+using dt = jd::data_type;
+using ft = jd::format_type;
+
 namespace executor {
-static unordered_map<string, jd::data_type> type2sparsemem{
-    {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
-    {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
+static unordered_map<string, dt> type2sparsemem{{"fp32", dt::fp32}, {"s32", dt::s32}, {"fp16", dt::fp16},
+                                                {"u8", dt::u8},     {"s8", dt::s8},   {"bf16", dt::bf16}};
 
 MultiHeadAttentionOperator::MultiHeadAttentionOperator(const shared_ptr<OperatorConfig>& conf)
     : Operator(conf),
@@ -70,6 +72,14 @@ void MultiHeadAttentionOperator::MapTensors(const vector<Tensor*>& input, const 
   int input_size = input.size();
   dst_ = output[0];
   switch (input_size) {
+    case 5: {
+      Q_ = input[0];
+      K_ = input[1];
+      V_ = input[2];
+      att_mask_ = input[3];
+      binary_add_mask_ = input[4];
+      break;
+    }
     case 12: {
       QKV_ = input[0];
       att_mask_ = input[1];
@@ -143,31 +153,35 @@ void MultiHeadAttentionOperator::Prepare(const vector<Tensor*>& input, const vec
   MapTensors(input, output);
   LOG_IF(FATAL, binary_add_mask_ != nullptr && is_sparse_)
       << "one more mask (binary_add_mask) is not supported for sparse MHA kernel!";
-  dst_->set_dtype("u8");
   string dtype;
   if (Q_ != nullptr)
     dtype = Q_->dtype();
   else
     dtype = QKV_->dtype();
-  LOG_IF(FATAL, dtype != "s8") << "only support int8, but get " << dtype;
-  Q_scales = GetScales(Q_min_->data(), Q_max_->data(), Q_min_->size(), dtype);
-  K_scales = GetScales(K_min_->data(), K_max_->data(), K_min_->size(), dtype);
-  V_scales = GetScales(V_min_->data(), V_max_->data(), V_min_->size(), dtype);
-  QK_scales = GetScales(QK_min_->data(), QK_max_->data(), QK_min_->size(), "u8");  // after_softmax
-  dst_scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
-  QK_rescales = GetRescales(Q_scales, K_scales, {}, "fp32");
-  QK_rescale_ = QK_rescales[0] * output_scale_;
-  softmax_rescale_ = QK_scales[0];
-  if (is_sparse_) {
-    QKV_zeropoint_ = GetZeroPoints(dst_min_->data(), dst_scales, dst_->dtype())[0];
-    QKV_rescale_ = GetRescales(QK_scales, V_scales, dst_scales, dst_->dtype())[0];
-  } else {
-    QKV_zeropoint_ = (dst_->dtype() == "fp32") ? 0 : GetZeroPoints(dst_min_->data(), dst_scales, dst_->dtype())[0];
-    QKV_rescale_ = GetRescales(QK_scales, V_scales, dst_scales, dst_->dtype())[0];
-    scaleQ = Q_scales[0];
-    scaleK = K_scales[0];
-    scaleV = V_scales[0];
-    scaleRet = dst_scales[0];
+  LOG_IF(FATAL, dtype != "s8" && dtype != "bf16") << "only support int8/bf16, but get " << dtype;
+  if (dtype == "bf16") {
+    dst_->set_dtype("bf16");
+  } else if (dtype == "s8") {
+    dst_->set_dtype("u8");
+    Q_scales = GetScales(Q_min_->data(), Q_max_->data(), Q_min_->size(), dtype);
+    K_scales = GetScales(K_min_->data(), K_max_->data(), K_min_->size(), dtype);
+    V_scales = GetScales(V_min_->data(), V_max_->data(), V_min_->size(), dtype);
+    QK_scales = GetScales(QK_min_->data(), QK_max_->data(), QK_min_->size(), "u8");  // after_softmax
+    dst_scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+    QK_rescales = GetRescales(Q_scales, K_scales, {}, "fp32");
+    QK_rescale_ = QK_rescales[0] * output_scale_;
+    softmax_rescale_ = QK_scales[0];
+    if (is_sparse_) {
+      QKV_zeropoint_ = GetZeroPoints(dst_min_->data(), dst_scales, dst_->dtype())[0];
+      QKV_rescale_ = GetRescales(QK_scales, V_scales, dst_scales, dst_->dtype())[0];
+    } else {
+      QKV_zeropoint_ = (dst_->dtype() == "fp32") ? 0 : GetZeroPoints(dst_min_->data(), dst_scales, dst_->dtype())[0];
+      QKV_rescale_ = GetRescales(QK_scales, V_scales, dst_scales, dst_->dtype())[0];
+      scaleQ = 1 / Q_scales[0];      // ONNX-style scale
+      scaleK = 1 / K_scales[0];      // ONNX-style scale
+      scaleV = 1 / V_scales[0];      // ONNX-style scale
+      scaleRet = 1 / dst_scales[0];  // ONNX-style scale
+    }
   }
 }
 
@@ -220,14 +234,11 @@ void MultiHeadAttentionOperator::ReshapeSparse(const vector<Tensor*>& input, con
   scaleRet = 1 / dst_scales[0];
   zeropointRet = QKV_zeropoint_;
 
-  jd::data_type dt = jd::data_type::s8;
-  jd::format_type ft = jd::format_type::undef;
-
-  jd::tensor_desc K_desc = {{bs_, head_num_, head_size_, seq_len_}, jd::data_type::s8, jd::format_type::undef};
-  jd::tensor_desc Q_desc = {{bs_, head_num_, head_size_, seq_len_}, jd::data_type::s8, jd::format_type::undef};
-  jd::tensor_desc mask_desc = {{bs_, seq_len_}, jd::data_type::fp32, jd::format_type::undef};
-  jd::tensor_desc V_desc = {{bs_, head_num_, head_size_, seq_len_}, jd::data_type::s8, jd::format_type::undef};
-  jd::tensor_desc ret_desc = {{bs_, head_num_, head_size_, seq_len_}, jd::data_type::u8, jd::format_type::undef};
+  jd::tensor_desc K_desc = {{bs_, head_num_, head_size_, seq_len_}, dt::s8, ft::undef};
+  jd::tensor_desc Q_desc = {{bs_, head_num_, head_size_, seq_len_}, dt::s8, ft::undef};
+  jd::tensor_desc mask_desc = {{bs_, seq_len_}, dt::fp32, ft::undef};
+  jd::tensor_desc V_desc = {{bs_, head_num_, head_size_, seq_len_}, dt::s8, ft::undef};
+  jd::tensor_desc ret_desc = {{bs_, head_num_, head_size_, seq_len_}, dt::u8, ft::undef};
 
   std::vector<jd::tensor_desc> ts_descs = {K_desc, Q_desc, mask_desc, V_desc, ret_desc};
 
@@ -243,38 +254,6 @@ void MultiHeadAttentionOperator::ReshapeSparse(const vector<Tensor*>& input, con
       dst_->set_shape({bs_, hidden_size_, seq_len_});
     } else {
       dst_->set_shape(dst_shape);
-    }
-  }
-}
-
-template <typename _T>
-static void matrix_transpose(_T* mat, size_t rows, size_t cols, _T* tmat) {
-  for (size_t i = 0; i < rows; i++) {
-    for (size_t j = 0; j < cols; j++) {
-      tmat[j * rows + i] = mat[i * cols + j];
-    }
-  }
-}
-
-template <typename T1, typename T2>
-static void ref_mm_row_NN_f32(T1* matA, T2* matB, float* matC, float* matD, int m, int n, int k, float alpha,
-                              float beta) {
-  int NBlock = 128;
-  if (matD != NULL) matD[0] = matD[0];
-#pragma omp parallel for collapse(2)
-  for (int i = 0; i < n; i += NBlock) {
-    for (int j = 0; j < m; j++) {
-      int remainn = i + NBlock <= n ? NBlock : n - i;
-      for (int ii = 0; ii < remainn; ii++) {
-        auto tmp = 0.f;
-        for (int ik = 0; ik < k; ik++) {
-          float v1 = matA[ik + j * k];
-          float v2 = matB[ik * n + i + ii];
-          tmp += v1 * v2 * alpha;
-        }
-        tmp += beta;
-        matC[(i + ii) + j * n] = tmp;
-      }
     }
   }
 }
@@ -303,40 +282,46 @@ void MultiHeadAttentionOperator::ReshapeDense(const vector<Tensor*>& input, cons
     hidden_size_ = head_num_ * head_size_;
   }
   dst_->set_shape(attn_shape);
-  attr_map["QK_rescale"] = std::to_string(QK_rescale_);
-  attr_map["softmax_rescale"] = std::to_string(softmax_rescale_);
-  attr_map["QKV_rescale"] = std::to_string(QKV_rescale_);
-  attr_map["QKV_dstzp"] = std::to_string(QKV_zeropoint_);
-  attr_map["Q_scale"] = std::to_string(scaleQ);
-  attr_map["K_scale"] = std::to_string(scaleK);
-  attr_map["V_scale"] = std::to_string(scaleV);
-  attr_map["DST_scale"] = std::to_string(scaleRet);
-  attr_map["QK_output_scale"] = std::to_string(output_scale_);
-  std::vector<jd::tensor_desc> ts_descs;
-  jd::data_type dt = jd::data_type::s8;
-  jd::format_type ft = jd::format_type::undef;
-  ts_descs.assign(jd::mha_dense_io::mha_dense_io_MAX + 1, jd::tensor_desc{{}, jd::data_type::undef, ft});
-  if (Q_ != nullptr) {
-    ts_descs[jd::mha_dense_io::SRC_Q] = {Q_->shape(), dt, ft};
-    ts_descs[jd::mha_dense_io::SRC_K] = {K_->shape(), dt, ft};
-    ts_descs[jd::mha_dense_io::SRC_V] = {V_->shape(), dt, ft};
-  } else {
-    ts_descs[jd::mha_dense_io::SRC_Q] = {attn_shape, dt, ft};
-    ts_descs[jd::mha_dense_io::SRC_K] = {attn_shape, dt, ft};
-    ts_descs[jd::mha_dense_io::SRC_V] = {attn_shape, dt, ft};
+  attr_map["approx_exp"] = "True";
+  attr_map["stable_softmax"] = Q_->dtype() == "s8" ? "True" : "False";
+
+  std::vector<jd::tensor_desc> ts_descs(jd::mha_dense_io::mha_dense_io_MAX + 1, jd::tensor_desc());
+  // scale and zero point
+  const jd::tensor_desc desc_f32_scalar{{1}, dt::fp32, ft::a};
+  ts_descs[jd::mha_dense_io::ATT_SCALE] = desc_f32_scalar;
+  rt_data_[jd::mha_dense_io::ATT_SCALE] = &output_scale_;
+  if (Q_->dtype() == "s8") {
+    attr_map["softmax_rescale"] = std::to_string(softmax_rescale_);
+    ts_descs[jd::mha_dense_io::Q_SCALE] = desc_f32_scalar;
+    ts_descs[jd::mha_dense_io::K_SCALE] = desc_f32_scalar;
+    ts_descs[jd::mha_dense_io::V_SCALE] = desc_f32_scalar;
+    ts_descs[jd::mha_dense_io::SRC_DST_SCALE] = desc_f32_scalar;
+    ts_descs[jd::mha_dense_io::SRC_DST_ZP] = desc_f32_scalar;
+
+    rt_data_[jd::mha_dense_io::Q_SCALE] = &scaleQ;
+    rt_data_[jd::mha_dense_io::K_SCALE] = &scaleK;
+    rt_data_[jd::mha_dense_io::V_SCALE] = &scaleV;
+    rt_data_[jd::mha_dense_io::SRC_DST_SCALE] = &scaleRet;
+    rt_data_[jd::mha_dense_io::SRC_DST_ZP] = &QKV_zeropoint_;
   }
-  ts_descs[jd::mha_dense_io::MASK] = {{QK_shape[0]}, jd::data_type::s32, ft};
-  ts_descs[jd::mha_dense_io::DST] = {attn_shape, (dst_->dtype() == "fp32") ? jd::data_type::fp32 : jd::data_type::u8,
-                                     ft};
+  ft qkv_ft = ft::abcd;
+  auto qkv_dtype = (dst_->dtype() == "bf16") ? dt::bf16 : dt::s8;
+  if (Q_ != nullptr) {
+    ts_descs[jd::mha_dense_io::SRC_Q] = {Q_->shape(), qkv_dtype, qkv_ft};
+    ts_descs[jd::mha_dense_io::SRC_K] = {K_->shape(), qkv_dtype, qkv_ft};
+    ts_descs[jd::mha_dense_io::SRC_V] = {V_->shape(), qkv_dtype, qkv_ft};
+  } else {
+    ts_descs[jd::mha_dense_io::SRC_Q] = {attn_shape, qkv_dtype, qkv_ft};
+    ts_descs[jd::mha_dense_io::SRC_K] = {attn_shape, qkv_dtype, qkv_ft};
+    ts_descs[jd::mha_dense_io::SRC_V] = {attn_shape, qkv_dtype, qkv_ft};
+  }
+  ts_descs[jd::mha_dense_io::MASK] = {{QK_shape[0]}, dt::s32, ft::a};
+  ts_descs[jd::mha_dense_io::DST] = {attn_shape, (dst_->dtype() == "bf16") ? dt::bf16 : dt::u8, qkv_ft};
+
   if (binary_add_mask_ != nullptr) {
-    std::vector<int64_t> badd_shape;
-    LOG_IF(FATAL, binary_add_mask_->shape().size() > QK_shape.size()) << "Unsupprt binary add mask dimension";
-    for (const auto& s : binary_add_mask_->shape()) {
-      if (s != 1) {
-        badd_shape.push_back(s);
-      }
-    }
-    ts_descs[jd::mha_dense_io::BINARY_ADD] = {badd_shape, jd::data_type::fp32, jd::format_type::undef};
+    const auto& badd_mask_size = binary_add_mask_->shape().size();
+    LOG_IF(FATAL, badd_mask_size > QK_shape.size()) << "Unsupported binary add mask dimension";
+    ts_descs[jd::mha_dense_io::BINARY_ADD] = {binary_add_mask_->shape(), dt::fp32, jd::plain_format(badd_mask_size)};
   }
   jd::operator_desc op_desc(jd::kernel_kind::mha_dense, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
                             ts_descs, attr_map);

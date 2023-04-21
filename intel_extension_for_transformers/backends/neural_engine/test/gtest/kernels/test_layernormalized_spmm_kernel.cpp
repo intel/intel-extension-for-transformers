@@ -131,7 +131,7 @@ void prepare_sparse_data(T* vector_data, dim_t rows, dim_t cols, dim_t blk_row, 
 std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_shape, const data_type& a_dt,
                                                   bool is_clear = false, float sparsity = 0.f,
                                                   const std::vector<float>& ranges = {-10, 10}) {
-  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
+  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), size_t{1}, std::multiplies<size_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
 

@@ -71,12 +71,15 @@ class SPARSE_API_ mha_dense_ref_kd_t : public kernel_desc_t {
   inline dim_t head_size() const { return op_desc_.tensor_descs()[io::SRC_Q].shape()[3]; }
   inline bool merged_QKV() const { return merged_QKV_; }
   inline bool approx_exp() const { return approx_exp_; }
+  inline bool stable_softmax() const { return stable_softmax_; }
   inline data_type dst_dt() const { return dst_dt_; }
+  inline format_type kv_ft() const { return op_desc_.tensor_descs()[io::SRC_K].ftype(); }
 
  private:
   jd::operator_desc op_desc_;
   bool merged_QKV_;
-  bool approx_exp_;  // approx exp for the same behavior as the mha approx kernel
+  bool approx_exp_;      // approx exp for the same behavior as the mha approx kernel
+  bool stable_softmax_;  // whether to minus max before calculating exp
   data_type dst_dt_;
 };
 
@@ -98,6 +101,7 @@ class SPARSE_API_ mha_dense_ref_k_t : public kernel_t {
   bool init() override;
   bool execute(const std::vector<const void*>& rt_data) const override;
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
+  size_t get_workspace_size() const override { return workspace_size_; }
 
  private:
   template <float (*func_exp)(float)>
@@ -105,9 +109,13 @@ class SPARSE_API_ mha_dense_ref_k_t : public kernel_t {
   const std::vector<jd::tensor_desc>& ts_descs_;
   const bool has_badd;
   const bool approx_exp;
-  const data_type dst_dt_;
-  const int bs_, sl_m_, sl_n_, head_num_, head_size_, ld_src_, ld_dst_;
-  const dim_t badd_stride[4];
+  const bool stable_softmax;
+  const data_type dst_dt_, dst_v_;
+  const format_type kv_ft_;
+  const int bs_, sl_m_, sl_n_, head_num_, head_size_, ld_q_, ld_kv_, ld_dst_;  // in #elements
+  const std::array<dim_t, 4> badd_step;
+  const bool is_dynq10n_dst;
+  const size_t workspace_size_;
 };
 
 }  // namespace jd

@@ -17,6 +17,7 @@
 #include <array>
 #include <climits>
 #include <fstream>
+#include <functional>
 #include <string>
 #include <utility>
 
@@ -71,11 +72,6 @@ constexpr size_t xmm_to_preserve = 0;
 namespace jd {
 class jit_generator : public Xbyak::CodeGenerator {
  public:
-  using Zmm = Xbyak::Zmm;
-  using Ymm = Xbyak::Ymm;
-  using Xmm = Xbyak::Xmm;
-  using Reg64 = Xbyak::Reg64;
-  using Opmask = Xbyak::Opmask;
   explicit jit_generator(size_t code_size = MAX_CODE_SIZE, void* code_ptr = nullptr)
       : Xbyak::CodeGenerator(code_size, (code_ptr == nullptr) ? Xbyak::AutoGrow : code_ptr) {}
   virtual ~jit_generator() {}
@@ -175,12 +171,100 @@ class jit_generator : public Xbyak::CodeGenerator {
    */
   void transpose_16x16_ps(const std::array<Xbyak::Zmm, 16UL>& src, const std::array<Xbyak::Zmm, 16UL>& tmp,
                           const int N = 16);
+  /**
+   * @brief Reduce dword in an vevtor register inplace
+   *
+   * @tparam OP2 type of the 2nd operand of the reduction op
+   * @tparam OP3 type of the 3rd  operand of the reduction op
+   * @param src vector register to perform reduction
+   * @param tmp tmp vector register to help reduction
+   * @param inst the reduction instruction
+   *
+   * @example reduce_dwords(src, dst, &CodeGenerator::vpmaxsd);
+   * @example reduce_dwords(src, dst, std::bind(&CodeGenerator::vrangeps, this, _1, _2, _3, 0b1010));
+   */
+  template <typename FUNC, typename = typename std::enable_if<std::is_constructible<
+                               std::function<void(const Xmm&, const Xmm&, const Xmm&)>, FUNC>::value>::type>
+  inline void reduce_dwords(const Ymm& src, const Ymm& tmp, const FUNC inst) {
+    SPARSE_LOG_IF(FATAL, src.getBit() != tmp.getBit()) << "Operand and tmp register should be of same type!";
+    if (src.isZMM()) {
+      vshuff32x4(tmp, src, src, 0x4E);  // 256-bit shuffle
+      inst(src, src, tmp);
+    }
+    vshuff32x4(tmp, src, src, 0xB1);  // 128/256-bit shuffle
+    inst(src, src, tmp);
+    vshufps(tmp, src, src, 0x4E);  // 64/128-bit shuffle
+    inst(src, src, tmp);
+    vshufps(tmp, src, src, 0xB1);  // 32/64-bit shuffle
+    inst(src, src, tmp);
+  }
+  template <typename OP2, typename OP3, typename CG,
+            typename = typename std::enable_if<std::is_base_of<Xbyak::Operand, OP2>::value>::type,
+            typename = typename std::enable_if<std::is_base_of<Xbyak::Operand, OP3>::value>::type,
+            typename = typename std::enable_if<std::is_base_of<Xbyak::CodeGenerator, CG>::value>::type>
+  inline void reduce_dwords(const Ymm& src, const Ymm& tmp, void (CG::*inst)(const Xmm&, const OP2&, const OP3&)) {
+    reduce_dwords(src, tmp, std::bind(inst, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  }
 
- protected:
+  /**
+   * @brief Perform approximated exp function; src and dst can be the same; log2e and ln2 can be zword_b in ZMM limited
+   * use cases.
+   *
+   * Use together with `exp_approx_f32_coeff`, the corresponding coefficient of the 2nd-order polynomial approximating
+   * function $f(x) = exp(x)$ where $x \in (-ln2, 0]$; idea from https://arxiv.org/abs/2101.01321
+   */
+  void exp_approx_f32(const Zmm& dst, const Zmm& src, const Xbyak::Operand& log2e, const Xbyak::Operand& ln2,
+                      const std::array<Zmm, 3>& coeff, const std::array<Zmm, 2>& tmp) {
+    vmulps(tmp[0], src, log2e);        // x / ln2
+    vrndscaleps(tmp[0], tmp[0], 0x2);  // round up
+    const auto& z = tmp[0];
+    vmulps(tmp[1], tmp[0], ln2);
+    vsubps(tmp[1], src, tmp[1]);  // x mod ln2 (can we use fmsub?)
+    vmovaps(dst, coeff[1]);
+    vfmadd231ps(dst, tmp[1], coeff[0]);  // dst = f * c0 + c1
+    vfmadd213ps(dst, tmp[1], coeff[2]);  // dst = (f * c0 + c1) * f + c2
+    vscalefps(dst, dst, z);              // dst = exp(f) * 2^z
+  }
+  /**
+   * @brief refer `exp_approx_f32`
+   *
+   * Note that exp_approx_f16_coeff can not be constexpr without compile-time bit-cast
+   */
+  void exp_approx_f16(const Zmm& dst, const Zmm& src, const Xbyak::Operand& log2e, const Xbyak::Operand& ln2,
+                      const std::array<Zmm, 3>& coeff, const std::array<Zmm, 2>& tmp) {
+    vmulph(tmp[0], src, log2e);        // x / ln2
+    vrndscaleph(tmp[0], tmp[0], 0x2);  // round up
+    const auto& z = tmp[0];
+    vmulph(tmp[1], tmp[0], ln2);
+    vsubph(tmp[1], src, tmp[1]);  // x mod ln2 (can we use fmsub?)
+    vmovaps(dst, coeff[1]);
+    vfmadd231ph(dst, tmp[1], coeff[0]);  // dst = f * c0 + c1
+    vfmadd213ph(dst, tmp[1], coeff[2]);  // dst = (f * c0 + c1) * f + c2
+    vscalefph(dst, dst, z);              // dst = exp(f) * 2^z
+  }
+
+  /**
+   * @brief AMX 2x2 bf16 tile product along K
+   *
+   * @param reg_ksize a read-only register with k-size in it
+   * @param src0 a volatile register with src0 address at the beginning
+   * @param src1 a volatile register with src1 address at the beginning
+   * @param src0_stride a read-only register with src0_stride in it
+   * @param src1_stride a read-only register with src1_stride in it
+   * @param reg_tmp0 a volatile register for intermediate use
+   * @param reg_tmp1 a volatile register for intermediate use
+   * @param dst_addr a function mapping tile index to the address to store it
+   */
+  void tile_product_amx_bf16ps(const Xbyak::Operand& reg_ksize, const Reg64& src0, const Reg64& src1,
+                               const Reg64& src0_stride, const Reg64& src1_stride, const Reg64& reg_tmp0,
+                               const Reg64& reg_tmp1, std::function<Xbyak::Address(int, int)> dst_addr);
+
   const uint8_t* jit_ker_ = nullptr;
   static constexpr uint64_t MAX_CODE_SIZE = 128 * 1024;
   static constexpr uint64_t BYTES_ZMM = 64;
-  static constexpr uint64_t BYTES_TMM = 16 * 64;
+  static constexpr uint64_t TMM_MAX_ROW = 16;
+  static constexpr uint64_t TMM_MAX_COL = 64;
+  static constexpr uint64_t BYTES_TMM = TMM_MAX_ROW * TMM_MAX_COL;
   static constexpr int VEC = 16;  // 512 bits of ZMM register divided by S32 bits.
   int callee_functions_code_size_ = 0;
   const size_t num_abi_save_gpr_regs = sizeof(abi_save_gpr_regs) / sizeof(abi_save_gpr_regs[0]);
@@ -188,5 +272,8 @@ class jit_generator : public Xbyak::CodeGenerator {
 
   static int dump_idx;
 };
+
+constexpr std::array<float, 3> exp_approx_f32_coeff{0.35815147f, 0.96963238f, 1.f};
+extern const std::array<uint16_t, 3> exp_approx_f16_coeff;
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_JIT_GENERATOR_HPP_

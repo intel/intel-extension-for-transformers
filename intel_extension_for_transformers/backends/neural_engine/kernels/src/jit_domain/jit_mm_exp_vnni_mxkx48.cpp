@@ -36,19 +36,6 @@ Xbyak::Zmm jit_mm_exp_vnni_mxkx48_t::dst_tile_Vmm(int i, int j) {
 Xbyak::Zmm jit_mm_exp_vnni_mxkx48_t::TW_Vmm(int j) { return Xbyak::Zmm(j); }
 Xbyak::Zmm jit_mm_exp_vnni_mxkx48_t::dst_scale_Vmm(int j) { return Xbyak::Zmm(3 + j); }
 
-void jit_mm_exp_vnni_mxkx48_t::exp_approx_ps(const Zmm& x, const Zmm& log2e, const Xbyak::Operand& half, const Zmm& c0,
-                                             const Xbyak::Operand& c1, const Xbyak::Operand& c2, const Zmm& vtemp,
-                                             const Zmm& vtemp2) {
-  vfmadd213ps(x, log2e, half);     // x = x * log2e + _mm512_set1_ps(0.5f);
-  vcvtps2dq(vtemp, x | T_rd_sae);  //
-  vcvtdq2ps(vtemp, vtemp);         // vtemp = floor(x)
-  vsubps(x, x, vtemp);             // f = x1 - z;
-  vmovdqu32(vtemp2, x);            //
-  vfmadd213ps(vtemp2, c0, c1);     // f * c0 + c1
-  vfmadd213ps(x, vtemp2, c2);      // (f * c0 + c1) * f + c2
-  vscalefps(x, x, vtemp);          // f * 2^z
-}
-
 void jit_mm_exp_vnni_mxkx48_t::generate() {
   inLocalLabel();  // use local label for multiple instance
   preamble();
@@ -57,7 +44,6 @@ void jit_mm_exp_vnni_mxkx48_t::generate() {
   mov(reg_dst, ptr[parambase + GET_OFF(dst)]);
   mov(reg_ld_dst.cvt32(), dword[parambase + GET_OFF(ld_dst)]);
   mov(reg_src_b0, ptr[parambase + GET_OFF(src_b0)]);
-  vpbroadcastd(vreg_log2ef, dword[rip + l_log2ef]);
 
   for (int j = 0; j < TW_; ++j)  // clear sum vregs
     vxorps(dst_scale_Vmm(j), dst_scale_Vmm(j), dst_scale_Vmm(j));
@@ -110,10 +96,15 @@ void jit_mm_exp_vnni_mxkx48_t::generate() {
   mov(reg_tmp.cvt32(), dword[parambase + GET_OFF(scale)]);
   const auto& vreg_scale = vreg_temp;
   vpbroadcastd(vreg_scale, reg_tmp.cvt32());
-  const auto& vreg_c0 = TW_Vmm(0);
-  vpbroadcastd(vreg_c0, dword[rip + l_poly_c[0]]);
-  vpbroadcastd(vreg_log2ef, dword[rip + l_log2ef]);
-  const Zmm vreg_exp_temp[] = {TW_Vmm(1), TW_Vmm(2)};
+  const std::array<Zmm, 3> vreg_c = {
+      TW_Vmm(0),
+      TW_Vmm(1),
+      TW_Vmm(2),
+  };
+  vpbroadcastd(vreg_c[0], dword[rip + l_exp_approx_coeff]);
+  vpbroadcastd(vreg_c[1], dword[rip + l_exp_approx_coeff + 4]);
+  vpbroadcastd(vreg_c[2], dword[rip + l_exp_approx_coeff + 8]);
+  const std::array<Zmm, 2> vreg_exp_temp = {TW_Vmm(1), TW_Vmm(2)};
 
   for (int i = 0; i < TH_; ++i) {
     for (int j = 0; j < TW_; ++j) {
@@ -123,9 +114,8 @@ void jit_mm_exp_vnni_mxkx48_t::generate() {
       } else {
         vmulps(dst_tile_Vmm(i, j), dst_tile_Vmm(i, j), vreg_scale);
       }
-      exp_approx_ps(dst_tile_Vmm(i, j), vreg_log2ef, zword_b[rip + l_halff],          //
-                    vreg_c0, zword_b[rip + l_poly_c[1]], zword_b[rip + l_poly_c[2]],  //
-                    vreg_exp_temp[0], vreg_exp_temp[1]);
+      exp_approx_f32(dst_tile_Vmm(i, j), dst_tile_Vmm(i, j), dword[rip + l_log2e], dword[rip + l_ln2], vreg_c,
+                     vreg_exp_temp);
       vaddps(dst_scale_Vmm(j), dst_scale_Vmm(j), dst_tile_Vmm(i, j));
 
       const bool needs_mask = N_ % VEC != 0 && j == TW_ - 1;
@@ -157,7 +147,7 @@ void jit_mm_exp_vnni_mxkx48_t::generate() {
   jl(l_mloop);
 
   mov(reg_dst, ptr[parambase + GET_OFF(dst_scale)]);
-  vpbroadcastd(vreg_temp, dword[rip + l_255]);
+  vpbroadcastd(vreg_temp, dword[rip + l_255f]);
   for (int j = 0; j < TW_; ++j) {
     const bool needs_mask = N_ % VEC != 0 && j == TW_ - 1;
     const Xbyak::Address out = ptr[reg_dst + j * VEC * sizeof(float)] | (needs_mask ? mask_n : k0);
@@ -167,19 +157,14 @@ void jit_mm_exp_vnni_mxkx48_t::generate() {
 
   postamble();  // ret
 
-  const float constants[] = {1.442695f, .5f, 0.240226507f, 0.452920674f, 0.713483036f, 255.f};
-  L(l_log2ef);
-  db(reinterpret_cast<const uint8_t*>(&constants[0]), sizeof(float));
-  L(l_halff);
-  db(reinterpret_cast<const uint8_t*>(&constants[1]), sizeof(float));
-  L(l_poly_c[0]);
-  db(reinterpret_cast<const uint8_t*>(&constants[2]), sizeof(float));
-  L(l_poly_c[1]);
-  db(reinterpret_cast<const uint8_t*>(&constants[3]), sizeof(float));
-  L(l_poly_c[2]);
-  db(reinterpret_cast<const uint8_t*>(&constants[4]), sizeof(float));
-  L(l_255);
-  db(reinterpret_cast<const uint8_t*>(&constants[5]), sizeof(float));
+  L(l_log2e);
+  db(bit_cast<uint32_t>(std::log2f(std::exp(1.f))), sizeof(float));
+  L(l_ln2);
+  db(bit_cast<uint32_t>(std::log(2.f)), sizeof(float));
+  L(l_exp_approx_coeff);
+  db(reinterpret_cast<const uint8_t*>(exp_approx_f32_coeff.data()), sizeof(exp_approx_f32_coeff));
+  L(l_255f);
+  db(bit_cast<uint32_t>(255.f), sizeof(float));
 
   outLocalLabel();  // end of local label
 }

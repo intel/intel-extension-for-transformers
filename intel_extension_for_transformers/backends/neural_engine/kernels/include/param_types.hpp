@@ -14,10 +14,12 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_
+#include <cassert>
 #include <cstdint>
+#include <map>
 #include <unordered_map>
 #include <vector>
-#include <map>
+
 namespace jd {
 // The main kinds of kernel.
 enum class kernel_kind : uint8_t {
@@ -34,7 +36,6 @@ enum class kernel_kind : uint8_t {
   attention,
   transpose_mha,
   mha_dense,
-  dynamic_quantize_mha,
   slice,
   dynamic_quant
 };
@@ -103,6 +104,7 @@ enum class format_type : uint8_t {
   ba,  // shape permutation = {1, 0}
   abc,
   abcd,
+  acbd,
 
   // encoding format of sparse matrix
   uncoded,
@@ -111,6 +113,19 @@ enum class format_type : uint8_t {
   bsr,
   bsc,
   csrp,
+};
+constexpr format_type plain_format(const int n) {
+  return n == 1   ? format_type::a
+         : n == 2 ? format_type::ab
+         : n == 3 ? format_type::abc
+         : n == 4 ? format_type::abcd
+                  : (assert(false), format_type::undef);
+}
+
+static const std::map<format_type, const char*> format_type_name = {
+    {format_type::a, "a"},       {format_type::ab, "ab"},     {format_type::ba, "ba"},     {format_type::abc, "abc"},
+    {format_type::abcd, "abcd"}, {format_type::acbd, "acbd"}, {format_type::csr, "csr"},   {format_type::csc, "csc"},
+    {format_type::bsr, "bsr"},   {format_type::bsc, "bsc"},   {format_type::csrp, "csrp"},
 };
 
 // Engine kind.

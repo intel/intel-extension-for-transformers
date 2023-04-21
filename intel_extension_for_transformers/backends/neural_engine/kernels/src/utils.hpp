@@ -67,8 +67,15 @@
 
 #endif  // _WIN32
 
-#define SPARSE_LOG(level) LOG(level) << "Log from Sparselib: "
-#define SPARSE_LOG_IF(level, f) LOG_IF(level, f) << "Log from Sparselib: "
+#if __has_cpp_attribute(fallthrough)
+#elif defined(WITH_GCC_FLAGS)
+#define fallthrough gnu::fallthrough
+#endif
+
+#define SPARSE_LOG(level) LOG(level) << "Sparselib] "
+#define SPARSE_LOG_IF(level, f) LOG_IF(level, f) << "Sparselib] "
+#define SPARSE_DLOG(level) DLOG(level) << "Sparselib] "
+#define SPARSE_DLOG_IF(level, f) DLOG_IF(level, f) << "Sparselib] "
 namespace jd {
 
 typedef uint16_t bfloat16_t;  // NOLINT
@@ -298,6 +305,31 @@ class aligned_allocator_t {
   // Always returns true for stateless allocators.
   bool operator==(const aligned_allocator_t<T, N>& other) const { return true; }
 };
+
+/* Prepend ones to vec until the vector length reaches `n`. */
+template <typename T, typename = std::enable_if_t<std::is_arithmetic<T>::value>>
+inline std::vector<T> pre_pad1(const size_t n, const std::vector<T> vec) {
+  SPARSE_LOG_IF(FATAL, n < vec.size()) << "Vector size to large!";
+  std::vector<T> out(n, T{1});
+  std::copy(vec.cbegin(), vec.cend(), out.begin() + n - vec.size());
+  return out;
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
+inline std::vector<T> dim2stride(const std::vector<T> dim) {
+  std::vector<T> out(dim.size());
+  out[dim.size() - 1] = 1;
+  for (int i = dim.size() - 2; i >= 0; --i) out[i] = out[i + 1] * dim[i + 1];
+  return out;
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
+inline std::vector<T> dim2step(const std::vector<T> dim) {
+  auto out = dim2stride(dim);
+  for (size_t i = 0; i < dim.size(); ++i)
+    if (dim[i] <= 1) out[i] = 0;
+  return out;
+}
 
 template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
 inline std::vector<T> perm_inv(const std::vector<T>& perm) {

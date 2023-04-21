@@ -186,13 +186,6 @@ class SPARSE_API_ mha_dense_desc : public kernel_desc_proxy {
   virtual ~mha_dense_desc() {}
 };
 
-class SPARSE_API_ dynamic_quantize_mha_desc : public kernel_desc_proxy {
- public:
-  dynamic_quantize_mha_desc() {}
-  explicit dynamic_quantize_mha_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
-  virtual ~dynamic_quantize_mha_desc() {}
-};
-
 class SPARSE_API_ slice_desc : public kernel_desc_proxy {
  public:
   slice_desc() {}
@@ -291,13 +284,6 @@ class SPARSE_API_ mha_dense : public kernel_proxy {
   mha_dense() {}
   explicit mha_dense(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~mha_dense() {}
-};
-
-class SPARSE_API_ dynamic_quantize_mha : public kernel_proxy {
- public:
-  dynamic_quantize_mha() {}
-  explicit dynamic_quantize_mha(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
-  virtual ~dynamic_quantize_mha() {}
 };
 
 class SPARSE_API_ slice : public kernel_proxy {

@@ -60,8 +60,6 @@ class jit_mm_exp_vnni_mxkx48_t : public jit_generator {
   Xbyak::Zmm TW_Vmm(int j);               // Register allocator of load activation. 1D shape=(TW)
   Xbyak::Zmm dst_scale_Vmm(int j);        // Register allocator of load activation. 1D shape=(TW)
   Xbyak::Zmm dst_tile_Vmm(int i, int j);  // Reg alloc of DST tile. 2D shape=(TH,TW), stride=(TW,1)
-  void exp_approx_ps(const Zmm& x, const Zmm& log2e, const Xbyak::Operand& half, const Zmm& c0,
-                     const Xbyak::Operand& c1, const Xbyak::Operand& c2, const Zmm& vtemp, const Zmm& vtemp2);
 
   const dim_t N_ = 48;
   const int TH_ = 8;  // tile height (along m) in terms of #registers
@@ -76,9 +74,8 @@ class jit_mm_exp_vnni_mxkx48_t : public jit_generator {
   const size_t dsize_dst;
 
   const Xbyak::Zmm& vreg_temp = zmm31;
-  const Xbyak::Zmm& vreg_log2ef = zmm30;
   static constexpr int VREG_NUMS = 32;
-  static constexpr int USED_VREGS = 2;
+  static constexpr int USED_VREGS = 1;
 
 #ifdef _WIN32
   const Xbyak::Reg64& parambase = rcx;
@@ -96,8 +93,8 @@ class jit_mm_exp_vnni_mxkx48_t : public jit_generator {
   const Xbyak::Reg64& reg_ld_dst = r12;
   const Xbyak::Reg64& reg_iterm = r13;
   const Xbyak::Opmask& mask_n = k1;
-  Xbyak::Label l_kloop, l_mloop, l_255;
-  Xbyak::Label l_log2ef, l_halff, l_poly_c[3];
+  Xbyak::Label l_kloop, l_mloop, l_255f;
+  Xbyak::Label l_log2e, l_ln2, l_exp_approx_coeff;
 };
 }  // namespace jd
 

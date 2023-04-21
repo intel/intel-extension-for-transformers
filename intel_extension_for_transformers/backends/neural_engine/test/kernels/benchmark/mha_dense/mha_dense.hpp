@@ -15,57 +15,49 @@
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_HPP_
 
+#include <functional>
 #include <memory>
-#include <string>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "benchmark_utils.hpp"
-#include "interface.hpp"
 #include "kernels/mha_dense_types.hpp"
-
-#define MHA_DENSE_ARG_NUM 4
 
 namespace jd {
 
 class mha_dense_bench : public kernel_bench {
- private:
-  int64_t head_num;
-  int64_t head_size;
-  int64_t batch_size;
-  int64_t sl_m;
-  int64_t sl_n;
-  int32_t mask = -1;  // valid seqlen
-  data_type dt_dst;
-  int badd_dim;  // #dimention of the binary_add src tensor; Non-positive number for disabling binary_add
-  std::unordered_map<std::string, std::string> op_attrs;
+  std::shared_ptr<mha_dense_bench> smb;
+
+ protected:
+  using io = mha_dense_io::io;
 
  public:
-  mha_dense_bench() : kernel_bench() {}
+  mha_dense_bench() {}
   virtual ~mha_dense_bench() {
-    for (auto data : {args.first.rt_data, args.second.rt_data})
-      for (auto p : data)
-        if (p != nullptr) aligned_allocator_t<char>::deallocate(const_cast<void*>(p));
+    if (smb == nullptr) {  // for a finally derived class
+      for (auto op_args : {args.first, args.second})
+        for (auto rt_data : op_args.rt_data)
+          if (rt_data != nullptr) aligned_allocator_t<uint8_t, 64>::deallocate(const_cast<void*>(rt_data));
+    }
   }
 
   bench_res_t set_config(int argc, char** argv) override;
-  double calc_flop() const override;
-  std::vector<int> get_refresh_data_idx() const override {
-    return {mha_dense_io::SRC_Q, mha_dense_io::SRC_K, mha_dense_io::SRC_V, mha_dense_io::DST};
-  }
-  int get_workspace_idx() const override { return mha_dense_io::WORKSPACE; }
+  double calc_flop() const override { return smb->calc_flop(); }
+  std::vector<int> get_refresh_data_idx() const override { return smb->get_refresh_data_idx(); }
+  int get_workspace_idx() const final { return mha_dense_io::WORKSPACE; }
   // Just like that in gtest file
-  void get_true_data() override;
+  void get_true_data() override { smb->get_true_data(); }
   // Just like that in gtest file
-  bool check_result() override;
+  bool check_result() override { return smb->check_result(); }
   // Just like that in gtest file
-  void gen_case() override;
+  void gen_case() override { smb->gen_case(); }
   void set_kernel_proxy() override {
+    args = smb->args;
+    ts_descs = smb->ts_descs;
     mha_dense_desc mha_dense_desc(args.first.op_desc);
     kp = std::make_shared<mha_dense>(mha_dense_desc);
-  }
+  };
 };
-
 }  // namespace jd
 
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_HPP_

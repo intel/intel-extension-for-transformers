@@ -31,7 +31,8 @@ class tile_param_t {
   int A_tile_num = 2;
   int B_tile_num = 2;
 
-  tile_param_t() : M_tile(0), N_tile(0), K_tile(0), is_bf16(false), K_pack(0) {}
+  tile_param_t()
+      : M_tile(0), N_tile(0), K_tile(0), is_bf16(false), K_pack(0), C_tile_num(4), A_tile_num(2), B_tile_num(2) {}
   tile_param_t(int m_tile, int n_tile, int k_tile, bool bf16, int k_pack, int c_tile_num = 4, int a_tile_num = 2,
                int b_tile_num = 2)
       : M_tile(m_tile),
@@ -47,8 +48,9 @@ class tile_param_t {
 
  public:
   bool operator!=(const tile_param_t& rhs) const {
-    return (M_tile != rhs.M_tile) | (K_tile != rhs.K_tile) | (N_tile != rhs.N_tile) | (is_bf16 != rhs.is_bf16) |
-           (K_pack != rhs.K_pack);
+    return (M_tile != rhs.M_tile) || (K_tile != rhs.K_tile) || (N_tile != rhs.N_tile) || (is_bf16 != rhs.is_bf16) ||
+           (K_pack != rhs.K_pack) || (C_tile_num != rhs.C_tile_num) || (A_tile_num != rhs.A_tile_num) ||
+           (B_tile_num != rhs.B_tile_num);
   }
 };
 

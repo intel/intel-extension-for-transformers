@@ -118,11 +118,10 @@ class mha_dense_k_t : public kernel_t {
  private:
   bool execute_tiny(const std::vector<const void*>& rt_data) const;
   const data_type dst_dt_;
-  const int src_bs_, src_sl_m_, src_sl_n_, head_num_, head_size_, ld_src_, ld_dst_;
+  const format_type kv_ft_;
+  const int src_bs_, src_sl_m_, src_sl_n_, head_num_, head_size_, ld_q_, ld_kv_, ld_dst_;
   const float softmax_rescale_f32_;
   const uint16_t softmax_rescale_;
-  const float QK_rescale_, QKV_rescale_, QKV_dstzp_;
-  const float Q_scale_, K_scale_, V_scale_, DST_scale_, QK_output_scale_;
 
   const std::vector<jd::tensor_desc>& ts_descs_;
   const bool has_binary_add;

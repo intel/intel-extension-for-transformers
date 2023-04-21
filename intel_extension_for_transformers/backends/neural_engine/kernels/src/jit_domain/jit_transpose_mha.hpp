@@ -48,9 +48,6 @@ class MHA_stage1_kernel : public MHA_kernel {
 
  protected:
   void packedf32_bf16(int idx0, int idx1);
-  // x and y can be same register
-  // len(tmp)==2
-  void exp_f32_lowprecision(Zmm log2e, Zmm ln2, Zmm c[3], Zmm x, Zmm y, Zmm tmp[]);
 };
 
 class MHA_stage2_kernel : public MHA_kernel {

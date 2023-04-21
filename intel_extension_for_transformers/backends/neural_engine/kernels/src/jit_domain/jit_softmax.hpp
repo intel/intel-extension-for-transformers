@@ -39,12 +39,9 @@ class jit_softmax_t : public jit_generator {
   virtual ~jit_softmax_t() {}
 
  private:
-  enum op_t { sum, max };
   void generate() override;
   void assign_regs();
   void prepare_mask();
-  void get_horizontal_op(const Zmm& v, const Zmm& vtmp, op_t op);
-  void perform_op(Zmm v, Zmm vtmp, op_t op);
   void get_unroll();
   void lut_softmax_kernel_gen();
   void lut_int8_cvt_int16(Zmm dst, Reg64 src);

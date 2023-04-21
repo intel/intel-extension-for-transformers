@@ -24,9 +24,9 @@ namespace jd {
 void transpose_matmul_bench::get_true_data() {
   std::shared_ptr<const kernel_desc_t> ker_ref_desc;
   kernel_desc_t::create<matmul_ref_kd_t>(ker_ref_desc, args.second.op_desc);
-  std::shared_ptr<const kernel_t> attention_ref_kernel;
-  kernel_t::create<matmul_ref_k_t, matmul_ref_kd_t>(attention_ref_kernel, ker_ref_desc);
-  attention_ref_kernel->execute(args.second.rt_data);
+  std::shared_ptr<const kernel_t> trmm_ref_kernel;
+  kernel_t::create<matmul_ref_k_t, matmul_ref_kd_t>(trmm_ref_kernel, ker_ref_desc);
+  trmm_ref_kernel->execute(args.second.rt_data);
 }
 
 bench_res_t transpose_matmul_bench::set_config(int argc, char** argv) {

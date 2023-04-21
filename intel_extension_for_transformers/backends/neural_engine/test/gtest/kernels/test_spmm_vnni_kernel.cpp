@@ -154,7 +154,7 @@ void prepare_sparse_data(T* vector_data, jd::dim_t rows, jd::dim_t cols, jd::dim
 std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_shape, const dt& a_dt,
                                                   bool is_clear = false, float sparsity = 0.f,
                                                   const std::vector<float>& ranges = {-10, 10}) {
-  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
+  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), size_t{1}, std::multiplies<size_t>());
   int bytes_size = elem_num * jd::type_size[a_dt];
   void* data_ptr = nullptr;
   if (is_clear) {
@@ -399,7 +399,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   auto attrs_map = tpi.param.args.first.op_desc.attrs();
   jd::dim_t oc = wei_shape[0];
   jd::dim_t ic = wei_shape[1];
-  jd::dim_t bs = std::accumulate(src_shape.begin(), src_shape.end(), 1, std::multiplies<jd::dim_t>()) / ic;
+  jd::dim_t bs = std::accumulate(src_shape.begin(), src_shape.end(), jd::dim_t{1}, std::multiplies<jd::dim_t>()) / ic;
   jd::dim_t micro_bs = src_shape.back();
 
   params.push_back("c" + std::to_string(static_cast<int>(tpi.param.args.first.nthr)));

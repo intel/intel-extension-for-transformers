@@ -57,9 +57,9 @@ bool check_result(const test_params_t& t) {
 
     std::shared_ptr<const kernel_desc_t> ker_ref_desc;
     kernel_desc_t::create<matmul_ref_kd_t>(ker_ref_desc, q.op_desc);
-    std::shared_ptr<const kernel_t> attention_ref_kernel;
-    kernel_t::create<matmul_ref_k_t, matmul_ref_kd_t>(attention_ref_kernel, ker_ref_desc);
-    attention_ref_kernel->execute(q.rt_data);
+    std::shared_ptr<const kernel_t> trmm_ref_kernel;
+    kernel_t::create<matmul_ref_k_t, matmul_ref_kd_t>(trmm_ref_kernel, ker_ref_desc);
+    trmm_ref_kernel->execute(q.rt_data);
   } catch (const std::exception& e) {
     return t.expect_to_fail;
   }
@@ -105,7 +105,7 @@ TEST_P(MMVNNIP2031P2013KernelTest, ) {
 std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_shape, const dt& a_dt,
                                                   bool is_clear = false, const std::vector<float>& ranges = {-10, 10}) {
   if (a_shape.size() == 0) return {nullptr, nullptr};
-  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<dim_t>());
+  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), dim_t{1}, std::multiplies<dim_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
   if (is_clear) {

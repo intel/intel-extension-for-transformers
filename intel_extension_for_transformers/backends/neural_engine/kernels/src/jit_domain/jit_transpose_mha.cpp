@@ -33,19 +33,6 @@ void MHA_stage1_kernel::packedf32_bf16(int idx0, int idx1) {
   vshufi32x4(Zmm(idx0), Zmm(idx0), Zmm(idx1), (4 << 4) | 4);
 }
 
-void MHA_stage1_kernel::exp_f32_lowprecision(Zmm log2e, Zmm ln2, Zmm c[3], Zmm x, Zmm y, Zmm tmp[]) {
-  vmulps(tmp[0], x, log2e);
-  vrndscaleps(tmp[0], tmp[0], 0x2);
-  auto z = tmp[0];
-  vmulps(tmp[1], tmp[0], ln2);
-  vsubps(tmp[1], x, tmp[1]);
-  auto q = tmp[1];
-  vmovaps(y, c[1]);
-  vfmadd231ps(y, q, c[0]);
-  vfmadd213ps(y, q, c[2]);
-  vscalefps(y, y, z);
-}
-
 void MHA_stage2_kernel::loadbf16_norm_rows(const Zmm& x, const RegExp& addr, const Zmm& scale) {
   vpmovzxwd(x, yword[addr]);
   vpslld(x, x, 16);
@@ -329,7 +316,10 @@ void MHA_s8s8s8_row_amx_32x32_batchk_binary_exp::generate() {
   int TmpValueReserve = 64;
   int TmpSpace = XmmReserve + TmmReserve + TmpValueReserve;
   int TTmmStart = XmmReserve;
-  Xbyak::Label tmpfvariable;
+  Xbyak::Label l_exp_approx_coeff;
+  Xbyak::Label l_log2e;
+  Xbyak::Label l_ln2;
+  Xbyak::Label l_255f;
   {
     StackFrame st(this, 1, 11, TmpSpace);
 #ifdef _WIN32
@@ -358,24 +348,20 @@ void MHA_s8s8s8_row_amx_32x32_batchk_binary_exp::generate() {
     vbroadcastss(Zmm(ZIDX_ScaleAB), ptr[parambase + offsetof(ssd::transpose_mha_step1_params, scaleAB)]);
 
     int ZIDX_LOG2E = 30;
-    vbroadcastss(Zmm(ZIDX_LOG2E), ptr[rip + tmpfvariable]);
+    vbroadcastss(Zmm(ZIDX_LOG2E), ptr[rip + l_log2e]);
     int ZIDX_LN2 = 29;
-    vbroadcastss(Zmm(ZIDX_LN2), ptr[rip + tmpfvariable + 4]);
+    vbroadcastss(Zmm(ZIDX_LN2), ptr[rip + l_ln2]);
     int ZIDX_C0 = 28;
-    vbroadcastss(Zmm(ZIDX_C0), ptr[rip + tmpfvariable + 8]);
+    vbroadcastss(Zmm(ZIDX_C0), ptr[rip + l_exp_approx_coeff]);
     int ZIDX_C1 = 27;
-    vbroadcastss(Zmm(ZIDX_C1), ptr[rip + tmpfvariable + 12]);
+    vbroadcastss(Zmm(ZIDX_C1), ptr[rip + l_exp_approx_coeff + 4]);
     int ZIDX_C2 = 26;
-    vbroadcastss(Zmm(ZIDX_C2), ptr[rip + tmpfvariable + 16]);
+    vbroadcastss(Zmm(ZIDX_C2), ptr[rip + l_exp_approx_coeff + 8]);
     int ZIDX_TMP = 24;
-    Zmm c[] = {
-        Zmm(ZIDX_C0),
-        Zmm(ZIDX_C1),
-        Zmm(ZIDX_C2),
-    };
-    Zmm tmp[] = {Zmm(ZIDX_TMP), Zmm(ZIDX_TMP + 1)};
+    const std::array<Zmm, 3> c = {Zmm(ZIDX_C0), Zmm(ZIDX_C1), Zmm(ZIDX_C2)};
+    const std::array<Zmm, 2> tmp = {Zmm(ZIDX_TMP), Zmm(ZIDX_TMP + 1)};
     int ZIDX_FF = 23;
-    vbroadcastss(Zmm(ZIDX_FF), ptr[rip + tmpfvariable + 20]);
+    vbroadcastss(Zmm(ZIDX_FF), ptr[rip + l_255f]);
 
     mov(reg_matBptr, ptr[parambase + offsetof(ssd::transpose_mha_step1_params, matB)]);
     mov(reg_sumptr, ptr[parambase + offsetof(ssd::transpose_mha_step1_params, expsum)]);
@@ -433,8 +419,7 @@ void MHA_s8s8s8_row_amx_32x32_batchk_binary_exp::generate() {
           vcvtdq2ps(Zmm(i * ZMM_PerROW + j), ptr[reg_TmpPtr + j * 64]);
           vmulps(Zmm(i * ZMM_PerROW + j), Zmm(ZIDX_ScaleAB));
           vaddps(Zmm(i * ZMM_PerROW + j), zword_b[reg_matDptr + (tt + i) * sizeof(float)]);
-          exp_f32_lowprecision(Zmm(ZIDX_LOG2E), Zmm(ZIDX_LN2), c, Zmm(i * ZMM_PerROW + j), Zmm(i * ZMM_PerROW + j),
-                               tmp);
+          exp_approx_f32(Zmm(i * ZMM_PerROW + j), Zmm(i * ZMM_PerROW + j), Zmm(ZIDX_LOG2E), Zmm(ZIDX_LN2), c, tmp);
           vaddps(Zmm(ZIDX_ExpSum + j), Zmm(ZIDX_ExpSum + j), Zmm(i * ZMM_PerROW + j));
         }
         for (int j = 0; j < ZMM_PerROW; j += 2) {
@@ -470,9 +455,14 @@ void MHA_s8s8s8_row_amx_32x32_batchk_binary_exp::generate() {
 #endif
   }
   outLocalLabel();  // end of local label
-  L(tmpfvariable);
-  const float tmparr[] = {1.442695f, 0.693147180f, 0.35815147f, 0.96963238f, 1.0f, 255.f};
-  db(reinterpret_cast<uint8_t*>(const_cast<float*>(tmparr)), sizeof(tmparr));
+  L(l_log2e);
+  db(bit_cast<uint32_t>(std::log2f(std::exp(1.f))), sizeof(float));
+  L(l_ln2);
+  db(bit_cast<uint32_t>(std::log(2.f)), sizeof(float));
+  L(l_exp_approx_coeff);
+  db(reinterpret_cast<const uint8_t*>(exp_approx_f32_coeff.data()), sizeof(exp_approx_f32_coeff));
+  L(l_255f);
+  db(bit_cast<uint32_t>(255.f), sizeof(float));
 }
 
 void MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp::generate() {
@@ -483,7 +473,10 @@ void MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp::generate() {
   int TmmReserve = 0;
   int TmpValueReserve = 64;
   int TmpSpace = XmmReserve + TmmReserve + TmpValueReserve;
-  Xbyak::Label tmpfvariable;
+  Xbyak::Label l_exp_approx_coeff;
+  Xbyak::Label l_log2e;
+  Xbyak::Label l_ln2;
+  Xbyak::Label l_255f;
   {
     StackFrame st(this, 1, 12, TmpSpace);
 #ifdef _WIN32
@@ -510,24 +503,20 @@ void MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp::generate() {
     vbroadcastss(Zmm(ZIDX_ScaleAB), ptr[parambase + offsetof(ssd::transpose_mha_step1_params, scaleAB)]);
 
     int ZIDX_LOG2E = 30;
-    vbroadcastss(Zmm(ZIDX_LOG2E), ptr[rip + tmpfvariable]);
+    vbroadcastss(Zmm(ZIDX_LOG2E), ptr[rip + l_log2e]);
     int ZIDX_LN2 = 29;
-    vbroadcastss(Zmm(ZIDX_LN2), ptr[rip + tmpfvariable + 4]);
+    vbroadcastss(Zmm(ZIDX_LN2), ptr[rip + l_ln2]);
     int ZIDX_C0 = 28;
-    vbroadcastss(Zmm(ZIDX_C0), ptr[rip + tmpfvariable + 8]);
+    vbroadcastss(Zmm(ZIDX_C0), ptr[rip + l_exp_approx_coeff]);
     int ZIDX_C1 = 27;
-    vbroadcastss(Zmm(ZIDX_C1), ptr[rip + tmpfvariable + 12]);
+    vbroadcastss(Zmm(ZIDX_C1), ptr[rip + l_exp_approx_coeff + 4]);
     int ZIDX_C2 = 26;
-    vbroadcastss(Zmm(ZIDX_C2), ptr[rip + tmpfvariable + 16]);
+    vbroadcastss(Zmm(ZIDX_C2), ptr[rip + l_exp_approx_coeff + 8]);
     int ZIDX_TMP = 24;
-    Zmm c[] = {
-        Zmm(ZIDX_C0),
-        Zmm(ZIDX_C1),
-        Zmm(ZIDX_C2),
-    };
-    Zmm tmp[] = {Zmm(ZIDX_TMP), Zmm(ZIDX_TMP + 1)};
+    const std::array<Zmm, 3> c = {Zmm(ZIDX_C0), Zmm(ZIDX_C1), Zmm(ZIDX_C2)};
+    const std::array<Zmm, 2> tmp = {Zmm(ZIDX_TMP), Zmm(ZIDX_TMP + 1)};
     int ZIDX_FF = 23;
-    vbroadcastss(Zmm(ZIDX_FF), ptr[rip + tmpfvariable + 20]);
+    vbroadcastss(Zmm(ZIDX_FF), ptr[rip + l_255f]);
 
     // C reg 16 A reg 1 B reg 2: 19
     // expsum reg 2
@@ -589,8 +578,8 @@ void MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp::generate() {
         vcvtdq2ps(Zmm(ZIDX_CReg + i * ZMM_PerROW + j), Zmm(ZIDX_CReg + i * ZMM_PerROW + j));
         vmulps(Zmm(ZIDX_CReg + i * ZMM_PerROW + j), Zmm(ZIDX_ScaleAB));
         vaddps(Zmm(ZIDX_CReg + i * ZMM_PerROW + j), zword_b[reg_matDptr + i * sizeof(float)]);
-        exp_f32_lowprecision(Zmm(ZIDX_LOG2E), Zmm(ZIDX_LN2), c, Zmm(ZIDX_CReg + i * ZMM_PerROW + j),
-                             Zmm(ZIDX_CReg + i * ZMM_PerROW + j), tmp);
+        exp_approx_f32(Zmm(ZIDX_CReg + i * ZMM_PerROW + j), Zmm(ZIDX_CReg + i * ZMM_PerROW + j), Zmm(ZIDX_LOG2E),
+                       Zmm(ZIDX_LN2), c, tmp);
         vaddps(Zmm(ZIDX_ExpSum + j), Zmm(ZIDX_ExpSum + j), Zmm(ZIDX_CReg + i * ZMM_PerROW + j));
       }
       for (int j = 0; j < ZMM_PerROW; j += 2) {
@@ -625,9 +614,14 @@ void MHA_s8s8s8_row_vnni_8x32_batchk_binary_exp::generate() {
 #endif
   }
   outLocalLabel();  // end of local label
-  L(tmpfvariable);
-  const float tmparr[] = {1.442695f, 0.693147180f, 0.35815147f, 0.96963238f, 1.0f, 255.f};
-  db(reinterpret_cast<uint8_t*>(const_cast<float*>(tmparr)), sizeof(tmparr));
+  L(l_log2e);
+  db(bit_cast<uint32_t>(std::log2f(std::exp(1.f))), sizeof(float));
+  L(l_ln2);
+  db(bit_cast<uint32_t>(std::log(2.f)), sizeof(float));
+  L(l_exp_approx_coeff);
+  db(reinterpret_cast<const uint8_t*>(exp_approx_f32_coeff.data()), sizeof(exp_approx_f32_coeff));
+  L(l_255f);
+  db(bit_cast<uint32_t>(255.f), sizeof(float));
 }
 
 void MHA_norm_quantize_reorder_prescale_packed::generate() {

@@ -60,9 +60,20 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
   // prepare workspace
   const auto workspace_idx = kb->get_workspace_idx();
   const auto workspace_size = kb->kp->get_workspace_size();
+  std::shared_ptr<void> with_workspace;
   if (workspace_idx >= 0 && workspace_size > 0) {
     p.rt_data[workspace_idx] = aligned_allocator_t<char>::allocate(workspace_size);
     q.rt_data[workspace_idx] = aligned_allocator_t<char>::allocate(workspace_size);
+    with_workspace = {
+        nullptr,
+        [workspace_idx, &p, &q](...) {
+          // free workspace memory
+          aligned_allocator_t<char>::deallocate(const_cast<void*>(p.rt_data[workspace_idx]));
+          aligned_allocator_t<char>::deallocate(const_cast<void*>(q.rt_data[workspace_idx]));
+          p.rt_data[workspace_idx] = nullptr;
+          q.rt_data[workspace_idx] = nullptr;
+        },
+    };
   }
 
   kb->kp->execute(p.rt_data);
@@ -104,21 +115,13 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
 
   // free new memory
   free_new_mem(&new_data);
-  // free workspace memory
-  if (workspace_idx >= 0 && workspace_size > 0) {
-    aligned_allocator_t<char>::deallocate(const_cast<void*>(p.rt_data[workspace_idx]));
-    aligned_allocator_t<char>::deallocate(const_cast<void*>(q.rt_data[workspace_idx]));
-    p.rt_data[workspace_idx] = nullptr;
-    q.rt_data[workspace_idx] = nullptr;
-  }
-
   res.stat = bench_status::success;
   return res;
 }
 void bench_op::refresh_data(std::vector<void*>* new_data_pointer, const std::vector<int>& idx) {
   auto new_data = *new_data_pointer;
   for (size_t i = 0; i < idx.size(); ++i) {
-    int elem_num = std::accumulate(kb->ts_descs[idx[i]].shape().begin(), kb->ts_descs[idx[i]].shape().end(), 1,
+    int elem_num = std::accumulate(kb->ts_descs[idx[i]].shape().begin(), kb->ts_descs[idx[i]].shape().end(), size_t{1},
                                    std::multiplies<size_t>());
     switch (kb->ts_descs[idx[i]].dtype()) {
       case dt::fp32:
@@ -153,10 +156,10 @@ bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vect
   std::vector<const void*>& rt_data = *rt_data_pointer;
   std::vector<void*>& new_data = *new_data_pointer;
   for (size_t i = 0; i < idx.size(); ++i) {
-    int elem_num =
-        std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), 1, std::multiplies<size_t>());
+    int elem_num = std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), size_t{1},
+                                   std::multiplies<size_t>());
     int byte_size = elem_num * type_size[ts_descs[idx[i]].dtype()];
-    void* new_mem = aligned_allocator_t<uint8_t, 64>::allocate(byte_size);
+    void* new_mem = aligned_allocator_t<uint8_t, 64>::allocate(pad_to(byte_size, 64));
     SPARSE_LOG_IF(ERROR, !new_mem) << "malloc failed.";
     rt_data[idx[i]] = new_mem;
     new_data.emplace_back(new_mem);

@@ -43,11 +43,12 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_layernormalized_spmm_kernel.cpp
     test_seq_cpy_2x8x8.cpp
     test_seq_cpy_48x4.cpp
-    test_dynamic_quantize_mha.cpp
+    test_dynamic_quant_mha.cpp
     test_mha_dense_kernel.cpp
     test_slice_kernel.cpp
     test_dynamic_quant_matmul.cpp
     test_dynamic_quant.cpp
+    test_mha_dense_bf16_kernel.cpp
 )
 if (NE_WITH_SPARSELIB_GPU)
 list(APPEND KERNEL_TEST_CASES_SRC ./gpu/test_gpu_matmul.cpp)
@@ -68,6 +69,8 @@ list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_tr_v.cpp)
 list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_softmax.cpp)
 list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_mm_qk.cpp)
 list(APPEND KERNEL_TEST_CASES_SRC test_mha_dense_mm_av.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_trans_AB16a4b_16x.cpp)
+list(APPEND KERNEL_TEST_CASES_SRC test_trans_BA16b4a_trq10n_x16.cpp)
 endif()
 
 function(register_gtest_func exe src)

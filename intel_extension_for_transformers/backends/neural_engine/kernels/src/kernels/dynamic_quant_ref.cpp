@@ -47,7 +47,7 @@ bool dynamic_quant_ref_k_t::execute(const std::vector<const void*>& rt_data) con
   auto src_desc = ts_desc[0];
   int quantized_dim_elt_num = src_desc.shape().back();
   int channel_num =
-      std::accumulate(src_desc.shape().begin(), src_desc.shape().end() - 1, size_t(1), std::multiplies<size_t>());
+      std::accumulate(src_desc.shape().begin(), src_desc.shape().end() - 1, size_t{1}, std::multiplies<size_t>());
   std::vector<float> fp32_src(src_desc.size(), 0);
   if (src_desc.dtype() == data_type::fp32) {
     cast_to_float_array<float>(rt_data[io::SRC], &fp32_src, src_desc.size());

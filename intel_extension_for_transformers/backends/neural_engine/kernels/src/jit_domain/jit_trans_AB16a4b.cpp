@@ -19,7 +19,7 @@
 
 namespace jd {
 
-void jit_trans_AB16a4b::transpose_16x16_ps(regs_pool* const rp, const Xbyak::Reg64& src, const Xbyak::Reg64& dst,
+void jit_trans_AB16a4b::mem_trans_16x16_ps(regs_pool* const rp, const Xbyak::Reg64& src, const Xbyak::Reg64& dst,
                                            const Xbyak::Opmask& mask, bool is_tail) {
   const auto mat = rp->regs<Zmm, 16>();
   const auto tmp = rp->regs<Zmm, 16>();
@@ -37,35 +37,12 @@ void jit_trans_AB16a4b::transpose_16x16_ps(regs_pool* const rp, const Xbyak::Reg
     }
   }
 
-  for (int i = 0; i < 8; ++i) {
-    vpunpckldq(tmp[2 * i + 0], mat[2 * i], mat[2 * i + 1]);
-    vpunpckhdq(tmp[2 * i + 1], mat[2 * i], mat[2 * i + 1]);
-  }
-
-  for (int i = 0; i < 4; ++i) {
-    vpunpcklqdq(mat[4 * i + 0], tmp[4 * i + 0], tmp[4 * i + 2]);
-    vpunpckhqdq(mat[4 * i + 1], tmp[4 * i + 0], tmp[4 * i + 2]);
-    vpunpcklqdq(mat[4 * i + 2], tmp[4 * i + 1], tmp[4 * i + 3]);
-    vpunpckhqdq(mat[4 * i + 3], tmp[4 * i + 1], tmp[4 * i + 3]);
-  }
-
-  for (int i = 0; i < 2; ++i) {
-    vshufi32x4(tmp[8 * i + 0], mat[8 * i + 0], mat[8 * i + 4], 0x88);
-    vshufi32x4(tmp[8 * i + 1], mat[8 * i + 1], mat[8 * i + 5], 0x88);
-    vshufi32x4(tmp[8 * i + 2], mat[8 * i + 2], mat[8 * i + 6], 0x88);
-    vshufi32x4(tmp[8 * i + 3], mat[8 * i + 3], mat[8 * i + 7], 0x88);
-    vshufi32x4(tmp[8 * i + 4], mat[8 * i + 0], mat[8 * i + 4], 0xdd);
-    vshufi32x4(tmp[8 * i + 5], mat[8 * i + 1], mat[8 * i + 5], 0xdd);
-    vshufi32x4(tmp[8 * i + 6], mat[8 * i + 2], mat[8 * i + 6], 0xdd);
-    vshufi32x4(tmp[8 * i + 7], mat[8 * i + 3], mat[8 * i + 7], 0xdd);
-  }
+  // transpose with 32 ZMMs
+  jit_generator::transpose_16x16_ps(mat, tmp, N / 4);
 
   // last step and move out
   for (int i = 0; i < pad_n / 4; ++i) {
-    if (i < N / 4)
-      vshufi32x4(mat[i], tmp[i % 8], tmp[8 + i % 8], i < 8 ? 0x88 : 0xdd);
-    else
-      vpxord(Xbyak::Xmm(mat[i]), Xbyak::Xmm(mat[i]), Xbyak::Xmm(mat[i]));
+    if (i >= N / 4) vpxord(Xbyak::Xmm(mat[i]), Xbyak::Xmm(mat[i]), Xbyak::Xmm(mat[i]));
     // move out
     vmovdqa32(ptr[dst + i * BYTES_ZMM], mat[i]);
   }
@@ -90,7 +67,7 @@ void jit_trans_AB16a4b::generate() {
   }
 
   if (m_tiles == 1) {
-    transpose_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n);
+    mem_trans_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n);
     lea(reg_src, ptr[reg_src + ld_src * 16]);
     lea(reg_dst, ptr[reg_dst + BYTES_ZMM * (pad_n / 4)]);
   } else if (m_tiles > 1) {
@@ -100,7 +77,7 @@ void jit_trans_AB16a4b::generate() {
     mov(reg_msize, m_tiles);
     xor_(reg_iterm, reg_iterm);
     L(m_loop);
-    transpose_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n);
+    mem_trans_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n);
     lea(reg_src, ptr[reg_src + ld_src * 16]);
     lea(reg_dst, ptr[reg_dst + BYTES_ZMM * (pad_n / 4)]);
     lea(reg_iterm, ptr[reg_iterm + 1]);
@@ -109,7 +86,7 @@ void jit_trans_AB16a4b::generate() {
   }
 
   const auto m_tail = M % 16;
-  if (m_tail > 0) transpose_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n, true);
+  if (m_tail > 0) mem_trans_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n, true);
 }
 
 }  // namespace jd

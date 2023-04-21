@@ -175,7 +175,7 @@ TEST_P(MMAVX512P2031P2013KernelTest, ) {
 
 std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_shape, const dt& a_dt,
                                                   bool is_clear = false, const std::vector<float>& ranges = {-10, 10}) {
-  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<dim_t>());
+  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), dim_t{1}, std::multiplies<dim_t>());
   int bytes_size = elem_num * type_size[a_dt];
   void* data_ptr = nullptr;
   if (is_clear) {

@@ -14,8 +14,10 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_GEMM_AVX512F_8BIT_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_DOMAIN_JIT_GEMM_AVX512F_8BIT_HPP_
 
-#include "jit_generator.hpp"
+#include <vector>
+
 #include "jit_domain/jit_eltwise_injector.hpp"
+#include "jit_generator.hpp"
 #include "kernels/matmul_types.hpp"
 #include "regs_pool.hpp"
 

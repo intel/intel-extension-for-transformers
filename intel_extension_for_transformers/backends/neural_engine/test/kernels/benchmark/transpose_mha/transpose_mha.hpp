@@ -92,7 +92,7 @@ class transpose_mha_bench : public kernel_bench {
   void gen_case() override;
   void set_kernel_proxy() override {
     transpose_mha_desc desc(args.first.op_desc);
-    kp = std::make_shared<attention>(desc);
+    kp = std::make_shared<transpose_mha>(desc);
   }
 };
 

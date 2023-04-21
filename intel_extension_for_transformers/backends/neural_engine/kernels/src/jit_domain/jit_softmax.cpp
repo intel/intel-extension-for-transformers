@@ -72,7 +72,7 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
   vshuff32x4(zmm_tmp, zmm_exp_neg_max, zmm_exp_neg_max, 0x4E);  //  horizontal max
   vpmaxsw(zmm_exp_neg_max, zmm_exp_neg_max, zmm_tmp);           // ymm_exp_neg_max contain the max value(s16)
   vpmovsxwd(zmm_exp_neg_max, ymm_exp_neg_max);                  // s16 cvt s32 and store into the zmm_exp_neg_max
-  get_horizontal_op(zmm_exp_neg_max, zmm_tmp, op_t::max);
+  reduce_dwords(zmm_exp_neg_max, zmm_tmp, &CodeGenerator::vpmaxsd);
   if (param_.input_dt == data_type::s8)
     vpmovdb(xmm_exp_neg_max, zmm_exp_neg_max);
   else
@@ -95,8 +95,8 @@ void jit_softmax_t::lut_softmax_kernel_gen() {
   L(sum_reduction_end);
   if (param_.vec_tail_len != 0) lut_handle_exp(true);
 
-  get_horizontal_op(zmm_denominator, zmm_tmp, op_t::sum);  // horizontal sum
-  vdivps(zmm_denominator, zmm_one_fp32, zmm_denominator);  // calculate denominator
+  reduce_dwords(zmm_denominator, zmm_tmp, &CodeGenerator::vaddps);  // horizontal sum
+  vdivps(zmm_denominator, zmm_one_fp32, zmm_denominator);           // calculate denominator
 
   // loop3: calculate softmax,apply unroll optimization.
   mov(dst_addr_volatile, dst_addr);
@@ -220,24 +220,6 @@ void jit_softmax_t::prepare_mask() {
   for (size_t i = 0; i < param_.vec_tail_len % 16; i++) mask = (mask << 1) + 1;
   mov(reg_tmp.cvt32(), mask);
   kmovd(bit32_mask, reg_tmp.cvt32());
-}
-
-void jit_softmax_t::get_horizontal_op(const Zmm& v, const Zmm& vtmp, op_t op) {
-  vshuff32x4(vtmp, v, v, 0x4E);  // 256-bit shuffle
-  perform_op(v, vtmp, op);
-  vshuff32x4(vtmp, v, v, 0xB1);  // 128/256-bit shuffle
-  perform_op(v, vtmp, op);
-  vshufps(vtmp, v, v, 0x4E);  // 64/128-bit shuffle
-  perform_op(v, vtmp, op);
-  vshufps(vtmp, v, v, 0xB1);  // 32/64-bit shuffle
-  perform_op(v, vtmp, op);
-}
-
-void jit_softmax_t::perform_op(Zmm v, Zmm vtmp, op_t op) {
-  if (op == op_t::max)
-    vpmaxsd(v, v, vtmp);
-  else if (op == op_t::sum)
-    vaddps(v, v, vtmp);
 }
 
 void jit_softmax_t::assign_regs() {

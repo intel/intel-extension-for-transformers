@@ -37,28 +37,36 @@ namespace jd {
 bool mha_dense_kd_t::init() {
   if (!isa_available(avx512_core_amx)) return false;
   auto op_attrs = op_desc_.attrs();
-  param_.QK_rescale_ = str_to_num<float>(op_attrs["QK_rescale"]);
-  param_.softmax_rescale_ = str_to_num<float>(op_attrs["softmax_rescale"]);
-  param_.QKV_rescale_ = str_to_num<float>(op_attrs["QKV_rescale"]);
-  param_.QKV_dstzp_ = str_to_num<float>(op_attrs["QKV_dstzp"]);
-  param_.Q_scale_ = str_to_num<float>(op_attrs["Q_scale"]);
-  param_.K_scale_ = str_to_num<float>(op_attrs["K_scale"]);
-  param_.V_scale_ = str_to_num<float>(op_attrs["V_scale"]);
-  param_.DST_scale_ = str_to_num<float>(op_attrs["DST_scale"]);
-  param_.QK_output_scale_ = str_to_num<float>(op_attrs["QK_output_scale"]);
-  if (op_attrs.find("merged_QKV") != op_attrs.end() && op_attrs["merged_QKV"] == "True")
-    param_.base_ = 3;
-  else
-    param_.base_ = 1;
+  param_.base_ = (op_attrs.find("merged_QKV") != op_attrs.end() && op_attrs["merged_QKV"] == "True") ? 3 : 1;
+  KERNEL_INIT_CHECK(op_attrs.find("approx_exp") != op_attrs.end() && op_attrs.at("approx_exp") == "True");
+  KERNEL_INIT_CHECK(op_attrs.find("stable_softmax") != op_attrs.end() && op_attrs.at("stable_softmax") == "True");
+  KERNEL_INIT_CHECK(op_attrs.find("softmax_rescale") != op_attrs.end());
+  KERNEL_INIT_CHECK(std::all_of(op_attrs.cbegin(), op_attrs.cend(), [](auto&& kv) {
+    return kv.first == "merged_QKV" || kv.first == "approx_exp" || kv.first == "stable_softmax" ||
+           kv.first == "softmax_rescale";
+  }))
 
   auto& tensor_desc = op_desc_.tensor_descs();
   auto& q_shape = tensor_desc[io::SRC_Q].shape();
   auto& k_shape = tensor_desc[io::SRC_K].shape();
+  auto& v_shape = tensor_desc[io::SRC_V].shape();
   auto& dst_shape = tensor_desc[io::DST].shape();
   KERNEL_INIT_CHECK(q_shape == dst_shape)
-  KERNEL_INIT_CHECK(k_shape == tensor_desc[io::SRC_V].shape())
+  KERNEL_INIT_CHECK(k_shape == v_shape)
+
+  KERNEL_INIT_CHECK(tensor_desc[io::SRC_Q].ftype() == format_type::abcd)
+  KERNEL_INIT_CHECK(tensor_desc[io::DST].ftype() == format_type::abcd)
+  KERNEL_INIT_CHECK(tensor_desc[io::SRC_K].ftype() == format_type::abcd ||
+                    tensor_desc[io::SRC_K].ftype() == format_type::acbd)
+  KERNEL_INIT_CHECK(tensor_desc[io::SRC_V].ftype() == tensor_desc[io::SRC_K].ftype())
+
+  KERNEL_INIT_CHECK(tensor_desc[io::SRC_Q].dtype() == data_type::s8)
+  KERNEL_INIT_CHECK(tensor_desc[io::SRC_K].dtype() == data_type::s8)
+  KERNEL_INIT_CHECK(tensor_desc[io::SRC_V].dtype() == data_type::s8)
+  KERNEL_INIT_CHECK(tensor_desc[io::MASK].dtype() == data_type::s32)
 
   param_.dst_dt_ = tensor_desc[io::DST].dtype();
+  param_.kv_ft_ = tensor_desc[io::SRC_K].ftype();
   param_.src_bs_ = q_shape[0];
   param_.src_sl_m_ = q_shape[1];
   param_.src_sl_n_ = k_shape[1];
@@ -70,6 +78,13 @@ bool mha_dense_kd_t::init() {
 
   KERNEL_INIT_CHECK(is_any_of({data_type::u8, data_type::s8, data_type::fp32, data_type::bf16},
                               [dst_dt = param_.dst_dt_](auto t) { return dst_dt == t; }))
+
+  KERNEL_INIT_CHECK((tensor_desc[io::ATT_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
+  KERNEL_INIT_CHECK((tensor_desc[io::Q_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
+  KERNEL_INIT_CHECK((tensor_desc[io::K_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
+  KERNEL_INIT_CHECK((tensor_desc[io::V_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
+  KERNEL_INIT_CHECK((tensor_desc[io::SRC_DST_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
+  KERNEL_INIT_CHECK((tensor_desc[io::SRC_DST_ZP] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
 
   const auto has_badd = has_binary_add();
   if (param_.src_sl_m_ == 1) {
@@ -83,11 +98,26 @@ bool mha_dense_kd_t::init() {
     KERNEL_INIT_CHECK(isa_available(avx512_core_amx))
 
     const auto& badd_shape = tensor_desc[io::BINARY_ADD].shape();
+    const auto badd_dim = badd_shape.size();
     KERNEL_INIT_CHECK(tensor_desc[io::BINARY_ADD].dtype() == data_type::fp32);
-    KERNEL_INIT_CHECK(param_.src_sl_n_ == badd_shape[badd_shape.size() - 1]);
-    KERNEL_INIT_CHECK(badd_shape.size() < 2 || param_.src_sl_m_ == badd_shape[badd_shape.size() - 2]);
-    KERNEL_INIT_CHECK(badd_shape.size() < 3 || param_.head_num_ == badd_shape[badd_shape.size() - 3]);
-    KERNEL_INIT_CHECK(badd_shape.size() < 4 || param_.src_bs_ == badd_shape[badd_shape.size() - 4]);
+
+    KERNEL_INIT_CHECK(tensor_desc[io::BINARY_ADD].ftype() == plain_format(badd_dim));
+    switch (badd_dim) {
+      case 4:
+        KERNEL_INIT_CHECK(badd_shape[badd_dim - 4] == 1 || badd_shape[badd_dim - 4] == param_.src_bs_);
+        [[fallthrough]];
+      case 3:
+        KERNEL_INIT_CHECK(badd_shape[badd_dim - 3] == 1 || badd_shape[badd_dim - 3] == param_.head_num_);
+        [[fallthrough]];
+      case 2:
+        KERNEL_INIT_CHECK(badd_shape[badd_dim - 2] == 1 || badd_shape[badd_dim - 2] == param_.src_sl_m_);
+        [[fallthrough]];
+      case 1:
+        KERNEL_INIT_CHECK(badd_shape[badd_dim - 1] == param_.src_sl_n_);  // the last dim can not be broadcasted
+        break;
+      default:
+        SPARSE_LOG(ERROR) << "Unexpected binary_add shape!";
+    }
   }
   return true;
 }
@@ -95,23 +125,19 @@ bool mha_dense_kd_t::init() {
 mha_dense_k_t::mha_dense_k_t(const std::shared_ptr<const kernel_desc_t>& kd)
     : kernel_t(kd),
       dst_dt_(derived_kd()->params().dst_dt_),
+      kv_ft_(derived_kd()->params().kv_ft_),
       src_bs_(derived_kd()->params().src_bs_),
       src_sl_m_(derived_kd()->params().src_sl_m_),
       src_sl_n_(derived_kd()->params().src_sl_n_),
       head_num_(derived_kd()->params().head_num_),
       head_size_(derived_kd()->params().head_size_),
-      ld_src_(head_size_ * head_num_ * derived_kd()->params().base_),
+      ld_q_(head_size_ * head_num_ * derived_kd()->params().base_),
+      ld_kv_(kv_ft_ == format_type::abcd   ? ld_q_
+             : kv_ft_ == format_type::acbd ? head_size_ * derived_kd()->params().base_
+                                           : 0),
       ld_dst_(head_size_ * head_num_ * get_data_size(dst_dt_)),
-      softmax_rescale_f32_(derived_kd()->params().softmax_rescale_),
+      softmax_rescale_f32_(str_to_num<float>(derived_kd()->get_operator_desc().attrs().at("softmax_rescale"))),
       softmax_rescale_(fp32_to_fp16(softmax_rescale_f32_)),
-      QK_rescale_(derived_kd()->params().QK_rescale_),
-      QKV_rescale_(derived_kd()->params().QKV_rescale_),
-      QKV_dstzp_(derived_kd()->params().QKV_dstzp_),
-      Q_scale_(derived_kd()->params().Q_scale_),
-      K_scale_(derived_kd()->params().K_scale_),
-      V_scale_(derived_kd()->params().V_scale_),
-      DST_scale_(derived_kd()->params().DST_scale_),
-      QK_output_scale_(derived_kd()->params().QK_output_scale_),
       ts_descs_(derived_kd()->get_operator_desc().tensor_descs()),
       has_binary_add(derived_kd()->has_binary_add()),
       thread_workspace_size_(sizeof(int8_t) * head_size_ * pad_to(src_sl_n_, 16) +  // k
@@ -141,7 +167,7 @@ bool mha_dense_k_t::init() {
   // init ker_trans_k
   for (int i = 1; i <= 16; ++i) {
     ker_trans_k_[i] = new jit_trans_AB16a4b(
-        {/*.M = */ i, /*.N = */ hs_max64, /*.ld_src = */ ld_src_, /*.pad_n = */ pad_to(hs_max64, 16)});
+        {/*.M = */ i, /*.N = */ hs_max64, /*.ld_src = */ ld_kv_, /*.pad_n = */ pad_to(hs_max64, 16)});
     if (!ker_trans_k_[i]->create_kernel()) return false;
   }
 
@@ -152,7 +178,7 @@ bool mha_dense_k_t::init() {
             32,
             head_size_,
             i,
-            ld_src_,
+            ld_q_,
             &amx_full_tile_param_,
         });
     if (!ker_qk_gemm_32x_[i / 16]->create_kernel()) return false;
@@ -161,7 +187,7 @@ bool mha_dense_k_t::init() {
             16,
             head_size_,
             i,
-            ld_src_,
+            ld_q_,
             &amx_full_tile_param_,
         });
     if (!ker_qk_gemm_16x_[i / 16]->create_kernel()) return false;
@@ -177,7 +203,7 @@ bool mha_dense_k_t::init() {
 
   // init ker_trans_v
   for (int i = 0; i <= 4; i++) {
-    ker_trans_v_[i] = new jit_trans_BA16b4a({/*.M = */ i, /*.N = */ hs_max64, /*.ld_src = */ ld_src_});
+    ker_trans_v_[i] = new jit_trans_BA16b4a({/*.M = */ i, /*.N = */ hs_max64, /*.ld_src = */ ld_kv_});
     if (!ker_trans_v_[i]->create_kernel()) return false;
   }
 
@@ -219,12 +245,11 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
   const int32_t bs = src_bs_;
   n_thread_t with_n_thread(bs * head_num_, true);
 
-  const int badd_stride[] = {
-      !has_binary_add || ts_descs_[io::BINARY_ADD].shape().size() < 4 ? 0 : head_num_ * src_sl_m_ * src_sl_n_,
-      !has_binary_add || ts_descs_[io::BINARY_ADD].shape().size() < 3 ? 0 : src_sl_m_ * src_sl_n_,
-      !has_binary_add || ts_descs_[io::BINARY_ADD].shape().size() < 2 ? 0 : src_sl_n_,
-      !has_binary_add || ts_descs_[io::BINARY_ADD].shape().size() < 1 ? 0 : 1,
-  };
+  std::array<int, 4> badd_stride{0, 0, 0, 0};
+  if (has_binary_add) {
+    const auto tmp_stride_ = dim2step(pre_pad1(4, ts_descs_[io::BINARY_ADD].shape()));
+    for (int i = 0; i < 4; ++i) badd_stride[i] = tmp_stride_[i];
+  }
 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < bs; ibs++) {
@@ -248,8 +273,10 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       const auto softmax_scrach_p64 = reinterpret_cast<uint8_t*>(qk_scrach + 32 * sl_n_pad16);
       // softmax_scrach_p64_size = 32 * sl_n_pad64
 
-      const int src_q_offset = ibs * src_sl_m_ * ld_src_ + ihn * head_size_;
-      const int src_kv_offset = ibs * src_sl_n_ * ld_src_ + ihn * head_size_;
+      const int src_q_offset = ibs * src_sl_m_ * ld_q_ + ihn * head_size_;
+      const int src_kv_offset = kv_ft_ == format_type::abcd   ? ibs * src_sl_n_ * ld_kv_ + ihn * head_size_
+                                : kv_ft_ == format_type::acbd ? (ibs * head_num_ + ihn) * src_sl_n_ * ld_kv_
+                                                              : 0;
       const int dst_offset = ibs * src_sl_m_ * ld_dst_ + ihn * head_size_ * get_data_size(dst_dt_);
       // init amx for each omp thread
       ker_amx_cfg_(&amx_full_tile_cfg_);
@@ -263,11 +290,18 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       const auto badd_f32 =
           has_binary_add ? reinterpret_cast<const float*>(rt_data[io::BINARY_ADD]) + badd_offset : nullptr;
 
+      const auto att_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::ATT_SCALE])[0];
+      const auto q_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::Q_SCALE])[0];
+      const auto k_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::K_SCALE])[0];
+      const auto v_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::V_SCALE])[0];
+      const auto dst_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::SRC_DST_SCALE])[0];
+      const auto dst_zp = reinterpret_cast<const float*>(rt_data[mha_dense_io::SRC_DST_ZP])[0];
+
       // reorder K
       for (int i = 0; i < sl_n; i += 16)
         for (int j = 0; j < head_size_; j += 64) {
           jit_trans_AB16a4b::rt_data_t rt_data_tr_k{
-              /*.src = */ curr_k + i * ld_src_ + j,
+              /*.src = */ curr_k + i * ld_kv_ + j,
               /*.dst = */ k_scrach + i * head_size_ + j * 16,
           };
           (*ker_trans_k_[std::min(16, sl_n - i)])(&rt_data_tr_k);
@@ -278,7 +312,7 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       for (int j = 0; j < head_size_; j += 64)
         for (int i = 0; i < sl_n_pad64; i += 4) {
           jit_trans_BA16b4a::rt_data_t rt_data_tr_v{
-              /*.src = */ curr_v + i * ld_src_ + j,
+              /*.src = */ curr_v + i * ld_kv_ + j,
               /*.dst = */ v_scrach_p64 + i * 16 + j * sl_n_pad64,
               /*.ld_dst = */ tr_v_dst_stride,
           };
@@ -298,7 +332,7 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
           /*.softmax_rescale = */ softmax_rescale_,
           /*.src_badd = */ nullptr,
           /*.ld_badd = */ badd_stride[2],
-          /*.QK_rescale = */ QK_rescale_,
+          /*.QK_rescale = */ q_scale * k_scale * att_scale,
       };
       jit_softmax_Ab16a::rt_data_t rt_data_softmax2{
           /*.src = */ qk_scrach + sl_n_pad16 * 16,           // sl_pad_ / 16 * 16 * 16
@@ -307,21 +341,21 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
           /*.softmax_rescale = */ softmax_rescale_,
           /*.src_badd = */ nullptr,
           /*.ld_badd = */ badd_stride[2],
-          /*.QK_rescale = */ QK_rescale_,
+          /*.QK_rescale = */ q_scale * k_scale * att_scale,
       };
       jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::rt_data_t rt_data_av{
           /*.src0 = */ softmax_scrach_p64,
           /*.src1 = */ v_scrach_p64,
           /*.dst = */ nullptr,
           /*.K = */ padding_mask,
-          /*.rescale = */ QKV_rescale_,
-          /*.zp = */ QKV_dstzp_,
+          /*.rescale = */ v_scale / softmax_rescale_f32_ / dst_scale,
+          /*.zp = */ dst_zp,
       };
       const int att_tail = reinterpret_cast<const int32_t*>(rt_data[mha_dense_io::MASK])[ibs] % 16;
       int cur_r_pos = 0;
 
       for (int j = 0; j < row_loop - 1; j++, cur_r_pos += 32) {
-        rt_data_qk.src0 = curr_q + cur_r_pos * ld_src_;
+        rt_data_qk.src0 = curr_q + cur_r_pos * ld_q_;
         rt_data_av.dst = curr_dst + cur_r_pos * ld_dst_;
         if (has_binary_add) rt_data_softmax1.src_badd = badd_f32 + cur_r_pos * badd_stride[2];
         if (has_binary_add) rt_data_softmax2.src_badd = badd_f32 + (cur_r_pos + 16) * badd_stride[2];
@@ -330,26 +364,26 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
 
       if (is_even) {
         if (rollback == 0) {
-          rt_data_qk.src0 = curr_q + cur_r_pos * ld_src_;
+          rt_data_qk.src0 = curr_q + cur_r_pos * ld_q_;
           rt_data_av.dst = curr_dst + cur_r_pos * ld_dst_;
           if (has_binary_add) rt_data_softmax1.src_badd = badd_f32 + cur_r_pos * badd_stride[2];
           if (has_binary_add) rt_data_softmax2.src_badd = badd_f32 + (cur_r_pos + 16) * badd_stride[2];
           mha_per_head_32x(rt_data_qk, rt_data_softmax1, rt_data_softmax2, rt_data_av, att_tail, col_tile, att_tile);
         } else {
-          rt_data_qk.src0 = curr_q + cur_r_pos * ld_src_;
+          rt_data_qk.src0 = curr_q + cur_r_pos * ld_q_;
           rt_data_av.dst = curr_dst + cur_r_pos * ld_dst_;
           if (has_binary_add) rt_data_softmax1.src_badd = badd_f32 + cur_r_pos * badd_stride[2];
           mha_per_head_16x(rt_data_qk, rt_data_softmax1, rt_data_av, att_tail, col_tile, att_tile);
 
           cur_r_pos += 16 - rollback;
 
-          rt_data_qk.src0 = curr_q + cur_r_pos * ld_src_;
+          rt_data_qk.src0 = curr_q + cur_r_pos * ld_q_;
           rt_data_av.dst = curr_dst + cur_r_pos * ld_dst_;
           if (has_binary_add) rt_data_softmax1.src_badd = badd_f32 + cur_r_pos * badd_stride[2];
           mha_per_head_16x(rt_data_qk, rt_data_softmax1, rt_data_av, att_tail, col_tile, att_tile);
         }
       } else {
-        rt_data_qk.src0 = curr_q + cur_r_pos * ld_src_;
+        rt_data_qk.src0 = curr_q + cur_r_pos * ld_q_;
         rt_data_av.dst = curr_dst + cur_r_pos * ld_dst_;
         if (has_binary_add) rt_data_softmax1.src_badd = badd_f32 + cur_r_pos * badd_stride[2];
         if (has_binary_add) rt_data_softmax2.src_badd = badd_f32 + (cur_r_pos + 16) * badd_stride[2];
@@ -357,7 +391,7 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
 
         cur_r_pos += 32 - rollback;
 
-        rt_data_qk.src0 = curr_q + cur_r_pos * ld_src_;
+        rt_data_qk.src0 = curr_q + cur_r_pos * ld_q_;
         rt_data_av.dst = curr_dst + cur_r_pos * ld_dst_;
         if (has_binary_add) rt_data_softmax1.src_badd = badd_f32 + cur_r_pos * badd_stride[2];
         mha_per_head_16x(rt_data_qk, rt_data_softmax1, rt_data_av, att_tail, col_tile, att_tile);
@@ -396,7 +430,7 @@ static inline __m512 exp_ps_0_1(__m512 x) {
 
 #ifdef WITH_GCC_FLAGS
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+#pragma GCC diagnostic ignored "-Wignored-attributes"  // https://stackoverflow.com/a/49216021
 #endif
 template <int tail, int off>
 static inline std::array<__m512i, 16> tr_add_vnni_x64(const int8_t* a, size_t lda) {
@@ -513,20 +547,28 @@ static const decltype(load_interleave_vnni<1>)* load_interleave_vnni_tbl[] = {
 };
 bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const {
   const int32_t bs = src_bs_;
-  const int badd_stride[] = {
-      !has_binary_add || ts_descs_[io::BINARY_ADD].shape().size() < 4 ? 0 : head_num_ * src_sl_m_ * src_sl_n_,
-      !has_binary_add || ts_descs_[io::BINARY_ADD].shape().size() < 3 ? 0 : src_sl_m_ * src_sl_n_,
-      !has_binary_add || ts_descs_[io::BINARY_ADD].shape().size() < 2 ? 0 : src_sl_n_,
-      !has_binary_add || ts_descs_[io::BINARY_ADD].shape().size() < 1 ? 0 : 1,
-  };
+  std::array<int, 4> badd_stride{0, 0, 0, 0};
+  if (has_binary_add) {
+    const auto tmp_stride_ = dim2step(pre_pad1(4, ts_descs_[io::BINARY_ADD].shape()));
+    for (int i = 0; i < 4; ++i) badd_stride[i] = tmp_stride_[i];
+  }
   const int sl_n_pad16 = pad_to(src_sl_n_, 16);
   const int sl_n_pad64 = pad_to(src_sl_n_, 64);
 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < bs; ibs++) {
     for (int ihn = 0; ihn < head_num_; ihn++) {
-      const int src_q_offset = ibs * src_sl_m_ * ld_src_ + ihn * head_size_;
-      const int src_kv_offset = ibs * src_sl_n_ * ld_src_ + ihn * head_size_;
+      const auto att_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::ATT_SCALE])[0];
+      const auto q_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::Q_SCALE])[0];
+      const auto k_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::K_SCALE])[0];
+      const auto v_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::V_SCALE])[0];
+      const auto dst_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::SRC_DST_SCALE])[0];
+      const auto dst_zp = reinterpret_cast<const float*>(rt_data[mha_dense_io::SRC_DST_ZP])[0];
+
+      const int src_q_offset = ibs * src_sl_m_ * ld_q_ + ihn * head_size_;
+      const int src_kv_offset = kv_ft_ == format_type::abcd   ? ibs * src_sl_n_ * ld_kv_ + ihn * head_size_
+                                : kv_ft_ == format_type::acbd ? (ibs * head_num_ + ihn) * src_sl_n_ * ld_kv_
+                                                              : 0;
       const int dst_offset = ibs * src_sl_m_ * ld_dst_ + ihn * head_size_ * get_data_size(dst_dt_);
       const int badd_offset = ibs * badd_stride[0] + ihn * badd_stride[1];
 
@@ -557,13 +599,13 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
 
       /* Q x K + deq10n + mask + get_max */
       constexpr int rn_sae = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
-      auto v_scale = _mm512_set1_ps(QK_rescale_);
+      auto scales = _mm512_set1_ps(q_scale * k_scale * att_scale);
       auto v_max = _mm512_set1_ps(-INFINITY);
       for (int j = 0; j < pmask_floor16; j += VEC) {
         __m512i v_dst = _mm512_setzero_epi32();
         __m512i v_src0_sum128 = _mm512_setzero_epi32();
         for (int k = 0; k < head_size_; k += 4 * VEC) {
-          auto v_src1 = tr_add_vnni_x64<16, 128>(curr_k + j * ld_src_ + k, ld_src_);
+          auto v_src1 = tr_add_vnni_x64<16, 128>(curr_k + j * ld_kv_ + k, ld_kv_);
           v_src0_sum128 = _mm512_dpbusds_epi32(v_src0_sum128, v_128u, _mm512_loadu_si512(curr_q + k));
 #pragma GCC unroll VEC
           for (int kk = 0; kk < VEC; ++kk) {
@@ -573,7 +615,7 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
         }
         const int32_t src0_sum128 = _mm512_reduce_add_epi32(v_src0_sum128);
         v_dst = _mm512_sub_epi32(v_dst, _mm512_set1_epi32(src0_sum128));
-        auto dstf32 = _mm512_fmadd_ps(_mm512_cvt_roundepi32_ps(v_dst, rn_sae), v_scale, _mm512_loadu_ps(badd_f32 + j));
+        auto dstf32 = _mm512_fmadd_ps(_mm512_cvt_roundepi32_ps(v_dst, rn_sae), scales, _mm512_loadu_ps(badd_f32 + j));
         v_max = _mm512_max_ps(v_max, dstf32);
         _mm512_store_ps(qk_scrach + j, dstf32);
       }
@@ -581,7 +623,7 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
         __m512i v_dst = _mm512_setzero_epi32();
         __m512i v_src0_sum128 = _mm512_setzero_epi32();
         for (int k = 0; k < head_size_; k += 4 * VEC) {
-          auto v_src1 = tr_add128_vnni_x64_tbl[pmask_tail16](curr_k + pmask_floor16 * ld_src_ + k, ld_src_);
+          auto v_src1 = tr_add128_vnni_x64_tbl[pmask_tail16](curr_k + pmask_floor16 * ld_kv_ + k, ld_kv_);
           v_src0_sum128 = _mm512_dpbusds_epi32(v_src0_sum128, v_128u, _mm512_loadu_si512(curr_q + k));
 #pragma GCC unroll VEC
           for (int kk = 0; kk < VEC; ++kk) {
@@ -592,7 +634,7 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
         }
         const int32_t src0_sum128 = _mm512_reduce_add_epi32(v_src0_sum128);
         v_dst = _mm512_sub_epi32(v_dst, _mm512_set1_epi32(src0_sum128));
-        auto dstf32 = _mm512_fmadd_ps(_mm512_cvt_roundepi32_ps(v_dst, rn_sae), v_scale,
+        auto dstf32 = _mm512_fmadd_ps(_mm512_cvt_roundepi32_ps(v_dst, rn_sae), scales,
                                       _mm512_maskz_loadu_ps(pmask_tail, badd_f32 + pmask_floor16));
         v_max = _mm512_mask_max_ps(v_max, pmask_tail, v_max, dstf32);
         _mm512_store_ps(qk_scrach + pmask_floor16, dstf32);
@@ -614,16 +656,15 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
 #pragma omp simd
       for (int i = 0; i < padding_mask; ++i)  // should be fine?
         exp_sum += reinterpret_cast<const float*>(qk_scrach)[i];
-
-      v_scale = _mm512_set1_ps(softmax_rescale_f32_ / exp_sum);
+      scales = _mm512_set1_ps(softmax_rescale_f32_ / exp_sum);
       for (int j = 0; j < pmask_floor16; j += VEC) {
         auto xs = _mm512_load_ps(qk_scrach + j);
-        xs = _mm512_mul_ps(xs, v_scale);
+        xs = _mm512_mul_ps(xs, scales);
         _mm512_mask_cvtepi32_storeu_epi8(softmax_scrach_p64 + j, 0xffff, _mm512_cvt_roundps_epu32(xs, rn_sae));
       }
       {
         auto xs = _mm512_maskz_load_ps(pmask_tail, qk_scrach + pmask_floor16);
-        xs = _mm512_mul_ps(xs, v_scale);
+        xs = _mm512_mul_ps(xs, scales);
         _mm512_mask_cvtepi32_storeu_epi8(softmax_scrach_p64 + pmask_floor16, 0xffff,
                                          _mm512_cvt_roundps_epu32(xs, rn_sae));
       }
@@ -633,22 +674,22 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
       alignas(16) const uint8_t vpshufb_control[16] = {0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15};
       __m512i vperm_ctl = _mm512_cvtepu8_epi32(_mm_load_si128(reinterpret_cast<const __m128i*>(vpermt2d_control)));
       __m512i vpshuf_ctl = _mm512_broadcast_i32x4(_mm_load_si128(reinterpret_cast<const __m128i*>(vpshufb_control)));
-      v_scale = _mm512_set1_ps(QKV_rescale_);
-      auto v_zp = _mm512_set1_ps(QKV_dstzp_);
+      scales = _mm512_set1_ps(v_scale / softmax_rescale_f32_ / dst_scale);
+      auto v_zp = _mm512_set1_ps(dst_zp);
       for (int j = 0; j < head_size_; j += VEC) {  // head_size_ must be a multiple of 16
         __m512i v_dst = _mm512_setzero_epi32();
         for (int k = 0; k < pmask_floor4; k += 4) {
           __m512i v_src0 = _mm512_set1_epi32(*reinterpret_cast<const int32_t*>(softmax_scrach_p64 + k));
-          __m512i v_src1 = load_interleave_vnni<4>(curr_v + j + k * ld_src_, ld_src_, vperm_ctl, vpshuf_ctl);
+          __m512i v_src1 = load_interleave_vnni<4>(curr_v + j + k * ld_kv_, ld_kv_, vperm_ctl, vpshuf_ctl);
           v_dst = _mm512_dpbusds_epi32(v_dst, v_src0, v_src1);
         }
         {  // tail
           __m512i v_src0 = _mm512_set1_epi32(*reinterpret_cast<const int32_t*>(softmax_scrach_p64 + pmask_floor4));
           __m512i v_src1 = load_interleave_vnni_tbl[pmask_tail4](  //
-              curr_v + j + pmask_floor4 * ld_src_, ld_src_, vperm_ctl, vpshuf_ctl);
+              curr_v + j + pmask_floor4 * ld_kv_, ld_kv_, vperm_ctl, vpshuf_ctl);
           v_dst = _mm512_dpbusds_epi32(v_dst, v_src0, v_src1);
         }
-        auto xs = _mm512_fmadd_ps(_mm512_cvt_roundepi32_ps(v_dst, rn_sae), v_scale, v_zp);
+        auto xs = _mm512_fmadd_ps(_mm512_cvt_roundepi32_ps(v_dst, rn_sae), scales, v_zp);
         switch (dst_dt_) {
           case data_type::u8:
             _mm512_mask_cvtusepi32_storeu_epi8(
