@@ -25,5 +25,6 @@ jobs:
         pip install -r requirements.txt
         find . -name "test*.py" | sed 's,\.\/,python ,g' | sed 's/$/ --verbose/'  > run.sh
         echo "This step runs in bash"
+        chmod +x run.sh
         ./run.sh
       shell: bash
