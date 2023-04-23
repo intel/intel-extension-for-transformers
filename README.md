@@ -4,7 +4,7 @@ Intel® Extension for Transformers
 ===========================
 <h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
 
-[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./examples/optimization/pytorch/huggingface/language-modeling/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
 ---
@@ -77,7 +77,7 @@ output = model(**input).logits.argmax().item()
 <tbody>
   <tr>
     <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
-    <td colspan="2" align="center"><a href="examples/optimization/pytorch/huggingface/language-modeling/chatbot">NeuralChat</a></td>
+    <td colspan="2" align="center"><a href="workflows/chatbot">NeuralChat</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.md">Kernel Libraries</a></td>
   </tr>

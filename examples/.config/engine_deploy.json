@@ -478,7 +478,7 @@
   },
   "stable_diffusion": {
     "working_dir": "huggingface/pytorch/text-to-image/deployment/stable_diffusion",
-    "data_dir": " ",
+    "data_dir": "",
     "hf_model_name": "CompVis/stable-diffusion-v1-4",
     "prepare": {
       "cmd": "bash -x export_model.sh",
@@ -499,7 +499,7 @@
   },
   "gpt-j-6b": {
     "working_dir": "huggingface/pytorch/text-generation/deployment",
-    "data_dir": " ",
+    "data_dir": "",
     "hf_model_name": "EleutherAI/gpt-j-6B",
     "prepare": {
       "cmd": "python gen_ir.py",
