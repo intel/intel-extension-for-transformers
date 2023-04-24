@@ -16,8 +16,8 @@ conda install mkl mkl-include -y
 conda install gperftools jemalloc==5.2.1 -c conda-forge -y
 
 # Installation
-pip install git+https://github.com/intel/neural-compressor.git
-pip install intel_extension_for_pytorch transformers intel_extension_for_transformers datasets accelerate
+pip install git+https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git
+pip install neural_compressor intel_extension_for_pytorch transformers datasets accelerate
 
 # Setup Environment Variables
 export KMP_BLOCKTIME=1
@@ -43,8 +43,9 @@ Here is how to run the scripts:
 python evaluate_clm.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \
+    --dataset lambada \
     --sq \
-    --int8_bf16_mixed \
+    --alpha 0.7 \
     --output_dir "saved_results"
 ```
 To do quantization based transformers language-modeling example [`run_clm.py`](https://github.com/huggingface/transformers/blob/main/examples/pytorch/language-modeling/run_clm.py), please use the following command.

@@ -13,7 +13,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import intel_extension_for_pytorch as ipex
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--model", nargs="?", default="EleutherAI/gpt-j-6B"
+    "--model", nargs="?", default="EleutherAI/gpt-j-6b"
 )
 parser.add_argument("--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k")
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
@@ -45,12 +45,13 @@ calib_size = 1
 
 
 class Evaluator:
-    def __init__(self, dataset, tokenizer, batch_size=8, pad_val=1, pad_max=196):
+    def __init__(self, dataset, tokenizer, batch_size=8, pad_val=1, pad_max=196, is_calib=False):
         self.dataset = dataset
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.pad_val = pad_val
         self.pad_max = pad_max
+        self.is_calib = is_calib
 
         # tokenize the dataset
         self.dataset = self.dataset.map(self.tokenize_function, batched=True)
@@ -71,8 +72,10 @@ class Evaluator:
             input_ids = text["input_ids"]
             pad_len = self.pad_max - input_ids.shape[0]
             last_ind.append(input_ids.shape[0] - 1)
-
-            input_ids = pad(input_ids, (0, pad_len), value=self.pad_val)
+            if self.is_calib:
+                input_ids = input_ids[:self.pad_max] if len(input_ids) > self.pad_max else input_ids
+            else:
+                input_ids = pad(input_ids, (0, pad_len), value=self.pad_val)
             input_ids_padded.append(input_ids)
 
         return (torch.vstack(input_ids_padded), torch.tensor(last_ind))
@@ -119,6 +122,7 @@ user_model = AutoModelForCausalLM.from_pretrained(
 )
 tokenizer = AutoTokenizer.from_pretrained(args.model)
 
+
 # to channels last
 user_model = user_model.to(memory_format=torch.channels_last)
 user_model.eval()
@@ -128,7 +132,7 @@ if args.quantize:
     # dataset
     calib_dataset = load_dataset(args.dataset, split="train")
     calib_dataset = calib_dataset.shuffle(seed=42)
-    calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, args.pad_max_length)
+    calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
     calib_dataloader = DataLoader(
         calib_evaluator.dataset,
         batch_size=calib_size,
@@ -151,6 +155,7 @@ if args.quantize:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     if args.sq:
+        args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
         recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha}}
         conf = PostTrainingQuantConfig(
             backend="ipex",
@@ -201,16 +206,13 @@ if args.accuracy_only:
             model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
             user_model=user_model,
             batch_size=args.batch_size,
-            tasks=["lambada_openai", "piqa", "winogrande", "hellaswag"],
+            tasks=["lambada_openai"]
         )
         dumped = json.dumps(results, indent=2)
         if args.save_accuracy_path:
             with open(args.save_accuracy_path, "w") as f:
                 f.write(dumped)
         print('Accuracy for lambada_openai is ', results["results"]["lambada_openai"]["acc"])
-        print('Accuracy for piqa is ', results["results"]["piqa"]["acc"])
-        print('Accuracy for winogrande is ', results["results"]["winogrande"]["acc"])
-        print('Accuracy for hellaswag is ', results["results"]["hellaswag"]["acc"])
 
     with torch.no_grad(), torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
         eval_func(user_model)

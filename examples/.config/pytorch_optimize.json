@@ -1147,9 +1147,9 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_j_6b_ipex",
+        "topology": "gpt_j_6b_clm_ipex",
         "mode": "accuracy",
-        "batch_size": "64",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"

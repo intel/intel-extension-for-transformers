@@ -89,7 +89,7 @@ function run_benchmark {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "gpt_j_6b_clm_ipex" ]; then
-        script="run_gptj.py"
+        script="evaluate_clm.py"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_mlm_static" ]; then
@@ -152,10 +152,11 @@ function run_benchmark {
 
     echo $extra_cmd
 
-    if [ -z ${DATASET_NAME} ];then
+    if [ ${script} = "evaluate_clm.py" ];then
         python -u ./${script} \
             --model ${model_name_or_path} \
             --output_dir ${tuned_checkpoint} \
+	    --batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}
     elif [ -z ${DATASET_CONFIG_NAME} ];then
