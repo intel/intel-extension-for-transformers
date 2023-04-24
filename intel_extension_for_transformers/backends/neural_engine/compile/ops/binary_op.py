@@ -74,7 +74,8 @@ class BinaryOp(Operator):
         if framework == 'torch':
             algo_dict = {'aten::rsub': 'sub', 'aten::mul': 'mul', 'aten::add': 'add', 'aten::add_': 'add',
                          'aten::div': 'div', 'aten::sub': 'sub', 'aten::gt': 'gt', 'aten::lt': 'lt',
-                         'aten::eq': 'eq', 'aten::ne': 'ne', 'aten::neg': 'mul'}
+                         'aten::eq': 'eq', 'aten::ne': 'ne', 'aten::neg': 'mul',
+                         'aten::floor_divide': 'div'}
             self._attr['algorithm'] = algo_dict[node.kind()]
             if node.kind() == 'aten::neg':
                 self._input_tensors.append(Tensor(name=self._name + "_mul_val",

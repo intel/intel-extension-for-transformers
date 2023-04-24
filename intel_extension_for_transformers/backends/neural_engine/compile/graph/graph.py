@@ -604,6 +604,7 @@ class Graph(object):
 
             yaml.add_representer(list, list_representer)
             yaml.add_representer(OrderedDict, dict_representer)
+            yaml.Dumper.ignore_aliases = lambda *args: True
             yaml.dump(net_info, f, default_flow_style=False, sort_keys=False)
 
         logger.info("Emit done...")

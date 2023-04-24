@@ -28,7 +28,8 @@ attention_mask[0] = 0
 past_key_value_torch = tuple([(torch.zeros([1,16,32,256]), torch.zeros([1,16,32,256])) for i in range(28)])
 input_ids = input_ids[0:1].unsqueeze(0)
 attention_mask = attention_mask.unsqueeze(0)
-
+if 'llama' in model_id:
+    past_key_value_torch = tuple([(torch.zeros([1,32,32,256]), torch.zeros([1,32,32,256])) for i in range(32)])
 if os.path.exists(args.pt_file):
     print('PT model exists, compile will be executed.')
 else:
@@ -44,12 +45,22 @@ else:
         sys.exit(1)
 
 from intel_extension_for_transformers.backends.neural_engine.compile import compile, autocast
-if args.dtype == "bf16":
-    with autocast("bf16"):
+if 'llama' not in model_id:
+    if args.dtype == "bf16":
+        with autocast("bf16"):
+            graph = compile(args.pt_file)
+    elif args.dtype == "int8":
+        graph = compile(args.pt_file, './int8_pattern.conf')
+    else:
         graph = compile(args.pt_file)
-elif args.dtype == "int8":
-    graph = compile(args.pt_file, './int8_pattern.conf')
 else:
-    graph = compile(args.pt_file)
+    if args.dtype == "bf16":
+        with autocast("bf16"):
+            graph = compile(args.pt_file, './llama_pattern.conf')
+    elif args.dtype == "int8":
+        graph = compile(args.pt_file, './llama_int8_pattern.conf')
+    else:
+        graph = compile(args.pt_file, './llama_pattern.conf')
+        
 graph.save(args.output_model)
 print('Neural Engine ir is saved as {}'.format(args.output_model))

@@ -96,6 +96,7 @@ class InnerProductOperator : public Operator {
   bool gelu_split_;
   bool tanh_;
   bool sigmoid_;
+  bool swish_;
   bool relu_;
 
   bool append_eltwise_;

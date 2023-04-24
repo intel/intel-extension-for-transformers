@@ -138,6 +138,12 @@ pattern_default_setting = {
     'MultiHeadAttention': False,
     'Int8BF16MixedPrecisionChecker': False,
     'QuantizedGraphDtypeRefactor': True,
+    
+    #LLAMA
+    'LlamaEmbeddings': False,
+    'LlamaMatMulWithTranspose': False,
+    'LlamaRoraryPosEmb': False,
+    'LlamaPostprocess': False,
 }
 
 class SubGraphMatcher(object):

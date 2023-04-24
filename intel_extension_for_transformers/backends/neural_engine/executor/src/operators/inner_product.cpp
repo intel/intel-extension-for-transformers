@@ -80,8 +80,10 @@ InnerProductOperator::InnerProductOperator(const shared_ptr<OperatorConfig>& con
   gelu_tanh_ = (iter != attrs_map.end() && iter->second == "gelu_tanh") ? true : false;
   tanh_ = (iter != attrs_map.end() && iter->second == "tanh") ? true : false;
   sigmoid_ = (iter != attrs_map.end() && iter->second == "sigmoid") ? true : false;
+  swish_ = (iter != attrs_map.end() && iter->second == "swish") ? true : false;
   relu_ = (iter != attrs_map.end() && iter->second == "relu") ? true : false;
-  append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_;
+  append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_
+                    || swish_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
   DLOG(INFO) << "append_op: " << append_op_;
 }
@@ -233,7 +235,8 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
     kernel_type_ = Dense;
     auto shape = src1_->shape();
     if (shape.size() == 2) {
-      if ((shape[0] == 4096 || shape[0] == 16384) && (shape[1] == 4096 || shape[1] == 16384) && ip_count < MAX_IP) {
+      if ((shape[0] == 4096 || shape[0] == 16384 || shape[0] == 11008) && (shape[1] == 4096 || shape[1] == 16384 ||
+           shape[0] == 11008) && ip_count < MAX_IP && !swish_) {
         ip_count++;
         beam_forward_ = true;
         jit_kernel_.reset(new jit_avx512f_fp8_gemm::IWrapperAvx512f_row_Abf16Bfp8(4, shape[0], shape[1]),
@@ -989,6 +992,12 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     auto op_alpha = 0.0;
     auto op_beta = 0.0;
     po.append_eltwise(op_scale, algorithm::eltwise_relu, op_alpha, op_beta);
+  }
+  if (swish_) {
+    auto op_scale = 1.0;
+    auto op_alpha = 1.0;
+    auto op_beta = 0.0;
+    po.append_eltwise(op_scale, algorithm::eltwise_swish, op_alpha, op_beta);
   }
   // this is to sub zero point in fp32 to make the output u8
   if (!is_dynamic_ && append_eltwise_ && dst_->dtype() == "u8") {

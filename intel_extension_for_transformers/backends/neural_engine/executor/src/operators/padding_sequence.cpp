@@ -29,6 +29,10 @@ PaddingSequenceOperator::PaddingSequenceOperator(const shared_ptr<OperatorConfig
   StringSplit<int64_t>(&dims_, attrs_map["dims"], ",");
   iter = attrs_map.find("seq_len_first");
   seq_len_first_ = (iter != attrs_map.end())? true : false;
+  iter = attrs_map.find("mode");
+  if (iter != attrs_map.end()) {
+    mode_ = (attrs_map["mode"]);
+  }
 }
 
 void PaddingSequenceOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -123,6 +127,29 @@ void PaddingSequenceOperator::Forward(const vector<Tensor*>& input, const vector
       }
     }
   }
+
+if (mode_ == "llama") {
+  int index = 0;
+  int64_t idx = 0;
+  for (int j = 0; j < seq_len; ++j) {
+    if (seq_len_first_) {
+      idx = 0 + j * src_stride_[0];
+    } else {
+      idx = 0 * src_stride_[0] + j;
+    }
+    if (mask_data[idx] == 0) {
+      index += 1;
+    }
+    break;
+  }
+  for (int i = 0; i < pad_dst_shape_[0]; ++i) {
+#pragma omp parallel for
+    for (int j = 0; j < index; ++j) {
+      int row_idx = i * pad_dst_stride_[0] + j * pad_dst_stride_[1];
+      dst_data[row_idx + j] = padding_;
+    }
+  }
+}
 
   // 2. unref tensors
   this->unref_tensors(input);

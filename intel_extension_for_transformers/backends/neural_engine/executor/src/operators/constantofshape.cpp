@@ -37,6 +37,10 @@ ConstantOfShapeOperator::ConstantOfShapeOperator(
     is_trilu_ = true;
     trilu_k_ = StringToNum<int>(attrs_map["trilu"]);
   }
+  iter = attrs_map.find("mode");
+  if (iter != attrs_map.end()) {
+    mode_ = (attrs_map["mode"]);
+  }
 }
 
 ConstantOfShapeOperator::~ConstantOfShapeOperator() {}
@@ -47,6 +51,9 @@ void ConstantOfShapeOperator::Reshape(const vector<Tensor*>& input,
   // 1.1: Prepare Tensor origin shape
   if (is_tensor_) {
     dst_shape_ = input[0]->shape();
+    if (mode_ == "llama") {
+      dst_shape_ = {1, 1, input[1]->shape()[1], input[0]->shape()[3]};
+    }
   } else {
     for (int i = 0; i < input[0]->size(); ++i) {
       auto src_data = input[0]->mutable_data();
@@ -66,27 +73,16 @@ void ConstantOfShapeOperator::Forward(const vector<Tensor*>& input,
   if (output_dtype_ == "fp32") {
     Eigen::Map<Eigen::ArrayXf> output_array(reinterpret_cast<float*>(dst_data),
                                             array_size_);
-
-    output_array = Eigen::ArrayXf::Constant(
-        array_size_, static_cast<float>(constant_value_));
-    // } else if (output_dtype_ == "int32"){
-    //   Eigen::Map<Eigen::ArrayXd>
-    //   output_array(reinterpret_cast<int*>(dst_data), array_size_);
-    //   output_array = Eigen::Dynamic1D::Constant(array_size_,
-    //   constant_value_);
+    if (mode_ == "llama" && dst_shape_[3] > 33) {
+        output_array = Eigen::ArrayXf::Constant(
+            array_size_, static_cast<float>(0));
+    } else {
+        output_array = Eigen::ArrayXf::Constant(
+            array_size_, static_cast<float>(constant_value_));
+    }
   }
-  if (is_trilu_ && dst_shape_.size() == 3) {
-    // upper == 0
-    // for (int i = 0; i < dst_shape_[0]; ++i) {
-    //   for (int j = 0; j < dst_shape_[1] - trilu_k_; ++j) {
-    //     for (int k = trilu_k_ + j; k < dst_shape_[2]; ++k) {
-    //       reinterpret_cast<float*>(dst_data)[dst_shape_[1] * i +
-    //       dst_shape_[2] * j + k] = 0;
-    //     }
-    //   }
-    // }
 
-    // upper == 1
+  if (is_trilu_ && dst_shape_.size() == 3) {
     for (int i = 0; i < dst_shape_[0]; ++i) {
       for (int j = 0; j < dst_shape_[1]; ++j) {
         int range =
@@ -98,6 +94,18 @@ void ConstantOfShapeOperator::Forward(const vector<Tensor*>& input,
       }
     }
   }
+
+  if (is_trilu_ && dst_shape_.size() == 4 && mode_ == "llama") {
+    int col = dst_shape_[2];
+    int row = dst_shape_[3];
+    for (int j = 0; j < col; ++j) {
+      for (int k = 0; k < j + trilu_k_; ++k) {
+        reinterpret_cast<float*>(
+            dst_data)[row * j  + k ] = 0;
+      }
+    }
+  }
+
   this->unref_tensors(input);
 }
 

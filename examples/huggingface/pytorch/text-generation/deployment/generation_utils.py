@@ -547,24 +547,147 @@ class GenerationMixin:
             )
         elif inputs_kwarg is not None:
             inputs = inputs_kwarg
+        if not model_kwargs["llama"]:
+            # 3. models with `input_ids` can also make use of `inputs_embeds`
+            if self._can_retrieve_inputs_from_name(inputs, "inputs_embeds", model_kwargs):
+                inputs, input_name = model_kwargs["inputs_embeds"], "inputs_embeds"
 
-        # 3. models with `input_ids` can also make use of `inputs_embeds`
-        if self._can_retrieve_inputs_from_name(inputs, "inputs_embeds", model_kwargs):
+            # 4. Only encoder-decoder models can have non `input_ids` input format
+            if not self.config.is_encoder_decoder and input_name != "input_ids":
+                raise ValueError(
+                    f"If {input_name} is passed as model-specific keyword "
+                    "input then model has to be an encoder-decoder and not a "
+                    f"{self.__class__.__name__}."
+                )
+
+            # 5. if `inputs` is still None, try to create `input_ids` from BOS token
+            if inputs is None:
+                inputs = self._prepare_input_ids_for_generation(bos_token_id, model_kwargs.get("encoder_outputs"))
+
+            return inputs, input_name, model_kwargs
+        else:
+            # 3. In the presence of `inputs_embeds` for text models:
+            # - decoder-only models should complain if the user attempts to pass `inputs_embeds`, but the model
+            # doesn't have its forwarding implemented. `inputs_embeds` is kept in `model_kwargs` and can coexist with
+            # input_ids (`inputs_embeds` will be used in the 1st generation step, as opposed to `input_ids`)
+            # - encoder-decoder models should complain if the user attempts to pass `inputs_embeds` and `input_ids`, and
+            # pull the former to inputs. It will be used in place of `input_ids` to get the encoder hidden states.
+            if input_name == "input_ids" and "inputs_embeds" in model_kwargs:
+                if not self.config.is_encoder_decoder:
+                    has_inputs_embeds_forwarding = "inputs_embeds" in set(
+                        inspect.signature(self.prepare_inputs_for_generation).parameters.keys()
+                    )
+                    if not has_inputs_embeds_forwarding:
+                        raise ValueError(
+                            f"You passed `inputs_embeds` to `.generate()`, but the model class {self.__class__.__name__} "
+                            "doesn't have its forwarding implemented. See the GPT2 implementation for an example "
+                            "(https://github.com/huggingface/transformers/pull/21405), and feel free to open a PR with it!"
+                        )
+                    # In this case, `input_ids` is moved to the `model_kwargs`, so a few automations (like the creation of
+                    # the attention mask) can rely on the actual model input.
+                    model_kwargs["input_ids"] = self._maybe_initialize_input_ids_for_generation(
+                        inputs, bos_token_id, model_kwargs=model_kwargs
+                    )
+                else:
+                    if inputs is not None:
+                        raise ValueError("You passed `inputs_embeds` and `input_ids` to `.generate()`. Please pick one.")
+                inputs, input_name = model_kwargs["inputs_embeds"], "inputs_embeds"
+
+            # 4. if `inputs` is still None, try to create `input_ids` from BOS token
+            inputs = self._maybe_initialize_input_ids_for_generation(inputs, bos_token_id, model_kwargs)
+            return inputs, input_name, model_kwargs
+
+    def _prepare_model_inputs(
+        self,
+        inputs: Optional[torch.Tensor] = None,
+        bos_token_id: Optional[int] = None,
+        model_kwargs: Optional[Dict[str, torch.Tensor]] = None,
+    ) -> Tuple[torch.Tensor, Optional[str], Dict[str, torch.Tensor]]:
+        """
+        This function extracts the model-specific `inputs` for generation.
+        """
+        # 1. retrieve all kwargs that are non-None or non-model input related.
+        # some encoder-decoder models have different names for model and encoder
+        if (
+            self.config.is_encoder_decoder
+            and hasattr(self, "encoder")
+            and self.encoder.main_input_name != self.main_input_name
+        ):
+            input_name = self.encoder.main_input_name
+        else:
+            input_name = self.main_input_name
+
+        model_kwargs = {k: v for k, v in model_kwargs.items() if v is not None or k != input_name}
+
+        # 2. check whether model_input_name is passed as kwarg
+        # if yes and `inputs` is None use kwarg inputs
+        inputs_kwarg = model_kwargs.pop(input_name, None)
+        if inputs_kwarg is not None and inputs is not None:
+            raise ValueError(
+                f"`inputs`: {inputs}` were passed alongside {input_name} which is not allowed."
+                f"Make sure to either pass {inputs} or {input_name}=..."
+            )
+        elif inputs_kwarg is not None:
+            inputs = inputs_kwarg
+
+        # 3. In the presence of `inputs_embeds` for text models:
+        # - decoder-only models should complain if the user attempts to pass `inputs_embeds`, but the model
+        # doesn't have its forwarding implemented. `inputs_embeds` is kept in `model_kwargs` and can coexist with
+        # input_ids (`inputs_embeds` will be used in the 1st generation step, as opposed to `input_ids`)
+        # - encoder-decoder models should complain if the user attempts to pass `inputs_embeds` and `input_ids`, and
+        # pull the former to inputs. It will be used in place of `input_ids` to get the encoder hidden states.
+        if input_name == "input_ids" and "inputs_embeds" in model_kwargs:
+            if not self.config.is_encoder_decoder:
+                has_inputs_embeds_forwarding = "inputs_embeds" in set(
+                    inspect.signature(self.prepare_inputs_for_generation).parameters.keys()
+                )
+                if not has_inputs_embeds_forwarding:
+                    raise ValueError(
+                        f"You passed `inputs_embeds` to `.generate()`, but the model class {self.__class__.__name__} "
+                        "doesn't have its forwarding implemented. See the GPT2 implementation for an example "
+                        "(https://github.com/huggingface/transformers/pull/21405), and feel free to open a PR with it!"
+                    )
+                # In this case, `input_ids` is moved to the `model_kwargs`, so a few automations (like the creation of
+                # the attention mask) can rely on the actual model input.
+                model_kwargs["input_ids"] = self._maybe_initialize_input_ids_for_generation(
+                    inputs, bos_token_id, model_kwargs=model_kwargs
+                )
+            else:
+                if inputs is not None:
+                    raise ValueError("You passed `inputs_embeds` and `input_ids` to `.generate()`. Please pick one.")
             inputs, input_name = model_kwargs["inputs_embeds"], "inputs_embeds"
 
-        # 4. Only encoder-decoder models can have non `input_ids` input format
-        if not self.config.is_encoder_decoder and input_name != "input_ids":
-            raise ValueError(
-                f"If {input_name} is passed as model-specific keyword "
-                "input then model has to be an encoder-decoder and not a "
-                f"{self.__class__.__name__}."
-            )
-
-        # 5. if `inputs` is still None, try to create `input_ids` from BOS token
-        if inputs is None:
-            inputs = self._prepare_input_ids_for_generation(bos_token_id, model_kwargs.get("encoder_outputs"))
-
+        # 4. if `inputs` is still None, try to create `input_ids` from BOS token
+        inputs = self._maybe_initialize_input_ids_for_generation(inputs, bos_token_id, model_kwargs)
         return inputs, input_name, model_kwargs
+
+    def _maybe_initialize_input_ids_for_generation(
+        self,
+        inputs: Optional[torch.Tensor] = None,
+        bos_token_id: Optional[int] = None,
+        model_kwargs: Optional[Dict[str, torch.Tensor]] = None,
+    ) -> torch.LongTensor:
+        """Initializes input ids for generation, if necessary."""
+        if inputs is not None:
+            return inputs
+
+        encoder_outputs = model_kwargs.get("encoder_outputs")
+        if self.config.is_encoder_decoder and encoder_outputs is not None:
+            # make dummy input_ids with value -100, as a sanity check ensuring that they won't be used for encoding
+            shape = encoder_outputs.last_hidden_state.size()[:-1]
+            return torch.ones(shape, dtype=torch.long, device=self.device) * -100
+
+        if bos_token_id is None:
+            raise ValueError("`bos_token_id` has to be defined when no `input_ids` are provided.")
+
+        # If there is some tensor in `model_kwargs`, we can infer the batch size from it. This is helpful with
+        # soft-prompting or in multimodal implementations built on top of decoder-only language models.
+        batch_size = 1
+        for value in model_kwargs.values():
+            if isinstance(value, torch.Tensor):
+                batch_size = value.shape[0]
+                break
+        return torch.ones((batch_size, 1), dtype=torch.long, device=self.device) * bos_token_id
 
     def _can_retrieve_inputs_from_name(
         self, inputs: Optional[torch.Tensor], name: str, model_kwargs: Dict[str, torch.Tensor]
@@ -2739,31 +2862,105 @@ class GenerationMixin:
                     break
 
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
-            if model_inputs["past_key_values"] is None:
-                first_token = model_inputs["input_ids"].size()[1] != 1
-                if first_token: 
-                    input_bs = input_ids.size()[0]
-                    seq_len = input_ids.size()[1]
-                    model_inputs["attention_mask"] = model_inputs["attention_mask"][:1,:]
-                    model_inputs["input_ids"] = model_inputs["input_ids"][:1,:]
-                    input_ids_1 = model_inputs['input_ids'].cpu().numpy().astype(np.int32)
-                    attention_mask_1 = model_inputs['attention_mask'].cpu().numpy().astype(np.int32)
-                    # # input_ids = np.concatenate((input_ids, input_ids ,input_ids, input_ids), axis=0)
-                    # # attnention_mask = np.concatenate((attnention_mask, attnention_mask,attnention_mask,attnention_mask), axis=0)
-                    past_k_v =  np.ones([1,0,16,256]).astype(np.float32)
-                    predictions = engine_model.inference([input_ids_1] + [past_k_v for _ in range(2 * model_kwargs["past_kv_nums"])] + [attention_mask_1])
+            if not model_kwargs["llama"]:
+                if model_inputs["past_key_values"] is None:
+                    first_token = model_inputs["input_ids"].size()[1] != 1
+                    if first_token:
+                        input_bs = input_ids.size()[0]
+                        seq_len = input_ids.size()[1]
+                        model_inputs["attention_mask"] = model_inputs["attention_mask"][:1,:]
+                        model_inputs["input_ids"] = model_inputs["input_ids"][:1,:]
+                        input_ids_1 = model_inputs['input_ids'].cpu().numpy().astype(np.int32)
+                        attention_mask_1 = model_inputs['attention_mask'].cpu().numpy().astype(np.int32)
 
-                    
+                        past_k_v =  np.ones([1,0,16,256]).astype(np.float32)
+                        predictions = engine_model.inference([input_ids_1] + [past_k_v for _ in range(2 * model_kwargs["past_kv_nums"])] + [attention_mask_1])
+
+                        for key in predictions:
+                            predictions[key] = torch.from_numpy(predictions[key])
+
+                        torchout = CausalLMOutputWithPast()
+                        torchout.logits = list(predictions.values())[0]
+                        torchout.past_key_values = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
+                        outputs = torchout
+                    if first_token:
+                        outputs.logits = outputs.logits.expand(input_bs, seq_len, -1)
+                        past_key_values = []
+                        for key, value in outputs.past_key_values:
+                            key_dim = key.dim()
+                            value_dim = value.dim()
+                            key = key.expand(input_bs, -1, -1, -1).contiguous()
+                            value = value.expand(input_bs, -1, -1, -1).contiguous()
+                            if key_dim == 3:
+                                key = key.view(key.size(1) * key.size(0), key.size(2), key.size(3))
+                            if value_dim == 3:
+                                value = value.view(value.size(1) * value.size(0), value.size(2), value.size(3))
+                            past_key_values.append(tuple([key, value]))
+                        outputs.past_key_values = tuple(past_key_values)
+                    if synced_gpus and this_peer_finished:
+                        cur_len = cur_len + 1
+                        continue  # don't waste resources running the code we don't need
+                    next_token_logits = outputs.logits[:, -1, :]
+
+                else:
+                    example_inputs = []
+                    for k, v in model_inputs.items():
+                        if v is not None and not isinstance(v, bool):
+                            example_inputs.append(v)
+                    example_inputs = tuple(example_inputs)
+
+                    input_ids_1 = example_inputs[0].cpu().numpy().astype(np.int32)
+                    attention_mask_1 = example_inputs[-1].cpu().numpy().astype(np.int32)
+                    past_key_values = [example_inputs[1][i][j] for i in range(model_kwargs["past_kv_nums"]) for j in range(2)]
+                    predictions = engine_model.inference([input_ids_1] + past_key_values + [attention_mask_1])
+
+                    # ts=time.time()
                     for key in predictions:
                         predictions[key] = torch.from_numpy(predictions[key])
+                    outputs = CausalLMOutputWithPast()
+                    outputs.logits = list(predictions.values())[0].reshape(-1,1,50400)
+                    outputs.past_key_values = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
 
-                    torchout = CausalLMOutputWithPast()
-                    torchout.logits = list(predictions.values())[0]
-                    torchout.past_key_values = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
-                    outputs = torchout
-                if first_token: 
-                    outputs.logits = outputs.logits.expand(input_bs, seq_len, -1)
-                    
+                    # print(2,time.time()-ts)
+                    if synced_gpus and this_peer_finished:
+                        cur_len = cur_len + 1
+                        continue  # don't waste resources running the code we don't need
+                    next_token_logits = outputs.logits[:, -1, :]
+            else:
+                first_token = False
+                input_bs = input_ids.size()[0]
+                if model_inputs["past_key_values"] is None:
+                    first_token = True
+                if first_token:
+                    seq_len = input_ids.size()[1]
+
+                    model_inputs["past_key_values"] = tuple([(torch.zeros([1,32,1,128]), torch.zeros([1,32,1,128])) for i in range(model_kwargs["past_kv_nums"])])
+                    model_inputs["attention_mask"] = model_inputs["attention_mask"][:1,:]
+                    model_inputs["input_ids"] = model_inputs["input_ids"][:1,:]
+                    model_inputs["attention_mask"] = torch.cat([torch.zeros(1, 1), model_inputs["attention_mask"]], dim=-1)
+                else:
+                    model_inputs["attention_mask"] = torch.cat([torch.zeros(input_bs, 1), model_inputs["attention_mask"]], dim=-1)
+
+                model_inputs.pop("use_cache", None)
+                model_inputs.pop("token_type_ids", None)
+
+                input_ids_1 = model_inputs['input_ids'].cpu().numpy().astype(np.int32)
+                attention_mask_1 = model_inputs['attention_mask'].cpu().numpy().astype(np.int32)
+                past_k_v = [model_inputs['past_key_values'][i][j] for i in range(32) for j in range(2)]
+                predictions = engine_model.inference([input_ids_1, attention_mask_1] + past_k_v)
+
+                for key in predictions:
+                    predictions[key] = torch.from_numpy(predictions[key])
+                outputs = CausalLMOutputWithPast()
+                outputs.logits = list(predictions.values())[0]
+                outputs.past_key_values = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
+
+                if synced_gpus and this_peer_finished:
+                    cur_len = cur_len + 1
+                    continue  # don't waste resources running the code we don't need
+
+                if first_token:
+                    outputs.logits = outputs.logits.expand(input_bs, -1, -1)
                     past_key_values = []
                     for key, value in outputs.past_key_values:
                         key_dim = key.dim()
@@ -2774,38 +2971,11 @@ class GenerationMixin:
                             key = key.view(key.size(1) * key.size(0), key.size(2), key.size(3))
                         if value_dim == 3:
                             value = value.view(value.size(1) * value.size(0), value.size(2), value.size(3))
+
                         past_key_values.append(tuple([key, value]))
                     outputs.past_key_values = tuple(past_key_values)
-                if synced_gpus and this_peer_finished:
-                    cur_len = cur_len + 1
-                    continue  # don't waste resources running the code we don't need               
+
                 next_token_logits = outputs.logits[:, -1, :]
-              
-            else:
-                example_inputs = []
-                for k, v in model_inputs.items():
-                    if v is not None and not isinstance(v, bool):
-                        example_inputs.append(v)
-                example_inputs = tuple(example_inputs)                
-
-                input_ids_1 = example_inputs[0].cpu().numpy().astype(np.int32)
-                attention_mask_1 = example_inputs[-1].cpu().numpy().astype(np.int32)
-                past_key_values = [example_inputs[1][i][j] for i in range(model_kwargs["past_kv_nums"]) for j in range(2)]
-                predictions = engine_model.inference([input_ids_1] + past_key_values + [attention_mask_1])
-                
-                # ts=time.time()
-                for key in predictions:
-                    predictions[key] = torch.from_numpy(predictions[key])
-                outputs = CausalLMOutputWithPast()
-                outputs.logits = list(predictions.values())[0].reshape(-1,1,50400)
-                outputs.past_key_values = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
-
-                # print(2,time.time()-ts)
-                if synced_gpus and this_peer_finished:
-                    cur_len = cur_len + 1
-                    continue  # don't waste resources running the code we don't need
-                next_token_logits = outputs.logits[:, -1, :]
-
             # hack: adjust tokens for Marian. For Marian we have to make sure that the `pad_token_id`
             # cannot be generated both before and after the `nn.functional.log_softmax` operation.
             next_token_logits = self.adjust_logits_during_generation(next_token_logits, cur_len=cur_len)

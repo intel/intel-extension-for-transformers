@@ -130,11 +130,13 @@ class TorchExtractor(object):
                     if out_tensor.qscheme() == torch.per_channel_affine or \
                        out_tensor.qscheme() == torch.per_channel_symmetric:
                         # per_channel case
-                        fp32_min = torch.min(fp32_data, 1).values.numpy()
-                        fp32_max = torch.max(fp32_data, 1).values.numpy()
+                        per_ch_scale = out_tensor.q_per_channel_scales().numpy()
+                        fp32_max = per_ch_scale * 127
+                        fp32_min = -fp32_max
                     else:
-                        fp32_min = fp32_data.min().numpy()
-                        fp32_max = fp32_data.max().numpy()
+                        q_scale = torch.tensor(out_tensor.q_scale()).numpy()
+                        fp32_max = q_scale * 127
+                        fp32_min = -fp32_max
                     dtype = 's8' + "_weight"
                     util.insert_quant_info(tensor_name, [fp32_min, fp32_max, dtype])
 

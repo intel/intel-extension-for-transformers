@@ -32,22 +32,26 @@ def get_node_name(node):
         node_names[node] = name
         return name
 
-op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant',
+op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant', 'prim::ListConstruct': 'ListConstruct',
            'aten::linear': 'InnerProduct', 'aten::slice': 'Slice', 'aten::unsqueeze': 'Unsqueeze',
-           'aten::embedding': 'Gather', 'aten::where': 'Where', 'aten::matmul': 'Matmul', 'aten::gelu': 'Gelu',
+           'aten::rsqrt': 'Rsqrt', 'aten::masked_fill' : 'ConstantOfShape', 'aten::mean' : 'ReduceMean',
+           'aten::embedding': 'Gather', 'aten::where': 'Where', 'aten::matmul': 'Matmul',
+           'aten::reshape': 'Reshape', 'aten::gelu': 'Gelu', 'aten::max' : 'Max', 'aten::cos': 'Cos',
            'aten::layer_norm': 'LayerNorm', 'aten::size': 'Shape', 'aten::view': 'View',
-           'aten::permute': 'Reorder', 'aten::transpose': 'Reorder', 'aten::repeat': 'Repeat',
-           'aten::select': 'Slice', 'aten::tanh': 'Tanh', 'aten::arange': 'Arange', 'aten::pow': 'Pow',
-           'aten::reciprocal': 'Reciprocal', 'aten::einsum': 'Einsum', 'aten::sin': 'Sin', 'aten::cos': 'Cos',
+           'aten::permute': 'Reorder', 'aten::transpose': 'Reorder', 'aten::expand' : 'Expand',
+           'aten::select': 'Slice', 'aten::tanh': 'Tanh', 'aten::arange': 'Arange',
+           'aten::reciprocal': 'Reciprocal', 'aten::einsum': 'Einsum', 'aten::sin': 'Sin',
            'aten::neg': 'Neg', 'aten::stack': 'Stack', 'aten::flatten': 'Flatten', 'aten::cat': 'Concat',
-           'aten::rsub': 'Rsub', 'aten::mul': 'Mul', 'aten::add': 'Add', 'aten::add_': 'Add', 'aten::div': 'Div',
-           'aten::sub': 'Sub', 'aten::gt': 'Greater', 'aten::lt': 'Less', 'aten::eq': 'Equal', 'aten::ne': 'NotEqual',
+           'aten::rsub': 'Rsub', 'aten::mul': 'Mul', 'aten::add': 'Add', 'aten::add_': 'Add',
+           'aten::sub': 'Sub', 'aten::gt': 'Greater', 'aten::lt': 'Less', 'aten::eq': 'Equal',
            'aten::quantize_per_tensor': 'Quantize', 'aten::dequantize': 'Dequantize',
-           'aten::padding_sequence': 'PaddingSequence', 'aten::expand': 'Expand', 'aten::masked_fill': 'Masked_fill',
-           'aten::floor_divide': 'Floor_divide', 'aten::max': 'Max', 'aten::mean': 'Mean', 'aten::reshape': 'Reshape',
-           'aten::rsqrt': 'Rsqrt', 'aten::silu': 'Silu',
-           'prim::ListUnpack': 'ListUnpack', 'prim::ListConstruct': 'ListConstruct',
-           'prim::TupleUnpack': 'TupleUnpack', 'prim::TupleConstruct': 'TupleConstruct'}
+           'prim::TupleUnpack': 'TupleUnpack','prim::TupleConstruct': 'TupleConstruct',
+           'aten::rsqrt': 'Rsqrt', 'aten::floor_divide': 'Div', 'aten::pow': 'Pow',
+           'aten::full': 'Full', 'aten::zeros': 'Zeros', 'aten::repeat': 'Repeat',
+           'aten::silu': 'Swish', 'prim::ListUnpack': 'ListUnpack', 'aten::ne': 'NotEqual',
+           'aten::div': 'Div', 'aten::padding_sequence' : 'PaddingSequence'}
+
+
 
 def torch_extract_operator(node, model, nodes_dict, engine_graph=None):
     """Decorate the operator in Torch.

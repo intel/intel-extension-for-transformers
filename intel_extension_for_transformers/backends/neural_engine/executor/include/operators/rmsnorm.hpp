@@ -12,10 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_PADDING_SEQUENCE_HPP_
-#define ENGINE_EXECUTOR_INCLUDE_OPERATORS_PADDING_SEQUENCE_HPP_
-#include <vector>
+#ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_RMS_NORM_HPP_
+#define ENGINE_EXECUTOR_INCLUDE_OPERATORS_RMS_NORM_HPP_
+#include <immintrin.h>
+
+#include <cstring>
 #include <string>
+#include <unordered_map>
+#include <vector>
 #include <memory>
 
 #include "../operator.hpp"
@@ -23,28 +27,29 @@
 namespace executor {
 
 /**
- * @brief A Padding Sequence Mask operator.
+ * @brief A RMS Normalization operator.
  *
  */
 
-class PaddingSequenceOperator : public Operator {
- public:
-  explicit PaddingSequenceOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~PaddingSequenceOperator() {}
+class RmsNormOperator : public Operator {
+  using parallelBNormCallback = void (*)(char*, const float*, char*, int, __m512*);
 
+ public:
+  explicit RmsNormOperator(const shared_ptr<OperatorConfig>& conf);
+  virtual ~RmsNormOperator() {}
+
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  template <int dt_bytewidth>
+  void RmsNormParallelB(const void* src_data, const float* gamma_data, void* dst_data);
 
  private:
-  std::vector<int64_t> src_shape_;
-  std::vector<int64_t> src_stride_;
-  std::vector<int64_t> pad_dst_shape_;
-  std::vector<int64_t> pad_dst_stride_;
-  float padding_;
-  std::vector<int64_t> attr_dst_shape_;
-  std::vector<int64_t> dims_;
-  bool seq_len_first_ = false;
-  string mode_ = "None";
+  float epsilon_ = 1e-05;
+  int dt_bytewidth_ = 4;  // fp32 inference by default
+  int64_t norm_dim_ = -1;
+  int batchs_ = -1;
+  parallelBNormCallback parallelB_norm_callback_ = nullptr;
 };
 }  // namespace executor
-#endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_PADDING_SEQUENCE_HPP_
+#endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_RMS_NORM_HPP_

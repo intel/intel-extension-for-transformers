@@ -183,10 +183,15 @@ void SliceOperator::ClampIndices(int64_t* v, const int64_t& min,
 void SliceOperator::Reshape(const vector<Tensor*>& input,
                             const vector<Tensor*>& output) {
   if (!ends_with_tensor_.empty()) {
+    int tensor_offset = 1;
+    if (!starts_with_tensor_.empty()) {
+      // for llama mode
+      tensor_offset += 1;
+    }
     if (ends_.empty()) {
-      ends_.push_back(input[1]->shape()[ends_with_tensor_[0]]);
+      ends_.push_back(input[tensor_offset]->shape()[ends_with_tensor_[0]]);
     } else {
-      ends_[0] = input[1]->shape()[ends_with_tensor_[0]];
+      ends_[0] = input[tensor_offset]->shape()[ends_with_tensor_[0]];
     }
   }
   if (!starts_with_tensor_.empty()) {
@@ -203,10 +208,12 @@ void SliceOperator::Reshape(const vector<Tensor*>& input,
         offset = 32;
       }
     }
-    if (ends_.empty()) {
-      ends_.push_back(starts_[0] + offset);
-    } else {
-      ends_[0] = starts_[0] + offset;
+    if (ends_with_tensor_.empty()) {
+      if (ends_.empty()) {
+        ends_.push_back(starts_[0] + offset);
+      } else {
+        ends_[0] = starts_[0] + offset;
+      }
     }
   }
   const vector<int64_t>& src_shape = input[0]->shape();

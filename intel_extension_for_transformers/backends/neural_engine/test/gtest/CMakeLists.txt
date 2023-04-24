@@ -48,6 +48,7 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/sparse_operators/sparse_inner_product.cpp
     ${HOST_SRC_DIR}/src/llga_operators/llga_kernel.cpp
     ${HOST_SRC_DIR}/src/llga_operators/llga_op_creator.cpp
+    ${HOST_SRC_DIR}/src/operators/rmsnorm.cpp
 )
 
 if(WIN32)
