@@ -21,6 +21,7 @@ parser.add_argument('--max-new-tokens', default=32, type=int, help="output max n
 parser.add_argument('--input-tokens', default='32', type=str)
 parser.add_argument('--prompt', default=None, type=str)
 parser.add_argument('--batch-size', default=1, type=int)
+parser.add_argument('--greedy', action='store_true')
 args = parser.parse_args()
 print(args)
 
