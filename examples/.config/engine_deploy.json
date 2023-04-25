@@ -320,7 +320,7 @@
     }
   },
   "bert_mini_sparse": {
-    "working_dir": "huggingface/pytorch/text-classification/deployment/sst2/bert_mini",
+    "working_dir": "huggingface/pytorch/text-classification/deployment/sparse/bert_mini",
     "data_dir": "/tf_dataset2/datasets/sst2_data",
     "hf_model_name": "Intel/bert-mini-sst2-distilled-sparse-90-1X4-block",
     "benchmark": {
