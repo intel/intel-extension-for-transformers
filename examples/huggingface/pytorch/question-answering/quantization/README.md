@@ -76,8 +76,7 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
 |Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining 
 |---|------------------------------------|---|---|---
 |squad|distilbert-base-uncased-distilled-squad| ✅| ✅| ✅
-|squad|valhalla/longformer-base-4096-finetuned-squadv1| ✅| ✅| 
-
+|squad|valhalla/longformer-base-4096-finetuned-squadv1| ✅| ✅| N/A
 ###  Intel Extension for PyTorch (IPEX) Validated model list
 |Dataset|Pretrained model|Supported IPEX Version 
 |---|------------------------------------|---

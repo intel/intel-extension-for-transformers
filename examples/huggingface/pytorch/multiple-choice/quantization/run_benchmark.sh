@@ -56,10 +56,10 @@ function run_benchmark {
 
     if [ "${topology}" = "bert_base_swag_static" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_base_swag_dynamic" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
-        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bert_base_swag_qat" ]; then
+        model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
     fi
 
     if [[ ${mode} == "accuracy" ]]; then

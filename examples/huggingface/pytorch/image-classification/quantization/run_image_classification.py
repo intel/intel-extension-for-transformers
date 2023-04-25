@@ -408,6 +408,9 @@ def main():
         # Set the validation transforms
         dataset["validation"].set_transform(val_transforms)
 
+    metric_name = optim_args.metric_name
+    training_args.metric_for_best_model = metric_name
+
     # Initalize our trainer
     trainer = NLPTrainer(
         model=model,
@@ -418,8 +421,6 @@ def main():
         tokenizer=feature_extractor,
         data_collator=collate_fn,
     )
-    
-    metric_name = optim_args.metric_name
 
     if optim_args.tune:
 

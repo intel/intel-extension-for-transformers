@@ -1,9 +1,9 @@
 accelerate
-datasets >= 1.8.0
 protobuf
 sentencepiece != 0.1.92
-torch >= 1.10.0
-transformers>=4.12.0
+datasets >= 1.1.3
+torch >= 1.10
+transformers
 wandb
 neural_compressor
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3

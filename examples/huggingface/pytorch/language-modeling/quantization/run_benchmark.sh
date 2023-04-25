@@ -135,6 +135,21 @@ function run_benchmark {
         script="run_clm.py"
         DATASET_NAME="lambada"
         model_name_or_path="bigscience/bloom-560m"
+    elif [ "${topology}" = "gpt_neo_clm_qat" ]; then
+        script="run_clm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="EleutherAI/gpt-neo-125M"
+    elif [ "${topology}" = "bert_mlm_qat" ]; then
+        script="run_mlm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="bert-base-uncased"
+    elif [ "${topology}" = "xlnet_plm_qat" ]; then
+        script="run_plm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="xlnet-base-cased"
     fi
     
     if [[ ${int8} == "true" ]]; then

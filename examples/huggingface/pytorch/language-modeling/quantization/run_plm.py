@@ -511,6 +511,8 @@ def main():
         plm_probability=data_args.plm_probability,
         max_span_length=data_args.max_span_length,
     )
+    metric_name = optim_args.metric_name
+    training_args.metric_for_best_model = metric_name
 
     # Initialize our Trainer
     trainer = NLPTrainer(
@@ -521,7 +523,6 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
     )
-    metric_name = optim_args.metric_name
 
     if optim_args.tune:
 

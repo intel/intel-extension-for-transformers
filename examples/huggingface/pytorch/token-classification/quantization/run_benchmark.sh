@@ -69,13 +69,12 @@ function run_benchmark {
     if [ "${topology}" = "distilbert_base_ner_static" ]; then
         DATASET_NAME="conll2003"
         model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
-        model_type="bert"
-        approach="PostTrainingStatic"
     elif [ "${topology}" = "distilbert_base_ner_dynamic" ]; then
         DATASET_NAME="conll2003"
         model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
-        model_type="bert"
-        approach="PostTrainingDynamic"
+    elif [ "${topology}" = "distilbert_base_ner_qat" ]; then
+        DATASET_NAME="conll2003"
+        model_name_or_path="elastic/distilbert-base-uncased-finetuned-conll03-english "
     fi
 
     if [[ ${int8} == "true" ]]; then

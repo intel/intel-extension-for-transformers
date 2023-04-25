@@ -561,6 +561,8 @@ def main():
         mlm_probability=data_args.mlm_probability,
         pad_to_multiple_of=8 if pad_to_multiple_of_8 else None,
     )
+    metric_name = optim_args.metric_name
+    training_args.metric_for_best_model = metric_name
 
     # Initialize our Trainer
     trainer = NLPTrainer(
@@ -575,7 +577,6 @@ def main():
         if training_args.do_eval and not is_torch_tpu_available()
         else None,
     )
-    metric_name = optim_args.metric_name
 
     if optim_args.tune:
 

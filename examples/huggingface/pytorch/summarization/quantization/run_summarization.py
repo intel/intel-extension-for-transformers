@@ -669,6 +669,9 @@ def main():
         result = {k: round(v, 4) for k, v in result.items()}
         return result
 
+    metric_name = optim_args.metric_name
+    training_args.metric_for_best_model = metric_name
+
     # Initialize our Trainer
     trainer = NLPSeq2SeqTrainer(
         model=model,
@@ -688,7 +691,6 @@ def main():
     )
     num_beams = data_args.num_beams if data_args.num_beams is not None else training_args.generation_num_beams
 
-    metric_name = optim_args.metric_name
     if optim_args.tune:
 
         if not training_args.do_eval:

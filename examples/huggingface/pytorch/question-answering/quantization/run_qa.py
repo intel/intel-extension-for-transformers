@@ -632,6 +632,9 @@ def main():
     def compute_metrics(p: EvalPrediction):
         return metric.compute(predictions=p.predictions, references=p.label_ids)
 
+    metric_name = optim_args.metric_name
+    training_args.metric_for_best_model = metric_name
+
     # Initialize our Trainer
     trainer = QuestionAnsweringTrainer(
         model=model,
@@ -645,7 +648,6 @@ def main():
         compute_metrics=compute_metrics,
     )
 
-    metric_name = optim_args.metric_name
     calib_dataloader = trainer.get_eval_dataloader()
 
     if optim_args.tune:

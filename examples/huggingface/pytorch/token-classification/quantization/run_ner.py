@@ -571,6 +571,8 @@ def main():
                 "accuracy": results["overall_accuracy"],
             }
 
+    metric_name = optim_args.metric_name
+    training_args.metric_for_best_model = metric_name
     # Initialize our Trainer
     trainer = NLPTrainer(
         model=model,
@@ -581,7 +583,6 @@ def main():
         data_collator=data_collator,
         compute_metrics=compute_metrics,
     )
-    metric_name = optim_args.metric_name
 
     if optim_args.tune:
 

@@ -45,6 +45,18 @@ function run_tuning {
     elif [ "${topology}" = "bert_base_swag_dynamic" ]; then
         model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
         approach="PostTrainingDynamic"
+    elif [ "${topology}" = "bert_base_swag_qat" ]; then
+        model_name_or_path="ehdwns1516/bert-base-uncased_SWAG"
+        approach="QuantizationAwareTraining"
+        extra_cmd=$extra_cmd" --learning_rate 1e-5 \
+                   --num_train_epochs 6 \
+                   --eval_steps 100 \
+                   --save_steps 100 \
+                   --greater_is_better True \
+                   --load_best_model_at_end True \
+                   --evaluation_strategy steps \
+                   --save_strategy steps \
+                   --save_total_limit 1"
     fi
 
     python -u ./run_swag.py \

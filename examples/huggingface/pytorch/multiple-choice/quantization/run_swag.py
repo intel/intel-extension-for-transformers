@@ -448,6 +448,13 @@ def main():
         preds = np.argmax(predictions, axis=1)
         return {"accuracy": (preds == label_ids).astype(np.float32).mean().item()}
 
+    metric_name = (
+        optim_args.metric_name
+        if optim_args.metric_name is not None
+        else "eval_accuracy"
+    )
+    training_args.metric_for_best_model = metric_name
+
     # Initialize our Trainer
     trainer = NLPTrainer(
         model=model,
@@ -457,12 +464,6 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
-    )
-
-    metric_name = (
-        optim_args.metric_name
-        if optim_args.metric_name is not None
-        else "eval_accuracy"
     )
 
     if optim_args.tune:

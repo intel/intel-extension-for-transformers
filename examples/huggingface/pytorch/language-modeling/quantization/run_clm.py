@@ -541,6 +541,9 @@ def main():
             preds = preds[:, :-1].reshape(-1)
             return metric.compute(predictions=preds, references=labels)
 
+    metric_name = optim_args.metric_name
+    training_args.metric_for_best_model = metric_name
+
     # Initialize our Trainer
     trainer = NLPTrainer(
         model=model,
@@ -555,7 +558,6 @@ def main():
         if training_args.do_eval and not is_torch_tpu_available()
         else None,
     )
-    metric_name = optim_args.metric_name
 
     if optim_args.tune:
 

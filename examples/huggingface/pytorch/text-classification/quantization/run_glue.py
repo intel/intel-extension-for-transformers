@@ -504,17 +504,6 @@ def main():
     else:
         data_collator = None
 
-    # Initialize our Trainer
-    trainer = NLPTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset if training_args.do_train else None,
-        eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics=compute_metrics,
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-    )
-
     metric_name = (
         optim_args.metric_name
         if optim_args.metric_name is not None
@@ -526,6 +515,18 @@ def main():
             if data_args.task_name == "cola"
             else "accuracy"
         )
+    )
+    training_args.metric_for_best_model = metric_name
+
+    # Initialize our Trainer
+    trainer = NLPTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset if training_args.do_train else None,
+        eval_dataset=eval_dataset if training_args.do_eval else None,
+        compute_metrics=compute_metrics,
+        tokenizer=tokenizer,
+        data_collator=data_collator,
     )
 
     if optim_args.tune:

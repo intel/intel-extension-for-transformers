@@ -25,4 +25,4 @@ run run_benchmark.sh
 
 |Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---
-|imagenet-1k|google/vit-base-patch16-224| ✅| ✅| N/✅|
+|imagenet-1k|google/vit-base-patch16-224| ✅| ✅| N/A|

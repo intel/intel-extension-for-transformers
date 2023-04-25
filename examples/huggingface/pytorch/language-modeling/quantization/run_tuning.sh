@@ -56,6 +56,21 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="EleutherAI/gpt-neo-125M"
         approach="PostTrainingDynamic"
+    elif [ "${topology}" = "gpt_neo_clm_qat" ]; then
+        script="run_clm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="EleutherAI/gpt-neo-125M"
+        approach="QuantizationAwareTraining"
+        extra_cmd=$extra_cmd" --learning_rate 1e-5 \
+                   --num_train_epochs 6 \
+                   --eval_steps 100 \
+                   --save_steps 100 \
+                   --greater_is_better True \
+                   --load_best_model_at_end True \
+                   --evaluation_strategy steps \
+                   --save_strategy steps \
+                   --save_total_limit 1"
     elif [ "${topology}" = "gptj_clm_static" ]; then
         script="run_clm.py"
         DATASET_NAME="wikitext"
@@ -79,6 +94,22 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="bert-base-uncased"
         approach="PostTrainingStatic"
+    elif [ "${topology}" = "bert_mlm_qat" ]; then
+        script="run_mlm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="bert-base-uncased"
+        approach="QuantizationAwareTraining"
+        extra_cmd=$extra_cmd" --learning_rate 1e-5 \
+                   --num_train_epochs 6 \
+                   --eval_steps 100 \
+                   --save_steps 100 \
+                   --greater_is_better True \
+                   --load_best_model_at_end True \
+                   --evaluation_strategy steps \
+                   --save_strategy steps \
+                   --metric_for_best_model accuracy \
+                   --save_total_limit 1"
     elif [ "${topology}" = "bert_mlm_dynamic" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
@@ -91,6 +122,22 @@ function run_tuning {
         DATASET_CONFIG_NAME="wikitext-2-raw-v1"
         model_name_or_path="xlnet-base-cased"
         approach="PostTrainingStatic"
+    elif [ "${topology}" = "xlnet_plm_qat" ]; then
+        script="run_plm.py"
+        DATASET_NAME="wikitext"
+        DATASET_CONFIG_NAME="wikitext-2-raw-v1"
+        model_name_or_path="xlnet-base-cased"
+        approach="QuantizationAwareTraining"
+        extra_cmd=$extra_cmd" --learning_rate 1e-5 \
+                   --num_train_epochs 6 \
+                   --eval_steps 100 \
+                   --save_steps 100 \
+                   --greater_is_better True \
+                   --load_best_model_at_end True \
+                   --evaluation_strategy steps \
+                   --save_strategy steps \
+                   --metric_for_best_model accuracy \
+                   --save_total_limit 1"
     elif [ "${topology}" = "xlnet_plm_dynamic" ]; then
         script="run_plm.py"
         DATASET_NAME="wikitext"

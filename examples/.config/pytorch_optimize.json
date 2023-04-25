@@ -20,6 +20,27 @@
       }
     }
   },
+  "gpt_neo_clm_qat": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gpt_neo_clm_qat",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gpt_neo_clm_qat",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "bloom_text_static": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune":{
@@ -146,6 +167,27 @@
       }
     }
   },
+  "bert_mlm_qat": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_mlm_qat",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_mlm_qat",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "bert_mlm_dynamic": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization/",
     "tune": {
@@ -180,6 +222,27 @@
       "cmd": "bash run_benchmark.sh",
       "params": {
         "topology": "xlnet_plm_static",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "xlnet_plm_qat": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization/",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "xlnet_plm_qat",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "xlnet_plm_qat",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -294,6 +357,27 @@
       }
     }
   },
+  "bert_base_swag_qat": {
+    "working_dir": "huggingface/pytorch/multiple-choice/quantization/",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bert_base_swag_qat",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bert_base_swag_qat",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "bert_base_swag_dynamic": {
     "working_dir": "huggingface/pytorch/multiple-choice/quantization/",
     "tune": {
@@ -328,6 +412,27 @@
       "cmd": "bash run_benchmark.sh",
       "params": {
         "topology": "distilbert_base_squad_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distilbert_base_squad_qat": {
+    "working_dir": "huggingface/pytorch/question-answering/quantization/",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_base_squad_qat",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_base_squad_qat",
         "mode": "accuracy",
         "batch_size": "64",
         "iters": "100",
@@ -811,6 +916,27 @@
       "cmd": "bash run_benchmark.sh",
       "params": {
         "topology": "distilbert_base_ner_static",
+        "mode": "accuracy",
+        "batch_size": "64",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "distilbert_base_ner_qat": {
+    "working_dir": "huggingface/pytorch/token-classification/quantization/",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "distilbert_base_ner_qat",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "distilbert_base_ner_qat",
         "mode": "accuracy",
         "batch_size": "64",
         "iters": "100",

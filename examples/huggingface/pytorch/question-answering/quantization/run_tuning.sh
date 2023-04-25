@@ -57,6 +57,19 @@ function run_tuning {
         DATASET_NAME="squad"
         model_name_or_path="distilbert-base-uncased-distilled-squad"
         approach="PostTrainingDynamic"
+    elif [ "${topology}" = "distilbert_base_squad_qat" ]; then
+        DATASET_NAME="squad"
+        model_name_or_path="distilbert-base-uncased-distilled-squad"
+        approach="QuantizationAwareTraining"
+        extra_cmd=$extra_cmd" --learning_rate 1e-5 \
+                   --num_train_epochs 6 \
+                   --eval_steps 100 \
+                   --save_steps 100 \
+                   --greater_is_better True \
+                   --load_best_model_at_end True \
+                   --evaluation_strategy steps \
+                   --save_strategy steps \
+                   --save_total_limit 1"
     elif [ "${topology}" = "bert_large_SQuAD_static" ]; then
         DATASET_NAME="squad"
         model_name_or_path="bert-large-uncased-whole-word-masking-finetuned-squad"
