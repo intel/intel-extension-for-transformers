@@ -38,6 +38,7 @@ Submodules
    generate_sequence/index.rst
    innerproductwithbiasgelu/index.rst
    innerproductwithslice/index.rst
+   innerproductwithswish/index.rst
    input_data/index.rst
    input_file/index.rst
    insert_bf16_node/index.rst
@@ -48,6 +49,10 @@ Submodules
    layer_norm/index.rst
    layer_norm_with_reduce_mean/index.rst
    layer_norm_with_transpose/index.rst
+   llama_embeding/index.rst
+   llama_matmulwithtranspose/index.rst
+   llama_postprocess/index.rst
+   llama_rotary_pos_emb/index.rst
    lower_all_tuples/index.rst
    matmul_with_bias/index.rst
    matmul_with_bias_add/index.rst
@@ -78,6 +83,7 @@ Submodules
    resnetBlock_instancenormReshapeFromConv/index.rst
    resnetBlock_instancenormReshapeFromdiv/index.rst
    restore_hidden_states_in_length_adaptive_update_indices/index.rst
+   rms_norm/index.rst
    rotary_pos_emb/index.rst
    slicemask/index.rst
    stableDiffusion_ReshapeFusion/index.rst
