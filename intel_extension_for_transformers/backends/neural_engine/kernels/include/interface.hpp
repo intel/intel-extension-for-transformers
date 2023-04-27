@@ -28,6 +28,7 @@
 #include "kernel_cache.hpp"
 #include "utils.hpp"
 #include "vtune_wrapper.hpp"
+#include "exposed_enum.hpp"
 #include "kernels/sparse_data.hpp"
 
 namespace jd {
@@ -130,6 +131,13 @@ class SPARSE_API_ eltwiseop_desc : public kernel_desc_proxy {
   virtual ~eltwiseop_desc() {}
 };
 
+class SPARSE_API_ groupnorm_desc : public kernel_desc_proxy {
+ public:
+  groupnorm_desc() {}
+  explicit groupnorm_desc(const operator_desc& op_desc) : kernel_desc_proxy(op_desc) {}
+  virtual ~groupnorm_desc() {}
+};
+
 class SPARSE_API_ layernorm_ba_desc : public kernel_desc_proxy {
  public:
   layernorm_ba_desc() {}
@@ -228,6 +236,13 @@ class SPARSE_API_ eltwiseop : public kernel_proxy {
   eltwiseop() {}
   explicit eltwiseop(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
   virtual ~eltwiseop() {}
+};
+
+class SPARSE_API_ groupnorm : public kernel_proxy {
+ public:
+  groupnorm() {}
+  explicit groupnorm(const kernel_desc_proxy& kdp) : kernel_proxy(kdp) {}
+  virtual ~groupnorm() {}
 };
 
 class SPARSE_API_ layernorm_ba : public kernel_proxy {

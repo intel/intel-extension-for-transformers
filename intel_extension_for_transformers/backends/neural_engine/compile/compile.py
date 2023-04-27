@@ -50,21 +50,22 @@ class autocast:
 
 
 def _config_validation(config):
-    """The validation of the input config."""
+    """The validation of the pattern config."""
     if config == None:
         return None
 
-    import yaml
+    # the config is a dict or text file.
+    if isinstance(config, dict) != True:
+        with open(config, 'r') as conf_file:
+            import yaml
+            config = yaml.safe_load(conf_file)
+
     from schema import Schema
-
-    with open(config, 'r') as conf_file:
-        conf = yaml.safe_load(conf_file)
-
     conf_schema = Schema({
-        'pattern_switch': Schema({str: bool}, error='You should provide correct fused_patterns.')
+        'pattern_switch': Schema({str: bool}, error='The format of the pattern config is wrong.')
     })
 
-    return conf_schema.validate(conf)
+    return conf_schema.validate(config)
 
 
 def start_pipeline(model, config=None):

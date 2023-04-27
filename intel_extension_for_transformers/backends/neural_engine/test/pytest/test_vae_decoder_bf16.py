@@ -17,7 +17,7 @@
 
 import unittest
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.backends.neural_engine.compile import compile, autocast
 import numpy as np
 import os
 import sys
@@ -29,7 +29,64 @@ def is_win():
     return sys.platform.startswith('win')
 
 
+vae_decoder_pattern_config = {
+    'pattern_switch': {
+        # General Pattern
+        'PaddingSequence': False,
+        'AttentionReshape': False,
+        'QKVReshape': False,
+        'ReshapeFusion': False,
+        'InsertBF16Node': False,
+        'OperatorAdaptor': False,
+
+        # transpose_int8
+        'QKVMerge': False,
+
+        # 'TextEncoder
+        'TextEncoder_WordEmbedding': False,
+        'TextEncoder_QReshape': False,
+        'TextEncoder_KVReshape': False,
+        'TextEncoder_AttentionMaskAddReshape': False,
+        'TextEncoder_SoftmaxReshape': False,
+        'TextEncoder_MulReshape': False,
+        'TextEncoder_AttentionReshape': False,
+        'TextEncoder_CasualAttentionMask': False,
+
+        # for unet and vae decoder
+        'GroupNorm': True,
+
+        # vae deocder & Transformer2Dmodel
+        'AttentionBlock_Resize2Gather': True,
+        'AttentionBlock_QKVPreReshape': True,
+        'AttentionBlock_AttentionMaskAddReshape': True,
+        'AttentionBlock_ConstantOfShapeWithMul': True,
+        'Transformer2Dmodel_GetSampleBatch': True,
+        'Transformer2Dmodel_SampleSlice': True,
+        'Transformer2Dmodel_EncoderHiddenStatesReshape': True,
+        'Transformer2Dmodel_ConstantOfShapeWithMul': True,
+        'Transformer2Dmodel_QKVPreReshape': True,
+        'Transformer2Dmodel_QKVReshape': True,
+        'AttentionBlock_QKVReshape': True,
+        'Transformer2Dmodel_QKVReshapeTo4D': False,
+        'Transformer2Dmodel_AttentionMaskAddReshape': True,
+        'Transformer2Dmodel_FFNInputSlice': True,
+        'Transformer2Dmodel_FFNInputSlice_1': True,
+        'Transformer2DModel_UpBlockResize': True,
+
+        # for all stable diffusion models
+        'StableDiffusion_bf16Convert': True,
+        'StableDiffusion_ReshapeFusion': True,
+
+        # MHA
+        'TorchInsertBF16Node': False,
+        'StableDiffusion_MHAReshape': True,
+        'StableDiffusion_MHA': False,
+    }
+}
+
+
 class TestVaeDecoderBF16(unittest.TestCase):
+
     @classmethod
     def setUpClass(self):
         pass
@@ -43,18 +100,19 @@ class TestVaeDecoderBF16(unittest.TestCase):
         root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/vae_decoder_bf16/'
         if is_win():
             root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
-        model_dir = root_dir + 'bf16-model.onnx'
-        pattern_config = root_dir + 'pattern_config'
+        model_dir = root_dir + 'model.onnx'
         self.assertTrue(os.path.exists(model_dir), 'model is not found, please set your own model path!')
 
-        graph = compile(model_dir, config=pattern_config)
+        with autocast('bf16'):
+            graph = compile(model_dir, config=vae_decoder_pattern_config)
         input_0_path = root_dir + 'latent_sample.pt'
         inputs_0 = torch.load(input_0_path)
 
         output = graph.inference([inputs_0])
 
         # onnxruntime
-        model_dir = root_dir + 'model.onnx'
+        fp32_model_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/vae_decoder_fp32/'
+        model_dir = fp32_model_dir + 'model.onnx'
         session = ort.InferenceSession(model_dir)
         x = torch.load(input_0_path).numpy()
 

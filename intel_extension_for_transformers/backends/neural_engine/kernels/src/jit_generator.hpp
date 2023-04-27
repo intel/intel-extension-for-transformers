@@ -121,6 +121,26 @@ class jit_generator : public Xbyak::CodeGenerator {
     vpslld(zmm, zmm, 0x10);
   }
 
+  enum op_t { sum, max };
+
+  void perform_op(Zmm v, Zmm vtmp, op_t op) {
+    if (op == op_t::max)
+      vpmaxsd(v, v, vtmp);
+    else if (op == op_t::sum)
+      vaddps(v, v, vtmp);
+  }
+
+  void get_horizontal_op(const Zmm& v, const Zmm& vtmp, op_t op) {
+    vshuff32x4(vtmp, v, v, 0x4E);  // 256-bit shuffle
+    perform_op(v, vtmp, op);
+    vshuff32x4(vtmp, v, v, 0xB1);  // 128/256-bit shuffle
+    perform_op(v, vtmp, op);
+    vshufps(vtmp, v, v, 0x4E);  // 64/128-bit shuffle
+    perform_op(v, vtmp, op);
+    vshufps(vtmp, v, v, 0xB1);  // 32/64-bit shuffle
+    perform_op(v, vtmp, op);
+  }
+
   void fp32_cvt_bf16(Zmm zmm) {
     if (isa_available(avx512_core_bf16)) {
       vcvtneps2bf16(Ymm(zmm.getIdx()), zmm);

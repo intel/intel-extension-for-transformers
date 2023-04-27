@@ -21,19 +21,20 @@ import diffusion_utils
 import torch
 import time
 from pytorch_fid import fid_score
+from diffusers import DPMSolverMultistepScheduler
 import os
 
 
 def benchmark(pipe, neural_engine_graph):
-    print('benchmark start...')
-    warmup = 3
-    total = 7
+    print('Benchmark start...')
+    warmup = 4
+    total = 8
     total_time = 0
     with torch.no_grad():
         prompt = "a photo of an astronaut riding a horse on mars"
         for i in range(total):
             start2 = time.time()
-            pipe(prompt, engine_graph=neural_engine_graph).images[0]
+            pipe(prompt, engine_graph=neural_engine_graph, num_inference_steps=20).images[0]
             end2 = time.time()
             if i >= warmup:
                 total_time += end2 - start2
@@ -42,21 +43,24 @@ def benchmark(pipe, neural_engine_graph):
     print("Average Throughput: {:.5f} samples/sec".format((total - warmup) / (total_time)))
 
 
-def accuracy(pipe, original_pipe, neural_engine_graph):
+def accuracy(pipe, original_pipe, neural_engine_graph, generator):
     with torch.no_grad():
         prompt = "a photo of an astronaut riding a horse on mars"
 
-        engine_image = pipe(prompt, engine_graph=neural_engine_graph).images[0]
-        engine_image.save("astronaut_rides_horse_from_engine.png")
-
-        pytorch_image = original_pipe(prompt).images[0]
-        pytorch_image.save("astronaut_rides_horse_from_pytorch.png")
+        save_time = time.strftime("_%H_%M_%S")
+        # Engine
+        engine_image = pipe(prompt, engine_graph=neural_engine_graph, generator=generator).images[0]
+        engine_image.save("astronaut_rides_horse_from_engine" + save_time + '.png')
 
         engine_image_dir = "engine_image"
         os.makedirs(engine_image_dir, exist_ok=True)
         if os.path.isfile(os.path.join(engine_image_dir, "astronaut_rides_horse.png")):
             os.remove(os.path.join(engine_image_dir, "astronaut_rides_horse.png"))
         engine_image.save(engine_image_dir + "/astronaut_rides_horse.png")
+
+        # Pytorch
+        pytorch_image = original_pipe(prompt, generator=generator).images[0]
+        pytorch_image.save("astronaut_rides_horse_from_pytorch" + save_time + '.png')
 
         pytorch_image_dir = "pytorch_image"
         os.makedirs(pytorch_image_dir, exist_ok=True)
@@ -69,10 +73,12 @@ def accuracy(pipe, original_pipe, neural_engine_graph):
         return fid
 
 
-def executor(pipe, neural_engine_graph, prompt, output_picture_name):
-    print('executor start...')
-    image = pipe(prompt, engine_graph=neural_engine_graph).images[0]
-    image.save(output_picture_name)
+def executor(pipe, neural_engine_graph, prompt, name, size):
+    print('Executor start...')
+    for i in range(size):
+        save_time = time.strftime("_%H_%M_%S")
+        image = pipe(prompt, engine_graph=neural_engine_graph).images[0]
+        image.save(name + str(i) + save_time + '.png')
     return
 
 
@@ -82,24 +88,23 @@ def parse_args():
                         default="CompVis/stable-diffusion-v1-4",
                         type=str,
                         help="Path to pretrained model or model identifier from huggingface.co/models.")
-    parser.add_argument("--ir_path", default="./ir", type=str, help="Neural engine IR path.")
     parser.add_argument(
         "--prompt",
         default="a photo of an astronaut riding a horse on mars",
         type=str,
         help="The input of the model, like: 'a photo of an astronaut riding a horse on mars'.")
-    parser.add_argument("--output_picture_name",
-                        default="astronaut_rides_horse.png",
-                        type=str,
-                        help="output picture name.")
-    parser.add_argument("--mode", type=str,
-                        help="Benchmark mode of latency or accuracy.")
+    parser.add_argument("--ir_path", default="./ir", type=str, help="Neural engine IR path.")
+    parser.add_argument("--name", default="output_image", type=str, help="output image name.")
+    parser.add_argument("--mode", type=str, help="Benchmark mode of latency or accuracy.")
+    parser.add_argument("--seed", type=int, default=666, help="random seed")
+    parser.add_argument("--size", type=int, default=1, help="the number of output images")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model)
+    dpm = DPMSolverMultistepScheduler.from_pretrained(args.input_model, subfolder="scheduler")
+    pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model, schedule=dpm)
     neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path)
 
     if args.mode == "latency":
@@ -108,11 +113,12 @@ def main():
 
     if args.mode == "accuracy":
         from diffusers import StableDiffusionPipeline
+        generator = torch.Generator("cpu").manual_seed(args.seed)
         original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
-        accuracy(pipe, original_pipe, neural_engine_graph)
+        accuracy(pipe, original_pipe, neural_engine_graph, generator)
         return
 
-    executor(pipe, neural_engine_graph, args.prompt, args.output_picture_name)
+    executor(pipe, neural_engine_graph, args.prompt, args.name, args.size)
 
     return
 

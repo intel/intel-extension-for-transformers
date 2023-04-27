@@ -33,6 +33,7 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_spmm_vnni_kernel.cpp
     test_spmm_avx512f_kernel.cpp
     test_eltwiseop_kernel.cpp
+    test_groupnorm_kernel.cpp
     test_layernorm_ba_kernel.cpp
     test_gather_kernel.cpp
     test_matmul_avx512f_p2031_p2013.cpp

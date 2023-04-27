@@ -31,6 +31,7 @@ EXECUTOR_TYPE = {
     "MatMulWithBiasTanh": "InnerProduct",
     "MatMulWithBiasRelu": "InnerProduct",
     "MatMulWithBiasSigmoid": "InnerProduct",
+    "MatMulWithBiasSwish": "InnerProduct",
     "Matmul": "Matmul",
     "Einsum": "Matmul",
     "MatMul": "InnerProduct",
@@ -118,6 +119,10 @@ pattern_default_setting = {
     # for all stable diffusion models
     'StableDiffusion_bf16Convert': False,
     'StableDiffusion_ReshapeFusion': False,
+
+    # MHA for the stable diffusion
+    'StableDiffusion_MHAReshape': False,
+    'StableDiffusion_MHA': False,
     
     #GPT-J
     'TorchEmbedding': True,

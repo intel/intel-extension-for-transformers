@@ -60,7 +60,7 @@ supported_patterns = [
     'TextEncoder_AttentionReshape',
     'TextEncoder_CasualAttentionMask',
 
-    #vae decoder & Transformer2Dmodel
+    #Vae decoder & Transformer2Dmodel
     'AttentionBlock_Resize2Gather',
     'GroupNorm',
     'AttentionBlock_QKVPreReshape',
@@ -80,18 +80,22 @@ supported_patterns = [
     'Transformer2Dmodel_FFNInputSlice_1',
     'Transformer2DModel_UpBlockResize',
 
+    # General
     'QKVReshape',
     'DecoderAttnReshape',
     'ConvReshape',
     'AddClsToken',
     'TransposeBatchMatMul',
     'Gelu',
+
     'MatMulWithBiasGelu',
     'MatMulWithBiasAdd',
     'AddEmbeddings',
     'MatMulWithBiasTanh',
     'MatMulWithBiasRelu',
     'MatMulWithBiasSigmoid',
+    'MatMulWithBiasUnsqueeze',
+
     "RestoreHiddenStatesInLengthAdaptiveUpdateIndices",
     "AttentionOutputLayerNormLengthAdaptiveExpandIndices",
     "ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements",
@@ -130,8 +134,10 @@ supported_patterns = [
     'ReshapeFusion',
     'StableDiffusion_bf16Convert',
     'StableDiffusion_ReshapeFusion',
-    'OperatorAdaptor',
+    'StableDiffusion_MHAReshape',
+    'StableDiffusion_MHA',
 
+    'OperatorAdaptor',
     'MultiHeadAttention',
     'OutputData',
     'QuantizedGraphDtypeRefactor',

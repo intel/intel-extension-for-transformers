@@ -20,6 +20,7 @@ from .pattern import Pattern, pattern_registry
 from collections import OrderedDict
 from .. import graph_utils as util
 from .. import logger
+from .subgraph_matcher import EXECUTOR_TYPE
 
 
 @pattern_registry(pattern_type='MatMulWithBiasSigmoid')
@@ -33,12 +34,33 @@ class MatMulWithBiasSigmoid(Pattern):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'MatMulWithBiasSigmoid': [
-                # unet
+                # unet inner_product + swish
                 {
                     'patterns': {
                         'in': [[(0, 'MatMulWithBias'), (1, ['Sigmoid']), (2, 'Mul')]],
+                        'out': [[(0, 'MatMulWithBiasSwish')]]
                     },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 2
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            0: [0]
+                        }, {
+                            0: [1]
+                        }, {
+                            0: [2]
+                        }], [[0, 1, 2], 3]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            2: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [0, 1, 2]
                 },
+                # inner_product + sigmoid
                 {
                     'patterns': {
                         'in': [[(0, 'MatMulWithBias'), (1, ['Sigmoid'])]],
@@ -62,7 +84,7 @@ class MatMulWithBiasSigmoid(Pattern):
                             1: [0]
                         }], [[0], 1]]
                     },
-                    'returns': [0]
+                    'returns': [0, 1]
                 },
             ]
         }
@@ -75,23 +97,19 @@ class MatMulWithBiasSigmoid(Pattern):
                     attr['src0_perm'] = ret_old_nodes[i][0].attr['src0_perm']
                 if 'src1_perm' in ret_old_nodes[i][0].attr.keys():
                     attr['src1_perm'] = ret_old_nodes[i][0].attr['src1_perm']
-                attr['append_op'] = 'sigmoid'
+                op_t_list = [n.op_type for n in ret_old_nodes[i]]
+                op_t_list[0] = EXECUTOR_TYPE.get(op_t_list[0], op_t_list[0])
+                if op_t_list == ['InnerProduct', 'Sigmoid']:
+                    attr['append_op'] = 'sigmoid'
+                if op_t_list == ['InnerProduct', 'Sigmoid', 'Mul']:
+                    attr['append_op'] = 'swish'
                 model.nodes[mat_node_idx].attr = attr
 
-        # for unet
-        pattern = pattern_mapping_config['MatMulWithBiasSigmoid'][0]['patterns']['in']
-        patterns_nodes_name = util.search_pattern(pattern, model)
-        logger.info('MatMulWithBiasSigmoid skip...')
-        logger.debug('MatMulWithBiasSigmoid = {}'.format(patterns_nodes_name))
-        if len(patterns_nodes_name) != 0:
-            return model
-
-        pattern_dict = pattern_mapping_config['MatMulWithBiasSigmoid'][1]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithBiasSigmoid", pattern_dict,
-                                                                    model)
-        if len(new_node_names) != 0:
-            _set_attr(new_node_names, ret_old_nodes, model)
-
-            return model
+        for i in range(len(pattern_mapping_config['MatMulWithBiasSigmoid'])):
+            pattern_dict = pattern_mapping_config['MatMulWithBiasSigmoid'][i]
+            model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithBiasSigmoid",
+                                                                        pattern_dict, model)
+            if len(new_node_names) != 0:
+                _set_attr(new_node_names, ret_old_nodes, model)
 
         return model

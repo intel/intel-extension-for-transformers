@@ -279,12 +279,8 @@ class Profiling_ {
         ProfilingTensors(fp, ots);
         // weight shape, sparse enable, zero ratio
         ProfilingWeights(fp, op);
-        // operator average iteration latency(exclude warm up)
-        float average_latency =
-            op->latency().size() <= warm_up
-                ? accumulate(op->latency().begin(), op->latency().end(), 0.0) / (op->latency().size())
-                : accumulate(op->latency().begin() + warm_up, op->latency().end(), 0.0) /
-                      (op->latency().size() - warm_up);
+        // record the last infernece latency as profiling data
+        float average_latency = *(op->latency().end() - 1);
         fprintf(fp, "%.3f, ", average_latency);
         // total latency
         total_latency += average_latency;

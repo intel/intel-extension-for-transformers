@@ -275,6 +275,8 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
     po.append_eltwise(dst_scales[0], algorithm::eltwise_linear, 1., zero_point);
   }
   if (append_eltwise_ || append_sum_) attr.set_post_ops(po);
+
+  // set conv attr to scratchpad_mode
   attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
   attr_ = attr;
 
@@ -543,7 +545,13 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
 
   convolution_pd_ = dnnl::convolution_forward::primitive_desc(convolution_d, attr_, eng_);
   memory::desc scratchpad_md = convolution_pd_.scratchpad_desc();
-  scratchpad_ = MemoryAllocator::get().GetMemory(scratchpad_md.get_size(), 1);
+  if (scratchpad_) {
+    free(scratchpad_);
+    scratchpad_ = nullptr;
+  }
+
+  scratchpad_ = reinterpret_cast<void*>(
+    aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
   memory scratchpad_m = memory(scratchpad_md, eng_, scratchpad_);
   memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
 

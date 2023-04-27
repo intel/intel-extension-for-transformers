@@ -73,19 +73,43 @@ class StableDiffusion_ReshapeFusion(Pattern):
                 if pre_node.op_type in EXECUTOR_TYPE \
                    and (EXECUTOR_TYPE[pre_node.op_type] == "InnerProduct" or \
                         EXECUTOR_TYPE[pre_node.op_type] == "Matmul"):
+                    # Multiple dest_ops will cause node.input_tensors[1] left in the output.
+                    if len(node.input_tensors[1].dest_op) != 1:
+                        continue
+
                     pre_node.attr['reshape'] = node.attr['dst_shape']
                     pre_node.output_tensors[0] = node.output_tensors[0]
                     pre_node.output_tensors[0].source_op = [pre_node.name]
+                    if 'dims' in node.attr:
+                        pre_node.attr['reshape_dims'] = str(node.attr['dims'])
+                        pre_node.input_tensors.append(node.input_tensors[1])
+                                        
                     if node.output_tensors[0].dest_op != []:
                         next_node = model.get_node_by_name(node.output_tensors[0].dest_op[0])
                         for input_tensor in next_node.input_tensors:
                             if input_tensor.name == node.output_tensors[0].name:
                                 input_tensor.source_op = [pre_node.name]
-                    if 'dims' in node.attr:
-                        pre_node.attr['reshape_dims'] = str(node.attr['dims'])
-                        pre_node.input_tensors.append(node.input_tensors[1])
 
                     remove_node_name.append(node.name)
+
+        model.remove_nodes(remove_node_name)
+
+        # fuse transpose nodes to previous conv
+        remove_node_name = []
+        for node in model.nodes:
+            if node.op_type == "Transpose" and node.input_tensors[0].source_op:
+                pre_node = model.get_node_by_name(node.input_tensors[0].source_op[0])
+                if pre_node.op_type in EXECUTOR_TYPE and (EXECUTOR_TYPE[pre_node.op_type] == "Convolution"):
+                    pre_node.attr['dst_perm'] = node.attr['dst_perm']
+                    if len(pre_node.output_tensors[0].dest_op) == 1:
+                        pre_node.output_tensors[0] = node.output_tensors[0]
+                        pre_node.output_tensors[0].source_op = [pre_node.name]
+                        if node.output_tensors[0].dest_op != []:
+                            next_node = model.get_node_by_name(node.output_tensors[0].dest_op[0])
+                            for input_tensor in next_node.input_tensors:
+                                if input_tensor.name == node.output_tensors[0].name:
+                                    input_tensor.source_op = [pre_node.name]
+                        remove_node_name.append(node.name)
 
         model.remove_nodes(remove_node_name)
 

@@ -37,7 +37,11 @@ using dnnl::prop_kind;
 class ConvolutionOperator : public Operator {
  public:
   explicit ConvolutionOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~ConvolutionOperator() { MemoryAllocator::get().UnrefMemory(scratchpad_); }
+  virtual ~ConvolutionOperator() {
+    if (scratchpad_) {
+      free(scratchpad_);
+    }
+  }
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

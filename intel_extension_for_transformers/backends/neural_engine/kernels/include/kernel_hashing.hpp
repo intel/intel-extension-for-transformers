@@ -105,6 +105,10 @@ class hash_t {
         break;
       case kernel_kind::transpose_mha:
         break;
+      case kernel_kind::groupnorm:
+        hash_combine(seed, op_attrs["groups"]);
+        hash_combine(seed, op_attrs["eps"]);
+        break;
       case kernel_kind::layernorm_ba:
         hash_combine(seed, op_attrs["split_output"]);
         hash_combine(seed, op_attrs["matrix_shape"]);

@@ -411,7 +411,7 @@ void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& 
       zmm_tb_allocate.insert(&zmm_aux0);
       mask_tb_allocate.insert(&k_mask);
     }
-
+    
     if (i.op_alg == postop_alg::low_precision_exp) {
       zmm_tb_allocate.insert(&zmm_aux1);
       zmm_tb_allocate.insert(&zmm_aux2);

@@ -24,6 +24,7 @@ const std::vector<impl_list_item_t> cpu_engine_t::empty_list = {};
 
 DECLARE_IMPL_LIST(sparse_matmul);
 DECLARE_IMPL_LIST(eltwiseop);
+DECLARE_IMPL_LIST(groupnorm);
 DECLARE_IMPL_LIST(layernorm_ba);
 DECLARE_IMPL_LIST(transpose_matmul);
 DECLARE_IMPL_LIST(dynamic_quant_matmul);
@@ -47,6 +48,7 @@ const std::vector<impl_list_item_t>* cpu_engine_t::get_implementation_list(const
   switch (op_desc.kernel_kind()) {
     CASE(sparse_matmul);
     CASE(eltwiseop);
+    CASE(groupnorm);
     CASE(layernorm_ba);
     CASE(layernormalized_spmm);
     CASE(gather);

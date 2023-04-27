@@ -67,13 +67,14 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
                 output_tensor = [
                     Tensor(name=new_node_output_tensor_name,
                            source_op=[new_node_name],
-                           dest_op=[],
+                           dest_op=encoder_hidden_states_tensor.dest_op,
                            dtype=matmul_node.output_tensors[0].dtype)
                 ]
                 new_node = util.construct_node(node_name=new_node_name,
                                                op_type='Reshape',
                                                input_tensors=input_tensors,
                                                output_tensors=output_tensor)
+
                 attr = OrderedDict()
                 attr['dst_shape'] = '-1,768'
                 new_node.attr = attr

@@ -38,6 +38,7 @@ class TestDynamicQuantization(unittest.TestCase):
         pass
 
     def test_dynamic_quantization(self):
+        np.random.seed(1)
         os.environ['GLOG_minloglevel'] = '2'
         graph = Graph()
         input_data_node = OPERATORS['Input']()

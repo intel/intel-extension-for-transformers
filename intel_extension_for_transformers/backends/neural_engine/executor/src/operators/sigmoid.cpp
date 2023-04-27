@@ -18,10 +18,13 @@
 
 namespace executor {
 
+static unordered_map<string, dnnl::memory::data_type> type2mem{
+    {"fp32", dnnl::memory::data_type::f32}, {"s32", dnnl::memory::data_type::f32},
+    {"fp16", dnnl::memory::data_type::f16}, {"u8", dnnl::memory::data_type::u8},
+    {"s8", dnnl::memory::data_type::s8},    {"bf16", dnnl::memory::data_type::bf16}};
+
 void SigmoidOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  if (input[0]->dtype() != "fp32") {
-    LOG(ERROR) << "dtype " << input[0]->dtype() << " is not supported by sigmoid.";
-  }
+  // dnnl sigmoid supports f32 / bf16 / f16 / s32 / s8 / u8
   output[0]->set_dtype(input[0]->dtype());
 }
 
@@ -38,8 +41,8 @@ void SigmoidOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
   memory::dims dst_stride = GetStrides(dst_shape);
 
   // 1.4 Prepare memory descriptors
-  memory::desc src_md(src_shape_origin, memory::data_type::f32, src_stride);
-  memory::desc dst_md(dst_shape, memory::data_type::f32, dst_stride);
+  memory::desc src_md(src_shape_origin, type2mem[input[0]->dtype()], src_stride);
+  memory::desc dst_md(dst_shape, type2mem[output[0]->dtype()], dst_stride);
 
   // 1.5 Set dst tensor shape
   auto& dst_tensor_ptr = output[0];

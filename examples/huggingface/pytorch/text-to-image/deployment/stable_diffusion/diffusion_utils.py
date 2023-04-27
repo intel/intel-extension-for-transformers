@@ -18,6 +18,8 @@
 import inspect
 from typing import Callable, List, Optional, Union
 import torch
+import numpy as np
+import copy
 
 from packaging import version
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
@@ -281,6 +283,9 @@ class StableDiffusionPipeline(DiffusionPipeline):
 
             prompt_embeds = text_encoder_graph.inference([text_input_ids])
             bsz, seq_length = text_input_ids.shape
+            encoder_hidden_state = prompt_embeds['last_hidden_state:0']
+            if encoder_hidden_state.dtype == np.int16:
+                prompt_embeds['last_hidden_state:0'] = bf16_to_fp32(encoder_hidden_state)
             prompt_embeds = torch.from_numpy(prompt_embeds['last_hidden_state:0']).reshape(
                 bsz, seq_length, -1)
 
@@ -335,6 +340,9 @@ class StableDiffusionPipeline(DiffusionPipeline):
             # text_encoder engine inference
             negative_prompt_embeds = text_encoder_graph.inference([uncond_input.input_ids])
             bsz, seq_length = uncond_input.input_ids.shape
+            encoder_hidden_state = negative_prompt_embeds['last_hidden_state:0']
+            if encoder_hidden_state.dtype == np.int16:
+                negative_prompt_embeds['last_hidden_state:0'] = bf16_to_fp32(encoder_hidden_state)
             negative_prompt_embeds = torch.from_numpy(negative_prompt_embeds['last_hidden_state:0']).reshape(
                 bsz, seq_length, -1)
 
@@ -669,3 +677,19 @@ def neural_engine_init(ir_path):
     vae_decoder_graph.graph_init(vae_decoder_conf, vae_decoder_bin)
 
     return [text_encoder_graph, unet_graph, vae_decoder_graph]
+
+def fp32_to_bf16(fp32_np):
+  assert(fp32_np.dtype==np.float32)
+  temp = copy.deepcopy(fp32_np)
+  int32_np = temp.view(dtype=np.int32)
+  int32_np = int32_np >> 16
+  bf16_np = int32_np.astype(np.uint16)
+  return bf16_np
+
+def bf16_to_fp32(bf16_np):
+  assert(bf16_np.dtype==np.int16)
+  temp = copy.deepcopy(bf16_np)
+  int32_np = temp.astype(dtype=np.int32)
+  int32_np = int32_np << 16
+  fp32_np = int32_np.view(np.float32)
+  return fp32_np

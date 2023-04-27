@@ -48,7 +48,7 @@ inline __m512 bf16_load(float* addr) {
 void bf16_sum(int64_t norm_dim_elt_num, int dt_bytewidth, char* src, __m512* zmm_sum_x, __m512* zmm_sum_powx) {
   int64_t i = 0;
   int tail = norm_dim_elt_num % 16;
-  for (int64_t i = 0; i < norm_dim_elt_num / 16; i++) {
+  for (; i < norm_dim_elt_num / 16; i++) {
     __m512 zmm_src = bf16_load(static_cast<float*>(static_cast<void*>((src + i * 16 * dt_bytewidth))));
     SIMD_SUM
   }
@@ -96,14 +96,14 @@ void bf16_norm(int map_size, int dt_bytewidth, int channels_per_group, const flo
   int tail = map_size % 16;
   for (int64_t i = 0; i < channels_per_group; i++) {
     SIMD_NORM_OFFSET
+    int64_t j = 0;
     auto norm = [&] {
-      __m512 zmm_dst = bf16_load(static_cast<float*>(static_cast<void*>((cur_channel_src + i * 16 * dt_bytewidth))));
+      __m512 zmm_dst = bf16_load(static_cast<float*>(static_cast<void*>((cur_channel_src + j * 16 * dt_bytewidth))));
       zmm_dst = _mm512_sub_ps(zmm_dst, *zmm_mean);
       zmm_dst = _mm512_fmadd_ps(zmm_dst, zmm_gamma, zmm_beta);
       auto zmm_shift = _mm512_srli_epi32(_mm512_castps_si512(zmm_dst), 0x10);
       return _mm512_cvtepi32_epi16(zmm_shift);
     };
-    int64_t j = 0;
     for (; j < map_size / 16; j++) {
       auto ymm_bf16 = norm();
       _mm256_storeu_ps(static_cast<float*>(static_cast<void*>((cur_channel_dst + j * 16 * dt_bytewidth))),
@@ -266,6 +266,22 @@ void GroupNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   const vector<int64_t> src_shape = input[0]->shape();
   assert(src_shape.size() > 1);
   output[0]->set_shape(src_shape);
+  auto HW = std::accumulate(src_shape.begin() + 2, src_shape.end(), 1, std::multiplies<int>());
+  if (HW > 1024) mode = parallelC;
+
+  src_desc_ = {src_shape, type2sparsemem_[input[0]->dtype()], jd::format_type::undef};
+  dst_desc_ = {src_shape, type2sparsemem_[output[0]->dtype()], jd::format_type::undef};
+  gamma_desc_ = {{}, jd::data_type::fp32, jd::format_type::undef};
+  beta_desc_ = {{}, jd::data_type::fp32, jd::format_type::undef};
+  vector<jd::tensor_desc> ts_descs = {src_desc_, dst_desc_, gamma_desc_, beta_desc_};
+  std::unordered_map<std::string, std::string> op_attrs_;
+  op_attrs_["eps"] = std::to_string(epsilon_);
+  op_attrs_["groups"] = std::to_string(group_);
+  jd::operator_desc op_desc(jd::kernel_kind::groupnorm, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                            ts_descs, op_attrs_);
+  jd::groupnorm_desc groupnorm_desc(op_desc);
+  groupnorm_ker = jd::groupnorm(groupnorm_desc);
+  work_space = static_cast<float*>(malloc(groupnorm_ker.get_workspace_size()));
 }
 
 void GroupNormOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -278,7 +294,19 @@ void GroupNormOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   const float* beta_data = static_cast<const float*>(beta->data());
   Tensor* dst = output[0];
   float* dst_data = static_cast<float*>(dst->mutable_data());
-  GroupNormParallelG(src_data, gamma_data, beta_data, dst_data, src_shape);
+  std::vector<const void*> rt_data;
+
+  switch (mode) {
+    case parallelC:
+      rt_data = {src->data(), dst->data(), gamma->data(), beta->data(), work_space};
+      groupnorm_ker.execute(rt_data);
+      break;
+    case parallelG:
+      GroupNormParallelG(src_data, gamma_data, beta_data, dst_data, src_shape);
+      break;
+    default:
+      break;
+  }
   this->unref_tensors(input);
 }
 

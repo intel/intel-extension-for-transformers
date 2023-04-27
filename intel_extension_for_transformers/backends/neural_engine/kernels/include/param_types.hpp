@@ -27,6 +27,7 @@ enum class kernel_kind : uint8_t {
   sparse_matmul,
   matmul,
   eltwiseop,
+  groupnorm,
   layernorm_ba,
   layernormalized_spmm,
   transpose_matmul,

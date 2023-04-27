@@ -110,10 +110,10 @@ python export_ir.py --onnx_model=./model/vae_decoder_bf16/bf16-model.onnx --patt
 Python API command as follows:
 ```python
 # FP32 IR
-GLOG_minloglevel=2 python run_executor.py --ir_path=./fp32_ir --mode=performance
+python run_executor.py --ir_path=./fp32_ir --mode=latency
 
 # BF16 IR
-GLOG_minloglevel=2 python run_executor.py --ir_path=./bf16_ir --mode=performance
+python run_executor.py --ir_path=./bf16_ir --mode=latency
 ```
 
 ## 3. Accuracy
@@ -123,10 +123,10 @@ By setting --accuracy to check FID socre.
 Python API command as follows:
 ```python
 # FP32 IR
-GLOG_minloglevel=2 python run_executor.py --ir_path=./fp32_ir --mode=accuracy
+python run_executor.py --ir_path=./fp32_ir --mode=accuracy
 
 # BF16 IR
-GLOG_minloglevel=2 python run_executor.py --ir_path=./bf16_ir --mode=accuracy
+python run_executor.py --ir_path=./bf16_ir --mode=accuracy
 ```
 
 ## 4. Try Text to Image

@@ -72,6 +72,12 @@ void MultiHeadAttentionOperator::MapTensors(const vector<Tensor*>& input, const 
   int input_size = input.size();
   dst_ = output[0];
   switch (input_size) {
+    case 3: {
+      Q_ = input[0];
+      K_ = input[1];
+      V_ = input[2];
+      break;
+    }
     case 5: {
       Q_ = input[0];
       K_ = input[1];
@@ -315,7 +321,9 @@ void MultiHeadAttentionOperator::ReshapeDense(const vector<Tensor*>& input, cons
     ts_descs[jd::mha_dense_io::SRC_K] = {attn_shape, qkv_dtype, qkv_ft};
     ts_descs[jd::mha_dense_io::SRC_V] = {attn_shape, qkv_dtype, qkv_ft};
   }
-  ts_descs[jd::mha_dense_io::MASK] = {{QK_shape[0]}, dt::s32, ft::a};
+  if (att_mask_ != nullptr) {
+    ts_descs[jd::mha_dense_io::MASK] = {{QK_shape[0]}, dt::s32, ft::a};
+  }
   ts_descs[jd::mha_dense_io::DST] = {attn_shape, (dst_->dtype() == "bf16") ? dt::bf16 : dt::u8, qkv_ft};
 
   if (binary_add_mask_ != nullptr) {
@@ -376,18 +384,20 @@ void MultiHeadAttentionOperator::ForwardDense(const vector<Tensor*>& input, cons
     V_data = reinterpret_cast<int8_t*>(V_->mutable_data());
     // for decoder_only transformers, q_seq_len != k_seq_len
     // bs x seq_len x head_num x head_size (Q, K, V)
-    bool decoder = (Q_->shape()[1] != K_->shape()[1]);
-    for (int i = 0; i < att_mask_->shape()[0]; ++i) {
-      if (*(reinterpret_cast<int32_t*>(att_mask_->mutable_data()) + i) != 1) {
-        decoder = false;
-        break;
-      }
-    }
-    if (decoder) {
-      int32_t k_seq_len = K_->shape()[1];
-#pragma omp parallel for
+    if (att_mask_ != nullptr) {
+      bool decoder = (Q_->shape()[1] != K_->shape()[1]);
       for (int i = 0; i < att_mask_->shape()[0]; ++i) {
-        *(reinterpret_cast<int32_t*>(att_mask_->mutable_data()) + i) = k_seq_len;
+        if (*(reinterpret_cast<int32_t*>(att_mask_->mutable_data()) + i) != 1) {
+          decoder = false;
+          break;
+        }
+      }
+      if (decoder) {
+        int32_t k_seq_len = K_->shape()[1];
+#pragma omp parallel for
+        for (int i = 0; i < att_mask_->shape()[0]; ++i) {
+          *(reinterpret_cast<int32_t*>(att_mask_->mutable_data()) + i) = k_seq_len;
+        }
       }
     }
   } else {
@@ -396,13 +406,16 @@ void MultiHeadAttentionOperator::ForwardDense(const vector<Tensor*>& input, cons
     K_data = QKV_data + hidden_size_;
     V_data = QKV_data + 2 * hidden_size_;
   }
-  int32_t* att_mask_data = reinterpret_cast<int32_t*>(att_mask_->mutable_data());
+
   int8_t* dst_data = reinterpret_cast<int8_t*>(dst_->mutable_data());
   const auto workspace = MemoryAllocator::get().GetMemory(mha_dense_.get_workspace_size(), 1);
   rt_data_[jd::mha_dense_io::SRC_Q] = Q_data;
   rt_data_[jd::mha_dense_io::SRC_K] = K_data;
   rt_data_[jd::mha_dense_io::SRC_V] = V_data;
-  rt_data_[jd::mha_dense_io::MASK] = att_mask_data;
+  if (att_mask_ != nullptr) {
+    int32_t* att_mask_data = reinterpret_cast<int32_t*>(att_mask_->mutable_data());
+    rt_data_[jd::mha_dense_io::MASK] = att_mask_data;
+  }
   rt_data_[jd::mha_dense_io::DST] = dst_data;
   rt_data_[jd::mha_dense_io::WORKSPACE] = workspace;
   if (binary_add_mask_ != nullptr) {
