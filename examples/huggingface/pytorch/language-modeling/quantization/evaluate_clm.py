@@ -4,13 +4,14 @@ import time
 import json
 import fnmatch
 import re
-import numpy as np
 import torch
 from datasets import load_dataset
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import intel_extension_for_pytorch as ipex
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model", nargs="?", default="EleutherAI/gpt-j-6b"
@@ -37,12 +38,16 @@ parser.add_argument("--batch_size", default=1, type=int,
                     help="For accuracy measurement only.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
-parser.add_argument("--pad_max_length", default=196, type=int,
+parser.add_argument("--pad_max_length", default=512, type=int,
                     help="Pad input ids to max length.")
+parser.add_argument("--calib_iters", default=512, type=int,
+                    help="calibration iters.")
+parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
+                    "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
+                    help="tasks list for accuracy validation")
 
 args = parser.parse_args()
 calib_size = 1
-
 
 class Evaluator:
     def __init__(self, dataset, tokenizer, batch_size=8, pad_val=1, pad_max=196, is_calib=False):
@@ -116,11 +121,19 @@ class Evaluator:
         print("Latency: ", latency)
         return acc
 
-user_model = AutoModelForCausalLM.from_pretrained(
-    args.model,
-    torchscript=True,  # torchscript will force `return_dict=False` to avoid jit errors
-)
-tokenizer = AutoTokenizer.from_pretrained(args.model)
+if re.search("llama", args.model):
+    from transformers import LlamaForCausalLM, LlamaTokenizer
+    user_model = LlamaForCausalLM.from_pretrained(
+        args.model,
+        torchscript=True,  # torchscript will force `return_dict=False` to avoid jit errors
+    )
+    tokenizer = LlamaTokenizer.from_pretrained(args.model)
+else:
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        torchscript=True,  # torchscript will force `return_dict=False` to avoid jit errors
+    )
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
 
 
 # to channels last
@@ -142,7 +155,7 @@ if args.quantize:
 
     def calib_func(prepared_model):
         for i, calib_input in enumerate(calib_dataloader):
-            if i > 100:
+            if i > args.calib_iters:
                 break
             prepared_model(calib_input[0])
 
@@ -200,19 +213,23 @@ if args.int8 or args.int8_bf16_mixed:
 if args.accuracy_only:
     user_model.eval()
     def eval_func(user_model):
-        from intel_extension_for_transformers.evaluation.lm_evaluation_harness.evaluator import evaluate
+        from intel_extension_for_transformers.evaluation import evaluate
         results = evaluate(
             model="hf-causal",
             model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
             user_model=user_model,
             batch_size=args.batch_size,
-            tasks=["lambada_openai"]
+            tasks=args.tasks,
         )
         dumped = json.dumps(results, indent=2)
         if args.save_accuracy_path:
             with open(args.save_accuracy_path, "w") as f:
                 f.write(dumped)
-        print('Accuracy for lambada_openai is ', results["results"]["lambada_openai"]["acc"])
+        for task_name in args.tasks:
+            if task_name == "wikitext":
+                print("Accuracy for %s is: %s", % task_name, % results["results"][task_name]["word_perplexity"])
+            else:
+                print("Accuracy for %s is: %s", % task_name, % results["results"][task_name]["acc"])
 
     with torch.no_grad(), torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
         eval_func(user_model)

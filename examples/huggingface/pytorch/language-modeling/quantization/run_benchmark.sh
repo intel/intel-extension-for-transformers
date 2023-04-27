@@ -13,6 +13,7 @@ function init_params {
   iters=100
   batch_size=16
   tuned_checkpoint=saved_results
+  tasks="lambada_openai  lambada_standard"
   for var in "$@"
   do
     case $var in
@@ -92,6 +93,18 @@ function run_benchmark {
         script="evaluate_clm.py"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         approach="PostTrainingStatic"
+    elif [ "${topology}" = "opt_2.7b_clm_ipex" ]; then
+        script="evaluate_clm.py"
+        model_name_or_path="facebook/opt-2.7b"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "opt_6.7b_clm_ipex" ]; then
+        script="evaluate_clm.py"
+        model_name_or_path="facebook/opt-6.7b"
+        approach="PostTrainingStatic"
+    elif [ "${topology}" = "llama_7b_clm_ipex" ]; then
+        script="evaluate_clm.py"
+        model_name_or_path="decapoda-research/llama-7b-hf"
+        approach="PostTrainingStatic"
     elif [ "${topology}" = "bert_mlm_static" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
@@ -154,15 +167,17 @@ function run_benchmark {
     
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
-        model_name_or_path=${tuned_checkpoint}
+        if [ ${script} != "evaluate_clm.py" ];then
+            model_name_or_path=${tuned_checkpoint}
+        fi
     fi
 
-    if [[ ${int8} == "true" ]] && [ "${topology}" = "gpt_j_6b_clm_ipex" ]; then
-        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
-    fi
 
     if [[ ${bf16} == "true" ]]; then
         extra_cmd=$extra_cmd" --bf16_ipex"
+    fi
+    if [ "${tasks}" != "" ]; then
+	extra_cmd=$extra_cmd" --tasks ${tasks}"
     fi
 
     echo $extra_cmd
@@ -171,7 +186,7 @@ function run_benchmark {
         python -u ./${script} \
             --model ${model_name_or_path} \
             --output_dir ${tuned_checkpoint} \
-	    --batch_size ${batch_size} \
+            --batch_size ${batch_size} \
             ${mode_cmd} \
             ${extra_cmd}
     elif [ -z ${DATASET_CONFIG_NAME} ];then

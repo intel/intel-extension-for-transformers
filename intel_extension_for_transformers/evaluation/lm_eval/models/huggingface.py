@@ -14,6 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import re
 import math
 import torch
 import torch.nn.functional as F
@@ -168,12 +169,18 @@ class HuggingFaceAutoLM(BaseLM):
         )
 
         self._add_special_tokens = add_special_tokens
-        self.tokenizer = self._create_auto_tokenizer(
-            pretrained=pretrained,
-            revision=revision,
-            subfolder=subfolder,
-            tokenizer=tokenizer,
-        )
+        if re.search("llama", pretrained):
+            from transformers import LlamaTokenizer    # pylint: disable=E0611
+            self.tokenizer = LlamaTokenizer.from_pretrained(
+                    pretrained,
+                    )
+        else:
+            self.tokenizer = self._create_auto_tokenizer(
+                pretrained=pretrained,
+                revision=revision,
+                subfolder=subfolder,
+                tokenizer=tokenizer,
+            )
         self.tokenizer.model_max_length = self.max_length
 
         accelerate_kwargs = {}

@@ -17,6 +17,7 @@
 
 import os
 import random
+import re
 import time
 import numpy as np
 import json
@@ -89,6 +90,8 @@ def evaluate(model,
     """
     random.seed(seed)
     np.random.seed(seed)
+    import torch
+    torch.manual_seed(seed)
 
     assert tasks != [], "No tasks specified"
 
@@ -113,13 +116,20 @@ def evaluate(model,
         )
     
     task_dict = get_task_dict(tasks)
+    if re.search("llama", model_args):
+        for key, value in task_dict.items():
+            if key == "lambada_openai":
+                from .tasks import lambada
+                task_dict[key] = lambada.LambadaOpenAI()
+            if key == "lambada_standard":
+                from .tasks import lambada
+                task_dict[key] = lambada.LambadaStandard() 
 
     if check_integrity:
         run_task_tests(task_list=tasks)
     
     if user_model:
         lm.model = user_model
-
     results = evaluate_func(
         lm=lm,
         task_dict=task_dict,

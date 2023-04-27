@@ -1282,4 +1282,67 @@
       }
     }
   },
+  "opt_2.7b_clm_ipex": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "opt_2.7b_clm_ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "opt_2.7b_clm_ipex",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "opt_6.7b_clm_ipex": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "opt_6.7b_clm_ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "opt_6.7b_clm_ipex",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "llama_7b_clm_ipex": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "llama_7b_clm_ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "llama_7b_clm_ipex",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
 }

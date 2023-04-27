@@ -17,7 +17,8 @@ conda install gperftools jemalloc==5.2.1 -c conda-forge -y
 
 # Installation
 pip install git+https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git
-pip install neural_compressor intel_extension_for_pytorch transformers datasets accelerate
+pip install git+https://github.com/intel/neural-compressor.git@6efe818497d5e424deac42580f9fde84f8b8723d
+pip install intel_extension_for_pytorch transformers datasets accelerate
 
 # Setup Environment Variables
 export KMP_BLOCKTIME=1
@@ -30,23 +31,68 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 ```
 
 # Run
-## 1. Quantization
 
 Here is how to run the scripts:
 
 **Causal Language Modeling (CLM)**
 
-`evaluate_clm.py` quantizes the large language models using the dataset [NeelNanda/pile-10k](https://huggingface.co/datasets/NeelNanda/pile-10k) calibration and validates `lambada_openai`, `piqa`, `winogrande`, `hellaswag` and other datasets accuracy provided by lm_evaluation_harness, an example command is as follows.
+`evaluate_clm.py` quantizes the large language models using the dataset [NeelNanda/pile-10k](https://huggingface.co/datasets/NeelNanda/pile-10k) calibration and validates `lambada_openai`, `piqa`, `winogrande`, `hellaswag` and other datasets accuracy provided by lm_eval, an example command is as follows.
+### GPT-J-6b
+
+#### Quantization
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
 python evaluate_clm.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \
-    --dataset lambada \
+    --dataset NeelNanda/pile-10k \
     --sq \
-    --alpha 0.7 \
-    --output_dir "saved_results"
+    --alpha 0.5 \
+    --output_dir "saved_results" \
+```
+
+#### Accuracy with lm_eval
+```bash
+# FP32 Accuracy
+python evaluate_clm.py \
+    --model EleutherAI/gpt-j-6B \
+    --accuracy_only \
+    --batch_size 112 \
+    --tasks "lambada_openai" "lambada_standard"\
+    --int8 \
+    --output_dir "saved_results"  # load int8 model
+# to validate IPEX BF16 model, please use "--ipex_bf16" to replace "--int8" and remove "--output_dir".
+# to validate FP32 model, please remove "--int8" and "--output_dir".
+```
+### OPT-2.7b
+
+#### Quantization
+
+```bash
+# "--sq" is used to enable smooth quant
+# "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+python evaluate_clm.py \
+    --model facebook/opt-2.7b \
+    --quantize \
+    --dataset NeelNanda/pile-10k \
+    --sq \
+    --alpha 0.5 \
+    --output_dir "saved_results" \
+    --int8_bf16_mixed
+```
+
+#### Accuracy with lm_eval
+```bash
+python evaluate_clm.py \
+    --model facebook/opt-2.7b \
+    --accuracy_only \
+    --batch_size 112 \
+    --tasks "winogrande" "copa" "piqa" "rte" "hellaswag" "openbookqa" "lambada_openai" "lambada_standard" \
+    --int8 \
+    --output_dir "saved_results"  # load int8 model
+# to validate IPEX BF16 model, please use "--ipex_bf16" to replace "--int8" and remove "--output_dir".
+# to validate FP32 model, please remove "--int8" and "--output_dir".
 ```
 To do quantization based transformers language-modeling example [`run_clm.py`](https://github.com/huggingface/transformers/blob/main/examples/pytorch/language-modeling/run_clm.py), please use the following command.
 ```
@@ -93,30 +139,8 @@ python run_mlm.py \
     --overwrite_output_dir
 
 ```
-## 2. Accuracy
-```bash
-# FP32 Accuracy
-python evaluate_clm.py \
-    --model EleutherAI/gpt-j-6B \
-    --accuracy_only \
-    --batch_size 56
 
-# BF16 Accuracy
-python evaluate_clm.py \
-    --model EleutherAI/gpt-j-6B \
-    --accuracy_only \
-    --ipex_bf16 \
-    --batch_size 56
-
-# INT8 Accuracy
-python evaluate_clm.py \
-    --model EleutherAI/gpt-j-6B \
-    --accuracy_only \
-    --int8 \
-    --batch_size 56
-```
-
-## 3. Validated Model List
+## 2. Validated Model List
 
 |Type|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining
 |---|------------------------------------|---|---|---

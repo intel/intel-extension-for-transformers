@@ -18,6 +18,7 @@ function init_params {
   batch_size=8
   model_type="bert"
   approach="PostTrainingStatic"
+  alpha=0.5
   for var in "$@"
   do
     case $var in
@@ -85,9 +86,27 @@ function run_tuning {
         approach="PostTrainingDynamic"
     elif [ "${topology}" = "gpt_j_6b_clm_ipex" ]; then
         script="evaluate_clm.py"
-	DATASET_NAME="lambada"
+        DATASET_NAME="NeelNanda/pile-10k"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         approach="PostTrainingStatic"
+    elif [ "${topology}" = "opt_2.7b_clm_ipex" ]; then
+        script="evaluate_clm.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="facebook/opt-2.7b"
+        approach="PostTrainingStatic"
+	extra_cmd=$extra_cmd" --int8_bf16_mixed"
+    elif [ "${topology}" = "opt_6.7b_clm_ipex" ]; then
+        script="evaluate_clm.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="facebook/opt-6.7b"
+        approach="PostTrainingStatic"
+	extra_cmd=$extra_cmd" --int8_bf16_mixed"
+    elif [ "${topology}" = "llama_7b_clm_ipex" ]; then
+        script="evaluate_clm.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="decapoda-research/llama-7b-hf"
+        approach="PostTrainingStatic"
+	extra_cmd=$extra_cmd" --int8_bf16_mixed"
     elif [ "${topology}" = "bert_mlm_static" ]; then
         script="run_mlm.py"
         DATASET_NAME="wikitext"
@@ -179,10 +198,10 @@ function run_tuning {
         python -u ./${script} \
             --model ${model_name_or_path} \
             --output_dir ${tuned_checkpoint} \
-	    --dataset ${DATASET_NAME} \
+            --dataset ${DATASET_NAME} \
             --quantize \
-	    --sq \
-	    --alpha 0.7 \
+            --sq \
+            --alpha ${alpha} \
             ${extra_cmd}
     elif [ -z ${DATASET_CONFIG_NAME} ];then
         python -u ./${script} \

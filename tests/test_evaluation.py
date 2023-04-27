@@ -49,6 +49,15 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.70)
 
-
+    def test_lambada_for_llama(self):
+        results = evaluate(
+                model="hf-causal",
+                model_args='pretrained="decapoda-research/llama-7b-hf",tokenizer="decapoda-research/llama-7b-hf",dtype=float32',
+                tasks=["lambada_openai", "lambada_standard"],
+                limit=20,
+                )
+        print(results)
+        self.assertEqual(results["results"]["lambada_standard"]["acc"], 0.75)
+        self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
 if __name__ == "__main__":
     unittest.main()
