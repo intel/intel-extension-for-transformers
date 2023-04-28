@@ -18,10 +18,24 @@
 
 namespace executor {
 
+static inline float _mm256_reduce_add_ps(__m256 x) {
+  const __m128 x128 = _mm_add_ps(_mm256_extractf128_ps(x, 1), _mm256_castps256_ps128(x));
+  const __m128 x64 = _mm_add_ps(x128, _mm_movehl_ps(x128, x128));
+  const __m128 x32 = _mm_add_ss(x64, _mm_shuffle_ps(x64, x64, 0x55));
+  return _mm_cvtss_f32(x32);
+}
+
+#if __AVX512F__
 #define FP32_POWXSUM(zmm1, zmm2)    \
   zmm2 = _mm512_mul_ps(zmm2, zmm2); \
   zmm1 = _mm512_add_ps(zmm1, zmm2);
+#else
+#define FP32_POWXSUM(ymm1, ymm2)    \
+  ymm2 = _mm256_mul_ps(ymm2, ymm2); \
+  ymm1 = _mm256_add_ps(ymm1, ymm2);
+#endif
 
+#if __AVX512F__
 void fp32_norm(char* src, const float* gamma, char* dst, int norm_dim, __m512* scale) {
   for (int i = 0; i < norm_dim; i += 16) {
     auto zmm_src = _mm512_loadu_ps(src + i * 4);
@@ -30,17 +44,36 @@ void fp32_norm(char* src, const float* gamma, char* dst, int norm_dim, __m512* s
     _mm512_storeu_ps(dst + i * 4, _mm512_mul_ps(zmm_src, zmm_fin_scale));
   }
 }
+#else
+void fp32_norm(char* src, const float* gamma, char* dst, int norm_dim, __m256* scale) {
+  for (int i = 0; i < norm_dim; i += 8) {
+    auto ymm_src = _mm256_loadu_ps(reinterpret_cast<float*>(static_cast<void*>(src)) + i);
+    auto ymm_gamma = _mm256_loadu_ps(gamma + i);
+    auto ymm_fin_scale = _mm256_mul_ps(ymm_gamma, *scale);
+    _mm256_storeu_ps(reinterpret_cast<float*>(static_cast<void*>(dst)) + i, _mm256_mul_ps(ymm_src, ymm_fin_scale));
+  }
+}
+#endif
 
+#if __AVX512F__
 __m512 bf16_load(float* addr) {
   auto bf16_data = _mm256_loadu_ps(addr);
 #if __AVX512BF16__ && __GNUC__ > 11
   return _mm512_cvtpbh_ps((__m256bh)bf16_data);
 #else
-  auto y = _mm512_cvtepu16_epi32((__m256i)bf16_data);
+  auto y = _mm512_cvtepu16_epi32(_mm256_castps_si256(bf16_data));
   return _mm512_castsi512_ps(_mm512_bslli_epi128(y, 2));
 #endif
 }
+#else
+__m256 bf16_load(float* addr) {
+  auto bf16_data = _mm_loadu_ps(addr);
+  auto y = _mm256_cvtepu16_epi32(_mm_castps_si128(bf16_data));
+  return _mm256_castsi256_ps(_mm256_bslli_epi128(y, 2));
+}
+#endif
 
+#if __AVX512F__
 void bf16_norm(char* src, const float* gamma, char* dst, int norm_dim, __m512* scale) {
   auto fp32_cvt_bf16 = [](__m512& zmm_dst) {
 #if __AVX512BF16__ && __GNUC__ > 11
@@ -57,9 +90,26 @@ void bf16_norm(char* src, const float* gamma, char* dst, int norm_dim, __m512* s
     auto zmm_fin_scale = _mm512_mul_ps(zmm_gamma, *scale);
     auto zmm_dst = _mm512_mul_ps(zmm_src, zmm_fin_scale);
     auto bf16_dst = fp32_cvt_bf16(zmm_dst);
-    _mm256_storeu_ps(static_cast<float*>(static_cast<void*>(dst + i * 2)), (__m256)bf16_dst);
+    _mm256_storeu_ps(static_cast<float*>(static_cast<void*>(dst + i * 2)), _mm256_castsi256_ps(bf16_dst));
   }
 }
+#else
+void bf16_norm(char* src, const float* gamma, char* dst, int norm_dim, __m256* scale) {
+  auto fp32_cvt_bf16 = [](__m256& ymm_dst) {
+    auto y = _mm256_bsrli_epi128(_mm256_castps_si256(ymm_dst), 2);
+    return _mm256_cvtepi32_epi16(y);
+  };
+
+  for (int i = 0; i < norm_dim; i += 8) {
+    auto ymm_src = bf16_load(static_cast<float*>(static_cast<void*>(src + i * 2)));
+    auto ymm_gamma = _mm256_loadu_ps(gamma + i);
+    auto ymm_fin_scale = _mm256_mul_ps(ymm_gamma, *scale);
+    auto ymm_dst = _mm256_mul_ps(ymm_src, ymm_fin_scale);
+    auto bf16_dst = fp32_cvt_bf16(ymm_dst);
+    _mm_storeu_ps(static_cast<float*>(static_cast<void*>(dst + i * 2)), _mm_castsi128_ps(bf16_dst));
+  }
+}
+#endif
 
 template <int dt_bytewidth>
 void RmsNormOperator::RmsNormParallelB(const void* src_data, const float* gamma_data, void* dst_data) {
@@ -69,8 +119,8 @@ void RmsNormOperator::RmsNormParallelB(const void* src_data, const float* gamma_
     auto src = static_cast<const char*>(src_data) + offset;
     auto dst = static_cast<char*>(dst_data) + offset;
 
+#if __AVX512F__
     auto zmm_powx_sum = _mm512_setzero_ps();
-
     for (int j = 0; j < norm_dim_; j += 16) {
 #if dt_bytewidth == 2
       auto zmm_src = bf16_load(static_cast<float*>(static_cast<void*>(const_cast<char*>(src) + j * 2)));
@@ -85,6 +135,24 @@ void RmsNormOperator::RmsNormParallelB(const void* src_data, const float* gamma_
     auto zmm_scale = _mm512_set1_ps(powx_mean);
     zmm_scale = _mm512_rsqrt14_ps(zmm_scale);
     parallelB_norm_callback_(const_cast<char*>(src), gamma_data, dst, norm_dim_, &zmm_scale);
+#else
+    auto ymm_powx_sum = _mm256_setzero_ps();
+    for (int j = 0; j < norm_dim_; j += 8) {
+#if dt_bytewidth == 2
+      auto ymm_src = bf16_load(static_cast<float*>(static_cast<void*>(const_cast<char*>(src) + j * 2)));
+#else
+      auto ymm_src =
+          _mm256_loadu_ps(static_cast<float*>(static_cast<void*>(const_cast<char*>(src) + j * dt_bytewidth_)));
+#endif
+      FP32_POWXSUM(ymm_powx_sum, ymm_src);
+    }
+
+    auto powx_mean = (_mm256_reduce_add_ps(ymm_powx_sum) + epsilon_) / norm_dim_;
+
+    auto ymm_scale = _mm256_set1_ps(powx_mean);
+    ymm_scale = _mm256_rsqrt_ps(ymm_scale);
+    parallelB_norm_callback_(const_cast<char*>(src), gamma_data, dst, norm_dim_, &ymm_scale);
+#endif
   }
 }
 

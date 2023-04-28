@@ -32,7 +32,11 @@ namespace executor {
  */
 
 class RmsNormOperator : public Operator {
+#if __AVX512F__
   using parallelBNormCallback = void (*)(char*, const float*, char*, int, __m512*);
+#else
+  using parallelBNormCallback = void (*)(char*, const float*, char*, int, __m256*);
+#endif
 
  public:
   explicit RmsNormOperator(const shared_ptr<OperatorConfig>& conf);
