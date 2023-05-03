@@ -1,0 +1,53 @@
+:py:mod:`intel_extension_for_transformers.evaluation.lm_eval.tasks.lambada`
+===========================================================================
+
+.. py:module:: intel_extension_for_transformers.evaluation.lm_eval.tasks.lambada
+
+.. autoapi-nested-parse::
+
+   The LAMBADA dataset: Word prediction requiring a broad discourse context∗
+   https://arxiv.org/pdf/1606.06031.pdf
+
+   LAMBADA is a dataset to evaluate the capabilities of computational models for text
+   understanding by means of a word prediction task. LAMBADA is a collection of narrative
+   passages sharing the characteristic that human subjects are able to guess their last
+   word if they are exposed to the whole passage, but not if they only see the last
+   sentence preceding the target word. To succeed on LAMBADA, computational models
+   cannot simply rely on local context, but must be able to keep track of information
+   in the broader discourse.
+
+   Homepage: https://zenodo.org/record/2630551#.X4Xzn5NKjUI
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.evaluation.lm_eval.tasks.lambada.LambadaStandard
+   intel_extension_for_transformers.evaluation.lm_eval.tasks.lambada.LambadaOpenAI
+
+
+
+
+.. py:class:: LambadaStandard
+
+
+
+   The LAMBADA task using the standard original LAMBADA dataset.
+
+
+.. py:class:: LambadaOpenAI
+
+
+
+   The LAMBADA task using the LAMBADA OpenAI dataset, a modified version of the
+   original LAMBADA dataset created by OpenAI for evaluating their GPT-2 model.
+
+   Reference: https://github.com/openai/gpt-2/issues/131#issuecomment-497136199
+
+

@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.evaluation.lm_eval.tasks`
+===================================================================
+
+.. py:module:: intel_extension_for_transformers.evaluation.lm_eval.tasks
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   lambada/index.rst
+
+
