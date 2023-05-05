@@ -24,6 +24,7 @@
 namespace jd {
 using dt = data_type;
 using ft = format_type;
+using io = exposed_enum::mha_dense::io;
 
 struct test_params_t {
   dim_t bs;
@@ -69,7 +70,7 @@ bool check_result(const int nthr, const bool expect_to_fail, const test_data_t& 
     const auto tmp_p = std::shared_ptr<char>(aligned_allocator_t<char>::allocate(mha_dense_kernel.get_workspace_size()),
                                              [](char* ptr) { aligned_allocator_t<char>::deallocate(ptr); });
     auto data_p = d.rt_data_kern;
-    data_p[mha_dense_io::WORKSPACE] = tmp_p.get();
+    data_p[io::WORKSPACE] = tmp_p.get();
     mha_dense_kernel.execute(data_p);
 
     std::shared_ptr<const kernel_desc_t> mha_dense_ref_desc;
@@ -83,13 +84,13 @@ bool check_result(const int nthr, const bool expect_to_fail, const test_data_t& 
   }
 
   if (!expect_to_fail) {
-    auto buf1 = d.rt_data_kern[mha_dense_io::DST];
-    auto size1 = d.op_desc.tensor_descs()[mha_dense_io::DST].size();
-    auto buf2 = d.rt_data_ref[mha_dense_io::DST];
-    auto size2 = d.op_desc.tensor_descs()[mha_dense_io::DST].size();
+    auto buf1 = d.rt_data_kern[io::DST];
+    auto size1 = d.op_desc.tensor_descs()[io::DST].size();
+    auto buf2 = d.rt_data_ref[io::DST];
+    auto size2 = d.op_desc.tensor_descs()[io::DST].size();
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
-    switch (d.op_desc.tensor_descs()[mha_dense_io::DST].dtype()) {
+    switch (d.op_desc.tensor_descs()[io::DST].dtype()) {
       case dt::fp32:
         return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
       case dt::s32:
@@ -145,23 +146,23 @@ std::pair<const void*, const void*> make_tensor_obj(const tensor_desc& ts_desc, 
 test_data_t gen_data(const dim_t bs, const dim_t sl_m, const dim_t sl_n, const dim_t head_num, const dim_t head_size,
                      int badd_dim = 0, const data_type dt_dst = data_type::u8, const ft kv_ft = ft::abcd) {
   std::vector<dim_t> badd_fullshape = {bs, head_num, sl_m, sl_n};
-  std::vector<tensor_desc> ts_descs(mha_dense_io::mha_dense_io_MAX + 1, tensor_desc{{}, data_type::undef, ft::undef});
-  ts_descs[mha_dense_io::SRC_Q] = {{bs, sl_m, head_num, head_size}, data_type::s8, ft::abcd};
-  ts_descs[mha_dense_io::SRC_K] = {{bs, sl_n, head_num, head_size}, data_type::s8, kv_ft};
-  ts_descs[mha_dense_io::SRC_V] = {{bs, sl_n, head_num, head_size}, data_type::s8, kv_ft};
-  ts_descs[mha_dense_io::MASK] = {{bs}, data_type::s32, ft::a};
-  ts_descs[mha_dense_io::DST] = {{bs, sl_m, head_num, head_size}, dt_dst, ft::abcd};
+  std::vector<tensor_desc> ts_descs(io::SIZE, tensor_desc{});
+  ts_descs[io::SRC_Q] = {{bs, sl_m, head_num, head_size}, data_type::s8, ft::abcd};
+  ts_descs[io::SRC_K] = {{bs, sl_n, head_num, head_size}, data_type::s8, kv_ft};
+  ts_descs[io::SRC_V] = {{bs, sl_n, head_num, head_size}, data_type::s8, kv_ft};
+  ts_descs[io::MASK] = {{bs}, data_type::s32, ft::a};
+  ts_descs[io::DST] = {{bs, sl_m, head_num, head_size}, dt_dst, ft::abcd};
   if (badd_dim > 0) {
     SPARSE_LOG_IF(FATAL, badd_dim > 4) << "Unsupported binary add dimention";
-    ts_descs[mha_dense_io::BINARY_ADD] = {std::vector<dim_t>(badd_fullshape.cend() - badd_dim, badd_fullshape.cend()),
-                                          data_type::fp32, plain_format(badd_dim)};
+    ts_descs[io::BINARY_ADD] = {std::vector<dim_t>(badd_fullshape.cend() - badd_dim, badd_fullshape.cend()),
+                                data_type::fp32, plain_format(badd_dim)};
   }
-  ts_descs[mha_dense_io::ATT_SCALE] = {{1}, data_type::fp32, ft::a};
-  ts_descs[mha_dense_io::Q_SCALE] = {{1}, data_type::fp32, ft::a};
-  ts_descs[mha_dense_io::K_SCALE] = {{1}, data_type::fp32, ft::a};
-  ts_descs[mha_dense_io::V_SCALE] = {{1}, data_type::fp32, ft::a};
-  ts_descs[mha_dense_io::SRC_DST_SCALE] = {{1}, data_type::fp32, ft::a};
-  ts_descs[mha_dense_io::SRC_DST_ZP] = {{1}, data_type::fp32, ft::a};
+  ts_descs[io::ATT_SCALE] = {{1}, data_type::fp32, ft::a};
+  ts_descs[io::Q_SCALE] = {{1}, data_type::fp32, ft::a};
+  ts_descs[io::K_SCALE] = {{1}, data_type::fp32, ft::a};
+  ts_descs[io::V_SCALE] = {{1}, data_type::fp32, ft::a};
+  ts_descs[io::SRC_DST_SCALE] = {{1}, data_type::fp32, ft::a};
+  ts_descs[io::SRC_DST_ZP] = {{1}, data_type::fp32, ft::a};
 
   // Step 1.1: Construct Operator config obj
   std::unordered_map<std::string, std::string> attr_map;
@@ -170,49 +171,49 @@ test_data_t gen_data(const dim_t bs, const dim_t sl_m, const dim_t sl_n, const d
   attr_map["softmax_rescale"] = std::to_string(float{UINT8_MAX});  // TODO(Yi): Use 255?
 
   // Step 2: Construct Tensor ptr
-  auto Qs = make_tensor_obj(ts_descs[mha_dense_io::SRC_Q]);
-  auto Ks = make_tensor_obj(ts_descs[mha_dense_io::SRC_K]);
-  auto Vs = make_tensor_obj(ts_descs[mha_dense_io::SRC_V]);
-  auto masks = make_tensor_obj(ts_descs[mha_dense_io::MASK], 1, sl_n);
-  auto dsts = make_tensor_obj(ts_descs[mha_dense_io::DST], 0);
+  auto Qs = make_tensor_obj(ts_descs[io::SRC_Q]);
+  auto Ks = make_tensor_obj(ts_descs[io::SRC_K]);
+  auto Vs = make_tensor_obj(ts_descs[io::SRC_V]);
+  auto masks = make_tensor_obj(ts_descs[io::MASK], 1, sl_n);
+  auto dsts = make_tensor_obj(ts_descs[io::DST], 0);
 
-  auto badds = badd_dim > 0 ? make_tensor_obj(ts_descs[mha_dense_io::BINARY_ADD], -1.f, 1.f)
+  auto badds = badd_dim > 0 ? make_tensor_obj(ts_descs[io::BINARY_ADD], -1.f, 1.f)
                             : std::pair<const void*, const void*>{nullptr, nullptr};
 
-  auto att_scales = make_tensor_obj(ts_descs[mha_dense_io::ATT_SCALE], 1.f);  // TODO(Yi): 1/sqrt
-  auto q_scales = make_tensor_obj(ts_descs[mha_dense_io::Q_SCALE], 1.1f);
-  auto k_scales = make_tensor_obj(ts_descs[mha_dense_io::K_SCALE], 0.9f);
-  auto v_scales = make_tensor_obj(ts_descs[mha_dense_io::V_SCALE], 1.2f);
-  auto dst_scales = make_tensor_obj(ts_descs[mha_dense_io::SRC_DST_SCALE], 1.2f);
-  auto dst_zps = make_tensor_obj(ts_descs[mha_dense_io::SRC_DST_ZP], 110);
+  auto att_scales = make_tensor_obj(ts_descs[io::ATT_SCALE], 1.f);  // TODO(Yi): 1/sqrt
+  auto q_scales = make_tensor_obj(ts_descs[io::Q_SCALE], 1.1f);
+  auto k_scales = make_tensor_obj(ts_descs[io::K_SCALE], 0.9f);
+  auto v_scales = make_tensor_obj(ts_descs[io::V_SCALE], 1.2f);
+  auto dst_scales = make_tensor_obj(ts_descs[io::SRC_DST_SCALE], 1.2f);
+  auto dst_zps = make_tensor_obj(ts_descs[io::SRC_DST_ZP], 110);
 
-  std::vector<const void*> data_p(mha_dense_io::mha_dense_io_MAX + 1, nullptr);
-  data_p[mha_dense_io::SRC_Q] = Qs.first;
-  data_p[mha_dense_io::SRC_K] = Ks.first;
-  data_p[mha_dense_io::SRC_V] = Vs.first;
-  data_p[mha_dense_io::MASK] = masks.first;
-  data_p[mha_dense_io::DST] = dsts.first;
-  data_p[mha_dense_io::BINARY_ADD] = badds.first;
-  data_p[mha_dense_io::ATT_SCALE] = att_scales.first;
-  data_p[mha_dense_io::Q_SCALE] = q_scales.first;
-  data_p[mha_dense_io::K_SCALE] = k_scales.first;
-  data_p[mha_dense_io::V_SCALE] = v_scales.first;
-  data_p[mha_dense_io::SRC_DST_SCALE] = dst_scales.first;
-  data_p[mha_dense_io::SRC_DST_ZP] = dst_zps.first;
+  std::vector<const void*> data_p(io::SIZE, nullptr);
+  data_p[io::SRC_Q] = Qs.first;
+  data_p[io::SRC_K] = Ks.first;
+  data_p[io::SRC_V] = Vs.first;
+  data_p[io::MASK] = masks.first;
+  data_p[io::DST] = dsts.first;
+  data_p[io::BINARY_ADD] = badds.first;
+  data_p[io::ATT_SCALE] = att_scales.first;
+  data_p[io::Q_SCALE] = q_scales.first;
+  data_p[io::K_SCALE] = k_scales.first;
+  data_p[io::V_SCALE] = v_scales.first;
+  data_p[io::SRC_DST_SCALE] = dst_scales.first;
+  data_p[io::SRC_DST_ZP] = dst_zps.first;
 
-  std::vector<const void*> data_q(mha_dense_io::mha_dense_io_MAX + 1, nullptr);
-  data_q[mha_dense_io::SRC_Q] = Qs.second;
-  data_q[mha_dense_io::SRC_K] = Ks.second;
-  data_q[mha_dense_io::SRC_V] = Vs.second;
-  data_q[mha_dense_io::MASK] = masks.second;
-  data_q[mha_dense_io::DST] = dsts.second;
-  data_q[mha_dense_io::BINARY_ADD] = badds.second;
-  data_q[mha_dense_io::ATT_SCALE] = att_scales.second;
-  data_q[mha_dense_io::Q_SCALE] = q_scales.second;
-  data_q[mha_dense_io::K_SCALE] = k_scales.second;
-  data_q[mha_dense_io::V_SCALE] = v_scales.second;
-  data_q[mha_dense_io::SRC_DST_SCALE] = dst_scales.second;
-  data_q[mha_dense_io::SRC_DST_ZP] = dst_zps.second;
+  std::vector<const void*> data_q(io::SIZE, nullptr);
+  data_q[io::SRC_Q] = Qs.second;
+  data_q[io::SRC_K] = Ks.second;
+  data_q[io::SRC_V] = Vs.second;
+  data_q[io::MASK] = masks.second;
+  data_q[io::DST] = dsts.second;
+  data_q[io::BINARY_ADD] = badds.second;
+  data_q[io::ATT_SCALE] = att_scales.second;
+  data_q[io::Q_SCALE] = q_scales.second;
+  data_q[io::K_SCALE] = k_scales.second;
+  data_q[io::V_SCALE] = v_scales.second;
+  data_q[io::SRC_DST_SCALE] = dst_scales.second;
+  data_q[io::SRC_DST_ZP] = dst_zps.second;
 
   operator_desc op_desc(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
 

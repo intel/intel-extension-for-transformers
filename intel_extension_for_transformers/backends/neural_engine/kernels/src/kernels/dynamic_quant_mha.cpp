@@ -19,17 +19,6 @@
 namespace jd {
 using dt = jd::data_type;
 
-inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
-  std::vector<std::vector<dim_t>> shapes(mha_dense_io::mha_dense_io_MAX + 1);
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
-  return shapes;
-}
-inline std::vector<dt> get_tensor_dtypes(const std::vector<tensor_desc>& descs) {
-  std::vector<dt> shapes(mha_dense_io::mha_dense_io_MAX + 1);
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.dtype(); });
-  return shapes;
-}
-
 #define KERNEL_INIT_CHECK(f)                                            \
   if (!(f)) {                                                           \
     SPARSE_LOG(ERROR) << "Dynamic q10n kernel requires `" << #f << "`"; \
@@ -38,13 +27,12 @@ inline std::vector<dt> get_tensor_dtypes(const std::vector<tensor_desc>& descs) 
 bool jd::dynamic_quant_mha_kd_t::init() {
   if (!isa_available(amx_int8)) return false;
 
-  const auto& descs = op_desc_.tensor_descs();
   const auto& op_attrs = op_desc_.attrs();
   KERNEL_INIT_CHECK(op_attrs.find("approx_exp") != op_attrs.end() && op_attrs.at("approx_exp") == "True");
   KERNEL_INIT_CHECK(op_attrs.find("stable_softmax") != op_attrs.end() && op_attrs.at("stable_softmax") == "False");
 
-  const auto shapes = get_tensor_shapes(descs);
-  const auto dtypes = get_tensor_dtypes(descs);
+  const auto shapes = op_desc_.tensor_shapes();
+  const auto dtypes = op_desc_.tensor_dtypes();
 
   const auto batch_size = shapes[io::SRC_Q][0];
   const auto head_num = shapes[io::SRC_Q][2];
@@ -102,7 +90,7 @@ bool jd::dynamic_quant_mha_kd_t::init() {
 
 dynamic_quant_mha_k_t::dynamic_quant_mha_k_t(const std::shared_ptr<const kernel_desc_t>& kd)
     : kernel_t(kd),
-      t_shapes_(get_tensor_shapes(derived_kd()->get_operator_desc().tensor_descs())),
+      t_shapes_(derived_kd()->get_operator_desc().tensor_shapes()),
       batch_size_(t_shapes_[io::SRC_Q][0]),
       head_num_(t_shapes_[io::SRC_Q][2]),
       M_(t_shapes_[io::SRC_Q][1]),

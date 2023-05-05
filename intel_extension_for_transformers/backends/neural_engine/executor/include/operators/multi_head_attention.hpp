@@ -24,7 +24,6 @@
 #include "../operator.hpp"
 #ifdef WITH_SPARSELIB
 #include "kernels/include/interface.hpp"
-#include "kernels/include/kernels/mha_dense_types.hpp"
 #endif
 
 namespace executor {

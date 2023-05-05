@@ -14,12 +14,14 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_JIT_GENERATOR_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_JIT_GENERATOR_HPP_
+
 #include <array>
 #include <climits>
 #include <fstream>
 #include <functional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "cpu_isa.hpp"
 #include "utils.hpp"
@@ -70,6 +72,8 @@ constexpr size_t xmm_to_preserve = 0;
 #endif
 
 namespace jd {
+class jit_eltwise_injector;
+
 class jit_generator : public Xbyak::CodeGenerator {
  public:
   explicit jit_generator(size_t code_size = MAX_CODE_SIZE, void* code_ptr = nullptr)
@@ -77,7 +81,8 @@ class jit_generator : public Xbyak::CodeGenerator {
   virtual ~jit_generator() {}
   void dump_asm();  // print assembly code
 
- public:
+  friend class jit_eltwise_injector;  //  so that injector can access utility methods
+
   const int EVEX_max_8b_offt = 0x200;
   const Xbyak::Reg64 reg_EVEX_max_8b_offt = rbp;
 
@@ -119,26 +124,6 @@ class jit_generator : public Xbyak::CodeGenerator {
   void bf16_cvt_fp32(Zmm zmm) {
     vpmovzxwd(zmm, Ymm(zmm.getIdx()));
     vpslld(zmm, zmm, 0x10);
-  }
-
-  enum op_t { sum, max };
-
-  void perform_op(Zmm v, Zmm vtmp, op_t op) {
-    if (op == op_t::max)
-      vpmaxsd(v, v, vtmp);
-    else if (op == op_t::sum)
-      vaddps(v, v, vtmp);
-  }
-
-  void get_horizontal_op(const Zmm& v, const Zmm& vtmp, op_t op) {
-    vshuff32x4(vtmp, v, v, 0x4E);  // 256-bit shuffle
-    perform_op(v, vtmp, op);
-    vshuff32x4(vtmp, v, v, 0xB1);  // 128/256-bit shuffle
-    perform_op(v, vtmp, op);
-    vshufps(vtmp, v, v, 0x4E);  // 64/128-bit shuffle
-    perform_op(v, vtmp, op);
-    vshufps(vtmp, v, v, 0xB1);  // 32/64-bit shuffle
-    perform_op(v, vtmp, op);
   }
 
   void fp32_cvt_bf16(Zmm zmm) {
@@ -192,7 +177,7 @@ class jit_generator : public Xbyak::CodeGenerator {
   void transpose_16x16_ps(const std::array<Xbyak::Zmm, 16UL>& src, const std::array<Xbyak::Zmm, 16UL>& tmp,
                           const int N = 16);
   /**
-   * @brief Reduce dword in an vevtor register inplace
+   * @brief Reduce dword in an vector register inplace
    *
    * @tparam OP2 type of the 2nd operand of the reduction op
    * @tparam OP3 type of the 3rd  operand of the reduction op
@@ -227,6 +212,38 @@ class jit_generator : public Xbyak::CodeGenerator {
   }
 
   /**
+   * @brief Elementwise reduce a set of vector registers and store the result to the first one
+   *
+   * @tparam OP2 type of the 2nd operand of the reduction op
+   * @tparam OP3 type of the 3rd  operand of the reduction op
+   * @param xs vector registers to perform reduction
+   * @param inst the reduction instruction
+   */
+  template <typename FUNC, typename = std::enable_if_t<std::is_constructible<
+                               std::function<void(const Xmm&, const Xmm&, const Xmm&)>, FUNC>::value>>
+  inline void reduce_vmms(const Xmm* xs, const FUNC inst, size_t n) {
+    for (size_t span = 1; span < n; span *= 2)
+      for (size_t i = 0; i < n; i += span * 2) inst(xs[i], xs[i], xs[i + span]);
+  }
+  template <typename OP2, typename OP3, typename CG,
+            typename = typename std::enable_if<std::is_base_of<Xbyak::Operand, OP2>::value>::type,
+            typename = typename std::enable_if<std::is_base_of<Xbyak::Operand, OP3>::value>::type,
+            typename = typename std::enable_if<std::is_base_of<Xbyak::CodeGenerator, CG>::value>::type>
+  inline void reduce_vmms(const Xmm* xs, void (CG::*inst)(const Xmm&, const OP2&, const OP3&), size_t n) {
+    reduce_vmms(xs, std::bind(inst, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), n);
+  }
+  template <typename FUNC, typename VMM>
+  inline void reduce_vmms(const std::vector<VMM>& xs, const FUNC inst) {
+    static_assert(std::is_base_of<Xmm, VMM>::value);
+    reduce_vmms(xs.data(), inst, xs.size());
+  }
+  template <typename FUNC, typename VMM, size_t n>
+  inline void reduce_vmms(const std::array<VMM, n>& xs, const FUNC inst) {
+    static_assert(std::is_base_of<Xmm, VMM>::value);
+    reduce_vmms(xs.data(), inst, n);
+  }
+
+  /**
    * @brief Perform approximated exp function; src and dst can be the same; log2e and ln2 can be zword_b in ZMM limited
    * use cases.
    *
@@ -234,16 +251,21 @@ class jit_generator : public Xbyak::CodeGenerator {
    * function $f(x) = exp(x)$ where $x \in (-ln2, 0]$; idea from https://arxiv.org/abs/2101.01321
    */
   void exp_approx_f32(const Zmm& dst, const Zmm& src, const Xbyak::Operand& log2e, const Xbyak::Operand& ln2,
-                      const std::array<Zmm, 3>& coeff, const std::array<Zmm, 2>& tmp) {
+                      const Xbyak::Operand& coeff0, const Xbyak::Operand& coeff1, const Xbyak::Operand& coeff2,
+                      const std::array<Zmm, 2>& tmp) {
     vmulps(tmp[0], src, log2e);        // x / ln2
     vrndscaleps(tmp[0], tmp[0], 0x2);  // round up
     const auto& z = tmp[0];
     vmulps(tmp[1], tmp[0], ln2);
     vsubps(tmp[1], src, tmp[1]);  // x mod ln2 (can we use fmsub?)
-    vmovaps(dst, coeff[1]);
-    vfmadd231ps(dst, tmp[1], coeff[0]);  // dst = f * c0 + c1
-    vfmadd213ps(dst, tmp[1], coeff[2]);  // dst = (f * c0 + c1) * f + c2
-    vscalefps(dst, dst, z);              // dst = exp(f) * 2^z
+    vmovaps(dst, coeff1);
+    vfmadd231ps(dst, tmp[1], coeff0);  // dst = f * c0 + c1
+    vfmadd213ps(dst, tmp[1], coeff2);  // dst = (f * c0 + c1) * f + c2
+    vscalefps(dst, dst, z);            // dst = exp(f) * 2^z
+  }
+  void exp_approx_f32(const Zmm& dst, const Zmm& src, const Xbyak::Operand& log2e, const Xbyak::Operand& ln2,
+                      const std::array<Zmm, 3>& coeff, const std::array<Zmm, 2>& tmp) {
+    exp_approx_f32(dst, src, log2e, ln2, coeff[0], coeff[1], coeff[2], tmp);
   }
   /**
    * @brief refer `exp_approx_f32`
@@ -251,16 +273,21 @@ class jit_generator : public Xbyak::CodeGenerator {
    * Note that exp_approx_f16_coeff can not be constexpr without compile-time bit-cast
    */
   void exp_approx_f16(const Zmm& dst, const Zmm& src, const Xbyak::Operand& log2e, const Xbyak::Operand& ln2,
-                      const std::array<Zmm, 3>& coeff, const std::array<Zmm, 2>& tmp) {
+                      const Xbyak::Operand& coeff0, const Xbyak::Operand& coeff1, const Xbyak::Operand& coeff2,
+                      const std::array<Zmm, 2>& tmp) {
     vmulph(tmp[0], src, log2e);        // x / ln2
     vrndscaleph(tmp[0], tmp[0], 0x2);  // round up
     const auto& z = tmp[0];
     vmulph(tmp[1], tmp[0], ln2);
     vsubph(tmp[1], src, tmp[1]);  // x mod ln2 (can we use fmsub?)
-    vmovaps(dst, coeff[1]);
-    vfmadd231ph(dst, tmp[1], coeff[0]);  // dst = f * c0 + c1
-    vfmadd213ph(dst, tmp[1], coeff[2]);  // dst = (f * c0 + c1) * f + c2
-    vscalefph(dst, dst, z);              // dst = exp(f) * 2^z
+    vmovaps(dst, coeff1);
+    vfmadd231ph(dst, tmp[1], coeff0);  // dst = f * c0 + c1
+    vfmadd213ph(dst, tmp[1], coeff2);  // dst = (f * c0 + c1) * f + c2
+    vscalefph(dst, dst, z);            // dst = exp(f) * 2^z
+  }
+  void exp_approx_f16(const Zmm& dst, const Zmm& src, const Xbyak::Operand& log2e, const Xbyak::Operand& ln2,
+                      const std::array<Zmm, 3>& coeff, const std::array<Zmm, 2>& tmp) {
+    exp_approx_f16(dst, src, log2e, ln2, coeff[0], coeff[1], coeff[2], tmp);
   }
 
   /**

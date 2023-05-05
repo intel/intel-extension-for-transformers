@@ -42,6 +42,7 @@ class regs_pool {
   Xbyak::util::StackFrame sf_;
   Xbyak::CodeGenerator* code_;
   const size_t stack_size_;
+  const size_t stack_align_;
   const bool make_epilog_;
 
   std::array<int, reg_kind_size> ridx_next;       // The index of next register to be allocated
@@ -136,10 +137,11 @@ class regs_pool {
    */
   regs_pool(  //
       Xbyak::CodeGenerator* const code, const int pNum, const std::array<int, 3UL> reg_num = zero_x3,
-      const size_t stack_size = 0, const bool make_epilog = true)
+      const size_t stack_size = 0, const bool make_epilog = true, const size_t stack_align = 8)
       : sf_(code, pNum, reg_num[get_reg_kind_i<Reg64>()], 0, false),  // stack memory and epilogue managed here
         code_(code),
         stack_size_(stack_size),
+        stack_align_(stack_align),
         make_epilog_(make_epilog),
         ridx_next(zero_x3),
         ridx_max({reg_num[0] & (~UseRCX) & (~UseRDX), reg_num[1], reg_num[2]}),
@@ -150,6 +152,8 @@ class regs_pool {
         << "No more GPR registers!";
     SPARSE_LOG_IF(FATAL, get_max<Zmm>() > 32) << "No more XMM registers!";
     SPARSE_LOG_IF(FATAL, get_max<Opmask>() > 7) << "No more mask registers!";
+    SPARSE_LOG_IF(FATAL, stack_align < 8 || (stack_align & (stack_align - 1)) != 0)
+        << "stack alignment must be a power of 2!";
 
     // preserve xmm on demend
 #ifdef _WIN32
@@ -163,7 +167,17 @@ class regs_pool {
 #endif
 
     // allocate stack space
-    if (stack_size) code_->sub(code_->rsp, pad_to(stack_size_, 8));
+    if (stack_size) {
+      if (stack_align <= 8) {  // stack is aligned to 8 by default
+        code_->sub(code_->rsp, pad_to(stack_size_, 8));
+      } else {
+        const auto tmp = reg<Reg64>();
+        code_->lea(tmp, code_->ptr[code_->rsp - 8]);  // 8 for reserve rsp
+        code_->and_(tmp, 0 - stack_align);            // align
+        code_->mov(code_->qword[tmp], code_->rsp);
+        code_->lea(code_->rsp, code_->ptr[tmp - pad_to(stack_size_, stack_align)]);
+      }
+    }
   }
 
   ~regs_pool() {
@@ -184,7 +198,13 @@ class regs_pool {
         << "Asked too many masks! Actually used: " << get_touched<Opmask>() << "/" << get_max<Opmask>();
 
     // free stack space
-    if (stack_size_) code_->add(code_->rsp, pad_to(stack_size_, 8));
+    if (stack_size_) {
+      if (stack_align_ <= 8) {
+        code_->add(code_->rsp, pad_to(stack_size_, 8));
+      } else {
+        code_->mov(code_->rsp, code_->ptr[code_->rsp + pad_to(stack_size_, stack_align_)]);
+      }
+    }
 
 #ifdef _WIN32
     // restore xmm on demend

@@ -17,13 +17,14 @@
 
 #include <glog/logging.h>
 
+#include <array>
 #include <memory>
 #include <vector>
 
 #include "cpu_isa.hpp"
+#include "exposed_enum.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
-#include "kernels/mha_dense_types.hpp"
 #include "operator_desc.hpp"
 #include "utils.hpp"
 
@@ -50,7 +51,7 @@ namespace jd {
 class mha_dense_ref_k_t;
 
 class SPARSE_API_ mha_dense_ref_kd_t : public kernel_desc_t {
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
 
  public:
   explicit mha_dense_ref_kd_t(const jd::operator_desc& op_desc)
@@ -84,7 +85,7 @@ class SPARSE_API_ mha_dense_ref_kd_t : public kernel_desc_t {
 };
 
 class SPARSE_API_ mha_dense_ref_k_t : public kernel_t {
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
 
  public:
   using kd_t = mha_dense_ref_kd_t;

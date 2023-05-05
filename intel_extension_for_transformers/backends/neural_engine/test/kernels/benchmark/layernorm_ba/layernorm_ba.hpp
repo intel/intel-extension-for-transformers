@@ -49,8 +49,8 @@ class layernorm_ba_bench : public kernel_bench {
     for (auto op_args : {args.first, args.second})
       for (auto rt_data : op_args.rt_data)
         if (rt_data != nullptr && s.find(rt_data) == s.end()) {
-          aligned_allocator_t<char>::deallocate(const_cast<void*>(rt_data));
           s.insert(rt_data);
+          aligned_allocator_t<char>::deallocate(const_cast<void*>(rt_data));
         }
   }
 

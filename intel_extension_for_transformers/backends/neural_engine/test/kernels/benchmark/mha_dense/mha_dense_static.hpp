@@ -22,7 +22,6 @@
 
 #include "benchmark_utils.hpp"
 #include "interface.hpp"
-#include "kernels/mha_dense_types.hpp"
 #include "mha_dense/mha_dense.hpp"
 
 namespace jd {
@@ -49,7 +48,7 @@ class mha_dense_static_bench : public mha_dense_bench {
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const final;
   std::vector<int> get_refresh_data_idx() const override {
-    return {mha_dense_io::SRC_Q, mha_dense_io::SRC_K, mha_dense_io::SRC_V, mha_dense_io::DST};
+    return {io::SRC_Q, io::SRC_K, io::SRC_V, io::DST};
   }
   // Just like that in gtest file
   void get_true_data() override;

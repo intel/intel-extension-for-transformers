@@ -9,3 +9,10 @@ $it_per_core=100
 56 static 2 1024 8 80 bf16 bf16 -1 2 77
 56 static 2 256 8 160 bf16 bf16 -1 2 77
 56 static 2 64 8 160 bf16 bf16 -1 2 77
+
+# kv-cache cases
+$it_per_core=500
+56 static 2 32 16 256 bf16 bf16 -1 2 32
+56 static 2 32 16 256 bf16 bf16 -1 2 48
+56 static 2 32 16 256 bf16 bf16 -1 2 56
+56 static 2 32 16 256 bf16 bf16 -1 2 64

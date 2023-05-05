@@ -20,7 +20,7 @@ namespace jd {
     SPARSE_LOG(ERROR) << "Transpose attention kernel requires `" << #f << "`"; \
     return false;                                                              \
   }
-using idx = exposed_enum::groupnorm::rt_data_idx;
+using idx = exposed_enum::groupnorm::io;
 
 bool groupnorm_kd_t::init() {
   if (!isa_available(avx512_core)) return false;

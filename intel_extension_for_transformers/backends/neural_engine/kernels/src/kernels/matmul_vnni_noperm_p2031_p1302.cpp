@@ -26,19 +26,13 @@ using io = ssd::matmul_io::io;
  *   unified: transpose input while doing gemm. This optimization usually benefits small input.
  */
 
-static inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
-  return shapes;
-}
-
 // Part1: class matmul_vnni_noperm_p2031_p1302_kd_t
 
 bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
   using dt = jd::data_type;
   if (!isa_available(avx512_core_vnni)) return false;
-  auto& descs = op_desc_.tensor_descs();
-  auto shapes = get_tensor_shapes(descs);
+  auto shapes = op_desc_.tensor_shapes();
+  auto dtypes = op_desc_.tensor_dtypes();
 
   for (auto mat : {io::SRC0, io::SRC1, io::SRC2, io::DST0})
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
@@ -66,10 +60,10 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
   }
   bool scaler_scale = shapes[io::SCALE0] == std::vector<dim_t>({1}) && shapes[io::ZP0] == std::vector<dim_t>({1});
   bool is_supported = (op_desc_.kernel_prop() == kernel_prop::forward_inference) &&
-                      is_any_of({dt::u8}, [&](const dt& a) { return descs[io::SRC0].dtype() == a; }) &&
-                      is_any_of({dt::s8}, [&](const dt& a) { return descs[io::SRC1].dtype() == a; }) &&
-                      is_any_of({dt::u8}, [&](const dt& a) { return descs[io::DST0].dtype() == a; }) &&  //
-                      scaler_scale && descs[io::SCALE0].dtype() == dt::fp32 && descs[io::ZP0].dtype() == dt::fp32;
+                      is_any_of({dt::u8}, [&](const dt& a) { return dtypes[io::SRC0] == a; }) &&
+                      is_any_of({dt::s8}, [&](const dt& a) { return dtypes[io::SRC1] == a; }) &&
+                      is_any_of({dt::u8}, [&](const dt& a) { return dtypes[io::DST0] == a; }) &&  //
+                      scaler_scale && dtypes[io::SCALE0] == dt::fp32 && dtypes[io::ZP0] == dt::fp32;
 
   if (!is_supported) {
     SPARSE_LOG(WARNING) << "Skip as dtype not matched";
@@ -97,9 +91,7 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::init() {
 }
 
 bool matmul_vnni_noperm_p2031_p1302_kd_t::matmul_params_init() {
-  auto& descs = op_desc_.tensor_descs();
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
+  const auto shapes = op_desc_.tensor_shapes();
   auto attrs = op_desc_.attrs();
 
   jit_param_.M = shapes[io::SRC0][2];      // aka src0_perm_shape[2]
@@ -119,7 +111,7 @@ bool matmul_vnni_noperm_p2031_p1302_kd_t::matmul_params_init() {
 
 matmul_vnni_noperm_p2031_p1302_k_t::matmul_vnni_noperm_p2031_p1302_k_t(const std::shared_ptr<const kd_t>& kd)
     : kernel_t(kd),
-      t_shapes_(get_tensor_shapes(kd->get_operator_desc().tensor_descs())),
+      t_shapes_(kd->get_operator_desc().tensor_shapes()),
       src0_perm_shape_(t_shapes_[io::SRC0]),  // src0 perm none
       src1_perm_shape_({
           t_shapes_[io::SRC1][2],

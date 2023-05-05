@@ -20,11 +20,11 @@
 
 #include "amx_utils.hpp"
 #include "cpu_isa.hpp"
+#include "exposed_enum.hpp"
 #include "jit_domain/jit_mha_dense_bf16.hpp"
 #include "jit_domain/jit_trans_AB16a4b_16x.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
-#include "kernels/mha_dense_types.hpp"
 #include "operator_desc.hpp"
 #include "utils.hpp"
 
@@ -54,7 +54,7 @@ class mha_dense_bf16_k_t;
  * Currently only support per-tensor quantization.
  */
 class mha_dense_bf16_kd_t : public kernel_desc_t {
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
 
  public:
   explicit mha_dense_bf16_kd_t(const jd::operator_desc& op_desc)
@@ -82,7 +82,7 @@ class mha_dense_bf16_kd_t : public kernel_desc_t {
 };
 
 class mha_dense_bf16_k_t : public kernel_t {
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
 
  public:
   using kd_t = mha_dense_bf16_kd_t;
@@ -112,16 +112,16 @@ class mha_dense_bf16_k_t : public kernel_t {
 
   const size_t workspace_size_;
 
+  const tile_param_t amx_full_tile_param_;
+  const tileconfig_t amx_full_tile_cfg_;
+  jit_amx_config_t ker_amx_cfg_;
+  jit_amx_release_t ker_amx_rls_;
+
   jit_trans_AB16a4b_16x kern_tr_k;
   jit_padding_interleave4b_n kern_tr_v;
   jit_padding_copy2d kern_tr_q;
   jit_mha_bf16_row_amx_32x32_softmax kern_qksoftmax;
   jit_mha_bf16_row_amx_32x32 kern_mmav;
-
-  const tile_param_t amx_full_tile_param_;
-  const tileconfig_t amx_full_tile_cfg_;
-  jit_amx_config_t ker_amx_cfg_;
-  jit_amx_release_t ker_amx_rls_;
 };
 
 }  // namespace jd

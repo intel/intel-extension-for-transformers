@@ -30,7 +30,6 @@
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
-#include "kernels/mha_dense_types.hpp"
 #include "mha_dense/mha_dense.hpp"
 
 namespace jd {

@@ -20,12 +20,12 @@
 
 #include "amx_utils.hpp"
 #include "cpu_isa.hpp"
+#include "exposed_enum.hpp"
 #include "jit_domain/jit_dynamic_quant_mha.hpp"
 #include "jit_domain/jit_trans_AB16a4b_16x.hpp"
 #include "jit_domain/jit_trans_BA16b4a_trq10n_x16.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
-#include "kernels/mha_dense_types.hpp"
 #include "operator_desc.hpp"
 #include "utils.hpp"
 
@@ -54,7 +54,7 @@ class dynamic_quant_mha_k_t;
 
 class dynamic_quant_mha_kd_t : public kernel_desc_t {
  public:
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
   explicit dynamic_quant_mha_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::mha_dense), op_desc_(op_desc) {}
   virtual ~dynamic_quant_mha_kd_t() {}
@@ -79,7 +79,7 @@ class dynamic_quant_mha_kd_t : public kernel_desc_t {
 
 class dynamic_quant_mha_k_t : public kernel_t {
  public:
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
   using kd_t = dynamic_quant_mha_kd_t;
   explicit dynamic_quant_mha_k_t(const std::shared_ptr<const kernel_desc_t>& kd);
   virtual ~dynamic_quant_mha_k_t() {}

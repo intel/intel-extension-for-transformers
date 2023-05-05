@@ -293,10 +293,9 @@ static auto case_func = []() {
 };
 
 std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
-  auto& descs = tpi.param.args.first.op_desc.tensor_descs();
   auto attrs = tpi.param.args.first.op_desc.attrs();
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
+  const auto shapes = tpi.param.args.first.op_desc.tensor_shapes();
+  const auto dtypes = tpi.param.args.first.op_desc.tensor_dtypes();
 
   const dim_t M = shapes[io::SRC0][0];
   const dim_t K = shapes[io::SRC0][1];
@@ -306,7 +305,7 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back(std::to_string(M));
   params.push_back(std::to_string(K));
   params.push_back(std::to_string(N));
-  params.push_back(data_type_name.at(descs[io::SRC1].dtype()));
+  params.push_back(data_type_name.at(dtypes[io::SRC1]));
   if (attrs["alpha"] != "" && str_to_num<float>(attrs["alpha"]) != 1.f)
     params.push_back(std::string("alpha") + num2id(attrs["alpha"]));
   if (attrs["weight_type"] != "") {

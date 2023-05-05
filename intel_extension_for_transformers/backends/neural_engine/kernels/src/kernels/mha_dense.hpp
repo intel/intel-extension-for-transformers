@@ -20,6 +20,7 @@
 
 #include "amx_utils.hpp"
 #include "cpu_isa.hpp"
+#include "exposed_enum.hpp"
 #include "jit_domain/jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b.hpp"
 #include "jit_domain/jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab.hpp"
 #include "jit_domain/jit_softmax_Ab16a.hpp"
@@ -27,7 +28,6 @@
 #include "jit_domain/jit_trans_BA16b4a.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
-#include "kernels/mha_dense_types.hpp"
 #include "operator_desc.hpp"
 #include "utils.hpp"
 
@@ -57,34 +57,31 @@ class mha_dense_k_t;
  * Currently only support per-tensor quantization.
  */
 class mha_dense_kd_t : public kernel_desc_t {
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
 
  public:
   explicit mha_dense_kd_t(const jd::operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::mha_dense), op_desc_(op_desc) {}
   virtual ~mha_dense_kd_t() {}
 
- public:
   bool init() override;
   DECLARE_COMMON_PD_T(mha_dense_k_t, mha_dense_kd_t);
 
- public:
   const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
   inline std::vector<dim_t> shape() const override { return op_desc_.tensor_descs()[io::DST].shape(); }
-  const ssd::mha_dense_param_t& params() const { return param_; }
   bool has_binary_add() const {
     return op_desc_.tensor_descs().size() > io::BINARY_ADD &&
            op_desc_.tensor_descs()[io::BINARY_ADD].dtype() != data_type::undef;
   }
+  bool merged() const { return merged_; }
 
  private:
   jd::operator_desc op_desc_;
-  ssd::mha_dense_param_t param_;
-  // bool add_kernel_desc(const operator_desc& op_desc, const char* name);
+  bool merged_;
 };
 
 class mha_dense_k_t : public kernel_t {
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
 
  public:
   using kd_t = mha_dense_kd_t;
@@ -117,6 +114,7 @@ class mha_dense_k_t : public kernel_t {
 
  private:
   bool execute_tiny(const std::vector<const void*>& rt_data) const;
+  const std::vector<tensor_desc>& ts_desc;
   const data_type dst_dt_;
   const format_type kv_ft_;
   const int src_bs_, src_sl_m_, src_sl_n_, head_num_, head_size_, ld_q_, ld_kv_, ld_dst_;

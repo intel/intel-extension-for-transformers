@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
 
 #include "param_types.hpp"
 #include "tensor_desc.hpp"
@@ -82,10 +83,26 @@ class operator_desc {
   inline const std::vector<postop_attr>& apply_postops_list() const { return apply_postops_list_; }
   inline const std::vector<binaryop_attr>& get_binaryop_list() const { return binaryop_list_; }
 
+  inline std::vector<std::vector<dim_t>> tensor_shapes() const {
+    std::vector<std::vector<dim_t>> ret(ts_descs_.size());
+    std::transform(ts_descs_.cbegin(), ts_descs_.cend(), ret.begin(), [](auto&& td) { return td.shape(); });
+    return ret;
+  }
+  inline std::vector<data_type> tensor_dtypes() const {
+    std::vector<data_type> ret(ts_descs_.size());
+    std::transform(ts_descs_.cbegin(), ts_descs_.cend(), ret.begin(), [](auto&& td) { return td.dtype(); });
+    return ret;
+  }
+  inline std::vector<format_type> tensor_ftypes() const {
+    std::vector<format_type> ret(ts_descs_.size());
+    std::transform(ts_descs_.cbegin(), ts_descs_.cend(), ret.begin(), [](auto&& td) { return td.ftype(); });
+    return ret;
+  }
+
  private:
   jd::kernel_kind ker_kind_;
   jd::kernel_prop ker_prop_ = jd::kernel_prop::forward_inference;
-  jd::engine_kind engine_kind_ = jd::engine_kind::cpu;;
+  jd::engine_kind engine_kind_ = jd::engine_kind::cpu;
   jd::runtime_kind runtime_kind_ = jd::runtime_kind::undef;
   uint64_t impl_nthr_;
   std::vector<tensor_desc> ts_descs_;

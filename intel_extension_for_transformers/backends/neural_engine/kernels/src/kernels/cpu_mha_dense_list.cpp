@@ -14,14 +14,15 @@
 
 #include <map>
 #include <tuple>
+
 #include "cpu_engine.hpp"
-#include "param_types.hpp"
+#include "exposed_enum.hpp"
 #include "impl_list_item.hpp"
+#include "kernels/dynamic_quant_mha.hpp"
 #include "kernels/mha_dense.hpp"
 #include "kernels/mha_dense_bf16.hpp"
 #include "kernels/mha_dense_ref.hpp"
-#include "kernels/dynamic_quant_mha.hpp"
-#include "kernels/mha_dense_types.hpp"
+#include "param_types.hpp"
 namespace jd {
 static const std::vector<impl_list_item_t> bf16_impl_list{
     CPU_INSTANCE(mha_dense_bf16_k_t),
@@ -40,8 +41,9 @@ static const std::vector<impl_list_item_t> dynamic_impl_list{
 };
 
 const std::vector<impl_list_item_t>* get_mha_dense_impl_list(const operator_desc& op_desc) {
-  return op_desc.tensor_descs()[mha_dense_io::SRC_Q].dtype() == data_type::bf16        ? &bf16_impl_list
-         : op_desc.tensor_descs()[mha_dense_io::DST_SCALE].dtype() == data_type::undef ? &static_impl_list
-                                                                                       : &dynamic_impl_list;
+  using io = exposed_enum::mha_dense::io;
+  return op_desc.tensor_descs()[io::SRC_Q].dtype() == data_type::bf16        ? &bf16_impl_list
+         : op_desc.tensor_descs()[io::DST_SCALE].dtype() == data_type::undef ? &static_impl_list
+                                                                             : &dynamic_impl_list;
 }
 }  // namespace jd

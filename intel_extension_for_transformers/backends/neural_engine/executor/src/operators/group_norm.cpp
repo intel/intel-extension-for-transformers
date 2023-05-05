@@ -263,17 +263,17 @@ void GroupNormOperator::Prepare(const vector<Tensor*>& input, const vector<Tenso
 }
 
 void GroupNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  using io = jd::exposed_enum::groupnorm::io;
   const vector<int64_t> src_shape = input[0]->shape();
   assert(src_shape.size() > 1);
   output[0]->set_shape(src_shape);
   auto HW = std::accumulate(src_shape.begin() + 2, src_shape.end(), 1, std::multiplies<int>());
   if (HW > 1024) mode = parallelC;
-
-  src_desc_ = {src_shape, type2sparsemem_[input[0]->dtype()], jd::format_type::undef};
-  dst_desc_ = {src_shape, type2sparsemem_[output[0]->dtype()], jd::format_type::undef};
-  gamma_desc_ = {{}, jd::data_type::fp32, jd::format_type::undef};
-  beta_desc_ = {{}, jd::data_type::fp32, jd::format_type::undef};
-  vector<jd::tensor_desc> ts_descs = {src_desc_, dst_desc_, gamma_desc_, beta_desc_};
+  vector<jd::tensor_desc> ts_descs(io::SIZE, jd::tensor_desc());
+  ts_descs[io::SRC] = {src_shape, type2sparsemem_[input[0]->dtype()], jd::format_type::undef};
+  ts_descs[io::DST] = {src_shape, type2sparsemem_[output[0]->dtype()], jd::format_type::undef};
+  ts_descs[io::GAMMA] = {{}, jd::data_type::fp32, jd::format_type::undef};
+  ts_descs[io::BETA] = {{}, jd::data_type::fp32, jd::format_type::undef};
   std::unordered_map<std::string, std::string> op_attrs_;
   op_attrs_["eps"] = std::to_string(epsilon_);
   op_attrs_["groups"] = std::to_string(group_);
@@ -285,6 +285,7 @@ void GroupNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
 }
 
 void GroupNormOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  using io = jd::exposed_enum::groupnorm::io;
   Tensor* src = input[0];
   const vector<int64_t>& src_shape = src->shape();
   const float* src_data = static_cast<const float*>(src->data());
@@ -294,13 +295,18 @@ void GroupNormOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   const float* beta_data = static_cast<const float*>(beta->data());
   Tensor* dst = output[0];
   float* dst_data = static_cast<float*>(dst->mutable_data());
-  std::vector<const void*> rt_data;
 
   switch (mode) {
-    case parallelC:
-      rt_data = {src->data(), dst->data(), gamma->data(), beta->data(), work_space};
+    case parallelC: {
+      std::vector<const void*> rt_data(io::SIZE);
+      rt_data[io::SRC] = src->data();
+      rt_data[io::DST] = dst->data();
+      rt_data[io::GAMMA] = gamma->data();
+      rt_data[io::BETA] = beta->data();
+      rt_data[io::WORKSPACE] = work_space;
       groupnorm_ker.execute(rt_data);
       break;
+    }
     case parallelG:
       GroupNormParallelG(src_data, gamma_data, beta_data, dst_data, src_shape);
       break;

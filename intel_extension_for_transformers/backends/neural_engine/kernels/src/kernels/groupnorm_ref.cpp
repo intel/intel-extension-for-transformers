@@ -16,8 +16,8 @@
 #include "exposed_enum.hpp"
 
 namespace jd {
-using idx = exposed_enum::groupnorm::rt_data_idx;
-bool groupnorm_ref_k_t::execute([[maybe_unused]] const std::vector<const void*>& rt_data) const {
+using idx = exposed_enum::groupnorm::io;
+bool groupnorm_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto shape = derived_kd()->shape();
   auto src_desc = derived_kd()->get_operator_desc().tensor_descs()[0];
   auto op_attrs = derived_kd()->get_operator_desc().attrs();

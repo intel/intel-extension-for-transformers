@@ -211,10 +211,8 @@ static auto case_func = []() {
 };
 
 std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
-  auto& descs = tpi.param.args.first.op_desc.tensor_descs();
+  const auto shapes = tpi.param.args.first.op_desc.tensor_shapes();
   auto attrs = tpi.param.args.first.op_desc.attrs();
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
 
   const dim_t bs0 = shapes[io::DST0][0];
   const dim_t bs1 = shapes[io::DST0][1];

@@ -120,15 +120,7 @@ void jit_softmax_Ab16a::generate() {
   }
   vpxorq(zmm16, zmm16, zmm16);
   for (int i = 0; i < 16; ++i) {
-    vpermilps(zmm30, Zmm(i), SHUFFLE(2, 3, 0, 1));
-    vmaxps(Zmm(i), Zmm(i), zmm30);
-    vpermilps(zmm30, Zmm(i), SHUFFLE(1, 0, 3, 2));
-    vmaxps(Zmm(i), Zmm(i), zmm30);
-    vshuff32x4(zmm30, Zmm(i), Zmm(i), SHUFFLE(2, 3, 0, 1));
-    vmaxps(Zmm(i), Zmm(i), zmm30);
-    vshuff32x4(zmm30, Zmm(i), Zmm(i), SHUFFLE(1, 0, 3, 2));
-    vmaxps(Zmm(i), Zmm(i), zmm30);
-
+    reduce_dwords(Zmm(i), zmm30, &CodeGenerator::vmaxps);
     vsubps(Zmm(i), zmm16, Zmm(i));  // negate
   }
   // calculation exp and sum

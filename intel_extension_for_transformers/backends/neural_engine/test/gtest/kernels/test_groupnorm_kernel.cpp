@@ -18,7 +18,7 @@
 
 namespace jd {
 
-using idx = exposed_enum::groupnorm::rt_data_idx;
+using idx = exposed_enum::groupnorm::io;
 
 struct op_args_t {
   operator_desc op_desc;
@@ -41,8 +41,8 @@ bool check_result(const test_params_t& t) {
   const auto& op_desc = p.op_desc;
   auto dt = op_desc.tensor_descs()[0].dtype();
   auto op_attr = op_desc.attrs();
-  std::vector<const void*> data1(idx::IDX_SIZE);
-  std::vector<const void*> data2(idx::IDX_SIZE);
+  std::vector<const void*> data1(idx::SIZE, nullptr);
+  std::vector<const void*> data2(idx::SIZE, nullptr);
   try {
     groupnorm_desc groupnorm_desc(op_desc);
     groupnorm groupnorm_ker(groupnorm_desc);

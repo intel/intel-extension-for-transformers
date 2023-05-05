@@ -17,12 +17,16 @@
 
 #include <algorithm>
 #include <vector>
+#include <memory>
 
 #include "amx_utils.hpp"
 #include "jit_generator.hpp"
+#include "regs_pool.hpp"
+
+/// @note jit classes in this file may not meet the coding convention and is to be refactored.
 
 namespace jd {
-// src rowxcolbytes => dst rowbytespad//64xcolpadx64
+// src row x colbytes => dst rowbytespad//64xcolpadx64
 // rowpad%N=0
 class jit_padding_interleave4b_n : public jit_generator {
  public:
@@ -38,171 +42,115 @@ class jit_padding_interleave4b_n : public jit_generator {
   };
 
   explicit jit_padding_interleave4b_n(int _ntile, int _srcbytes)
-      : NTile(_ntile), SrcBytes(_srcbytes), RowTile(4 / SrcBytes) {}
+      : NTile(_ntile), SrcBytes(_srcbytes), RowTile(4 / SrcBytes) {
+    SPARSE_LOG_IF(FATAL, SrcBytes != 1 && SrcBytes != 2) << "Unexpected SrcBytes!";
+  }
 
  private:
+  void process_row_tile(regs_pool* const rp, const Reg64 src_ptr, const Reg64 dst_ptr, const Reg64 src_stride,
+                        const Reg64 dst_stride, const Reg64 iter_row, const Reg64 col_size, bool is_row_tail) {
+    const auto ZmmEleSize = 64 / SrcBytes;
+    const auto NPerLoop = std::min(NTile, ZmmEleSize);
+    const auto ZMM_PerNTile = std::min(1, NTile / ZmmEleSize);
+    const auto Valid_NReg = NPerLoop / 16;
+    const auto& reg_itercol = rp->reg<Reg64>();
+    xor_(reg_itercol.cvt32(), reg_itercol.cvt32());
+    Xbyak::Label l_col_loop;
+    L(l_col_loop);
+    const auto masks = rp->regs<Opmask>(ZMM_PerNTile);
+    for (int i = 0; i < ZMM_PerNTile; i++) {
+      auto curr_itercol = rp->reg<Reg64>();  // curr_itercol = reg_itercol + i * NPerLoop;
+      lea(curr_itercol, ptr[reg_itercol + i * NPerLoop]);
+      generate_Nbitsmask(masks[i], curr_itercol, col_size, rp->reg<Reg64>(), rp->reg<Reg64>(), NPerLoop);
+    }
+    const auto& curr_dst = rp->reg<Reg64>();
+    mov(curr_dst, reg_itercol);
+    imul(curr_dst, dst_stride);
+    lea(curr_dst, ptr[dst_ptr + curr_dst]);
+    for (int i = 0; i < NTile; i += NPerLoop) {
+      const auto reg_srcs = rp->regs<Zmm>(RowTile);
+      if (is_row_tail) {
+        for (int j = 0; j < RowTile; j++) vxorps(reg_srcs[j], reg_srcs[j]);
+      }
+
+      const auto curr_src = rp->reg<Reg64>();  // curr_src := reg_itercol * SrcBytes + j * reg_srcstride
+      Xbyak::Label l_skip_row;
+      for (int j = 0; j < RowTile; j++) {
+        if (is_row_tail) {
+          const auto& curr_iter_row = rp->reg<Reg64>();
+          lea(curr_iter_row, ptr[iter_row + j]);
+          cmp(curr_iter_row.cvt32(), dword[rp->p[0] + offsetof(rt_data_t, row)]);
+          jge(l_skip_row, T_NEAR);
+        }
+
+        (j == 0) ? lea(curr_src, ptr[src_ptr + reg_itercol * SrcBytes]) : lea(curr_src, ptr[curr_src + src_stride]);
+        if (SrcBytes == 1) {
+          vmovdqu8(reg_srcs[j] | masks[i / NPerLoop] | T_z, zword[curr_src + i * SrcBytes]);
+        } else if (SrcBytes == 2) {
+          vmovdqu16(reg_srcs[j] | masks[i / NPerLoop] | T_z, zword[curr_src + i * SrcBytes]);
+        }
+      }
+      if (is_row_tail) L(l_skip_row);
+      if (SrcBytes == 1) {
+        assert(false);  // TODO(Yi): unify reorder V
+      } else if (SrcBytes == 2) {
+        interleave_2rows_4regs(reg_srcs, rp->regs<Zmm>(16));
+      } else {
+        assert(false);
+      }
+      for (int j = 0; j < Valid_NReg; j++) vmovaps(ptr[curr_dst + j * BYTES_ZMM + i * 4], reg_srcs[j]);
+    }
+    lea(reg_itercol, ptr[reg_itercol + NTile]);
+    cmp(reg_itercol, col_size);
+    jb(l_col_loop);
+  }
+
   inline void generate() override {
     inLocalLabel();  // use local label for multiple instance
+    const int ZMM_PerNTile = ceil_div(NTile * SrcBytes, BYTES_ZMM);
+    const int vmm_used = 16 + RowTile;
+    regs_pool rp(this, 1, {11, vmm_used, ZMM_PerNTile});
+    const auto& reg_srcptr = rp.reg<Reg64>();
+    const auto& reg_dstptr = rp.reg<Reg64>();
+    const auto& reg_srcstride = rp.reg<Reg64>();
+    const auto& reg_dststride = rp.reg<Reg64>();
+    const auto& reg_colsize = rp.reg<Reg64>();
+    mov(reg_srcptr, ptr[rp.p[0] + offsetof(rt_data_t, srcptr)]);
+    mov(reg_dstptr, ptr[rp.p[0] + offsetof(rt_data_t, dstptr)]);
+    mov(reg_srcstride.cvt32(), ptr[rp.p[0] + offsetof(rt_data_t, srcstride)]);
+    mov(reg_dststride.cvt32(), ptr[rp.p[0] + offsetof(rt_data_t, dststride)]);
+    mov(reg_colsize.cvt32(), ptr[rp.p[0] + offsetof(rt_data_t, col)]);
 
-    int SF_TmpSize = 64;
-    Xbyak::util::StackFrame st(this, 1, 12, 16 * 10 + SF_TmpSize);
-    const Xbyak::Reg64& parambase = st.p[0];
-    const Xbyak::Reg64& reg_srcptr = st.t[0];
-    const Xbyak::Reg64& reg_dstptr = st.t[1];
-    const Xbyak::Reg64& reg_srcstride = st.t[2];
-    const Xbyak::Reg64& reg_dststride = st.t[3];
-    const Xbyak::Reg64& reg_rowpadsize = st.t[4];
-    const Xbyak::Reg64& reg_colsize = st.t[5];
-    const Xbyak::Reg64& reg_iterrow = st.t[6];
-    const Xbyak::Reg64& reg_itercol = st.t[7];
-    const Xbyak::Reg64& reg_tmp = st.t[8];
-    const Xbyak::Reg64& reg_tmp1 = st.t[9];
-    const Xbyak::Reg64& reg_tmp2 = st.t[10];
-    const Xbyak::Reg64& reg_colpadsize = st.t[11];
-    const Xbyak::Reg64& reg_ret = rax;
-    int ZmmEleSize = 64 / SrcBytes;
-    auto shuf_masks = std::vector<Opmask>{k5, k6};
-    mov(reg_tmp, 0xf0f0);
-    kmovd(shuf_masks[0], reg_tmp.cvt32());
-    mov(reg_tmp, 0x0f0f);
-    kmovd(shuf_masks[1], reg_tmp.cvt32());
-#ifdef _WIN32
-    for (int i = 0; i < 10; i++) {
-      movaps(xword[rsp + i * 16], Xmm(6 + i));
+    Xbyak::Label l_row_loop;
+    const auto& reg_iterrow = rp.reg<Reg64>();
+    xor_(reg_iterrow.cvt32(), reg_iterrow.cvt32());
+    L(l_row_loop);
+
+    const auto& reg_itercol = rp.reg<Reg64>();
+    {  // if (reg_iterrow + RowTile > row) jmp to tail
+      const auto& reg_tmp = rp.reg<Reg64>();
+      lea(reg_tmp, ptr[reg_iterrow + RowTile]);
+      cmp(reg_tmp.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, row)]);
     }
-#endif
-    mov(reg_srcptr, ptr[parambase + offsetof(rt_data_t, srcptr)]);
-    mov(reg_dstptr, ptr[parambase + offsetof(rt_data_t, dstptr)]);
-    mov(reg_srcstride.cvt32(), ptr[parambase + offsetof(rt_data_t, srcstride)]);
-    mov(reg_dststride.cvt32(), ptr[parambase + offsetof(rt_data_t, dststride)]);
+    jg(".tailloop", T_NEAR);
 
-    mov(reg_colsize.cvt32(), ptr[parambase + offsetof(rt_data_t, col)]);
-
-    mov(reg_colpadsize.cvt32(), ptr[parambase + offsetof(rt_data_t, colpad)]);
-    mov(reg_rowpadsize.cvt32(), ptr[parambase + offsetof(rt_data_t, rowpad)]);
-
-    int ZIDX_TranSrc = 0;
-    int ZIDX_TransTmp = RowTile;
-    std::vector<Zmm> reg_srcs(RowTile), reg_tmps(16);
-    for (size_t i = 0; i < reg_srcs.size(); i++) {
-      reg_srcs[i] = Zmm(ZIDX_TranSrc + i);
+    process_row_tile(&rp, reg_srcptr, reg_dstptr, reg_srcstride, reg_dststride, reg_iterrow, reg_colsize, false);
+    {  // reg_srcptr += RowTile * reg_srcstride
+      const auto& reg_tmp = rp.reg<Reg64>();
+      imul(reg_tmp, reg_srcstride, RowTile);
+      lea(reg_srcptr, ptr[reg_srcptr + reg_tmp]);
     }
-    for (size_t i = 0; i < reg_tmps.size(); i++) {
-      reg_tmps[i] = Zmm(ZIDX_TransTmp + i);
-    }
-    int NPerLoop = std::min(NTile, ZmmEleSize);
-    int ZMM_PerNTile = std::min(1, NTile / ZmmEleSize);
-    int Valid_NReg = NPerLoop / 16;
-
-    xor_(reg_iterrow, reg_iterrow);
-    L(".rowloop");
-    xor_(reg_itercol, reg_itercol);
-    mov(reg_tmp.cvt32(), ptr[parambase + offsetof(rt_data_t, row)]);
-    sub(reg_tmp, reg_iterrow);
-    cmp(reg_tmp, RowTile);
-    jl(".tailloop", T_NEAR);
-
-    L(".colloop");
-    for (int i = 0; i < ZMM_PerNTile; i++) {
-      int mskidx = 1 + i;
-      generate_Nbitsmask(Opmask(mskidx), reg_itercol, reg_colsize, reg_tmp, reg_tmp1, NPerLoop);
-      add(reg_itercol, NPerLoop);
-    }
-    sub(reg_itercol, NTile);
-    mov(reg_tmp1, reg_itercol);
-    imul(reg_tmp1, reg_dststride);
-    lea(reg_tmp, ptr[reg_dstptr + reg_tmp1]);
-    for (int i = 0; i < NTile; i += NPerLoop) {
-      int mskidx = 1 + (i / NPerLoop);
-      lea(reg_tmp1, ptr[reg_srcptr + reg_itercol * SrcBytes]);
-      for (int j = 0; j < RowTile; j++) {
-        if (SrcBytes == 1) {
-          vmovdqu8(reg_srcs[j] | Opmask(mskidx) | T_z, ptr[reg_tmp1 + i * SrcBytes]);
-        } else if (SrcBytes == 2) {
-          vmovdqu16(reg_srcs[j] | Opmask(mskidx) | T_z, ptr[reg_tmp1 + i * SrcBytes]);
-        } else if (SrcBytes == 4) {
-          vmovdqu32(reg_srcs[j] | Opmask(mskidx) | T_z, ptr[reg_tmp1 + i * SrcBytes]);
-        }
-        add(reg_tmp1, reg_srcstride);
-      }
-      if (SrcBytes == 2) {
-        interleave_2rows_4regs(reg_srcs.data(), reg_tmps.data());
-      } else if (SrcBytes == 1) {
-        assert(false);  // TODO(Yi): unify reorder V
-      } else {
-      }
-      for (int j = 0; j < Valid_NReg; j++) {
-        vmovups(ptr[reg_tmp + j * 64 + i * 4], reg_srcs[j]);
-      }
-    }
-    add(reg_itercol, NTile);
-    cmp(reg_itercol, reg_colpadsize);
-    jb(".colloop");
-    add(reg_iterrow, RowTile);
-    imul(reg_tmp, reg_srcstride, RowTile);
-    lea(reg_srcptr, ptr[reg_srcptr + reg_tmp]);
-    lea(reg_dstptr, ptr[reg_dstptr + NTile * 4]);
     jmp(".rowend", T_NEAR);
 
     L(".tailloop");
-
-    L(".tailcolloop");
-    for (int i = 0; i < ZMM_PerNTile; i++) {
-      int mskidx = 1 + i;
-      generate_Nbitsmask(Opmask(mskidx), reg_itercol, reg_colsize, reg_tmp, reg_tmp1, NPerLoop);
-      add(reg_itercol, NPerLoop);
-    }
-    sub(reg_itercol, NTile);
-    mov(reg_tmp1, reg_itercol);
-    imul(reg_tmp1, reg_dststride);
-    lea(reg_tmp, ptr[reg_dstptr + reg_tmp1]);
-    lea(reg_tmp1, ptr[reg_srcptr + reg_itercol * SrcBytes]);
-    for (int i = 0; i < NTile; i += NPerLoop) {
-      int mskidx = 1 + (i / NPerLoop);
-      lea(reg_tmp1, ptr[reg_srcptr + reg_itercol * SrcBytes]);
-      mov(reg_tmp2, reg_iterrow);
-      for (int j = 0; j < RowTile; j++) vxorps(reg_srcs[j], reg_srcs[j]);
-      inLocalLabel();
-      for (int j = 0; j < RowTile; j++) {
-        cmp(reg_tmp2.cvt32(), ptr[parambase + offsetof(rt_data_t, row)]);
-        jge(".tailloop_skip", T_NEAR);
-        if (SrcBytes == 1) {
-          vmovdqu8(reg_srcs[j] | Opmask(mskidx) | T_z, ptr[reg_tmp1 + i * SrcBytes]);
-        } else if (SrcBytes == 2) {
-          vmovdqu16(reg_srcs[j] | Opmask(mskidx) | T_z, ptr[reg_tmp1 + i * SrcBytes]);
-        } else if (SrcBytes == 4) {
-          vmovdqu32(reg_srcs[j] | Opmask(mskidx) | T_z, ptr[reg_tmp1 + i * SrcBytes]);
-        }
-        add(reg_tmp1, reg_srcstride);
-        add(reg_tmp2, 1);
-      }
-      L(".tailloop_skip");
-      outLocalLabel();
-      if (SrcBytes == 2) {
-        interleave_2rows_4regs(reg_srcs.data(), reg_tmps.data());
-      } else if (SrcBytes == 1) {
-        assert(false);  // TODO(Yi): unify reorder V
-      }
-      for (int j = 0; j < Valid_NReg; j++) {
-        vmovups(ptr[reg_tmp + j * 64 + i * 4], reg_srcs[j]);
-      }
-    }
-    add(reg_itercol, NTile);
-    cmp(reg_itercol, reg_colpadsize);
-    jb(".tailcolloop");
-    add(reg_iterrow, RowTile);
-    lea(reg_dstptr, ptr[reg_dstptr + NTile * 4]);
+    process_row_tile(&rp, reg_srcptr, reg_dstptr, reg_srcstride, reg_dststride, reg_iterrow, reg_colsize, true);
 
     L(".rowend");
-    cmp(reg_iterrow.cvt32(), reg_rowpadsize);
-    jb(".rowloop");
+    lea(reg_dstptr, ptr[reg_dstptr + NTile * 4]);
+    add(reg_iterrow, RowTile);
+    cmp(reg_iterrow.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, rowpad)]);
+    jb(l_row_loop);
 
-    mov(reg_ret, 0);
-#ifdef _WIN32
-    for (int i = 0; i < 10; i++) {
-      movaps(Xmm(i + 6), xword[rsp + i * 16]);
-    }
-#endif
     outLocalLabel();  // end of local label
   }
 
@@ -234,7 +182,7 @@ class jit_padding_interleave4b_n : public jit_generator {
     L(".maskend");
     outLocalLabel();
   }
-  void interleave_2rows_4regs(Xbyak::Zmm* src_2regs, Xbyak::Zmm* tmp_2reg) {
+  void interleave_2rows_4regs(std::vector<Xbyak::Zmm> src_2regs, std::vector<Xbyak::Zmm> tmp_2reg) {
     vpunpcklwd(tmp_2reg[0], src_2regs[0], src_2regs[1]);
     vpunpckhwd(tmp_2reg[1], src_2regs[0], src_2regs[1]);
     vshuff32x4(src_2regs[0], tmp_2reg[0], tmp_2reg[1], 0 | (1 << 2) | (0 << 4) | (1 << 6));
@@ -242,7 +190,7 @@ class jit_padding_interleave4b_n : public jit_generator {
     vshuff32x4(src_2regs[1], tmp_2reg[0], tmp_2reg[1], 2 | (3 << 2) | (2 << 4) | (3 << 6));
     vshuff32x4(src_2regs[1], src_2regs[1], src_2regs[1], 0 | (2 << 2) | (1 << 4) | (3 << 6));
   }
-  const int NTile;
+  const int NTile;  // in terms of #elemetns
   const int SrcBytes, RowTile;
 };
 
@@ -267,7 +215,6 @@ class jit_padding_copy2d : public jit_generator {
     inLocalLabel();  // use local label for multiple instance
     int SF_TmpSize = 64;
     Xbyak::util::StackFrame st(this, 1, 12, 16 * 10 + SF_TmpSize);
-    const Reg64& parambase = st.p[0];
     const Reg64& reg_srcptr = st.t[0];
     const Reg64& reg_dstptr = st.t[1];
     const Reg64& reg_srcstride = st.t[2];
@@ -288,16 +235,16 @@ class jit_padding_copy2d : public jit_generator {
       movaps(xword[rsp + i * 16], Xmm(6 + i));
     }
 #endif
-    mov(reg_srcptr, ptr[parambase + offsetof(rt_data_t, srcptr)]);
-    mov(reg_dstptr, ptr[parambase + offsetof(rt_data_t, dstptr)]);
-    mov(reg_srcstride.cvt32(), ptr[parambase + offsetof(rt_data_t, srcstride)]);
-    mov(reg_dststride.cvt32(), ptr[parambase + offsetof(rt_data_t, dststride)]);
+    mov(reg_srcptr, ptr[st.p[0] + offsetof(rt_data_t, srcptr)]);
+    mov(reg_dstptr, ptr[st.p[0] + offsetof(rt_data_t, dstptr)]);
+    mov(reg_srcstride.cvt32(), ptr[st.p[0] + offsetof(rt_data_t, srcstride)]);
+    mov(reg_dststride.cvt32(), ptr[st.p[0] + offsetof(rt_data_t, dststride)]);
 
-    mov(reg_colsize.cvt32(), ptr[parambase + offsetof(rt_data_t, col)]);
-    mov(reg_rowsize.cvt32(), ptr[parambase + offsetof(rt_data_t, row)]);
+    mov(reg_colsize.cvt32(), ptr[st.p[0] + offsetof(rt_data_t, col)]);
+    mov(reg_rowsize.cvt32(), ptr[st.p[0] + offsetof(rt_data_t, row)]);
 
-    mov(reg_colpadsize.cvt32(), ptr[parambase + offsetof(rt_data_t, colpad)]);
-    mov(reg_rowpadsize.cvt32(), ptr[parambase + offsetof(rt_data_t, rowpad)]);
+    mov(reg_colpadsize.cvt32(), ptr[st.p[0] + offsetof(rt_data_t, colpad)]);
+    mov(reg_rowpadsize.cvt32(), ptr[st.p[0] + offsetof(rt_data_t, rowpad)]);
 
     int Level0_RowTile = 8;
     xor_(reg_iterrow, reg_iterrow);
@@ -408,226 +355,185 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
   static constexpr int MTile = 32, NTile = 32;
   static constexpr int KTile = 32;
 
-  explicit jit_mha_bf16_row_amx_32x32_softmax(bool has_badd)
-      : jit_generator(), binary_add(has_badd), mTC{tile_param_t(16, 16, KTile, true, 2)} {}
+  explicit jit_mha_bf16_row_amx_32x32_softmax(bool has_badd, const tile_param_t* pre_amx_cfg)
+      : jit_generator(),
+        binary_add(has_badd),
+        pre_amx_cfg_(pre_amx_cfg),
+        required_amx_cfg_{16, 16, KTile, true, 2},
+        required_tile_cfg_(required_amx_cfg_) {}
 
  private:
   inline void generate() override {
-    // int CMTile = 2;
+    bool need_cfg_amx = pre_amx_cfg_ != nullptr && *pre_amx_cfg_ != required_amx_cfg_;
+    std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
+
     int const ZMM_PerROW = NTile / 16;
+    const int amx_config_size = need_cfg_amx ? sizeof(tileconfig_t) : 0;
+    const int TmmReserve = MTile * NTile * sizeof(float);
+    const int ExpSumReserve = MTile * BYTES_ZMM;  // reserve for Expsum buffer
+    const int TmpSpace = amx_config_size + TmmReserve + ExpSumReserve;
+    const int TTmmStart = amx_config_size;
+    const int TExpsumStart = TTmmStart + TmmReserve;
 
-    inLocalLabel();  // use local label for multiple instance
-    int XmmReserve = 16 * (10 + 2);
-    int TmmReserve = MTile * NTile * 4;
-    int ExpSumReserve = MTile * 16 * 4;  // reserve for Expsum buffer
-    int TmpSpace = XmmReserve + TmmReserve + ExpSumReserve;
-    int TTmmStart = XmmReserve;
-    int TExpsumStart = TTmmStart + TmmReserve;
-
-    Xbyak::Label l_exp_approx_coeff;
-    Xbyak::Label l_log2e;
-    Xbyak::Label l_ln2;
-    Xbyak::Label l_255f;
+    Xbyak::Label l_exp_approx_coeff, l_log2e, l_ln2, l_255f, l_amx_cfg;
     {
-      Xbyak::util::StackFrame st(this, 1, 13, TmpSpace);
+      regs_pool rp(this, 1, {9, 32, 0}, TmpSpace, true, 64);  // align 64
 
-#ifdef _WIN32
-      for (int i = 0; i < 10; i++) {
-        movaps(xword[rsp + i * 16], Xmm(6 + i));
+      std::shared_ptr<void> local_cfg;
+      if (need_cfg_amx) {  // create a local amx config environment
+        local_cfg = {(sttilecfg(ptr[rsp]), ldtilecfg(ptr[rip + l_amx_cfg]), nullptr),
+                     [&](...) { ldtilecfg(ptr[rsp]); }};
       }
-#endif
-      const Reg64& parambase = st.p[0];
-      const Reg64& reg_matAptr = st.t[0];
-      const Reg64& reg_matBptr = st.t[1];
-      const Reg64& reg_astep = st.t[2];
-      const Reg64& reg_matCptr = st.t[3];
-      const Reg64& reg_matDptr = st.t[4];
-      const Reg64& reg_iterk = st.t[5];
-      // const Reg64& reg_sumptr = st.t[6];
-      const Reg64& reg_itern = st.t[7];
-      const Reg64& reg_TmpPtr = st.t[8];
-      const Reg64& reg_iterm = st.t[10];
-      const Reg64& reg_ksize = st.t[11];
-      const Reg64& reg_temp = st.t[12];
-      const Reg64& reg_ret = rax;
+      const auto reg_ksize = rp.reg<Reg64>();
+      mov(reg_ksize.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, k)]);
 
-      // ZMM:
-      // [0-15] ZMMs for expsum [16-31] ZMMs for temp regs of transpose
-      // [27-31] ZMMs for constant variables
-      // [16-26] ZMMs for temperary use
-      int ZIDX_LOG2E = 31;
-      int ZIDX_LN2 = 30;
-      int ZIDX_C0 = 29;
-      int ZIDX_C1 = 28;
-      int ZIDX_C2 = 27;
-
-      const std::array<Zmm, 3> c = {
-          Zmm(ZIDX_C0),
-          Zmm(ZIDX_C1),
-          Zmm(ZIDX_C2),
-      };
-      int ZIDX_TMP = 25;
-      const std::array<Zmm, 2> tmp = {Zmm(ZIDX_TMP), Zmm(ZIDX_TMP + 1)};
-      int ZIDX_ExpSum = 0;
-      // int ZIDX_CReg = 16;
-      std::array<Zmm, 16> regs_trans_src, regs_trans_tmp;
-      for (int i = 0; i < 16; i++) {
-        regs_trans_src[i] = Zmm(i);
-        regs_trans_tmp[i] = Zmm(16 + i);
-      }
-
-      mov(reg_temp, reinterpret_cast<uint64_t>(&mTC));
-      ldtilecfg(ptr[reg_temp]);
-
-      xor_(reg_astep, reg_astep);
-
-      mov(reg_ksize.cvt32(), dword[parambase + offsetof(rt_data_t, k)]);
-
+      const auto reg_iterm = rp.reg<Reg64>();
       xor_(reg_iterm, reg_iterm);
       L(".mloop");
-      for (int i = 0; i < 16; i++) {
-        vxorps(Zmm(ZIDX_ExpSum + i), Zmm(ZIDX_ExpSum + i));
-      }
-      for (int i = 0; i < MTile; i++) {
-        vmovups(ptr[rsp + TExpsumStart + i * 64], Zmm(ZIDX_ExpSum));
-      }
-
-      vbroadcastss(Zmm(ZIDX_LOG2E), ptr[rip + l_log2e]);
-      vbroadcastss(Zmm(ZIDX_LN2), ptr[rip + l_ln2]);
-      vbroadcastss(Zmm(ZIDX_C0), ptr[rip + l_exp_approx_coeff]);
-      vbroadcastss(Zmm(ZIDX_C1), ptr[rip + l_exp_approx_coeff + 4]);
-      vbroadcastss(Zmm(ZIDX_C2), ptr[rip + l_exp_approx_coeff + 8]);
-
-      xor_(reg_itern, reg_itern);
-      L(".nloop");
-      mov(reg_matBptr, ptr[parambase + offsetof(rt_data_t, matB)]);
       {
-        auto reg_tmp = reg_iterk;
-        mov(reg_tmp, reg_ksize);
-        imul(reg_tmp, reg_itern);
-        lea(reg_matBptr, ptr[reg_matBptr + reg_tmp * sizeof(bfloat16_t)]);
-      }
-      mov(reg_matAptr, ptr[parambase + offsetof(rt_data_t, matA)]);
-      mov(reg_astep.cvt32(), dword[parambase + offsetof(rt_data_t, astep)]);
-      {  // reg_matAptr = reg_matAptr + reg_iterm * reg_astep
-        auto reg_tmp = reg_iterk;
-        mov(reg_tmp, reg_astep);
-        imul(reg_tmp, reg_iterm);
-        lea(reg_matAptr, ptr[reg_matAptr + reg_tmp]);
+        const auto vreg_zero = rp.reg<Zmm>();
+        vxorps(vreg_zero, vreg_zero);
+        for (int i = 0; i < MTile; i++) vmovaps(ptr[rsp + TExpsumStart + i * 64], vreg_zero);
       }
 
-      mov(reg_temp, NTile * 4);  // b,c stride
-      tile_product_amx_bf16ps(reg_ksize, reg_matAptr, reg_matBptr, reg_astep, reg_temp, reg_iterk, reg_TmpPtr,
-                              [&](int i, int j) { return ptr[rsp + reg_temp + TTmmStart + i * 16 * 64 * 2 + j * 64]; });
+      {
+        const auto vreg_log2e = rp.reg<Zmm>();
+        const auto vreg_ln2 = rp.reg<Zmm>();
+        const auto c = rp.regs<Zmm, 3>();
+        vbroadcastss(vreg_log2e, dword[rip + l_log2e]);
+        vbroadcastss(vreg_ln2, dword[rip + l_ln2]);
+        vbroadcastss(c[0], dword[rip + l_exp_approx_coeff]);
+        vbroadcastss(c[1], dword[rip + l_exp_approx_coeff + 4]);
+        vbroadcastss(c[2], dword[rip + l_exp_approx_coeff + 8]);
 
-      if (binary_add) {
-        mov(reg_matDptr.cvt32(), dword[parambase + offsetof(rt_data_t, dstep)]);
-        imul(reg_matDptr, reg_iterm);
-        add(reg_matDptr, qword[parambase + offsetof(rt_data_t, matD)]);
-        lea(reg_matDptr, ptr[reg_matDptr + reg_itern * sizeof(float)]);
-      }
-      auto reg_cstep = reg_astep;
-      imul(reg_cstep.cvt32(), dword[parambase + offsetof(rt_data_t, n)], sizeof(bfloat16_t));
-      mov(reg_matCptr, ptr[parambase + offsetof(rt_data_t, matC)]);
-      lea(reg_matCptr, ptr[reg_matCptr + reg_itern * sizeof(bfloat16_t)]);
-      {  // reg_matCptr += reg_cstep * reg_iterm
-        auto reg_tmp = reg_iterk;
-        mov(reg_tmp, reg_iterm);
-        imul(reg_tmp.cvt32(), reg_cstep);
-        add(reg_matCptr, reg_tmp);
-      }
+        const auto reg_itern = rp.reg<Reg64>();
+        xor_(reg_itern.cvt32(), reg_itern.cvt32());
+        L(".nloop");
+        {  // tile product
+          const auto reg_matB = rp.reg<Reg64>();
+          {  // reg_matB := matB + reg_ksize * reg_itern * sizeof(bf16)
+            mov(reg_matB, ptr[rp.p[0] + offsetof(rt_data_t, matB)]);
+            auto reg_tmp = rp.reg<Reg64>();
+            mov(reg_tmp, reg_ksize);
+            imul(reg_tmp, reg_itern);
+            lea(reg_matB, ptr[reg_matB + reg_tmp * sizeof(bfloat16_t)]);
+          }
+          const auto reg_astep = rp.reg<Reg64>();
+          mov(reg_astep.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, astep)]);
+          const auto reg_matA = rp.reg<Reg64>();
+          {  // reg_matA = matA + reg_iterm * reg_astep
+            mov(reg_matA, ptr[rp.p[0] + offsetof(rt_data_t, matA)]);
+            auto reg_tmp = rp.reg<Reg64>();
+            mov(reg_tmp, reg_astep);
+            imul(reg_tmp, reg_iterm);
+            lea(reg_matA, ptr[reg_matA + reg_tmp]);
+          }
+          const auto stride_bc = rp.reg<Reg64>();
+          mov(stride_bc, NTile * sizeof(float));  // b,c stride
+          tile_product_amx_bf16ps(
+              reg_ksize, reg_matA, reg_matB, reg_astep, stride_bc, rp.reg<Reg64>(), rp.reg<Reg64>(),
+              [&](int i, int j) { return ptr[rsp + stride_bc + TTmmStart + i * 16 * 64 * 2 + j * 64]; });
+        }
+        const auto reg_matD = rp.reg<Reg64>();
+        if (binary_add) {
+          mov(reg_matD.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, dstep)]);
+          imul(reg_matD, reg_iterm);
+          add(reg_matD, qword[rp.p[0] + offsetof(rt_data_t, matD)]);
+          lea(reg_matD, ptr[reg_matD + reg_itern * sizeof(float)]);
+        }
+        const auto reg_matC = rp.reg<Reg64>();
+        const auto reg_cstep = rp.reg<Reg64>();
+        imul(reg_cstep.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)], sizeof(bfloat16_t));
+        mov(reg_matC, ptr[rp.p[0] + offsetof(rt_data_t, matC)]);
+        lea(reg_matC, ptr[reg_matC + reg_itern * sizeof(bfloat16_t)]);
+        {  // reg_matC += reg_cstep * reg_iterm
+          auto reg_tmp = rp.reg<Reg64>();
+          mov(reg_tmp, reg_iterm);
+          imul(reg_tmp.cvt32(), reg_cstep);
+          add(reg_matC, reg_tmp);
+        }
 
-      // calc f32 exp, accumulate exp to buffer
-      for (int in = 0; in < NTile; in += 16) {
-        lea(reg_TmpPtr, ptr[reg_matCptr + in * sizeof(bfloat16_t)]);
-        for (int i = 0; i < MTile; i += 16) {
-          for (int j = 0; j < 16; j++) {
-            auto reg_tmp = reg_iterk;
-            if (binary_add)
-              (i == 0 && j == 0) ? xor_(reg_tmp.cvt32(), reg_tmp.cvt32())
-                                 : add(reg_tmp.cvt32(), dword[parambase + offsetof(rt_data_t, dstep)]);
-            if (binary_add) vmovups(regs_trans_tmp[0], zword[reg_matDptr + reg_tmp + in * 4]);
+        // calc f32 exp, accumulate exp to buffer
+        for (int in = 0; in < NTile; in += 16) {
+          const auto curr_matC = rp.reg<Reg64>();
+          auto badd_ptr = rp.reg<Reg64>();
+          for (int i = 0; i < MTile; i += 16) {
+            const auto vregs_xs = rp.regs<Zmm, 16>();
+            for (int ii = 0; ii < 16; ii++) {
+              (i == 0 && ii == 0) ? lea(curr_matC, ptr[reg_matC + in * sizeof(bfloat16_t)])
+                                  : lea(curr_matC, ptr[curr_matC + reg_cstep]);
+              const auto vreg_badd = rp.reg<Zmm>();
+              if (binary_add) {
+                (i == 0 && ii == 0) ? xor_(badd_ptr.cvt32(), badd_ptr.cvt32())
+                                    : add(badd_ptr.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, dstep)]);
+                vmovups(vreg_badd, zword[reg_matD + badd_ptr + in * 4]);
+              }
 
-            vmovups(regs_trans_src[j], ptr[rsp + TTmmStart + in * 4 + (i + j) * NTile * 4]);
-            !binary_add  // (optionally) add mask and scale
-                ? vmulps(regs_trans_src[j], regs_trans_src[j], zword_b[parambase + offsetof(rt_data_t, scaleAB)])
-                : vfmadd132ps(regs_trans_src[j], regs_trans_tmp[0], zword_b[parambase + offsetof(rt_data_t, scaleAB)]);
-            exp_approx_f32(regs_trans_src[j], regs_trans_src[j], Zmm(ZIDX_LOG2E), Zmm(ZIDX_LN2), c, tmp);
-            vpsrld(regs_trans_tmp[1], regs_trans_src[j], 16);
-            vpmovdw(ptr[reg_TmpPtr], regs_trans_tmp[1]);
-            vaddps(regs_trans_src[j], regs_trans_src[j], ptr[rsp + TExpsumStart + (i + j) * 64]);
-            vmovups(ptr[rsp + TExpsumStart + (i + j) * 64], regs_trans_src[j]);
-            add(reg_TmpPtr, reg_cstep);
+              vmovaps(vregs_xs[ii], zword[rsp + TTmmStart + in * 4 + (i + ii) * NTile * 4]);
+              !binary_add  // (optionally) add mask and scale
+                  ? vmulps(vregs_xs[ii], vregs_xs[ii], zword_b[rp.p[0] + offsetof(rt_data_t, scaleAB)])
+                  : vfmadd132ps(vregs_xs[ii], vreg_badd, zword_b[rp.p[0] + offsetof(rt_data_t, scaleAB)]);
+              exp_approx_f32(vregs_xs[ii], vregs_xs[ii], vreg_log2e, vreg_ln2, c, rp.regs<Zmm, 2>());
+              vpsrld(vreg_badd, vregs_xs[ii], 16);
+              vpmovdw(ptr[curr_matC], vreg_badd);
+              vaddps(vregs_xs[ii], vregs_xs[ii], ptr[rsp + TExpsumStart + (i + ii) * 64]);
+              vmovaps(zword[rsp + TExpsumStart + (i + ii) * 64], vregs_xs[ii]);
+            }
           }
         }
+        add(reg_itern, NTile);
+        cmp(reg_itern.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)]);
+        jb(".nloop");
       }
-      add(reg_itern, NTile);
-      cmp(reg_itern.cvt32(), dword[parambase + offsetof(rt_data_t, n)]);
-      jb(".nloop");
 
       // normalize all temp exp values
       for (int im = 0; im < MTile; im += 16) {
-        for (int j = 0; j < 16; j++) {
-          vmovups(regs_trans_src[j], ptr[rsp + TExpsumStart + (im + j) * 64]);
-        }
-        transpose_16x16_ps(regs_trans_src, regs_trans_tmp);
-        for (int i = 0; i < 16; i += 2) {
-          vaddps(regs_trans_src[i], regs_trans_src[i], regs_trans_src[i + 1]);
-        }
-        for (int i = 0; i < 16; i += 4) {
-          vaddps(regs_trans_src[i], regs_trans_src[i], regs_trans_src[i + 2]);
-        }
-        for (int i = 0; i < 16; i += 8) {
-          vaddps(regs_trans_src[i], regs_trans_src[i], regs_trans_src[i + 4]);
-        }
-        for (int i = 0; i < 16; i += 16) {
-          vaddps(regs_trans_src[i], regs_trans_src[i], regs_trans_src[i + 8]);
-        }
-        vrcp14ps(regs_trans_src[0], regs_trans_src[0]);
-        vmovups(ptr[rsp + TExpsumStart + im * 4], regs_trans_src[0]);
+        const auto vregs_xs = rp.regs<Zmm, 16>();
+        for (int j = 0; j < 16; j++) vmovaps(vregs_xs[j], ptr[rsp + TExpsumStart + (im + j) * BYTES_ZMM]);
+        transpose_16x16_ps(vregs_xs, rp.regs<Zmm, 16>());
+        reduce_vmms(vregs_xs, &CodeGenerator::vaddps);
+        vrcp14ps(vregs_xs[0], vregs_xs[0]);
+        vmovaps(ptr[rsp + TExpsumStart + im * 4], vregs_xs[0]);
       }
 
-      imul(reg_cstep.cvt32(), dword[parambase + offsetof(rt_data_t, n)], sizeof(bfloat16_t));
+      const auto reg_cstep = rp.reg<Reg64>();
+      imul(reg_cstep.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)], sizeof(bfloat16_t));
+      const auto reg_itern = rp.reg<Reg64>();
       xor_(reg_itern, reg_itern);
       L(".nwrloop");
-      mov(reg_matCptr, ptr[parambase + offsetof(rt_data_t, matC)]);
-      lea(reg_matCptr, ptr[reg_matCptr + reg_itern * sizeof(bfloat16_t)]);
+      const auto reg_matC = rp.reg<Reg64>();  // reg_matC := matC + itern * bfloat16_t + reg_cstep * reg_iterm
       {
-        auto reg_tmp = reg_iterk;
+        mov(reg_matC, ptr[rp.p[0] + offsetof(rt_data_t, matC)]);
+        lea(reg_matC, ptr[reg_matC + reg_itern * sizeof(bfloat16_t)]);
+        auto reg_tmp = rp.reg<Reg64>();
         mov(reg_tmp, reg_iterm);
-        imul(reg_tmp.cvt32(), reg_cstep);
-        add(reg_matCptr, reg_tmp);
+        imul(reg_tmp, reg_cstep);
+        add(reg_matC, reg_tmp);
       }
       for (int i = 0; i < MTile; i++) {
-        vbroadcastss(regs_trans_tmp[0], ptr[rsp + TExpsumStart + i * 4]);
+        const auto vregs_xs = rp.regs<Zmm, 16>();
+        const auto vreg_scale = rp.reg<Zmm>();
+        vbroadcastss(vreg_scale, ptr[rsp + TExpsumStart + i * 4]);
         for (int in = 0; in < ZMM_PerROW; in++) {
-          vpmovzxwd(regs_trans_src[in], ptr[reg_matCptr + in * 32]);
-          vpslld(regs_trans_src[in], regs_trans_src[in], 16);
-          vmulps(regs_trans_src[in], regs_trans_src[in], regs_trans_tmp[0]);
+          vpmovzxwd(vregs_xs[in], ptr[reg_matC + in * 32]);
+          vpslld(vregs_xs[in], vregs_xs[in], 16);
+          vmulps(vregs_xs[in], vregs_xs[in], vreg_scale);
         }
         for (int in = 0; in < ZMM_PerROW; in += 2) {
-          vcvtne2ps2bf16(regs_trans_src[in], regs_trans_src[in + 1], regs_trans_src[in]);
-          vmovups(ptr[reg_matCptr + in * 32], regs_trans_src[in]);
+          vcvtne2ps2bf16(vregs_xs[in], vregs_xs[in + 1], vregs_xs[in]);
+          vmovups(ptr[reg_matC + in * 32], vregs_xs[in]);
         }
-        add(reg_matCptr, reg_cstep);
+        add(reg_matC, reg_cstep);
       }
       add(reg_itern, NTile);
-      cmp(reg_itern.cvt32(), dword[parambase + offsetof(rt_data_t, n)]);
+      cmp(reg_itern.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)]);
       jb(".nwrloop");
 
       add(reg_iterm, MTile);
-      cmp(reg_iterm.cvt32(), dword[parambase + offsetof(rt_data_t, m)]);
+      cmp(reg_iterm.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, m)]);
       jb(".mloop");
-
-      mov(reg_ret, 0);
-
-#ifdef _WIN32
-      for (int i = 0; i < 10; i++) {
-        movaps(Xmm(i + 6), xword[rsp + i * 16]);
-      }
-#endif
     }
-    outLocalLabel();  // end of local label
+
     L(l_log2e);
     db(bit_cast<uint32_t>(std::log2f(std::exp(1.f))), sizeof(float));
     L(l_ln2);
@@ -636,10 +542,17 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
     db(reinterpret_cast<const uint8_t*>(exp_approx_f32_coeff.data()), sizeof(exp_approx_f32_coeff));
     L(l_255f);
     db(bit_cast<uint32_t>(255.f), sizeof(float));
+    if (need_cfg_amx) {
+      align(sizeof(tileconfig_t));
+      L(l_amx_cfg);
+      db(reinterpret_cast<const uint8_t*>(&required_tile_cfg_), sizeof(tileconfig_t));
+    }
   }
 
   const bool binary_add;
-  const tileconfig_t mTC;
+  const tile_param_t* const pre_amx_cfg_;
+  const tile_param_t required_amx_cfg_;
+  const tileconfig_t required_tile_cfg_;
 };
 
 class jit_mha_bf16_row_amx_32x32 : public jit_generator {
@@ -659,88 +572,83 @@ class jit_mha_bf16_row_amx_32x32 : public jit_generator {
   static constexpr int MTile = 32, NTile = 32;
   static constexpr int KTile = 32;
 
-  jit_mha_bf16_row_amx_32x32() : jit_generator(), mTC{tile_param_t(16, 16, KTile, true, 2)} {}
+  explicit jit_mha_bf16_row_amx_32x32(const tile_param_t* pre_amx_cfg)
+      : jit_generator(),
+        pre_amx_cfg_(pre_amx_cfg),
+        required_amx_cfg_{16, 16, KTile, true, 2},
+        required_tile_cfg_(required_amx_cfg_) {}
 
  private:
   inline void generate() override {
     constexpr int ZMM_PerROW = NTile / 16;
 
     inLocalLabel();  // use local label for multiple instance
-    constexpr int XmmReserve = 16 * (10 + 2);
-    constexpr int TmmReserve = MTile * NTile * 4;
-    constexpr int TmpValueReserve = 64;
-    constexpr int TmpSpace = XmmReserve + TmmReserve + TmpValueReserve;
-    constexpr int TTmmStart = XmmReserve;
-    // int TValueStart = TTmmStart + TmmReserve;
-    Xbyak::Label tmpfvariable;
+    bool need_cfg_amx = pre_amx_cfg_ != nullptr && *pre_amx_cfg_ != required_amx_cfg_;
+    const int amx_config_size = need_cfg_amx ? sizeof(tileconfig_t) : 0;
+    const int TmmReserve = MTile * NTile * sizeof(float);
+    const int TmpSpace = amx_config_size + TmmReserve;
+    const int TTmmStart = amx_config_size;
+    Xbyak::Label tmpfvariable, l_amx_cfg;
     {
-      Xbyak::util::StackFrame st(this, 1, 13, TmpSpace);
-      mov(ptr[rsp], rdi);
-
-#ifdef _WIN32
-      for (int i = 0; i < 10; i++) {
-        movaps(xword[rsp + i * 16], Xmm(6 + i));
+      regs_pool rp(this, 1, {9, ZMM_PerROW, 1}, TmpSpace, true, 64);  // align 64
+      std::shared_ptr<void> local_cfg;
+      if (need_cfg_amx) {  // create a local amx config environment
+        local_cfg = {(sttilecfg(ptr[rsp]), ldtilecfg(ptr[rip + l_amx_cfg]), nullptr),
+                     [&](...) { ldtilecfg(ptr[rsp]); }};
       }
-#endif
-      const Reg64& parambase = st.p[0];
-      const Reg64& reg_matAptr = st.t[0];
-      const Reg64& reg_matBptr = st.t[1];
-      const Reg64& reg_astep = st.t[2];
-      const Reg64& reg_matCptr = st.t[3];
-      const Reg64& reg_iterk = st.t[5];
-      // const Reg64& reg_sumptr = st.t[6];
-      const Reg64& reg_itern = st.t[7];
-      const Reg64& reg_TmpPtr = st.t[8];
-      const Reg64& reg_iterm = st.t[10];
-      const Reg64& reg_ksize = st.t[11];
-      const Reg64& reg_temp = st.t[12];
-      const Reg64& reg_ret = rax;
-      const Opmask& mask0 = k1;
+      const Reg64& reg_ksize = rp.reg<Reg64>();
+      mov(reg_ksize.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, k)]);
 
-      mov(reg_temp, reinterpret_cast<uint64_t>(&mTC));
-      ldtilecfg(ptr[reg_temp]);
-
-      int ZIDX_CReg = 0;
-
-      mov(reg_ksize.cvt32(), dword[parambase + offsetof(rt_data_t, k)]);
-
-      xor_(reg_iterm, reg_iterm);
+      const Reg64& reg_iterm = rp.reg<Reg64>();
+      xor_(reg_iterm.cvt32(), reg_iterm.cvt32());
       L(".mloop");
 
-      xor_(reg_itern, reg_itern);
+      const Reg64& reg_itern = rp.reg<Reg64>();
+      xor_(reg_itern.cvt32(), reg_itern.cvt32());
       L(".nloop");
-      mov(reg_matBptr, ptr[parambase + offsetof(rt_data_t, matB)]);
-      {
-        auto reg_tmp = reg_iterk;
-        mov(reg_tmp, reg_ksize);
-        imul(reg_tmp, reg_itern);
-        lea(reg_matBptr, ptr[reg_matBptr + reg_tmp * sizeof(bfloat16_t)]);
-      }
-      mov(reg_matAptr, ptr[parambase + offsetof(rt_data_t, matA)]);
-      mov(reg_astep.cvt32(), dword[parambase + offsetof(rt_data_t, astep)]);
-      {  // reg_matAptr = matA + reg_iterm * reg_astep
-        auto reg_tmp = reg_iterk;
-        mov(reg_tmp, reg_astep);
-        imul(reg_tmp, reg_iterm);
-        lea(reg_matAptr, ptr[reg_matAptr + reg_tmp]);
-      }
-      mov(reg_temp, NTile * 4);  // b,c stride
-      tile_product_amx_bf16ps(reg_ksize, reg_matAptr, reg_matBptr, reg_astep, reg_temp, reg_iterk, reg_TmpPtr,
-                              [&](int i, int j) { return ptr[rsp + reg_temp + TTmmStart + i * 16 * 64 * 2 + j * 64]; });
+      {  // tile product
+        const Reg64& reg_astep = rp.reg<Reg64>();
+        mov(reg_astep.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, astep)]);
+        const Reg64& reg_matA = rp.reg<Reg64>();
+        {  // reg_matA = matA + reg_iterm * reg_astep
+          mov(reg_matA, ptr[rp.p[0] + offsetof(rt_data_t, matA)]);
+          auto reg_tmp = rp.reg<Reg64>();
+          mov(reg_tmp, reg_astep);
+          imul(reg_tmp, reg_iterm);
+          lea(reg_matA, ptr[reg_matA + reg_tmp]);
+        }
+        const Reg64& reg_matB = rp.reg<Reg64>();
+        {  // reg_matB := matB + reg_ksize * reg_itern * sizeof(bf16)
+          mov(reg_matB, ptr[rp.p[0] + offsetof(rt_data_t, matB)]);
+          auto reg_tmp = rp.reg<Reg64>();
+          mov(reg_tmp, reg_ksize);
+          imul(reg_tmp, reg_itern);
+          lea(reg_matB, ptr[reg_matB + reg_tmp * sizeof(bfloat16_t)]);
+        }
 
-      auto reg_cstep = reg_astep;
-      mov(reg_cstep.cvt32(), dword[parambase + offsetof(rt_data_t, cstep)]);
-      mov(reg_matCptr, ptr[parambase + offsetof(rt_data_t, matC)]);
-      lea(reg_matCptr, ptr[reg_matCptr + reg_itern * sizeof(bfloat16_t)]);
-      {
-        auto reg_tmp = reg_iterk;
+        auto stride_bc = rp.reg<Reg64>();
+        mov(stride_bc, NTile * 4);  // b,c stride
+        tile_product_amx_bf16ps(
+            reg_ksize, reg_matA, reg_matB, reg_astep, stride_bc, rp.reg<Reg64>(), rp.reg<Reg64>(),
+            [&](int i, int j) { return ptr[rsp + stride_bc + TTmmStart + i * BYTES_TMM * 2 + j * 64]; });
+      }
+      auto reg_cstep = rp.reg<Reg64>();
+      mov(reg_cstep.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, cstep)]);
+
+      const Reg64& reg_matC = rp.reg<Reg64>();
+      {  // reg_matC := matC + reg_itern * sizeof(bf16) + reg_iterm * reg_cstep
+        mov(reg_matC, ptr[rp.p[0] + offsetof(rt_data_t, matC)]);
+        lea(reg_matC, ptr[reg_matC + reg_itern * sizeof(bfloat16_t)]);
+        auto reg_tmp = rp.reg<Reg64>();
         mov(reg_tmp, reg_iterm);
         imul(reg_tmp.cvt32(), reg_cstep);
-        add(reg_matCptr, reg_tmp);
+        add(reg_matC, reg_tmp);
       }
-      {
-        auto reg_tmp = reg_iterk;
-        mov(reg_tmp.cvt32(), dword[parambase + offsetof(rt_data_t, n)]);
+      const auto mask0 = rp.reg<Opmask>();
+      {  // prepare mask0
+        const auto reg_temp = rp.reg<Reg64>();
+        const auto reg_tmp = rp.reg<Reg64>();
+        mov(reg_tmp.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)]);
         sub(reg_tmp, reg_itern);
         cmp(reg_tmp, NTile);
         jb(".maskflag");
@@ -756,38 +664,38 @@ class jit_mha_bf16_row_amx_32x32 : public jit_generator {
         L(".maskend");
       }
 
+      const auto vregs_xs = rp.regs<Zmm, ZMM_PerROW>();
       for (int i = 0; i < MTile; i++) {
-        int zidx = 0;
+        if (i != 0) lea(reg_matC, ptr[reg_matC + reg_cstep]);
         for (int j = 0; j < ZMM_PerROW; j++) {
-          vmovups(Zmm(ZIDX_CReg + zidx * ZMM_PerROW + j), ptr[rsp + TTmmStart + j * 64 + i * NTile * 4]);
+          vmovaps(vregs_xs[j], ptr[rsp + TTmmStart + j * 64 + i * NTile * 4]);
+          if (j % 2 == 1) {
+            vcvtne2ps2bf16(vregs_xs[j - 1], vregs_xs[j], vregs_xs[j - 1]);
+            vmovups(ptr[reg_matC + (j - 1) * 32] | mask0, vregs_xs[j - 1]);
+          }
         }
-        for (int j = 0; j < ZMM_PerROW; j += 2) {
-          vcvtne2ps2bf16(Zmm(ZIDX_CReg + zidx * ZMM_PerROW + j), Zmm(ZIDX_CReg + zidx * ZMM_PerROW + j + 1),
-                         Zmm(ZIDX_CReg + zidx * ZMM_PerROW + j));
-          vmovups(ptr[reg_matCptr + j * 32] | mask0, Zmm(ZIDX_CReg + zidx * ZMM_PerROW + j));
-        }
-        add(reg_matCptr, reg_cstep);
       }
 
       add(reg_itern, NTile);
-      cmp(reg_itern.cvt32(), dword[parambase + offsetof(rt_data_t, n)]);
+      cmp(reg_itern.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)]);
       jb(".nloop");
 
       add(reg_iterm, MTile);
-      cmp(reg_iterm.cvt32(), dword[parambase + offsetof(rt_data_t, m)]);
+      cmp(reg_iterm.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, m)]);
       jb(".mloop");
-      mov(reg_ret, 0);
+    }
 
-#ifdef _WIN32
-      for (int i = 0; i < 10; i++) {
-        movaps(Xmm(i + 6), xword[rsp + i * 16]);
-      }
-#endif
+    if (need_cfg_amx) {
+      align(sizeof(tileconfig_t));
+      L(l_amx_cfg);
+      db(reinterpret_cast<const uint8_t*>(&required_tile_cfg_), sizeof(tileconfig_t));
     }
     outLocalLabel();  // end of local label
   }
 
-  const tileconfig_t mTC;
+  const tile_param_t* const pre_amx_cfg_;
+  const tile_param_t required_amx_cfg_;
+  const tileconfig_t required_tile_cfg_;
 };
 
 }  // namespace jd

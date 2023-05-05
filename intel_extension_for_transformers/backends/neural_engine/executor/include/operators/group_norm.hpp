@@ -71,10 +71,6 @@ class GroupNormOperator : public Operator {
   norm_callback norm_func = nullptr;
   fwd_mode mode = parallelG;
 #ifdef WITH_SPARSELIB
-  jd::tensor_desc src_desc_;
-  jd::tensor_desc dst_desc_;
-  jd::tensor_desc gamma_desc_;
-  jd::tensor_desc beta_desc_;
   jd::groupnorm groupnorm_ker;
   void* work_space;
 #endif

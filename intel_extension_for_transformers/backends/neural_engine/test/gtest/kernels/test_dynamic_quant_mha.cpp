@@ -24,14 +24,12 @@
 #include "gtest/gtest.h"
 #include "interface.hpp"
 #include "kernels/mha_dense_ref.hpp"
-#include "kernels/mha_dense_types.hpp"
 #include "unit_test_utils.hpp"
 
 namespace jd {
-
-using dt = jd::data_type;
-using ft = jd::format_type;
-using io = mha_dense_io::io;
+using dt = data_type;
+using ft = format_type;
+using io = exposed_enum::mha_dense::io;
 
 static std::mt19937 rand_gen(1);
 
@@ -136,7 +134,7 @@ test_data_t gen_data(const dim_t batch_size, const dim_t head_num, const dim_t s
   op_attrs["stable_softmax"] = "False";
 
   // Step 2: Configure tensor shape
-  std::vector<tensor_desc> ts_descs(io::mha_dense_io_MAX + 1, {{}, dt::undef, ft::undef});
+  std::vector<tensor_desc> ts_descs(io::SIZE, {{}, dt::undef, ft::undef});
   ts_descs[io::SRC_Q] = {{batch_size, sl_M, head_num, head_size}, dt::s8, ft::abcd};
   ts_descs[io::SRC_K] = {{batch_size, sl_N, head_num, head_size}, dt::s8, ft::abcd};
   ts_descs[io::SRC_V] = {{batch_size, sl_N, head_num, head_size}, dt::s8, ft::abcd};
@@ -156,7 +154,7 @@ test_data_t gen_data(const dim_t batch_size, const dim_t head_num, const dim_t s
     ts_descs[io::N] = shape_ts_desc;
   }
   // Step 2: Construct runtime data
-  std::vector<const void*> rt_data(io::mha_dense_io_MAX + 1, nullptr);
+  std::vector<const void*> rt_data(io::SIZE, nullptr);
   rt_data[io::SRC_Q] = make_data_obj(ts_descs[io::SRC_Q], -128, 127);
   rt_data[io::SRC_K] = make_data_obj(ts_descs[io::SRC_K], -128, 127);
   rt_data[io::SRC_V] = make_data_obj(ts_descs[io::SRC_V], -128, 127);
@@ -181,8 +179,8 @@ test_data_t gen_data(const dim_t batch_size, const dim_t head_num, const dim_t s
     rt_data[io::N] = make_data_obj(ts_descs[io::N], sl_N, sl_N);
   }
 
-  std::vector<const void*> rt_data_cpy(io::mha_dense_io_MAX + 1, nullptr);
-  for (std::underlying_type<io>::type idx = 0; idx <= io::mha_dense_io_MAX; ++idx)
+  std::vector<const void*> rt_data_cpy(io::SIZE, nullptr);
+  for (std::underlying_type<io>::type idx = 0; idx < io::SIZE; ++idx)
     if (rt_data[idx] != nullptr) rt_data_cpy[idx] = copy_data_obj(ts_descs[idx], rt_data[idx]);
 
   // hide shapes in ts_descs if use dynamic shape

@@ -17,6 +17,7 @@
 #include "operator_registry.hpp"
 using dt = jd::data_type;
 using ft = jd::format_type;
+using io = jd::exposed_enum::mha_dense::io;
 
 namespace executor {
 static unordered_map<string, dt> type2sparsemem{{"fp32", dt::fp32}, {"s32", dt::s32}, {"fp16", dt::fp16},
@@ -29,7 +30,7 @@ MultiHeadAttentionOperator::MultiHeadAttentionOperator(const shared_ptr<Operator
       V_perm_({}),
       dst_perm_({}),
       output_scale_(1.),
-      rt_data_(jd::mha_dense_io::mha_dense_io_MAX + 1) {
+      rt_data_(io::SIZE) {
   auto attrs_map = operator_conf_->attributes();
 
   auto iter = attrs_map.find("Q_perm");
@@ -291,45 +292,45 @@ void MultiHeadAttentionOperator::ReshapeDense(const vector<Tensor*>& input, cons
   attr_map["approx_exp"] = "True";
   attr_map["stable_softmax"] = Q_->dtype() == "s8" ? "True" : "False";
 
-  std::vector<jd::tensor_desc> ts_descs(jd::mha_dense_io::mha_dense_io_MAX + 1, jd::tensor_desc());
+  std::vector<jd::tensor_desc> ts_descs(io::SIZE, jd::tensor_desc());
   // scale and zero point
   const jd::tensor_desc desc_f32_scalar{{1}, dt::fp32, ft::a};
-  ts_descs[jd::mha_dense_io::ATT_SCALE] = desc_f32_scalar;
-  rt_data_[jd::mha_dense_io::ATT_SCALE] = &output_scale_;
+  ts_descs[io::ATT_SCALE] = desc_f32_scalar;
+  rt_data_[io::ATT_SCALE] = &output_scale_;
   if (Q_->dtype() == "s8") {
     attr_map["softmax_rescale"] = std::to_string(softmax_rescale_);
-    ts_descs[jd::mha_dense_io::Q_SCALE] = desc_f32_scalar;
-    ts_descs[jd::mha_dense_io::K_SCALE] = desc_f32_scalar;
-    ts_descs[jd::mha_dense_io::V_SCALE] = desc_f32_scalar;
-    ts_descs[jd::mha_dense_io::SRC_DST_SCALE] = desc_f32_scalar;
-    ts_descs[jd::mha_dense_io::SRC_DST_ZP] = desc_f32_scalar;
+    ts_descs[io::Q_SCALE] = desc_f32_scalar;
+    ts_descs[io::K_SCALE] = desc_f32_scalar;
+    ts_descs[io::V_SCALE] = desc_f32_scalar;
+    ts_descs[io::SRC_DST_SCALE] = desc_f32_scalar;
+    ts_descs[io::SRC_DST_ZP] = desc_f32_scalar;
 
-    rt_data_[jd::mha_dense_io::Q_SCALE] = &scaleQ;
-    rt_data_[jd::mha_dense_io::K_SCALE] = &scaleK;
-    rt_data_[jd::mha_dense_io::V_SCALE] = &scaleV;
-    rt_data_[jd::mha_dense_io::SRC_DST_SCALE] = &scaleRet;
-    rt_data_[jd::mha_dense_io::SRC_DST_ZP] = &QKV_zeropoint_;
+    rt_data_[io::Q_SCALE] = &scaleQ;
+    rt_data_[io::K_SCALE] = &scaleK;
+    rt_data_[io::V_SCALE] = &scaleV;
+    rt_data_[io::SRC_DST_SCALE] = &scaleRet;
+    rt_data_[io::SRC_DST_ZP] = &QKV_zeropoint_;
   }
   ft qkv_ft = ft::abcd;
   auto qkv_dtype = (dst_->dtype() == "bf16") ? dt::bf16 : dt::s8;
   if (Q_ != nullptr) {
-    ts_descs[jd::mha_dense_io::SRC_Q] = {Q_->shape(), qkv_dtype, qkv_ft};
-    ts_descs[jd::mha_dense_io::SRC_K] = {K_->shape(), qkv_dtype, qkv_ft};
-    ts_descs[jd::mha_dense_io::SRC_V] = {V_->shape(), qkv_dtype, qkv_ft};
+    ts_descs[io::SRC_Q] = {Q_->shape(), qkv_dtype, qkv_ft};
+    ts_descs[io::SRC_K] = {K_->shape(), qkv_dtype, qkv_ft};
+    ts_descs[io::SRC_V] = {V_->shape(), qkv_dtype, qkv_ft};
   } else {
-    ts_descs[jd::mha_dense_io::SRC_Q] = {attn_shape, qkv_dtype, qkv_ft};
-    ts_descs[jd::mha_dense_io::SRC_K] = {attn_shape, qkv_dtype, qkv_ft};
-    ts_descs[jd::mha_dense_io::SRC_V] = {attn_shape, qkv_dtype, qkv_ft};
+    ts_descs[io::SRC_Q] = {attn_shape, qkv_dtype, qkv_ft};
+    ts_descs[io::SRC_K] = {attn_shape, qkv_dtype, qkv_ft};
+    ts_descs[io::SRC_V] = {attn_shape, qkv_dtype, qkv_ft};
   }
   if (att_mask_ != nullptr) {
-    ts_descs[jd::mha_dense_io::MASK] = {{QK_shape[0]}, dt::s32, ft::a};
+    ts_descs[io::MASK] = {{QK_shape[0]}, dt::s32, ft::a};
   }
-  ts_descs[jd::mha_dense_io::DST] = {attn_shape, (dst_->dtype() == "bf16") ? dt::bf16 : dt::u8, qkv_ft};
+  ts_descs[io::DST] = {attn_shape, (dst_->dtype() == "bf16") ? dt::bf16 : dt::u8, qkv_ft};
 
   if (binary_add_mask_ != nullptr) {
     const auto& badd_mask_size = binary_add_mask_->shape().size();
     LOG_IF(FATAL, badd_mask_size > QK_shape.size()) << "Unsupported binary add mask dimension";
-    ts_descs[jd::mha_dense_io::BINARY_ADD] = {binary_add_mask_->shape(), dt::fp32, jd::plain_format(badd_mask_size)};
+    ts_descs[io::BINARY_ADD] = {binary_add_mask_->shape(), dt::fp32, jd::plain_format(badd_mask_size)};
   }
   jd::operator_desc op_desc(jd::kernel_kind::mha_dense, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
                             ts_descs, attr_map);
@@ -409,18 +410,18 @@ void MultiHeadAttentionOperator::ForwardDense(const vector<Tensor*>& input, cons
 
   int8_t* dst_data = reinterpret_cast<int8_t*>(dst_->mutable_data());
   const auto workspace = MemoryAllocator::get().GetMemory(mha_dense_.get_workspace_size(), 1);
-  rt_data_[jd::mha_dense_io::SRC_Q] = Q_data;
-  rt_data_[jd::mha_dense_io::SRC_K] = K_data;
-  rt_data_[jd::mha_dense_io::SRC_V] = V_data;
+  rt_data_[io::SRC_Q] = Q_data;
+  rt_data_[io::SRC_K] = K_data;
+  rt_data_[io::SRC_V] = V_data;
   if (att_mask_ != nullptr) {
     int32_t* att_mask_data = reinterpret_cast<int32_t*>(att_mask_->mutable_data());
-    rt_data_[jd::mha_dense_io::MASK] = att_mask_data;
+    rt_data_[io::MASK] = att_mask_data;
   }
-  rt_data_[jd::mha_dense_io::DST] = dst_data;
-  rt_data_[jd::mha_dense_io::WORKSPACE] = workspace;
+  rt_data_[io::DST] = dst_data;
+  rt_data_[io::WORKSPACE] = workspace;
   if (binary_add_mask_ != nullptr) {
     float* binary_add_mask_data = reinterpret_cast<float*>(binary_add_mask_->mutable_data());
-    rt_data_[jd::mha_dense_io::BINARY_ADD] = binary_add_mask_data;
+    rt_data_[io::BINARY_ADD] = binary_add_mask_data;
   }
   mha_dense_.execute(rt_data_);
   MemoryAllocator::get().UnrefMemory(workspace, false);

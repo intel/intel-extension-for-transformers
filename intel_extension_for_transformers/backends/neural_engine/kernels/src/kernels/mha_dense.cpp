@@ -37,7 +37,7 @@ namespace jd {
 bool mha_dense_kd_t::init() {
   if (!isa_available(avx512_core_amx)) return false;
   auto op_attrs = op_desc_.attrs();
-  param_.base_ = (op_attrs.find("merged_QKV") != op_attrs.end() && op_attrs["merged_QKV"] == "True") ? 3 : 1;
+  merged_ = (op_attrs.find("merged_QKV") != op_attrs.end() && op_attrs["merged_QKV"] == "True");
   KERNEL_INIT_CHECK(op_attrs.find("approx_exp") != op_attrs.end() && op_attrs.at("approx_exp") == "True");
   KERNEL_INIT_CHECK(op_attrs.find("stable_softmax") != op_attrs.end() && op_attrs.at("stable_softmax") == "True");
   KERNEL_INIT_CHECK(op_attrs.find("softmax_rescale") != op_attrs.end());
@@ -65,19 +65,18 @@ bool mha_dense_kd_t::init() {
   KERNEL_INIT_CHECK(tensor_desc[io::SRC_V].dtype() == data_type::s8)
   KERNEL_INIT_CHECK(tensor_desc[io::MASK].dtype() == data_type::s32)
 
-  param_.dst_dt_ = tensor_desc[io::DST].dtype();
-  param_.kv_ft_ = tensor_desc[io::SRC_K].ftype();
-  param_.src_bs_ = q_shape[0];
-  param_.src_sl_m_ = q_shape[1];
-  param_.src_sl_n_ = k_shape[1];
-  param_.head_num_ = q_shape[2];
-  param_.head_size_ = q_shape[3];
+  const auto dst_dt = tensor_desc[io::DST].dtype();
+  const auto src_bs = q_shape[0];
+  const auto src_sl_m = q_shape[1];
+  const auto src_sl_n = k_shape[1];
+  const auto head_num = q_shape[2];
+  const auto head_size = q_shape[3];
 
-  KERNEL_INIT_CHECK(param_.head_size_ == 32 || param_.head_size_ == 64 || param_.head_size_ % 64 == 0)
-  KERNEL_INIT_CHECK(param_.src_sl_m_ == 1 || param_.src_sl_m_ >= 16)
+  KERNEL_INIT_CHECK(head_size == 32 || head_size == 64 || head_size % 64 == 0)
+  KERNEL_INIT_CHECK(src_sl_m == 1 || src_sl_m >= 16)
 
   KERNEL_INIT_CHECK(is_any_of({data_type::u8, data_type::s8, data_type::fp32, data_type::bf16},
-                              [dst_dt = param_.dst_dt_](auto t) { return dst_dt == t; }))
+                              [dst_dt](auto t) { return dst_dt == t; }))
 
   KERNEL_INIT_CHECK((tensor_desc[io::ATT_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
   KERNEL_INIT_CHECK((tensor_desc[io::Q_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
@@ -87,8 +86,8 @@ bool mha_dense_kd_t::init() {
   KERNEL_INIT_CHECK((tensor_desc[io::SRC_DST_ZP] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
 
   const auto has_badd = has_binary_add();
-  if (param_.src_sl_m_ == 1) {
-    KERNEL_INIT_CHECK(param_.head_size_ % 64 == 0)
+  if (src_sl_m == 1) {
+    KERNEL_INIT_CHECK(head_size % 64 == 0)
     KERNEL_INIT_CHECK(has_badd)
   } else {
     KERNEL_INIT_CHECK(q_shape == k_shape)
@@ -104,16 +103,16 @@ bool mha_dense_kd_t::init() {
     KERNEL_INIT_CHECK(tensor_desc[io::BINARY_ADD].ftype() == plain_format(badd_dim));
     switch (badd_dim) {
       case 4:
-        KERNEL_INIT_CHECK(badd_shape[badd_dim - 4] == 1 || badd_shape[badd_dim - 4] == param_.src_bs_);
+        KERNEL_INIT_CHECK(badd_shape[badd_dim - 4] == 1 || badd_shape[badd_dim - 4] == src_bs);
         [[fallthrough]];
       case 3:
-        KERNEL_INIT_CHECK(badd_shape[badd_dim - 3] == 1 || badd_shape[badd_dim - 3] == param_.head_num_);
+        KERNEL_INIT_CHECK(badd_shape[badd_dim - 3] == 1 || badd_shape[badd_dim - 3] == head_num);
         [[fallthrough]];
       case 2:
-        KERNEL_INIT_CHECK(badd_shape[badd_dim - 2] == 1 || badd_shape[badd_dim - 2] == param_.src_sl_m_);
+        KERNEL_INIT_CHECK(badd_shape[badd_dim - 2] == 1 || badd_shape[badd_dim - 2] == src_sl_m);
         [[fallthrough]];
       case 1:
-        KERNEL_INIT_CHECK(badd_shape[badd_dim - 1] == param_.src_sl_n_);  // the last dim can not be broadcasted
+        KERNEL_INIT_CHECK(badd_shape[badd_dim - 1] == src_sl_n);  // the last dim can not be broadcasted
         break;
       default:
         SPARSE_LOG(ERROR) << "Unexpected binary_add shape!";
@@ -124,16 +123,17 @@ bool mha_dense_kd_t::init() {
 
 mha_dense_k_t::mha_dense_k_t(const std::shared_ptr<const kernel_desc_t>& kd)
     : kernel_t(kd),
-      dst_dt_(derived_kd()->params().dst_dt_),
-      kv_ft_(derived_kd()->params().kv_ft_),
-      src_bs_(derived_kd()->params().src_bs_),
-      src_sl_m_(derived_kd()->params().src_sl_m_),
-      src_sl_n_(derived_kd()->params().src_sl_n_),
-      head_num_(derived_kd()->params().head_num_),
-      head_size_(derived_kd()->params().head_size_),
-      ld_q_(head_size_ * head_num_ * derived_kd()->params().base_),
+      ts_desc(derived_kd()->get_operator_desc().tensor_descs()),
+      dst_dt_(ts_desc[io::DST].dtype()),
+      kv_ft_(ts_desc[io::SRC_K].ftype()),
+      src_bs_(ts_desc[io::SRC_Q].shape()[0]),
+      src_sl_m_(ts_desc[io::SRC_Q].shape()[1]),
+      src_sl_n_(ts_desc[io::SRC_K].shape()[1]),
+      head_num_(ts_desc[io::SRC_Q].shape()[2]),
+      head_size_(ts_desc[io::SRC_Q].shape()[3]),
+      ld_q_(head_size_ * head_num_ * (derived_kd()->merged() ? 3 : 1)),
       ld_kv_(kv_ft_ == format_type::abcd   ? ld_q_
-             : kv_ft_ == format_type::acbd ? head_size_ * derived_kd()->params().base_
+             : kv_ft_ == format_type::acbd ? head_size_ * (derived_kd()->merged() ? 3 : 1)
                                            : 0),
       ld_dst_(head_size_ * head_num_ * get_data_size(dst_dt_)),
       softmax_rescale_f32_(str_to_num<float>(derived_kd()->get_operator_desc().attrs().at("softmax_rescale"))),
@@ -264,8 +264,8 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       const int att_tile = sl_n_pad64 / 64;
 
       const auto thread_id = omp_get_thread_num();
-      const auto thread_workspace = reinterpret_cast<char*>(const_cast<void*>(rt_data[mha_dense_io::WORKSPACE])) +
-                                    thread_id * thread_workspace_size_;
+      const auto thread_workspace =
+          reinterpret_cast<char*>(const_cast<void*>(rt_data[io::WORKSPACE])) + thread_id * thread_workspace_size_;
 
       const auto k_scrach = reinterpret_cast<int8_t*>(thread_workspace);
       const auto v_scrach_p64 = reinterpret_cast<int8_t*>(k_scrach + head_size_ * sl_n_pad16);
@@ -281,21 +281,21 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       // init amx for each omp thread
       ker_amx_cfg_(&amx_full_tile_cfg_);
 
-      const auto curr_q = reinterpret_cast<const int8_t*>(rt_data[mha_dense_io::SRC_Q]) + src_q_offset;
-      const auto curr_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[mha_dense_io::DST])) + dst_offset;
-      const auto curr_k = reinterpret_cast<const int8_t*>(rt_data[mha_dense_io::SRC_K]) + src_kv_offset;
-      const auto curr_v = reinterpret_cast<const int8_t*>(rt_data[mha_dense_io::SRC_V]) + src_kv_offset;
+      const auto curr_q = reinterpret_cast<const int8_t*>(rt_data[io::SRC_Q]) + src_q_offset;
+      const auto curr_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::DST])) + dst_offset;
+      const auto curr_k = reinterpret_cast<const int8_t*>(rt_data[io::SRC_K]) + src_kv_offset;
+      const auto curr_v = reinterpret_cast<const int8_t*>(rt_data[io::SRC_V]) + src_kv_offset;
 
       const int badd_offset = ibs * badd_stride[0] + ihn * badd_stride[1];
       const auto badd_f32 =
           has_binary_add ? reinterpret_cast<const float*>(rt_data[io::BINARY_ADD]) + badd_offset : nullptr;
 
-      const auto att_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::ATT_SCALE])[0];
-      const auto q_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::Q_SCALE])[0];
-      const auto k_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::K_SCALE])[0];
-      const auto v_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::V_SCALE])[0];
-      const auto dst_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::SRC_DST_SCALE])[0];
-      const auto dst_zp = reinterpret_cast<const float*>(rt_data[mha_dense_io::SRC_DST_ZP])[0];
+      const auto att_scale = reinterpret_cast<const float*>(rt_data[io::ATT_SCALE])[0];
+      const auto q_scale = reinterpret_cast<const float*>(rt_data[io::Q_SCALE])[0];
+      const auto k_scale = reinterpret_cast<const float*>(rt_data[io::K_SCALE])[0];
+      const auto v_scale = reinterpret_cast<const float*>(rt_data[io::V_SCALE])[0];
+      const auto dst_scale = reinterpret_cast<const float*>(rt_data[io::SRC_DST_SCALE])[0];
+      const auto dst_zp = reinterpret_cast<const float*>(rt_data[io::SRC_DST_ZP])[0];
 
       // reorder K
       for (int i = 0; i < sl_n; i += 16)
@@ -319,7 +319,7 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
           (*ker_trans_v_[std::max(0, std::min(4, sl_n - i))])(&rt_data_tr_v);
         }
 
-      const auto padding_mask = reinterpret_cast<const int32_t*>(rt_data[mha_dense_io::MASK])[ibs];
+      const auto padding_mask = reinterpret_cast<const int32_t*>(rt_data[io::MASK])[ibs];
       jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::rt_data_t rt_data_qk{
           /*.src0 = */ nullptr,
           /*.src1 = */ k_scrach,
@@ -351,7 +351,7 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
           /*.rescale = */ v_scale / softmax_rescale_f32_ / dst_scale,
           /*.zp = */ dst_zp,
       };
-      const int att_tail = reinterpret_cast<const int32_t*>(rt_data[mha_dense_io::MASK])[ibs] % 16;
+      const int att_tail = reinterpret_cast<const int32_t*>(rt_data[io::MASK])[ibs] % 16;
       int cur_r_pos = 0;
 
       for (int j = 0; j < row_loop - 1; j++, cur_r_pos += 32) {
@@ -558,12 +558,12 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < bs; ibs++) {
     for (int ihn = 0; ihn < head_num_; ihn++) {
-      const auto att_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::ATT_SCALE])[0];
-      const auto q_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::Q_SCALE])[0];
-      const auto k_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::K_SCALE])[0];
-      const auto v_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::V_SCALE])[0];
-      const auto dst_scale = reinterpret_cast<const float*>(rt_data[mha_dense_io::SRC_DST_SCALE])[0];
-      const auto dst_zp = reinterpret_cast<const float*>(rt_data[mha_dense_io::SRC_DST_ZP])[0];
+      const auto att_scale = reinterpret_cast<const float*>(rt_data[io::ATT_SCALE])[0];
+      const auto q_scale = reinterpret_cast<const float*>(rt_data[io::Q_SCALE])[0];
+      const auto k_scale = reinterpret_cast<const float*>(rt_data[io::K_SCALE])[0];
+      const auto v_scale = reinterpret_cast<const float*>(rt_data[io::V_SCALE])[0];
+      const auto dst_scale = reinterpret_cast<const float*>(rt_data[io::SRC_DST_SCALE])[0];
+      const auto dst_zp = reinterpret_cast<const float*>(rt_data[io::SRC_DST_ZP])[0];
 
       const int src_q_offset = ibs * src_sl_m_ * ld_q_ + ihn * head_size_;
       const int src_kv_offset = kv_ft_ == format_type::abcd   ? ibs * src_sl_n_ * ld_kv_ + ihn * head_size_
@@ -572,11 +572,11 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
       const int dst_offset = ibs * src_sl_m_ * ld_dst_ + ihn * head_size_ * get_data_size(dst_dt_);
       const int badd_offset = ibs * badd_stride[0] + ihn * badd_stride[1];
 
-      const auto curr_q = reinterpret_cast<const int8_t*>(rt_data[mha_dense_io::SRC_Q]) + src_q_offset;
-      const auto curr_k = reinterpret_cast<const int8_t*>(rt_data[mha_dense_io::SRC_K]) + src_kv_offset;
-      const auto curr_v = reinterpret_cast<const int8_t*>(rt_data[mha_dense_io::SRC_V]) + src_kv_offset;
-      const auto curr_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[mha_dense_io::DST])) + dst_offset;
-      const auto padding_mask = reinterpret_cast<const int32_t*>(rt_data[mha_dense_io::MASK])[ibs];
+      const auto curr_q = reinterpret_cast<const int8_t*>(rt_data[io::SRC_Q]) + src_q_offset;
+      const auto curr_k = reinterpret_cast<const int8_t*>(rt_data[io::SRC_K]) + src_kv_offset;
+      const auto curr_v = reinterpret_cast<const int8_t*>(rt_data[io::SRC_V]) + src_kv_offset;
+      const auto curr_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::DST])) + dst_offset;
+      const auto padding_mask = reinterpret_cast<const int32_t*>(rt_data[io::MASK])[ibs];
       const auto pmask_floor16 = (padding_mask - 1) / 16 * 16;
       const auto pmask_tail16 = padding_mask - pmask_floor16;
       const auto pmask_floor4 = (padding_mask - 1) / 4 * 4;
@@ -585,8 +585,8 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
           has_binary_add ? reinterpret_cast<const float*>(rt_data[io::BINARY_ADD]) + badd_offset : nullptr;
 
       const auto thread_id = omp_get_thread_num();
-      const auto thread_workspace = reinterpret_cast<char*>(const_cast<void*>(rt_data[mha_dense_io::WORKSPACE])) +
-                                    thread_id * thread_workspace_size_;
+      const auto thread_workspace =
+          reinterpret_cast<char*>(const_cast<void*>(rt_data[io::WORKSPACE])) + thread_id * thread_workspace_size_;
       const auto v_scrach_p64 = reinterpret_cast<int8_t*>(thread_workspace);
       const auto qk_scrach = reinterpret_cast<float*>(v_scrach_p64 + head_size_ * sl_n_pad64);
       const auto softmax_scrach_p64 = reinterpret_cast<uint8_t*>(qk_scrach + 32 * sl_n_pad16);

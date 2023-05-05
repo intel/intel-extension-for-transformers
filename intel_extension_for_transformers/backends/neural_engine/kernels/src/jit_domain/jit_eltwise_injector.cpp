@@ -191,14 +191,9 @@ void jit_eltwise_injector::linear_compute_vector_fwd(const Zmm& zmm_src) {
 }
 
 void jit_eltwise_injector::low_precision_exp_compute_vector_fwd(const Zmm& zmm_src) {
-  h->vmulps(zmm_aux1, zmm_src, table_val(exp_log2ef));
-  h->vrndscaleps(zmm_aux1, zmm_aux1, 0x2);
-  h->vmulps(zmm_aux2, zmm_aux1, table_val(ln2f));
-  h->vsubps(zmm_aux2, zmm_src, zmm_aux2);
-  h->vmovaps(zmm_src, table_val(low_precision_exp_const_v2));
-  h->vfmadd231ps(zmm_src, zmm_aux2, table_val(low_precision_exp_const_v1));
-  h->vfmadd213ps(zmm_src, zmm_aux2, table_val(one));
-  h->vscalefps(zmm_src, zmm_src, zmm_aux1);
+  h->exp_approx_f32(zmm_src, zmm_src, table_val(exp_log2ef), table_val(ln2f),  //
+                    table_val(low_precision_exp_const_v0), table_val(low_precision_exp_const_v1),
+                    table_val(low_precision_exp_const_v2), {zmm_aux1, zmm_aux2});
 }
 
 void jit_eltwise_injector::swish_compute_vector_fwd(const Zmm& zmm_src) {
@@ -411,7 +406,7 @@ void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& 
       zmm_tb_allocate.insert(&zmm_aux0);
       mask_tb_allocate.insert(&k_mask);
     }
-    
+
     if (i.op_alg == postop_alg::low_precision_exp) {
       zmm_tb_allocate.insert(&zmm_aux1);
       zmm_tb_allocate.insert(&zmm_aux2);
@@ -600,8 +595,11 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
                                      {ln2f, {0x3f317218, true}},      {positive_mask, {0x7fffffff, true}},
                                      {sign_mask, {0x80000000, true}}, {exponent_bias, {0x0000007f, true}}};
 
-  static const table_t low_precision_exp_consts{{low_precision_exp_const_v1, {0x3eb75fa1, true}},
-                                                {low_precision_exp_const_v2, {0x3f7839d3, true}}};
+  static const table_t low_precision_exp_consts{
+      {low_precision_exp_const_v0, {bit_cast<uint32_t>(exp_approx_f32_coeff[0]), true}},
+      {low_precision_exp_const_v1, {bit_cast<uint32_t>(exp_approx_f32_coeff[1]), true}},
+      {low_precision_exp_const_v2, {bit_cast<uint32_t>(exp_approx_f32_coeff[2]), true}},
+  };
 
   static const table_t bit8_lut_consts{{bit8_64, {0x40404040, true}}, {bit8_255, {0xffffffff, true}}};
 

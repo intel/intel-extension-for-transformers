@@ -61,197 +61,30 @@ double get_msec() {
              .count() /
          1e3;
 }
-static std::string init_info_attention(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "attention"
-     << ",";
 
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
+#define DEFINE_DEFAULT_INIT_INFO(primitive)                            \
+  static std::string init_info_##primitive(std::vector<dim_t> shape) { \
+    std::stringstream ss;                                              \
+    ss << "cpu," << #primitive << ",shape";                            \
+    for (auto& dim : shape) ss << "_" << std::to_string(dim);          \
+    return ss.str();                                                   \
   }
-
-  return ss.str();
-}
-
-static std::string init_info_layernorm_ba(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "layernorm_ba"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-
-static std::string init_info_eltwiseop(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "eltwiseop"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-
-static std::string init_info_sparse_matmul(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "sparse_matmul"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-
-static std::string init_info_transpose_mha(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "transpose_mha"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-static std::string init_info_transpose_matmul(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "transpose_matmul"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-static std::string init_info_softmax(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "softmax"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-static std::string init_info_gather(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "gather"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-
-static std::string init_info_layernormalized_spmm(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "layernormalized_spmm"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-
-static std::string init_info_mha_dense(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "mha_dense"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-
-static std::string init_info_slice(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "slice"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-
-static std::string init_info_dynamic_quant_matmul(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "dynamic_quant_matmul"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
-
-static std::string init_info_dynamic_quant(std::vector<dim_t> shape) {
-  std::stringstream ss;
-  ss << "cpu"
-     << ","
-     << "dynamic_quant"
-     << ",";
-
-  ss << "shape";
-  for (auto& kd_shape_dim : shape) {
-    ss << "_" << std::to_string(kd_shape_dim);
-  }
-
-  return ss.str();
-}
+DEFINE_DEFAULT_INIT_INFO(attention)
+DEFINE_DEFAULT_INIT_INFO(layernorm_ba)
+DEFINE_DEFAULT_INIT_INFO(eltwiseop)
+DEFINE_DEFAULT_INIT_INFO(sparse_matmul)
+DEFINE_DEFAULT_INIT_INFO(transpose_mha)
+DEFINE_DEFAULT_INIT_INFO(transpose_matmul)
+DEFINE_DEFAULT_INIT_INFO(softmax)
+DEFINE_DEFAULT_INIT_INFO(gather)
+DEFINE_DEFAULT_INIT_INFO(layernormalized_spmm)
+DEFINE_DEFAULT_INIT_INFO(mha_dense)
+DEFINE_DEFAULT_INIT_INFO(slice)
+DEFINE_DEFAULT_INIT_INFO(dynamic_quant_matmul)
+DEFINE_DEFAULT_INIT_INFO(dynamic_quant)
+DEFINE_DEFAULT_INIT_INFO(matmul)
+DEFINE_DEFAULT_INIT_INFO(groupnorm)
+#undef DEFINE_DEFAULT_INIT_INFO
 
 void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
   if (is_initialized_) return;
@@ -275,8 +108,12 @@ void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
       CASE(slice);
       CASE(dynamic_quant_matmul);
       CASE(dynamic_quant);
-      default:
+      CASE(matmul);
+      CASE(groupnorm);
+      case kernel_kind::undef:
         SPARSE_LOG(FATAL) << "unknown primitive kind";
+        break;
+        // deliberately avoid default case so that the compiler gives waring of missing cases
     }
 #undef CASE
 

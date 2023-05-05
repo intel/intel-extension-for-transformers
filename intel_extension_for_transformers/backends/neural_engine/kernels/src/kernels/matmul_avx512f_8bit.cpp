@@ -22,11 +22,6 @@
 namespace jd {
 
 using io = ssd::matmul_io::io;
-static inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
-  return shapes;
-}
 
 bool matmul_avx512f_8bit_kd_t::init() {
   if (!isa_available(avx512_core_bf16)) return false;
@@ -35,9 +30,8 @@ bool matmul_avx512f_8bit_kd_t::init() {
 }
 
 bool matmul_avx512f_8bit_kd_t::params_init() {
-  auto& descs = op_desc_.tensor_descs();
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
+  const auto shapes = op_desc_.tensor_shapes();
+  const auto dtypes = op_desc_.tensor_dtypes();
   auto attrs = op_desc_.attrs();
 
   dim_t M = shapes[io::SRC0][0];
@@ -63,7 +57,7 @@ bool matmul_avx512f_8bit_kd_t::params_init() {
   auto iter = attrs.find("append_op");
   jit_param_.has_gelu = (iter != attrs.end() && iter->second == "gelu_tanh") ? true : false;
 
-  if (descs[io::SRC1].dtype() == data_type::bf16) {
+  if (dtypes[io::SRC1] == data_type::bf16) {
     jit_param_.weight_bf16 = reinterpret_cast<bfloat16_t*>(str_to_num<intptr_t>(attrs["weight_bf16"]));
     jit_param_.weight_type = data_type::f8_e4m3;
     for (auto& it : data_type_name) {
@@ -72,9 +66,9 @@ bool matmul_avx512f_8bit_kd_t::params_init() {
         break;
       }
     }
-  } else if (descs[io::SRC1].dtype() == data_type::s8 || descs[io::SRC1].dtype() == data_type::f8_e4m3 ||
-             descs[io::SRC1].dtype() == data_type::f8_e5m2) {
-    jit_param_.weight_type = descs[io::SRC1].dtype();
+  } else if (dtypes[io::SRC1] == data_type::s8 || dtypes[io::SRC1] == data_type::f8_e4m3 ||
+             dtypes[io::SRC1] == data_type::f8_e5m2) {
+    jit_param_.weight_type = dtypes[io::SRC1];
   }
   jit_param_.weight_fp8 = reinterpret_cast<float8_t*>(str_to_num<intptr_t>(attrs["weight_8bit"]));
 
@@ -172,7 +166,7 @@ void matmul_avx512f_8bit_kd_t::packBF16() {
 
 matmul_avx512f_8bit_k_t::matmul_avx512f_8bit_k_t(const std::shared_ptr<const kd_t>& kd)
     : kernel_t(kd),
-      t_shapes_(get_tensor_shapes(kd->get_operator_desc().tensor_descs())),
+      t_shapes_(kd->get_operator_desc().tensor_shapes()),
       M_(t_shapes_[io::SRC0][0]),
       K_(t_shapes_[io::SRC0][1]),
       N_(t_shapes_[io::SRC1][0]) {}

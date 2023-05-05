@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "benchmark_utils.hpp"
-#include "kernels/mha_dense_types.hpp"
 
 namespace jd {
 
@@ -29,7 +28,7 @@ class mha_dense_bench : public kernel_bench {
   std::shared_ptr<mha_dense_bench> smb;
 
  protected:
-  using io = mha_dense_io::io;
+  using io = exposed_enum::mha_dense::io;
 
  public:
   mha_dense_bench() {}
@@ -44,7 +43,7 @@ class mha_dense_bench : public kernel_bench {
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return smb->calc_flop(); }
   std::vector<int> get_refresh_data_idx() const override { return smb->get_refresh_data_idx(); }
-  int get_workspace_idx() const final { return mha_dense_io::WORKSPACE; }
+  int get_workspace_idx() const final { return io::WORKSPACE; }
   // Just like that in gtest file
   void get_true_data() override { smb->get_true_data(); }
   // Just like that in gtest file

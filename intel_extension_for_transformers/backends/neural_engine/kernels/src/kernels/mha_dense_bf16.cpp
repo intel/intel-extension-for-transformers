@@ -47,27 +47,28 @@ bool mha_dense_bf16_kd_t::init() {
   KERNEL_INIT_CHECK((desc[io::SRC_K].shape() == std::vector<dim_t>{batch_size, sl_n, head_num, head_size}));
   KERNEL_INIT_CHECK((desc[io::SRC_V].shape() == std::vector<dim_t>{batch_size, sl_n, head_num, head_size}));
   KERNEL_INIT_CHECK((desc[io::DST].shape() == std::vector<dim_t>{batch_size, sl_m, head_num, head_size}));
-  if (!desc[io::BINARY_ADD].shape().empty()) {
+  const auto& badd_shape = desc[io::BINARY_ADD].shape();
+  if (!badd_shape.empty()) {
     KERNEL_INIT_CHECK(desc[io::BINARY_ADD].dtype() == dt::fp32);
-    const auto& badd_shape = desc[io::BINARY_ADD].shape();
     KERNEL_INIT_CHECK(desc[io::BINARY_ADD].ftype() == plain_format(badd_shape.size()));
-    KERNEL_INIT_CHECK((badd_shape == std::vector<dim_t>{1, 1, sl_m, sl_n}));  // TODO(Yi): tmp restriction to removed
-    KERNEL_INIT_CHECK(badd_shape[badd_shape.size() - 1] == sl_n);             // the last dim can not be broadcasted
-    KERNEL_INIT_CHECK(badd_shape[badd_shape.size() - 2] == 1 || badd_shape[badd_shape.size() - 2] == sl_m);
-    KERNEL_INIT_CHECK(badd_shape[badd_shape.size() - 3] == 1 || badd_shape[badd_shape.size() - 3] == head_num);
-    KERNEL_INIT_CHECK(badd_shape[badd_shape.size() - 4] == 1 || badd_shape[badd_shape.size() - 4] == batch_size);
+    const auto& badd_pad1 = pre_pad1(4, badd_shape);
+    KERNEL_INIT_CHECK((badd_pad1 == std::vector<dim_t>{1, 1, sl_m, sl_n}));  // TODO(Yi): tmp restriction to removed
+    KERNEL_INIT_CHECK(badd_pad1[0] == 1 || badd_pad1[0] == batch_size);
+    KERNEL_INIT_CHECK(badd_pad1[1] == 1 || badd_pad1[1] == head_num);
+    KERNEL_INIT_CHECK(badd_pad1[2] == 1 || badd_pad1[2] == sl_m);
+    KERNEL_INIT_CHECK(badd_pad1[3] == 1 || badd_pad1[3] == sl_n);
   }
   KERNEL_INIT_CHECK((desc[io::MASK].shape().empty() || desc[io::MASK] == tensor_desc{{batch_size}, dt::s32, ft::a}));
   KERNEL_INIT_CHECK((desc[io::ATT_SCALE] == tensor_desc{{1}, dt::fp32, ft::a}));
 
-  KERNEL_INIT_CHECK((0 == desc[io::Q_SCALE].shape().size()));
-  KERNEL_INIT_CHECK((0 == desc[io::Q_ZP].shape().size()));
-  KERNEL_INIT_CHECK((0 == desc[io::K_SCALE].shape().size()));
-  KERNEL_INIT_CHECK((0 == desc[io::K_ZP].shape().size()));
-  KERNEL_INIT_CHECK((0 == desc[io::V_SCALE].shape().size()));
-  KERNEL_INIT_CHECK((0 == desc[io::V_ZP].shape().size()));
-  KERNEL_INIT_CHECK((0 == desc[io::DST_SCALE].shape().size()));
-  KERNEL_INIT_CHECK((0 == desc[io::DST_ZP].shape().size()));
+  KERNEL_INIT_CHECK(desc[io::Q_SCALE].shape().empty());
+  KERNEL_INIT_CHECK(desc[io::Q_ZP].shape().empty());
+  KERNEL_INIT_CHECK(desc[io::K_SCALE].shape().empty());
+  KERNEL_INIT_CHECK(desc[io::K_ZP].shape().empty());
+  KERNEL_INIT_CHECK(desc[io::V_SCALE].shape().empty());
+  KERNEL_INIT_CHECK(desc[io::V_ZP].shape().empty());
+  KERNEL_INIT_CHECK(desc[io::DST_SCALE].shape().empty());
+  KERNEL_INIT_CHECK(desc[io::DST_ZP].shape().empty());
 
   // dtype
   KERNEL_INIT_CHECK(is_all_of(
@@ -108,14 +109,16 @@ mha_dense_bf16_k_t::mha_dense_bf16_k_t(const std::shared_ptr<const kernel_desc_t
       workspace_size_(sizeof(bfloat16_t) * bs_ * head_num_ * sl_n_pad_ * head_size_pad_ +    // reorder K
                       sizeof(bfloat16_t) * bs_ * head_num_ * sl_n_pad_ * head_size_pad_ +    // reorder V
                       get_data_size(dt_dst) * omp_get_max_threads() * 32 * head_size_pad_ +  // tmp dst
-                      sizeof(float) * bs_ * sl_m_ * sl_n_pad_),                              // tmp badd
+                      sizeof(float) * bs_ * sl_m_ * sl_n_pad_ +                              // tmp badd
+                      sizeof(float) * pad_to(sl_m_, PAD_SIZE) * sl_n_pad_),  // extra space for badd to read
+      amx_full_tile_param_(16, 16, 32, true, 2),
+      amx_full_tile_cfg_(amx_full_tile_param_),
       kern_tr_k({/*.pad_n = */ 64, /*.cvt_s8u8 = */ false, 2}),
       kern_tr_v(32, sizeof(bfloat16_t)),
       kern_tr_q(),
-      kern_qksoftmax(has_pmask || has_badd || sl_n_pad_ != sl_n_),  // pmask is applied via binary add
-      kern_mmav(),
-      amx_full_tile_param_(16, 16, 64, false, 4),
-      amx_full_tile_cfg_(amx_full_tile_param_) {}
+      kern_qksoftmax(has_pmask || has_badd || sl_n_pad_ != sl_n_,  // pmask is applied via binary add
+                     &amx_full_tile_param_),
+      kern_mmav(&amx_full_tile_param_) {}
 
 bool mha_dense_bf16_k_t::init() {
   if (!ker_amx_cfg_.create_kernel()) return false;
@@ -212,6 +215,9 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
 #pragma omp parallel for collapse(2)
   for (int ibat = 0; ibat < bs_ * head_num_; ibat++) {
     for (int i_m = 0; i_m < sl_m_; i_m += m_tile) {
+      const int curr_thread_num = omp_get_thread_num();
+      // init amx for each omp thread
+      ker_amx_cfg_(&amx_full_tile_cfg_);
       const auto ibs = ibat / head_num_;  // batch_size idx
       const auto ihn = ibat % head_num_;  // head_num idx
       const int curr_pmask = has_pmask ? pmask[ibs] : sl_n_;
@@ -262,7 +268,7 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
 
       const auto is_tail_m = i_m + m_tile > sl_m_;
       const auto curr_dst = dst + ioffset + i_m * ld_dst_;
-      const auto mmav_dst = (!is_tail_m) ? curr_dst : tmp_dst + omp_get_thread_num() * m_tile * head_size_pad_;
+      const auto mmav_dst = (!is_tail_m) ? curr_dst : tmp_dst + curr_thread_num * m_tile * head_size_pad_;
       auto curr_v = reo_v + ibat * sl_n_pad_ * head_size_pad_;
       const jit_mha_bf16_row_amx_32x32::rt_data_t rtdata_mmav{
           /*.matA = */ curr_a,

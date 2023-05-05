@@ -44,12 +44,9 @@ struct test_params_t {
 
 void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   // configure alias
-  auto& descs = op_desc.tensor_descs();
   auto attrs = op_desc.attrs();
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
-  std::vector<jd::data_type> dtypes(descs.size());
-  std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
+  const auto shapes = op_desc.tensor_shapes();
+  const auto dtypes = op_desc.tensor_dtypes();
 
   const dim_t M = shapes[io::SRC0][3];  // aka src0_perm_shape[2]
   const dim_t K = shapes[io::SRC0][1];  // aka src0_perm_shape[3]
@@ -271,10 +268,8 @@ static auto case_func = []() {
 };
 
 std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
-  auto& descs = tpi.param.args.first.op_desc.tensor_descs();
   auto attrs = tpi.param.args.first.op_desc.attrs();
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
+  const auto shapes = tpi.param.args.first.op_desc.tensor_shapes();
 
   const dim_t bs0 = shapes[io::DST0][0];
   const dim_t bs1 = shapes[io::DST0][1];

@@ -13,24 +13,13 @@
 //  limitations under the License.
 
 #include "kernels/matmul_ref.hpp"
+
+#include <algorithm>
+
 #include "fp8.hpp"
 
 namespace jd {
 using io = ssd::matmul_io::io;
-namespace {
-static inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) {
-    if (d.shape().size() < 4 && (d.shape().size() != 1 || d.shape()[0] != 1)) {
-      std::vector<int64_t> tmp(4 - d.shape().size(), 1);
-      tmp.insert(tmp.end(), d.shape().begin(), d.shape().end());
-      return tmp;
-    }
-    return d.shape();
-  });
-  return shapes;
-}
-}  // namespace
 
 static const std::vector<dim_t> perm_plain4{0, 1, 2, 3};
 static const std::vector<std::vector<std::vector<dim_t>>> perm_list = {
@@ -41,8 +30,9 @@ static const std::vector<std::vector<std::vector<dim_t>>> perm_list = {
 // Part1: class matmul_ref_kd_t
 
 bool matmul_ref_kd_t::init() {
-  auto& descs = op_desc_.tensor_descs();
-  auto shapes = get_tensor_shapes(descs);
+  auto shapes = op_desc_.tensor_shapes();
+  std::transform(shapes.begin(), shapes.end(), shapes.begin(),
+                 [](auto&& x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
 
   for (auto mat : {io::SRC0, io::SRC1, io::SRC2, io::DST0}) {
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
@@ -140,9 +130,9 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto& op_desc = ref_kd.get_operator_desc();
   auto& descs = op_desc.tensor_descs();
   auto& attrs = op_desc.attrs();
-  // std::vector<std::vector<dim_t>> shapes(descs.size());
-  // std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
-  auto shapes = get_tensor_shapes(descs);
+  auto shapes = op_desc.tensor_shapes();
+  std::transform(shapes.begin(), shapes.end(), shapes.begin(),
+                 [](auto&& x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
   std::vector<jd::data_type> dtypes(descs.size());
   std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
   bool has_binary_add = shapes.size() > io::SRC2 && !shapes[io::SRC2].empty();

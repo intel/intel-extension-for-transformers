@@ -150,6 +150,7 @@ class jit_eltwise_injector {
     tanh_linear_ubound,
     tanh_saturation_lbound,
     tanh_pol_table,
+    low_precision_exp_const_v0,
     low_precision_exp_const_v1,
     low_precision_exp_const_v2,
     exchange_zmm_low256_high256,

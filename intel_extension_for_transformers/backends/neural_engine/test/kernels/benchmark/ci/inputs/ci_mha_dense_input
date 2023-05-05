@@ -1,4 +1,4 @@
-### ncores_per_inst kern batch_size seq_len head_num head_size dt_dst dt_src mask badd_dim sl_n
+### ncores_per_inst kern batch_size seq_len head_num head_size dt_dst dt_src mask badd_dim sl_n ft_kv
 $it_per_core=300
 48 static 4 1 16 256 u8 s8 -1 2 33
 48 static 4 1 16 256 u8 s8 -1 2 33 acbd

@@ -23,8 +23,9 @@
 #include "utils.hpp"
 
 namespace jd {
-using dt = jd::data_type;
-using ft = jd::format_type;
+using dt = data_type;
+using ft = format_type;
+using io = exposed_enum::mha_dense::io;
 
 const void* make_data_obj(const tensor_desc desc, const float min_val, const float max_val) {
   int elem_num = std::accumulate(desc.shape().begin(), desc.shape().end(), dim_t{1}, std::multiplies<dim_t>());
@@ -122,7 +123,7 @@ void mha_dense_dynamic_bench::gen_case() {
   op_attrs["stable_softmax"] = "False";
 
   // Step 2: Set tensor shapes
-  ts_descs = std::vector<tensor_desc>(io::mha_dense_io_MAX + 1, {{}, dt::undef, ft::undef});
+  ts_descs = std::vector<tensor_desc>(io::SIZE, {{}, dt::undef, ft::undef});
   ts_descs[io::SRC_Q] = {{batch_size, sl_M, head_num, head_size}, dt::s8, ft::abcd};
   ts_descs[io::SRC_K] = {{batch_size, sl_N, head_num, head_size}, dt::s8, ft::abcd};
   ts_descs[io::SRC_V] = {{batch_size, sl_N, head_num, head_size}, dt::s8, ft::abcd};
@@ -135,7 +136,7 @@ void mha_dense_dynamic_bench::gen_case() {
   ts_descs[io::DST_SCALE] = {{batch_size, sl_M}, dt::fp32, ft::ab};
 
   // Step 2: Construct runtime data
-  std::vector<const void*> rt_data(io::mha_dense_io_MAX + 1, nullptr);
+  std::vector<const void*> rt_data(io::SIZE, nullptr);
   rt_data[io::SRC_Q] = make_data_obj(ts_descs[io::SRC_Q], -128, 127);
   rt_data[io::SRC_K] = make_data_obj(ts_descs[io::SRC_K], -128, 127);
   rt_data[io::SRC_V] = make_data_obj(ts_descs[io::SRC_V], -128, 127);
@@ -148,8 +149,8 @@ void mha_dense_dynamic_bench::gen_case() {
   rt_data[io::DST] = make_data_obj(ts_descs[io::DST], -128, 127);  // random dst and scale to be overwrite
   rt_data[io::DST_SCALE] = make_data_obj(ts_descs[io::DST_SCALE], INT32_MIN, INT32_MAX);
 
-  std::vector<const void*> rt_data_cpy(io::mha_dense_io_MAX + 1, nullptr);
-  for (std::underlying_type<io>::type idx = 0; idx <= io::mha_dense_io_MAX; ++idx)
+  std::vector<const void*> rt_data_cpy(io::SIZE, nullptr);
+  for (std::underlying_type<io>::type idx = 0; idx < io::SIZE; ++idx)
     if (rt_data[idx] != nullptr) rt_data_cpy[idx] = copy_data_obj(ts_descs[idx], rt_data[idx]);
 
   // Step 3: op_args_t testcase pair

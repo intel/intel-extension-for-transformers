@@ -254,24 +254,13 @@ int get_data_size(jd::data_type dt) {
   return jd::type_size.at(dt);
 }
 
-#ifdef WITH_GCC_FLAGS
-#pragma GCC optimize "no-strict-aliasing"
-#endif
 float get_exp(float x) {
-  unsigned int max = 0x42b17218;
-  unsigned int min = 0xc2aeac50;
-  float* fmax = reinterpret_cast<float*>(&max);
-  float* fmin = reinterpret_cast<float*>(&min);
-  if (x < *fmin) x = *fmin;
-  if (x > *fmax) {
-    return INFINITY;
-  } else {
-    return expf(x);
-  }
+  static const auto fmax = bit_cast<float>(0x42b17218);
+  static const auto fmin = bit_cast<float>(0xc2aeac50);
+  if (x < fmin) x = fmin;
+  return x > fmax ? INFINITY : expf(x);
 }
-#ifdef WITH_GCC_FLAGS
-#pragma GCC optimize "strict-aliasing"
-#endif
+
 // todo:add a erf_gelu version.
 float get_gelu(float x) {
   // an approximate fitting function of GELU(x)

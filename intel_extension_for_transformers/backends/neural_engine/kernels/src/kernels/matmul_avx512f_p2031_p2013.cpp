@@ -30,19 +30,13 @@ using io = ssd::matmul_io::io;
  *   n_tile: n-size of a tile in terms of #registers; default is 2
  */
 
-static inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
-  return shapes;
-}
-
 // Part1: class matmul_avx512f_p2031_p2013_kd_t
 
 bool matmul_avx512f_p2031_p2013_kd_t::init() {
   using dt = jd::data_type;
   if (!isa_available(avx512_core)) return false;
-  auto& descs = op_desc_.tensor_descs();
-  auto shapes = get_tensor_shapes(descs);
+  const auto shapes = op_desc_.tensor_shapes();
+  const auto dtypes = op_desc_.tensor_dtypes();
 
   for (auto mat : {io::SRC0, io::SRC1, io::SRC2, io::DST0})
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
@@ -66,12 +60,11 @@ bool matmul_avx512f_p2031_p2013_kd_t::init() {
 
   bool has_binary_add = !shapes[io::SRC2].empty();
 
-  bool is_supported =
-      (op_desc_.kernel_prop() == kernel_prop::forward_inference) &&
-      is_any_of({dt::fp32}, [&](const dt& a) { return descs[io::SRC0].dtype() == a; }) &&
-      is_any_of({dt::fp32}, [&](const dt& a) { return descs[io::SRC1].dtype() == a; }) &&
-      is_any_of({dt::fp32}, [&](const dt& a) { return descs[io::DST0].dtype() == a; }) &&
-      (!has_binary_add || is_any_of({dt::fp32}, [&](const dt& a) { return descs[io::SRC2].dtype() == a; }));
+  bool is_supported = (op_desc_.kernel_prop() == kernel_prop::forward_inference) &&
+                      is_any_of({dt::fp32}, [&](const dt& a) { return dtypes[io::SRC0] == a; }) &&
+                      is_any_of({dt::fp32}, [&](const dt& a) { return dtypes[io::SRC1] == a; }) &&
+                      is_any_of({dt::fp32}, [&](const dt& a) { return dtypes[io::DST0] == a; }) &&
+                      (!has_binary_add || is_any_of({dt::fp32}, [&](const dt& a) { return dtypes[io::SRC2] == a; }));
 
   if (!is_supported) return false;
 
@@ -96,9 +89,7 @@ bool matmul_avx512f_p2031_p2013_kd_t::init() {
 }
 
 bool matmul_avx512f_p2031_p2013_kd_t::matmul_params_init() {
-  auto& descs = op_desc_.tensor_descs();
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
+  const auto shapes = op_desc_.tensor_shapes();
   auto attrs = op_desc_.attrs();
 
   dim_t M = shapes[io::SRC0][3];  // aka src0_perm_shape[2]
@@ -136,7 +127,7 @@ bool matmul_avx512f_p2031_p2013_kd_t::matmul_params_init() {
 
 matmul_avx512f_p2031_p2013_k_t::matmul_avx512f_p2031_p2013_k_t(const std::shared_ptr<const kd_t>& kd)
     : kernel_t(kd),
-      t_shapes_(get_tensor_shapes(kd->get_operator_desc().tensor_descs())),
+      t_shapes_(kd->get_operator_desc().tensor_shapes()),
       src0_perm_shape_({
           t_shapes_[io::SRC0][2],
           t_shapes_[io::SRC0][0],

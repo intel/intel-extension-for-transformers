@@ -65,8 +65,8 @@ void jit_channelwise_sum_t::generate() {
         }
         loop /= 2;
       }
-      get_horizontal_op(zmm_sum_x[0], zmm_tmp, op_t::sum);
-      get_horizontal_op(zmm_sum_powx[0], zmm_tmp, op_t::sum);
+      reduce_dwords(zmm_sum_x[0], zmm_tmp, &CodeGenerator::vaddps);
+      reduce_dwords(zmm_sum_powx[0], zmm_tmp, &CodeGenerator::vaddps);
       vmovups(ptr[reg_sum_x] | sum_write_mask, zmm_sum_x[0]);
       vmovups(ptr[reg_sum_powx] | sum_write_mask, zmm_sum_powx[0]);
     };
@@ -160,7 +160,7 @@ void jit_channelwise_norm_t::generate() {
     auto norm = [&] {
       int unroll = 16;
       while (param_.HW % (unroll * 16) != 0) unroll -= 1;
-      auto zmms = rp.regs<Zmm,16>();
+      auto zmms = rp.regs<Zmm, 16>();
       auto loop_num = param_.HW / (unroll * 16);
       xor_(reg_loop, reg_loop);
       L(".norm_loop");

@@ -28,78 +28,73 @@
 namespace jd {
 using dt = data_type;
 
-static inline std::vector<std::vector<dim_t>> get_tensor_shapes(const std::vector<tensor_desc>& descs) {
-  std::vector<std::vector<dim_t>> shapes(descs.size());
-  std::transform(descs.begin(), descs.end(), shapes.begin(), [&](tensor_desc d) { return d.shape(); });
-  return shapes;
-}
-
 // Part1: class mha_dense_ref_kd_t
 
 bool mha_dense_ref_kd_t::init() {
-  auto& descs = op_desc_.tensor_descs();
+  const auto shapes = op_desc_.tensor_shapes();
+  const auto dtypes = op_desc_.tensor_dtypes();
+  const auto ftypes = op_desc_.tensor_ftypes();
   auto& op_attrs = op_desc_.attrs();
   merged_QKV_ = op_attrs.find("merged_QKV") != op_attrs.end() && op_attrs.at("merged_QKV") == "True";
   approx_exp_ = op_attrs.find("approx_exp") != op_attrs.end() && op_attrs.at("approx_exp") == "True";
   stable_softmax_ = op_attrs.find("stable_softmax") != op_attrs.end() && op_attrs.at("stable_softmax") == "True";
 
-  dst_dt_ = descs[io::DST].dtype();
+  dst_dt_ = dtypes[io::DST];
   KERNEL_INIT_CHECK(is_any_of({dt::u8, dt::s8, dt::fp32, dt::bf16}, [dst = dst_dt_](const dt t) { return dst == t; }))
 
   // dynamic shape
-  KERNEL_INIT_CHECK((bs() > 0 || descs[io::BATCH_SIZE].shape() == std::vector<dim_t>{1}));
-  KERNEL_INIT_CHECK((head_num() > 0 || descs[io::HEAD_NUM].shape() == std::vector<dim_t>{1}));
-  KERNEL_INIT_CHECK((head_size() > 0 || descs[io::HEAD_SIZE].shape() == std::vector<dim_t>{1}));
-  KERNEL_INIT_CHECK((sl_m() > 0 || descs[io::M].shape() == std::vector<dim_t>{1}));
-  KERNEL_INIT_CHECK((sl_n() > 0 || descs[io::N].shape() == std::vector<dim_t>{1}));
+  KERNEL_INIT_CHECK((bs() > 0 || shapes[io::BATCH_SIZE] == std::vector<dim_t>{1}));
+  KERNEL_INIT_CHECK((head_num() > 0 || shapes[io::HEAD_NUM] == std::vector<dim_t>{1}));
+  KERNEL_INIT_CHECK((head_size() > 0 || shapes[io::HEAD_SIZE] == std::vector<dim_t>{1}));
+  KERNEL_INIT_CHECK((sl_m() > 0 || shapes[io::M] == std::vector<dim_t>{1}));
+  KERNEL_INIT_CHECK((sl_n() > 0 || shapes[io::N] == std::vector<dim_t>{1}));
 
-  KERNEL_INIT_CHECK((descs[io::SRC_Q].shape() == std::vector<dim_t>{bs(), sl_m(), head_num(), head_size()}))
-  KERNEL_INIT_CHECK((descs[io::SRC_K].shape() == std::vector<dim_t>{bs(), sl_n(), head_num(), head_size()}))
-  KERNEL_INIT_CHECK((descs[io::SRC_V].shape() == std::vector<dim_t>{bs(), sl_n(), head_num(), head_size()}))
-  KERNEL_INIT_CHECK((descs[io::DST].shape() == std::vector<dim_t>{bs(), sl_m(), head_num(), head_size()}))
+  KERNEL_INIT_CHECK((shapes[io::SRC_Q] == std::vector<dim_t>{bs(), sl_m(), head_num(), head_size()}))
+  KERNEL_INIT_CHECK((shapes[io::SRC_K] == std::vector<dim_t>{bs(), sl_n(), head_num(), head_size()}))
+  KERNEL_INIT_CHECK((shapes[io::SRC_V] == std::vector<dim_t>{bs(), sl_n(), head_num(), head_size()}))
+  KERNEL_INIT_CHECK((shapes[io::DST] == std::vector<dim_t>{bs(), sl_m(), head_num(), head_size()}))
 
-  KERNEL_INIT_CHECK(descs[io::MASK].ftype() == format_type::undef ||
-                    (descs[io::MASK].dtype() == dt::s32 && descs[io::MASK].shape() == std::vector<dim_t>{bs()}))
+  KERNEL_INIT_CHECK(ftypes[io::MASK] == format_type::undef ||
+                    (dtypes[io::MASK] == dt::s32 && shapes[io::MASK] == std::vector<dim_t>{bs()}))
 
   // attention scale
-  KERNEL_INIT_CHECK((descs[io::ATT_SCALE].dtype() == dt::fp32))
-  KERNEL_INIT_CHECK((descs[io::ATT_SCALE].ftype() == format_type::a))
-  KERNEL_INIT_CHECK((descs[io::ATT_SCALE].shape() == std::vector<dim_t>{bs()} ||
-                     descs[io::ATT_SCALE].shape() == std::vector<dim_t>{1}))
+  KERNEL_INIT_CHECK((dtypes[io::ATT_SCALE] == dt::fp32))
+  KERNEL_INIT_CHECK((ftypes[io::ATT_SCALE] == format_type::a))
+  KERNEL_INIT_CHECK(
+      (shapes[io::ATT_SCALE] == std::vector<dim_t>{bs()} || shapes[io::ATT_SCALE] == std::vector<dim_t>{1}))
 
   // can not use DST_SCALE as input and output at the same time
-  KERNEL_INIT_CHECK(descs[io::DST_SCALE].dtype() == dt::undef || descs[io::SRC_DST_SCALE].dtype() == dt::undef)
+  KERNEL_INIT_CHECK(dtypes[io::DST_SCALE] == dt::undef || dtypes[io::SRC_DST_SCALE] == dt::undef)
 
-  KERNEL_INIT_CHECK((descs[io::Q_SCALE].size() == 0 ||  //
-                     descs[io::Q_SCALE].shape() == std::vector<dim_t>{1} ||
-                     descs[io::Q_SCALE].shape() == std::vector<dim_t>{bs(), sl_m()}))
-  KERNEL_INIT_CHECK((descs[io::K_SCALE].size() == 0 ||  //
-                     descs[io::K_SCALE].shape() == std::vector<dim_t>{1} ||
-                     descs[io::K_SCALE].shape() == std::vector<dim_t>{bs(), sl_n()}))
-  KERNEL_INIT_CHECK((descs[io::V_SCALE].size() == 0 ||  //
-                     descs[io::V_SCALE].shape() == std::vector<dim_t>{1} ||
-                     descs[io::V_SCALE].shape() == std::vector<dim_t>{bs(), sl_n()}))
-  KERNEL_INIT_CHECK((descs[io::SRC_DST_SCALE].size() == 0 ||
-                     descs[io::SRC_DST_SCALE].shape() == std::vector<dim_t>{1} ||
-                     descs[io::SRC_DST_SCALE].shape() == std::vector<dim_t>{bs(), sl_m()}))
+  KERNEL_INIT_CHECK((shapes[io::Q_SCALE].size() == 0 ||  //
+                     shapes[io::Q_SCALE] == std::vector<dim_t>{1} ||
+                     shapes[io::Q_SCALE] == std::vector<dim_t>{bs(), sl_m()}))
+  KERNEL_INIT_CHECK((shapes[io::K_SCALE].size() == 0 ||  //
+                     shapes[io::K_SCALE] == std::vector<dim_t>{1} ||
+                     shapes[io::K_SCALE] == std::vector<dim_t>{bs(), sl_n()}))
+  KERNEL_INIT_CHECK((shapes[io::V_SCALE].size() == 0 ||  //
+                     shapes[io::V_SCALE] == std::vector<dim_t>{1} ||
+                     shapes[io::V_SCALE] == std::vector<dim_t>{bs(), sl_n()}))
+  KERNEL_INIT_CHECK((shapes[io::SRC_DST_SCALE].size() == 0 || shapes[io::SRC_DST_SCALE] == std::vector<dim_t>{1} ||
+                     shapes[io::SRC_DST_SCALE] == std::vector<dim_t>{bs(), sl_m()}))
 
-  KERNEL_INIT_CHECK((descs[io::DST_SCALE].size() == 0 ||  //
-                     descs[io::DST_SCALE].shape() == std::vector<dim_t>{bs(), sl_m()}))
+  KERNEL_INIT_CHECK((shapes[io::DST_SCALE].size() == 0 ||  //
+                     shapes[io::DST_SCALE] == std::vector<dim_t>{bs(), sl_m()}))
 
   // currently only support s8
-  KERNEL_INIT_CHECK((descs[io::Q_ZP].shape().empty()))
-  KERNEL_INIT_CHECK((descs[io::K_ZP].shape().empty()))
-  KERNEL_INIT_CHECK((descs[io::V_ZP].shape().empty()))
-  KERNEL_INIT_CHECK((descs[io::DST_ZP].shape().empty()))
+  KERNEL_INIT_CHECK((shapes[io::Q_ZP].empty()))
+  KERNEL_INIT_CHECK((shapes[io::K_ZP].empty()))
+  KERNEL_INIT_CHECK((shapes[io::V_ZP].empty()))
+  KERNEL_INIT_CHECK((shapes[io::DST_ZP].empty()))
 
-  KERNEL_INIT_CHECK(descs[io::SRC_Q].ftype() == format_type::abcd)
-  KERNEL_INIT_CHECK(descs[io::DST].ftype() == format_type::abcd)
-  KERNEL_INIT_CHECK(descs[io::SRC_K].ftype() == format_type::abcd || descs[io::SRC_K].ftype() == format_type::acbd)
-  KERNEL_INIT_CHECK(descs[io::SRC_V].ftype() == descs[io::SRC_K].ftype())
+  KERNEL_INIT_CHECK(ftypes[io::SRC_Q] == format_type::abcd)
+  KERNEL_INIT_CHECK(ftypes[io::DST] == format_type::abcd)
+  KERNEL_INIT_CHECK(ftypes[io::SRC_K] == format_type::abcd || ftypes[io::SRC_K] == format_type::acbd)
+  KERNEL_INIT_CHECK(ftypes[io::SRC_V] == ftypes[io::SRC_K])
 
-  if (descs.size() > io::BINARY_ADD && descs[io::BINARY_ADD].dtype() != dt::undef) {
-    const auto badd_shape_bcst = pre_pad1(4, descs[io::BINARY_ADD].shape());
-    KERNEL_INIT_CHECK(descs[io::BINARY_ADD].dtype() == dt::fp32)
+  if (shapes.size() > io::BINARY_ADD && dtypes[io::BINARY_ADD] != dt::undef) {
+    const auto badd_shape_bcst = pre_pad1(4, shapes[io::BINARY_ADD]);
+    KERNEL_INIT_CHECK(dtypes[io::BINARY_ADD] == dt::fp32)
     KERNEL_INIT_CHECK(badd_shape_bcst[0] == 1 || badd_shape_bcst[0] == bs())
     KERNEL_INIT_CHECK(badd_shape_bcst[1] == 1 || badd_shape_bcst[1] == head_num())
     KERNEL_INIT_CHECK(badd_shape_bcst[2] == 1 || badd_shape_bcst[2] == sl_m())
@@ -107,14 +102,8 @@ bool mha_dense_ref_kd_t::init() {
   }
 
   // dtype
-  KERNEL_INIT_CHECK(is_all_of(
-      {
-          descs[io::SRC_Q].dtype(),
-          descs[io::SRC_K].dtype(),
-          descs[io::SRC_V].dtype(),
-          descs[io::DST].dtype(),
-      },
-      [&](const dt t) { return t != dt::undef; }));
+  KERNEL_INIT_CHECK(is_all_of({dtypes[io::SRC_Q], dtypes[io::SRC_K], dtypes[io::SRC_V], dtypes[io::DST]},
+                              [&](const dt t) { return t != dt::undef; }));
 
   return true;
 }

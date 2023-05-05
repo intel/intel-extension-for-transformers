@@ -213,7 +213,7 @@ void jit_mmsoftmax_batch_amx_s8_ab_BA16b4a_u8_16x::generate() {
       const auto zmm_expsum = rp.regs<Zmm, 16>();
       mm_exp_sum(&rp, reg_tmp, zmm_expsum);
       transpose_16x16_ps(zmm_expsum, rp.regs<Zmm, 16>());  // 4 inst per zmm
-      for (int ii = 1; ii < 16; ++ii) vaddps(zmm_expsum[0], zmm_expsum[0], zmm_expsum[ii]);
+      reduce_vmms(zmm_expsum, &CodeGenerator::vaddps);
 
       const auto zmm_tmp = rp.reg<Zmm>();
       vpbroadcastd(zmm_tmp, dword[rip + l_255]);
@@ -507,7 +507,7 @@ void jit_mm_batch_amx_u8s8_ab_AB16a4b_dynamic_quant_16x::generate() {
     const auto& zmm_rcpscale = zmm_absmax;
     {
       transpose_16x16_ps(zmm_absmax, rp.regs<Zmm, 16>());  // 4 inst per zmm
-      for (int ii = 1; ii < 16; ++ii) vrangeps(zmm_absmax[0], zmm_absmax[0], zmm_absmax[ii], 0b1011);
+      reduce_vmms(zmm_absmax, [this](auto& _0, auto& _1, auto& _2) { vrangeps(_0, _1, _2, 0b1011); });
       const auto zmm_127 = rp.reg<Zmm>();
       const auto zmm_scale = rp.reg<Zmm>();
       const auto zmm_tmp = rp.reg<Zmm>();
