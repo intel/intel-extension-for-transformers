@@ -13,10 +13,11 @@
 //  limitations under the License.
 
 #include "kernels/matmul_avx512f_8bit.hpp"
-#include "fp8.hpp"
+
+#include "cpu_parallel.hpp"
+#include "data_pack.hpp"
 #include "kernels/matmul_types.hpp"
 #include "singleton.hpp"
-#include "cpu_parallel.hpp"
 #include "utils.hpp"
 
 namespace jd {
@@ -41,6 +42,7 @@ bool matmul_avx512f_8bit_kd_t::params_init() {
   jit_param_.K = K;
   jit_param_.N = N;
 
+  jit_param_.has_scale0 = !shapes[io::SCALE0].empty();
   bool has_bias = !shapes[io::SRC2].empty();
   if (attrs["alpha"] != "") jit_param_.alpha = str_to_num<float>(attrs["alpha"]);
   SPARSE_LOG_IF(WARNING, jit_param_.alpha == 0.f)
@@ -54,114 +56,33 @@ bool matmul_avx512f_8bit_kd_t::params_init() {
     jit_param_.beta = 0.f;  // set beta to 0 to avoid generate unnecessary asm ascode
   }
 
-  auto iter = attrs.find("append_op");
-  jit_param_.has_gelu = (iter != attrs.end() && iter->second == "gelu_tanh") ? true : false;
+  if (attrs["thread_nums"] != "") {
+    jit_param_.thread_num = str_to_num<intptr_t>(attrs["thread_nums"]);
+  }
+
+  jit_param_.postop_attrs = op_desc_.apply_postops_list();
+  jit_param_.weight_fp8 = reinterpret_cast<float8_t*>(str_to_num<intptr_t>(attrs["weight_8bit"]));
 
   if (dtypes[io::SRC1] == data_type::bf16) {
     jit_param_.weight_bf16 = reinterpret_cast<bfloat16_t*>(str_to_num<intptr_t>(attrs["weight_bf16"]));
-    jit_param_.weight_type = data_type::f8_e4m3;
+    jit_param_.weight_type = data_type::f8_e5m2;
     for (auto& it : data_type_name) {
       if (it.second == attrs["weight_type"]) {
         jit_param_.weight_type = it.first;
         break;
       }
     }
+    if (jit_param_.weight_type == data_type::f8_e4m3 || jit_param_.weight_type == data_type::f8_e5m2) {
+      std::function<float8_t(bfloat16_t)> cast_func = [&](bfloat16_t bf16) -> float8_t {
+        return cast_to<float8_t>(cast_to<float>(bf16, data_type::bf16), jit_param_.weight_type);
+      };
+      pack<float8_t, bfloat16_t>(jit_param_.weight_fp8, jit_param_.weight_bf16, N, K, cast_func);
+    }
   } else if (dtypes[io::SRC1] == data_type::s8 || dtypes[io::SRC1] == data_type::f8_e4m3 ||
              dtypes[io::SRC1] == data_type::f8_e5m2) {
     jit_param_.weight_type = dtypes[io::SRC1];
   }
-  jit_param_.weight_fp8 = reinterpret_cast<float8_t*>(str_to_num<intptr_t>(attrs["weight_8bit"]));
-
-  if (attrs["thread_nums"] != "") {
-    jit_param_.thread_num = str_to_num<intptr_t>(attrs["thread_nums"]);
-  }
-
-  jit_param_.postop_attrs = op_desc_.apply_postops_list();
-  packBF16();
   return true;
-}
-
-void matmul_avx512f_8bit_kd_t::reference(bfloat16_t* srcptr, float8_t* dstptr, int row, int col, int rowpad, int colpad,
-                                         int srcstride, int dststride) {
-  int srcld = srcstride / 2;
-  auto sptr = reinterpret_cast<bfloat16_t*>(srcptr);
-  auto dptr = reinterpret_cast<uint8_t*>(dstptr);
-  int NTile = 16;
-  for (int irow = 0; irow < rowpad; irow += NTile) {
-    for (int icol = 0; icol < colpad; icol += 1) {
-      for (int iin = 0; iin < NTile; iin++) {
-        if (irow + iin < row) {
-          if (icol < col) {
-            *(dptr + irow * dststride + icol * NTile + iin) = float8_base<FloatEncoding::E4M3>::convert_float_to_fp8(
-                bf16_to_fp32(*(sptr + (irow + iin) * srcld + icol)));
-          } else {
-            *(dptr + irow * dststride + icol * NTile + iin) =
-                float8_base<FloatEncoding::E4M3>::convert_float_to_fp8(static_cast<float>(0));
-          }
-        } else {
-          *(dptr + irow * dststride + icol * NTile + iin) =
-              float8_base<FloatEncoding::E4M3>::convert_float_to_fp8(static_cast<float>(0));
-        }
-      }
-    }
-  }
-}
-void matmul_avx512f_8bit_kd_t::reference(bfloat16_t* srcptr, int8_t* dstptr, int row, int col, int rowpad, int colpad,
-                                         int srcstride, int dststride) {
-  int srcld = srcstride / 2;
-  auto sptr = reinterpret_cast<bfloat16_t*>(srcptr);
-  auto dptr = (dstptr);
-  int NTile = 16;
-  for (int irow = 0; irow < rowpad; irow += NTile) {
-    for (int icol = 0; icol < colpad; icol += 1) {
-      for (int iin = 0; iin < NTile; iin++) {
-        if (irow + iin < row) {
-          if (icol < col) {
-            *(dptr + irow * dststride + icol * NTile + iin) =
-                fp32_to_int8(bf16_to_fp32(*(sptr + (irow + iin) * srcld + icol)));
-          } else {
-            *(dptr + irow * dststride + icol * NTile + iin) = fp32_to_int8(static_cast<float>(0));
-          }
-        } else {
-          *(dptr + irow * dststride + icol * NTile + iin) = fp32_to_int8(static_cast<float>(0));
-        }
-      }
-    }
-  }
-}
-
-void matmul_avx512f_8bit_kd_t::packBF16() {
-  CpuDevice* cpudevice = Singleton<CpuDevice>::GetInstance();
-  bfloat16_t* matB = jit_param_.weight_bf16;
-  int n = jit_param_.N;
-  int k = jit_param_.K;
-  int ldb = k;
-  int npad = pad_to(n, 16);
-  int kpad = pad_to(k, 1);
-  auto ncores = cpudevice->getThreads();
-  Parallel2DRowMajor _para;
-  _para.update(npad, kpad, 16, 1, ncores);
-#pragma omp parallel
-  {
-    int tidx = omp_get_thread_num();
-    int colidx, rowidx, rowsize, colsize;
-    _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
-    if (rowsize > 0 && colsize > 0) {
-      int rowremain = remainsize(rowidx, n, rowsize);
-      int colremain = remainsize(colidx, k, colsize);
-      if (op_desc_.tensor_descs()[io::SRC1].dtype() == data_type::bf16) {
-        if (jit_param_.weight_type == data_type::s8) {
-          reference(matB + rowidx * ldb + colidx, jit_param_.weight_int8 + rowidx * kpad + colidx * 16, rowremain,
-                    colremain, rowsize, colsize, k * sizeof(bfloat16_t), kpad);
-        } else if (jit_param_.weight_type == data_type::f8_e4m3 || jit_param_.weight_type == data_type::f8_e5m2) {
-          reference(matB + rowidx * ldb + colidx, jit_param_.weight_fp8 + rowidx * kpad + colidx * 16, rowremain,
-                    colremain, rowsize, colsize, k * sizeof(bfloat16_t), kpad);
-        } else {
-          SPARSE_LOG(ERROR) << "Not Support Weight type";
-        }
-      }
-    }
-  }
 }
 
 matmul_avx512f_8bit_k_t::matmul_avx512f_8bit_k_t(const std::shared_ptr<const kd_t>& kd)
@@ -198,6 +119,7 @@ bool matmul_avx512f_8bit_k_t::execute(const std::vector<const void*>& rt_data) c
   bfloat16_t* matA = const_cast<bfloat16_t*>(reinterpret_cast<const bfloat16_t*>(rt_data[io::SRC0]));
   bfloat16_t* matC = const_cast<bfloat16_t*>(reinterpret_cast<const bfloat16_t*>(rt_data[io::DST0]));
   bfloat16_t* matD = const_cast<bfloat16_t*>(reinterpret_cast<const bfloat16_t*>(rt_data[io::SRC2]));
+  float* scale = const_cast<float*>(reinterpret_cast<const float*>(rt_data[io::SCALE0]));
 #pragma omp parallel
   {
     int tidx = omp_get_thread_num();
@@ -209,6 +131,7 @@ bool matmul_avx512f_8bit_k_t::execute(const std::vector<const void*>& rt_data) c
       int kbatch = pad_to_le(mCacheAdapter.mKBatch, jit_ker_->KTile);
       auto cptr = matC + colidx + rowidx * ldc;
       auto dptr = matD + colidx + rowidx * ldd;
+      auto scaleptr = scale + colidx;
       for (int iterk = 0; iterk < K_; iterk += kbatch) {
         int kbatch_remain = iterk + kbatch <= K_ ? kbatch : K_ - iterk;
         auto aptr = matA + rowidx * lda + iterk;
@@ -223,6 +146,7 @@ bool matmul_avx512f_8bit_k_t::execute(const std::vector<const void*>& rt_data) c
                                                                      bptr + tmpcol * K_,
                                                                      cptr + i * ldc + tmpcol,
                                                                      dptr + i * ldd + tmpcol,
+                                                                     scaleptr + tmpcol,
                                                                      kbatch_remain,
                                                                      nsize,
                                                                      lda * 2,

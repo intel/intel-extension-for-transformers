@@ -80,16 +80,18 @@ namespace jd {
 
 typedef uint16_t bfloat16_t;  // NOLINT
 typedef uint8_t float8_t;     // NOLINT
+
 typedef int64_t dim_t;
 
 SPARSE_API_ int8_t fp32_to_int8(const float fp32, const float scale = 1.f, const float zp = 0.f);
+SPARSE_API_ float int8_to_fp32(const int8_t int8, const float scale = 1.f, const float zp = 0.f);
 SPARSE_API_ uint16_t fp32_to_fp16(const float x);
 SPARSE_API_ float fp16_to_fp32(const uint16_t x);
 SPARSE_API_ bfloat16_t fp32_to_bf16(const float fp32);
 SPARSE_API_ float bf16_to_fp32(const bfloat16_t bf16);
 
 template <typename dst_t, typename src_t>
-dst_t cast_to(src_t x);
+SPARSE_API_ dst_t cast_to(const src_t x, data_type = data_type::undef);
 
 template <typename T>
 SPARSE_API_ void init_vector(T* v, int num_size, float bound1 = -10, float bound2 = 10, int seed = 5489u);

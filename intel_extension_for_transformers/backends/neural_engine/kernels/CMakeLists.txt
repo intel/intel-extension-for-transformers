@@ -29,6 +29,10 @@ file(GLOB SOURCES
   ${PROJECT_SOURCE_DIR}/src/jit_domain/*.cpp
 )
 
+file(GLOB_RECURSE HEADERS
+  ${PROJECT_SOURCE_DIR}/*.hpp
+)
+
 file(GLOB GPU_SOURCES
   ${PROJECT_SOURCE_DIR}/src/gpu/*.cpp
   ${PROJECT_SOURCE_DIR}/src/gpu/engine/*.cpp
@@ -48,10 +52,10 @@ if (NE_WITH_SPARSELIB_GPU)
 endif()
 
 if (NE_DYNAMIC_LINK)
-    add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES})
+    add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
     target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_KERNEL_BUILD)
 else()
-    add_library(${HOST_LIBRARY_NAME} STATIC ${SOURCES})
+    add_library(${HOST_LIBRARY_NAME} STATIC ${SOURCES} ${HEADERS})
     if (WIN32)
         target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_API_)
     endif()

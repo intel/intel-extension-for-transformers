@@ -26,8 +26,7 @@
 #include "interface.hpp"
 #include "kernels/matmul_ref.hpp"
 #include "utils.hpp"
-#include "kernels/fp8.hpp"
-#include "cpu_parallel.hpp"
+#include "kernels/data_pack.hpp"
 
 #define OMP_NUM_THREADS "OMP_NUM_THREADS"
 
@@ -46,62 +45,6 @@ struct test_params_t {
   std::pair<op_args_t, op_args_t> args;
   bool expect_to_fail;
 };
-
-int8_t to_8bit(float fp32, data_type type) {
-  if (type == dt::s8) {
-    return fp32_to_int8(fp32);
-  } else if (type == dt::f8_e4m3) {
-    return float8_base<FloatEncoding::E4M3>::convert_float_to_fp8(fp32);
-  } else if (type == dt::f8_e5m2) {
-    return float8_base<FloatEncoding::E5M2>::convert_float_to_fp8(fp32);
-  } else {
-    return 0;
-  }
-}
-void reference(int8_t* srcptr, int8_t* dstptr, data_type type, int row, int col, int rowpad, int colpad, int srcstride,
-               int dststride) {
-  int srcld = srcstride / 2;
-  auto sptr = reinterpret_cast<int8_t*>(srcptr);
-  auto dptr = (dstptr);
-  int NTile = 16;
-  for (int irow = 0; irow < rowpad; irow += NTile) {
-    for (int icol = 0; icol < colpad; icol += 1) {
-      for (int iin = 0; iin < NTile; iin++) {
-        if (irow + iin < row) {
-          if (icol < col) {
-            *(dptr + irow * dststride + icol * NTile + iin) = *(sptr + (irow + iin) * srcld + icol);
-          } else {
-            *(dptr + irow * dststride + icol * NTile + iin) = to_8bit(static_cast<float>(0), type);
-          }
-        } else {
-          *(dptr + irow * dststride + icol * NTile + iin) = to_8bit(static_cast<float>(0), type);
-        }
-      }
-    }
-  }
-}
-
-int8_t* pack(int8_t* input, int n, int k, data_type type, int ncores) {
-  int ldb = k;
-  int npad = pad_to(n, 16);
-  int kpad = pad_to(k, 1);
-  int8_t* output = new int8_t[npad * kpad];
-  Parallel2DRowMajor _para;
-  _para.update(npad, kpad, 16, 1, ncores);
-#pragma omp parallel
-  {
-    int tidx = omp_get_thread_num();
-    int colidx, rowidx, rowsize, colsize;
-    _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
-    if (rowsize > 0 && colsize > 0) {
-      int rowremain = remainsize(rowidx, n, rowsize);
-      int colremain = remainsize(colidx, k, colsize);
-      reference(input + rowidx * ldb + colidx, output + rowidx * kpad + colidx * 16, type, rowremain, colremain,
-                rowsize, colsize, k * sizeof(bfloat16_t), kpad);
-    }
-  }
-  return output;
-}
 
 bool check_result(const test_params_t& t) {
   const auto& p = t.args.first;
@@ -142,7 +85,7 @@ bool check_result(const test_params_t& t) {
     } else if (dst_type == dt::s8) {
       return compare_data<int8_t>(buf1, size1, buf2, size2, 1);
     } else if (dst_type == dt::bf16) {
-      return compare_data<bfloat16_t>(buf1, size1, buf2, size2, 0.1);
+      return compare_data<bfloat16_t>(buf1, size1, buf2, size2, 5e-2);
     }
   }
   return false;
@@ -164,7 +107,6 @@ TEST_P(MMAVX512FP8KernelTest, ) {
       char* data = reinterpret_cast<char*>(const_cast<void*>(rt_data));
       delete[] data;
     }
-    // auto tensor = op_args.op_desc.tensor_descs()[io::SRC1];
     auto attr = op_args.op_desc.attrs();
     if (attr["weight_8bit"] != "") {
       int8_t* weight = reinterpret_cast<int8_t*>(str_to_num<intptr_t>(attr["weight_8bit"]));
@@ -197,13 +139,13 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_
     } else if (a_dt == dt::bf16) {
       data_ptr = new bfloat16_t[elem_num];
       init_vector(static_cast<bfloat16_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
-    } else if (a_dt == dt::f8_e4m3) {
+    } else if (a_dt == dt::f8_e4m3 || a_dt == dt::f8_e5m2) {
       data_ptr = new float8_t[elem_num];
       float8_t* fp8 = reinterpret_cast<float8_t*>(data_ptr);
       float* fp32 = new float[elem_num];
       init_vector(fp32, elem_num, ranges[0], ranges[1]);
       for (int i = 0; i < elem_num; i++) {
-        fp8[i] = float8_base<FloatEncoding::E4M3>::convert_float_to_fp8(fp32[i]);
+        fp8[i] = cast_to<float8_t>(fp32[i], a_dt);
       }
       delete[] fp32;
     }
@@ -221,8 +163,9 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, data_type sr
   tensor_desc src0_desc = {{M, K}, dt::bf16, ft::ab};
   tensor_desc src1_desc = {{N, K}, src1_dtype, ft::ab};
   tensor_desc dst_desc = {{M, N}, dt::bf16, ft::ab};
-  tensor_desc bias_desc = {{N}, dt::bf16, ft::ab};
-  std::vector<tensor_desc> ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc};
+  tensor_desc bias_desc = {{N}, dt::bf16, ft::a};
+  tensor_desc scale_desc = {{N}, dt::fp32, ft::a};
+  std::vector<tensor_desc> ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc, scale_desc};
 
   // Step 2: Construct runtime data
   std::vector<const void*> rt_data1;
@@ -231,7 +174,7 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, data_type sr
   for (int index = 0; index < tensor_num; ++index) {
     auto& tsd = ts_descs[index];
     bool is_clear = (index == io::DST0);
-    auto ranges = std::vector<float>{-2, 10};
+    auto ranges = std::vector<float>{-10, 10};
     auto data_pair = make_data_obj(tsd.shape(), tsd.dtype(), is_clear, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
@@ -241,21 +184,24 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, data_type sr
   std::unordered_map<std::string, std::string> attrs2 = attrs;
 
   if (src1_dtype == dt::bf16) {
-    attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(new int8_t[N * K]));
     attrs1["weight_bf16"] = std::to_string(reinterpret_cast<intptr_t>(rt_data1[io::SRC1]));
-  } else {
-    int ncores = str_to_num<intptr_t>(attrs["thread_nums"]);
-    data_type type = data_type::f8_e4m3;
-
-    for (auto& it : data_type_name) {
-      if (it.second == attrs["weight_type"]) {
-        type = it.first;
-        break;
-      }
-    }
-    int8_t* weight_8bit = pack(reinterpret_cast<int8_t*>(const_cast<void*>(rt_data1[io::SRC1])), N, K, type, ncores);
+    attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(new float8_t[N * K]));
+    attrs2["weight_bf16"] = std::to_string(reinterpret_cast<intptr_t>(rt_data2[io::SRC1]));
+    attrs2["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(new float8_t[N * K]));
+  } else if (src1_dtype == data_type::s8) {
+    std::function<int8_t(int8_t)> cast_func_s8 = [](int8_t x) { return x; };
+    int8_t* weight_8bit = new int8_t[N * K];
+    int8_t* src1_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data1[io::SRC1]));
+    pack<int8_t, int8_t>(weight_8bit, src1_s8, N, K, cast_func_s8);
+    attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(weight_8bit));
+  } else if (src1_dtype == data_type::f8_e4m3 || src1_dtype == data_type::f8_e5m2) {
+    std::function<float8_t(float8_t)> cast_func_fp8 = [](float8_t x) { return x; };
+    float8_t* src1_fp8 = reinterpret_cast<float8_t*>(const_cast<void*>(rt_data1[io::SRC1]));
+    float8_t* weight_8bit = new float8_t[N * K];
+    pack<float8_t, float8_t>(weight_8bit, src1_fp8, N, K, cast_func_fp8);
     attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(weight_8bit));
   }
+
   operator_desc op_desc1(kernel_kind::transpose_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
                          attrs1, postop_attr);
   operator_desc op_desc2(kernel_kind::transpose_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
@@ -273,19 +219,18 @@ static auto case_func = []() {
   postop_attr fp32_swish_attr{data_type::fp32, postop_type::eltwise, postop_alg::swish, 2};
   for (int nthr : nthr_cases) {
     n_thread_t with_n_thread(nthr);
-    cases.push_back({gen_case(4, 2, 16, dt::f8_e4m3, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
-    cases.push_back({gen_case(4, 4096, 4096, dt::f8_e4m3, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
-    cases.push_back({gen_case(4, 4096, 16384, dt::f8_e4m3, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
+    cases.push_back({gen_case(4, 2, 16, dt::f8_e4m3, nthr, {{"alpha", "1.f"}, {"beta", "0.f"}})});
+    cases.push_back({gen_case(4, 2, 16, dt::f8_e5m2, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
+    cases.push_back({gen_case(4, 2, 16, dt::s8, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
+    cases.push_back({gen_case(4, 4096, 4096, dt::f8_e5m2, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
     cases.push_back({gen_case(4, 4096, 4096, dt::s8, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
-    cases.push_back({gen_case(4, 4096, 16384, dt::s8, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
     cases.push_back(
-        {gen_case(4, 4096, 4096, dt::bf16, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}, {"weight_type", "f8_e4m3"}})});
-
+        {gen_case(4, 4096, 4096, dt::bf16, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}, {"weight_type", "f8_e5m2"}})});
     cases.push_back({gen_case(4, 4096, 4096, dt::bf16, nthr,
                               {{"alpha", "1.f"},
                                {"beta", "1.f"},
                                {"thread_nums", std::to_string(nthr)},
-                               {"weight_type", "f8_e4m3"},
+                               {"weight_type", "f8_e5m2"},
                                {"postop_list", "fp32_swish"}},
                               {fp32_swish_attr})});
   }

@@ -13,11 +13,10 @@
 //  limitations under the License.
 
 #include "inner_product.hpp"
-#include "fp8_gemm.hpp"
+#include "kernels/src/fp8.hpp"
+#include "kernels/src/kernels/data_pack.hpp"
 #include "model.hpp"
 
-static int ip_count = 0;
-int constexpr MAX_IP = 10000;
 namespace executor {
 
 static unordered_map<string, dnnl::memory::data_type> type2mem{
@@ -34,7 +33,6 @@ InnerProductOperator::InnerProductOperator(const shared_ptr<OperatorConfig>& con
       format_any_(true),
       gelu_split_(false),
       weight_cached_(false),
-      beam_forward_(false),
       has_bias_(false) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("src0_perm");
@@ -82,10 +80,11 @@ InnerProductOperator::InnerProductOperator(const shared_ptr<OperatorConfig>& con
   sigmoid_ = (iter != attrs_map.end() && iter->second == "sigmoid") ? true : false;
   swish_ = (iter != attrs_map.end() && iter->second == "swish") ? true : false;
   relu_ = (iter != attrs_map.end() && iter->second == "relu") ? true : false;
-  append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_
-                    || swish_;
+  append_eltwise_ = (gelu_erf_ && !gelu_split_) || (gelu_tanh_ && !gelu_split_) || tanh_ || sigmoid_ || relu_ || swish_;
   append_op_ = (iter != attrs_map.end()) ? iter->second : "";
   DLOG(INFO) << "append_op: " << append_op_;
+  auto wcptr = weight_compression_context::get_instance();
+  weight_comp_.type_ = wcptr->global_type_;
 }
 
 InnerProductOperator::~InnerProductOperator() {}
@@ -202,14 +201,6 @@ void InnerProductOperator::MapTensors(const vector<Tensor*>& input, const vector
   }
 }
 
-static inline float bf162float(uint16_t a) {
-  uint32_t tmp = *(reinterpret_cast<uint32_t*>(&a));
-  tmp = tmp << 16;
-  return *(reinterpret_cast<float*>(&tmp));
-}
-
-static inline uint16_t float2bf16(float a) { return (reinterpret_cast<uint16_t*>(&a))[1]; }
-
 void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // set output dtype and primitive attr(without post_ops) in Prepare
   MapTensors(input, output);
@@ -234,40 +225,70 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
   } else if (src1_->dtype() == "bf16") {
     kernel_type_ = Dense;
     auto shape = src1_->shape();
-    if (shape.size() == 2) {
-      if ((shape[0] == 4096 || shape[0] == 16384 || shape[0] == 11008) && (shape[1] == 4096 || shape[1] == 16384 ||
-           shape[0] == 11008) && ip_count < MAX_IP && !swish_) {
-        ip_count++;
-        beam_forward_ = true;
-        jit_kernel_.reset(new jit_avx512f_fp8_gemm::IWrapperAvx512f_row_Abf16Bfp8(4, shape[0], shape[1]),
-                          [](void* ptr) {
-                            if (ptr) {
-                              delete (jit_avx512f_fp8_gemm::IWrapperAvx512f_row_Abf16Bfp8*)ptr;
-                            }
-                          });
-        auto src1ptr = reinterpret_cast<uint16_t*>(const_cast<void*>(src1_->data()));
+    if (weight_comp_.enabled() && shape.size() == 2 && dst_->dtype() == "bf16") {
+      int _N = shape[0], _K = shape[1];
+      auto src_bf16 = reinterpret_cast<const uint16_t*>(src1_->data());
+      if (_N % 32 == 0 && _K % 32 == 0) {  // this limitation will be removed by kernel updates
+        jd::tensor_desc src0_desc = {{weight_comp_.PreferedM, shape[1]}, jd::data_type::bf16, jd::format_type::ab};
+        jd::tensor_desc src1_desc;
+        jd::tensor_desc dst_desc = {{weight_comp_.PreferedM, shape[0]}, jd::data_type::bf16, jd::format_type::ab};
+        jd::tensor_desc bias_desc = {{}, jd::data_type::bf16, jd::format_type::a};
+        jd::tensor_desc scales_desc = {{}, jd::data_type::fp32, jd::format_type::a};
 
-        float minvalue = 1e20, maxvalue = -1e20;
-        for (int i = 0; i < shape[1] * shape[0]; i++) {
-          auto fval = bf162float(src1ptr[i]);
-          if (fval < minvalue) {
-            minvalue = fval;
-          }
-          if (fval > maxvalue) {
-            maxvalue = fval;
-          }
+        if (weight_comp_.type_ == jd::data_type::f8_e4m3) {
+          src1_desc = {{shape[0], shape[1]}, jd::data_type::f8_e4m3, jd::format_type::ab};
+          weight_comp_.mem_.resize(_N * _K * 1);
+          vector<uint8_t> tmpfp8(_N * _K);
+          float8_auto_scale<jd::data_type::f8_e4m3>::auto_scale_T_bf16(src_bf16, tmpfp8.data(), _N, _K,
+                                                                    &weight_comp_.scale_);
+          std::function<jd::float8_t(jd::float8_t)> cast_func_fp8 = [](jd::float8_t x) { return x; };
+          jd::pack<jd::float8_t, jd::float8_t>(weight_comp_.mem_.data(), tmpfp8.data(), _N, _K, cast_func_fp8);
+          weight_comp_.valid = true;
+        } else if (weight_comp_.type_ == jd::data_type::s8) {
+          src1_desc = {{_N, _K}, jd::data_type::s8, jd::format_type::ab};
+          scales_desc = {{_N}, jd::data_type::fp32, jd::format_type::a};
+          weight_comp_.mem_.resize(_N * _K * 1);
+          weight_comp_.scales_.resize(_N);
+          weight_comp_.scale_ = 1.f;
+          vector<int8_t> tmp(_N * _K);
+          int8_quantize::quantize_T_bf16_percn(src_bf16, tmp.data(), _N, _K, weight_comp_.scales_.data());
+          std::function<int8_t(int8_t)> cast_func_int8 = [](int8_t x) { return x; };
+          jd::pack<int8_t, int8_t>(reinterpret_cast<int8_t*>(weight_comp_.mem_.data()), tmp.data(), _N, _K,
+                                   cast_func_int8);
+          weight_comp_.valid = true;
+        } else if (weight_comp_.type_ == jd::data_type::f8_e5m2) {
+          src1_desc = {{shape[0], shape[1]}, jd::data_type::f8_e5m2, jd::format_type::ab};
+          weight_comp_.mem_.resize(_N * _K * 1);
+          vector<uint8_t> tmpfp8(_N * _K);
+          float8_auto_scale<jd::data_type::f8_e5m2>::auto_scale_T_bf16(src_bf16, tmpfp8.data(), _N, _K,
+                                                                    &weight_comp_.scale_);
+          std::function<jd::float8_t(jd::float8_t)> cast_func_fp8 = [](jd::float8_t x) { return x; };
+          jd::pack<jd::float8_t, jd::float8_t>(weight_comp_.mem_.data(), tmpfp8.data(), _N, _K, cast_func_fp8);
+          weight_comp_.valid = true;
         }
-        std::vector<uint16_t> rescale_(shape[1] * shape[0]);
-        float maxval = std::abs(minvalue);
-        maxval = std::max(maxval, std::abs(maxvalue));
-        float SCALE = 128.f / maxval;
-        for (int i = 0; i < rescale_.size(); i++) {
-          rescale_[i] = float2bf16(bf162float(src1ptr[i]) * SCALE);
+        if (weight_comp_.valid) {
+          std::unordered_map<std::string, std::string> attrs = {{"alpha", std::to_string(weight_comp_.scale_)},
+                                                                {"beta", std::to_string(has_bias_ ? 1.f : 0.f)}};
+          attrs["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(weight_comp_.mem_.data()));
+          if (has_bias_) {
+            bias_desc = {{shape[0]}, jd::data_type::bf16, jd::format_type::ab};
+          }
+          std::vector<jd::tensor_desc> ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc, scales_desc};
+
+          vector<jd::postop_attr> postop_chain;
+          if (gelu_tanh_) {
+            jd::postop_attr gelu_attr(jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::gelu);
+            postop_chain.push_back(gelu_attr);
+          }
+          if (swish_) {
+            jd::postop_attr gelu_attr(jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::swish);
+            postop_chain.push_back(gelu_attr);
+          }
+          jd::operator_desc op_desc(jd::kernel_kind::transpose_matmul, jd::kernel_prop::forward_inference,
+                                    jd::engine_kind::cpu, ts_descs, attrs, postop_chain);
+          jd::transpose_matmul_desc kernel_desc(op_desc);
+          matmul_kern_ = jd::transpose_matmul(kernel_desc);
         }
-        FP8_PTR(jit_kernel_.get())->packBbf16_T(rescale_.data(), shape[0], shape[1], shape[1]);
-        fp8_scale_ = 1 / SCALE;
-      } else {
-        beam_forward_ = false;
       }
     }
   }
@@ -1173,20 +1194,11 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
 
   auto& src0_shape_ = input[0]->shape();
   auto& dst_shape_ = output[0]->shape();
-  if (beam_forward_ && src0_shape_[0] == 4) {
+  if (weight_comp_.valid && src0_shape_[0] == weight_comp_.PreferedM) {
     auto& src1_shape = src1_->shape();
-    if (has_bias_) {
-      FP8_PTR(jit_kernel_.get())
-          ->forward(reinterpret_cast<uint16_t*>(const_cast<void*>(src0_->data())), NULL,
-                    reinterpret_cast<uint16_t*>(const_cast<void*>(dst_->data())),
-                    reinterpret_cast<uint16_t*>(const_cast<void*>(bias_->data())), src0_shape_[0], src1_shape[0],
-                    src0_shape_[1], src0_shape_[1], src0_shape_[1], src1_shape[0], 0, fp8_scale_, 1.f, gelu_tanh_);
-    } else {
-      FP8_PTR(jit_kernel_.get())
-          ->forward(reinterpret_cast<uint16_t*>(const_cast<void*>(src0_->data())), NULL,
-                    reinterpret_cast<uint16_t*>(const_cast<void*>(dst_->data())), NULL, src0_shape_[0], src1_shape[0],
-                    src0_shape_[1], src0_shape_[1], src0_shape_[1], src1_shape[0], 0, fp8_scale_, 0.f, gelu_tanh_);
-    }
+    std::vector<const void*> rt{src0_->data(), NULL, dst_->data(), has_bias_ ? bias_->data() : NULL,
+                                weight_comp_.scales_.data()};
+    matmul_kern_.execute(rt);
     return;
   }
 

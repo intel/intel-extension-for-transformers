@@ -79,6 +79,7 @@ enum class kernel_prop : uint8_t {
 // Data type.
 enum class data_type : uint8_t {
   undef,
+  s4,
   f8_e4m3,
   f8_e5m2,
   u8,

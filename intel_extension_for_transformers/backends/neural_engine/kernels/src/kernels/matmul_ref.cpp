@@ -14,10 +14,6 @@
 
 #include "kernels/matmul_ref.hpp"
 
-#include <algorithm>
-
-#include "fp8.hpp"
-
 namespace jd {
 using io = ssd::matmul_io::io;
 
@@ -88,12 +84,6 @@ bool matmul_ref_kd_t::init() {
         }
       }
     }
-    if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty()) {
-      if (shapes[io::SCALE0] != std::vector<dim_t>{1}) {
-        SPARSE_LOG(ERROR) << "SCALE0 is not scaler";
-        return false;
-      }
-    }
     if (shapes.size() > io::ZP0 && !shapes[io::ZP0].empty()) {
       if (shapes[io::ZP0] != std::vector<dim_t>{1}) {
         SPARSE_LOG(ERROR) << "ZP0 is not scaler";
@@ -138,7 +128,8 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   bool has_binary_add = shapes.size() > io::SRC2 && !shapes[io::SRC2].empty();
 
   const auto& left_dt = dtypes[io::SRC0];
-  const auto& right_dt = dtypes[io::SRC1];
+  data_type right_dt = dtypes[io::SRC1];
+
   const auto& dst_dt = dtypes[io::DST0];
 
   // alpha * src0 x src1 + beta * src2 = dst.
@@ -146,8 +137,6 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   float alpha = 1.f, beta = 1.f, zp = 0.f;
   if (attrs.find("alpha") != attrs.end()) alpha = str_to_num<float>(attrs.at("alpha"));
   if (attrs.find("beta") != attrs.end()) beta = str_to_num<float>(attrs.at("beta"));
-  if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty())
-    alpha = static_cast<const float*>(rt_data[io::SCALE0])[0];
   if (shapes.size() > io::ZP0 && !shapes[io::ZP0].empty()) zp = static_cast<const float*>(rt_data[io::ZP0])[0];
   if (attrs.find("src0_scale") != attrs.end()) alpha /= str_to_num<float>(attrs.at("src0_scale"));
   if (attrs.find("src1_scale") != attrs.end()) alpha /= str_to_num<float>(attrs.at("src1_scale"));
@@ -165,13 +154,18 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   const std::vector<dim_t> left_stride = apply_perm(left_perm_stride, perm_inv(perm()[0]));
   const std::vector<dim_t> right_stride = apply_perm(right_perm_stride, perm_inv(perm()[1]));
   const std::vector<dim_t> dst_stride = apply_perm(dst_perm_stride, perm()[2]);
+  const std::vector<dim_t> bias_stride = dim2step(shapes[io::SRC2]);
+  std::vector<dim_t> scale_stride;
+  if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty()) {
+    scale_stride = dim2step(shapes[io::SCALE0]);
+  }
 
   // runtime data alias
   const auto left_data = rt_data[io::SRC0];
   const auto right_data = rt_data[io::SRC1];
   auto dst_data = const_cast<void*>(rt_data[io::DST0]);
   const auto badd_data = rt_data.size() > io::SRC2 ? rt_data[io::SRC2] : nullptr;
-
+  const auto scale_data = rt_data.size() > io::SCALE0 ? rt_data[io::SCALE0] : nullptr;
   // ptr alias
   auto left_fp32 = static_cast<const float*>(left_data);
   auto left_bf16 = static_cast<const bfloat16_t*>(left_data);
@@ -187,12 +181,12 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto dst_bf16 = static_cast<bfloat16_t*>(dst_data);
   auto badd_fp32 = static_cast<const float*>(badd_data);
   auto badd_bf16 = static_cast<const bfloat16_t*>(badd_data);
+  auto scale_fp32 = static_cast<const float*>(scale_data);
 
   std::vector<jd::postop_attr> post_attr = op_desc.apply_postops_list();
-  if (dst_dt != dt::fp32 && (post_attr.size() == 0 || post_attr.back().dt != dst_dt)) {
+  if ((dst_dt != dt::fp32 && dst_dt != dt::bf16) && (post_attr.size() == 0 || post_attr.back().dt != dst_dt)) {
     post_attr.emplace_back(dst_dt, postop_type::eltwise, postop_alg::quantize, 0, 0, 1);
   }
-  std::vector<dim_t> bias_stride = dim2step(shapes[io::SRC2]);
   // Computing the kernel
 #pragma omp parallel for collapse(4)
   for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0)
@@ -202,6 +196,10 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
           float value = 0;
           dim_t dst_idx = ibs0 * dst_stride[0] + ibs1 * dst_stride[1] + i * dst_stride[2] + j * dst_stride[3];
           dim_t bias_idx = ibs0 * bias_stride[0] + ibs1 * bias_stride[1] + i * bias_stride[2] + j * bias_stride[3];
+          dim_t scale_idx = 0;
+          if (!scale_stride.empty()) {
+            scale_idx = j * bias_stride.back();
+          }
           for (dim_t k = 0; k < K_; ++k) {
             dim_t l_idx = ibs0 * left_stride[0] + ibs1 * left_stride[1] + i * left_stride[2] + k * left_stride[3];
             dim_t r_idx = ibs0 * right_stride[0] + ibs1 * right_stride[1] + k * right_stride[2] + j * right_stride[3];
@@ -210,17 +208,33 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
                            : left_dt == dt::u8   ? left_u8[l_idx]
                            : left_dt == dt::s8   ? left_s8[l_idx]
                            : left_dt == dt::bf16 ? bf16_to_fp32(left_bf16[l_idx])
-                           : left_dt == dt::f8_e4m3
-                               ? float8_base<FloatEncoding::E4M3>::convert_fp8_to_float(left_u8[l_idx])
-                               : 0.f;
+                                                 : 0.f;
 
-            auto r_value = right_dt == dt::fp32   ? right_fp32[r_idx]
-                           : right_dt == dt::u8   ? right_u8[r_idx]
-                           : right_dt == dt::s8   ? right_s8[r_idx]
-                           : right_dt == dt::bf16 ? bf16_to_fp32(right_bf16[r_idx])
-                           : right_dt == dt::f8_e4m3
-                               ? float8_base<FloatEncoding::E4M3>::convert_fp8_to_float(right_u8[r_idx])
-                               : 0.f;
+            auto r_value = right_dt == dt::fp32      ? right_fp32[r_idx]
+                           : right_dt == dt::u8      ? right_u8[r_idx]
+                           : right_dt == dt::s8      ? right_s8[r_idx]
+                           : right_dt == dt::bf16    ? bf16_to_fp32(right_bf16[r_idx])
+                           : right_dt == dt::f8_e4m3 ? cast_to<float, float8_t>(right_u8[r_idx], right_dt)
+                           : right_dt == dt::f8_e5m2 ? cast_to<float, float8_t>(right_u8[r_idx], right_dt)
+                                                     : 0.f;
+
+            if (attrs.find("weight_type") != attrs.end()) {
+              for (auto& it : data_type_name) {
+                if (it.second == attrs.at("weight_type")) {
+                  right_dt = it.first;
+                  break;
+                }
+              }
+              if (right_dt == data_type::f8_e4m3 || right_dt == data_type::f8_e5m2) {
+                float fp32 = bf16_to_fp32(right_bf16[r_idx]);
+                float8_t fp8 = cast_to<float8_t, float>(fp32, right_dt);
+                r_value = cast_to<float, float8_t>(fp8, right_dt);
+              } else if (right_dt == data_type::s8) {
+                float fp32 = bf16_to_fp32(right_bf16[r_idx]);
+                int8_t int8 = fp32_to_int8(fp32);
+                r_value = int8_to_fp32(int8);
+              }
+            }
             value += l_value * r_value;
           }
           float badd_value = 0;
@@ -228,8 +242,11 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
             badd_value = dtypes[io::SRC2] == dt::fp32   ? badd_fp32[bias_idx]
                          : dtypes[io::SRC2] == dt::bf16 ? bf16_to_fp32(badd_bf16[bias_idx])
                                                         : 0;
-          value = apply_postop_list(alpha * value + beta * badd_value + zp, post_attr);
-
+          float scale_value = 1.f;
+          if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty()) {
+            scale_value = dtypes[io::SCALE0] == dt::fp32 ? scale_fp32[scale_idx] : 1.f;
+          }
+          value = apply_postop_list(alpha * scale_value * value + beta * badd_value + zp, post_attr);
           // Quantize dst data
           if (dst_dt == dt::fp32) {
             dst_fp32[dst_idx] = value;

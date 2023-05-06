@@ -13,16 +13,22 @@
 //  limitations under the License.
 
 #include "utils.hpp"
+#include "fp8.hpp"
 
 #include <glog/logging.h>
 #include <iostream>
 
 namespace jd {
 int8_t fp32_to_int8(const float fp32, const float scale, const float zp) {
-  int32_t int32 = nearbyint(fp32 * scale + zp);
+  int32_t int32 = nearbyint(fp32 / scale + zp);
   int32 = int32 < -128 ? -128 : int32;
   int32 = int32 > 127 ? 127 : int32;
   return static_cast<int8_t>(int32);
+}
+
+float int8_to_fp32(const int8_t int8, const float scale, const float zp) {
+  float fp32 = static_cast<float>(static_cast<int>(int8));
+  return fp32 * scale - zp;
 }
 
 float fp16_to_fp32(const uint16_t x) {    // IEEE-754 16-bit floating-point format (without infinity): 1-5-10, exp-15,
@@ -48,18 +54,48 @@ uint16_t fp32_to_fp16(const float x) {  // IEEE-754 16-bit floating-point format
 }
 
 template <typename dst_t, typename src_t>
-dst_t cast_to(src_t x) {
+dst_t SPARSE_API_ cast_to(src_t x, data_type) {
   return static_cast<dst_t>(x);
 }
 
 template <>
-bfloat16_t cast_to<bfloat16_t, float>(float x) {
-  return fp32_to_bf16(x);
+uint16_t SPARSE_API_ cast_to<uint16_t>(const float x, data_type type) {
+  if (type == data_type::fp16) {
+    return fp32_to_fp16(x);
+  } else {
+    return fp32_to_bf16(x);
+  }
 }
 
 template <>
-float cast_to<float, bfloat16_t>(bfloat16_t x) {
-  return bf16_to_fp32(x);
+float SPARSE_API_ cast_to<float>(const uint16_t x, data_type type) {
+  if (type == data_type::fp16) {
+    return fp16_to_fp32(x);
+  } else {
+    return bf16_to_fp32(x);
+  }
+}
+
+template <>
+uint8_t SPARSE_API_ cast_to<uint8_t>(const float x, data_type type) {
+  if (type == data_type::f8_e5m2) {
+    return float8_base<FloatEncoding::E5M2>::convert_float_to_fp8(x);
+  } else if (type == data_type::f8_e4m3) {
+    return float8_base<FloatEncoding::E4M3>::convert_float_to_fp8(x);
+  } else {
+    return static_cast<uint8_t>(x);
+  }
+}
+
+template <>
+float SPARSE_API_ cast_to<float>(const uint8_t x, data_type type) {
+  if (type == data_type::f8_e5m2) {
+    return float8_base<FloatEncoding::E5M2>::convert_fp8_to_float(x);
+  } else if (type == data_type::f8_e4m3) {
+    return float8_base<FloatEncoding::E4M3>::convert_fp8_to_float(x);
+  } else {
+    return static_cast<float>(x);
+  }
 }
 
 // undefined behaviour, https://stackoverflow.com/questions/98650/what-is-the-strict-aliasing-rule
@@ -127,7 +163,7 @@ void init_vector<bfloat16_t>(bfloat16_t* v, int num_size, float range1, float ra
   std::mt19937 gen(seed);
   std::uniform_real_distribution<float> u(range1, range2);
   for (int i = 0; i < num_size; ++i) {
-    v[i] = cast_to<bfloat16_t>(u(gen));
+    v[i] = cast_to<bfloat16_t>(u(gen), data_type::bf16);
   }
 }
 

@@ -42,13 +42,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  **************************************************************************************************/
-
-#pragma once
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_FP8_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_FP8_HPP_
 #include <stdint.h>
-
+#include <numeric>
 #include <cstring>
+#include "utils.hpp"
 
 enum class FloatEncoding { E4M3, E5M2 };
 

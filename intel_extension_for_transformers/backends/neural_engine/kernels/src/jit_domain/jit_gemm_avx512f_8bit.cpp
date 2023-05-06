@@ -41,6 +41,7 @@ void jit_gemm_avx512f_8bit_t::generate() {
 
     injector_.escape_regs(reg_type::reg64, reg_tmp.getIdx());
     injector_.escape_regs(reg_type::reg64, reg_tmp1.getIdx());
+    injector_.escape_regs(reg_type::reg64, reg_tmp2.getIdx());
     vreg_push(rsp);
     auto zmms_a = rp.regs<Xbyak::Zmm>(ARegCount);
     auto zmms_b = rp.regs<Xbyak::Zmm>(BRegCount);
@@ -65,16 +66,23 @@ void jit_gemm_avx512f_8bit_t::generate() {
     imul(reg_bstep, reg_bstep, 16);
     xor_(reg_iterk, reg_iterk);
 
-    mov(reg_tmp1, 0xaaaaaaaa);
-    kmovq(k1, reg_tmp1);
+    mov(reg_tmp2, 0xaaaaaaaa);
+    kmovq(k1, reg_tmp2);
 
-    mov(reg_tmp2, 120 << 23);
+    if (param_.weight_type == data_type::f8_e4m3) {
+      mov(reg_tmp2, (127 - 7) << 23);
+    } else if (param_.weight_type == data_type::f8_e5m2) {
+      mov(reg_tmp2, (127 - 15) << 23);
+    }
     vpbroadcastd(zmms_tmp_[1], reg_tmp2.cvt32());
+
+    mov(reg_tmp2, 1 << 31);
+    vpbroadcastd(zmms_tmp_[2], reg_tmp2.cvt32());
 
     cmp(reg_nsize, NTile);
     jb(".lastloop", T_NEAR);
     L(".kloop");
-    generate_fma(MTile, NRegs, KTile, reg_matAptr, reg_matBptr, reg_tmp, reg_tmp1, reg_astep, reg_bstep);
+    generate_fma(MTile, NRegs, KTile, reg_matAptr, reg_matBptr, reg_astep, reg_bstep, reg_tmp, reg_tmp1);
     add(reg_matAptr, KTile * 2);
     add(reg_matBptr, KTile * 16);
     add(reg_iterk, KTile);
@@ -85,7 +93,7 @@ void jit_gemm_avx512f_8bit_t::generate() {
 
     L(".lastloop");
     L(".k1loop");
-    generate_fma(MTile, 1, KTile, reg_matAptr, reg_matBptr, reg_tmp, reg_tmp1, reg_astep, reg_bstep);
+    generate_fma(MTile, 1, KTile, reg_matAptr, reg_matBptr, reg_astep, reg_bstep, reg_tmp, reg_tmp1);
     add(reg_matAptr, KTile * 2);
     add(reg_matBptr, KTile * 16);
     add(reg_iterk, KTile);
@@ -105,29 +113,35 @@ void jit_gemm_avx512f_8bit_t::load_int8_fp32(const Xbyak::Zmm& tar, const Xbyak:
   vpmovsxbd(tar, addr);
   vcvtdq2ps(tar | T_rn_sae, tar);
 }
-void jit_gemm_avx512f_8bit_t::load_fp8_fp32_e4m3(const Xbyak::Zmm& tar, const Xbyak::Address& addr) {
+
+void jit_gemm_avx512f_8bit_t::load_fp8_fp32(const Xbyak::Zmm& tar, const Xbyak::Address& addr) {
   auto& exp = zmms_tmp_[0];
   vpmovsxbd(tar, addr);
   vpslld(exp, tar, 25);
-  vpsrld(exp, exp, 5);
+  if (param_.weight_type == data_type::f8_e4m3) {
+    vpsrld(exp, exp, 5);
+  } else if (param_.weight_type == data_type::f8_e5m2) {
+    vpsrld(exp, exp, 4);
+  }
   vpaddd(exp, exp, zmms_tmp_[1]);
+  vandps(tar, zmms_tmp_[2]);
   vorps(tar, exp);
 }
 
 void jit_gemm_avx512f_8bit_t::generate_fma(int MTile, int _NRegs, int KTile, const Xbyak::Reg64& aptr,
-                                           const Xbyak::Reg64& btpr, const Xbyak::Reg64& reg_tmp,
-                                           const Xbyak::Reg64& reg_tmp1, const Xbyak::Reg64& reg_astep,
-                                           const Xbyak::Reg64& reg_bstep) {
+                                           const Xbyak::Reg64& bptr, const Xbyak::Reg64& reg_astep,
+                                           const Xbyak::Reg64& reg_bstep, const Xbyak::Reg64& reg_tmp,
+                                           const Xbyak::Reg64& reg_tmp1) {
   int kk = 0;
   for (; kk < KTile; kk++) {
     int mm = 0;
     lea(reg_tmp, ptr[aptr + kk * 2]);
-    mov(reg_tmp1, btpr);
+    mov(reg_tmp1, bptr);
     for (int nn = 0; nn < _NRegs; nn++) {
       if (param_.weight_type == data_type::s8) {
         load_int8_fp32(zmms_b_[nn], ptr[reg_tmp1 + kk * 16]);
-      } else if (param_.weight_type == data_type::f8_e4m3) {
-        load_fp8_fp32_e4m3(zmms_b_[nn], ptr[reg_tmp1 + kk * 16]);
+      } else if (param_.weight_type == data_type::f8_e4m3 || param_.weight_type == data_type::f8_e5m2) {
+        load_fp8_fp32(zmms_b_[nn], ptr[reg_tmp1 + kk * 16]);
       }
       add(reg_tmp1, reg_bstep);
     }
@@ -143,15 +157,36 @@ void jit_gemm_avx512f_8bit_t::generate_fma(int MTile, int _NRegs, int KTile, con
 void jit_gemm_avx512f_8bit_t::alphabeta_process(int MTile, int _NRegs, const Xbyak::Reg64& parambase,
                                                 const Xbyak::Reg64& reg_tmp, const Xbyak::Reg64& reg_tmp1) {
   inLocalLabel();
+  // load scale
+  if (param_.has_scale0) {
+    mov(reg_tmp, ptr[parambase + OFFSET(scale)]);
+    for (int nn = 0; nn < _NRegs; nn++) {
+      vmovups(zmms_b_[nn], ptr[reg_tmp + nn * 64]);
+    }
+  }
   cmp(dword[parambase + OFFSET(alpha)], 0x3F800000);  // 1.f
   je(".afteralpha", T_NEAR);
   vbroadcastss(zmms_a_[0], zword[parambase + OFFSET(alpha)]);
-  for (int i = 0; i < MTile; i++) {
-    for (int j = 0; j < _NRegs; j++) {
-      vmulps(zmms_c_[i * NRegs + j], zmms_a_[0]);
+  if (param_.has_scale0) {
+    for (int nn = 0; nn < _NRegs; nn++) {
+      vmulps(zmms_b_[nn], zmms_a_[0]);
+    }
+  } else {
+    for (int i = 0; i < MTile; i++) {
+      for (int j = 0; j < _NRegs; j++) {
+        vmulps(zmms_c_[i * NRegs + j], zmms_a_[0]);
+      }
     }
   }
   L(".afteralpha");
+  // scale
+  if (param_.has_scale0) {
+    for (int mm = 0; mm < MTile; mm++) {
+      for (int nn = 0; nn < _NRegs; nn++) {
+        vmulps(zmms_c_[mm * NRegs + nn], zmms_b_[nn]);
+      }
+    }
+  }
   cmp(dword[parambase + OFFSET(kpos)], 0);
   jnz(".ntinitkl", T_NEAR);
   cmp(dword[parambase + OFFSET(beta)], 0);

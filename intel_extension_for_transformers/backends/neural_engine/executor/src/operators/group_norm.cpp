@@ -39,7 +39,7 @@ void fp32_sum(int64_t norm_dim_elt_num, int dt_bytewidth, char* src, __m512* zmm
   }
 }
 
-inline __m512 bf16_load(float* addr) {
+static inline __m512 bf16_load(float* addr) {
   auto bf16_data = _mm256_castps_si256(_mm256_loadu_ps(addr));
   auto shift_data = _mm512_cvtepu16_epi32(bf16_data);
   return _mm512_castsi512_ps(_mm512_slli_epi32(shift_data, 0x10));

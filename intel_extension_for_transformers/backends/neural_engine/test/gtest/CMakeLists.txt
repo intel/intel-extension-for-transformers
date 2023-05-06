@@ -49,6 +49,7 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/llga_operators/llga_kernel.cpp
     ${HOST_SRC_DIR}/src/llga_operators/llga_op_creator.cpp
     ${HOST_SRC_DIR}/src/operators/rmsnorm.cpp
+    ${HOST_SRC_DIR}/src/weight_compression.cpp
 )
 
 if(WIN32)

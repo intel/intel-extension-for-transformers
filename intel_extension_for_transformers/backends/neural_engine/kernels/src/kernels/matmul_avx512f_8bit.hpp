@@ -61,11 +61,6 @@ class matmul_avx512f_8bit_kd_t : public kernel_desc_t {
 
  private:
   bool params_init();
-  void packBF16();
-  void reference(bfloat16_t* srcptr, float8_t* dstptr, int row, int col, int rowpad, int colpad, int srcstride,
-                 int dststride);
-  void reference(bfloat16_t* srcptr, int8_t* dstptr, int row, int col, int rowpad, int colpad, int srcstride,
-                 int dststride);
 
  private:
   jd::operator_desc op_desc_;

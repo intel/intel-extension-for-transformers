@@ -243,7 +243,8 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
             float value = 0;
 #pragma omp simd
             for (int k = 0; k < head_size_; ++k)
-              value += cast_to<float>(q_bf16[i * ld_q_ + k]) * cast_to<float>(k_bf16[j * ld_kv_ + k]);
+              value += cast_to<float>(q_bf16[i * ld_q_ + k], data_type::bf16) *
+                       cast_to<float>(k_bf16[j * ld_kv_ + k], data_type::bf16);
             exp_row[j] = value;
           } else {
             SPARSE_LOG(FATAL) << "Unexpected Q K type!";
@@ -287,7 +288,7 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
           for (int k = 0; k < curr_sl_n; ++k) {
             auto v_val =  //
                 ts_descs_[io::SRC_V].dtype() == dt::s8     ? (use_requant_v ? v_requant_s8[k] : v_s8[k * ld_kv_ + j])
-                : ts_descs_[io::SRC_V].dtype() == dt::bf16 ? cast_to<float>(v_bf16[k * ld_kv_ + j])
+                : ts_descs_[io::SRC_V].dtype() == dt::bf16 ? cast_to<float>(v_bf16[k * ld_kv_ + j], data_type::bf16)
                                                            : (SPARSE_LOG(FATAL) << "Unexpected V type", NAN);
             value += exp_row[k] * v_val;
           }

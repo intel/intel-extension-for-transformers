@@ -24,6 +24,7 @@
 #include "../operator.hpp"
 #include "../sparse_operators/sparse_inner_product.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#include "../weight_compression.hpp"
 #ifdef WITH_SPARSELIB
 #include "kernels/include/interface.hpp"
 #endif
@@ -87,22 +88,20 @@ class InnerProductOperator : public Operator {
   // While "perm" decide all dimensions, and is the external Trans OP. Both are transpose.
   bool weight_cached_;
   bool has_bias_;
-  bool beam_forward_;
   bool format_any_;
   bool append_sum_;
   bool binary_add_;
   bool gelu_erf_;
   bool gelu_tanh_;
   bool gelu_split_;
+  bool swish_;
   bool tanh_;
   bool sigmoid_;
   bool relu_;
-  bool swish_;
 
   bool append_eltwise_;
   bool is_dynamic_ = false;
   float output_scale_ = 1.f;
-  float fp8_scale_ = 1.f;
   vector<float> dst_scales_;
   vector<float> rescales_;
   string output_dtype_ = "fp32";
@@ -115,7 +114,7 @@ class InnerProductOperator : public Operator {
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
   memory scale_f32_mem_;
-  std::shared_ptr<void> jit_kernel_;
+  weight_compression weight_comp_;
 #ifdef WITH_SPARSELIB
   jd::tensor_desc src0_desc_;
   jd::tensor_desc src1_desc_;
@@ -124,6 +123,7 @@ class InnerProductOperator : public Operator {
   jd::tensor_desc scales_desc_;
   std::unordered_map<std::string, std::string> op_attrs_;
   jd::sparse_matmul spmm_kern_;
+  jd::transpose_matmul matmul_kern_;
 #endif
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream eng_stream_ = dnnl::stream(eng_);

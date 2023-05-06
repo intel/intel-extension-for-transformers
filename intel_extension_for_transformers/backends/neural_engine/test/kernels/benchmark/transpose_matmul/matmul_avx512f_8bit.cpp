@@ -18,73 +18,12 @@
 
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
-#include "cpu_parallel.hpp"
-#include "kernels/fp8.hpp"
-#include "singleton.hpp"
 #include "utils.hpp"
+#include "kernels/data_pack.hpp"
 
 namespace jd {
-
 using dt = jd::data_type;
 using ft = jd::format_type;
-namespace {
-
-int8_t to_8bit(float fp32, data_type type) {
-  if (type == dt::s8) {
-    return fp32_to_int8(fp32);
-  } else if (type == dt::f8_e4m3) {
-    return float8_base<FloatEncoding::E4M3>::convert_float_to_fp8(fp32);
-  } else if (type == dt::f8_e5m2) {
-    return float8_base<FloatEncoding::E5M2>::convert_float_to_fp8(fp32);
-  } else {
-    return 0;
-  }
-}
-void reference(int8_t* srcptr, int8_t* dstptr, data_type type, int row, int col, int rowpad, int colpad, int srcstride,
-               int dststride) {
-  int srcld = srcstride / 2;
-  auto sptr = reinterpret_cast<int8_t*>(srcptr);
-  auto dptr = (dstptr);
-  int NTile = 16;
-  for (int irow = 0; irow < rowpad; irow += NTile) {
-    for (int icol = 0; icol < colpad; icol += 1) {
-      for (int iin = 0; iin < NTile; iin++) {
-        if (irow + iin < row) {
-          if (icol < col) {
-            *(dptr + irow * dststride + icol * NTile + iin) = *(sptr + (irow + iin) * srcld + icol);
-          } else {
-            *(dptr + irow * dststride + icol * NTile + iin) = to_8bit(static_cast<float>(0), type);
-          }
-        } else {
-          *(dptr + irow * dststride + icol * NTile + iin) = to_8bit(static_cast<float>(0), type);
-        }
-      }
-    }
-  }
-}
-
-int8_t* pack(int8_t* input, int n, int k, data_type type, int ncores) {
-  int ldb = k;
-  int npad = pad_to(n, 16);
-  int kpad = pad_to(k, 1);
-  int8_t* output = aligned_allocator_t<int8_t>::allocate(npad * kpad, true);
-  Parallel2DRowMajor _para;
-  _para.update(npad, kpad, 16, 1, ncores);
-#pragma omp parallel
-  {
-    int tidx = omp_get_thread_num();
-    int colidx, rowidx, rowsize, colsize;
-    _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
-    if (rowsize > 0 && colsize > 0) {
-      int rowremain = remainsize(rowidx, n, rowsize);
-      int colremain = remainsize(colidx, k, colsize);
-      reference(input + rowidx * ldb + colidx, output + rowidx * kpad + colidx * 16, type, rowremain, colremain,
-                rowsize, colsize, k * sizeof(float8_t), kpad);
-    }
-  }
-  return output;
-}
-}  // namespace
 
 bool matmul_avx512f_8bit_bench::check_result() {
   const auto& p = args.first;
@@ -134,13 +73,13 @@ std::pair<const void*, const void*> make_data_obj_matmul_avx512f_8bit(  //
     } else if (a_dt == dt::bf16) {
       data_ptr = aligned_allocator_t<bfloat16_t>::allocate(elem_num);
       init_vector(static_cast<bfloat16_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
-    } else if (a_dt == dt::f8_e4m3) {
+    } else if (a_dt == dt::f8_e4m3 || a_dt == dt::f8_e5m2) {
       data_ptr = aligned_allocator_t<uint8_t>::allocate(elem_num);
       float8_t* fp8 = reinterpret_cast<float8_t*>(data_ptr);
       float* fp32 = aligned_allocator_t<float>::allocate(elem_num);
       init_vector(fp32, elem_num, ranges[0], ranges[1]);
       for (int i = 0; i < elem_num; i++) {
-        fp8[i] = float8_base<FloatEncoding::E4M3>::convert_float_to_fp8(fp32[i]);
+        fp8[i] = cast_to<float8_t>(fp32[i], a_dt);
       }
       aligned_allocator_t<float, 64>::deallocate(fp32);
     }
@@ -170,31 +109,26 @@ void matmul_avx512f_8bit_bench::gen_case() {
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
-  if (src1_dtype == data_type::s8) {
-    op_attrs["weight_type"] = "s8";
-  } else {
-    op_attrs["weight_type"] = "f8_e4m3";
-  }
+
   std::unordered_map<std::string, std::string> attrs1 = op_attrs;
   std::unordered_map<std::string, std::string> attrs2 = op_attrs;
 
   if (src1_dtype == dt::bf16) {
-    attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(aligned_allocator_t<int8_t>::allocate(N * K)));
     attrs1["weight_bf16"] = std::to_string(reinterpret_cast<intptr_t>(rt_data1[io::SRC1]));
-  } else {
-    Xbyak::util::Cpu* cpu = Singleton<Xbyak::util::Cpu>::GetInstance();
-    int numcores = cpu->getNumCores(Xbyak::util::IntelCpuTopologyLevel::CoreLevel);
-    int ompthreads = omp_get_max_threads();
-    int ncores = std::min(numcores, ompthreads);
-    data_type type = data_type::f8_e4m3;
-
-    for (auto& it : data_type_name) {
-      if (it.second == op_attrs["weight_type"]) {
-        type = it.first;
-        break;
-      }
-    }
-    int8_t* weight_8bit = pack(reinterpret_cast<int8_t*>(const_cast<void*>(rt_data1[io::SRC1])), N, K, type, ncores);
+    attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(aligned_allocator_t<int8_t>::allocate(N * K)));
+    attrs2["weight_bf16"] = std::to_string(reinterpret_cast<intptr_t>(rt_data2[io::SRC1]));
+    attrs2["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(aligned_allocator_t<int8_t>::allocate(N * K)));
+  } else if (src1_dtype == data_type::s8) {
+    std::function<int8_t(int8_t)> cast_func_s8 = [](int8_t x) { return x; };
+    int8_t* weight_8bit = new int8_t[N * K];
+    int8_t* src1_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data1[io::SRC1]));
+    pack<int8_t, int8_t>(weight_8bit, src1_s8, N, K, cast_func_s8);
+    attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(weight_8bit));
+  } else if (src1_dtype == data_type::f8_e4m3 || src1_dtype == data_type::f8_e5m2) {
+    std::function<float8_t(float8_t)> cast_func_fp8 = [](float8_t x) { return x; };
+    float8_t* src1_fp8 = reinterpret_cast<float8_t*>(const_cast<void*>(rt_data1[io::SRC1]));
+    float8_t* weight_8bit = new float8_t[N * K];
+    pack<float8_t, float8_t>(weight_8bit, src1_fp8, N, K, cast_func_fp8);
     attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(weight_8bit));
   }
 
@@ -226,6 +160,9 @@ bench_res_t matmul_avx512f_8bit_bench::set_config(int argc, char** argv) {
       src1_dtype = data_type::s8;
       break;
     case 2:
+      src1_dtype = data_type::f8_e5m2;
+      break;
+    case 3:
       src1_dtype = data_type::f8_e4m3;
       break;
 

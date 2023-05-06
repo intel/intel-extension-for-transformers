@@ -29,7 +29,7 @@ class jit_gemm_avx512f_8bit_t : public jit_generator {
     CRegCount = NRegs * MTile;
     BRegCount = NRegs;
     ARegCount = 1;
-    TmpRegCount = 2;
+    TmpRegCount = 3;
     injector_.eltwise_injector_init(this, param_.postop_attrs);
   }
   void generate();
@@ -67,11 +67,11 @@ class jit_gemm_avx512f_8bit_t : public jit_generator {
   }
 
   void load_int8_fp32(const Xbyak::Zmm& tar, const Xbyak::Address& addr);
-  void load_fp8_fp32_e4m3(const Xbyak::Zmm& tar, const Xbyak::Address& addr);
+  void load_fp8_fp32(const Xbyak::Zmm& tar, const Xbyak::Address& addr);
 
-  void generate_fma(int MTile, int _NRegs, int KTile, const Xbyak::Reg64& aptr, const Xbyak::Reg64& btpr,
-                    const Xbyak::Reg64& reg_tmp, const Xbyak::Reg64& reg_tmp1, const Xbyak::Reg64& reg_astep,
-                    const Xbyak::Reg64& reg_bstep);
+  void generate_fma(int MTile, int _NRegs, int KTile, const Xbyak::Reg64& aptr, const Xbyak::Reg64& bptr,
+                    const Xbyak::Reg64& reg_astep, const Xbyak::Reg64& reg_bstep, const Xbyak::Reg64& reg_tmp,
+                    const Xbyak::Reg64& reg_tmp1);
   void alphabeta_process(int MTile, int _NRegs, const Xbyak::Reg64& parambase, const Xbyak::Reg64& reg_tmp,
                          const Xbyak::Reg64& reg_tmp1);
   void vreg_push(const Xbyak::Reg64& baseaddr) {

@@ -393,7 +393,8 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
       // need zero point when src0 is u8
       if (src_->dtype() == "u8") {
         mask = src_min_->size() > 1 ? 2 : 0;
-        zp_src0_mem_ = memory({{src_min_->size()}, memory::data_type::s32, GetStrides(scale_shape)}, eng_);
+        zp_src0_mem_ = memory(
+            {{static_cast<dnnl_dim_t>(src_min_->size())}, memory::data_type::s32, GetStrides(scale_shape)}, eng_);
         attr_.set_zero_points(DNNL_ARG_SRC, mask, {DNNL_RUNTIME_S32_VAL});
       }
     }
