@@ -33,7 +33,7 @@ training_args:
     do_predict:                  Whether to run predictions.
     per_device_train_batch_size: Batch size per device during training.
     per_device_eval_batch_size:  Batch size per device during evaluation.
-    output:dir:                  Output directory.
+    output_dir:                  Output directory.
 ```
 
 Inference
@@ -70,5 +70,5 @@ training_args:
     do_predict:                  Whether to run predictions.
     per_device_train_batch_size: Batch size per device during training.
     per_device_eval_batch_size:  Batch size per device during evaluation.
-    output:dir:                  Output directory.
+    output_dir:                  Output directory.
 ```

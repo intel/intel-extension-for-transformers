@@ -29,4 +29,4 @@ args:
 training_args:
   do_predict: true
   per_device_eval_batch_size: 100
-  output:dir: "/.output"
+  output_dir: "./output_dir"
