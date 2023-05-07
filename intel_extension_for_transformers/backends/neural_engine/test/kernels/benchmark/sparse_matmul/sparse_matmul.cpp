@@ -42,12 +42,7 @@ bench_res_t sparse_matmul_bench::set_config(int argc, char** argv) {
   if (!strcmp(argv[0], "vnni")) {
     smb = std::make_shared<spmm_vnni_bench>();
   } else if (!strcmp(argv[0], "amx_bf16_x16")) {
-    if (isa_available(amx_bf16)) {
-      smb = std::make_shared<spmm_amx_bf16_x16_bench>();
-    } else {
-      LOG(ERROR) << "SPARSE_LIB_USE_AMX is off";
-      return {bench_status::unimplemented};
-    }
+    smb = std::make_shared<spmm_amx_bf16_x16_bench>();
   } else if (!strcmp(argv[0], "avx512f")) {
     smb = std::make_shared<spmm_avx512f_bench>();
   } else {

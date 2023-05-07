@@ -22,7 +22,7 @@
 
 #include "benchmark_utils.hpp"
 #include "kernels/spmm_types.hpp"
-#include "cpu_isa.hpp"
+
 namespace jd {
 
 class sparse_matmul_bench : public kernel_bench {

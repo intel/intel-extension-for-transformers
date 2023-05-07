@@ -16,7 +16,6 @@
 #include <string>
 
 #include "amx_utils.hpp"
-#include "cpu_isa.hpp"
 #include "gtest/gtest.h"
 #include "kernels/mha_dense_ref.hpp"
 #include "unit_test_utils.hpp"
