@@ -12,7 +12,7 @@ parser.add_argument("--model",
     )
 parser.add_argument('--dtype', default=None, type=str)
 parser.add_argument('--output_model', default="./ir", type=str)
-parser.add_argument('--pt_file', default="./model.pt", type=str)
+parser.add_argument('--pt_file', default="temp.pt", type=str)
 args = parser.parse_args()
 print(args)
 
@@ -28,6 +28,8 @@ attention_mask[0] = 0
 past_key_value_torch = tuple([(torch.zeros([1,16,32,256]), torch.zeros([1,16,32,256])) for i in range(28)])
 input_ids = input_ids[0:1].unsqueeze(0)
 attention_mask = attention_mask.unsqueeze(0)
+
+clean_model = False
 if 'llama' in model_id:
     past_key_value_torch = tuple([(torch.zeros([1,32,32,256]), torch.zeros([1,32,32,256])) for i in range(32)])
 if os.path.exists(args.pt_file):
@@ -40,6 +42,7 @@ else:
         traced_model = torch.jit.trace(model, (input_ids, past_key_value_torch, attention_mask))
         torch.jit.save(traced_model, args.pt_file)
         print("Traced model is saved as {}".format(args.pt_file))
+        clean_model = True
     else:
         print("Model with {} can't be traced, please provide one.".format(args.dtype))
         sys.exit(1)
@@ -64,3 +67,5 @@ else:
         
 graph.save(args.output_model)
 print('Neural Engine ir is saved as {}'.format(args.output_model))
+if clean_model:
+    os.remove(args.pt_file)
