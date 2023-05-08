@@ -22,6 +22,8 @@ parser.add_argument('--input-tokens', default='32', type=str)
 parser.add_argument('--prompt', default=None, type=str)
 parser.add_argument('--greedy', default=None, type=str)
 parser.add_argument('--batch-size', default=1, type=int)
+parser.add_argument('--fp8_weight', action="store_true")
+parser.add_argument('--fp8_weight_type', default='int8', type=str)
 args = parser.parse_args()
 print(args)
 
@@ -64,9 +66,15 @@ num_iter = 10
 num_warmup = 4
 
 
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
-graph = compile(args.ir_path)
+from intel_extension_for_transformers.backends.neural_engine.compile import compile, autocast
 print("Using IR file {}".format(args.ir_path))
+if args.fp8_weight:
+    with autocast('bf16', weight_dtype=args.fp8_weight_type):
+        print("Using FP8 weight which has storage type {} and make sure your IR is BF16 type".format(
+              args.fp8_weight_type))
+        graph = compile(args.ir_path)
+else:
+    graph = compile(args.ir_path)
 import numpy as np
 
 prompt = [prompt] * args.batch_size

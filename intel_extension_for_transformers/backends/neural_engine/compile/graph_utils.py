@@ -116,6 +116,29 @@ def get_quant_info():
     return _quant_info
 
 
+def environ_info_init():
+    """Initialize the environ info."""
+    global _environ_info
+    _environ_info = {}
+
+def insert_environ_info(key, value):
+    """Modify the environ info."""
+    _environ_info[key] = value
+
+def remove_environ_info_item(key):
+    """Remove an item in environ info."""
+    _environ_info.pop(key, None)
+
+def remove_environ_info_items(keys):
+    """Remove a list of items in environ info."""
+    for key in keys:
+        remove_environ_info_item(key)
+
+def get_environ_info():
+    """Get the environ info."""
+    return _environ_info
+
+
 def search_straight_pattern(input_pattern, graph):
     """Search user specified patterns on internal grpah structure.
 
@@ -1151,3 +1174,23 @@ def get_model_fwk_name(model):
     assert fwk_name != 'NA', 'Framework is not detected correctly from model format.'
 
     return fwk_name
+
+def set_environ_var(key, val='1'):
+    """Set an env var."""
+    assert type(val) == str, 'Environment variable must be string!'
+    os.environ[key] = val
+
+def set_environ_vars(kvs):
+    """Set a list of env vars."""
+    for key, val in kvs.items():
+        set_environ_var(key, val)
+
+def del_environ_var(key):
+    """Delete an env var."""
+    if key in os.environ:
+        del os.environ[key]
+
+def del_environ_vars(keys):
+    """Delete a list of env vars."""
+    for key in keys:
+        del_environ_var(key)

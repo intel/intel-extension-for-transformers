@@ -26,6 +26,7 @@ from .graph import Graph
 import numpy as np
 from . import graph_utils as util
 from copy import deepcopy
+from .optimizer import Optimizer
 
 COMPILES = OrderedDict({
     'loader': Loader,
@@ -36,14 +37,19 @@ COMPILES = OrderedDict({
 
 class autocast:
 
-    def __init__(self, cast_type: str) -> None:
+    def __init__(self, cast_type: str, *args, **kwargs) -> None:
         util.autocast_init()
         self.prev_cast_type = util.get_autocast_info()['cast_type']
         self.cast_type = cast_type
+        self.weight_dtype = None
+        if 'weight_dtype' in kwargs:
+            self.weight_dtype = kwargs['weight_dtype']
 
     def __enter__(self) -> None:
         self.prev_cast_type = util.get_autocast_info()['cast_type']
         util.set_autocast("cast_type", self.cast_type)
+        if self.weight_dtype:
+            util.set_autocast("weight_dtype", self.weight_dtype)
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         util.set_autocast("cast_type", self.prev_cast_type)
@@ -106,6 +112,8 @@ def compile(model, config=None) -> Graph:
         else:
             config = _config_validation(config)
             model = start_pipeline(model, config=config)
+        optimizer = Optimizer(model)
+        optimizer.optimize()
     if util.get_autocast_info()['cast_type'] == "dynamic_int8":
         model = _dynamic_quantization(model)
     return model
