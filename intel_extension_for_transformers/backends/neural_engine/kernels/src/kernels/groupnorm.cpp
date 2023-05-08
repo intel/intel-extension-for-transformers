@@ -15,10 +15,10 @@
 
 namespace jd {
 
-#define KERNEL_INIT_CHECK(f)                                                   \
-  if (!(f)) {                                                                  \
-    SPARSE_LOG(ERROR) << "Transpose attention kernel requires `" << #f << "`"; \
-    return false;                                                              \
+#define KERNEL_INIT_CHECK(f)                                         \
+  if (!(f)) {                                                        \
+    SPARSE_LOG(ERROR) << "groupnorm kernel requires `" << #f << "`"; \
+    return false;                                                    \
   }
 using idx = exposed_enum::groupnorm::io;
 

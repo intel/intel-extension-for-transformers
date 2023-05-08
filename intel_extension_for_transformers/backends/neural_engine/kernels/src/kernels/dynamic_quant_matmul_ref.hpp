@@ -21,7 +21,7 @@
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "utils.hpp"
-#include "kernels/dynamic_quant_matmul_rt_data_idx.hpp"
+#include "exposed_enum.hpp"
 
 namespace jd {
 class dynamic_quant_matmul_ref_k_t;

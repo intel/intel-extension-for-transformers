@@ -15,6 +15,7 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_COMMON_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_COMMON_HPP_
 
+#include <immintrin.h>
 #include <float.h>
 #include <glog/logging.h>
 #include <limits.h>
@@ -40,9 +41,6 @@
 #include "oneapi/dnnl/dnnl.hpp"
 #include "interface.hpp"
 
-#if __AVX512F__
-#include <immintrin.h>
-#endif
 
 #ifdef NEURALENGINE_SHARED_LIB_
 #ifndef NEURALENGINE_API_
@@ -174,7 +172,10 @@ __m512 cvt_bf16_to_fp32(__mmask16 mask, const __m256i src);
 // Conversion from FP32 to BF16
 __m256i trunc_fp32_to_bf16(const __m512 src);
 __m256i cvt_fp32_to_bf16(const __m512 src);
+#elif __AVX2__
+__m128i cvt_fp32_to_bf16(const __m256 src);
 #endif
+
 void zero_ker(uint16_t* out, size_t len);
 void move_ker(uint16_t* out, const uint16_t* in, size_t len);
 void add_ker(uint16_t* inout, uint16_t* in, size_t len);

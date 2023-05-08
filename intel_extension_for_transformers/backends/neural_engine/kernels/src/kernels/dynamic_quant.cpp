@@ -15,7 +15,7 @@
 #include "kernels/dynamic_quant.hpp"
 
 namespace jd {
-using io = ssd::dynamic_quant_io::io;
+using io = jd::exposed_enum::dynamic_quant::io;
 
 bool dynamic_quant_kd_t::init() {
   if (!isa_available(avx512_core)) return false;

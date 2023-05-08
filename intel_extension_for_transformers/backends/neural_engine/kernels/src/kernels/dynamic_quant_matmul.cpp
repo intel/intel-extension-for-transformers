@@ -17,7 +17,7 @@
 
 namespace jd {
 
-using io = ssd::dynamic_quant_matmul_io::io;
+using io = jd::exposed_enum::dynamic_quant_matmul::io;
 
 enum prob_size_idx { batch, m, n, k };
 
@@ -63,7 +63,7 @@ bool dynamic_quant_matmul_kd_t::split_execute_init() {
   assign_cores_ = {weight_cores, activation_cores};
   auto m_per_core = prob_size_[m] / activation_cores;
   auto remain_m = prob_size_[m] % activation_cores;
-  bool add_bias = (ts_descs.size() - 1) == static_cast<int>(io::BIAS) ? true : false;
+  bool add_bias = ts_descs[io::BIAS].size() != 0;
   bool append_sum = op_desc_.attrs().count("append_sum") != 0 ? true : false;
   auto dst_dt = ts_descs[2].dtype();
   if (append_sum)
@@ -88,6 +88,7 @@ bool dynamic_quant_matmul_kd_t::split_execute_init() {
       p.add_bias = add_bias;
       p.append_sum = append_sum;
       p.dst_dt = dst_dt;
+      p.postop_attrs = op_desc_.apply_postops_list();
 
       auto config_amx = [&](int M_tile, int N_tile, int K_tile, tileconfig_t* cfg) {
         tile_param_t p = {M_tile, N_tile, K_tile, false, 4, 3, 1, 4};
@@ -108,10 +109,12 @@ bool dynamic_quant_matmul_kd_t::split_execute_init() {
   return true;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized" 
 bool dynamic_quant_matmul_kd_t::init() {
   if (!isa_available(amx_int8)) return false;
   auto ts_descs = op_desc_.tensor_descs();
-  bool add_bias = (ts_descs.size() - 1) == static_cast<int>(io::BIAS) ? true : false;
+  bool add_bias = ts_descs[io::BIAS].size() != 0;
   if (ts_descs[0].dtype() != data_type::s8 || ts_descs[1].dtype() != data_type::s8)
     SPARSE_LOG(FATAL) << "activation, weight should be s8 in dynamic_quant_matmul";
   SPARSE_LOG_IF(FATAL, prob_size_[k] % 4 != 0) << "k must pad with 4.";
@@ -142,6 +145,7 @@ bool dynamic_quant_matmul_kd_t::init() {
     p.align_m_loop = p.m / 16;
     p.tail_m = p.m % 16;
     p.add_bias = add_bias;
+    p.postop_attrs = op_desc_.apply_postops_list();
 
     auto config_amx = [&](int M_tile, int N_tile, int K_tile, tileconfig_t* cfg) {
       tile_param_t p = {M_tile, N_tile, K_tile, false, 4, 3, 1, 4};
@@ -154,6 +158,7 @@ bool dynamic_quant_matmul_kd_t::init() {
 
   return true;
 }
+#pragma GCC diagnostic pop
 
 bool dynamic_quant_matmul_k_t::split_execute_init() {
   auto prob_size = derived_kd()->shape();

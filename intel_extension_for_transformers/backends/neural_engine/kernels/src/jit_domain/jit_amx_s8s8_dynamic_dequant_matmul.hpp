@@ -21,15 +21,19 @@
 #include "jit_generator.hpp"
 #include "kernels/dynamic_quant_matmul_types.hpp"
 #include "utils.hpp"
+#include "jit_eltwise_injector.hpp"
 namespace jd {
 class jit_amx_s8s8_dynamic_dequant_matmul_t : public jit_generator {
  public:
   explicit jit_amx_s8s8_dynamic_dequant_matmul_t(const ssd::dynamic_quant_matmul_param_t& param, size_t dst_n_dim)
-      : jit_generator(), param_(param), dst_n_dim_(dst_n_dim) {}
+      : jit_generator(), param_(param), dst_n_dim_(dst_n_dim) {
+    eltwise_injector_.eltwise_injector_init(this, param_.postop_attrs);
+  }
   virtual ~jit_amx_s8s8_dynamic_dequant_matmul_t() {}
 
  private:
   ssd::dynamic_quant_matmul_param_t param_;
+  jit_eltwise_injector eltwise_injector_;
 
  private:
   void generate() override;

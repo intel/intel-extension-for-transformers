@@ -22,6 +22,7 @@
 #include <vector>
 #include <memory>
 
+#include "../common.hpp"
 #include "../operator.hpp"
 
 namespace executor {

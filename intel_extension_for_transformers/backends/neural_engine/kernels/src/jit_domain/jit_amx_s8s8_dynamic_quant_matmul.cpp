@@ -24,7 +24,7 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
   Xbyak::Label data_label;
   inLocalLabel();
   {
-    const int stack_tmpbuf_offset = 4 + 2 * sizeof(tileconfig_t);
+    const int stack_scale_offset = 4 + 2 * sizeof(tileconfig_t);
     auto trans_block_col = param_.k / param_.tile_k;
     const auto does_calc = param_.align_m_loop > 0 || param_.tail_m != 0;
     regs_pool rp(this, 1, {does_calc ? 11 : 6, does_calc ? 32 : 0, 0});
@@ -97,6 +97,10 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
               vfmadd213ps(zmms[2], zmms[0], zmms[1]);
             else
               vmulps(zmms[2], zmms[2], zmms[0]);
+            if (param_.postop_attrs.size() != 0) {
+              eltwise_injector_.escape_rp_all_type(&rp);
+              eltwise_injector_.vector_compute(zmms[2], param_.postop_attrs);
+            }
             vmovups(ptr[reg_tmp_buf + reg_tmp + (idx * 16 + row_loop * param_.pad_n) * sizeof(float)], zmms[2]);
           }
         }
@@ -136,7 +140,7 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
       imul(reg_tmp, reg_m_loop, 16 * sizeof(float));
       vmovups(M == 16 ? ptr[reg_scale_dst + reg_tmp] : ptr[reg_scale_dst + reg_tmp] | scaleC_mask, scale);
       vrcp14ps(scale, scale);
-      vmovups(ptr[rip + data_label + stack_tmpbuf_offset], scale);
+      vmovups(ptr[rip + data_label + stack_scale_offset], scale);
     };
 
     auto calculate_scale = [&](int M, std::string label_prefix) {
@@ -175,7 +179,7 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
       imul(reg_tmp2, store_n_loop, 16);
       add(reg_tmp, reg_tmp2);
       for (int i = 0; i < M; i++) {
-        int quant_scale = i * sizeof(float) + stack_tmpbuf_offset;
+        int quant_scale = i * sizeof(float) + stack_scale_offset;
         vmulps(Zmm(i), Zmm(i), zword_b[rip + data_label + quant_scale]);
         vcvtps2dq(Zmm(i), Zmm(i));
         vpmovsdb(
@@ -231,9 +235,12 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
   outLocalLabel();
   L(data_label);
   float const_val[] = {1.f / 127.f};
+  float scale_holdplace[16] = {0};
   db(reinterpret_cast<uint8_t*>(const_val), sizeof(const_val));
   db(reinterpret_cast<uint8_t*>(&param_.m_align_cfg), sizeof(tileconfig_t));
   db(reinterpret_cast<uint8_t*>(&param_.m_tail_cfg), sizeof(tileconfig_t));
+  db(reinterpret_cast<uint8_t*>(scale_holdplace), 64);
+  eltwise_injector_.prepare_table();
 }
 
 }  // namespace jd

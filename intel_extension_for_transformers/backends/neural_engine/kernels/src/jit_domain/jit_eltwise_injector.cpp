@@ -466,6 +466,18 @@ void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& 
   }
 }
 
+template <typename REG_TYPE>
+void jit_eltwise_injector::escape_from_rp(reg_type type, regs_pool* rp) {
+  auto idx = rp->get_next<REG_TYPE>();
+  for (int i = 0; i < idx; i++) this->escape_regs(type, rp->map_reg_idx<REG_TYPE>(i));
+}
+
+void jit_eltwise_injector::escape_rp_all_type(regs_pool* rp) {
+  escape_from_rp<Reg64>(reg_type::reg64, rp);
+  escape_from_rp<Opmask>(reg_type::mask, rp);
+  escape_from_rp<Zmm>(reg_type::zmm, rp);
+}
+
 void jit_eltwise_injector::assign_regs() {
   std::vector<Xbyak::Reg*> reg64_allocate_vec;
   std::vector<Xbyak::Reg*> mask_allocate_vec;
@@ -509,7 +521,6 @@ void jit_eltwise_injector::assign_regs() {
       allocate_idx++;
     }
   };
-
   allocate_regs(reg_type::reg64, max_reg64_idx, used_regs.find(reg_type::reg64), reg64_allocate_vec);
   allocate_regs(reg_type::mask, max_mask_idx, used_regs.find(reg_type::mask), mask_allocate_vec);
   allocate_regs(reg_type::zmm, max_zmm_idx, used_regs.find(reg_type::zmm), zmm_allocate_vec);

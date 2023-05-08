@@ -99,6 +99,10 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
               vfmadd213ps(zmms[2], zmms[0], zmms[1]);
             else
               vmulps(zmms[2], zmms[2], zmms[0]);
+            if (param_.postop_attrs.size() != 0) {
+              eltwise_injector_.escape_rp_all_type(&rp);
+              eltwise_injector_.vector_compute(zmms[2], param_.postop_attrs);
+            }
             if (param_.dst_dt != data_type::fp32) {
               fp32_cvt_bf16(zmms[2]);
               RegExp write_back_addr =
@@ -168,6 +172,7 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
   L(cfg_label);
   db(reinterpret_cast<uint8_t*>(&param_.m_align_cfg), sizeof(tileconfig_t));
   db(reinterpret_cast<uint8_t*>(&param_.m_tail_cfg), sizeof(tileconfig_t));
+  eltwise_injector_.prepare_table();
 }
 
 }  // namespace jd

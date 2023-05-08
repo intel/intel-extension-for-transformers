@@ -15,11 +15,10 @@
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
 #include "kernels/dynamic_quant_ref.hpp"
-#include "kernels/dynamic_quant_rt_data_idx.hpp"
 
 namespace jd {
 
-using io = ssd::dynamic_quant_io::io;
+using io = jd::exposed_enum::dynamic_quant::io;
 
 struct op_args_t {
   operator_desc op_desc;

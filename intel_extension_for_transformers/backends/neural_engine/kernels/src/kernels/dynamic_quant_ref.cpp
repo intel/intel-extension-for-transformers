@@ -16,7 +16,7 @@
 
 namespace jd {
 
-using io = ssd::dynamic_quant_io::io;
+using io = exposed_enum::dynamic_quant::io;
 
 void get_dynamic_quant_scale(float* mat, float* scale, int channel_num, int quantized_dim_elt_num) {
 #pragma omp parallel for

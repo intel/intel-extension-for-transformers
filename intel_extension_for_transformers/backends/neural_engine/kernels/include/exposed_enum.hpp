@@ -54,6 +54,13 @@ enum io {
   SIZE,
 };
 }  // namespace mha_dense
+namespace dynamic_quant_matmul {
+enum io { ACTIVATION, WEIGHT, DST, SCALE_A, SCALE_W, SCALE_DST, WORKSPACE, BIAS, IDX_SIZE };
+}
+
+namespace dynamic_quant {
+enum io { SRC, MAT_DST, SCALE_DST, IDX_SIZE };
+}
 
 }  // namespace exposed_enum
 }  // namespace jd

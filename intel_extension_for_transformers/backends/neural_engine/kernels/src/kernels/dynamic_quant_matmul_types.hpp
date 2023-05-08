@@ -36,6 +36,7 @@ struct dynamic_quant_matmul_param_t {
   data_type dst_dt;
   tileconfig_t m_align_cfg;
   tileconfig_t m_tail_cfg;
+  std::vector<postop_attr> postop_attrs;
 };
 
 struct dynamic_quant_matmul_data_t {

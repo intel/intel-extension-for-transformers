@@ -28,7 +28,10 @@
 namespace jd {
 #define FOREACH_REG template <typename R>
 #define FOREACH_REG_N template <typename R, size_t N>
+class jit_eltwise_injector;
 class regs_pool {
+  friend jit_eltwise_injector;
+
  private:
   enum class reg_kind : size_t {
     gpr,

@@ -14,8 +14,6 @@
 
 #include "rmsnorm.hpp"
 
-#include "common.hpp"
-
 namespace executor {
 
 static inline float _mm256_reduce_add_ps(__m256 x) {
@@ -29,7 +27,7 @@ static inline float _mm256_reduce_add_ps(__m256 x) {
 #define FP32_POWXSUM(zmm1, zmm2)    \
   zmm2 = _mm512_mul_ps(zmm2, zmm2); \
   zmm1 = _mm512_add_ps(zmm1, zmm2);
-#else
+#elif __AVX2__
 #define FP32_POWXSUM(ymm1, ymm2)    \
   ymm2 = _mm256_mul_ps(ymm2, ymm2); \
   ymm1 = _mm256_add_ps(ymm1, ymm2);
@@ -44,7 +42,7 @@ void fp32_norm(char* src, const float* gamma, char* dst, int norm_dim, __m512* s
     _mm512_storeu_ps(dst + i * 4, _mm512_mul_ps(zmm_src, zmm_fin_scale));
   }
 }
-#else
+#elif __AVX2__
 void fp32_norm(char* src, const float* gamma, char* dst, int norm_dim, __m256* scale) {
   for (int i = 0; i < norm_dim; i += 8) {
     auto ymm_src = _mm256_loadu_ps(reinterpret_cast<float*>(static_cast<void*>(src)) + i);
@@ -65,8 +63,8 @@ static inline __m512 bf16_load(float* addr) {
   return _mm512_castsi512_ps(_mm512_bslli_epi128(y, 2));
 #endif
 }
-#else
-static inline __m256 bf16_load(float* addr) {
+#elif __AVX2__
+__m256 bf16_load(float* addr) {
   auto bf16_data = _mm_loadu_ps(addr);
   auto y = _mm256_cvtepu16_epi32(_mm_castps_si128(bf16_data));
   return _mm256_castsi256_ps(_mm256_bslli_epi128(y, 2));
@@ -75,37 +73,23 @@ static inline __m256 bf16_load(float* addr) {
 
 #if __AVX512F__
 void bf16_norm(char* src, const float* gamma, char* dst, int norm_dim, __m512* scale) {
-  auto fp32_cvt_bf16 = [](__m512& zmm_dst) {
-#if __AVX512BF16__ && __GNUC__ > 11
-    return _mm512_cvtneps_pbh(zmm_dst);
-#else
-    auto y = _mm512_bsrli_epi128(_mm512_castps_si512(zmm_dst), 2);
-    return _mm512_cvtepi32_epi16(y);
-#endif
-  };
-
   for (int i = 0; i < norm_dim; i += 16) {
     auto zmm_src = bf16_load(static_cast<float*>(static_cast<void*>(src + i * 2)));
     auto zmm_gamma = _mm512_loadu_ps(gamma + i);
     auto zmm_fin_scale = _mm512_mul_ps(zmm_gamma, *scale);
     auto zmm_dst = _mm512_mul_ps(zmm_src, zmm_fin_scale);
-    auto bf16_dst = fp32_cvt_bf16(zmm_dst);
+    auto bf16_dst = cvt_fp32_to_bf16(zmm_dst);
     _mm256_storeu_ps(static_cast<float*>(static_cast<void*>(dst + i * 2)), _mm256_castsi256_ps(bf16_dst));
   }
 }
-#else
+#elif __AVX2__
 void bf16_norm(char* src, const float* gamma, char* dst, int norm_dim, __m256* scale) {
-  auto fp32_cvt_bf16 = [](__m256& ymm_dst) {
-    auto y = _mm256_bsrli_epi128(_mm256_castps_si256(ymm_dst), 2);
-    return _mm256_cvtepi32_epi16(y);
-  };
-
   for (int i = 0; i < norm_dim; i += 8) {
     auto ymm_src = bf16_load(static_cast<float*>(static_cast<void*>(src + i * 2)));
     auto ymm_gamma = _mm256_loadu_ps(gamma + i);
     auto ymm_fin_scale = _mm256_mul_ps(ymm_gamma, *scale);
     auto ymm_dst = _mm256_mul_ps(ymm_src, ymm_fin_scale);
-    auto bf16_dst = fp32_cvt_bf16(ymm_dst);
+    auto bf16_dst = cvt_fp32_to_bf16(ymm_dst);
     _mm_storeu_ps(static_cast<float*>(static_cast<void*>(dst + i * 2)), _mm_castsi128_ps(bf16_dst));
   }
 }
@@ -135,7 +119,7 @@ void RmsNormOperator::RmsNormParallelB(const void* src_data, const float* gamma_
     auto zmm_scale = _mm512_set1_ps(powx_mean);
     zmm_scale = _mm512_rsqrt14_ps(zmm_scale);
     parallelB_norm_callback_(const_cast<char*>(src), gamma_data, dst, norm_dim_, &zmm_scale);
-#else
+#elif __AVX2__
     auto ymm_powx_sum = _mm256_setzero_ps();
     for (int j = 0; j < norm_dim_; j += 8) {
 #if dt_bytewidth == 2

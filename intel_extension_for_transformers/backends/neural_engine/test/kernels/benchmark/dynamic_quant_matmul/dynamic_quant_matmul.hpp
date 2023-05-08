@@ -30,13 +30,12 @@
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
-#include "kernels/dynamic_quant_matmul_rt_data_idx.hpp"
 
 #define DYNAMIC_QUANT_MATMUL_ARG_NUM 5
 
 namespace jd {
 class dynamic_quant_matmul_bench : public kernel_bench {
-using io = jd::ssd::dynamic_quant_matmul_io::io;
+  using io = jd::exposed_enum::dynamic_quant_matmul::io;
 
  protected:
   int b, m, n, k;

@@ -24,7 +24,7 @@
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "utils.hpp"
-#include "kernels/dynamic_quant_rt_data_idx.hpp"
+#include "exposed_enum.hpp"
 #include "jit_domain/jit_dynamic_quant.hpp"
 
 namespace jd {

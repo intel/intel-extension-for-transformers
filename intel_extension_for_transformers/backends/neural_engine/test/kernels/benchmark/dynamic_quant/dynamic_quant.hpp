@@ -30,13 +30,12 @@
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
-#include "kernels/dynamic_quant_rt_data_idx.hpp"
 
 #define DYNAMIC_QUANT_ARG_NUM 3
 
 namespace jd {
 class dynamic_quant_bench : public kernel_bench {
-using io = jd::ssd::dynamic_quant_io::io;
+  using io = jd::exposed_enum::dynamic_quant::io;
 
  protected:
   int channel_num, quantize_dim_elt_num;

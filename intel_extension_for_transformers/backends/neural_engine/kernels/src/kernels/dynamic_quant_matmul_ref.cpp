@@ -18,7 +18,7 @@ namespace jd {
 
 enum prob_size_idx { batch, m, n, k };
 
-using io = ssd::dynamic_quant_matmul_io::io;
+using io = exposed_enum::dynamic_quant_matmul::io;
 
 dynamic_quant_matmul_ref_kd_t::dynamic_quant_matmul_ref_kd_t(const jd::operator_desc& op_desc)
     : kernel_desc_t(kernel_kind::dynamic_quant_matmul), op_desc_(op_desc) {
@@ -43,7 +43,7 @@ bool dynamic_quant_matmul_ref_kd_t::init() {
   if (ts_desc[0].dtype() != data_type::s8 || ts_desc[1].dtype() != data_type::s8)
     SPARSE_LOG(FATAL) << "activation, weight should be s8 in dynamic_quant_matmul";
   SPARSE_LOG_IF(FATAL, prob_size_[k] % 4 != 0) << "k must pad with 4.";
-  has_bias = (ts_desc.size() - 1) == static_cast<int>(io::BIAS) ? true : false;
+  has_bias = ts_desc[io::BIAS].size() != 0;
   return true;
 }
 
@@ -63,15 +63,17 @@ void gemm(T* a, T* b, DST* c, int B, int M, int N, int K) {
   }
 }
 
-void dequant_add_bias(float* mat, const float* scale_a, const float* scale_w, int b, int m, int n,
-                      bool add_bias = false, const float* bias = nullptr) {
-  for (int batch = 0; batch < b; batch++)
+void dequant_add_bias(float* mat, const float* scale_a, const float* scale_w, int b, int m, int n, bool add_bias,
+                      const float* bias, const std::vector<postop_attr>& postop_list) {
+  for (int batch = 0; batch < b; batch++) {
 #pragma omp parallel for
     for (int i = 0; i < m; i++)
       for (int j = 0; j < n; j++) {
         mat[batch * m * n + i * n + j] = mat[batch * m * n + i * n + j] * scale_a[batch * m + i] * scale_w[j];
         if (add_bias) mat[batch * m * n + i * n + j] += bias[j];
+        mat[batch * m * n + i * n + j] = apply_postop_list(mat[batch * m * n + i * n + j], postop_list);
       }
+  }
 }
 
 void get_dynamic_quant_scale(float* mat, float* scale, int b, int m, int n) {
@@ -139,6 +141,7 @@ std::vector<int8_t> reorder_back(const int8_t* reorder_mat, int k, int n) {
 bool dynamic_quant_matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto prob_size = derived_kd()->get_prob_size();
   bool add_bias = derived_kd()->has_bias;
+  auto postop_list = derived_kd()->get_operator_desc().apply_postops_list();
   bool append_sum = derived_kd()->check_append_sum();
   auto l_mat = static_cast<const int8_t*>(rt_data[0]);
   auto r_mat = static_cast<const int8_t*>(rt_data[1]);
@@ -151,7 +154,8 @@ bool dynamic_quant_matmul_ref_k_t::execute(const std::vector<const void*>& rt_da
   std::vector<float> fp32_dst_mat(prob_size[batch] * prob_size[m] * prob_size[n], 0);
   gemm(l_mat, const_cast<const int8_t*>(reorder_back_mat.data()), fp32_dst_mat.data(), prob_size[batch], prob_size[m],
        prob_size[n], prob_size[k]);
-  dequant_add_bias(fp32_dst_mat.data(), scale_a, scale_w, prob_size[batch], prob_size[m], prob_size[n], add_bias, bias);
+  dequant_add_bias(fp32_dst_mat.data(), scale_a, scale_w, prob_size[batch], prob_size[m], prob_size[n], add_bias, bias,
+                   postop_list);
   if (append_sum)
     fp32_append_sum(reinterpret_cast<float*>(dst_mat), &fp32_dst_mat, prob_size[batch], prob_size[m], prob_size[n]);
   if (derived_kd()->check_dst_dt() == data_type::s8) {

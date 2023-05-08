@@ -802,12 +802,17 @@ inline __m256i trunc_fp32_to_bf16(const __m512 src) {
   return _mm512_cvtepi32_epi16(y);
 }
 
-inline __m256i cvt_fp32_to_bf16(const __m512 src) {
+__m256i cvt_fp32_to_bf16(const __m512 src) {
 #if __AVX512BF16__ && __GNUC__ > 11
   return (__m256i)_mm512_cvtneps_pbh(src);
 #else
   return trunc_fp32_to_bf16(src);
 #endif
+}
+#elif __AVX2__
+__m128i cvt_fp32_to_bf16(const __m256 src) {
+  auto y = _mm256_bsrli_epi128(_mm256_castps_si256(src), 2);
+  return _mm256_cvtepi32_epi16(y);
 }
 #endif
 

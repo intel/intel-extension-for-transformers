@@ -17,6 +17,9 @@
 #include "kernels/dynamic_quant_matmul_ref.hpp"
 
 namespace jd {
+
+using io = jd::exposed_enum::dynamic_quant_matmul::io;
+
 struct op_args_t {
   operator_desc op_desc;
   std::shared_ptr<std::vector<int8_t>> activation;
@@ -39,7 +42,7 @@ bool check_result(const test_params_t& t) {
   const auto& q = t.args.second;
   const auto& op_desc = p.op_desc;
   std::vector<const void*> data1, data2;
-  auto dst_dt = op_desc.tensor_descs()[2].dtype();
+  auto dst_dt = op_desc.tensor_descs()[io::DST].dtype();
   try {
     dynamic_quant_matmul_desc dynamic_quant_matmul_desc(op_desc);
     dynamic_quant_matmul dynamic_quant_matmul_ker(dynamic_quant_matmul_desc);
@@ -52,8 +55,8 @@ bool check_result(const test_params_t& t) {
     data2 = {q.activation->data(), q.reordered_weight->data(), q.dst->data(), q.scale_a->data(),
              q.scale_w->data(),    q.scale_dst->data(),        tmp_buf.get(), q.bias->data()};
     if (dst_dt == data_type::fp32) {
-      data1[2] = p.fp32_dst->data();
-      data2[2] = q.fp32_dst->data();
+      data1[io::DST] = p.fp32_dst->data();
+      data2[io::DST] = q.fp32_dst->data();
     }
     dynamic_quant_matmul_ker.execute(data1);
     std::shared_ptr<const kernel_desc_t> dynamic_quant_matmul_ref_desc;
@@ -71,9 +74,9 @@ bool check_result(const test_params_t& t) {
   }
 
   if (!t.expect_to_fail) {
-    auto buf1 = data1[2];
+    auto buf1 = data1[io::DST];
     auto size = p.dst->size();
-    auto buf2 = data2[2];
+    auto buf2 = data2[io::DST];
     bool ans1 = false;
     switch (dst_dt) {
       case data_type::fp32:
@@ -83,9 +86,9 @@ bool check_result(const test_params_t& t) {
         ans1 = compare_data<int8_t>(buf1, size, buf2, size, 1e-2);
         break;
     }
-    auto buf3 = data1[5];
+    auto buf3 = data1[io::SCALE_DST];
     auto size2 = p.scale_dst->size();
-    auto buf4 = data2[5];
+    auto buf4 = data2[io::SCALE_DST];
     auto ans2 = compare_data<float>(buf3, size2, buf4, size2, 5e-3);
     return ans1 && ans2;
   }
@@ -138,9 +141,10 @@ std::shared_ptr<std::vector<int8_t>> transpose_amx_tileKx64_reorder_buf(int8_t* 
 }
 
 std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
-                                         std::unordered_map<std::string, std::string> op_attrs) {
-  auto activation_shape = ts_descs[0].shape();
-  auto weight_shape = ts_descs[1].shape();
+                                         std::unordered_map<std::string, std::string> op_attrs,
+                                         const std::vector<postop_attr>& postop_attr = {}) {
+  auto activation_shape = ts_descs[io::ACTIVATION].shape();
+  auto weight_shape = ts_descs[io::WEIGHT].shape();
   int b = activation_shape[0], m = activation_shape[1], k = weight_shape[0], n = weight_shape[1];
   int pad_n = ceil_div(n, 16) * 16;
 
@@ -167,7 +171,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   reorder_stage(weight.get(), reorder_buf.get(), k, n, pad_n);
   auto trans_reorder_wei = transpose_amx_tileKx64_reorder_buf(reorder_buf.get()->data(), k, pad_n);
   operator_desc dynamic_quant_matmul_desc(kernel_kind::dynamic_quant_matmul, kernel_prop::forward_inference,
-                                          engine_kind::cpu, ts_descs, op_attrs);
+                                          engine_kind::cpu, ts_descs, op_attrs, postop_attr);
 
   op_args_t p = {dynamic_quant_matmul_desc,
                  activation,
@@ -191,6 +195,7 @@ static auto case_func = []() {
 
   std::vector<dim_t> batchs = {1, 2};
   std::vector<data_type> dt_types = {data_type::s8, data_type::fp32};
+  postop_attr swish_attr = {data_type::fp32, postop_type::eltwise, postop_alg::swish, 2.f};
   for (auto&& batch : batchs) {
     for (auto&& shape : shapes) {
       for (auto&& dt : dt_types) {
@@ -206,7 +211,7 @@ static auto case_func = []() {
         if (dt == data_type::fp32) op_attrs["append_sum"] = true;
         cases.push_back({gen_case({activation_desc, weight_desc, dst_desc, sclae_a_desc, scale_w_desc, scale_dst_desc,
                                    workspace_desc, bias_desc},
-                                  op_attrs),
+                                  op_attrs, {swish_attr}),
                          false});
       }
     }

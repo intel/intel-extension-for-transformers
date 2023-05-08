@@ -25,6 +25,7 @@
 #include "jit_generator.hpp"
 #include "utils.hpp"
 #include "param_types.hpp"
+#include "regs_pool.hpp"
 
 namespace jd {
 class jit_eltwise_injector {
@@ -52,6 +53,7 @@ class jit_eltwise_injector {
   }
 
   void escape_erase(reg_type type, int reg_idx = -1);
+  void escape_rp_all_type(regs_pool* rp);
   void init_tb_allocate_set(const std::vector<postop_attr>& postop_attrs);
   int max_zmm_allocate_num() { return zmm_tb_allocate.size(); }
   int max_mask_allocate_num() { return mask_tb_allocate.size(); }
@@ -73,6 +75,8 @@ class jit_eltwise_injector {
   void bit16_lut_compute_vector_fwd(const Xbyak::Zmm& zmm_src);
   void register_table_entries(const std::vector<postop_attr>& postop_attrs);
   void assert_check(const std::vector<postop_attr>& postop_attrs);
+  template <typename REG_TYPE>
+  void escape_from_rp(reg_type type, regs_pool* rp);
 
   uint32_t get_bit8_lut_term(int integer, const std::vector<postop_attr>& postop_attrs, data_type output_dt);
   uint32_t get_bit16_lut_term(int integer, const std::vector<postop_attr>& postop_attrs, data_type output_dt);
