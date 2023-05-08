@@ -20,11 +20,6 @@ parser.add_argument("--dataset", nargs="?", default="NeelNanda/pile-10k", const=
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 parser.add_argument("--quantize", action="store_true")
 parser.add_argument(
-    "--ipex_bf16",
-    action="store_true",
-    help="to enable ipex amp bf16 (work on platforms like SPR)",
-)
-parser.add_argument(
     "--int8_bf16_mixed",
     action="store_true",
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
@@ -33,7 +28,8 @@ parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto",
                     help="Smooth quant parameter.")
 parser.add_argument("--int8", action="store_true")
-parser.add_argument("--accuracy_only", action="store_true")
+parser.add_argument("--ipex", action="store_true", help="use intel extension for pytorch.")
+parser.add_argument("--accuracy", action="store_true")
 parser.add_argument("--batch_size", default=1, type=int,
                     help="For accuracy measurement only.")
 parser.add_argument("--save_accuracy_path", default=None,
@@ -47,6 +43,8 @@ parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa",
                     help="tasks list for accuracy validation")
 
 args = parser.parse_args()
+if args.ipex:
+    import intel_extension_for_pytorch as ipex
 calib_size = 1
 
 class Evaluator:
@@ -125,13 +123,13 @@ if re.search("llama", args.model):
     from transformers import LlamaForCausalLM, LlamaTokenizer
     user_model = LlamaForCausalLM.from_pretrained(
         args.model,
-        torchscript=True,  # torchscript will force `return_dict=False` to avoid jit errors
+        torchscript=True if args.ipex else False,  # torchscript will force `return_dict=False` to avoid jit errors
     )
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
 else:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torchscript=True,  # torchscript will force `return_dict=False` to avoid jit errors
+        torchscript=True if args.ipex else False,  # torchscript will force `return_dict=False` to avoid jit errors
     )
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 
@@ -171,14 +169,14 @@ if args.quantize:
         args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
         recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha}}
         conf = PostTrainingQuantConfig(
-            backend="ipex",
+            backend="ipex" if args.ipex else "default",
             excluded_precisions=excluded_precisions,
             op_type_dict=op_type_dict,
             recipes=recipes,
         )
     else:
         conf = PostTrainingQuantConfig(
-            backend="ipex",
+            backend="ipex" if args.ipex else "default",
             excluded_precisions=excluded_precisions,
             op_type_dict=op_type_dict,
         )
@@ -193,17 +191,6 @@ if args.quantize:
     q_model.save(args.output_dir)
     exit(0)
 
-amp_enabled = False
-amp_dtype = None
-if args.ipex_bf16:
-    amp_enabled = True
-    amp_dtype = torch.bfloat16
-    user_model = ipex.optimize(user_model, dtype=torch.bfloat16)
-    with torch.no_grad(), torch.cpu.amp.autocast():
-        user_model = torch.jit.trace(user_model, user_model.dummy_inputs["input_ids"])
-        user_model = torch.jit.freeze(user_model)
-    user_model.eval()
-
 if args.int8 or args.int8_bf16_mixed:
     print("load int8 model")
     from neural_compressor.utils.pytorch import load
@@ -212,27 +199,23 @@ if args.int8 or args.int8_bf16_mixed:
 
 if args.accuracy_only:
     user_model.eval()
-    def eval_func(user_model):
-        from intel_extension_for_transformers.evaluation import evaluate
-        results = evaluate(
-            model="hf-causal",
-            model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
-            user_model=user_model,
-            batch_size=args.batch_size,
-            tasks=args.tasks,
-        )
-        dumped = json.dumps(results, indent=2)
-        if args.save_accuracy_path:
-            with open(args.save_accuracy_path, "w") as f:
-                f.write(dumped)
-        for task_name in args.tasks:
-            if task_name == "wikitext":
-                print("Accuracy for %s is: %s", % task_name, % results["results"][task_name]["word_perplexity"])
-            else:
-                print("Accuracy for %s is: %s", % task_name, % results["results"][task_name]["acc"])
-
-    with torch.no_grad(), torch.cpu.amp.autocast(enabled=amp_enabled, dtype=amp_dtype):
-        eval_func(user_model)
+    from intel_extension_for_transformers.evaluation import evaluate
+    results = evaluate(
+        model="hf-causal",
+        model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
+        user_model=user_model,
+        batch_size=args.batch_size,
+        tasks=args.tasks,
+    )
+    dumped = json.dumps(results, indent=2)
+    if args.save_accuracy_path:
+        with open(args.save_accuracy_path, "w") as f:
+            f.write(dumped)
+    for task_name in args.tasks:
+        if task_name == "wikitext":
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
+        else:
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
 
 
 

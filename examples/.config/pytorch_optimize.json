@@ -4,14 +4,20 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_neo_clm_static",
+        "topology": "gpt_neo",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_neo_clm_static",
+        "topology": "gpt_neo",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -25,14 +31,20 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_neo_clm_qat",
+        "topology": "gpt_neo",
+        "task": "clm",
+        "approach": "qat",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_neo_clm_qat",
+        "topology": "gpt_neo",
+        "task": "clm",
+        "approach": "qat",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -46,14 +58,20 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "bloom_text_static",
+        "topology": "bloom_text",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "bloom_text_static",
+        "topology": "bloom_text",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "mode": "benchmark",
         "batch_size": "8",
         "iters": "100",
@@ -67,14 +85,20 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "bloom_text_dynamic",
+        "topology": "bloom_text",
+        "task": "clm",
+        "approach": "dynamic",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "bloom_text_dynamic",
+        "topology": "bloom_text",
+        "task": "clm",
+        "approach": "dynamic",
+        "backend": "",
         "mode": "benchmark",
         "batch_size": "8",
         "iters": "100",
@@ -88,14 +112,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_neo_clm_dynamic",
+        "topology": "gpt_neo",
+        "task": "clm",
+        "approach": "dynamic",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_neo_clm_dynamic",
+        "topology": "gpt_neo",
+        "task": "clm",
+        "approach": "dynamic",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -109,14 +139,20 @@
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gptj_clm_static",
+        "topology": "gpt_j",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gptj_clm_static",
+        "topology": "gpt_j",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -130,14 +166,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gptj_clm_dynamic",
+        "topology": "gpt_j",
+        "task": "clm",
+        "approach": "dynamic",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gptj_clm_dynamic",
+        "topology": "gpt_j",
+        "task": "clm",
+        "approach": "dynamic",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -151,14 +193,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "bert_mlm_static",
+        "topology": "bert",
+        "task": "mlm",
+        "approach": "static",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "bert_mlm_static",
+        "topology": "bert",
+        "task": "mlm",
+        "approach": "static",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -172,14 +220,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "bert_mlm_qat",
+        "topology": "bert",
+        "task": "mlm",
+        "approach": "qat",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "bert_mlm_qat",
+        "topology": "bert",
+        "task": "mlm",
+        "approach": "qat",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -193,14 +247,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "bert_mlm_dynamic",
+        "topology": "bert",
+        "task": "mlm",
+        "approach": "dynamic",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "bert_mlm_dynamic",
+        "topology": "bert",
+        "task": "mlm",
+        "approach": "dynamic",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -214,14 +274,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "xlnet_plm_static",
+        "topology": "xlnet",
+        "task": "plm",
+        "approach": "static",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "xlnet_plm_static",
+        "topology": "xlnet",
+        "task": "plm",
+        "approach": "static",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -235,14 +301,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "xlnet_plm_qat",
+        "topology": "xlnet",
+        "task": "plm",
+        "approach": "qat",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "xlnet_plm_qat",
+        "topology": "xlnet",
+        "task": "plm",
+        "approach": "qat",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -256,14 +328,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "xlnet_plm_dynamic",
+        "topology": "xlnet",
+        "task": "plm",
+        "approach": "dynamic",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "xlnet_plm_dynamic",
+        "topology": "xlnet",
+        "task": "plm",
+        "approach": "dynamic",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -277,7 +355,10 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_neox_clm_static",
+        "topology": "gpt_neox",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "output_model": "saved_results"
         
       }
@@ -285,7 +366,10 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_neox_clm_static",
+        "topology": "gpt_neox",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -299,14 +383,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_neox_clm_dynamic",
+        "topology": "gpt_neox",
+        "task": "clm",
+        "approach": "dynamic",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_neox_clm_dynamic",
+        "topology": "gpt_neox",
+        "task": "clm",
+        "approach": "dynamic",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",
@@ -320,14 +410,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "bloom_clm_static",
+        "topology": "bloom",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "bloom_clm_static",
+        "topology": "bloom",
+        "task": "clm",
+        "approach": "static",
+        "backend": "",
         "mode": "accuracy",
         "batch_size": "8",
         "iters": "100",

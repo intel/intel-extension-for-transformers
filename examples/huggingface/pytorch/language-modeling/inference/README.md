@@ -1,59 +1,49 @@
 Step-by-Step
 ============
-This document describes the step-by-step instructions to run large language models(LLMs) on 4th Gen Intel® Xeon® Scalable Processor (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)) with PyTorch and [Intel® Extension for PyTorch](https://github.com/intel/intel-extension-for-pytorch).
+This document describes the step-by-step instructions to run large language models(LLMs) `float32` and `bfloat16` inference on 4th Gen Intel® Xeon® Scalable Processor (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). Last word prediction accuracy is provide by [lm_eval](https://github.com/EleutherAI/lm-evaluation-harness.git).
 
-We now support two models, and we are adding more models and more advanced techniques(distributed inference, model compressions etc.) to better unleash LLM inference on Intel platforms.
+ 
 
-- GPT-J
-  script `run_gptj.py` is based on [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) and provides inference benchmarking. For [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) quantization, please refer to [quantization example](../quantization/inc)
-- BLOOM-176B
-  script `run_bloom.py` is adapted from [HuggingFace/transformers-bloom-inference](https://github.com/huggingface/transformers-bloom-inference/blob/main/bloom-inference-scripts/bloom-accelerate-inference.py). 
-
-# Prerequisite
-## Create Environment
+## Prerequisite
+### Create Environment
 ```
+WORK_DIR=$PWD
+# Create Environment (conda)
+conda create -n llm python=3.9 -y
 conda install mkl mkl-include -y
-conda install jemalloc gperftools -c conda-forge -y
-pip install torch==1.13.1 --extra-index-url https://download.pytorch.org/whl/cpu
-pip install intel_extension_for_pytorch==1.13.0
+conda install gperftools jemalloc==5.2.1 -c conda-forge -y
+
+# Installation
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel_extension_for_transformers
 pip install -r requirements.txt
-```
-## Setup Environment Variables
-```
+git submodule update --init --recursive
+python setup.py install
+cd /home/changwa1/refine_lm/examples/huggingface/pytorch/language-modeling/inference
+pip install -r requirements.txt
+
+# Setup Environment Variables
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
-
 # IOMP
-export OMP_NUM_THREADS=< Cores number to use >
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
+# Tcmalloc is a recommended malloc implementation that emphasizes fragmentation avoidance and scalable concurrency support.
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 ```
 
-# Performance Benchmark
+## Run
 
-## GPT-J
-### Performance
+### Inference
+
 ```bash
-# use jemalloc
-export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
-export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:9000000000,muzzy_decay_ms:9000000000"
-
-# default is beam search with num_beams=4, if you need to use greedy search for comparison, add "--greedy" in args.
+# "--precision provide two options "bf16"/"fp32"
+# "--jit" used to covert model to torchscript mode
+# "--ipex" enable intel_extension_for_pytorch
 numactl -m <node N> -C <cpu list> \
-    python run_gptj.py \
-        --precision <fp32/bf16> \
-        --max-new-tokens 32
+    python run_clm_no_trainer.py \
+        --precision "bf16" \ 
+        --model "EleutherAI/gpt-j-6b" \ 
+        --accuracy \
+        --task "lambada_openai"
 ```
-## BLOOM-176B
-### Performance
-We don't enable jemalloc here since BLOOM-176B requires lots of memory and will have memory contention w/ jemalloc.
-
-```bash
-numactl -m <node N> -C <cpu list> python3 run_bloom.py --batch_size 1 --benchmark
-```
-By default searcher is set to beam searcher with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
-
-
-
-
- >**Note**: Inference performance speedup with Intel DL Boost (VNNI/AMX) on Intel(R) Xeon(R) hardware, Please refer to [Performance Tuning Guide](https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html) for more optimizations.
