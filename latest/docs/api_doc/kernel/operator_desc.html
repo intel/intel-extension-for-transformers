@@ -100,7 +100,11 @@
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv42jd">
 <span id="_CPPv32jd"></span><span id="_CPPv22jd"></span><span id="jd"></span><span class="target" id="namespacejd"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">jd</span></span></span><br /></dt>
-<dd><dl class="cpp class">
+<dd><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>jit classes in this file may not meet the coding convention and is to be refactored. </p>
+</div>
+<dl class="cpp class">
 <dt class="sig sig-object cpp" id="_CPPv4N2jd13operator_descE">
 <span id="_CPPv3N2jd13operator_descE"></span><span id="_CPPv2N2jd13operator_descE"></span><span id="jd::operator_desc"></span><span class="target" id="classjd_1_1operator__desc"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">operator_desc</span></span></span><a class="headerlink" href="#_CPPv4N2jd13operator_descE" title="Permalink to this definition"></a><br /></dt>
 <dd><div class="docutils container">
@@ -181,6 +185,21 @@
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc17get_binaryop_listEv">
 <span id="_CPPv3NK2jd13operator_desc17get_binaryop_listEv"></span><span id="_CPPv2NK2jd13operator_desc17get_binaryop_listEv"></span><span id="jd::operator_desc::get_binaryop_listC"></span><span class="target" id="classjd_1_1operator__desc_1aa78c4084a4c0ef5b17ce75da2f0cb75e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">binaryop_attr</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_binaryop_list</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc17get_binaryop_listEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc13tensor_shapesEv">
+<span id="_CPPv3NK2jd13operator_desc13tensor_shapesEv"></span><span id="_CPPv2NK2jd13operator_desc13tensor_shapesEv"></span><span id="jd::operator_desc::tensor_shapesC"></span><span class="target" id="classjd_1_1operator__desc_1a6db6537dcfc7784f222f918c0dde1da2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">dim_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">tensor_shapes</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc13tensor_shapesEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc13tensor_dtypesEv">
+<span id="_CPPv3NK2jd13operator_desc13tensor_dtypesEv"></span><span id="_CPPv2NK2jd13operator_desc13tensor_dtypesEv"></span><span id="jd::operator_desc::tensor_dtypesC"></span><span class="target" id="classjd_1_1operator__desc_1ad05fbe195381aa15a5ac332ac2486a05"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">data_type</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">tensor_dtypes</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc13tensor_dtypesEv" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK2jd13operator_desc13tensor_ftypesEv">
+<span id="_CPPv3NK2jd13operator_desc13tensor_ftypesEv"></span><span id="_CPPv2NK2jd13operator_desc13tensor_ftypesEv"></span><span id="jd::operator_desc::tensor_ftypesC"></span><span class="target" id="classjd_1_1operator__desc_1a1f7aa02ae60c76ae5dee0274abcd103b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">format_type</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">tensor_ftypes</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK2jd13operator_desc13tensor_ftypesEv" title="Permalink to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 </div>

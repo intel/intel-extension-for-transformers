@@ -34,6 +34,11 @@ Functions
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.quant_info_init
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_quant_info
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_quant_info
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.environ_info_init
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_environ_info
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_item
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_items
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_environ_info
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_straight_pattern
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_pattern
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.construct_node
@@ -43,6 +48,10 @@ Functions
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.str2list
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping_conf_validation
    intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_var
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_vars
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_var
+   intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_vars
 
 
 
@@ -100,6 +109,31 @@ Functions
 .. py:function:: get_quant_info()
 
    Get the quant info.
+
+
+.. py:function:: environ_info_init()
+
+   Initialize the environ info.
+
+
+.. py:function:: insert_environ_info(key, value)
+
+   Modify the environ info.
+
+
+.. py:function:: remove_environ_info_item(key)
+
+   Remove an item in environ info.
+
+
+.. py:function:: remove_environ_info_items(keys)
+
+   Remove a list of items in environ info.
+
+
+.. py:function:: get_environ_info()
+
+   Get the environ info.
 
 
 .. py:function:: search_straight_pattern(input_pattern, graph)
@@ -355,5 +389,25 @@ Functions
    :param model: framework name that supported by Neural Engine,
                  if there's no available fwk info, then return 'NA'.
    :type model: string
+
+
+.. py:function:: set_environ_var(key, val='1')
+
+   Set an env var.
+
+
+.. py:function:: set_environ_vars(kvs)
+
+   Set a list of env vars.
+
+
+.. py:function:: del_environ_var(key)
+
+   Delete an env var.
+
+
+.. py:function:: del_environ_vars(keys)
+
+   Delete a list of env vars.
 
 

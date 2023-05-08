@@ -32,6 +32,7 @@ Submodules
    graph_utils/index.rst
    logger/index.rst
    onnx_utils/index.rst
+   optimizer/index.rst
    tf_utils/index.rst
    torch_utils/index.rst
 

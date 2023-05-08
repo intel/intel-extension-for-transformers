@@ -122,32 +122,59 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_quant_info" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_quant_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_quant_info</span></code></a>()</p></td>
 <td><p>Get the quant info.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_straight_pattern" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_straight_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_straight_pattern</span></code></a>(input_pattern, graph)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.environ_info_init" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.environ_info_init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">environ_info_init</span></code></a>()</p></td>
+<td><p>Initialize the environ info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_environ_info" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_environ_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">insert_environ_info</span></code></a>(key, value)</p></td>
+<td><p>Modify the environ info.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_item" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_item"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_environ_info_item</span></code></a>(key)</p></td>
+<td><p>Remove an item in environ info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_items" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_items"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_environ_info_items</span></code></a>(keys)</p></td>
+<td><p>Remove a list of items in environ info.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_environ_info" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_environ_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_environ_info</span></code></a>()</p></td>
+<td><p>Get the environ info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_straight_pattern" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_straight_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_straight_pattern</span></code></a>(input_pattern, graph)</p></td>
 <td><p>Search user specified patterns on internal grpah structure.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_pattern" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_pattern</span></code></a>(pattern_list, graph)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_pattern" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.search_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_pattern</span></code></a>(pattern_list, graph)</p></td>
 <td><p>Search the complete pattern in the graph.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.construct_node" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.construct_node"><code class="xref py py-obj docutils literal notranslate"><span class="pre">construct_node</span></code></a>(node_name, op_type[, input_tensors, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.construct_node" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.construct_node"><code class="xref py py-obj docutils literal notranslate"><span class="pre">construct_node</span></code></a>(node_name, op_type[, input_tensors, ...])</p></td>
 <td><p>Construct node with engine op_type.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_pattern" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">insert_pattern</span></code></a>(target_node_names, new_nodes, graph)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_pattern" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">insert_pattern</span></code></a>(target_node_names, new_nodes, graph)</p></td>
 <td><p>Replace the specific pattern matched from the new constructed graph with new pattern.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pattern_mapping</span></code></a>(pattern_name, mapping_dict, graph)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pattern_mapping</span></code></a>(pattern_name, mapping_dict, graph)</p></td>
 <td><p>The pattern mapping function.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.list2str" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.list2str"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list2str</span></code></a>(src_perm)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.list2str" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.list2str"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list2str</span></code></a>(src_perm)</p></td>
 <td><p>Convert the shape list to str for emitting yaml.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.str2list" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.str2list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">str2list</span></code></a>(src_str)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.str2list" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.str2list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">str2list</span></code></a>(src_str)</p></td>
 <td><p>Convert the str to shape list.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping_conf_validation" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping_conf_validation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pattern_mapping_conf_validation</span></code></a>(conf_dict)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping_conf_validation" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.pattern_mapping_conf_validation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pattern_mapping_conf_validation</span></code></a>(conf_dict)</p></td>
 <td><p>The validation of the pattern mapping config.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_model_fwk_name</span></code></a>(model)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_model_fwk_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_model_fwk_name</span></code></a>(model)</p></td>
 <td><p>Detect the input model belongs to which framework.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_var" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_environ_var</span></code></a>(key[, val])</p></td>
+<td><p>Set an env var.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_vars" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_environ_vars</span></code></a>(kvs)</p></td>
+<td><p>Set a list of env vars.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_var" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">del_environ_var</span></code></a>(key)</p></td>
+<td><p>Delete an env var.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_vars" title="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">del_environ_vars</span></code></a>(keys)</p></td>
+<td><p>Delete a list of env vars.</p></td>
 </tr>
 </tbody>
 </table>
@@ -224,6 +251,36 @@ it can not also be used for node name in the new Graph class</p>
 <dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_quant_info">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_quant_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_quant_info" title="Permalink to this definition"></a></dt>
 <dd><p>Get the quant info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.environ_info_init">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">environ_info_init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.environ_info_init" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_environ_info">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">insert_environ_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.insert_environ_info" title="Permalink to this definition"></a></dt>
+<dd><p>Modify the environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_item">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">remove_environ_info_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_item" title="Permalink to this definition"></a></dt>
+<dd><p>Remove an item in environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_items">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">remove_environ_info_items</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.remove_environ_info_items" title="Permalink to this definition"></a></dt>
+<dd><p>Remove a list of items in environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_environ_info">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_environ_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.get_environ_info" title="Permalink to this definition"></a></dt>
+<dd><p>Get the environ info.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -538,6 +595,30 @@ fusion is too complicated, you had better decompose it.</p>
 if there’s no available fwk info, then return ‘NA’.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_var">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">set_environ_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_var" title="Permalink to this definition"></a></dt>
+<dd><p>Set an env var.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_vars">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">set_environ_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kvs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.set_environ_vars" title="Permalink to this definition"></a></dt>
+<dd><p>Set a list of env vars.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_var">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">del_environ_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_var" title="Permalink to this definition"></a></dt>
+<dd><p>Delete an env var.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_vars">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">del_environ_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.compile.graph_utils.del_environ_vars" title="Permalink to this definition"></a></dt>
+<dd><p>Delete a list of env vars.</p>
 </dd></dl>
 
 </section>

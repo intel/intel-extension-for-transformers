@@ -87,6 +87,7 @@ Submodules
    rms_norm/index.rst
    rotary_pos_emb/index.rst
    slicemask/index.rst
+   stableDiffusion_ExplicitNHWCTranspose/index.rst
    stableDiffusion_MHAReshape/index.rst
    stableDiffusion_ReshapeFusion/index.rst
    stableDiffusion_bf16Convert/index.rst
