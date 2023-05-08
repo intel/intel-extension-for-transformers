@@ -81,6 +81,10 @@ unet_pattern_config = {
         'TorchInsertBF16Node': False,
         'StableDiffusion_MHAReshape': True,
         'StableDiffusion_MHA': True,
+        'ExplicitNHWCTransposeForConv': True,
+
+        # Channel_last
+        'ConvReshape': False
     }
 }
 

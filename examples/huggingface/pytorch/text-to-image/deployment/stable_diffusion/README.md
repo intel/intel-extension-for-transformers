@@ -136,13 +136,13 @@ Try using one sentence to create a picture!
 ```python
 # Running FP32 models or BF16 models, just import differnt IRs.
 # FP32 models
-GLOG_minloglevel=2 python run_executor.py --ir_path=./fp32_ir
+python run_executor.py --ir_path=./fp32_ir
 ```
 ![picture1](./images/astronaut_rides_horse.png)
 
 ```python
 # BF16 models
-GLOG_minloglevel=2 python run_executor.py --ir_path=./bf16_ir
+python run_executor.py --ir_path=./bf16_ir
 ```
 ![picture2](./images/astronaut_rides_horse_from_engine_1.png)
 

@@ -24,12 +24,72 @@ import sys
 import torch
 import onnxruntime as ort
 
+text_encoder_pattern_config = {
+    'pattern_switch': {
+        # General Pattern
+        'PaddingSequence': False,
+        'AttentionReshape': False,
+        'QKVReshape': False,
+        'ReshapeFusion': False,
+        'InsertBF16Node': False,
+        'OperatorAdaptor': False,
+
+        # transpose_int8
+        'QKVMerge': False,
+
+        # 'TextEncoder
+        'TextEncoder_WordEmbedding': True,
+        'TextEncoder_QReshape': True,
+        'TextEncoder_KVReshape': True,
+        'TextEncoder_AttentionMaskAddReshape': True,
+        'TextEncoder_SoftmaxReshape': True,
+        'TextEncoder_MulReshape': True,
+        'TextEncoder_AttentionReshape': True,
+        'TextEncoder_CasualAttentionMask': True,
+
+        # for unet and vae decoder
+        'GroupNorm': False,
+
+        # vae deocder & Transformer2Dmodel
+        'AttentionBlock_Resize2Gather': False,
+        'AttentionBlock_QKVPreReshape': False,
+        'AttentionBlock_AttentionMaskAddReshape': False,
+        'AttentionBlock_ConstantOfShapeWithMul': False,
+        'Transformer2Dmodel_GetSampleBatch': False,
+        'Transformer2Dmodel_SampleSlice': False,
+        'Transformer2Dmodel_EncoderHiddenStatesReshape': False,
+        'Transformer2Dmodel_ConstantOfShapeWithMul': False,
+        'Transformer2Dmodel_QKVPreReshape': False,
+        'Transformer2Dmodel_QKVReshape': False,
+        'AttentionBlock_QKVReshape': False,
+        'Transformer2Dmodel_QKVReshapeTo4D': False,
+        'Transformer2Dmodel_AttentionMaskAddReshape': False,
+        'Transformer2Dmodel_FFNInputSlice': False,
+        'Transformer2Dmodel_FFNInputSlice_1': False,
+        'Transformer2DModel_UpBlockResize': False,
+
+        # for all stable diffusion models
+        'StableDiffusion_bf16Convert': True,
+        'StableDiffusion_ReshapeFusion': True,
+
+        # MHA
+        'TorchInsertBF16Node': False,
+        'StableDiffusion_MHAReshape': True,
+        'StableDiffusion_MHA': False,
+        'ExplicitNHWCTransposeForConv': True,
+
+        # Channel_last
+        'ConvReshape': False
+    }
+}
+
 
 def is_win():
     return sys.platform.startswith('win')
 
 
 class TestTextEncoder(unittest.TestCase):
+
     @classmethod
     def setUpClass(self):
         pass
@@ -44,10 +104,9 @@ class TestTextEncoder(unittest.TestCase):
         if is_win():
             root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
         model_dir = root_dir + 'model.onnx'
-        pattern_config = root_dir + 'pattern_config'
         self.assertTrue(os.path.exists(model_dir), 'model is not found, please set your own model path!')
 
-        graph = compile(model_dir, config=pattern_config)
+        graph = compile(model_dir, config=text_encoder_pattern_config)
         input_0_path = root_dir + 'input_ids.pt'
         inputs_0 = torch.load(input_0_path)
 

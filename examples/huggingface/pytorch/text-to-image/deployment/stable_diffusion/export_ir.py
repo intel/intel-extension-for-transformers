@@ -71,7 +71,10 @@ text_encoder_pattern_config = {
         'TorchInsertBF16Node': False,
         'StableDiffusion_MHAReshape': True,
         'StableDiffusion_MHA': False,
+        'ExplicitNHWCTransposeForConv': True,
 
+        # Channel_last
+        'ConvReshape': False
     }
 }
 
@@ -128,6 +131,10 @@ unet_pattern_config = {
         'TorchInsertBF16Node': False,
         'StableDiffusion_MHAReshape': True,
         'StableDiffusion_MHA': False,
+        'ExplicitNHWCTransposeForConv': True,
+
+        # Channel_last
+        'ConvReshape': False
     }
 }
 
@@ -184,6 +191,10 @@ vae_decoder_pattern_config = {
         'TorchInsertBF16Node': False,
         'StableDiffusion_MHAReshape': True,
         'StableDiffusion_MHA': False,
+        'ExplicitNHWCTransposeForConv': True,
+
+        # Channel_last
+        'ConvReshape': False
     }
 }
 

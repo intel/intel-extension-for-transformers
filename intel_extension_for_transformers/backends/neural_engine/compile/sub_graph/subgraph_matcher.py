@@ -81,6 +81,7 @@ pattern_default_setting = {
     'ReshapeFusion': True,
     'InsertBF16Node': True,
     'OperatorAdaptor': True,
+    'ConvReshape': True,
 
     'GroupNorm': True,
 
@@ -123,6 +124,7 @@ pattern_default_setting = {
     # MHA for the stable diffusion
     'StableDiffusion_MHAReshape': False,
     'StableDiffusion_MHA': False,
+    'ExplicitNHWCTransposeForConv': False,
     
     #GPT-J
     'TorchEmbedding': True,

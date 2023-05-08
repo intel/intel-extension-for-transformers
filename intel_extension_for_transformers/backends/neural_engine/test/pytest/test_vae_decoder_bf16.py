@@ -60,6 +60,7 @@ vae_decoder_pattern_config = {
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
         'AttentionBlock_ConstantOfShapeWithMul': True,
+
         'Transformer2Dmodel_GetSampleBatch': True,
         'Transformer2Dmodel_SampleSlice': True,
         'Transformer2Dmodel_EncoderHiddenStatesReshape': True,
@@ -80,10 +81,13 @@ vae_decoder_pattern_config = {
         # MHA
         'TorchInsertBF16Node': False,
         'StableDiffusion_MHAReshape': True,
-        'StableDiffusion_MHA': False,
+        'StableDiffusion_MHA': True,
+        'ExplicitNHWCTransposeForConv': True,
+
+        # Channel_last
+        'ConvReshape': False
     }
 }
-
 
 class TestVaeDecoderBF16(unittest.TestCase):
 

@@ -81,7 +81,11 @@ text_encoder_pattern_config = {
         # MHA
         'TorchInsertBF16Node': False,
         'StableDiffusion_MHAReshape': True,
-        'StableDiffusion_MHA': False,
+        'StableDiffusion_MHA': True,
+        'ExplicitNHWCTransposeForConv': True,
+
+        # Channel_last
+        'ConvReshape': False
     }
 }
 
