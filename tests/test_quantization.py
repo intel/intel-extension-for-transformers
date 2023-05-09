@@ -19,6 +19,7 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
     AutoModelForSeq2SeqLM,
+    Seq2SeqTrainingArguments,
 )
 
 os.environ["WANDB_DISABLED"] = "true"
@@ -245,8 +246,10 @@ class TestQuantization(unittest.TestCase):
     def test_seq2seq_models(self):
         model = AutoModelForSeq2SeqLM.from_pretrained('t5-small')
         tokenizer = AutoTokenizer.from_pretrained('t5-small')
+        args=Seq2SeqTrainingArguments(output_dir='./tmp_trainer')
         trainer = NLPSeq2SeqTrainer(
                 model=model,
+                args=args,
                 tokenizer=tokenizer,
                 train_dataset=self.dummy_dataset,
                 eval_dataset=self.dummy_dataset,
@@ -266,8 +269,10 @@ class TestQuantization(unittest.TestCase):
         tokenizer = AutoTokenizer.from_pretrained(
             'google/bert_uncased_L-2_H-128_A-2'
         )
+        args=Seq2SeqTrainingArguments(output_dir='./tmp_trainer')
         trainer = NLPSeq2SeqTrainer(
                 model=model,
+                args=args,
                 tokenizer=tokenizer,
                 train_dataset=self.dummy_dataset,
                 eval_dataset=self.dummy_dataset,

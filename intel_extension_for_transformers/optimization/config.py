@@ -158,6 +158,7 @@ class QuantizationConfig(object):
     Args:
         framework: Which framework you used
         approach: Which quantization approach to use
+        strategy: Which quantization tuning strategy to use
         timeout: Tuning timeout(seconds), 0 means early stop. Combined with max_trials field to decide when to exit
         max_trials: Max tune times
         metrics: Used to evaluate accuracy of tuning model, no need for NoTrainerOptimize
@@ -184,6 +185,7 @@ class QuantizationConfig(object):
         self,
         framework: str = "pytorch",
         approach: str = "PostTrainingStatic",
+        strategy: str = "basic",
         timeout: int = 0,
         max_trials: int = 100,
         metrics: Union[Metric, List] = None,
@@ -202,6 +204,8 @@ class QuantizationConfig(object):
         self.framework = framework
         if approach is not None:
             self.approach = approach
+        if strategy is not None:
+            self.strategy = strategy
         if timeout is not None:
             self.timeout = timeout
         if max_trials is not None:
@@ -346,7 +350,7 @@ class QuantizationConfig(object):
             "strategy: {} is not support!".format(strategy)
         self.inc_config.usr_cfg.tuning.strategy.name = strategy
         if strategy == "mse_v2":
-                 self.inc_config.usr_cfg.tuning.strategy_kwargs = {"confidence_batches": 1}
+            self.inc_config.usr_cfg.tuning.strategy_kwargs = {"confidence_batches": 1}
 
     @property
     def timeout(self):
@@ -368,6 +372,16 @@ class QuantizationConfig(object):
     def op_wise(self, op_wise):
         """Set the op_wise dict."""
         self.inc_config.usr_cfg.quantization.op_wise = op_wise
+
+    @property
+    def optype_wise(self):
+        """Get the optype_wise dict."""
+        return self.inc_config.usr_cfg.quantization.optype_wise
+
+    @optype_wise.setter
+    def optype_wise(self, optype_wise):
+        """Set the optype_wise dict."""
+        self.inc_config.usr_cfg.quantization.optype_wise = optype_wise
 
     @property
     def max_trials(self):
