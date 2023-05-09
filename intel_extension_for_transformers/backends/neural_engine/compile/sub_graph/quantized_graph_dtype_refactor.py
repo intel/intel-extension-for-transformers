@@ -27,7 +27,6 @@ import copy
 @pattern_registry(pattern_type='QuantizedGraphDtypeRefactor')
 class QuantizedGraphDtypeCheck(Pattern):
     """The QuantizedGraphDtypeRefactor pattern.
-
     Fuse the original sub-graph into the custom acceleration 'QuantizedGraphDtypeRefactor' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
@@ -105,7 +104,8 @@ class QuantizedGraphDtypeCheck(Pattern):
                             remove_node_names.append(node.name)
                         else:
                             if len(dst_ops) >= 2:
-                                dst_ops_type = [o.op_type for o in dst_ops]
+                                dst_ops_type = [EXECUTOR_TYPE.get(o.op_type, o.op_type)
+                                                for o in dst_ops]
                                 valid = True
                                 for ot in dst_ops_type:
                                     if ot in checker[graph_dtype] or ot in ['Quantize', 'Output']:
@@ -157,7 +157,7 @@ class QuantizedGraphDtypeCheck(Pattern):
         bf16_op = [
             'InnerProduct', 'Slice', 'Matmul', 'Reshape', 'BinaryOp', 'BinaryAdd', 'Reorder',
             'Concat', 'Softmax', 'LayerNorm', 'LogSoftmax', 'Convolution', 'Gather', 'GroupNorm',
-            'Sigmoid', 'Gelu'
+            'Sigmoid', 'Gelu', 'MultiHeadAttention'
         ]
         s8_op = ['InnerProduct', 'Reshape', 'Shape', 'BinaryOp']
         checker = {'bf16': bf16_op, 's8': s8_op}

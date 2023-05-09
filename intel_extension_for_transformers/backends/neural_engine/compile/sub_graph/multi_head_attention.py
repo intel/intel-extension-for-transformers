@@ -27,8 +27,9 @@ class MultiHeadAttention(Pattern):
         if model.framework_modeling_config['framework'] != 'torch':
             return model
         quant_info = util.get_quant_info()
-        if not quant_info:
+        if not (quant_info or util.get_autocast_info()['cast_type'] == "bf16"):
             return model
+
         pattern_mapping_config = {
             'MultiHeadAttention': [
                 # for multi head attention
@@ -107,6 +108,34 @@ class MultiHeadAttention(Pattern):
                     },
                     'returns': [0, 1, 2, 3, 4, 5]
                 },
+                
+                # GPT-J bf16 torch model
+                {
+                    'patterns': {
+                        'in': [[(0, 'MatmulwithTranspose'), (1, 'BinaryAdd'),
+                                (2, 'Div'), (3, 'Add'),
+                                (4, 'Softmax'), (5, 'Quantize'), (6, 'MatmulwithTranspose')]],
+                        'out': [[(0, 'MultiHeadAttention')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 6,
+                    },
+                    'input_tensors': {
+                        0: [[
+                            {0: [0]},  # Q
+                            {0: [1]},  # K
+                            {6: [1]},  # V
+                            {3: [1]},  # mask_0
+                            {1: [1]},  # mask_1
+                            ],
+                            [[0, 1, 2, 3, 4], 5]]
+                    },
+                    'output_tensors': {
+                        0 : [[{6: [0]}], [[0], 1]]
+                    },
+                    'returns': [0, 1, 2, 3, 4, 6]
+                },
             ]
         }
 
@@ -153,6 +182,8 @@ class MultiHeadAttention(Pattern):
                             new_node.input_tensors[4], new_node.input_tensors[3]
 
         for i in range(len(pattern_mapping_config['MultiHeadAttention'])):
+            if util.get_autocast_info()['cast_type'] == "bf16" and i == 1:
+                continue
             pattern_dict = pattern_mapping_config['MultiHeadAttention'][i]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("MultiHeadAttention",
                                                                         pattern_dict, model)

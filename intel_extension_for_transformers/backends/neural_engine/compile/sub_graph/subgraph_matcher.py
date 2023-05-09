@@ -142,7 +142,7 @@ pattern_default_setting = {
     
     
     'TorchInsertBF16Node': True,
-    'MultiHeadAttention': False,
+    'MultiHeadAttention': True,
     'Int8BF16MixedPrecisionChecker': False,
     'QuantizedGraphDtypeRefactor': True,
     
