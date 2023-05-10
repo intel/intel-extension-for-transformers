@@ -166,6 +166,7 @@ class HuggingFaceAutoLM(BaseLM):
         self._config = self.AUTO_CONFIG_CLASS.from_pretrained(
             pretrained,
             revision=revision + ("/" + subfolder if subfolder is not None else ""),
+            trust_remote_code=True
         )
 
         self._add_special_tokens = add_special_tokens
@@ -229,6 +230,7 @@ class HuggingFaceAutoLM(BaseLM):
             max_memory=max_memory,
             offload_folder=offload_folder,
             torch_dtype=torch_dtype,
+            trust_remote_code=True
         )
         return model
 
