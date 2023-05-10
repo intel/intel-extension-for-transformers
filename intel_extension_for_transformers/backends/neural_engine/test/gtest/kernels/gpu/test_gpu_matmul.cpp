@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #include "../unit_test_utils.hpp"
+#include "singleton.hpp"
 #include "gtest/gtest.h"
 #include "kernel_desc.hpp"
 
@@ -65,8 +66,10 @@ bool check_result(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   try {
-    const engine_t* ocl_gpu_engine = engine_factory::instance().create(engine_kind::gpu, runtime_kind::opencl);
-    const engine_t* cpu_engine = engine_factory::instance().create(engine_kind::cpu, runtime_kind::undef);
+    const engine_t* ocl_gpu_engine =
+        Singleton<engine_factory>::GetInstance()->create(engine_kind::gpu, runtime_kind::opencl);
+    const engine_t* cpu_engine =
+        Singleton<engine_factory>::GetInstance()->create(engine_kind::cpu, runtime_kind::undef);
     std::shared_ptr<kernel_t> matmul_kernel;
     stream_t* stream = nullptr;
     ocl_gpu_engine->create_stream(reinterpret_cast<stream_t**>(&stream));
