@@ -21,6 +21,7 @@ add_library(host_operators STATIC
     ${HOST_SRC_DIR}/src/operators/strided_slice.cpp
     ${HOST_SRC_DIR}/src/operators/matmul.cpp
     ${HOST_SRC_DIR}/src/operators/inner_product.cpp
+    ${HOST_SRC_DIR}/src/operators/quantize.cpp
     ${HOST_SRC_DIR}/src/operators/reorder.cpp
     ${HOST_SRC_DIR}/src/operators/reduce_mean.cpp
     ${HOST_SRC_DIR}/src/operators/gelu.cpp

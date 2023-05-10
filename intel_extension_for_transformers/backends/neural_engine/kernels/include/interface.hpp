@@ -32,6 +32,7 @@
 #include "kernels/sparse_data.hpp"
 
 namespace jd {
+
 /**
  * @brief Proxy pattern. The proxy could interface to anything.
  *  Similar to onednn's "struct handle". oneapi/dnnl/dnnl.hpp:136.

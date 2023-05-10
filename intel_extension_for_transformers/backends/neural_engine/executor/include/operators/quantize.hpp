@@ -34,6 +34,8 @@ using dnnl::prop_kind;
  */
 
 class QuantizeOperator : public Operator {
+  using io = jd::exposed_enum::dynamic_quant::io;
+
  public:
   explicit QuantizeOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~QuantizeOperator();
@@ -47,11 +49,18 @@ class QuantizeOperator : public Operator {
   dnnl::stream eng_stream_ = dnnl::stream(eng_);
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void RuntimeMinmax();
+  jd::tensor_desc mat_desc_;
+  jd::tensor_desc scale_desc_;
+  jd::tensor_desc dst_mat_desc_;
 
  protected:
   string output_dtype_ = "fp32";
   vector<float> scales_;
-
+#ifdef WITH_SPARSELIB
+  jd::dynamic_quant dynamic_quant_;
+#endif
+  void Reshape_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
   Tensor* src_ = nullptr;
   Tensor* src_min_ = nullptr;
   Tensor* src_max_ = nullptr;
@@ -59,7 +68,7 @@ class QuantizeOperator : public Operator {
   Tensor* dst_min_ = nullptr;
   Tensor* dst_max_ = nullptr;
   bool is_dynamic_ = false;
-  int channel_ = -1;  // -1 represent per_tensor
+  bool per_batch_ = false;  // false represent per_tensor
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_QUANTIZE_HPP_
