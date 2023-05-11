@@ -6,7 +6,7 @@
     "benchmark": {
       "cmd": "bash run_bert_mini.sh",
       "params": {
-         "model": "/tf_dataset2/models/nlp_toolkit/bert_base_mrpc",
+         "model": "/tf_dataset2/models/nlp_toolkit/bert_mini_mrpc",
          "dataset": "mrpc",
          "precision": "int8/fp32",
          "cache_dir": "/home/tensorflow/.cache/nlp_toolkit/bert_mini_mrpc",
