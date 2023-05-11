@@ -2,6 +2,9 @@ import torch
 import time
 import argparse
 
+# import logging
+# logging.disable(logging.WARNING)
+
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 # args
@@ -54,7 +57,7 @@ text_generator = pipeline(
 )
 
 # input prompt
-prompt = "Develop a C++ program that reads a text file line by line and counts the number of occurrences of a specific word in the file"
+prompt = "DeepSpeed is a machine learning framework for deep neural networks and deep reinforcement learning. It is written in C++ and is available for Linux, Mac OS X,"
 prompt = [prompt] * args.batch_size
 input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
 print("---- Prompt size:", input_size)
