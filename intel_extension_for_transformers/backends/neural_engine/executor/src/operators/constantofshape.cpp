@@ -73,7 +73,7 @@ void ConstantOfShapeOperator::Forward(const vector<Tensor*>& input,
   if (output_dtype_ == "fp32") {
     Eigen::Map<Eigen::ArrayXf> output_array(reinterpret_cast<float*>(dst_data),
                                             array_size_);
-    if (mode_ == "llama" && dst_shape_[3] > 33) {
+    if (mode_ == "llama" && (dst_shape_[3] - dst_shape_[2] != 1)) {
         output_array = Eigen::ArrayXf::Constant(
             array_size_, static_cast<float>(0));
     } else {

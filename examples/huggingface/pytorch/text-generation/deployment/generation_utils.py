@@ -51,7 +51,6 @@ from transformers.models.auto import (
     MODEL_FOR_SPEECH_SEQ_2_SEQ_MAPPING,
     MODEL_FOR_VISION_2_SEQ_MAPPING,
 )
-from transformers.pytorch_utils import torch_int_div
 from transformers.utils import ModelOutput, logging
 from transformers.generation.beam_constraints import DisjunctiveConstraint, PhrasalConstraint
 from transformers.generation.beam_search import BeamScorer, BeamSearchScorer, ConstrainedBeamSearchScorer
@@ -96,6 +95,11 @@ import pickle
 
 logger = logging.get_logger(__name__)
 
+def torch_int_div(tensor1, tensor2):
+    """
+    A function that performs integer division across different versions of PyTorch.
+    """
+    return torch.div(tensor1, tensor2, rounding_mode="floor")
 
 @dataclass
 class GreedySearchDecoderOnlyOutput(ModelOutput):

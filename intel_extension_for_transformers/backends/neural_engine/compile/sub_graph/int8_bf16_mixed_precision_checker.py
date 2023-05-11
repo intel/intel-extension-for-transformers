@@ -128,10 +128,7 @@ class Int8BF16MixedPrecisionChecker(Pattern):
 
         def _revert_logits_output_dtype(model, output_dtype):
             for t in model.nodes[-1].input_tensors:
-                try:
-                    pre_node = model.get_node_by_name(t.source_op[0])
-                except:
-                    import pdb; pdb.set_trace()
+                pre_node = model.get_node_by_name(t.source_op[0])
                 if pre_node and EXECUTOR_TYPE.get(pre_node.op_type, pre_node.op_type) in \
                    ['InnerProduct', 'Softmax', 'LogSoftmax']:
                     if pre_node.attr.get('output_dtype', "fp32") == output_dtype:

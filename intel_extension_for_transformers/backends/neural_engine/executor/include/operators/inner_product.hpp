@@ -172,6 +172,7 @@ class InnerProductOperator : public Operator {
   // M dimension num of per BLOCK is 4 for sparse kernel algorithm
   int64_t M_NBLK_ = 4;
   string append_op_;
+  int64_t seq_len_ = 0;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_INNER_PRODUCT_HPP_

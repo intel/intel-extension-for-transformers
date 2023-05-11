@@ -107,6 +107,36 @@ class LlamaEmbeddings(Pattern):
                     },
                     'returns': [1]
                 },
+                
+                {
+                    'patterns': {
+                        'in': [[(0, 'Arange'), (1, 'Less'), (3, 'ConstantOfShape'),
+                                (5,'Concat'), (6,'Unsqueeze'), (7,'Unsqueeze'), (8,'Slice'), (9, 'Slice'), 
+                                (11, 'Expand'), (13, 'Add')],
+                               [(), (2, 'Full'), (3, 'ConstantOfShape')],
+                               [(), (4, 'Zeros'), (5, 'Concat')],
+                               [(), (10, 'Add'), (11, 'Expand')],
+                               [(), (12, 'BinaryAdd'), (13, 'Add')]
+                              ],
+                        'out': [[(0, 'BinaryAdd')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 13
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            12: [0],
+                        }], [[0], 1]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            13: [0]
+                        }], [[0], 1]],
+                    },
+                    'returns': [0, 12]
+                },
+                
             ]
         }
 
@@ -141,5 +171,17 @@ class LlamaEmbeddings(Pattern):
                                                     'value': -10000})
                 BinaryAdd = model.get_node_by_name(new_node_names[i][2])
                 BinaryAdd.input_tensors.append(padding_node.output_tensors[0])
-        
+
+        pattern_dict = pattern_mapping_config['LlamaEmbeddings'][2]
+        model, new_node_names, ret_old_nodes = \
+            util.pattern_mapping('LlamaEmbeddings', pattern_dict, model)
+        if len(new_node_names) != 0:
+            for i in range(len(new_node_names)):
+                add_node = model.get_node_by_name(new_node_names[i][0])
+                add_node.input_tensors.append(ret_old_nodes[i][1].input_tensors[1])
+                remove_add = model.get_node_by_name(
+                    ret_old_nodes[i][0].output_tensors[0].dest_op[0])
+                model.remove_nodes(remove_add.output_tensors[0].dest_op)
+                model.remove_nodes([ret_old_nodes[i][0].output_tensors[0].dest_op[0]])
+        model._framework_modeling_config['architecture'] = 'decoder_only'
         return model

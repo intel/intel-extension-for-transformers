@@ -194,7 +194,9 @@ class QuantizedGraphDtypeCheck(Pattern):
                 if t.location and len(t.location) == 2:
                     break
                 else:
-                    if match_ret and t.dtype == "fp32":
+                    if (match_ret or \
+                        model._framework_modeling_config.get('architecture', 'None') == \
+                        'decoder_only') and t.dtype == "fp32":
                         t.dtype = "bf16"
 
         return model

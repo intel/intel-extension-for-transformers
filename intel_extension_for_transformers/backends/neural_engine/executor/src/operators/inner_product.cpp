@@ -1028,6 +1028,16 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
 
   // Part1: Derive operator's user proper shape and strides
   // 1.1 Transpose tensor shape and get it
+  // for decoder-only transformers dnnl amx bf16 brgemm weight reorder process
+#if __AMX_BF16__
+  if (src1_->dtype() == "bf16" && model_ != nullptr && model_->input_shape().size() > 1) {
+    if ((seq_len_ != 0  && seq_len_ > 128 && model_->input_shape()[1] == 1) ||
+        (seq_len_ != 0  && seq_len_ == 1 && model_->input_shape()[1] > 128)) {
+      weight_cached_ = false;
+    }
+    seq_len_ = model_->input_shape()[1];
+  }
+#endif
   vector<int64_t> src0_shape_origin = src0_->shape();
   vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
   vector<int64_t> src0_stride = GetStrides(src0_shape_origin, src0_perm_);

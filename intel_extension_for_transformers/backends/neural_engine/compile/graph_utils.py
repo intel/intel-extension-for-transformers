@@ -562,7 +562,7 @@ def search_pattern(pattern_list, graph):
         return m_main_chain
 
 
-def construct_node(node_name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict()):
+def construct_node(node_name, op_type, input_tensors=None, output_tensors=None, attr=None):
     """Construct node with engine op_type.
 
     Args:
@@ -580,6 +580,12 @@ def construct_node(node_name, op_type, input_tensors=[], output_tensors=[], attr
         new_node = OPERATORS["OpAny"]()
     else:
         new_node = OPERATORS[op_type]()
+    if input_tensors == None:
+        input_tensors = []
+    if output_tensors == None:
+        output_tensors = []
+    if attr == None:
+        attr = OrderedDict()
     new_node.construct(node_name,
                        op_type,
                        input_tensors=input_tensors,

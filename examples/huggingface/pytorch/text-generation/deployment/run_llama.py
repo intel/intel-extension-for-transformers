@@ -30,7 +30,7 @@ generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 generate_kwargs["past_kv_nums"] = 32
 generate_kwargs["llama"] = True 
 # load model
-model_id = "decapoda-research/llama-13b-hf"
+model_id = "decapoda-research/llama-7b-hf"
 config = AutoConfig.from_pretrained(model_id)
 from transformers import LlamaForCausalLM, LlamaTokenizer
 tokenizer = LlamaTokenizer.from_pretrained(model_id)
