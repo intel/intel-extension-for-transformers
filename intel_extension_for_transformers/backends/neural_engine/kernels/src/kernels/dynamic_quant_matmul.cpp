@@ -110,7 +110,7 @@ bool dynamic_quant_matmul_kd_t::split_execute_init() {
 }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized" 
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 bool dynamic_quant_matmul_kd_t::init() {
   if (!isa_available(amx_int8)) return false;
   auto ts_descs = op_desc_.tensor_descs();

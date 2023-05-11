@@ -29,7 +29,6 @@
 
 namespace jd {
 class groupnorm_k_t;
-
 class groupnorm_kd_t : public kernel_desc_t {
  public:
   explicit groupnorm_kd_t(const jd::operator_desc& op_desc)
@@ -54,10 +53,12 @@ class groupnorm_kd_t : public kernel_desc_t {
 class groupnorm_k_t : public kernel_t {
  public:
   using kd_t = groupnorm_kd_t;
+  enum parallel_mode { parallelG, parallelC };
   explicit groupnorm_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
   virtual ~groupnorm_k_t() {
     safe_delete(jit_sum_ker_);
     safe_delete(jit_norm_ker_);
+    safe_delete(jit_groupwise_ker_);
   }
   // Delete move constructor and move operator
   groupnorm_k_t(groupnorm_k_t&& other) = delete;
@@ -70,15 +71,19 @@ class groupnorm_k_t : public kernel_t {
   bool init() override;
 
   bool execute(const std::vector<const void*>& rt_data) const override;
+  void parallelC_execute(const std::vector<const void*>& rt_data) const;
+  void parallelG_execute(const std::vector<const void*>& rt_data) const;
 
  public:
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
   size_t get_workspace_size() const override;
 
  private:
-  jit_channelwise_sum_t* jit_sum_ker_;
-  jit_channelwise_norm_t* jit_norm_ker_;
+  jit_channelwise_sum_t* jit_sum_ker_ = nullptr;
+  jit_channelwise_norm_t* jit_norm_ker_ = nullptr;
+  jit_groupnorm_t* jit_groupwise_ker_ = nullptr;
   int64_t HW_;
+  parallel_mode mode_;
   int dt_bytewidth_;
   int batchs_;
   int channels_;

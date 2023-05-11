@@ -41,8 +41,8 @@ bool check_result(const test_params_t& t) {
   const auto& op_desc = p.op_desc;
   auto dt = op_desc.tensor_descs()[0].dtype();
   auto op_attr = op_desc.attrs();
-  std::vector<const void*> data1(idx::SIZE, nullptr);
-  std::vector<const void*> data2(idx::SIZE, nullptr);
+  std::vector<const void*> data1(idx::SIZE);
+  std::vector<const void*> data2(idx::SIZE);
   try {
     groupnorm_desc groupnorm_desc(op_desc);
     groupnorm groupnorm_ker(groupnorm_desc);
@@ -112,9 +112,10 @@ TEST_P(GroupNormKernelTest, ) {
 }
 
 std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
-                                         std::unordered_map<std::string, std::string> op_attrs) {
+                                         std::unordered_map<std::string, std::string> op_attrs,
+                                         const std::vector<postop_attr>& postop_attr = {}) {
   operator_desc groupnorm_desc(kernel_kind::groupnorm, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                               op_attrs);
+                               op_attrs, postop_attr);
 
   auto gen_data = [](auto type, int size, float bound1, float bound2, bool clear = false) {
     auto ptr = std::shared_ptr<std::vector<decltype(type)>>(new std::vector<decltype(type)>(size, 0));
@@ -142,6 +143,7 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 static auto case_func = []() {
   std::vector<test_params_t> cases;
   std::vector<std::vector<int64_t>> problem_size = {{1, 8, 16, 16}, {1, 8, 64, 64}, {2, 8, 16, 16}, {2, 8, 64, 64}};
+  postop_attr swish_attr = {data_type::bf16, postop_type::eltwise, postop_alg::swish, 2.f};
   for (auto&& shape : problem_size) {
     tensor_desc src_desc = {shape, jd::data_type::bf16, jd::format_type::abcd};
     tensor_desc dst_desc = {shape, jd::data_type::bf16, jd::format_type::abcd};
@@ -149,7 +151,7 @@ static auto case_func = []() {
     tensor_desc beta_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
     tensor_desc workspace_desc = {{}, jd::data_type::fp32, jd::format_type::a};
     cases.push_back({gen_case({src_desc, dst_desc, gamma_desc, beta_desc, workspace_desc},
-                              {{"eps", "0"}, {"groups", "4"}}),
+                              {{"eps", "0.01"}, {"groups", "4"}}, {swish_attr}),
                      false});
   }
 

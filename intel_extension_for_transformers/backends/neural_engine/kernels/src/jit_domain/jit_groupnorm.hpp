@@ -17,9 +17,12 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include <functional>
 #include "jit_generator.hpp"
 #include "utils.hpp"
+#include "jit_eltwise_injector.hpp"
+#include "regs_pool.hpp"
 
 namespace jd {
 
@@ -28,45 +31,63 @@ struct groupnorm_param_t {
   int64_t HW;
   int channels;
   int groups;
+  float eps;
+  std::vector<postop_attr> postop_attrs;
 };
 
-struct channelwise_sum_data_t {
-  void* src;
-  float* sum_x_ptr;
-  float* sum_powx_ptr;
-};
-
-struct channelwise_norm_data_t {
+struct groupnorm_data_t {
   void* src;
   void* dst;
-  float* group_sum_x_ptr;
-  float* group_sum_powx_ptr;
+  float* sum_x_ptr;
+  float* sum_powx_ptr;
   float* gamma;
   float* beta;
 };
 
-class jit_channelwise_sum_t : public jit_generator {
+class jit_groupnorm_t : public jit_generator {
  public:
-  explicit jit_channelwise_sum_t(const groupnorm_param_t& param) : jit_generator(), param_(param) {}
-  virtual ~jit_channelwise_sum_t() {}
+  explicit jit_groupnorm_t(const groupnorm_param_t& param) : jit_generator(), param_(param) {
+    // all of numeral-calc-postop data type will be fp32.
+    for (auto& i : param_.postop_attrs) {
+      if (i.op_alg != postop_alg::quantize && i.op_alg != postop_alg::dequantize &&
+          i.op_alg != postop_alg::eltop_int_lut) {
+        i.dt = data_type::fp32;
+      }
+    }
+    eltwise_injector_.eltwise_injector_init(this, param_.postop_attrs);
+  }
+  virtual ~jit_groupnorm_t() {}
 
- private:
+  void prepare_mask(Reg64 reg_tmp, Opmask sum_write_mask);
+  void sum_code_gen(regs_pool* rp, Reg64 reg_src, Reg64 reg_sum_x, Reg64 reg_sum_powx, Opmask sun_write_mask,
+                    const Xbyak::Label& data_label, size_t sum_dim);
+  void norm(regs_pool* rp, Reg64 reg_src, Reg64 reg_dst, Reg64 reg_sum_x, Reg64 reg_sum_powx, Reg64 reg_gamma,
+            Reg64 reg_beta, const Xbyak::Label& div_const_label, const Xbyak::Label& eps_label,
+            size_t channels_per_group = 1);
+
+ protected:
   groupnorm_param_t param_;
-  // Opmask sum_write_mask = Opmask(2);
   Opmask sum_write_mask;
+  jit_eltwise_injector eltwise_injector_;
   int unroll;
 
  private:
   void generate() override;
 };
 
-class jit_channelwise_norm_t : public jit_generator {
+class jit_channelwise_sum_t : public jit_groupnorm_t {
  public:
-  explicit jit_channelwise_norm_t(const groupnorm_param_t& param) : jit_generator(), param_(param) {}
-  virtual ~jit_channelwise_norm_t() {}
+  explicit jit_channelwise_sum_t(const groupnorm_param_t& param) : jit_groupnorm_t(param) {}
+  virtual ~jit_channelwise_sum_t() {}
 
  private:
-  groupnorm_param_t param_;
+  void generate() override;
+};
+
+class jit_channelwise_norm_t : public jit_groupnorm_t {
+ public:
+  explicit jit_channelwise_norm_t(const groupnorm_param_t& param) : jit_groupnorm_t(param) {}
+  virtual ~jit_channelwise_norm_t() {}
 
  private:
   void generate() override;

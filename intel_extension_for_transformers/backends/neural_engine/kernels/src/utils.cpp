@@ -13,10 +13,10 @@
 //  limitations under the License.
 
 #include "utils.hpp"
-#include "fp8.hpp"
 
 #include <glog/logging.h>
 #include <iostream>
+#include "fp8.hpp"
 
 namespace jd {
 int8_t fp32_to_int8(const float fp32, const float scale, const float zp) {

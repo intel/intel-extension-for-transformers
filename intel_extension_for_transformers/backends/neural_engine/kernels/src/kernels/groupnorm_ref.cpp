@@ -19,6 +19,7 @@ namespace jd {
 using idx = exposed_enum::groupnorm::io;
 bool groupnorm_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto shape = derived_kd()->shape();
+  auto postop_list = derived_kd()->get_operator_desc().apply_postops_list();
   auto src_desc = derived_kd()->get_operator_desc().tensor_descs()[0];
   auto op_attrs = derived_kd()->get_operator_desc().attrs();
   int64_t batch_size = shape[0];
@@ -85,7 +86,7 @@ bool groupnorm_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
         const float* ptr = src_group_data + q * map_size;
         float* dst_ptr = dst_group_data + q * map_size;
         for (int64_t i = 0; i < map_size; i++) {
-          dst_ptr[i] = ptr[i] * a + b;
+          dst_ptr[i] = apply_postop_list(ptr[i] * a + b, postop_list);
         }
       }
     }

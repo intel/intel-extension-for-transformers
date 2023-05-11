@@ -309,6 +309,7 @@ class jit_generator : public Xbyak::CodeGenerator {
   const uint8_t* jit_ker_ = nullptr;
   static constexpr uint64_t MAX_CODE_SIZE = 128 * 1024;
   static constexpr uint64_t BYTES_ZMM = 64;
+  static constexpr uint64_t BYTES_YMM = 32;
   static constexpr uint64_t TMM_MAX_ROW = 16;
   static constexpr uint64_t TMM_MAX_COL = 64;
   static constexpr uint64_t BYTES_TMM = TMM_MAX_ROW * TMM_MAX_COL;

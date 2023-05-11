@@ -63,6 +63,7 @@ supported_patterns = [
     #Vae decoder & Transformer2Dmodel
     'AttentionBlock_Resize2Gather',
     'GroupNorm',
+    'GroupNormSwish',
     'AttentionBlock_QKVPreReshape',
     'AttentionBlock_AttentionMaskAddReshape',
     'AttentionBlock_ConstantOfShapeWithMul',
