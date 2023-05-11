@@ -85,7 +85,7 @@ Functions
    :param evo_eval_metric: The metric name used in evolution search
 
 
-.. py:class:: QuantizationConfig(framework: str = 'pytorch', approach: str = 'PostTrainingStatic', timeout: int = 0, max_trials: int = 100, metrics: Union[intel_extension_for_transformers.optimization.utils.metrics.Metric, List] = None, objectives: Union[intel_extension_for_transformers.optimization.utils.objectives.Objective, List] = performance, config_file: str = None, sampling_size: int = 100, use_bf16: bool = False, recipes: dict = None)
+.. py:class:: QuantizationConfig(framework: str = 'pytorch', approach: str = 'PostTrainingStatic', strategy: str = 'basic', timeout: int = 0, max_trials: int = 100, metrics: Union[intel_extension_for_transformers.optimization.utils.metrics.Metric, List] = None, objectives: Union[intel_extension_for_transformers.optimization.utils.objectives.Objective, List] = performance, config_file: str = None, sampling_size: int = 100, use_bf16: bool = False, recipes: dict = None)
 
 
 
@@ -93,6 +93,7 @@ Functions
 
    :param framework: Which framework you used
    :param approach: Which quantization approach to use
+   :param strategy: Which quantization tuning strategy to use
    :param timeout: Tuning timeout(seconds), 0 means early stop. Combined with max_trials field to decide when to exit
    :param max_trials: Max tune times
    :param metrics: Used to evaluate accuracy of tuning model, no need for NoTrainerOptimize
