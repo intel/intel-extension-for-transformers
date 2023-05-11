@@ -40,5 +40,5 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so # Intel OpenMP
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 
 # support single socket and multiple sockets
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <physical cores list> python run_generation.py --device cpu --ipex --jit --dtype bfloat16 --max-new-tokens 32
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <physical cores list> python run_generation.py -m EleutherAI/gpt-j-6b --dtype bfloat16 --ipex
 ```

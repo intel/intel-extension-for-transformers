@@ -7,7 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 # args
 parser = argparse.ArgumentParser("Text generation script", add_help=False)
 parser.add_argument(
-    "-m", "--model-id", type=str, required=True, help="huggingface model id"
+    "-m", "--model-id", type=str, required=True, help="huggingface model"
 )
 parser.add_argument("--dtype", type=str, default="float32", help="bfloat16 or float32")
 parser.add_argument("--max-new-tokens", default=32, type=int, help="max new tokens")
