@@ -30,21 +30,21 @@ python setup.py install
 ```
 Install required dependencies for examples
 ```shell
-cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/stable_diffusion
+cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion
 pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
-## Environment Variables
+## Environment Variables (optional)
 ```
 export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
-```
-Using weight sharing can save memory and improve the performance when multi instances.
-```
+
+# Using weight sharing can save memory and improve the performance when multi instances.
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
+>**Note**: This step is optional.
 # End-to-End Workflow
 ## 1. Prepare Models
 

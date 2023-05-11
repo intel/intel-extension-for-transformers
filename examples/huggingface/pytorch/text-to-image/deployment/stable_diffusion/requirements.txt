@@ -1,5 +1,5 @@
 git+https://github.com/intel/neural-compressor.git
-transformers==4.23.1
+transformers==4.28.1
 accelerate
 datasets >= 1.8.0
 sentencepiece != 0.1.92
