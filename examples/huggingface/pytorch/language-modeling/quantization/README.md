@@ -21,7 +21,7 @@ cd intel_extension_for_transformers
 pip install -r requirements.txt
 git submodule update --init --recursive
 python setup.py install
-cd /home/changwa1/refine_lm/examples/huggingface/pytorch/language-modeling/quantization
+cd examples/huggingface/pytorch/language-modeling/quantization
 pip install -r requirements.txt
 
 
