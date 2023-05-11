@@ -1,4 +1,4 @@
-# GPT-J
+# Text Generation
 We provide the inference benchmarking script `run_generation.py` for large language models text generation.
 
 ## Setup
