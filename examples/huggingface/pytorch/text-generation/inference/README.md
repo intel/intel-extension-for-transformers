@@ -27,7 +27,7 @@ git submodule update --init --recursive
 python setup.py install
 cd ../
 # install others deps
-pip install transformers accelerate onnx cpuid
+pip install cpuid transformers accelerate onnx sentencepiece
 pip install --no-deps optimum
 pip install --no-deps git+https://github.com/huggingface/optimum-intel.git@main
 
