@@ -46,7 +46,8 @@ class QunatizeFusion(Pattern):
                                             source_op[0]).op_type == 'Quantize' else False
                 except:
                     is_from_quant = False
-            if pre_node.input_tensors[0].name in quant_info or (pre_node.op_type == "Softmax") \
+            if pre_node.input_tensors[0].name in quant_info and len(pre_node.input_tensors) >= 6 \
+               or (pre_node.op_type == "Softmax") \
                or (EXECUTOR_TYPE.get(pre_node.op_type, pre_node.op_type) in \
                    ["InnerProduct", "Matmul"] and (not quant_info or is_from_quant)): 
                 return (pre_node, True)
