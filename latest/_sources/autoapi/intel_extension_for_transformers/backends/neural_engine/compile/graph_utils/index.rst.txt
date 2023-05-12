@@ -260,7 +260,7 @@ Functions
       with right order.
 
 
-.. py:function:: construct_node(node_name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict())
+.. py:function:: construct_node(node_name, op_type, input_tensors=None, output_tensors=None, attr=None)
 
    Construct node with engine op_type.
 
