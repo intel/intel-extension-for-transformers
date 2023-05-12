@@ -42,7 +42,7 @@ For FLAN-T5, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
 python finetune_seq2seq.py \
-        --model_name_or_path "google/flan-t5-xl/" \
+        --model_name_or_path "google/flan-t5-xl" \
         --train_file "stanford_alpaca/alpaca_data.json" \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -64,7 +64,7 @@ For LLaMA, use the below command line for finetuning on the Alpaca dataset.
 ```bash
 python finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
-        --data_path "/path/to/alpaca_data.json" \
+        --train_file "/path/to/alpaca_data.json" \
         --dataset_concatenation \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
@@ -103,7 +103,7 @@ For example, to finetune FLAN-T5 through Distributed Data Parallel training, bas
 ``` bash
 python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_node=<NUM_PROCESSES_PER_NODE> --nnodes=<NUM_NODES> --node_rank=<NODE_RANK> \
     finetune_seq2seq.py \
-        --model_name_or_path "google/flan-t5-xl/" \
+        --model_name_or_path "google/flan-t5-xl" \
         --train_file "stanford_alpaca/alpaca_data.json" \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -124,7 +124,7 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
 Once the model is finetuned, use the below command line to chat with it.
 ```bash
 python generate.py \
-        --base_model_path "google/flan-t5-xl/" \
+        --base_model_path "google/flan-t5-xl" \
         --lora_model_path "./flan-t5-xl_peft_finetuned_model" \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```

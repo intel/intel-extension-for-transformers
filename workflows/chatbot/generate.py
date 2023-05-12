@@ -27,6 +27,11 @@ def parse_args():
         nargs="+",
         default=["Tell me about alpacas.", "Tell me five words that rhyme with 'shock'."]
     )
+    # Add arguments for temperature, top_p, top_k and repetition_penalty
+    parser.add_argument("--temperature", type=float, default=0.1, help="The value used to control the randomness of sampling.")
+    parser.add_argument("--top_p", type=float, default=0.75, help="The cumulative probability of tokens to keep for sampling.")
+    parser.add_argument("--top_k", type=int, default=40, help="The number of highest probability tokens to keep for sampling.")
+    parser.add_argument("--repetition_penalty", type=float, default=1.1, help="The penalty applied to repeated tokens.")
     args = parser.parse_args()
     return args
 
@@ -46,6 +51,16 @@ def main():
     prompts = create_prompts(
         [{'instruction':instruction, 'input':''} for instruction in args.instructions]
     )
+
+    # Check the validity of the arguments
+    if not 0 < args.temperature <= 1.0:
+        raise ValueError("Temperature must be between 0 and 1.")
+    if not 0 <= args.top_p <= 1.0:
+        raise ValueError("Top-p must be between 0 and 1.")
+    if not 0 <= args.top_k <= 200:
+        raise ValueError("Top-k must be between 0 and 200.")
+    if not 1.0 <= args.repetition_penalty <= 2.0:
+        raise ValueError("Repetition penalty must be between 1 and 2.")
 
     try:
         tokenizer = AutoTokenizer.from_pretrained(lora_model_path)
@@ -70,9 +85,10 @@ def main():
     model.eval()
     def evaluate(
         prompt,
-        temperature=0.1,
-        top_p=0.75,
-        top_k=40,
+        temperature,
+        top_p,
+        top_k,
+        repetition_penalty,
         num_beams=4,
         max_new_tokens=128,
         **kwargs,
@@ -83,6 +99,7 @@ def main():
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
+            repetition_penalty=repetition_penalty,
             num_beams=num_beams,
             **kwargs,
         )
@@ -108,7 +125,11 @@ def main():
         idxs = f"{idx+1}"
         print("="*30 + idxs + "="*30 + "\n")
         print("Instruction:", instruction)
-        print("Response:", evaluate(prompt))
+        print("Response:", evaluate(prompt,
+                                    temperature=args.temperature,
+                                    top_p=args.top_p,
+                                    top_k=args.top_k,
+                                    repetition_penalty=args.repetition_penalty))
         print("="*(60 + len(idxs)) + "\n")
 
 if __name__ == "__main__":
