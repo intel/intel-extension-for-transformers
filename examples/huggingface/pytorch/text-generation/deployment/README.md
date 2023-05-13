@@ -42,17 +42,12 @@ python gen_ir.py --model=EleutherAI/gpt-j-6B --dtype=int8 --output_model=<path t
 - When the input dtype is int8, the pt file should exist.
 
 ### Inference 
+Neural Engine supports inference on multiple sockets with fp32/bf16/int8 Neural Engine model
 ```bash
-# support single socket and multiple sockets
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_gptj.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --ir_path <path to ir>
 ```
-
-Neural Engine supports FP8 weight compression **only when runing bf16 graph**. If you want to try, please add arg `--fp8_weight`, like:
+### Advanced Inference
+Neural Engine also supports weight compression to `fp8_4e3m`, `fp8_5e2m` and `int8` **only when runing bf16 graph**. If you want to try, please add arg `--weight_type`, like:
 ```bash
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_gptj.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --ir_path <path to bf16 ir> --fp8_weight
-```
-
-For now, there has three weight storage format types in Neural Engine: `fp8_4e3m`, `fp8_5e2m` and `int8` (default type if you enable `fp8_weight`). You can select weight storage format type with `--fp8_weight_type` arg. For example:
-```bash
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_gptj.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --ir_path <path to bf16 ir> --fp8_weight --fp8_weight_type=fp8_4e3m
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_gptj.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --ir_path <path to bf16 ir> --weight_type=fp8_5e2m
 ```
