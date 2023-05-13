@@ -42,7 +42,7 @@ python gen_ir.py --model=EleutherAI/gpt-j-6B --dtype=int8 --output_model=<path t
 - When the input dtype is int8, the pt file should exist.
 
 ### Inference 
-Neural Engine supports inference on multiple sockets with fp32/bf16/int8 Neural Engine model
+We supports inference on multiple sockets with fp32/bf16/int8 Neural Engine model
 ```bash
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_gptj.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --ir_path <path to ir>
 ```
