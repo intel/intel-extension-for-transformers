@@ -63,4 +63,8 @@ class Loader(object):
             if isinstance(model, str):
                 model = torch.jit.load(model)
                 model = torch.jit.freeze(model.eval())
+            else:
+                import io
+                model = torch.jit.load(io.BytesIO(model.save_to_buffer()))
+                model = torch.jit.freeze(model.eval())
         return model, framework

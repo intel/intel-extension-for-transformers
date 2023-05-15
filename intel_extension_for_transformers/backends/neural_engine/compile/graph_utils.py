@@ -1105,15 +1105,15 @@ def get_model_fwk_name(model):
 
     def _is_onnxruntime(model):
         """Check if the model is onnxruntime."""
-        try:
-            if isinstance(model, str):
+        if isinstance(model, str):
+            try:
                 graph = onnx.load(model)
                 assert (len(graph.graph.node) != 0)
+            except:
+                return 'NA'
             else:
-                graph = model.graph
-        except:
-            pass
-        else:
+                return 'onnxruntime'
+        elif 'onnx' in str(type(model)):
             return 'onnxruntime'
         return 'NA'
 
@@ -1134,18 +1134,20 @@ def get_model_fwk_name(model):
 
     def _is_torch(model):
         """Check if the model is torch."""
-        try:
-            if isinstance(model, str):
+        if isinstance(model, str):
+            try:
                 torch.jit.load(model)
-        except:
-            pass
-        else:
+            except:
+                return 'NA'
+            else:
+                return 'torch'
+        elif 'torch' in str(type(model)):
             return 'torch'
         return 'NA'
 
     def _is_neural_engine(model):
         """Check if the model is neural engine."""
-        if model and os.path.isdir(model):
+        if model and isinstance(model, str) and os.path.isdir(model):
             file_list = os.listdir(model)
             is_engine = True
             if len(file_list) == 2:
