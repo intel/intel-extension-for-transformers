@@ -14,11 +14,13 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 import transformers
 from modeling_gptj import GPTJForCausalLM
 from modeling_llama import LlamaForCausalLM
+from modeling_gpt_neox import GPTNeoXForCausalLM
 from optimum.utils import NormalizedConfigManager
 
 # to use modeling gptj modification base transformers 4.28.1:
 transformers.models.gptj.modeling_gptj.GPTJForCausalLM = GPTJForCausalLM
 transformers.models.llama.modeling_llama.LlamaForCausalLM = LlamaForCausalLM
+transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM = GPTNeoXForCausalLM
 
 import numpy as np
 from itertools import chain
@@ -250,7 +252,7 @@ if args.quantize:
             input_bs, input_len = input_ids.shape
             past_key_values = generate_dummy_past_key_values(input_bs, user_model)
             attention_mask = torch.ones(input_bs, input_len)
-            if i > args.calib_iters:
+            if i >= args.calib_iters:
                 break
             prepared_model(
                 input_ids=input_ids,
