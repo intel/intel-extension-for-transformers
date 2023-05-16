@@ -10,18 +10,14 @@ function main {
 
 # init params
 function init_params {
-  topology="bloom"
+  topology="gpt"
   tuned_checkpoint="saved_results"
-  tasks="lambada"
-  model_name_or_path="bigscience/bloom-560m"
+  DATASET_NAME="NeelNanda/pile-10k"
+  model_name_or_path="EleutherAI/gpt-j-6b"
   extra_cmd=""
   batch_size=8
-  max_cali_sample=100
-  max_train_sample=100
-
-
-  model_type="bloom"
   approach="PostTrainingStatic"
+  alpha=0.5
   for var in "$@"
   do
     case $var in
@@ -37,6 +33,15 @@ function init_params {
        --output_model=*)
            tuned_checkpoint=$(echo $var |cut -f2 -d=)
        ;;
+       --task=*)
+           task=$(echo $var |cut -f2 -d=)
+       ;;
+       --approach=*)
+           approach=$(echo $var |cut -f2 -d=)
+       ;;
+       --backend=*)
+           backend=$(echo $var |cut -f2 -d=)
+       ;;
       *)
           echo "Error: No such parameter: ${var}"
           exit 1
@@ -48,34 +53,65 @@ function init_params {
 
 # run_tuning
 function run_tuning {
-    if [ "${topology}" = "bloom_text_static" ]; then
-        script="run_text.py"
-        DATASET_NAME="lambada"
-        model_name_or_path="bigscience/bloom-560m"
-        approach="PostTrainingStatic"
-        model_type="bloom"
-    elif [ "${topology}" = "bloom_text_dynamic" ]; then
-        script="run_text.py"
-        DATASET_NAME="lambada"
-        model_name_or_path="bigscience/bloom-560m"
-        approach="PostTrainingDynamic"
-        model_type="bloom"
+
+    if [ "${topology}" = "gpt_j" ]; then
+        if [ "${task}" = "generation" ]; then
+            script="run_generation.py"
+        fi
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+            extra_cmd=$extra_cmd" --int8_bf16_mixed"
+            alpha=1.0
+        fi
+    elif [ "${topology}" = "opt_2.7b" ]; then
+        script="run_generation.py"
+        model_name_or_path="facebook/opt-2.7b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "opt_6.7b" ]; then
+        script="run_generation.py"
+        model_name_or_path="facebook/opt-6.7b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "llama_7b" ]; then
+        script="run_generation.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "llama_13b" ]; then
+        script="run_generation.py"
+        model_name_or_path="decapoda-research/llama-13b-hf"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "dolly_v2_3b" ]; then
+        script="run_generation.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+	    extra_cmd=$extra_cmd" --int8_bf16_mixed"
+	    alpha=1.0
+        fi
+
     fi
-    python -u ./${script} \
-        --model_name_or_path ${model_name_or_path} \
-        --tasks ${DATASET_NAME} \
-        --do_eval \
-        --do_train \
-        --model_type ${model_type} \
-        --max_cali_sample ${max_cali_sample} \
-        --max_train_sample ${max_train_sample} \
-        --per_device_eval_batch_size ${batch_size} \
-        --output_dir ${tuned_checkpoint} \
-        --tune \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --quantization_approach ${approach} \
-        ${extra_cmd}
+
+    if [ ${script} = "run_generation.py" ];then
+        python -u ./${script} \
+            --model ${model_name_or_path} \
+            --output_dir ${tuned_checkpoint} \
+            --dataset ${DATASET_NAME} \
+            --quantize \
+            --sq \
+            --alpha ${alpha} \
+            ${extra_cmd}
+    else
+        echo "Error: Please provide the correct script."
+        exit 1
+    fi
 }
 
 main "$@"

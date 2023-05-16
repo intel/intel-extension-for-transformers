@@ -11,10 +11,8 @@ function main {
 # init params
 function init_params {
   iters=100
-  batch_size=8
+  batch_size=1
   tuned_checkpoint=saved_results
-  max_cali_sample=100
-  max_train_sample=100
   for var in "$@"
   do
     case $var in
@@ -42,6 +40,15 @@ function init_params {
       --config=*)
           tuned_checkpoint=$(echo $var |cut -f2 -d=)
       ;;
+       --task=*)
+           task=$(echo $var |cut -f2 -d=)
+       ;;
+       --approach=*)
+           approach=$(echo $var |cut -f2 -d=)
+       ;;
+       --backend=*)
+           backend=$(echo $var |cut -f2 -d=)
+       ;;
       *)
           echo "Error: No such parameter: ${var}"
           exit 1
@@ -57,7 +64,9 @@ function run_benchmark {
     extra_cmd=''
 
     if [[ ${mode} == "accuracy" ]]; then
-        mode_cmd=" --accuracy_only"
+        echo "Error: Only support benchmark now."
+        echo "Please go to language modeling folder to get accuracy."
+        exit 1
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
     else
@@ -65,39 +74,66 @@ function run_benchmark {
         exit 1
     fi
 
-    if [ "${topology}" = "bloom_text_static" ]; then
-        script="run_text.py"
-        DATASET_NAME="lambada"
-        model_name_or_path="bigscience/bloom-560m"
-        approach="PostTrainingStatic"
-        model_type="bloom"
-    elif [ "${topology}" = "bloom_text_dynamic" ]; then
-        script="run_text.py"
-        DATASET_NAME="lambada"
-        model_name_or_path="bigscience/bloom-560m"
-        approach="PostTrainingDynamic"
-        model_type="bloom"
+
+    if [ "${topology}" = "gpt_j" ]; then
+        if [ "${task}" = "generation" ]; then
+            script="run_generation.py"
+        fi
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "opt_2.7b" ]; then
+        script="run_generation.py"
+        model_name_or_path="facebook/opt-2.7b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "opt_6.7b" ]; then
+        script="run_generation.py"
+        model_name_or_path="facebook/opt-6.7b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "llama_7b" ]; then
+        script="run_generation.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "llama_13b" ]; then
+        script="run_generation.py"
+        model_name_or_path="decapoda-research/llama-13b-hf"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "dolly_v2_3b" ]; then
+        script="run_generation.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
     fi
+
     
     if [[ ${int8} == "true" ]]; then
         extra_cmd=$extra_cmd" --int8"
-        model_name_or_path=${tuned_checkpoint}
     fi
+
     echo $extra_cmd
 
-    python -u ${script} \
-        --model_name_or_path ${model_name_or_path} \
-        --tasks ${DATASET_NAME} \
-        --do_eval \
-        --max_cali_sample ${max_cali_sample} \
-        --max_train_sample ${max_train_sample} \
-        --per_device_eval_batch_size ${batch_size} \
-        --output_dir ./tmp/benchmark_output \
-        --overwrite_output_dir \
-        --overwrite_cache \
-        --no_cuda \
-        ${mode_cmd} \
-        ${extra_cmd}
+    if [ "${script}" == "run_generation.py" ];then
+        python -u ./${script} \
+            --model ${model_name_or_path} \
+            --benchmark \
+            --output_dir ${tuned_checkpoint} \
+            --batch_size ${batch_size} \
+            ${mode_cmd} \
+            ${extra_cmd}
+    else
+        echo "Error: Please provide the correct script."
+    fi
 }
 
 main "$@"

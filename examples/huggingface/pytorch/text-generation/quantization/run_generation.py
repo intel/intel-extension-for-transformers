@@ -1,399 +1,342 @@
-import torch
-import transformers
-import sys
+import argparse
+import re
 import time
-from tqdm import tqdm
+import json
 import os
-from torch.nn.functional import pad
-import logging
-from dataclasses import field, dataclass
-from typing import Optional
-from intel_extension_for_transformers.optimization import (NoTrainerOptimizer, QuantizationConfig, OptimizedModel)
+import pathlib
+import torch
+import types
+from pathlib import Path
 from datasets import load_dataset
-from transformers import (
-    HfArgumentParser,
-    TrainingArguments,
-    AutoModelForCausalLM,
-    AutoConfig,
-    AutoTokenizer,
+from torch.nn.functional import pad
+from torch.utils.data import DataLoader
+from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
+import transformers
+from modeling_gptj import GPTJForCausalLM
+from modeling_llama import LlamaForCausalLM
+from optimum.utils import NormalizedConfigManager
+
+# to use modeling gptj modification base transformers 4.28.1:
+transformers.models.gptj.modeling_gptj.GPTJForCausalLM = GPTJForCausalLM
+transformers.models.llama.modeling_llama.LlamaForCausalLM = LlamaForCausalLM
+
+import numpy as np
+from itertools import chain
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--model", nargs="?", default="EleutherAI/gpt-j-6B", const="EleutherAI/gpt-j-6B"
 )
-
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO,
+parser.add_argument(
+    "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
-logger = logging.getLogger(__name__)
+parser.add_argument("--dtype", type=str, default="int8")
+parser.add_argument(
+    "--max-new-tokens", default=32, type=int, help="output max new tokens"
+)
+parser.add_argument("--output_dir", nargs="?", default="./saved_results")
+parser.add_argument("--quantize", action="store_true")
+parser.add_argument("--ipex", action="store_true")
+parser.add_argument("--sq", action="store_true")
+parser.add_argument("--alpha", default="auto", help="Smooth quant parameter.")
+parser.add_argument(
+    "--pad_max_length", default=512, type=int, help="Pad input ids to max length."
+)
+parser.add_argument("--calib_iters", default=512, type=int, help="calibration iters.")
+parser.add_argument("--int8", action="store_true")
+parser.add_argument(
+    "--int8_bf16_mixed",
+    action="store_true",
+    help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
+)
+parser.add_argument("--benchmark", action="store_true")
+parser.add_argument("--num_iter", default=100, type=int, help="num iter")
+parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
+parser.add_argument("--batch_size", default=1, type=int, help="batch size")
+args = parser.parse_args()
 
+calib_size = 1
 
-@dataclass
-class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
-    """
+# model
+if re.search("llama", args.model.lower()):
+    from transformers import LlamaForCausalLM, LlamaTokenizer
 
-    model_name_or_path: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": (
-                "The model checkpoint for weights initialization.Don't set if you want to train a model from scratch."
-            )
-        },
+    user_model = LlamaForCausalLM.from_pretrained(
+        args.model,
+        torchscript=True
+        if args.ipex
+        else False,  # torchscript will force `return_dict=False` to avoid jit errors
     )
-    config_overrides: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": (
-                "Override some existing default config settings when a model is trained from scratch. Example: "
-                "n_embd=10,resid_pdrop=0.2,scale_attn_weights=false,summary_type=cls_index"
-            )
-        },
+    tokenizer = LlamaTokenizer.from_pretrained(args.model)
+
+else:
+    user_model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        torchscript=True
+        if args.ipex
+        else False,  # torchscript will force `return_dict=False` to avoid jit errors
     )
-    config_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
-    )
-    model_type: Optional[str] = field(
-        default=None, metadata={"help": "The model group."}
-    )
-    tokenizer_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
-    )
-    cache_dir: Optional[str] = field(
-        default=None,
-        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
-    )
-    use_fast_tokenizer: bool = field(
-        default=True,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
-    )
-    model_revision: str = field(
-        default="main",
-        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
-    )
-    use_auth_token: bool = field(
-        default=False,
-        metadata={
-            "help": (
-                "Will use the token generated when running `huggingface-cli login` (necessary to use this script "
-                "with private models)."
-            )
-        },
-    )
-    onnx: bool = field(
-        default=True, metadata={"help": "convert PyTorch model to ONNX"}
-    )
-    no_cache: bool = field(
-        default=False, metadata={"help": "Whether or not to cache"}
-    )
-    bootstrap_iters: int = field(
-        default=100000, metadata={"help": "Number of iterations for bootstrap statistics"}
-    )
-    iters: int = field(
-        default=100,
-        metadata={
-            "help": "The inference iterations to run for benchmark."
-        },
-    )
-    def __post_init__(self):
-        if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+
+# to channels last
+user_model = user_model.to(memory_format=torch.channels_last)
+user_model.eval()
+
+if args.ipex:
+    import intel_extension_for_pytorch as ipex
+    from optimum.intel.generation.modeling import TSModelForCausalLM
+    from typing import Optional, Tuple, Union
+    from huggingface_hub import hf_hub_download
+    from transformers.utils import WEIGHTS_NAME
+
+    # Will remove the function when the PR merge to optimum-intel.
+    @classmethod
+    def _from_pretrained(
+        cls,
+        model_id: Union[str, Path],
+        config: PretrainedConfig,
+        use_auth_token: Optional[Union[bool, str, None]] = None,
+        revision: Optional[Union[str, None]] = None,
+        force_download: bool = False,
+        cache_dir: Optional[str] = None,
+        file_name: Optional[str] = WEIGHTS_NAME,
+        local_files_only: bool = False,
+        use_cache: bool = True,
+        **kwargs,
+    ):
+        if not getattr(config, "torchscript", False):
             raise ValueError(
-                "--config_overrides can't be used in combination with --config_name or --model_name_or_path"
+                "`torchscript` should be set to True to load TorchScript model"
             )
 
+        # Load the model from local directory
+        if os.path.isdir(model_id):
+            file_name = os.path.join(model_id, file_name)
+            model = cls.load_model(file_name)
+            model_save_dir = model_id
+        # Download the model from the hub
+        else:
+            model_cache_path = hf_hub_download(
+                repo_id=model_id,
+                filename=file_name,
+                use_auth_token=use_auth_token,
+                revision=revision,
+                cache_dir=cache_dir,
+                force_download=force_download,
+                local_files_only=local_files_only,
+            )
+            model_save_dir = Path(model_cache_path).parent
+            model = cls.load_model(model_cache_path)
 
-@dataclass
-class DataTrainingArguments:
-    """
-    Arguments pertaining to what data we are going to input our model for training and eval.
-    """
+        return cls(
+            model,
+            config=config,
+            model_save_dir=model_save_dir,
+            use_cache=use_cache,
+            **kwargs,
+        )
 
-    tasks: Optional[str] = field(
-        default="lambada", metadata={"help": "The name of the dataset to use (restrict to the task list)."}
-    )
-    batch_size: Optional[int] = field(default=8, metadata={"help": "The batch size"})
-    overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
-    )
-    validation_split_percentage: Optional[int] = field(
-        default=5,
-        metadata={
-            "help": "The percentage of the train set used as validation set in case there's no validation split"
-        },
-    )
-    keep_linebreaks: bool = field(
-        default=True, metadata={"help": "Whether to keep line breaks when using TXT files or not."}
-    )
-
-
-@dataclass
-class OptimizationArguments:
-    """
-    Arguments pertaining to what type of optimization we are going to apply on the model.
-    """
-
-    tune: bool = field(
-        default=False,
-        metadata={"help": "Whether or not to apply quantization."},
-    )
-    quantization_approach: Optional[str] = field(
-        default="PostTrainingStatic",
-        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
-                  "PostTrainingDynamic and QuantizationAwareTraining."},
-    )
-    is_relative: Optional[bool] = field(
-        default=True,
-        metadata={"help": "Metric tolerance mode, True is for relative, otherwise for absolute."},
-    )
-    max_train_sample: Optional[int] = field(
-        default=None,
-        metadata={"help": "The batch size of the train set."},
-    )
-    max_cali_sample: Optional[int] = field(
-        default=None,
-        metadata={"help": "The batch size of the calibration set."},
-    )
-    benchmark: bool = field(
-        default=False,
-        metadata={"help": "run benchmark."})
-    mix_precision: bool = field(
-        default=False,
-        metadata={"help": "Whether or not to apply quantization."},
-    )
-    int8: bool = field(
-        default=False,
-        metadata={"help":"run benchmark."})
-    show: bool = field(
-        default=False,
-        metadata={"help":"present the generation example."})
-    accuracy_only: bool = field(
-        default=False,
-        metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."})
+    torch._C._jit_set_texpr_fuser_enabled(False)
+    TSModelForCausalLM._from_pretrained = _from_pretrained
 
 
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self, name, fmt=':f'):
-        self.name = name
-        self.fmt = fmt
-        self.reset()
+# quantize
+if args.quantize:
 
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
+    def generate_dummy_past_key_values(input_bs, user_model):
+        normalized_config = NormalizedConfigManager.get_normalized_config_class(
+            user_model.config.model_type
+        )(user_model.config)
+        nb_pkv = 2
+        num_layers = normalized_config.num_layers
+        num_attention_heads = normalized_config.num_attention_heads
+        hidden_size = normalized_config.hidden_size
+        d_k = hidden_size // num_attention_heads
 
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
+        if user_model.config.model_type != "bloom":
+            new_shape = [input_bs, num_attention_heads, 0, d_k]
+            empty_tensor = torch.empty(size=new_shape)
+            past_key_values = tuple(
+                tuple(empty_tensor for _ in range(nb_pkv)) for _ in range(num_layers)
+            )
+            pkv = tuple(empty_tensor for _ in range(nb_pkv))
+        else:
+            pkv = ()
+            for nb_pkv in range(nb_pkv):
+                if nb_pkv % 2 == 0:
+                    new_shape = [input_bs * num_attention_heads, d_k, 0]
+                else:
+                    new_shape = [input_bs * num_attention_heads, 0, d_k]
+                pkv = pkv + (torch.empty(size=new_shape),)
+        past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
+        return past_key_values
 
-    def __str__(self):
-        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
-        return fmtstr.format(**self.__dict__)
-
-
-class Evaluator:
-    def __init__(self, dataset, tokenizer, batch_size=8, device='cpu'):
-        self.dataset = dataset
-        self.tokenizer = tokenizer
-        self.device = device
-        self.dataloader = NLPDataloader(dataset, tokenizer, batch_size, device, 195)
-        self.batch_size = batch_size
-
-    @torch.no_grad()
-    def evaluate(self, model):
-        model.eval()
-        batch_time = AverageMeter('Time', ':6.3f')
-        # The task is to predict the last word of the input.
-        total, hit = 0, 0
-        for index, (batched_input, label, batched_index) in enumerate(tqdm(self.dataloader)):
-            input_ids = batched_input
-            start = time.time()
-            outputs = model(input_ids)
-            batch_time.update(time.time() - start)
-            # print()
-            # print('Time usage: ', time.time()-start)
-            last_token_logits = outputs[0][:, batched_index, :]
-            pred = last_token_logits.argmax(dim=-1)
-            total += label.size(0)
-            hit += (pred == label).sum().item()
-            if (index+1) % 10 == 0:
-                accu = hit / total
-                print('#############')
-                print('Temporary Accu:', accu, flush=True)
-                print('#############')
-        accu = hit / total
-        print('Batch size = {}'.format(self.batch_size))
-        print('Latency: %.3f ms' % (batch_time.avg / self.batch_size * 1000))
-        print('Throughput: %.3f images/sec' % (self.batch_size / batch_time.avg))
-        return accu
-
-class NLPDataloader():
-    def __init__(self, dataset, tokenizer, batch_size=8,
-                        device='cpu', max_length=195, calibration=False
+    class Evaluator:
+        def __init__(
+            self,
+            dataset,
+            tokenizer,
+            batch_size=8,
+            pad_val=1,
+            pad_max=512,
+            is_calib=False,
         ):
-        self.dataset = dataset
-        self.tokenizer = tokenizer
-        self.device = device
-        self.batch_size = batch_size
-        import math
-        self.length = math.ceil(len(dataset) / self.batch_size)
-        # for evaluation, max_length is 195, while for calibration with train dataset, it's 512.
-        self.max_length = max_length
-        self.calib_flag = calibration
+            self.dataset = dataset
+            self.tokenizer = tokenizer
+            self.batch_size = batch_size
+            self.pad_val = pad_val
+            self.pad_max = pad_max
+            self.is_calib = is_calib
 
-        # tokenize the dataset
-        def tokenize_function(examples):
-            example = self.tokenizer(examples['text'])
+            # tokenize the dataset
+            self.dataset = self.dataset.map(self.tokenize_function, batched=True)
+            self.dataset.set_format(type="torch", columns=["input_ids"])
+
+        @torch.no_grad()
+        def tokenize_function(self, examples):
+            example = self.tokenizer(examples["text"])
             return example
 
-        self.dataset = self.dataset.map(tokenize_function, batched=True)
-        self.dataset.set_format(type='torch', columns=['input_ids'])
-
-    def pad_input(self, input):
-        input_id = input['input_ids'].unsqueeze(0)
-        if self.max_length >= input_id.shape[1]:
-            label = input_id[:, -1].to(self.device)
-            pad_len = self.max_length - input_id.shape[1]
-            label_index = -2 - pad_len
-            input_id = pad(input_id, (0, pad_len), value=3)
-        else:
-            input_id = input_id[:, :self.max_length]
-            label_index = -2
-            label = input_id[:, -1].to(self.device)
-        return (input_id, label, label_index)
-
-    def __iter__(self):
-        input_ids = None
-        labels = None
-        label_indices = None
-        for idx, batch in enumerate(self.dataset):
-            input_id, label, label_index = self.pad_input(batch)
-
-            if input_ids is None:
-                input_ids = input_id
-                labels = label
-                label_indices = [label_index]
-            else:
-                input_ids = torch.cat((input_ids, input_id), 0)
-                labels = torch.cat((labels, label), 0)
-                label_indices.append(label_index)
-
-            if (idx + 1) % self.batch_size == 0:
-                if not self.calib_flag:
-                    yield (input_ids, labels, label_indices)
+        @torch.no_grad()
+        def collate_batch(self, batch):
+            input_ids_padded = []
+            last_ind = []
+            for text in batch:
+                input_ids = text["input_ids"]
+                pad_len = self.pad_max - input_ids.shape[0]
+                last_ind.append(input_ids.shape[0] - 1)
+                if self.is_calib:
+                    input_ids = (
+                        input_ids[: self.pad_max]
+                        if len(input_ids) > self.pad_max
+                        else input_ids
+                    )
                 else:
-                    yield input_ids
-                input_ids = None
-                labels = None
-                label_indices = None
-        if (idx + 1) % self.batch_size != 0:
-            if not self.calib_flag:
-                yield (input_ids, labels, label_indices)
-            else:
-                yield input_ids
+                    input_ids = pad(input_ids, (0, pad_len), value=self.pad_val)
+                input_ids_padded.append(input_ids)
+            return (
+                torch.vstack(input_ids_padded),
+                torch.tensor(last_ind),
+            )
 
-    def __len__(self):
-        return self.length
-
-
-parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, OptimizationArguments))
-if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-    # If we pass only one argument to the script and it's the path to a json file,
-    # let's parse it to get our arguments.
-    model_args, data_args, training_args, optim_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
-else:
-    model_args, data_args, training_args, optim_args = parser.parse_args_into_dataclasses()
-
-model_name = model_args.model_name_or_path
-
-config_kwargs = {
-    "cache_dir": model_args.cache_dir,
-    "revision": model_args.model_revision,
-    "use_auth_token": True if model_args.use_auth_token else None,
-}
-if model_args.config_name:
-    config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
-elif model_args.model_name_or_path:
-    config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
-
-if optim_args.int8:
-    # Load the model obtained after Intel Neural Compressor (INC) quantization
-    model = OptimizedModel.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
+    calib_dataset = load_dataset(args.dataset, split="train")
+    calib_dataset = calib_dataset.shuffle(seed=42)
+    calib_evaluator = Evaluator(
+        calib_dataset,
+        tokenizer,
+        args.batch_size,
+        pad_max=args.pad_max_length,
+        is_calib=True,
     )
-else:
-    model = AutoModelForCausalLM.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
+    calib_dataloader = DataLoader(
+        calib_evaluator.dataset,
+        batch_size=calib_size,
+        shuffle=False,
+        collate_fn=calib_evaluator.collate_batch,
+    )
+    input_ids = user_model.dummy_inputs["input_ids"]
+    input_bs, input_len = input_ids.shape
+    past_key_values = generate_dummy_past_key_values(input_bs, user_model)
+    attention_mask = torch.ones(input_bs, input_len)
+    example_inputs = (
+        input_ids,
+        tuple(past_key_values),
+        attention_mask,
     )
 
-tokenizer_kwargs = {
-    "cache_dir": model_args.cache_dir,
-    "use_fast": model_args.use_fast_tokenizer,
-    "revision": model_args.model_revision,
-    "use_auth_token": True if model_args.use_auth_token else None,
-}
-if model_args.tokenizer_name:
-    tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
-elif model_args.model_name_or_path:
-    tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
-else:
-    raise ValueError(
-        "You are instantiating a new tokenizer from scratch. This is not supported by this script."
-        "You can do it from another script, save it, and load it from here, using --tokenizer_name."
+    def calib_func(prepared_model):
+        for i, (input_ids, last_ind) in enumerate(calib_dataloader):
+            input_bs, input_len = input_ids.shape
+            past_key_values = generate_dummy_past_key_values(input_bs, user_model)
+            attention_mask = torch.ones(input_bs, input_len)
+            if i > args.calib_iters:
+                break
+            prepared_model(
+                input_ids=input_ids,
+                past_key_values=past_key_values,
+                attention_mask=attention_mask,
+            )
+
+    from neural_compressor import PostTrainingQuantConfig, quantization
+
+    if re.search("gptj", user_model.config.model_type) or re.search(
+        "gpt_neox", user_model.config.model_type
+    ):
+        op_type_dict = {
+            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+        }
+    else:
+        op_type_dict = {}
+    excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+    if args.sq:
+        args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
+        recipes = {"smooth_quant": True, "smooth_quant_args": {"alpha": args.alpha}}
+        conf = PostTrainingQuantConfig(
+            backend="ipex" if args.ipex else "default",
+            excluded_precisions=excluded_precisions,
+            op_type_dict=op_type_dict,
+            recipes=recipes,
+            example_inputs=example_inputs,
+        )
+    else:
+        conf = PostTrainingQuantConfig(
+            backend="ipex" if args.ipex else "default",
+            excluded_precisions=excluded_precisions,
+            op_type_dict=op_type_dict,
+            example_inputs=example_inputs,
+        )
+    # save config
+    user_model.config.save_pretrained(args.output_dir)
+    q_model = quantization.fit(
+        user_model,
+        conf,
+        calib_func=calib_func,
     )
+    q_model.save(args.output_dir)
+    exit(0)
 
-# dataset = load_dataset(data_args.tasks, split='validation').select(range(1000))
-if optim_args.max_train_sample:
-    dataset = load_dataset(data_args.tasks, split='validation').select(range(optim_args.max_train_sample))
-else:
-    dataset = load_dataset(data_args.tasks, split='validation')
-dataset = dataset.shuffle(seed=42)
-train_dataset = load_dataset(data_args.tasks, split='train')
-train_dataset = train_dataset.shuffle(seed=42)
+# Generation
+generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
 
-if optim_args.max_cali_sample:
-    calib_dataset = train_dataset.select(range(optim_args.max_cali_sample))
-else:
-    calib_dataset = train_dataset
-calib_dataloader = NLPDataloader(
-    dataset,
-    tokenizer,
-    batch_size=data_args.batch_size,
-    device='cpu',
-    max_length=512,
-    calibration=True
-)
+if args.int8 or args.int8_bf16_mixed:
+    # TorchScript model don't attribute generate method, the wrapper is provided.
+    if args.ipex:
+        user_model = TSModelForCausalLM.from_pretrained(
+            args.output_dir, file_name="best_model.pt"
+        )
+    else:
+        from neural_compressor.utils.pytorch import load
 
-evaluator = Evaluator(dataset, tokenizer, 16, 'cpu')
+        user_model = load(args.output_dir, user_model)
 
-def eval_func(model):
-    acc = evaluator.evaluate(model)
-    return acc
 
-if optim_args.tune:
-    tokenizer.save_pretrained(training_args.output_dir)
-    config.save_pretrained(training_args.output_dir)
-    q_config = QuantizationConfig(approach=optim_args.quantization_approach, max_trials=600)
-    quantizer = NoTrainerOptimizer(model, training_args.output_dir)
-    model = quantizer.quantize(q_config, eval_func=eval_func, calib_dataloader=calib_dataloader)
+if args.benchmark:
+    prompt = "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun."
 
-if optim_args.benchmark or optim_args.accuracy_only:
-    results = eval_func(model)
-    print('Accuracy:', results)
-    if optim_args.show:
-        example = dataset[0]
-        encoded_prompt = tokenizer.encode(example["text"], add_special_tokens=False, return_tensors="pt")
-        # print("Original text: ", example["text"])
-        input_ids = encoded_prompt
-        input=input_ids
-        input=torch.squeeze(input)[:-1].unsqueeze(dim=0)
-        output_sequences = model.generate(input_ids=input,max_length=len(encoded_prompt[0]))
-        text = tokenizer.decode(output_sequences[0], clean_up_tokenization_spaces=True)
-        print("Generated text: ", text)
+    input_size = tokenizer(prompt, return_tensors="pt").input_ids.size(dim=1)
+    print("---- Prompt size:", input_size)
+
+    # start
+    total_time = 0.0
+    num_iter = args.num_iter
+    num_warmup = args.num_warmup
+
+    with torch.inference_mode(), torch.no_grad():
+        for i in range(num_iter):
+            tic = time.time()
+            input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+            gen_ids = user_model.generate(
+                input_ids, max_new_tokens=args.max_new_tokens, **generate_kwargs
+            )
+            gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
+            toc = time.time()
+            print(gen_text, flush=True)
+            if i >= num_warmup:
+                total_time += toc - tic
+
+    print("\n", "-" * 10, "Summary:", "-" * 10)
+    latency = total_time / (num_iter - num_warmup)
+    print("Inference latency: %.3f sec." % latency)
+    throughput = (num_iter - num_warmup) / total_time
+    print("Throughput: {} samples/sec".format(throughput))
