@@ -22,7 +22,7 @@ import numpy as np
 import os
 import sys
 import torch
-import onnxruntime as ort
+import copy
 
 
 def is_win():
@@ -90,7 +90,6 @@ unet_pattern_config = {
 
 
 class TestUnetBF16(unittest.TestCase):
-
     @classmethod
     def setUpClass(self):
         pass
@@ -119,28 +118,14 @@ class TestUnetBF16(unittest.TestCase):
         for node_name in output.keys():
             print(node_name, ', shape = ', output[node_name].shape)
 
-        # onnxruntime
-        fp32_model_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/unet_fp32/'
-        model = fp32_model_dir + 'model.onnx'
-        session = ort.InferenceSession(model)
-        x = torch.load(input_0_path).numpy()
-        y = torch.tensor([301], dtype=torch.float32).numpy()
-        z = torch.load(input_2_path).numpy()
+        output_bf16 = copy.deepcopy(output['out_sample:0'])
 
-        ortvalue = ort.OrtValue.ortvalue_from_numpy(x)
-        ortvalue.device_name()
-        ortvalue2 = ort.OrtValue.ortvalue_from_numpy(y)
-        ortvalue2.device_name()
-        ortvalue3 = ort.OrtValue.ortvalue_from_numpy(z)
-        ortvalue3.device_name()
+        # fp32 unet
+        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/unet_fp32/'
+        unet_fp32_output_dir = root_dir + 'unet_fp32_output.pt'
+        unet_fp32_output = torch.load(unet_fp32_output_dir)
 
-        outputs = session.run(None, {
-            'sample': ortvalue,
-            'timestep': ortvalue2,
-            'encoder_hidden_states': ortvalue3
-        })
-
-        flag = np.allclose(output['out_sample:0'], outputs[0], atol=1e-0)
+        flag = np.allclose(unet_fp32_output, output_bf16, atol=1e-1)
         self.assertTrue(flag)
 
 
