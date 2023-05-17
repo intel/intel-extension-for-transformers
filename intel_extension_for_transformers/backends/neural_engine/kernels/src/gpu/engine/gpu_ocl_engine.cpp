@@ -12,12 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "engine/gpu_ocl_engine.hpp"
-#include "gpu_ocl_stream.hpp"
-#include "memory_storage/gpu_ocl_memory_storage.hpp"
+#include "gpu_ocl_engine.hpp"
 #include "kernel_cache.hpp"
-#include "../kernels/opencl/common.hpp"
-#include "singleton.hpp"
+#include "src/gpu/stream/gpu_ocl_stream.hpp"
+#include "src/gpu/memory_storage/gpu_ocl_memory_storage.hpp"
+#include "src/gpu/kernels/opencl/common.hpp"
+#include "src/singleton.hpp"
 
 #define MAX_NUM_DEVICES 16
 #define MAX_DEVICE_NAME 1024

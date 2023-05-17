@@ -23,13 +23,11 @@
 
 #include "gtest/gtest.h"
 #include "interface.hpp"
-#include "kernels/mha_dense_ref.hpp"
+#include "src/cpu/kernels/mha_dense_ref.hpp"
 #include "unit_test_utils.hpp"
 
-namespace jd {
-using dt = data_type;
-using ft = format_type;
-using io = exposed_enum::mha_dense::io;
+namespace test {
+using io = jd::exposed_enum::mha_dense::io;
 
 static std::mt19937 rand_gen(1);
 
@@ -44,17 +42,18 @@ struct test_params_t {
   bool expect_to_fail;
 };
 struct test_data_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::vector<const void*> rt_data_kern;
   std::vector<const void*> rt_data_ref;
 };
 
 bool check_result(const int nthr, const bool expect_to_fail, const test_data_t& d) {
   try {
-    std::shared_ptr<const kernel_desc_t> dynamic_quant_mha_ref_desc;
-    kernel_desc_t::create<mha_dense_ref_kd_t>(dynamic_quant_mha_ref_desc, d.op_desc);
-    std::shared_ptr<const kernel_t> dynamic_quant_mha_ref_kernel;
-    kernel_t::create<mha_dense_ref_k_t, mha_dense_ref_kd_t>(dynamic_quant_mha_ref_kernel, dynamic_quant_mha_ref_desc);
+    std::shared_ptr<const jd::kernel_desc_t> dynamic_quant_mha_ref_desc;
+    jd::kernel_desc_t::create<jd::mha_dense_ref_kd_t>(dynamic_quant_mha_ref_desc, d.op_desc);
+    std::shared_ptr<const jd::kernel_t> dynamic_quant_mha_ref_kernel;
+    jd::kernel_t::create<jd::mha_dense_ref_k_t, jd::mha_dense_ref_kd_t>(dynamic_quant_mha_ref_kernel,
+                                                                        dynamic_quant_mha_ref_desc);
     const auto workspace_q = aligned_allocator_t<char>::allocate(dynamic_quant_mha_ref_kernel->get_workspace_size());
     auto data_q = d.rt_data_kern;
     data_q[io::WORKSPACE] = workspace_q;
@@ -62,8 +61,8 @@ bool check_result(const int nthr, const bool expect_to_fail, const test_data_t& 
     aligned_allocator_t<char>::deallocate(workspace_q);
 
     n_thread_t with_n_thread(nthr);
-    mha_dense_desc mha_dense_desc(d.op_desc);
-    mha_dense dynq10n_mha_dense_kernel(mha_dense_desc);
+    jd::mha_dense_desc mha_dense_desc(d.op_desc);
+    jd::mha_dense dynq10n_mha_dense_kernel(mha_dense_desc);
     const auto workspace_p = aligned_allocator_t<char>::allocate(dynq10n_mha_dense_kernel.get_workspace_size());
     auto data_p = d.rt_data_ref;
     data_p[io::WORKSPACE] = workspace_p;
@@ -91,41 +90,6 @@ bool check_result(const int nthr, const bool expect_to_fail, const test_data_t& 
   return false;
 }
 
-const void* make_data_obj(const tensor_desc desc, const float min_val, const float max_val) {
-  int elem_num = std::accumulate(desc.shape().begin(), desc.shape().end(), dim_t{1}, std::multiplies<dim_t>());
-  const int bytes_size = elem_num * type_size[desc.dtype()];
-  void* data_ptr = nullptr;
-  if (min_val == 0 && max_val == 0) {
-    data_ptr = new uint8_t[bytes_size];
-    memset(data_ptr, 0, bytes_size);
-  } else {
-    const auto seed = std::uniform_int_distribution<>()(rand_gen);
-    if (desc.dtype() == dt::fp32) {
-      data_ptr = new float[elem_num];
-      init_vector(static_cast<float*>(data_ptr), elem_num, min_val, max_val, seed);
-    } else if (desc.dtype() == dt::s32) {
-      data_ptr = new int32_t[elem_num];
-      init_vector(static_cast<int32_t*>(data_ptr), elem_num, min_val, max_val, seed);
-    } else if (desc.dtype() == dt::u8) {
-      data_ptr = new uint8_t[elem_num];
-      init_vector(static_cast<uint8_t*>(data_ptr), elem_num, min_val, max_val, seed);
-    } else if (desc.dtype() == dt::s8) {
-      data_ptr = new int8_t[elem_num];
-      init_vector(static_cast<int8_t*>(data_ptr), elem_num, min_val, max_val, seed);
-    } else {
-      SPARSE_LOG(FATAL) << "Unexpected dt!";
-    }
-  }
-  return data_ptr;
-}
-const void* copy_data_obj(const tensor_desc desc, const void* src) {
-  int elem_num = std::accumulate(desc.shape().begin(), desc.shape().end(), dim_t{1}, std::multiplies<dim_t>());
-  const int bytes_size = elem_num * type_size[desc.dtype()];
-  void* data_ptr = new uint8_t[bytes_size];
-  memcpy(data_ptr, src, bytes_size);
-  return data_ptr;
-}
-
 test_data_t gen_data(const dim_t batch_size, const dim_t head_num, const dim_t sl_M, const dim_t head_size,
                      const dim_t sl_N, const bool dynamic_shape, const int nthr) {
   n_thread_t with_n_thread(nthr);
@@ -134,19 +98,19 @@ test_data_t gen_data(const dim_t batch_size, const dim_t head_num, const dim_t s
   op_attrs["stable_softmax"] = "False";
 
   // Step 2: Configure tensor shape
-  std::vector<tensor_desc> ts_descs(io::SIZE, {{}, dt::undef, ft::undef});
-  ts_descs[io::SRC_Q] = {{batch_size, sl_M, head_num, head_size}, dt::s8, ft::abcd};
-  ts_descs[io::SRC_K] = {{batch_size, sl_N, head_num, head_size}, dt::s8, ft::abcd};
-  ts_descs[io::SRC_V] = {{batch_size, sl_N, head_num, head_size}, dt::s8, ft::abcd};
-  ts_descs[io::DST] = {{batch_size, sl_M, head_num, head_size}, dt::s8, ft::abcd};
-  ts_descs[io::BINARY_ADD] = {{batch_size, 1, 1, sl_N}, dt::fp32, ft::ab};
-  ts_descs[io::ATT_SCALE] = {{1}, dt::fp32, ft::a};
-  ts_descs[io::Q_SCALE] = {{batch_size, sl_M}, dt::fp32, ft::ab};
-  ts_descs[io::K_SCALE] = {{batch_size, sl_N}, dt::fp32, ft::ab};
-  ts_descs[io::V_SCALE] = {{batch_size, sl_N}, dt::fp32, ft::ab};
-  ts_descs[io::DST_SCALE] = {{batch_size, sl_M}, dt::fp32, ft::ab};
+  std::vector<jd::tensor_desc> ts_descs(io::SIZE, {{}, jd::data_type::undef, jd::format_type::undef});
+  ts_descs[io::SRC_Q] = {{batch_size, sl_M, head_num, head_size}, jd::data_type::s8, jd::format_type::abcd};
+  ts_descs[io::SRC_K] = {{batch_size, sl_N, head_num, head_size}, jd::data_type::s8, jd::format_type::abcd};
+  ts_descs[io::SRC_V] = {{batch_size, sl_N, head_num, head_size}, jd::data_type::s8, jd::format_type::abcd};
+  ts_descs[io::DST] = {{batch_size, sl_M, head_num, head_size}, jd::data_type::s8, jd::format_type::abcd};
+  ts_descs[io::BINARY_ADD] = {{batch_size, 1, 1, sl_N}, jd::data_type::fp32, jd::format_type::ab};
+  ts_descs[io::ATT_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+  ts_descs[io::Q_SCALE] = {{batch_size, sl_M}, jd::data_type::fp32, jd::format_type::ab};
+  ts_descs[io::K_SCALE] = {{batch_size, sl_N}, jd::data_type::fp32, jd::format_type::ab};
+  ts_descs[io::V_SCALE] = {{batch_size, sl_N}, jd::data_type::fp32, jd::format_type::ab};
+  ts_descs[io::DST_SCALE] = {{batch_size, sl_M}, jd::data_type::fp32, jd::format_type::ab};
   if (dynamic_shape) {
-    const tensor_desc shape_ts_desc{{1}, dt::s32, ft::a};
+    const jd::tensor_desc shape_ts_desc{{1}, jd::data_type::s32, jd::format_type::a};
     ts_descs[io::BATCH_SIZE] = shape_ts_desc;
     ts_descs[io::HEAD_NUM] = shape_ts_desc;
     ts_descs[io::HEAD_SIZE] = shape_ts_desc;
@@ -155,33 +119,57 @@ test_data_t gen_data(const dim_t batch_size, const dim_t head_num, const dim_t s
   }
   // Step 2: Construct runtime data
   std::vector<const void*> rt_data(io::SIZE, nullptr);
-  rt_data[io::SRC_Q] = make_data_obj(ts_descs[io::SRC_Q], -128, 127);
-  rt_data[io::SRC_K] = make_data_obj(ts_descs[io::SRC_K], -128, 127);
-  rt_data[io::SRC_V] = make_data_obj(ts_descs[io::SRC_V], -128, 127);
-  rt_data[io::BINARY_ADD] = make_data_obj(ts_descs[io::BINARY_ADD], 0, 0);
-  rt_data[io::ATT_SCALE] = make_data_obj(ts_descs[io::ATT_SCALE], 0, 0);
-  reinterpret_cast<float*>(const_cast<void*>(rt_data[io::ATT_SCALE]))[0] = 1.f;
-  rt_data[io::Q_SCALE] = make_data_obj(ts_descs[io::Q_SCALE], 0.001, 0.01);
-  rt_data[io::K_SCALE] = make_data_obj(ts_descs[io::K_SCALE], 0.001, 0.01);
-  rt_data[io::V_SCALE] = make_data_obj(ts_descs[io::V_SCALE], 0.001, 0.01);
-  rt_data[io::DST] = make_data_obj(ts_descs[io::DST], -128, 127);  // random dst and scale to be overwrite
-  rt_data[io::DST_SCALE] = make_data_obj(ts_descs[io::DST_SCALE], INT32_MIN, INT32_MAX);
+  std::vector<const void*> rt_data_cpy(io::SIZE, nullptr);
+  std::vector<std::pair<const void*, const void*>> data_pairs(io::SIZE, {nullptr, nullptr});
+  data_pairs[io::SRC_Q] = make_data_obj(ts_descs[io::SRC_Q], false, {-128, 127}, 0.f, jd::format_type::uncoded, nullptr,
+                                        std::uniform_int_distribution<>()(rand_gen));
+  data_pairs[io::SRC_K] = make_data_obj(ts_descs[io::SRC_K], false, {-128, 127}, 0.f, jd::format_type::uncoded, nullptr,
+                                        std::uniform_int_distribution<>()(rand_gen));
+  data_pairs[io::SRC_V] = make_data_obj(ts_descs[io::SRC_V], false, {-128, 127}, 0.f, jd::format_type::uncoded, nullptr,
+                                        std::uniform_int_distribution<>()(rand_gen));
+  data_pairs[io::BINARY_ADD] = make_data_obj(ts_descs[io::BINARY_ADD], true, {0, 0}, 0.f, jd::format_type::uncoded,
+                                             nullptr, std::uniform_int_distribution<>()(rand_gen));
   for (int ibs = 0; ibs < batch_size; ibs++) {
-    const auto batch_mask = reinterpret_cast<float*>(const_cast<void*>(rt_data[io::BINARY_ADD])) + sl_N * ibs;
+    const auto batch_mask = reinterpret_cast<float*>(const_cast<void*>(data_pairs[io::BINARY_ADD].first)) + sl_N * ibs;
+    const auto batch_mask_cpy =
+        reinterpret_cast<float*>(const_cast<void*>(data_pairs[io::BINARY_ADD].second)) + sl_N * ibs;
     const dim_t valid_sl = std::uniform_int_distribution<>(sl_N / 2, sl_N)(rand_gen);
     std::fill_n(batch_mask + valid_sl, sl_N - valid_sl, -1000.f);
+    std::fill_n(batch_mask_cpy + valid_sl, sl_N - valid_sl, -1000.f);
   }
-  if (dynamic_shape) {
-    rt_data[io::BATCH_SIZE] = make_data_obj(ts_descs[io::BATCH_SIZE], batch_size, batch_size);
-    rt_data[io::HEAD_NUM] = make_data_obj(ts_descs[io::HEAD_NUM], head_num, head_num);
-    rt_data[io::HEAD_SIZE] = make_data_obj(ts_descs[io::HEAD_SIZE], head_size, head_size);
-    rt_data[io::M] = make_data_obj(ts_descs[io::M], sl_M, sl_M);
-    rt_data[io::N] = make_data_obj(ts_descs[io::N], sl_N, sl_N);
-  }
+  data_pairs[io::ATT_SCALE] = make_data_obj(ts_descs[io::ATT_SCALE], true, {0, 0}, 0.f, jd::format_type::uncoded,
+                                            nullptr, std::uniform_int_distribution<>()(rand_gen));
+  reinterpret_cast<float*>(const_cast<void*>(data_pairs[io::ATT_SCALE].first))[0] = 1.f;
+  reinterpret_cast<float*>(const_cast<void*>(data_pairs[io::ATT_SCALE].second))[0] = 1.f;
+  data_pairs[io::Q_SCALE] = make_data_obj(ts_descs[io::Q_SCALE], false, {0.001, 0.01}, 0.f, jd::format_type::uncoded,
+                                          nullptr, std::uniform_int_distribution<>()(rand_gen));
+  data_pairs[io::K_SCALE] = make_data_obj(ts_descs[io::K_SCALE], false, {0.001, 0.01}, 0.f, jd::format_type::uncoded,
+                                          nullptr, std::uniform_int_distribution<>()(rand_gen));
+  data_pairs[io::V_SCALE] = make_data_obj(ts_descs[io::V_SCALE], false, {0.001, 0.01}, 0.f, jd::format_type::uncoded,
+                                          nullptr, std::uniform_int_distribution<>()(rand_gen));
+  data_pairs[io::DST] = make_data_obj(ts_descs[io::DST], false, {-128, 127});
+  data_pairs[io::DST_SCALE] = make_data_obj(ts_descs[io::DST_SCALE], false, {-128, 127}, 0.f, jd::format_type::uncoded,
+                                            nullptr, std::uniform_int_distribution<>()(rand_gen));
 
-  std::vector<const void*> rt_data_cpy(io::SIZE, nullptr);
-  for (std::underlying_type<io>::type idx = 0; idx < io::SIZE; ++idx)
-    if (rt_data[idx] != nullptr) rt_data_cpy[idx] = copy_data_obj(ts_descs[idx], rt_data[idx]);
+  if (dynamic_shape) {
+    data_pairs[io::BATCH_SIZE] =
+        make_data_obj(ts_descs[io::BATCH_SIZE], false, {static_cast<float>(batch_size), static_cast<float>(batch_size)},
+                      0.f, jd::format_type::uncoded, nullptr, std::uniform_int_distribution<>()(rand_gen));
+    data_pairs[io::HEAD_NUM] =
+        make_data_obj(ts_descs[io::HEAD_NUM], false, {static_cast<float>(head_num), static_cast<float>(head_num)}, 0.f,
+                      jd::format_type::uncoded, nullptr, std::uniform_int_distribution<>()(rand_gen));
+    data_pairs[io::HEAD_SIZE] =
+        make_data_obj(ts_descs[io::HEAD_SIZE], false, {static_cast<float>(head_size), static_cast<float>(head_size)},
+                      0.f, jd::format_type::uncoded, nullptr, std::uniform_int_distribution<>()(rand_gen));
+    data_pairs[io::M] = make_data_obj(ts_descs[io::M], false, {static_cast<float>(sl_M), static_cast<float>(sl_M)}, 0.f,
+                                      jd::format_type::uncoded, nullptr, std::uniform_int_distribution<>()(rand_gen));
+    data_pairs[io::N] = make_data_obj(ts_descs[io::N], false, {static_cast<float>(sl_N), static_cast<float>(sl_N)}, 0.f,
+                                      jd::format_type::uncoded, nullptr, std::uniform_int_distribution<>()(rand_gen));
+  }
+  for (std::underlying_type<io>::type idx = 0; idx < io::SIZE; ++idx) {
+    rt_data[idx] = data_pairs[idx].first;
+    rt_data_cpy[idx] = data_pairs[idx].second;
+  }
 
   // hide shapes in ts_descs if use dynamic shape
   if (dynamic_shape)
@@ -192,7 +180,8 @@ test_data_t gen_data(const dim_t batch_size, const dim_t head_num, const dim_t s
           ts_descs[idx].dtype(),
           ts_descs[idx].ftype(),
       };
-  operator_desc op_desc(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, op_attrs);
+  jd::operator_desc op_desc(jd::kernel_kind::mha_dense, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                            ts_descs, op_attrs);
 
   return {op_desc, rt_data, rt_data_cpy};
 }
@@ -211,7 +200,7 @@ static auto case_func = []() {
   cases.push_back({2, 4, 1024, 80, 77, false, 0});
   cases.push_back({2, 4, 256, 160, 77, false, 0});
   cases.push_back({1, 1, 256, 160, 256, false, 0});
-  if (isa_available(amx_int8)) cases.push_back({1, 1, 4096, 40, 4096, false, 0});
+  cases.push_back({1, 1, 4096, 40, 4096, false, 0});
   return ::testing::ValuesIn(cases);
 };
 
@@ -244,4 +233,4 @@ static std::string test_suffix(const testing::TestParamInfo<test_params_t>& tpi)
 }
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, DynQuantMHAKernTest, case_func(), test_suffix);
-}  // namespace jd
+}  // namespace test

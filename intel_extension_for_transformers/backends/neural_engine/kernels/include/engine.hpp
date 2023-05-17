@@ -30,15 +30,12 @@ class engine_t {
   virtual ~engine_t() {}
 
  public:
-  inline const engine_kind& get_engine_kind() const { return engine_kind_; }
-  inline const runtime_kind& get_runtime_kind() const { return runtime_kind_; }
+  const engine_kind& get_engine_kind() const { return engine_kind_; }
+  const runtime_kind& get_runtime_kind() const { return runtime_kind_; }
   virtual const std::vector<impl_list_item_t>* get_implementation_list(const operator_desc& op_desc) const = 0;
-  virtual bool create_kernel(const operator_desc&, std::shared_ptr<kernel_t>&,  // NOLINT
-                             const stream_t*) const {
-    return true;
-  }
-  virtual bool create_stream(stream_t**) const { return true; }
-  virtual bool create_memory_storage(memory_storage_t**) const { return true; }
+  virtual bool create_kernel(const operator_desc&, std::shared_ptr<kernel_t>&, const stream_t*) const = 0;  // NOLINT
+  virtual bool create_stream(stream_t**) const = 0;
+  virtual bool create_memory_storage(memory_storage_t**) const = 0;
 
  protected:
   engine_kind engine_kind_;

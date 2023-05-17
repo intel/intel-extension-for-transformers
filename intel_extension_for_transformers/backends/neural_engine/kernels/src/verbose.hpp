@@ -11,8 +11,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#ifndef ENGINE_SPARSELIB_INCLUDE_VERBOSE_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_VERBOSE_HPP_
+#ifndef ENGINE_SPARSELIB_SRC_VERBOSE_HPP_
+#define ENGINE_SPARSELIB_SRC_VERBOSE_HPP_
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "param_types.hpp"
-#include "utils.hpp"
+#include "data_type/data_types.hpp"
 
 namespace jd {
 int get_verbose();
@@ -67,7 +67,7 @@ class kd_info_t {
   const char* c_str() const { return str_.c_str(); }
   bool is_initialized() const { return is_initialized_; }
 
-  void init(jd::kernel_kind kind, std::vector<dim_t> shape);
+  void init(kernel_kind kind, std::vector<dim_t> shape);
 
  private:
   std::string str_;
@@ -82,4 +82,4 @@ class kd_info_t {
 };
 
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_VERBOSE_HPP_
+#endif  // ENGINE_SPARSELIB_SRC_VERBOSE_HPP_

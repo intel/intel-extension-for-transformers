@@ -17,6 +17,7 @@
 
 #include <vector>
 #include "param_types.hpp"
+#include "data_type/bf16.hpp"
 
 namespace jd {
 namespace ssd {

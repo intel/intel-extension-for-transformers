@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_OPENCL_COMMON_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_OPENCL_COMMON_HPP_
+#ifndef ENGINE_SPARSELIB_SRC_OPENCL_COMMON_HPP_
+#define ENGINE_SPARSELIB_SRC_OPENCL_COMMON_HPP_
 
 #include <CL/cl.h>
 
@@ -23,4 +23,4 @@ namespace jd {
 // Print an error message to screen (only if it occurs)
 void checkError(cl_int error, int line);
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_OPENCL_COMMON_HPP_
+#endif  // ENGINE_SPARSELIB_SRC_OPENCL_COMMON_HPP_

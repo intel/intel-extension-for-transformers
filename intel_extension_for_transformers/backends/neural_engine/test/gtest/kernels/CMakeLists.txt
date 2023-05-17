@@ -40,7 +40,6 @@ file(GLOB KERNEL_TEST_CASES_SRC
     test_gather_kernel.cpp
     test_matmul_avx512f_p2031_p2013.cpp
     test_matmul_avx512f_8bit.cpp
-    test_matmul_vnni_p2031_p2013.cpp
     test_matmul_vnni_noperm_p2031_p1302.cpp
     test_softmax_kernel.cpp
     test_layernormalized_spmm_kernel.cpp
@@ -62,9 +61,6 @@ check_isa("avx512_vnni")
 if(${avx512_vnni_found})
   list(APPEND KERNEL_TEST_CASES_SRC test_attention.cpp)
   list(APPEND KERNEL_TEST_CASES_SRC test_transpose_mha.cpp)
-  list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_tr_src0.cpp)
-  list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_tr_src1.cpp)
-  list(APPEND KERNEL_TEST_CASES_SRC test_matmul_vnni_p2031_p2013_mm_tile.cpp)
 endif()
 
 function(register_gtest_func exe src)

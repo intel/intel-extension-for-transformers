@@ -78,7 +78,7 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul avx512f
 - `output_fp32 = {0,1}` set to `1` to output fp32, while set to 0 to output int8.
 - `has_append_sum = {0,1}`  set to  `1` to append sum on output otherwise set to 0.
 - `micro_oc` is used to specify the data parallel in OC dim, and set to `-1` to automaticlly calculate.
-- `sub_func_level` is a positive integer up to `ssd::subfunc_level::subfunc_level_MAX`. Higher value means more code folding.
+- `sub_func_level` is a positive integer up to `jd::ssd::subfunc_level::subfunc_level_MAX`. Higher value means more code folding.
 - `[<post-op>...]` There can be more than one post-op. Please refer to [eltwiseop](#eltwiseop) to see supported `algorithm`.
 
 
@@ -106,7 +106,7 @@ make -j
 - `micro_bs` is used in [3D_inference](../../../kernels/docs/kernel_desc/3D_inference.md), and set to `-1` to avoid to use it.
 - `micro_oc` is used to specify the data parallel in OC dim, and set to `-1` to automatically calculate.
 - `output_bf16 = {0,1}` set to `1` to output bf16, while set to 0 to output fp32.
-- `sub_func_level` is a positive integer up to `ssd::subfunc_level::subfunc_level_MAX`. Higher value means more code folding.
+- `sub_func_level` is a positive integer up to `jd::ssd::subfunc_level::subfunc_level_MAX`. Higher value means more code folding.
 - `[<post-op>...]` There can be more than one post-op. Please refer to [eltwiseop](#eltwiseop) to see supported `algorithm`.
 
 You can use `-1` to use default config for `micro_bs`, `micro_oc`.
@@ -118,20 +118,20 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf sparse_matmul amx_bf1
 
 ### eltwiseop
 ```shell
-[<environment_variable>...] ./benchmark <mode> eltwiseop <M> <N> <data_type>_<algorithm>[+<data_type>_<algorithm>[+...]] <ranges>
+[<environment_variable>...] ./benchmark <mode> eltwiseop <M> <N> <jd::data_type>_<algorithm>[+<jd::data_type>_<algorithm>[+...]] <ranges>
 ```
 Eltwiseop is a series of element-wise calculation, and we have appended it to sparse GEMM in Kernels. We use 2D shape specification in eltwiseop.
 - `M,N` is the shape of input and output.
 - `ranges` specifies the interval where values of src tensor are located. It has the form of `<lower_bound>,<upper_bound>`.
-- `<data_type>_<algorithm>` describe a kind of element-wise calculation.There can be more than one postop and they should be concatenated by `+`.
-- `data_type = {bf16,fp32}` There should be **only one** `data_type` in each test case, for example, `fp32_gelu+bf16_exp` is invalid.
+- `<jd::data_type>_<algorithm>` describe a kind of element-wise calculation.There can be more than one postop and they should be concatenated by `+`.
+- `jd::data_type = {bf16,fp32}` There should be **only one** `jd::data_type` in each test case, for example, `fp32_gelu+bf16_exp` is invalid.
 -  `algorithm`  Current supported :
     + `exp`
     + `gelu`
     + `tanh`
     + `relu`
-    + `quantize` : converts `fp32` to `u8`. This `algorithm` doesn't require a `data_type` prefix.
-    + `dequantize`: converts `u8` to `fp32`. This `algorithm` doesn't require a `data_type` prefix.
+    + `quantize` : converts `fp32` to `u8`. This `algorithm` doesn't require a `jd::data_type` prefix.
+    + `dequantize`: converts `u8` to `fp32`. This `algorithm` doesn't require a `jd::data_type` prefix.
 
 #### Examples
 ```shell
@@ -202,7 +202,7 @@ BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf softmax lut 256x256 u
 BENCHMARK_ITER=100 BENCHMARK_NO_REFRESH=0 ./benchmark perf attention 1 64 8 128 0.5 1
 ```
 
-      
+
 ### Static MHA
 ```shell
 [<environment_variable>...] ./benchmark <mode> mha_dense <batch_size> <seq_len> <head_num> <head_size> [dst_type] [padding_mask] [badd_dim]
@@ -240,7 +240,7 @@ BENCHMARK_ITER=10 BENCHMARK_NO_REFRESH=0 ./benchmark perf dynamic_quant_matmul 1
 - `quantize_dim_elt_num` the number of elements in the quantized dim.
 - `src_data_type` could be one of `fp32` / `bf16`, indicate the data type of input-tensor.
 
-Please note that dynamic_quant only supports per-channel symmetric quantization.  
+Please note that dynamic_quant only supports per-channel symmetric quantization.
 
 #### Examples
 ```shell

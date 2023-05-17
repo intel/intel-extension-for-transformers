@@ -86,7 +86,7 @@ DEFINE_DEFAULT_INIT_INFO(matmul)
 DEFINE_DEFAULT_INIT_INFO(groupnorm)
 #undef DEFINE_DEFAULT_INIT_INFO
 
-void kd_info_t::init(jd::kernel_kind kind, std::vector<dim_t> shape) {
+void kd_info_t::init(kernel_kind kind, std::vector<dim_t> shape) {
   if (is_initialized_) return;
 
   std::call_once(initialization_flag_, [&] {

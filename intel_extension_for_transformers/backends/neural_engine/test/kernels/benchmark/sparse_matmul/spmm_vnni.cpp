@@ -11,53 +11,43 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
-#include "sparse_matmul/spmm_vnni.hpp"
-
+#include "spmm_vnni.hpp"
 #include <memory>
+#include <functional>
 
-#include "kernels/spmm_ref.hpp"
+#include "src/cpu/kernels/spmm_ref.hpp"
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
-#include "utils.hpp"
 
 #define WORKSPACE
 
-namespace jd {
-
-using dt = jd::data_type;
-using ft = jd::format_type;
+namespace bench {
 
 void spmm_vnni_bench::get_true_data() {}
-
 bool spmm_vnni_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
-
-  std::shared_ptr<const kernel_desc_t> spmm_ref_desc;
-  kernel_desc_t::create<spmm_ref_kd_t>(spmm_ref_desc, q.op_desc);
-  std::shared_ptr<const kernel_t> spmm_ref_kernel;
-  kernel_t::create<spmm_ref_k_t, spmm_ref_kd_t>(spmm_ref_kernel, spmm_ref_desc);
+  std::shared_ptr<const jd::kernel_desc_t> spmm_ref_desc;
+  jd::kernel_desc_t::create<jd::spmm_ref_kd_t>(spmm_ref_desc, q.op_desc);
+  std::shared_ptr<const jd::kernel_t> spmm_ref_kernel;
+  jd::kernel_t::create<jd::spmm_ref_k_t, jd::spmm_ref_kd_t>(spmm_ref_kernel, spmm_ref_desc);
   spmm_ref_kernel->execute(q.rt_data);
-
-  auto buf1 = p.rt_data[ssd::DST];
-  auto size1 = p.op_desc.tensor_descs()[ssd::DST].size();
-  auto buf2 = q.rt_data[ssd::DST];
-  auto size2 = q.op_desc.tensor_descs()[ssd::DST].size();
-
-  const auto& dst_type = p.op_desc.tensor_descs()[ssd::DST].dtype();
-  if (dst_type == dt::fp32) {
+  auto buf1 = p.rt_data[jd::ssd::DST];
+  auto size1 = p.op_desc.tensor_descs()[jd::ssd::DST].size();
+  auto buf2 = q.rt_data[jd::ssd::DST];
+  auto size2 = q.op_desc.tensor_descs()[jd::ssd::DST].size();
+  const auto& dst_type = p.op_desc.tensor_descs()[jd::ssd::DST].dtype();
+  if (dst_type == jd::data_type::fp32) {
     return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
-  } else if (dst_type == dt::s32) {
+  } else if (dst_type == jd::data_type::s32) {
     return compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
-  } else if (dst_type == dt::u8) {
+  } else if (dst_type == jd::data_type::u8) {
     return compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
-  } else if (dst_type == dt::s8) {
+  } else if (dst_type == jd::data_type::s8) {
     return compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
   }
   return false;
 }
-
 template <typename T>
 void prepare_sparse_data_spmm_vnni(T* vector_data, dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col, float sparsity,
                                    uint32_t* seed = nullptr) {
@@ -77,27 +67,26 @@ void prepare_sparse_data_spmm_vnni(T* vector_data, dim_t rows, dim_t cols, dim_t
     }
   }
 }
-
-std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<int64_t>& a_shape, const dt& a_dt,
-                                                            bool is_clear, float sparse_ratio,
-                                                            const std::vector<float>& ranges) {
+std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<int64_t>& a_shape,
+                                                            const jd::data_type& a_dt, bool is_clear,
+                                                            float sparse_ratio, const std::vector<float>& ranges) {
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<size_t>());
-  int bytes_size = elem_num * type_size[a_dt];
+  int bytes_size = elem_num * jd::type_size[a_dt];
   void* data_ptr = nullptr;
   if (is_clear) {
     data_ptr = aligned_allocator_t<uint8_t, 64>::allocate(bytes_size);
     memset(data_ptr, 0, bytes_size);
   } else {
-    if (a_dt == dt::fp32) {
+    if (a_dt == jd::data_type::fp32) {
       data_ptr = aligned_allocator_t<float, 64>::allocate(elem_num);
       init_vector(static_cast<float*>(data_ptr), elem_num, ranges[0], ranges[1]);
-    } else if (a_dt == dt::s32) {
+    } else if (a_dt == jd::data_type::s32) {
       data_ptr = aligned_allocator_t<int32_t, 64>::allocate(elem_num);
       init_vector(static_cast<int32_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
-    } else if (a_dt == dt::u8) {
+    } else if (a_dt == jd::data_type::u8) {
       data_ptr = aligned_allocator_t<uint8_t, 64>::allocate(elem_num);
       init_vector(static_cast<uint8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
-    } else if (a_dt == dt::s8) {
+    } else if (a_dt == jd::data_type::s8) {
       data_ptr = aligned_allocator_t<int8_t, 64>::allocate(elem_num);
       init_vector(static_cast<int8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
       if (sparse_ratio != 0.f) {
@@ -106,18 +95,15 @@ std::pair<const void*, const void*> make_data_obj_spmm_vnni(const std::vector<in
       }
     }
   }
-
   void* data_ptr_copy = aligned_allocator_t<uint8_t, 64>::allocate(bytes_size);
   memcpy(data_ptr_copy, data_ptr, bytes_size);
   return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
 }
-
 std::vector<float> make_output_scale(dim_t size, const std::vector<float>& ranges = {-10, 10}) {
   std::vector<float> output_scale(size, 0);
-  init_vector(output_scale.data(), size * sizeof(float), ranges[0], ranges[1]);
+  init_vector(output_scale.data(), size, ranges[0], ranges[1]);
   return output_scale;
 }
-
 void spmm_vnni_bench::gen_case() {
   // Step 1: Construct operator config
   bool append_sum = (op_attrs["append_sum"] == "true");
@@ -125,22 +111,21 @@ void spmm_vnni_bench::gen_case() {
   micro_bs = micro_bs == -1 ? N : micro_bs;
   LOG_IF(FATAL, N % micro_bs != 0) << "micro_bs must be a multiple of N";
   dim_t num_mbs = N / micro_bs;
-
   // Step 2: Construct runtime data
-  tensor_desc wei_desc = {{M, K}, dt::s8, ft::bsr};
-  tensor_desc src_desc = {{num_mbs, K, micro_bs}, dt::u8, ft::ab};
-  tensor_desc bia_desc = {{M, 1}, dt::s32, ft::ab};
-  tensor_desc dst_desc = {{num_mbs, M, micro_bs}, dt_dst, ft::ab};
-  tensor_desc scales_desc = {{M, 1}, dt::fp32, ft::ab};
+  jd::tensor_desc wei_desc = {{M, K}, jd::data_type::s8, jd::format_type::bsr};
+  jd::tensor_desc src_desc = {{num_mbs, K, micro_bs}, jd::data_type::u8, jd::format_type::ab};
+  jd::tensor_desc bia_desc = {{M, 1}, jd::data_type::s32, jd::format_type::ab};
+  jd::tensor_desc dst_desc = {{num_mbs, M, micro_bs}, dt_dst, jd::format_type::ab};
+  jd::tensor_desc scales_desc = {{M, 1}, jd::data_type::fp32, jd::format_type::ab};
   ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
   if (welford) {
-    tensor_desc mean_desc = {{num_mbs, micro_bs}, dt::fp32, ft::a};
-    tensor_desc var_desc = {{num_mbs, micro_bs}, dt::fp32, ft::a};
+    jd::tensor_desc mean_desc = {{num_mbs, micro_bs}, jd::data_type::fp32, jd::format_type::a};
+    jd::tensor_desc var_desc = {{num_mbs, micro_bs}, jd::data_type::fp32, jd::format_type::a};
     ts_descs.push_back(mean_desc);
     ts_descs.push_back(var_desc);
   }
 #ifdef WORKSPACE
-  tensor_desc workspace_desc = {{M * 2, N}, dt::fp32, ft::ab};
+  jd::tensor_desc workspace_desc = {{M * 2, N}, jd::data_type::fp32, jd::format_type::ab};
   ts_descs.push_back(workspace_desc);
 #endif
   std::vector<const void*> rt_data1;
@@ -148,65 +133,60 @@ void spmm_vnni_bench::gen_case() {
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
     auto& tsd = ts_descs[index];
-    bool is_clear = (index == ssd::DST && !append_sum);
-    float data_sparsity = (index == ssd::WEI) ? sparse_ratio : 0;
-    auto ranges = (index == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
+    bool is_clear = (index == jd::ssd::DST && !append_sum);
+    float data_sparsity = (index == jd::ssd::WEI) ? sparse_ratio : 0;
+    auto ranges = (index == jd::ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
     auto data_pair = make_data_obj_spmm_vnni(tsd.shape(), tsd.dtype(), is_clear, data_sparsity, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
-
   float scale = make_output_scale(1)[0];
-
   // Step 3: sparse data encoding
-  auto sparse_ptr = new bsr_data_t<int8_t>(
-      spns::reorder_to_bsr_group<int8_t, 4>(M, K, 4, 1, static_cast<const int8_t*>(rt_data1[ssd::WEI])));
+  auto sparse_ptr = new jd::bsr_data_t<int8_t>(
+      jd::spns::reorder_to_bsr_group<int8_t, 4>(M, K, 4, 1, static_cast<const int8_t*>(rt_data1[jd::ssd::WEI])));
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
-  std::vector<postop_attr> apply_postops_list;
+  std::vector<jd::postop_attr> apply_postops_list;
   if (postop_algs.size()) {
-    auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };
+    auto accu_op = [](std::string str_lists, jd::postop_alg alg) { return str_lists + '_' + jd::postop_alg_name[alg]; };
     op_attrs["postop_list"] = std::accumulate(postop_algs.begin() + 1, postop_algs.end(),
-                                              std::string(postop_alg_name[postop_algs[0]]), accu_op);
+                                              std::string(jd::postop_alg_name[postop_algs[0]]), accu_op);
     for (auto& alg : postop_algs) {
-      postop_attr attr(dt::fp32, postop_type::eltwise, alg, 0.0, 0.0, scale);
+      jd::postop_attr attr(jd::data_type::fp32, jd::postop_type::eltwise, alg, 0.0, 0.0, scale);
       apply_postops_list.push_back(attr);
     }
   }
-  if (dt_dst == dt::s8 || dt_dst == dt::u8) {
-    postop_attr attr(dt_dst, postop_type::eltwise, postop_alg::quantize, 0.0, 0.0, scale);
+  if (dt_dst == jd::data_type::s8 || dt_dst == jd::data_type::u8) {
+    jd::postop_attr attr(dt_dst, jd::postop_type::eltwise, jd::postop_alg::quantize, 0.0, 0.0, scale);
     apply_postops_list.push_back(attr);
   }
-  operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                           op_attrs, apply_postops_list);
-
+  jd::operator_desc an_op_desc(jd::kernel_kind::sparse_matmul, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                               ts_descs, op_attrs, apply_postops_list);
   // Step 4: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1};
   op_args_t op_args_copy = {an_op_desc, rt_data2};
-
   args = {op_args, op_args_copy};
 }
-
 bench_res_t spmm_vnni_bench::set_config(int argc, char** argv) {
   LOG(INFO) << "spmm_vnni\n";
   if (argc < SPMM_VNNI_ARG_NUM) {
     LOG(ERROR) << "Not enough arguments passed";
     return {bench_status::wrong_input};
   }
-  M = str_to_num<int64_t>(argv[0]);                        // M
-  K = str_to_num<int64_t>(argv[1]);                        // K
-  N = str_to_num<int64_t>(argv[2]);                        // N
-  sparse_ratio = str_to_num<float>(argv[3]);               // sparse_ratio
-  micro_bs = str_to_num<int64_t>(argv[4]);                 // micro_bs
-  dt_dst = strcmp(argv[5], "1") == 0 ? dt::fp32 : dt::s8;  // is_fp32_out
-  calc_mean_var = strcmp(argv[6], "2") == 0;               // calc mean and var
-  if (calc_mean_var && dt_dst != dt::fp32) {
+  M = str_to_num<int64_t>(argv[0]);                                              // M
+  K = str_to_num<int64_t>(argv[1]);                                              // K
+  N = str_to_num<int64_t>(argv[2]);                                              // N
+  sparse_ratio = str_to_num<float>(argv[3]);                                     // sparse_ratio
+  micro_bs = str_to_num<int64_t>(argv[4]);                                       // micro_bs
+  dt_dst = strcmp(argv[5], "1") == 0 ? jd::data_type::fp32 : jd::data_type::s8;  // is_fp32_out
+  calc_mean_var = strcmp(argv[6], "2") == 0;                                     // calc mean and var
+  if (calc_mean_var && dt_dst != jd::data_type::fp32) {
     LOG(ERROR) << "calc_mean_var requires fp32";
     bench_res_t res;
     res.stat = bench_status::fail;
     return res;
   }
   bool append_sum = strcmp(argv[6], "1") == 0 || calc_mean_var;  // has_append_sum
-  if (append_sum && dt_dst != dt::fp32) {
+  if (append_sum && dt_dst != jd::data_type::fp32) {
     LOG(ERROR) << "append_sum requires fp32";
     bench_res_t res;
     res.stat = bench_status::fail;
@@ -214,18 +194,16 @@ bench_res_t spmm_vnni_bench::set_config(int argc, char** argv) {
   }
   int64_t micro_oc = str_to_num<int64_t>(argv[7]);
   int sub_func_level = strlen(argv[8]) == 0 ? -1 : str_to_num<int>(argv[8]);  // -1 for invalid/defalut config
-  if (argc > 9 && strcmp(argv[9], "gelu")) postop_algs.push_back(postop_alg::gelu);
-  if (argc > 9 && strcmp(argv[9], "exp")) postop_algs.push_back(postop_alg::exp);
-
+  if (argc > 9 && strcmp(argv[9], "gelu")) postop_algs.push_back(jd::postop_alg::gelu);
+  if (argc > 9 && strcmp(argv[9], "exp")) postop_algs.push_back(jd::postop_alg::exp);
   if (append_sum) op_attrs["post_op"] = "append_sum";
   if (calc_mean_var) op_attrs["welford"] = "true";
   if (micro_oc >= 0) op_attrs["micro_oc"] = std::to_string(micro_oc);
   if (sub_func_level >= 0) {
-    if (sub_func_level <= static_cast<uint8_t>(ssd::subfunc_level::subfunc_level_MAX)) {
+    if (sub_func_level <= static_cast<uint8_t>(jd::ssd::subfunc_level::subfunc_level_MAX)) {
       op_attrs["sub_func"] = std::to_string(sub_func_level);
     }
   }
   return {bench_status::success};
 }
-
-}  // namespace jd
+}  // namespace bench

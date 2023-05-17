@@ -14,10 +14,11 @@
 #include <map>
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
+#include "interface.hpp"
 
-namespace jd {
+namespace test {
 struct op_args_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::vector<const void*> data;
 };
 
@@ -26,39 +27,7 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-template <typename T>
-void cast_to_float_array(const void* src, float* dst, int size) {
-  T* src_typed = reinterpret_cast<T*>(const_cast<void*>(src));
-  for (int i = 0; i < size; ++i) {
-    dst[i] = static_cast<float>(src_typed[i]);
-  }
-}
-
-template <>
-void cast_to_float_array<bfloat16_t>(const void* src, float* dst, int size) {
-  bfloat16_t* src_typed = reinterpret_cast<bfloat16_t*>(const_cast<void*>(src));
-  for (int i = 0; i < size; ++i) {
-    dst[i] = bf16_to_fp32(src_typed[i]);
-  }
-}
-
-template <typename T>
-void cast_from_float_array(float* src, void* dst, int size) {
-  T* dst_typed = reinterpret_cast<T*>(dst);
-  for (int i = 0; i < size; ++i) {
-    dst_typed[i] = static_cast<T>(src[i]);
-  }
-}
-
-template <>
-void cast_from_float_array<bfloat16_t>(float* src, void* dst, int size) {
-  bfloat16_t* dst_typed = reinterpret_cast<bfloat16_t*>(dst);
-  for (int i = 0; i < size; ++i) {
-    dst_typed[i] = fp32_to_bf16(src[i]);
-  }
-}
-
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+void get_true_data(const jd::operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   auto src_tensor = op_desc.tensor_descs()[0];
   auto dst_tensor = op_desc.tensor_descs()[1];
   int size = src_tensor.size();
@@ -73,7 +42,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   } else if (src_dt == jd::data_type::u8) {
     cast_to_float_array<uint8_t>(src, src_fp32, size);
   } else if (src_dt == jd::data_type::bf16) {
-    cast_to_float_array<bfloat16_t>(src, src_fp32, size);
+    cast_to_float_array<jd::bfloat16_t>(src, src_fp32, size);
   } else if (src_dt == jd::data_type::s32) {
     cast_to_float_array<int>(src, src_fp32, size);
   } else if (src_dt == jd::data_type::fp32) {
@@ -88,7 +57,7 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
   } else if (dst_dt == jd::data_type::u8) {
     cast_from_float_array<uint8_t>(src_fp32, dst, size);
   } else if (dst_dt == jd::data_type::bf16) {
-    cast_from_float_array<bfloat16_t>(src_fp32, dst, size);
+    cast_from_float_array<jd::bfloat16_t>(src_fp32, dst, size);
   } else if (dst_dt == jd::data_type::s32) {
     cast_from_float_array<int>(src_fp32, dst, size);
   } else if (dst_dt == jd::data_type::fp32) {
@@ -103,8 +72,8 @@ bool check_result(const test_params_t& t) {
 
   try {
     const auto& op_desc = p.op_desc;
-    eltwiseop_desc eltwiseop_desc(op_desc);
-    eltwiseop eltwiseop_kern(eltwiseop_desc);
+    jd::eltwiseop_desc eltwiseop_desc(op_desc);
+    jd::eltwiseop eltwiseop_kern(eltwiseop_desc);
     eltwiseop_kern.execute(p.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
@@ -123,15 +92,15 @@ bool check_result(const test_params_t& t) {
     auto dst_type = p.op_desc.tensor_descs()[1].dtype();
     EXPECT_NE(buf1, buf2);
     bool ans = false;
-    if (dst_type == data_type::fp32) {
+    if (dst_type == jd::data_type::fp32) {
       ans = compare_data<float>(buf1, size1, buf2, size2, 1e-1);
-    } else if (dst_type == data_type::u8) {
+    } else if (dst_type == jd::data_type::u8) {
       ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-2);
-    } else if (dst_type == data_type::s8) {
+    } else if (dst_type == jd::data_type::s8) {
       ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1e-2);
-    } else if (dst_type == data_type::bf16) {
-      ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-2);
-    } else if (dst_type == data_type::s32) {
+    } else if (dst_type == jd::data_type::bf16) {
+      ans = compare_data<jd::bfloat16_t>(buf1, size1, buf2, size2, 1e-2);
+    } else if (dst_type == jd::data_type::s32) {
       ans = compare_data<int>(buf1, size1, buf2, size2, 1e-2);
     }
     free(const_cast<void*>(p.data[0]));
@@ -160,11 +129,11 @@ TEST_P(EltwiseopKernelTest, TestPostfix) {
   EXPECT_TRUE(check_result(t));
 }
 
-std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
+std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_descs,
                                          const std::unordered_map<std::string, std::string> op_attrs,
-                                         const std::vector<postop_attr>& postop_attr) {
-  operator_desc eltwiseop_desc(kernel_kind::eltwiseop, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                               op_attrs, postop_attr);
+                                         const std::vector<jd::postop_attr>& postop_attr) {
+  jd::operator_desc eltwiseop_desc(jd::kernel_kind::eltwiseop, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                                   ts_descs, op_attrs, postop_attr);
 
   int num = get_element_num(eltwiseop_desc);
   void* src = nullptr;
@@ -208,29 +177,34 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
-  tensor_desc data0_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
-  tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
-  tensor_desc data2_desc = {{64, 1}, jd::data_type::fp32, jd::format_type::undef};
-  tensor_desc data3_desc = {{64, 1}, jd::data_type::bf16, jd::format_type::undef};
-  tensor_desc data4_desc = {{1024, 1024}, jd::data_type::u8, jd::format_type::undef};
-  tensor_desc data5_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
-  tensor_desc data6_desc = {{64, 1}, jd::data_type::u8, jd::format_type::undef};
+  jd::tensor_desc data0_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
+  jd::tensor_desc data1_desc = {{1024, 1024}, jd::data_type::bf16, jd::format_type::undef};
+  jd::tensor_desc data2_desc = {{64, 1}, jd::data_type::fp32, jd::format_type::undef};
+  jd::tensor_desc data3_desc = {{64, 1}, jd::data_type::bf16, jd::format_type::undef};
+  jd::tensor_desc data4_desc = {{1024, 1024}, jd::data_type::u8, jd::format_type::undef};
+  jd::tensor_desc data5_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
+  jd::tensor_desc data6_desc = {{64, 1}, jd::data_type::u8, jd::format_type::undef};
 
-  postop_attr fp32_exp_attr{data_type::fp32, postop_type::eltwise, postop_alg::exp};
-  postop_attr bf16_exp_attr{data_type::bf16, postop_type::eltwise, postop_alg::exp};
-  postop_attr fp32_swish_attr{data_type::fp32, postop_type::eltwise, postop_alg::swish, 2};
-  postop_attr bf16_swish_attr{data_type::bf16, postop_type::eltwise, postop_alg::swish, 2};
-  postop_attr fp32_gelu_attr{data_type::fp32, postop_type::eltwise, postop_alg::gelu};
-  postop_attr bf16_gelu_attr{data_type::bf16, postop_type::eltwise, postop_alg::gelu};
-  postop_attr fp32_relu_attr{data_type::fp32, postop_type::eltwise, postop_alg::relu, 2.0};
-  postop_attr quantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.04);
-  postop_attr quantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.04);
-  postop_attr dequantize_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::dequantize, 0, 0, 0.04);
-  postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, 0, 0, 0.04);
-  postop_attr fp32_tanh_attr{data_type::fp32, postop_type::eltwise, postop_alg::tanh};
-  postop_attr bit8_lut_u8_attr{data_type::u8, postop_type::eltwise, postop_alg::eltop_int_lut, 8};  // u8 as input dt
-  postop_attr bit8_lut_s8_attr{data_type::s8, postop_type::eltwise, postop_alg::eltop_int_lut, 8};  // s8 as input dt
-  postop_attr bit16_lut_u8_attr{data_type::u8, postop_type::eltwise, postop_alg::eltop_int_lut, 16, 256};
+  jd::postop_attr fp32_exp_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::exp};
+  jd::postop_attr bf16_exp_attr{jd::data_type::bf16, jd::postop_type::eltwise, jd::postop_alg::exp};
+  jd::postop_attr fp32_swish_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::swish, 2};
+  jd::postop_attr bf16_swish_attr{jd::data_type::bf16, jd::postop_type::eltwise, jd::postop_alg::swish, 2};
+  jd::postop_attr fp32_gelu_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::gelu};
+  jd::postop_attr bf16_gelu_attr{jd::data_type::bf16, jd::postop_type::eltwise, jd::postop_alg::gelu};
+  jd::postop_attr fp32_relu_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::relu, 2.0};
+  jd::postop_attr quantize_s8_attr(jd::data_type::s8, jd::postop_type::eltwise, jd::postop_alg::quantize, 0, 0, 0.04);
+  jd::postop_attr quantize_u8_attr(jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, 0, 0, 0.04);
+  jd::postop_attr dequantize_u8_attr(jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::dequantize, 0, 0,
+                                     0.04);
+  jd::postop_attr dequantize_s8_attr(jd::data_type::s8, jd::postop_type::eltwise, jd::postop_alg::dequantize, 0, 0,
+                                     0.04);
+  jd::postop_attr fp32_tanh_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::tanh};
+  jd::postop_attr bit8_lut_u8_attr{jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::eltop_int_lut,
+                                   8};  // u8 as input jd::data_type
+  jd::postop_attr bit8_lut_s8_attr{jd::data_type::s8, jd::postop_type::eltwise, jd::postop_alg::eltop_int_lut,
+                                   8};  // s8 as input jd::data_type
+  jd::postop_attr bit16_lut_u8_attr{jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::eltop_int_lut, 16,
+                                    256};
 
   cases.push_back({gen_case({data5_desc, data0_desc}, {{"postop_list", "s8dequantize"}}, {dequantize_s8_attr}), false});
 
@@ -293,4 +267,4 @@ static auto case_func = []() {
 };
 
 INSTANTIATE_TEST_SUITE_P(Prefix, EltwiseopKernelTest, case_func());
-}  // namespace jd
+}  // namespace test

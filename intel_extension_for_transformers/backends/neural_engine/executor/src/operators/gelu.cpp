@@ -15,7 +15,6 @@
 #include "gelu.hpp"
 
 #include "common.hpp"
-
 namespace executor {
 
 static unordered_map<string, dnnl::memory::data_type> type2mem{
@@ -29,89 +28,16 @@ GeluOperator::GeluOperator(const shared_ptr<OperatorConfig>& conf) : Operator(co
   if (iter != attrs_map.end()) {
     algorithm_ = iter->second;
   }
-
-  if (attrs_map.find("in8_lut_optimize") != attrs_map.end()) {
-    int8_lut_optimize = true;
-  }
-
-  if (attrs_map.find("int8_lut_acc_test") != attrs_map.end()) {
-    int8_lut_acc_test = true;
-  }
 }
 
 void GeluOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  if (int8_lut_optimize || int8_lut_acc_test) {
-    output[0]->set_dtype("u8");
-  } else {
-    // dnnl sigmoid supports f32 / bf16 / f16 / s32 / s8 / u8
-    output[0]->set_dtype(input[0]->dtype());
-  }
+  // dnnl sigmoid supports f32 / bf16 / f16 / s32 / s8 / u8
+  output[0]->set_dtype(input[0]->dtype());
 }
 
 void GeluOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-#ifdef WITH_SPARSELIB
-  if (int8_lut_optimize)
-    ReshapeWithSparselib(input, output);
-  else if (int8_lut_acc_test)
-    ReshapeWithInt8LutAccTest(input, output);
-  else
-#endif
-    ReshapeWithOnednn(input, output);
+  ReshapeWithOnednn(input, output);
 }
-
-#ifdef WITH_SPARSELIB
-void GeluOperator::ReshapeWithInt8LutAccTest(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  auto input_dt = input[0]->dtype();
-  auto src_min = input[1];
-  auto src_max = input[2];
-  Tensor* dst_tensor_ptr = output[0];
-  dst_tensor_ptr->set_shape(input[0]->shape());
-}
-
-
-void GeluOperator::ReshapeWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  auto input_dt = input[0]->dtype();
-  auto src_min = input[1];
-  auto src_max = input[2];
-  Tensor* dst_tensor_ptr = output[0];
-  dst_tensor_ptr->set_shape(input[0]->shape());
-  //  get scale & zero point;
-  const float* min_p = static_cast<const float*>(src_min->data());
-  const float* max_p = static_cast<const float*>(src_max->data());
-  float scale = (max_p[0] - min_p[0]) / 255;
-  float zp = 0;
-  jd::data_type attr_dtype = jd::data_type::undef;
-  // gen int8-lut attr
-  if (input_dt == "s8") {
-    attr_dtype = jd::data_type::s8;
-    src_desc_ = {input[0]->shape(), jd::data_type::s8, jd::format_type::undef};
-    zp = -min_p[0] / scale;
-  } else if (input_dt == "u8") {
-    attr_dtype = jd::data_type::u8;
-    src_desc_ = {input[0]->shape(), jd::data_type::u8, jd::format_type::undef};
-    zp = min_p[0] + min_p[0] * scale;
-  } else {
-    LOG(ERROR) << "int8-lut kernel only support s8/u8 as input.";
-  }
-  std::unordered_map<std::string, std::string> op_attr;
-  op_attr["postop_list"] = std::to_string(scale) + "+" + std::to_string(zp) + "gelu";
-
-  jd::postop_attr dequantize_attr{attr_dtype, jd::postop_type::eltwise, jd::postop_alg::dequantize, zp, 0, scale};
-  jd::postop_attr quantize_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::quantize, zp, 0, scale};
-
-  jd::postop_attr int8_lut_attr{attr_dtype, jd::postop_type::eltwise, jd::postop_alg::eltop_int_lut, 8};
-
-  dst_desc_ = {output[0]->shape(), jd::data_type::u8, jd::format_type::undef};
-
-  jd::postop_attr gelu_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::gelu};
-  std::vector<jd::postop_attr> postop_attrs = {int8_lut_attr, dequantize_attr, gelu_attr, quantize_attr};
-
-  jd::operator_desc op_desc(jd::kernel_kind::eltwiseop, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
-                            {src_desc_, dst_desc_}, op_attr, postop_attrs);
-  jd::eltwiseop_desc eltwiseop_desc(op_desc);
-  eltwiseop_ker = jd::eltwiseop(eltwiseop_desc);
-}
-#endif
 
 void GeluOperator::ReshapeWithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Prepare tensors shape and memory descriptors
@@ -155,14 +81,7 @@ void GeluOperator::ReshapeWithOnednn(const vector<Tensor*>& input, const vector<
 }
 
 void GeluOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-#ifdef WITH_SPARSELIB
-  if (int8_lut_optimize)
-    ForwardWithSparselib(input, output);
-  else if (int8_lut_acc_test)
-    ForwardWithInt8LutAccTest(input, output);
-  else
-#endif
-    ForwardWithOnednn(input, output);
+  ForwardWithOnednn(input, output);
 }
 
 void GeluOperator::ForwardWithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -186,65 +105,5 @@ void GeluOperator::ForwardWithOnednn(const vector<Tensor*>& input, const vector<
   // 5. unref tensors
   this->unref_tensors(input);
 }
-
-#ifdef WITH_SPARSELIB
-void GeluOperator::ForwardWithSparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  Tensor* dst_ptr = output[0];
-  dst_ptr->mutable_data();
-  std::vector<const void*> runtime_data = {input[0]->data(), dst_ptr->data()};
-  eltwiseop_ker.execute(runtime_data);
-  // unref tensors
-  this->unref_tensors(input);
-}
-
-float GeluOperator::TuneMatmulRange(float gelu_bound, float err, float step) {
-  float result = 0;
-  if (gelu_bound < 0) {
-    result = -3.0;
-  } else if (gelu_bound >= 7.2) {
-    result = gelu_bound;
-  } else if (gelu_bound > 0 && gelu_bound < 7.2) {
-    result = 7.2;
-    while (std::abs(gelu_bound - jd::get_gelu(result)) > err) result -= step;
-  }
-  return result;
-}
-
-void GeluOperator::ForwardWithInt8LutAccTest(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  auto input_dt = input[0]->dtype();
-  auto output_dt = output[0]->dtype();
-  const float* min_p = static_cast<const float*>(input[1]->data());
-  const float* max_p = static_cast<const float*>(input[2]->data());
-  float gelu_scale = (max_p[0] - min_p[0]) / 255;
-  float gelu_zp = -min_p[0] / gelu_scale;
-  float matmul_lb = TuneMatmulRange(min_p[0], 0.0001, 0.00001);
-  float matmul_ub = TuneMatmulRange(max_p[0], 0.0001, 0.00001);
-  float matmul_scale = (matmul_ub - matmul_lb) / 255;
-  float matmul_zp = matmul_lb + matmul_lb * matmul_scale;
-
-  if (input_dt != "fp32" || output_dt != "u8") {
-    LOG(ERROR) << "int8-lut test acc only support fp32 as input, u8 as output.";
-  }
-  // get num of input element
-  auto input_shape = input[0]->shape();
-  int element_num = 1;
-  for (auto&& i : input_shape) element_num *= i;
-
-  float* input_ptr = static_cast<float*>(input[0]->mutable_data());
-  int8_t* output_s8ptr = static_cast<int8_t*>(output[0]->mutable_data());
-  uint8_t* output_u8ptr = static_cast<uint8_t*>(output[0]->mutable_data());
-  // turncat->u8 quantize->u8 dequantize->gelu->u8 quantize
-  for (int i = 0; i < element_num; i++) {
-    if (input_ptr[i] < -3.0) input_ptr[i] = -3.0;
-    output_s8ptr[i] = jd::get_quantize(input_ptr[i], matmul_zp, matmul_scale, jd::data_type::u8);
-    input_ptr[i] = jd::get_dequantize(output_s8ptr[i], matmul_zp, matmul_scale);
-    input_ptr[i] = jd::get_gelu(input_ptr[i]);
-    output_u8ptr[i] = jd::get_quantize(input_ptr[i], gelu_zp, gelu_scale, jd::data_type::u8);
-  }
-
-  this->unref_tensors(input);
-}
-#endif
-
 REGISTER_OPERATOR_CLASS(Gelu);
 }  // namespace executor

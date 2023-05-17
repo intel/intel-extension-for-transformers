@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "param_types.hpp"
-#include "utils.hpp"
 
 namespace jd {
 namespace ssd {
@@ -53,7 +52,9 @@ struct matmul_fp8_param_t {
   bfloat16_t* weight_bf16 = nullptr;
   union {
     int8_t* weight_int8;
-    float8_t* weight_fp8;
+    float8_e4m3_t* weight_f8_e4m3;
+    float8_e5m2_t* weight_f8_e5m2;
+    uint8_t* weight_8bit;
   };
   data_type weight_type = data_type::undef;
   bool has_scale0 = false;

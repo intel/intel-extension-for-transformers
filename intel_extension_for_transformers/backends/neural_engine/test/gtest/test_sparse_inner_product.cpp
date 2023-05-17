@@ -132,9 +132,9 @@ TEST_P(InnerProductTest, TestPostfix) {
 #endif
 }
 
-Tensor* make_int32_bias_obj(const shared_ptr<TensorConfig>& bias_tensor_config,
-                            const float* origin_data, Tensor* weight_fp32,
-                            Tensor* weight_min, Tensor* weight_max, Tensor* src_min, Tensor* src_max) {
+Tensor* make_int32_bias_obj(const shared_ptr<TensorConfig>& bias_tensor_config, const float* origin_data,
+                            Tensor* weight_fp32, Tensor* weight_min, Tensor* weight_max, Tensor* src_min,
+                            Tensor* src_max) {
   Tensor* bias_tensor = new Tensor(*bias_tensor_config);
   bias_tensor->add_tensor_life(1);
   int32_t* bias_data = reinterpret_cast<int32_t*>(bias_tensor->mutable_data());
@@ -189,6 +189,16 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   return dst_tensor;
 }
 
+template <typename T>
+void init_vector(T* v, int num_size, float range1 = -10, float range2 = 10, int seed = 5489u) {
+  float low_value = std::max(range1, static_cast<float>(std::numeric_limits<T>::lowest()) + 1);
+  std::mt19937 gen(seed);
+  std::uniform_real_distribution<float> u(low_value, range2);
+  for (int i = 0; i < num_size; ++i) {
+    v[i] = u(gen);
+  }
+}
+
 Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, bool is_sparse = false) {
   // step1: set shape
   Tensor* a_tensor = new Tensor(*a_tensor_config);
@@ -196,7 +206,7 @@ Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, bo
   a_tensor->add_tensor_life(1);
   // step3: library buffer can only be obtained afterwards
   auto tensor_data = a_tensor->mutable_data();
-  jd::init_vector(static_cast<float*>(tensor_data), a_tensor->size());
+  init_vector(static_cast<float*>(tensor_data), a_tensor->size());
   if (is_sparse) {
     float* fp32_ptr = static_cast<float*>(tensor_data);
     std::vector<int64_t> a_shape = a_tensor_config->shape();
@@ -253,17 +263,16 @@ vector<Tensor*> make_transposed_int8_tensor_obj(const vector<shared_ptr<TensorCo
   return tensors;
 }
 
-OpArgs GenenrateCopies(const vector<shared_ptr<TensorConfig>>& old_configs,
-                       vector<Tensor*> old_tensors, Tensor* old_dst,
-                       std::map<std::string, std::string> attr_map) {
+OpArgs GenenrateCopies(const vector<shared_ptr<TensorConfig>>& old_configs, vector<Tensor*> old_tensors,
+                       Tensor* old_dst, std::map<std::string, std::string> attr_map) {
   int tensor_number = old_configs.size();
   vector<shared_ptr<TensorConfig>> new_configs(tensor_number);
   vector<Tensor*> new_tensors(tensor_number);
   for (int i = 0; i < tensor_number; i++) {
     vector<int64_t> shape = old_tensors[i]->shape();
     if (shape.size() > 1) {
-      new_configs[i] = std::make_shared<TensorConfig>(old_tensors[i]->name(),
-                       executor::GetShapes(shape, {1, 0}), old_tensors[i]->dtype());
+      new_configs[i] = std::make_shared<TensorConfig>(old_tensors[i]->name(), executor::GetShapes(shape, {1, 0}),
+                                                      old_tensors[i]->dtype());
       new_tensors[i] = new Tensor(*new_configs[i]);
       new_tensors[i]->add_tensor_life(1);
       if (old_tensors[i]->dtype() == "fp32")
@@ -294,20 +303,20 @@ OpArgs GenenrateCopies(const vector<shared_ptr<TensorConfig>>& old_configs,
     std::swap(new_tensors[swap_idx[i].first], new_tensors[swap_idx[i].second]);
   }
 
-  auto dst_config = std::make_shared<TensorConfig>(old_dst->name(),
-                    executor::GetShapes(old_dst->shape(), {1, 0}), old_dst->dtype());
+  auto dst_config =
+      std::make_shared<TensorConfig>(old_dst->name(), executor::GetShapes(old_dst->shape(), {1, 0}), old_dst->dtype());
   Tensor* dst = new Tensor(*dst_config);
   dst->add_tensor_life(1);
   std::vector<shared_ptr<TensorConfig>> output_config = {dst_config};
 
   attr_map["src1_perm"] = "1,0";
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
-  auto op_config = std::make_shared<OperatorConfig>("inner_product", old_dst->dtype(),
-                   new_configs, output_config, op_attr);
+  auto op_config =
+      std::make_shared<OperatorConfig>("inner_product", old_dst->dtype(), new_configs, output_config, op_attr);
   return {new_tensors, {dst}, op_config};
 }
 
-std::pair<OpArgs, OpArgs> GenerateInt8Case(const std::vector<std::vector<int64_t> >& input_shape,
+std::pair<OpArgs, OpArgs> GenerateInt8Case(const std::vector<std::vector<int64_t>>& input_shape,
                                            std::string output_type = "s8", std::string append_op = "") {
   // Step 1: Construct Tensor config ptr
   const auto& src0_shape = input_shape[0];
@@ -368,8 +377,8 @@ std::pair<OpArgs, OpArgs> GenerateInt8Case(const std::vector<std::vector<int64_t
                            reinterpret_cast<float*>(dst_max->mutable_data()));
 
   std::vector<shared_ptr<TensorConfig>> inputs_configs = {weight_s8_config,  src_u8_config,     bias_int32_config,
-                                               weight_min_config, weight_max_config, src_min_config,
-                                               src_max_config,    dst_min_config,    dst_max_config};
+                                                          weight_min_config, weight_max_config, src_min_config,
+                                                          src_max_config,    dst_min_config,    dst_max_config};
   vector<Tensor*> inputs = {weight_tensors[0], src_tensors[0],    bias_int32,
                             weight_tensors[1], weight_tensors[2], src_tensors[1],
                             src_tensors[2],    dst_min,           dst_max};
@@ -382,8 +391,8 @@ std::pair<OpArgs, OpArgs> GenerateInt8Case(const std::vector<std::vector<int64_t
   attr_map = {{"src0_perm", ""}, {"src1_perm", ""}, {"output_dtype", output_type}, {"append_op", append_op}};
 
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
-  auto op_config = std::make_shared<OperatorConfig>("inner_product", output_type,
-                   inputs_configs, output_config, op_attr);
+  auto op_config =
+      std::make_shared<OperatorConfig>("inner_product", output_type, inputs_configs, output_config, op_attr);
 
   OpArgs op_args = {inputs, {dst}, op_config};
   OpArgs op_args_copy = GenenrateCopies(inputs_configs, inputs, dst, attr_map);

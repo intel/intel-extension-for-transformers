@@ -13,9 +13,9 @@
 //  limitations under the License.
 
 #include "gpu_ocl_matmul_ref.hpp"
-#include "engine/gpu_ocl_engine.hpp"
-#include "gpu_ocl_stream.hpp"
-#include "../common.hpp"
+#include "src/gpu/engine/gpu_ocl_engine.hpp"
+#include "src/gpu/stream/gpu_ocl_stream.hpp"
+#include "src/gpu/kernels/opencl/common.hpp"
 
 namespace jd {
 inline const char* get_kernels() {

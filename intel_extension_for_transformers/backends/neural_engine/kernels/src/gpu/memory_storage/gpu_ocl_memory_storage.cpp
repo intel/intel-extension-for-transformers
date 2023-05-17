@@ -11,9 +11,10 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#include "memory_storage/gpu_ocl_memory_storage.hpp"
-#include "engine/gpu_ocl_engine.hpp"
-#include "gpu_ocl_stream.hpp"
+
+#include "gpu_ocl_memory_storage.hpp"
+#include "src/gpu/engine/gpu_ocl_engine.hpp"
+#include "src/gpu/stream/gpu_ocl_stream.hpp"
 
 namespace jd {
 bool gpu_ocl_memory_storage_t::allocate(size_t size) {
@@ -64,7 +65,8 @@ bool gpu_ocl_memory_storage_t::unmmap(void* map_ptr, size_t, const stream_t* str
   return true;
 }
 
-bool gpu_ocl_memory_storage_t::copy(void* ptr, size_t size, copy_direction_t direction, const stream_t* stream) {
+bool gpu_ocl_memory_storage_t::copy(void* ptr, size_t size, copy_direction_t direction,  // NOLINT
+                                    const stream_t* stream) {
   cl_command_queue queue = dynamic_cast<const gpu_ocl_stream_t*>(stream)->get_queue();
   cl_int err;
   switch (direction) {

@@ -14,11 +14,11 @@
 #include <map>
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
-#include "kernels/layernorm_ba_ref.hpp"
-
-namespace jd {
+#include "src/cpu/kernels/layernorm_ba_ref.hpp"
+#include "interface.hpp"
+namespace test {
 struct op_args_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::vector<const void*> data;
 };
 
@@ -34,14 +34,14 @@ bool check_result(const test_params_t& t) {
   auto op_attr = op_desc.attrs();
 
   try {
-    layernorm_ba_desc layernorm_ba_desc(op_desc);
-    layernorm_ba layernorm_ba_ker(layernorm_ba_desc);
+    jd::layernorm_ba_desc layernorm_ba_desc(op_desc);
+    jd::layernorm_ba layernorm_ba_ker(layernorm_ba_desc);
     layernorm_ba_ker.execute(p.data);
 
-    std::shared_ptr<const kernel_desc_t> lnorm_ba_ref_desc;
-    kernel_desc_t::create<layernorm_ba_ref_kd_t>(lnorm_ba_ref_desc, q.op_desc);
-    std::shared_ptr<const kernel_t> lnorm_ref_ker;
-    kernel_t::create<layernorm_ba_ref_k_t, layernorm_ba_ref_kd_t>(lnorm_ref_ker, lnorm_ba_ref_desc);
+    std::shared_ptr<const jd::kernel_desc_t> lnorm_ba_ref_desc;
+    jd::kernel_desc_t::create<jd::layernorm_ba_ref_kd_t>(lnorm_ba_ref_desc, q.op_desc);
+    std::shared_ptr<const jd::kernel_t> lnorm_ref_ker;
+    jd::kernel_t::create<jd::layernorm_ba_ref_k_t, jd::layernorm_ba_ref_kd_t>(lnorm_ref_ker, lnorm_ba_ref_desc);
     lnorm_ref_ker->execute(q.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
@@ -81,19 +81,19 @@ bool check_result(const test_params_t& t) {
     auto dst_type = p.op_desc.tensor_descs()[1].dtype();
     EXPECT_NE(buf1, buf2);
     bool ans = false;
-    if (dst_type == data_type::fp32) {
+    if (dst_type == jd::data_type::fp32) {
       ans = compare_data<float>(buf1, size1, buf2, size2, 5e-3);
       if (op_attr["split_output"] == "true" && ans) {
         auto buf3 = q.data[6];
         auto buf4 = p.data[6];
-        if (op_desc.apply_postops_list().back().dt == data_type::s8)
+        if (op_desc.apply_postops_list().back().dt == jd::data_type::s8)
           ans = compare_data<int8_t>(buf4, size1, buf3, size1, 1e-2);
         else
           ans = compare_data<uint8_t>(buf4, size1, buf3, size1, 1e-2);
       }
-    } else if (dst_type == data_type::u8) {
+    } else if (dst_type == jd::data_type::u8) {
       ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-2);
-    } else if (dst_type == data_type::s8) {
+    } else if (dst_type == jd::data_type::s8) {
       ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1e-2);
     }
     free_memory();
@@ -116,9 +116,9 @@ TEST_P(LayernormBaKernelTest, ) {
   EXPECT_TRUE(check_result(t));
 }
 
-std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
+std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_descs,
                                          std::unordered_map<std::string, std::string> op_attrs,
-                                         const std::vector<postop_attr>& postop_attr = {},
+                                         const std::vector<jd::postop_attr>& postop_attr = {},
                                          bool per_channel_quant = false) {
   // malloc memory
   auto input_tensor_desc = ts_descs[0].shape();
@@ -149,8 +149,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MALLOC);
   dst_ref = sparselib_ut_memo(dst_ref, num, out_dt, MEMSET);
   if (op_attrs["split_output"] == "true") {
-    dst2 = sparselib_ut_memo(dst2, num, data_type::s8, MALLOC);
-    dst2_ref = sparselib_ut_memo(dst2_ref, num, data_type::s8, MALLOC);
+    dst2 = sparselib_ut_memo(dst2, num, jd::data_type::s8, MALLOC);
+    dst2_ref = sparselib_ut_memo(dst2_ref, num, jd::data_type::s8, MALLOC);
   }
   float* alpha = reinterpret_cast<float*>(malloc(row * sizeof(float)));
   float* beta = reinterpret_cast<float*>(malloc(row * sizeof(float)));
@@ -203,13 +203,13 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
   if (per_channel_quant) op_attrs["binaryop_list"] = "u8_perchannel_quant";
 
-  operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                                  op_attrs, postop_attr);
+  jd::operator_desc layernorm_ba_desc(jd::kernel_kind::layernorm_ba, jd::kernel_prop::forward_inference,
+                                      jd::engine_kind::cpu, ts_descs, op_attrs, postop_attr);
 
   // init per_channel quant factor
   if (per_channel_quant) {
-    binaryop_attr u8_per_channel_quantize = {binaryop_alg::per_channel_quant, data_type::u8};
-    std::vector<binaryop_attr> binaryop_list = {u8_per_channel_quantize};
+    jd::binaryop_attr u8_per_channel_quantize = {jd::binaryop_alg::per_channel_quant, jd::data_type::u8};
+    std::vector<jd::binaryop_attr> binaryop_list = {u8_per_channel_quantize};
     float* scale = reinterpret_cast<float*>(malloc(row * sizeof(float)));
     float* zp = reinterpret_cast<float*>(malloc(row * sizeof(float)));
     for (int i = 0; i < row; i++) {
@@ -230,18 +230,20 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
 static auto case_func = []() {
   std::vector<test_params_t> cases;
-  tensor_desc data_desc0 = {{768, 300}, jd::data_type::fp32, jd::format_type::ba};
-  tensor_desc data_desc1 = {{768, 256}, jd::data_type::fp32, jd::format_type::ba};
-  tensor_desc data_desc2 = {{8, 768, 256}, jd::data_type::fp32, jd::format_type::ba};
-  tensor_desc data_desc3 = {{1024, 256}, jd::data_type::fp32, jd::format_type::ba};
-  tensor_desc data_desc4 = {{768, 256}, jd::data_type::s8, jd::format_type::ba};
-  tensor_desc data_desc5 = {{1024, 1536}, jd::data_type::fp32, jd::format_type::ba};
-  tensor_desc data_desc6 = {{1024, 1536}, jd::data_type::u8, jd::format_type::ba};
+  jd::tensor_desc data_desc0 = {{768, 300}, jd::data_type::fp32, jd::format_type::ba};
+  jd::tensor_desc data_desc1 = {{768, 256}, jd::data_type::fp32, jd::format_type::ba};
+  jd::tensor_desc data_desc2 = {{8, 768, 256}, jd::data_type::fp32, jd::format_type::ba};
+  jd::tensor_desc data_desc3 = {{1024, 256}, jd::data_type::fp32, jd::format_type::ba};
+  jd::tensor_desc data_desc4 = {{768, 256}, jd::data_type::s8, jd::format_type::ba};
+  jd::tensor_desc data_desc5 = {{1024, 1536}, jd::data_type::fp32, jd::format_type::ba};
+  jd::tensor_desc data_desc6 = {{1024, 1536}, jd::data_type::u8, jd::format_type::ba};
 
-  postop_attr s8_quantize = {data_type::s8,       postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0,
-                             rand_float_postfix()};
-  postop_attr u8_quantize = {data_type::u8,       postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0,
-                             rand_float_postfix()};
+  jd::postop_attr s8_quantize = {
+      jd::data_type::s8,   jd::postop_type::eltwise, jd::postop_alg::quantize, rand_float_postfix(), 0,
+      rand_float_postfix()};
+  jd::postop_attr u8_quantize = {
+      jd::data_type::u8,   jd::postop_type::eltwise, jd::postop_alg::quantize, rand_float_postfix(), 0,
+      rand_float_postfix()};
 
   std::string tensor_shape0 = "728x300";
   std::string tensor_shape1 = "768x256";
@@ -301,15 +303,15 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back("shape");
   for (auto&& i : tensor_shape) params.push_back(std::to_string(i));
 
-  auto add_dt_info = [&](data_type dt, const std::string& tensor_dt) {
-    switch (dt) {
-      case data_type::s8:
+  auto add_dt_info = [&](jd::data_type data_type, const std::string& tensor_dt) {
+    switch (data_type) {
+      case jd::data_type::s8:
         params.push_back(tensor_dt + "_s8");
         break;
-      case data_type::fp32:
+      case jd::data_type::fp32:
         params.push_back(tensor_dt + "_fp32");
         break;
-      case data_type::u8:
+      case jd::data_type::u8:
         params.push_back(tensor_dt + "_u8");
         break;
       default:
@@ -326,4 +328,4 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
 }
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, LayernormBaKernelTest, case_func(), test_suffix);
-}  // namespace jd
+}  // namespace test

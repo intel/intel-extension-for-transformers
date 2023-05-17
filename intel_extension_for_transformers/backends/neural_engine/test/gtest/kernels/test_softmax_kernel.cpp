@@ -14,10 +14,11 @@
 #include <map>
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
+#include "interface.hpp"
 
-namespace jd {
+namespace test {
 struct op_args_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::vector<const void*> data;
 };
 
@@ -26,15 +27,15 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+void get_true_data(const jd::operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[0]));
   auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rt_data[0]));
   auto dst_dt = op_desc.tensor_descs()[1].dtype();
   void* dst = const_cast<void*>(rt_data[1]);
 
-  std::vector<postop_attr> dequant_list = {op_desc.apply_postops_list().front()};
-  std::vector<postop_attr> quant_list;
-  if (op_desc.apply_postops_list().back().op_alg == postop_alg::quantize)
+  std::vector<jd::postop_attr> dequant_list = {op_desc.apply_postops_list().front()};
+  std::vector<jd::postop_attr> quant_list;
+  if (op_desc.apply_postops_list().back().op_alg == jd::postop_alg::quantize)
     quant_list.push_back(op_desc.apply_postops_list().back());
   auto src_tensor = op_desc.tensor_descs()[0];
   auto src_dt = src_tensor.dtype();
@@ -71,15 +72,15 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
 
     float scale = 1 / exp_sum;
     // step3. compute softmax
-    if (dst_dt == data_type::bf16) {
+    if (dst_dt == jd::data_type::bf16) {
       for (int j = 0; j < col; j++)
-        reinterpret_cast<bfloat16_t*>(dst)[i * col + j] = fp32_to_bf16(float_dst_data[i * col + j] * scale);
-    } else if (dst_dt == data_type::u8) {
+        reinterpret_cast<jd::bfloat16_t*>(dst)[i * col + j] = float_dst_data[i * col + j] * scale;
+    } else if (dst_dt == jd::data_type::u8) {
       for (int j = 0; j < col; j++) {
         reinterpret_cast<uint8_t*>(dst)[i * col + j] =
             (uint8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
       }
-    } else if (dst_dt == data_type::s8) {
+    } else if (dst_dt == jd::data_type::s8) {
       for (int j = 0; j < col; j++)
         reinterpret_cast<int8_t*>(dst)[i * col + j] =
             (int8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
@@ -95,8 +96,8 @@ bool check_result(const test_params_t& t) {
 
   try {
     const auto& op_desc = p.op_desc;
-    softmax_desc softmax_desc(op_desc);
-    softmax softmax_ker(softmax_desc);
+    jd::softmax_desc softmax_desc(op_desc);
+    jd::softmax softmax_ker(softmax_desc);
     softmax_ker.execute(p.data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
@@ -115,13 +116,13 @@ bool check_result(const test_params_t& t) {
     auto dst_dt = q.op_desc.tensor_descs()[1].dtype();
     EXPECT_NE(buf1, buf2);
     bool ans = false;
-    if (dst_dt == data_type::s8)
+    if (dst_dt == jd::data_type::s8)
       ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1e-1);
-    else if (dst_dt == data_type::u8)
+    else if (dst_dt == jd::data_type::u8)
       ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1e-1);
-    else if (dst_dt == data_type::bf16)
-      ans = compare_data<bfloat16_t>(buf1, size1, buf2, size2, 1e-1);
-    else if (dst_dt == data_type::fp32)
+    else if (dst_dt == jd::data_type::bf16)
+      ans = compare_data<jd::bfloat16_t>(buf1, size1, buf2, size2, 1e-1);
+    else if (dst_dt == jd::data_type::fp32)
       ans = compare_data<float>(buf1, size1, buf2, size2, 1e-1);
     else
       return ans = false;
@@ -151,11 +152,11 @@ TEST_P(SoftmaxLutKernelTest, TestPostfix) {
   EXPECT_TRUE(check_result(t));
 }
 
-std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
+std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_descs,
                                          const std::unordered_map<std::string, std::string> op_attrs,
-                                         const std::vector<postop_attr>& postop_attr) {
-  operator_desc softmax_desc(kernel_kind::softmax, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                             op_attrs, postop_attr);
+                                         const std::vector<jd::postop_attr>& postop_attr) {
+  jd::operator_desc softmax_desc(jd::kernel_kind::softmax, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                                 ts_descs, op_attrs, postop_attr);
 
   int num = get_element_num(softmax_desc);
   void* src = nullptr;
@@ -198,17 +199,19 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
-  tensor_desc data0_desc = {{8, 4, 128, 128}, jd::data_type::u8, jd::format_type::undef};
-  tensor_desc data1_desc = {{8, 4, 128, 128}, jd::data_type::s8, jd::format_type::undef};
-  tensor_desc data2_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
-  tensor_desc data3_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
-  tensor_desc data4_desc = {{4096, 384}, jd::data_type::u8, jd::format_type::undef};
-  tensor_desc data5_desc = {{4096, 384}, jd::data_type::s8, jd::format_type::undef};
-  tensor_desc data6_desc = {{8, 4, 128, 126}, jd::data_type::fp32, jd::format_type::undef};
-  tensor_desc data7_desc = {{8, 4, 128, 126}, jd::data_type::s8, jd::format_type::undef};
+  jd::tensor_desc data0_desc = {{8, 4, 128, 128}, jd::data_type::u8, jd::format_type::undef};
+  jd::tensor_desc data1_desc = {{8, 4, 128, 128}, jd::data_type::s8, jd::format_type::undef};
+  jd::tensor_desc data2_desc = {{1024, 1024}, jd::data_type::fp32, jd::format_type::undef};
+  jd::tensor_desc data3_desc = {{1024, 1024}, jd::data_type::s8, jd::format_type::undef};
+  jd::tensor_desc data4_desc = {{4096, 384}, jd::data_type::u8, jd::format_type::undef};
+  jd::tensor_desc data5_desc = {{4096, 384}, jd::data_type::s8, jd::format_type::undef};
+  jd::tensor_desc data6_desc = {{8, 4, 128, 126}, jd::data_type::fp32, jd::format_type::undef};
+  jd::tensor_desc data7_desc = {{8, 4, 128, 126}, jd::data_type::s8, jd::format_type::undef};
 
-  postop_attr dequantize_s8_attr(data_type::s8, postop_type::eltwise, postop_alg::dequantize, 140, 0, 0.643695);
-  postop_attr quant_u8_attr(data_type::u8, postop_type::eltwise, postop_alg::quantize, 0, 0, 0.00324144);
+  jd::postop_attr dequantize_s8_attr(jd::data_type::s8, jd::postop_type::eltwise, jd::postop_alg::dequantize, 140, 0,
+                                     0.643695);
+  jd::postop_attr quant_u8_attr(jd::data_type::u8, jd::postop_type::eltwise, jd::postop_alg::quantize, 0, 0,
+                                0.00324144);
 
   cases.push_back({gen_case({data1_desc, data0_desc},
                             {{"postop_list", "dequantize+scale0.653695"}, {"vec_len", "128"}, {"spec_type", "lut"}},
@@ -236,4 +239,4 @@ static auto case_func = []() {
 };
 
 INSTANTIATE_TEST_SUITE_P(Prefix, SoftmaxLutKernelTest, case_func());
-}  // namespace jd
+}  // namespace test

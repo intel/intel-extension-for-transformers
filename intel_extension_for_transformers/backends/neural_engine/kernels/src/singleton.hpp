@@ -12,14 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_SINGLETON_H_
-#define ENGINE_SPARSELIB_INCLUDE_SINGLETON_H_
+#ifndef ENGINE_SPARSELIB_SRC_SINGLETON_H_
+#define ENGINE_SPARSELIB_SRC_SINGLETON_H_
 #include <mutex>  // NOLINT
 
 template <typename T>
 class Singleton {
  public:
-  static SPARSE_API_ T* GetInstance() {
+  static  T* GetInstance() {
     if (instance_ == nullptr) {
       std::lock_guard<std::mutex> guard(mutex_);
       if (instance_ == nullptr) {
@@ -55,4 +55,4 @@ T* Singleton<T>::instance_ = nullptr;
 
 template <typename T>
 std::mutex Singleton<T>::mutex_;
-#endif  // ENGINE_SPARSELIB_INCLUDE_SINGLETON_H_
+#endif  // ENGINE_SPARSELIB_SRC_SINGLETON_H_

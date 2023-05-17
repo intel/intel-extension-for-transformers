@@ -11,17 +11,16 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#include <map>
-
 #include "gtest/gtest.h"
 #include "kernels/transpose_mha_types.hpp"
 #include "unit_test_utils.hpp"
+#include "interface.hpp"
 
-namespace jd {
-using io = ssd::transpose_mha_io::io;
+namespace test {
+using io = jd::ssd::transpose_mha_io::io;
 
 struct op_args_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::vector<const void*> data;
 };
 
@@ -118,8 +117,8 @@ bool check_result(const test_params_t& t) {
 
   try {
     const auto& op_desc = p.op_desc;
-    transpose_mha_desc transpose_mha_desc(op_desc);
-    transpose_mha transpose_mha_ker(transpose_mha_desc);
+    jd::transpose_mha_desc transpose_mha_desc(op_desc);
+    jd::transpose_mha transpose_mha_ker(transpose_mha_desc);
     transpose_mha_ker.execute(p.data);
   } catch (const std::exception& e) {
     SPARSE_LOG(WARNING) << e.what();
@@ -156,7 +155,7 @@ TEST_P(TransposeAttentionTest, ) {
   aligned_allocator_t<uint8_t>::deallocate(const_cast<void*>(t.args.second));
 }
 
-std::pair<op_args_t, uint8_t*> gen_case(const std::vector<tensor_desc>& ts_descs,
+std::pair<op_args_t, uint8_t*> gen_case(const std::vector<jd::tensor_desc>& ts_descs,
                                         std::unordered_map<std::string, std::string> op_attrs) {
   // malloc memory
   auto spmm_shape = ts_descs.front().shape();
@@ -223,7 +222,7 @@ std::pair<op_args_t, uint8_t*> gen_case(const std::vector<tensor_desc>& ts_descs
       for (int in = 0; in < n; in++) {
         exp_out[i * m * n + j * n + in] = exp_out[i * m * n + j * n + in] / sumexp_out[i * n + in];
         softmax_u8[i * m * n + j * n + in] =
-            get_quantize(exp_out[i * m * n + j * n + in], 0, (1 / 255.f), data_type::u8);
+            get_quantize(exp_out[i * m * n + j * n + in], 0, (1 / 255.f), jd::data_type::u8);
       }
     }
   }
@@ -279,13 +278,13 @@ static auto case_func = []() {
     for (auto&& batch : batchs) {
       for (auto&& seq_len : seq_lens) {
         // we assign the real shape of the K-matrix to the K_desc only for get the problem size when we gen the input &
-        // true-result data. In real mha kernel usage, pls make the shape field in tensor_desc EMPTY.
-        tensor_desc K_desc = {
+        // true-result data. In real mha kernel usage, pls make the shape field in jd::tensor_desc EMPTY.
+        jd::tensor_desc K_desc = {
             {batch, head_info.head_num, head_info.head_size, seq_len}, jd::data_type::s8, jd::format_type::undef};
-        tensor_desc Q_desc = {{}, jd::data_type::s8, jd::format_type::undef};
-        tensor_desc mask_desc = {{}, jd::data_type::fp32, jd::format_type::undef};
-        tensor_desc V_desc = {{}, jd::data_type::s8, jd::format_type::undef};
-        tensor_desc ret_desc = {{}, jd::data_type::u8, jd::format_type::undef};
+        jd::tensor_desc Q_desc = {{}, jd::data_type::s8, jd::format_type::undef};
+        jd::tensor_desc mask_desc = {{}, jd::data_type::fp32, jd::format_type::undef};
+        jd::tensor_desc V_desc = {{}, jd::data_type::s8, jd::format_type::undef};
+        jd::tensor_desc ret_desc = {{}, jd::data_type::u8, jd::format_type::undef};
         std::unordered_map<std::string, std::string> op_attrs;
         // we set the op_attrs only for gen the test_suffix in uts, in real mha kernel usage, user don't need to set
         // op_attrs, even they set, the op_attrs will not participate the kernel-hashing stage.
@@ -320,4 +319,4 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
 }
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, TransposeAttentionTest, case_func(), test_suffix);
-}  // namespace jd
+}  // namespace test

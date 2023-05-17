@@ -22,8 +22,8 @@
 #include <algorithm>
 
 #include "param_types.hpp"
+#include "data_type/data_types.hpp"
 #include "tensor_desc.hpp"
-
 namespace jd {
 /**
  * @brief The operator descriptor class, describing a specific kind of operator.
@@ -31,27 +31,27 @@ namespace jd {
 class operator_desc {
  public:
   operator_desc()
-      : ker_kind_(jd::kernel_kind::undef),
-        ker_prop_(jd::kernel_prop::undef),
-        engine_kind_(jd::engine_kind::undef),
-        runtime_kind_(jd::runtime_kind::undef),
+      : ker_kind_(kernel_kind::undef),
+        ker_prop_(kernel_prop::undef),
+        engine_kind_(engine_kind::undef),
+        runtime_kind_(runtime_kind::undef),
         impl_nthr_(0),
         ts_descs_({}),
         attrs_({}),
         apply_postops_list_({}) {}
-  operator_desc(const jd::kernel_kind& ker_kind, const jd::kernel_prop& ker_prop, const jd::engine_kind& eng_kind,
+  operator_desc(const kernel_kind& ker_kind, const kernel_prop& ker_prop, const engine_kind& eng_kind,
                 const std::vector<tensor_desc>& ts_descs, const std::unordered_map<std::string, std::string>& attrs,
                 const std::vector<postop_attr>& apply_postops_list = {})
       : ker_kind_(ker_kind),
         ker_prop_(ker_prop),
         engine_kind_(eng_kind),
-        runtime_kind_(jd::runtime_kind::undef),
+        runtime_kind_(runtime_kind::undef),
         impl_nthr_(omp_get_max_threads()),
         ts_descs_(ts_descs),
         attrs_(attrs),
         apply_postops_list_(apply_postops_list) {}
-  operator_desc(const jd::kernel_kind& ker_kind, const jd::kernel_prop& ker_prop, const jd::engine_kind& eng_kind,
-                const jd::runtime_kind& runtime_kind, const std::vector<tensor_desc>& ts_descs,
+  operator_desc(const kernel_kind& ker_kind, const kernel_prop& ker_prop, const engine_kind& eng_kind,
+                const runtime_kind& runtime_kind, const std::vector<tensor_desc>& ts_descs,
                 const std::unordered_map<std::string, std::string>& attrs,
                 const std::vector<postop_attr>& apply_postops_list = {})
       : ker_kind_(ker_kind),
@@ -101,9 +101,9 @@ class operator_desc {
 
  private:
   jd::kernel_kind ker_kind_;
-  jd::kernel_prop ker_prop_ = jd::kernel_prop::forward_inference;
-  jd::engine_kind engine_kind_ = jd::engine_kind::cpu;
-  jd::runtime_kind runtime_kind_ = jd::runtime_kind::undef;
+  jd::kernel_prop ker_prop_ = kernel_prop::forward_inference;
+  jd::engine_kind engine_kind_ = engine_kind::cpu;
+  jd::runtime_kind runtime_kind_ = runtime_kind::undef;
   uint64_t impl_nthr_;
   std::vector<tensor_desc> ts_descs_;
   std::unordered_map<std::string, std::string> attrs_;

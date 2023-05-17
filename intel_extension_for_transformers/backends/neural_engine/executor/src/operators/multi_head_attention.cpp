@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include "multi_head_attention.hpp"
+#include "kernels/exposed_enum.hpp"
 
 #include "operator_registry.hpp"
 using dt = jd::data_type;

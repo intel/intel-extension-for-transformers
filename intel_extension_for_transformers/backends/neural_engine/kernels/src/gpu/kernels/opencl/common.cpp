@@ -14,7 +14,7 @@
 
 #include "common.hpp"
 #include <cstdio>
-#include "utils.hpp"
+#include "src/utils.hpp"
 
 namespace jd {
 // Print an error message to screen (only if it occurs)

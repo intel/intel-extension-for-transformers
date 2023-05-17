@@ -11,35 +11,29 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_LAYERNORM_BA_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_LAYERNORM_BA_HPP_
 
 #include <functional>
-#include <iostream>
-#include <map>
 #include <memory>
-#include <sstream>
 #include <string>
-#include <unordered_map>
-#include <utility>
 #include <set>
+#include <unordered_map>
 #include <vector>
 
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
+
 #define LAYERNORM_BA_ARG_NUM 4
-
-namespace jd {
-
+namespace bench {
 class layernorm_ba_bench : public kernel_bench {
  private:
   int64_t M;
   int64_t N;
-  data_type in_dt;
-  data_type out_dt;
-  std::vector<postop_attr> postop_attrs;
+  jd::data_type in_dt;
+  jd::data_type out_dt;
+  std::vector<jd::postop_attr> postop_attrs;
   std::unordered_map<std::string, std::string> op_attrs;
 
  public:
@@ -53,7 +47,6 @@ class layernorm_ba_bench : public kernel_bench {
           aligned_allocator_t<char>::deallocate(const_cast<void*>(rt_data));
         }
   }
-
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override {
     // flop taken into consideration
@@ -70,11 +63,9 @@ class layernorm_ba_bench : public kernel_bench {
   // Just like that in gtest file
   void gen_case() override;
   void set_kernel_proxy() override {
-    layernorm_ba_desc layernorm_ba_desc(args.first.op_desc);
-    kp = std::make_shared<layernorm_ba>(layernorm_ba_desc);
+    jd::layernorm_ba_desc layernorm_ba_desc(args.first.op_desc);
+    kp = std::make_shared<jd::layernorm_ba>(layernorm_ba_desc);
   }
 };
-
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_LAYERNORM_BA_HPP_

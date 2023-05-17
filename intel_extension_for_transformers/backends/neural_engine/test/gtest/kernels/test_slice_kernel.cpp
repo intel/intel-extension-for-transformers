@@ -17,15 +17,15 @@
 #include <iostream>
 #include "unit_test_utils.hpp"
 #include "gtest/gtest.h"
-
-namespace jd {
+#include "interface.hpp"
+namespace test {
 
 template <typename T>
 void DataPrint(const T* data, std::vector<dim_t> shape, int stride = 0) {
   // print output file
   int outer = 1;
   if (stride == 0) stride = shape.back();
-  for (long unsigned int i = 0; i < shape.size() - 1; i++) outer *= shape[i]; // NOLINT
+  for (long unsigned int i = 0; i < shape.size() - 1; i++) outer *= shape[i];  // NOLINT
   for (int i = 0; i < outer; i++) {
     for (dim_t j = 0; j < shape.back(); ++j) std::cout << (T)(data[i * stride + j]) << ",";
     std::cout << std::endl;
@@ -37,7 +37,7 @@ template void DataPrint<int8_t>(const int8_t* data, std::vector<dim_t> shape, in
 
 struct OpArgs {
   std::vector<const void*> data;
-  operator_desc conf;
+  jd::operator_desc conf;
 };
 
 struct test_params_t {
@@ -56,15 +56,15 @@ bool CheckResult(const test_params_t& t) {
   const auto& q = t.args.second;
   // DataPrint<float>(reinterpret_cast<const float*>(p.data[0]), p.conf.tensor_descs()[0].shape());
   // std::cout << "=======================\n";
-  slice_desc slice_d(p.conf);
-  slice slice_ker(slice_d);
+  jd::slice_desc slice_d(p.conf);
+  jd::slice slice_ker(slice_d);
   slice_ker.execute(p.data);
   // Should compare buffer with different addresses
-  if (p.conf.tensor_descs()[1].dtype() == data_type::s8) {
+  if (p.conf.tensor_descs()[1].dtype() == jd::data_type::s8) {
     // DataPrint<int8_t>(reinterpret_cast<const int8_t*>(p.data[1]), p.conf.tensor_descs()[1].shape());
     // DataPrint<int8_t>(reinterpret_cast<const int8_t*>(q.data[1]), q.conf.tensor_descs()[1].shape());
     return compare_data<int8_t>(p.data[1], p.conf.tensor_descs()[1].size(), q.data[1], q.conf.tensor_descs()[1].size());
-  } else if (p.conf.tensor_descs()[1].dtype() == data_type::fp32) {
+  } else if (p.conf.tensor_descs()[1].dtype() == jd::data_type::fp32) {
     // DataPrint<float>(reinterpret_cast<const float*>(p.data[1]), p.conf.tensor_descs()[1].shape());
     // std::cout << "=======================\n";
     // DataPrint<float>(reinterpret_cast<const float*>(q.data[1]), q.conf.tensor_descs()[1].shape());
@@ -73,8 +73,8 @@ bool CheckResult(const test_params_t& t) {
     // DataPrint<float>(reinterpret_cast<const float*>(p.data[1]), p.conf.tensor_descs()[1].shape());
     // std::cout << "=======================\n";
     // DataPrint<float>(reinterpret_cast<const float*>(q.data[1]), q.conf.tensor_descs()[1].shape());
-    return compare_data<uint16_t>(p.data[1], p.conf.tensor_descs()[1].size(), q.data[1],
-                                  q.conf.tensor_descs()[1].size());
+    return compare_data<jd::bfloat16_t>(p.data[1], p.conf.tensor_descs()[1].size(), q.data[1],
+                                    q.conf.tensor_descs()[1].size());
   }
 }
 
@@ -92,8 +92,8 @@ TEST_P(SliceOpTest, TestPostfix) {
   t.memoryFree();
 }
 
-std::pair<OpArgs, OpArgs> GenerateCase(std::vector<tensor_desc> const& ts_descs, int begin, int step, size_t axis) {
-  data_type input_dt = ts_descs[0].dtype();
+std::pair<OpArgs, OpArgs> GenerateCase(std::vector<jd::tensor_desc> const& ts_descs, int begin, int step, size_t axis) {
+  jd::data_type input_dt = ts_descs[0].dtype();
   auto src_shape = ts_descs[0].shape();
   auto dst_shape = ts_descs[1].shape();
   // Step 1.1: Construct Operator config obj
@@ -102,19 +102,19 @@ std::pair<OpArgs, OpArgs> GenerateCase(std::vector<tensor_desc> const& ts_descs,
   attr_map["begin"] = std::to_string(begin);
   attr_map["step"] = std::to_string(step);
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const tensor_desc a_tensor_config) {
+  auto make_tensor_obj = [&](const jd::tensor_desc a_tensor_config) {
     void* tensor_data = sparselib_ut_memo(nullptr, a_tensor_config.size(), a_tensor_config.dtype(), memo_mode::MALLOC);
     void* tensor_data_copy =
         sparselib_ut_memo(nullptr, a_tensor_config.size(), a_tensor_config.dtype(), memo_mode::MALLOC);
 
     // init other tensor
-    if (input_dt == data_type::s8 || input_dt == data_type::u8)
+    if (input_dt == jd::data_type::s8 || input_dt == jd::data_type::u8)
       init_vector(static_cast<int8_t*>(tensor_data), a_tensor_config.size());
-    else if (input_dt == data_type::fp32)
+    else if (input_dt == jd::data_type::fp32)
       init_vector(static_cast<float*>(tensor_data), a_tensor_config.size());
     else
-      init_vector(static_cast<uint16_t*>(tensor_data), a_tensor_config.size());
-    memcpy(tensor_data_copy, tensor_data, a_tensor_config.size() * get_data_size(input_dt));
+      init_vector(static_cast<jd::bfloat16_t*>(tensor_data), a_tensor_config.size());
+    memcpy(tensor_data_copy, tensor_data, a_tensor_config.size() * jd::type_size.at(input_dt));
 
     return std::pair<void*, void*>{tensor_data, tensor_data_copy};
   };
@@ -138,20 +138,22 @@ std::pair<OpArgs, OpArgs> GenerateCase(std::vector<tensor_desc> const& ts_descs,
 #pragma omp parallel for
   for (int i = 0; i < outer_size; ++i) {
     if (step == 1) {
-      memcpy(dst_data_copy + i * dst_shape[axis] * inner_size * get_data_size(input_dt),
-             src_data_copy + (i * src_shape[axis] + begin) * inner_size * get_data_size(input_dt),
-             get_data_size(input_dt) * inner_size * dst_shape[axis]);
+      memcpy(dst_data_copy + i * dst_shape[axis] * inner_size * jd::type_size.at(input_dt),
+             src_data_copy + (i * src_shape[axis] + begin) * inner_size * jd::type_size.at(input_dt),
+             jd::type_size.at(input_dt) * inner_size * dst_shape[axis]);
     }
     if (step == 2) {
       for (int j = 0; j < dst_shape[axis]; j++) {
-        memcpy(dst_data_copy + (i * dst_shape[axis] + j) * inner_size * get_data_size(input_dt),
-               src_data_copy + (i * src_shape[axis] + begin + j * step) * inner_size * get_data_size(input_dt),
-               get_data_size(input_dt) * inner_size);
+        memcpy(dst_data_copy + (i * dst_shape[axis] + j) * inner_size * jd::type_size.at(input_dt),
+               src_data_copy + (i * src_shape[axis] + begin + j * step) * inner_size * jd::type_size.at(input_dt),
+               jd::type_size.at(input_dt) * inner_size);
       }
     }
   }
-  operator_desc slice_d(kernel_kind::slice, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
-  operator_desc slice_d_copy(kernel_kind::slice, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
+  jd::operator_desc slice_d(jd::kernel_kind::slice, jd::kernel_prop::forward_inference, jd::engine_kind::cpu, ts_descs,
+                            attr_map);
+  jd::operator_desc slice_d_copy(jd::kernel_kind::slice, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                                 ts_descs, attr_map);
   OpArgs op_args = {rt_data, slice_d};
   OpArgs op_args_copy = {rt_data_copy, slice_d_copy};
 
@@ -162,34 +164,34 @@ static auto CasesFp32 = []() {
   std::vector<test_params_t> cases;
 
   // Config
-  std::vector<int64_t> src_shape;
-  std::vector<int64_t> idx_shape;
-  std::vector<int64_t> dst_shape;
-  tensor_desc src, dst;
+  std::vector<dim_t> src_shape;
+  std::vector<dim_t> idx_shape;
+  std::vector<dim_t> dst_shape;
+  jd::tensor_desc src, dst;
 
-  for (data_type dt : {data_type::fp32, data_type::bf16, data_type::s8}) {
+  for (jd::data_type data_type : {jd::data_type::fp32, jd::data_type::bf16, jd::data_type::s8}) {
     src_shape = {1, 32, 16, 256};
     dst_shape = {1, 32, 16, 192};
-    src = {src_shape, dt, jd::format_type::undef};
-    dst = {dst_shape, dt, jd::format_type::undef};
+    src = {src_shape, data_type, jd::format_type::undef};
+    dst = {dst_shape, data_type, jd::format_type::undef};
     cases.push_back({GenerateCase({src, dst}, 0, 1, 3), false});
 
     src_shape = {1, 32, 16, 256};
     dst_shape = {1, 32, 16, 64};
-    src = {src_shape, dt, jd::format_type::undef};
-    dst = {dst_shape, dt, jd::format_type::undef};
+    src = {src_shape, data_type, jd::format_type::undef};
+    dst = {dst_shape, data_type, jd::format_type::undef};
     cases.push_back({GenerateCase({src, dst}, 2, 2, 3), false});
 
     src_shape = {1, 32, 16, 256};
     dst_shape = {1, 10, 16, 256};
-    src = {src_shape, dt, jd::format_type::undef};
-    dst = {dst_shape, dt, jd::format_type::undef};
+    src = {src_shape, data_type, jd::format_type::undef};
+    dst = {dst_shape, data_type, jd::format_type::undef};
     cases.push_back({GenerateCase({src, dst}, 2, 2, 1), false});
 
     src_shape = {1, 1, 2048, 2048};
     dst_shape = {1, 1, 32, 2048};
-    src = {src_shape, dt, jd::format_type::undef};
-    dst = {dst_shape, dt, jd::format_type::undef};
+    src = {src_shape, data_type, jd::format_type::undef};
+    dst = {dst_shape, data_type, jd::format_type::undef};
     cases.push_back({GenerateCase({src, dst}, 1, 1, 2), false});
   }
   return ::testing::ValuesIn(cases);
@@ -204,13 +206,13 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
 
   auto add_dt_info = [&](const std::string& tensor_dt) {
     switch (tensor_desc[0].dtype()) {
-      case data_type::s8:
+      case jd::data_type::s8:
         params.push_back(tensor_dt + "_s8");
         break;
-      case data_type::fp32:
+      case jd::data_type::fp32:
         params.push_back(tensor_dt + "_fp32");
         break;
-      case data_type::bf16:
+      case jd::data_type::bf16:
         params.push_back(tensor_dt + "_bf16");
         break;
       default:
@@ -226,4 +228,4 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
 }
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, SliceOpTest, CasesFp32(), test_suffix);
-}  // namespace jd
+}  // namespace test

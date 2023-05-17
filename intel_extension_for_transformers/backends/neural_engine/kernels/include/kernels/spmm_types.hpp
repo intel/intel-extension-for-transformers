@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "param_types.hpp"
-#include "utils.hpp"
 
 namespace jd {
 template <typename T>

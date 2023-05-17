@@ -82,7 +82,7 @@ struct context_t {
   std::vector<memory_storage_t*> workspaces_;
 };
 
-class kernel_t {
+class SPARSE_TEST_API_ kernel_t {
  public:
   explicit kernel_t(const std::shared_ptr<const kernel_desc_t>& kd);
   virtual ~kernel_t() {}

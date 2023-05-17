@@ -143,6 +143,16 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   return dst_tensor;
 }
 
+template <typename T>
+void init_vector(T* v, int num_size, float range1 = -10, float range2 = 10, int seed = 5489u) {
+  float low_value = std::max(range1, static_cast<float>(std::numeric_limits<T>::lowest()) + 1);
+  std::mt19937 gen(seed);
+  std::uniform_real_distribution<float> u(low_value, range2);
+  for (int i = 0; i < num_size; ++i) {
+    v[i] = u(gen);
+  }
+}
+
 Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, float bound1 = -10, float bound2 = 10) {
   // step1: set shape
   Tensor* a_tensor = new Tensor(*a_tensor_config);
@@ -150,7 +160,7 @@ Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, fl
   a_tensor->add_tensor_life(1);
   // step3: library buffer can only be obtained afterwards
   auto tensor_data = a_tensor->mutable_data();
-  jd::init_vector(static_cast<float*>(tensor_data), a_tensor->size(), bound1, bound2);
+  init_vector(static_cast<float*>(tensor_data), a_tensor->size(), bound1, bound2);
   return a_tensor;
 }
 

@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const tensor_desc& td) {
     if (i != 0) os << ' ';
     os << td.shape()[i];
   }
-  os << ", dt=";
+  os << ", data_type=";
   os << data_type_name.at(td.dtype());
   os << ", ft=";
   os << format_type_name.at(td.ftype());

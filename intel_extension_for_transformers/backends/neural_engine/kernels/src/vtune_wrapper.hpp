@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_VTUNE_WRAPPER_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_VTUNE_WRAPPER_HPP_
+#ifndef ENGINE_SPARSELIB_SRC_VTUNE_WRAPPER_HPP_
+#define ENGINE_SPARSELIB_SRC_VTUNE_WRAPPER_HPP_
 
 #include <stdlib.h>
 #include <string>
@@ -45,4 +45,4 @@ class vtune_wrapper_t {
 
 bool get_vtune();
 
-#endif  // ENGINE_SPARSELIB_INCLUDE_VTUNE_WRAPPER_HPP_
+#endif  // ENGINE_SPARSELIB_SRC_VTUNE_WRAPPER_HPP_

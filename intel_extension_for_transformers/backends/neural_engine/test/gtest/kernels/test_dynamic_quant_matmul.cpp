@@ -13,15 +13,16 @@
 //  limitations under the License.
 #include <map>
 #include "gtest/gtest.h"
+#include "interface.hpp"
+#include "src/cpu/kernels/dynamic_quant_matmul_ref.hpp"
 #include "unit_test_utils.hpp"
-#include "kernels/dynamic_quant_matmul_ref.hpp"
 
-namespace jd {
+namespace test {
 
 using io = jd::exposed_enum::dynamic_quant_matmul::io;
 
 struct op_args_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::shared_ptr<std::vector<int8_t>> activation;
   std::shared_ptr<std::vector<int8_t>> reordered_weight;
   std::shared_ptr<std::vector<int8_t>> dst;
@@ -44,8 +45,8 @@ bool check_result(const test_params_t& t) {
   std::vector<const void*> data1, data2;
   auto dst_dt = op_desc.tensor_descs()[io::DST].dtype();
   try {
-    dynamic_quant_matmul_desc dynamic_quant_matmul_desc(op_desc);
-    dynamic_quant_matmul dynamic_quant_matmul_ker(dynamic_quant_matmul_desc);
+    jd::dynamic_quant_matmul_desc dynamic_quant_matmul_desc(op_desc);
+    jd::dynamic_quant_matmul dynamic_quant_matmul_ker(dynamic_quant_matmul_desc);
     std::shared_ptr<char> tmp_buf(reinterpret_cast<char*>(malloc(dynamic_quant_matmul_ker.get_workspace_size())),
                                   [](char* ptr) { free(ptr); });
 
@@ -54,16 +55,16 @@ bool check_result(const test_params_t& t) {
 
     data2 = {q.activation->data(), q.reordered_weight->data(), q.dst->data(), q.scale_a->data(),
              q.scale_w->data(),    q.scale_dst->data(),        tmp_buf.get(), q.bias->data()};
-    if (dst_dt == data_type::fp32) {
+    if (dst_dt == jd::data_type::fp32) {
       data1[io::DST] = p.fp32_dst->data();
       data2[io::DST] = q.fp32_dst->data();
     }
     dynamic_quant_matmul_ker.execute(data1);
-    std::shared_ptr<const kernel_desc_t> dynamic_quant_matmul_ref_desc;
-    kernel_desc_t::create<dynamic_quant_matmul_ref_kd_t>(dynamic_quant_matmul_ref_desc, q.op_desc);
-    std::shared_ptr<const kernel_t> dynamic_quant_matmul_ref_ker;
-    kernel_t::create<dynamic_quant_matmul_ref_k_t, dynamic_quant_matmul_ref_kd_t>(dynamic_quant_matmul_ref_ker,
-                                                                                  dynamic_quant_matmul_ref_desc);
+    std::shared_ptr<const jd::kernel_desc_t> dynamic_quant_matmul_ref_desc;
+    jd::kernel_desc_t::create<jd::dynamic_quant_matmul_ref_kd_t>(dynamic_quant_matmul_ref_desc, q.op_desc);
+    std::shared_ptr<const jd::kernel_t> dynamic_quant_matmul_ref_ker;
+    jd::kernel_t::create<jd::dynamic_quant_matmul_ref_k_t, jd::dynamic_quant_matmul_ref_kd_t>(
+        dynamic_quant_matmul_ref_ker, dynamic_quant_matmul_ref_desc);
     dynamic_quant_matmul_ref_ker->execute(data2);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
@@ -79,7 +80,7 @@ bool check_result(const test_params_t& t) {
     auto buf2 = data2[io::DST];
     bool ans1 = false;
     switch (dst_dt) {
-      case data_type::fp32:
+      case jd::data_type::fp32:
         ans1 = compare_data<float>(buf1, size, buf2, size, 5e-3);
         return ans1;
       default:
@@ -140,9 +141,9 @@ std::shared_ptr<std::vector<int8_t>> transpose_amx_tileKx64_reorder_buf(int8_t* 
   return trans_reorder_buf;
 }
 
-std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
+std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_descs,
                                          std::unordered_map<std::string, std::string> op_attrs,
-                                         const std::vector<postop_attr>& postop_attr = {}) {
+                                         const std::vector<jd::postop_attr>& postop_attr = {}) {
   auto activation_shape = ts_descs[io::ACTIVATION].shape();
   auto weight_shape = ts_descs[io::WEIGHT].shape();
   int b = activation_shape[0], m = activation_shape[1], k = weight_shape[0], n = weight_shape[1];
@@ -170,8 +171,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
   reorder_stage(weight.get(), reorder_buf.get(), k, n, pad_n);
   auto trans_reorder_wei = transpose_amx_tileKx64_reorder_buf(reorder_buf.get()->data(), k, pad_n);
-  operator_desc dynamic_quant_matmul_desc(kernel_kind::dynamic_quant_matmul, kernel_prop::forward_inference,
-                                          engine_kind::cpu, ts_descs, op_attrs, postop_attr);
+  jd::operator_desc dynamic_quant_matmul_desc(jd::kernel_kind::dynamic_quant_matmul, jd::kernel_prop::forward_inference,
+                                              jd::engine_kind::cpu, ts_descs, op_attrs, postop_attr);
 
   op_args_t p = {dynamic_quant_matmul_desc,
                  activation,
@@ -191,24 +192,24 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
-  std::vector<std::vector<int64_t>> shapes = {{512, 1280, 1280}, {512, 1280, 10240}, {77, 768, 1024}};
+  std::vector<std::vector<dim_t>> shapes = {{512, 1280, 1280}, {512, 1280, 10240}, {77, 768, 1024}};
 
   std::vector<dim_t> batchs = {1, 2};
-  std::vector<data_type> dt_types = {data_type::s8, data_type::fp32};
-  postop_attr swish_attr = {data_type::fp32, postop_type::eltwise, postop_alg::swish, 2.f};
+  std::vector<jd::data_type> dt_types = {jd::data_type::s8, jd::data_type::fp32};
+  jd::postop_attr swish_attr = {jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::swish, 2.f};
   for (auto&& batch : batchs) {
     for (auto&& shape : shapes) {
-      for (auto&& dt : dt_types) {
-        tensor_desc activation_desc = {{batch, shape[0], shape[2]}, jd::data_type::s8, jd::format_type::undef};
-        tensor_desc weight_desc = {{shape[2], shape[1]}, jd::data_type::s8, jd::format_type::undef};
-        tensor_desc dst_desc = {{batch, shape[0], shape[1]}, dt, jd::format_type::undef};
-        tensor_desc sclae_a_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
-        tensor_desc scale_w_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
-        tensor_desc scale_dst_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
-        tensor_desc workspace_desc = {{}, jd::data_type::undef, jd::format_type::undef};
-        tensor_desc bias_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
+      for (auto&& data_type : dt_types) {
+        jd::tensor_desc activation_desc = {{batch, shape[0], shape[2]}, jd::data_type::s8, jd::format_type::undef};
+        jd::tensor_desc weight_desc = {{shape[2], shape[1]}, jd::data_type::s8, jd::format_type::undef};
+        jd::tensor_desc dst_desc = {{batch, shape[0], shape[1]}, data_type, jd::format_type::undef};
+        jd::tensor_desc sclae_a_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
+        jd::tensor_desc scale_w_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
+        jd::tensor_desc scale_dst_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
+        jd::tensor_desc workspace_desc = {{}, jd::data_type::undef, jd::format_type::undef};
+        jd::tensor_desc bias_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
         std::unordered_map<std::string, std::string> op_attrs = {{"large_wei_threshold", "0.8"}};
-        if (dt == data_type::fp32) op_attrs["append_sum"] = true;
+        if (data_type == jd::data_type::fp32) op_attrs["append_sum"] = true;
         cases.push_back({gen_case({activation_desc, weight_desc, dst_desc, sclae_a_desc, scale_w_desc, scale_dst_desc,
                                    workspace_desc, bias_desc},
                                   op_attrs, {swish_attr}),
@@ -220,4 +221,4 @@ static auto case_func = []() {
 };
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, DynamicQuantMatmulKernelTest, case_func());
-}  // namespace jd
+}  // namespace test

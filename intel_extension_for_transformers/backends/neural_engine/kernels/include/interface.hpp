@@ -21,15 +21,11 @@
 #include "param_types.hpp"
 #include "operator_desc.hpp"
 #include "engine.hpp"
-#include "cpu_engine.hpp"
-#include "engine_factory.hpp"
 #include "kernel_desc.hpp"
 #include "kernel.hpp"
 #include "kernel_cache.hpp"
-#include "utils.hpp"
-#include "vtune_wrapper.hpp"
-#include "exposed_enum.hpp"
-#include "kernels/sparse_data.hpp"
+#include "common.h"
+#include "src/vtune_wrapper.hpp"
 
 namespace jd {
 

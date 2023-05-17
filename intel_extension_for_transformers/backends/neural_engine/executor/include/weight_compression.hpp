@@ -16,12 +16,13 @@
 #define ENGINE_EXECUTOR_INCLUDE_WEIGHT_COMPRESSION_HPP_
 
 #include <stdint.h>
-
+#include <type_traits>
 #include <algorithm>
 #include <cstdlib>
 #include <limits>
 #include <vector>
-#include "kernels/include/utils.hpp"
+#include "param_types.hpp"
+#include "data_type/data_types.hpp"
 
 struct weight_compression {
   jd::data_type type_ = jd::data_type::undef;
@@ -33,18 +34,17 @@ struct weight_compression {
   static int constexpr PreferedM = 4;
 };
 
-template <jd::data_type T>
+template <typename T>
 struct float8_auto_scale {
-  static constexpr bool IS_E4M3 = (T == jd::data_type::f8_e4m3);
-  static constexpr bool IS_E5M2 = (T == jd::data_type::f8_e5m2);
-  static constexpr float EnlargeTarget = IS_E4M3 ? 256.f : 65536.f;
+  static constexpr bool is_e4m3 = std::is_same<T, jd::float8_e4m3_t>::value;
+  static constexpr float EnlargeTarget = is_e4m3 ? 256.f : 65536.f;
 
-  static void auto_scale_T_bf16(const uint16_t* _src, uint8_t* _dst, size_t _n, size_t _k, float* _scale) {
+  static void auto_scale_T_bf16(const jd::bfloat16_t* _src, T* _dst, size_t _n, size_t _k, float* _scale) {
     std::vector<float> minvals(_n, std::numeric_limits<float>::max()), maxvals(_n, std::numeric_limits<float>::min());
 #pragma omp parallel for
     for (int i = 0; i < _n; i++) {
       for (size_t j = 0; j < _k; j++) {
-        auto fval = jd::bf16_to_fp32(_src[i * _k + j]);
+        float fval = _src[i * _k + j];
         if (fval < minvals[i]) {
           minvals[i] = fval;
         }
@@ -62,17 +62,17 @@ struct float8_auto_scale {
     float SCALE = EnlargeTarget / maxabsval;
 #pragma omp parallel for
     for (int i = 0; i < _n * _k; i++) {
-      _dst[i] = jd::cast_to<uint8_t>(jd::bf16_to_fp32(_src[i]) * SCALE, T);
+      _dst[i] = static_cast<float>(_src[i]) * SCALE;
     }
     *_scale = 1.f / SCALE;
   }
 };
 
 struct int8_quantize {
-  static void quantize_T_bf16(const uint16_t* _src, int8_t* _dst, size_t _size, float* _scale) {
+  static void quantize_T_bf16(const jd::bfloat16_t* _src, int8_t* _dst, size_t _size, float* _scale) {
     float minvalue = std::numeric_limits<float>::max(), maxvalue = std::numeric_limits<float>::min();
     for (size_t i = 0; i < _size; i++) {
-      auto fval = jd::bf16_to_fp32(_src[i]);
+      float fval = _src[i];
       if (fval < minvalue) {
         minvalue = fval;
       }
@@ -86,7 +86,7 @@ struct int8_quantize {
 
 #pragma omp parallel for
     for (int i = 0; i < _size; i++) {
-      float tmp = jd::bf16_to_fp32(_src[i]) * SCALE + 0.5f;
+      float tmp = static_cast<float>(_src[i]) * SCALE + 0.5f;
       tmp = tmp > 127 ? 127 : tmp;
       tmp = tmp < -128 ? -128 : tmp;
       _dst[i] = int8_t(tmp);
@@ -95,13 +95,13 @@ struct int8_quantize {
     *_scale = 1 / SCALE;
   }
 
-  static void quantize_T_bf16_percn(const uint16_t* _src, int8_t* _dst, size_t _n, size_t _k, float* _scales) {
+  static void quantize_T_bf16_percn(const jd::bfloat16_t* _src, int8_t* _dst, size_t _n, size_t _k, float* _scales) {
     std::vector<float> minvals(_n, std::numeric_limits<float>::max()), maxvals(_n, std::numeric_limits<float>::min());
     std::vector<float> maxabsvals(_n);
 #pragma omp parallel for
     for (int i = 0; i < _n; i++) {
       for (size_t j = 0; j < _k; j++) {
-        auto fval = jd::bf16_to_fp32(_src[i * _k + j]);
+        float fval = static_cast<float>(_src[i * _k + j]);
         if (fval < minvals[i]) {
           minvals[i] = fval;
         }
@@ -112,7 +112,7 @@ struct int8_quantize {
       maxabsvals[i] = std::max(std::abs(minvals[i]), std::abs(maxvals[i]));
       float SCALE = 127 / maxabsvals[i];
       for (size_t j = 0; j < _k; j++) {
-        float tmp = jd::bf16_to_fp32(_src[i * _k + j]) * SCALE + 0.5f;
+        float tmp = static_cast<float>(_src[i * _k + j]) * SCALE + 0.5f;
         tmp = tmp > 127 ? 127 : tmp;
         tmp = tmp < -128 ? -128 : tmp;
         _dst[i * _k + j] = int8_t(tmp);

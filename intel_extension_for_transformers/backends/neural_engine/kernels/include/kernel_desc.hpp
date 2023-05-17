@@ -20,8 +20,8 @@
 #include <memory>
 #include "param_types.hpp"
 #include "operator_desc.hpp"
-#include "utils.hpp"
-#include "verbose.hpp"
+#include "common.h"
+#include "src/verbose.hpp"
 
 namespace jd {
 class engine_t;
@@ -29,9 +29,9 @@ class kernel_t;
 /**
  * @brief kernel descriptor implementation real class.
  */
-class kernel_desc_t {
+class SPARSE_TEST_API_ kernel_desc_t {
  public:
-  explicit kernel_desc_t(const jd::kernel_kind& ker_kind);
+  explicit kernel_desc_t(const kernel_kind& ker_kind);
   virtual ~kernel_desc_t() {}
 
  public:
@@ -57,7 +57,7 @@ class kernel_desc_t {
                                 const std::shared_ptr<const kernel_desc_t>& kd) const = 0;
 
  public:
-  virtual const jd::operator_desc& get_operator_desc() const = 0;
+  virtual const operator_desc& get_operator_desc() const = 0;
   inline const jd::kernel_kind& kernel_kind() const { return ker_kind_; }
   const char* info() const {
     if (!info_.is_initialized()) info_.init(ker_kind_, shape());
@@ -66,7 +66,7 @@ class kernel_desc_t {
 
  protected:
   jd::kernel_kind ker_kind_ = {};
-  mutable jd::kd_info_t info_;
+  mutable kd_info_t info_;
 };
 
 // kernel_desc_t::create_primitive() override.

@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_MATMUL_REF_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_MATMUL_REF_HPP_
+#ifndef ENGINE_SPARSELIB_SRC_MATMUL_REF_HPP_
+#define ENGINE_SPARSELIB_SRC_MATMUL_REF_HPP_
 
 #include <CL/cl.h>
 #include <vector>
@@ -23,9 +23,9 @@
 #include "kernel.hpp"
 namespace jd {
 class gpu_ocl_matmul_ref_k_t;
-class SPARSE_API_ gpu_ocl_matmul_ref_kd_t : public kernel_desc_t {
+class SPARSE_TEST_API_ gpu_ocl_matmul_ref_kd_t : public kernel_desc_t {
  public:
-  explicit gpu_ocl_matmul_ref_kd_t(const jd::operator_desc& op_desc)
+  explicit gpu_ocl_matmul_ref_kd_t(const operator_desc& op_desc)
       : kernel_desc_t(kernel_kind::matmul), op_desc_(op_desc) {}
   virtual ~gpu_ocl_matmul_ref_kd_t() {}
 
@@ -34,16 +34,16 @@ class SPARSE_API_ gpu_ocl_matmul_ref_kd_t : public kernel_desc_t {
   DECLARE_COMMON_PD_T(gpu_ocl_matmul_ref_k_t, gpu_ocl_matmul_ref_kd_t);
 
  public:
-  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
+  const operator_desc& get_operator_desc() const override { return op_desc_; }
   inline dim_t M() const { return op_desc_.tensor_descs()[0].shape()[0]; }
   inline dim_t N() const { return op_desc_.tensor_descs()[1].shape()[1]; }
   inline dim_t K() const { return op_desc_.tensor_descs()[1].shape()[1]; }
 
  private:
-  jd::operator_desc op_desc_;
+  operator_desc op_desc_;
 };
 
-class SPARSE_API_ gpu_ocl_matmul_ref_k_t : public kernel_t {
+class SPARSE_TEST_API_ gpu_ocl_matmul_ref_k_t : public kernel_t {
  public:
   using kd_t = gpu_ocl_matmul_ref_kd_t;
   explicit gpu_ocl_matmul_ref_k_t(const std::shared_ptr<const kernel_desc_t>& kd)
@@ -70,4 +70,4 @@ class SPARSE_API_ gpu_ocl_matmul_ref_k_t : public kernel_t {
   std::vector<void*> handle_;
 };
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_MATMUL_REF_HPP_
+#endif  // ENGINE_SPARSELIB_SRC_MATMUL_REF_HPP_

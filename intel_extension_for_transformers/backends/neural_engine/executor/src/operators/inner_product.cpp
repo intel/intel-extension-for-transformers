@@ -13,8 +13,9 @@
 //  limitations under the License.
 
 #include "inner_product.hpp"
-#include "kernels/src/fp8.hpp"
-#include "kernels/src/kernels/data_pack.hpp"
+#include "data_type/data_types.hpp"
+#include "kernels/data_pack.hpp"
+#include "kernels/sparse_data.hpp"
 #include "model.hpp"
 
 namespace executor {
@@ -231,7 +232,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
     auto shape = src1_->shape();
     if (weight_comp_.enabled() && shape.size() == 2 && dst_->dtype() == "bf16") {
       int _N = shape[0], _K = shape[1];
-      auto src_bf16 = reinterpret_cast<const uint16_t*>(src1_->data());
+      auto src_bf16 = reinterpret_cast<const jd::bfloat16_t*>(src1_->data());
       if (_N % 32 == 0 && _K % 32 == 0) {  // this limitation will be removed by kernel updates
         jd::tensor_desc src0_desc = {{weight_comp_.PreferedM, shape[1]}, jd::data_type::bf16, jd::format_type::ab};
         jd::tensor_desc src1_desc;
@@ -242,11 +243,13 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
         if (weight_comp_.type_ == jd::data_type::f8_e4m3) {
           src1_desc = {{shape[0], shape[1]}, jd::data_type::f8_e4m3, jd::format_type::ab};
           weight_comp_.mem_.resize(_N * _K * 1);
-          vector<uint8_t> tmpfp8(_N * _K);
-          float8_auto_scale<jd::data_type::f8_e4m3>::auto_scale_T_bf16(src_bf16, tmpfp8.data(), _N, _K,
-                                                                    &weight_comp_.scale_);
-          std::function<jd::float8_t(jd::float8_t)> cast_func_fp8 = [](jd::float8_t x) { return x; };
-          jd::pack<jd::float8_t, jd::float8_t>(weight_comp_.mem_.data(), tmpfp8.data(), _N, _K, cast_func_fp8);
+          vector<jd::float8_e4m3_t> tmpfp8(_N * _K);
+          float8_auto_scale<jd::float8_e4m3_t>::auto_scale_T_bf16(src_bf16, tmpfp8.data(), _N, _K,
+                                                                  &weight_comp_.scale_);
+
+          std::function<jd::float8_e4m3_t(jd::float8_e4m3_t)> cast_func_fp8 = [](jd::float8_e4m3_t x) { return x; };
+          jd::pack<jd::float8_e4m3_t, jd::float8_e4m3_t>(reinterpret_cast<jd::float8_e4m3_t*>(weight_comp_.mem_.data()),
+                                                         tmpfp8.data(), _N, _K, cast_func_fp8);
           weight_comp_.valid = true;
         } else if (weight_comp_.type_ == jd::data_type::s8) {
           src1_desc = {{_N, _K}, jd::data_type::s8, jd::format_type::ab};
@@ -263,11 +266,12 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
         } else if (weight_comp_.type_ == jd::data_type::f8_e5m2) {
           src1_desc = {{shape[0], shape[1]}, jd::data_type::f8_e5m2, jd::format_type::ab};
           weight_comp_.mem_.resize(_N * _K * 1);
-          vector<uint8_t> tmpfp8(_N * _K);
-          float8_auto_scale<jd::data_type::f8_e5m2>::auto_scale_T_bf16(src_bf16, tmpfp8.data(), _N, _K,
-                                                                    &weight_comp_.scale_);
-          std::function<jd::float8_t(jd::float8_t)> cast_func_fp8 = [](jd::float8_t x) { return x; };
-          jd::pack<jd::float8_t, jd::float8_t>(weight_comp_.mem_.data(), tmpfp8.data(), _N, _K, cast_func_fp8);
+          vector<jd::float8_e5m2_t> tmpfp8(_N * _K);
+          float8_auto_scale<jd::float8_e5m2_t>::auto_scale_T_bf16(src_bf16, tmpfp8.data(), _N, _K,
+                                                                  &weight_comp_.scale_);
+          std::function<jd::float8_e5m2_t(jd::float8_e5m2_t)> cast_func_fp8 = [](jd::float8_e5m2_t x) { return x; };
+          jd::pack<jd::float8_e5m2_t, jd::float8_e5m2_t>(reinterpret_cast<jd::float8_e5m2_t*>(weight_comp_.mem_.data()),
+                                                         tmpfp8.data(), _N, _K, cast_func_fp8);
           weight_comp_.valid = true;
         }
         if (weight_comp_.valid) {
@@ -1053,8 +1057,8 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   // for decoder-only transformers dnnl amx bf16 brgemm weight reorder process
 #if __AMX_BF16__
   if (src1_->dtype() == "bf16" && model_ != nullptr && model_->input_shape().size() > 1) {
-    if ((seq_len_ != 0  && seq_len_ > 128 && model_->input_shape()[1] == 1) ||
-        (seq_len_ != 0  && seq_len_ == 1 && model_->input_shape()[1] > 128)) {
+    if ((seq_len_ != 0 && seq_len_ > 128 && model_->input_shape()[1] == 1) ||
+        (seq_len_ != 0 && seq_len_ == 1 && model_->input_shape()[1] > 128)) {
       weight_cached_ = false;
     }
     seq_len_ = model_->input_shape()[1];

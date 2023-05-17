@@ -12,15 +12,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "utils.hpp"
-#include "layernorm_ba/layernorm_ba.hpp"
+#include "layernorm_ba.hpp"
 
-namespace jd {
+#include <memory>
+#include <functional>
 
+namespace bench {
 bench_res_t layernorm_ba_bench::set_config(int argc, char** argv) {
   if (argc < LAYERNORM_BA_ARG_NUM) {
     LOG(ERROR) << "Not enough arguments passed";
-
     return {bench_status::wrong_input};
   }
   LOG(INFO) << "layernorm_ba\n";
@@ -31,18 +31,17 @@ bench_res_t layernorm_ba_bench::set_config(int argc, char** argv) {
   std::string shape_str = std::string(argv[0]) + std::string("x") + std::string(argv[1]);
   in_dt = str_2_dt(in_dt_str);
   out_dt = str_2_dt(out_dt_str);
-  tensor_desc input_data_desc = {{M, N}, in_dt, jd::format_type::ba};
-  tensor_desc output_data_desc = {{M, N}, out_dt, jd::format_type::ba};
-  if (out_dt == data_type::s8 || out_dt == data_type::u8) {
+  jd::tensor_desc input_data_desc = {{M, N}, in_dt, jd::format_type::ba};
+  jd::tensor_desc output_data_desc = {{M, N}, out_dt, jd::format_type::ba};
+  if (out_dt == jd::data_type::s8 || out_dt == jd::data_type::u8) {
     postop_attrs.push_back(
-        {out_dt, postop_type::eltwise, postop_alg::quantize, rand_float_postfix(), 0, rand_float_postfix()});
+        {out_dt, jd::postop_type::eltwise, jd::postop_alg::quantize, rand_float_postfix(), 0, rand_float_postfix()});
   }
   op_attrs = {{"matrix_shape", shape_str}};
   ts_descs = {
       {{M, N}, in_dt, jd::format_type::ba}, {{M, N}, out_dt, jd::format_type::ba}, {{}, in_dt, jd::format_type::ba}};
   return {bench_status::success};
 }
-
 void layernorm_ba_bench::get_true_data() {
   auto& op_desc = args.second.op_desc;
   auto& rt_data = args.second.rt_data;
@@ -60,19 +59,17 @@ void layernorm_ba_bench::get_true_data() {
   auto dst_fp32 = static_cast<float*>(dst_data);
   auto dst_u8 = static_cast<uint8_t*>(dst_data);
   auto dst_s8 = static_cast<int8_t*>(dst_data);
-
   auto store_data = [&](int dst_idx, float value) {
-    if (dst_dt == data_type::fp32) {
+    if (dst_dt == jd::data_type::fp32) {
       dst_fp32[dst_idx] = static_cast<float>(value);
-    } else if (dst_dt == data_type::s8) {
+    } else if (dst_dt == jd::data_type::s8) {
       dst_s8[dst_idx] = static_cast<int8_t>(value);
-    } else if (dst_dt == data_type::u8) {
+    } else if (dst_dt == jd::data_type::u8) {
       dst_u8[dst_idx] = static_cast<uint8_t>(value);
     }
   };
-
   auto normal_translnorm = [&]() {
-    LOG_IF(FATAL, src_dt != data_type::fp32);
+    LOG_IF(FATAL, src_dt != jd::data_type::fp32);
     for (int k = 0; k < batch; k++) {
       for (int i = 0; i < col; i++) {
         // calculate mean.
@@ -103,9 +100,8 @@ void layernorm_ba_bench::get_true_data() {
       }
     }
   };
-
   auto direct_translnorm = [&]() {
-    LOG_IF(FATAL, src_dt != data_type::fp32 && src_dt != data_type::s32);
+    LOG_IF(FATAL, src_dt != jd::data_type::fp32 && src_dt != jd::data_type::s32);
     float* mean_data = reinterpret_cast<float*>(const_cast<void*>(rt_data[4]));
     float* var_data = reinterpret_cast<float*>(const_cast<void*>(rt_data[5]));
     for (int i = 0; i < batch; i++) {
@@ -124,7 +120,6 @@ void layernorm_ba_bench::get_true_data() {
       }
     }
   };
-
   if (op_attr.count("spec_type") == 0) {
     op_attr["spec_type"] = "normal";
     SPARSE_LOG(INFO) << "layernorm_ba spec_type set to normal by default.";
@@ -137,11 +132,9 @@ void layernorm_ba_bench::get_true_data() {
     LOG(FATAL) << "unsupported translnorm spec type.";
   }
 }
-
 bool layernorm_ba_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
-
   get_true_data();
   auto buf1 = p.rt_data[1];
   auto size1 = p.op_desc.tensor_descs()[1].size();
@@ -149,16 +142,15 @@ bool layernorm_ba_bench::check_result() {
   auto size2 = p.op_desc.tensor_descs()[1].size();
   auto dst_type = p.op_desc.tensor_descs()[1].dtype();
   bool ans = false;
-  if (dst_type == data_type::fp32) {
+  if (dst_type == jd::data_type::fp32) {
     ans = compare_data<float>(buf1, size1, buf2, size2, 5e-3);
-  } else if (dst_type == data_type::u8) {
+  } else if (dst_type == jd::data_type::u8) {
     ans = compare_data<uint8_t>(buf1, size1, buf2, size2, 1);
-  } else if (dst_type == data_type::s8) {
+  } else if (dst_type == jd::data_type::s8) {
     ans = compare_data<int8_t>(buf1, size1, buf2, size2, 1);
   }
   return ans;
 }
-
 void layernorm_ba_bench::gen_case() {
   // malloc memory
   int row = ts_descs[0].reduce_rows();
@@ -168,20 +160,17 @@ void layernorm_ba_bench::gen_case() {
   void* dst = nullptr;
   void* src_ref = nullptr;
   void* dst_ref = nullptr;
-
   auto in_dt = ts_descs[0].dtype();
   auto out_dt = ts_descs[1].dtype();
-  src = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num);
-  dst = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num, true);
-  src_ref = aligned_allocator_t<char>::allocate(get_data_size(in_dt) * num);
-  dst_ref = aligned_allocator_t<char>::allocate(get_data_size(out_dt) * num, true);
+  src = aligned_allocator_t<char>::allocate(jd::type_size.at(in_dt) * num);
+  dst = aligned_allocator_t<char>::allocate(jd::type_size.at(out_dt) * num, true);
+  src_ref = aligned_allocator_t<char>::allocate(jd::type_size.at(in_dt) * num);
+  dst_ref = aligned_allocator_t<char>::allocate(jd::type_size.at(out_dt) * num, true);
   float* alpha = aligned_allocator_t<float>::allocate(row);
   float* beta = aligned_allocator_t<float>::allocate(row);
-
   // init alpha&beta
   for (int i = 0; i < row; i++) alpha[i] = 1 + rand_float_postfix();
   for (int i = 0; i < row; i++) beta[i] = 1 + rand_float_postfix();
-
   // init matrix.
   const unsigned int seed = 667095;
   std::srand(seed);
@@ -192,10 +181,8 @@ void layernorm_ba_bench::gen_case() {
       assign_val(src_ref, in_dt, rand_val, i * col + j);
     }
   }
-
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
-
   rt_data1.emplace_back(src);
   rt_data1.emplace_back(dst);
   rt_data1.emplace_back(alpha);
@@ -204,13 +191,10 @@ void layernorm_ba_bench::gen_case() {
   rt_data2.emplace_back(dst_ref);
   rt_data2.push_back(alpha);
   rt_data2.push_back(beta);
-
-  operator_desc layernorm_ba_desc(kernel_kind::layernorm_ba, kernel_prop::forward_inference, engine_kind::cpu,
-                                  ts_descs, op_attrs, postop_attrs);
-
+  jd::operator_desc layernorm_ba_desc(jd::kernel_kind::layernorm_ba, jd::kernel_prop::forward_inference,
+                                      jd::engine_kind::cpu, ts_descs, op_attrs, postop_attrs);
   op_args_t p = {layernorm_ba_desc, rt_data1};
   op_args_t q = {layernorm_ba_desc, rt_data2};
   args = {p, q};
 }
-
-}  // namespace jd
+}  // namespace bench

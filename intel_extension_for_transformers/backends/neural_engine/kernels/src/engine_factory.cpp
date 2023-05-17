@@ -13,10 +13,10 @@
 //  limitations under the License.
 #include "engine_factory.hpp"
 
-#include "cpu_engine.hpp"
-
+#include "src/cpu/engine/cpu_engine.hpp"
+#include "src/utils.hpp"
 #ifdef SPARSELIB_GPU
-#include "engine/gpu_ocl_engine.hpp"
+#include "src/gpu/engine/gpu_ocl_engine.hpp"
 #endif
 
 namespace jd {

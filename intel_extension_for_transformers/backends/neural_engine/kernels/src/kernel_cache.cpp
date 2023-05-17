@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include "kernel_cache.hpp"
+#include "src/utils.hpp"
 
 namespace jd {
 const std::shared_ptr<const kernel_t>& kernel_cache::get(const operator_desc& op_desc) {

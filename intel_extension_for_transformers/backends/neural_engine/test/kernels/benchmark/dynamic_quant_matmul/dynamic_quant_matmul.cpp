@@ -12,19 +12,13 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "dynamic_quant_matmul/dynamic_quant_matmul.hpp"
-
-#include <algorithm>
-#include <limits>
-
+#include "dynamic_quant_matmul.hpp"
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "kernels/spmm_types.hpp"
-#include "kernels/dynamic_quant_matmul_ref.hpp"
-#include "utils.hpp"
+#include "src/cpu/kernels/dynamic_quant_matmul_ref.hpp"
 
-namespace jd {
-
+namespace bench {
 bench_res_t dynamic_quant_matmul_bench::set_config(int argc, char** argv) {
   if (argc < DYNAMIC_QUANT_MATMUL_ARG_NUM) {
     LOG(ERROR) << "Not enough arguments passed";
@@ -43,14 +37,12 @@ bench_res_t dynamic_quant_matmul_bench::set_config(int argc, char** argv) {
 bool dynamic_quant_matmul_bench::check_result() {
   const auto& p = args.first;
   const auto& q = args.second;
-
-  std::shared_ptr<const kernel_desc_t> dynamic_quant_matmul_ref_desc;
-  kernel_desc_t::create<dynamic_quant_matmul_ref_kd_t>(dynamic_quant_matmul_ref_desc, q.op_desc);
-  std::shared_ptr<const kernel_t> dynamic_quant_matmul_ref_ker;
-  kernel_t::create<dynamic_quant_matmul_ref_k_t, dynamic_quant_matmul_ref_kd_t>(dynamic_quant_matmul_ref_ker,
-                                                                                dynamic_quant_matmul_ref_desc);
+  std::shared_ptr<const jd::kernel_desc_t> dynamic_quant_matmul_ref_desc;
+  jd::kernel_desc_t::create<jd::dynamic_quant_matmul_ref_kd_t>(dynamic_quant_matmul_ref_desc, q.op_desc);
+  std::shared_ptr<const jd::kernel_t> dynamic_quant_matmul_ref_ker;
+  jd::kernel_t::create<jd::dynamic_quant_matmul_ref_k_t, jd::dynamic_quant_matmul_ref_kd_t>(
+      dynamic_quant_matmul_ref_ker, dynamic_quant_matmul_ref_desc);
   dynamic_quant_matmul_ref_ker->execute(q.rt_data);
-
   auto buf1 = p.rt_data[io::DST];
   auto size = p.op_desc.tensor_descs()[io::DST].size();
   auto buf2 = q.rt_data[io::DST];
@@ -66,7 +58,6 @@ void dynamic_quant_matmul_bench::gen_case() {
   op_attrs = {};
   op_attrs["large_wei_threshold"] = large_wei_threshold;
   int pad_n = (n + 15) / 16 * 16;
-
   void* activation = aligned_alloc(64, b * m * k);
   void* wei = aligned_alloc(64, k * pad_n);
   void* dst = aligned_alloc(64, b * m * n);
@@ -76,16 +67,13 @@ void dynamic_quant_matmul_bench::gen_case() {
   void* bias = aligned_alloc(64, n * sizeof(float));
   void* scale_dst = aligned_alloc(64, b * m * sizeof(float));
   void* correct_scale_dst = aligned_alloc(64, b * m * sizeof(float));
-
   init_vector(static_cast<int8_t*>(activation), b * m * k, ranges[0], ranges[1], rand());
   init_vector(static_cast<int8_t*>(wei), k * pad_n, ranges[0], ranges[1], rand());
   init_vector(static_cast<float*>(scale_a), b * m, ranges[0], ranges[1], rand());
   init_vector(static_cast<float*>(scale_w), n, ranges[0], ranges[1], rand());
   init_vector(static_cast<float*>(bias), n, ranges[0], ranges[1], rand());
-
   std::vector<const void*> rt_data_p(8, nullptr);
   std::vector<const void*> rt_data_q(8, nullptr);
-
   jd::tensor_desc activation_desc = {{b, m, k}, jd::data_type::s8, jd::format_type::undef};
   jd::tensor_desc weight_desc = {{k, pad_n}, jd::data_type::s8, jd::format_type::undef};
   jd::tensor_desc dst_desc = {{b, m, n}, jd::data_type::s8, jd::format_type::undef};
@@ -94,11 +82,8 @@ void dynamic_quant_matmul_bench::gen_case() {
   jd::tensor_desc scale_dst_desc = {{b, m}, jd::data_type::fp32, jd::format_type::undef};
   jd::tensor_desc workspace_desc = {{}, jd::data_type::fp32, jd::format_type::undef};
   jd::tensor_desc bias_desc = {{n}, jd::data_type::fp32, jd::format_type::undef};
-
   ts_descs = {activation_desc, weight_desc, dst_desc, sclae_a_desc, scale_w_desc, scale_dst_desc, workspace_desc};
-
   if (add_bias == "true") ts_descs.push_back(bias_desc);
-
   rt_data_p[io::ACTIVATION] = activation;
   rt_data_p[io::WEIGHT] = wei;
   rt_data_p[io::DST] = dst;
@@ -106,7 +91,6 @@ void dynamic_quant_matmul_bench::gen_case() {
   rt_data_p[io::SCALE_W] = scale_w;
   rt_data_p[io::SCALE_DST] = scale_dst;
   rt_data_p[io::BIAS] = bias;
-
   rt_data_q[io::ACTIVATION] = activation;
   rt_data_q[io::WEIGHT] = wei;
   rt_data_q[io::DST] = correct_dst;
@@ -114,15 +98,11 @@ void dynamic_quant_matmul_bench::gen_case() {
   rt_data_q[io::SCALE_W] = scale_w;
   rt_data_q[io::SCALE_DST] = correct_scale_dst;
   rt_data_q[io::BIAS] = bias;
-
-  operator_desc op_desc(kernel_kind::dynamic_quant_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                        op_attrs);
-
+  jd::operator_desc op_desc(jd::kernel_kind::dynamic_quant_matmul, jd::kernel_prop::forward_inference,
+                            jd::engine_kind::cpu, ts_descs, op_attrs);
   // Step 3: op_args_t testcase pair
   op_args_t op_args_p = {op_desc, rt_data_p};
   op_args_t op_args_q = {op_desc, rt_data_q};
-
   args = {op_args_p, op_args_q};
 }
-
-}  // namespace jd
+}  // namespace bench

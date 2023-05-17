@@ -11,32 +11,26 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_SOFTMAX_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_SOFTMAX_HPP_
 
 #include <functional>
-#include <iostream>
-#include <map>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
 
-namespace jd {
-
+namespace bench {
 class softmax_bench : public kernel_bench {
  private:
   std::vector<int64_t> shape;
-  data_type in_dt;
-  data_type out_dt;
-  std::vector<postop_attr> postop_attrs;
+  jd::data_type in_dt;
+  jd::data_type out_dt;
+  std::vector<jd::postop_attr> postop_attrs;
   std::unordered_map<std::string, std::string> op_attrs;
 
  public:
@@ -48,7 +42,6 @@ class softmax_bench : public kernel_bench {
           free(const_cast<void*>(rt_data));
         }
   }
-
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override {
     // flop taken into consideration
@@ -65,11 +58,9 @@ class softmax_bench : public kernel_bench {
   // Just like that in gtest file
   void gen_case() override;
   void set_kernel_proxy() override {
-    softmax_desc softmax_desc(args.first.op_desc);
-    kp = std::make_shared<softmax>(softmax_desc);
+    jd::softmax_desc softmax_desc(args.first.op_desc);
+    kp = std::make_shared<jd::softmax>(softmax_desc);
   }
 };
-
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_SOFTMAX_HPP_

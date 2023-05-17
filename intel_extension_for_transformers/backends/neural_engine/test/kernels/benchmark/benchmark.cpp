@@ -11,7 +11,6 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #include "benchmark_utils.hpp"
 #include "attention/attention.hpp"
 #include "eltwiseop/eltwiseop.hpp"
@@ -23,81 +22,74 @@
 #include "mha_dense/mha_dense.hpp"
 #include "dynamic_quant_matmul/dynamic_quant_matmul.hpp"
 #include "dynamic_quant/dynamic_quant.hpp"
-
 int main(int argc, char** argv) {
-  jd::bench_mode mode;
-  std::shared_ptr<jd::kernel_bench> kb;
-
+  bench::bench_mode mode;
+  std::shared_ptr<bench::kernel_bench> kb;
   if (argc < 5) {
     LOG(ERROR) << "Not enough arguments passed";
     return 1;
   }
-
   --argc;
   ++argv;
   // Get mode from command line input
   if (!strcmp(argv[0], "acc")) {
-    mode = jd::bench_mode::acc;
+    mode = bench::bench_mode::acc;
   } else if (!strcmp(argv[0], "perf")) {
-    mode = jd::bench_mode::perf;
+    mode = bench::bench_mode::perf;
   } else {
     LOG(ERROR) << "unknown mode";
     return 1;
   }
-
   --argc;
   ++argv;
   // Determine kernel kind
   if (!strcmp(argv[0], "sparse_matmul")) {
-    kb = std::make_shared<jd::sparse_matmul_bench>();
+    kb = std::make_shared<bench::sparse_matmul_bench>();
   } else if (!strcmp(argv[0], "layernorm_ba")) {
-    kb = std::make_shared<jd::layernorm_ba_bench>();
+    kb = std::make_shared<bench::layernorm_ba_bench>();
   } else if (!strcmp(argv[0], "eltwiseop")) {
-    kb = std::make_shared<jd::eltwiseop_bench>();
+    kb = std::make_shared<bench::eltwiseop_bench>();
   } else if (!strcmp(argv[0], "transpose_matmul")) {
-    kb = std::make_shared<jd::transpose_matmul_bench>();
+    kb = std::make_shared<bench::transpose_matmul_bench>();
   } else if (!strcmp(argv[0], "softmax")) {
-    kb = std::make_shared<jd::softmax_bench>();
+    kb = std::make_shared<bench::softmax_bench>();
   } else if (!strcmp(argv[0], "attention")) {
-    kb = std::make_shared<jd::attention_bench>();
+    kb = std::make_shared<bench::attention_bench>();
   } else if (!strcmp(argv[0], "transpose_mha")) {
-    kb = std::make_shared<jd::transpose_mha_bench>();
+    kb = std::make_shared<bench::transpose_mha_bench>();
   } else if (!strcmp(argv[0], "mha_dense")) {
-    kb = std::make_shared<jd::mha_dense_bench>();
+    kb = std::make_shared<bench::mha_dense_bench>();
   } else if (!strcmp(argv[0], "dynamic_quant_matmul")) {
-    kb = std::make_shared<jd::dynamic_quant_matmul_bench>();
+    kb = std::make_shared<bench::dynamic_quant_matmul_bench>();
   } else if (!strcmp(argv[0], "dynamic_quant")) {
-    kb = std::make_shared<jd::dynamic_quant_bench>();
+    kb = std::make_shared<bench::dynamic_quant_bench>();
   } else {
     LOG(ERROR) << "unknown kernel type";
     return 1;
   }
   // Use command line input to set config parameters
-
-  jd::bench_res_t res = kb->set_config(--argc, ++argv);
+  bench::bench_res_t res = kb->set_config(--argc, ++argv);
   // Run benchmark
-  jd::bench_op bench(kb);
-
+  bench::bench_op bench(kb);
   try {
-    if (res.stat == jd::bench_status::success) res = bench.run_bench(mode);
+    if (res.stat == bench::bench_status::success) res = bench.run_bench(mode);
   } catch (const std::exception& e) {
     LOG(ERROR) << "kernel exception occurred";
-    res.stat = jd::bench_status::fail;
+    res.stat = bench::bench_status::fail;
   }
   // Print result
-  if (res.stat != jd::bench_status::success) {
+  if (res.stat != bench::bench_status::success) {
     LOG(INFO) << "benchmark failed\n";
     return 1;
   }
-  if (mode == jd::bench_mode::acc) {
+  if (mode == bench::bench_mode::acc) {
     if (res.correct) {
       LOG(INFO) << "result correct\n";
     } else {
       LOG(INFO) << "result incorrect\n";
     }
-  } else if (mode == jd::bench_mode::perf) {
+  } else if (mode == bench::bench_mode::perf) {
     LOG(INFO) << "kernel execution time:" << res.ms << "ms,  GFLOPS:" << res.gflops;
   }
-
   return 0;
 }

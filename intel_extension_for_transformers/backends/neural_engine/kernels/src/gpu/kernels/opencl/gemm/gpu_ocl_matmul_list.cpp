@@ -14,7 +14,7 @@
 
 #include <map>
 #include <tuple>
-#include "engine/gpu_ocl_engine.hpp"
+#include "src/gpu/engine/gpu_ocl_engine.hpp"
 #include "param_types.hpp"
 #include "impl_list_item.hpp"
 #include "gpu_ocl_matmul_ref.hpp"

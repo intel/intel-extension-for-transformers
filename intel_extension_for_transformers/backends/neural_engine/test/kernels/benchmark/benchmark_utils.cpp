@@ -13,12 +13,15 @@
 //  limitations under the License.
 
 #include "benchmark_utils.hpp"
-#include "utils.hpp"
+
+#include <functional>
+
+#include "common_utils.hpp"
+#include "data_type/data_types.hpp"
 
 // Internal Control Variables
 int benchmark_iter = 100;
 bool benchmark_refresh = true;
-
 void read_benchmark_env() {
   const char* input_benchmark_iter = std::getenv("BENCHMARK_ITER");
   if (input_benchmark_iter != nullptr) {
@@ -27,7 +30,6 @@ void read_benchmark_env() {
       LOG(WARNING) << "BENCHMARK_ITER is 0! Please ensure you set this variable to an integer\n";
     }
   }
-
   const char* input_benchmark_refresh = std::getenv("BENCHMARK_NO_REFRESH");
   if (input_benchmark_refresh != nullptr) {
     if (strcmp(input_benchmark_refresh, "1") == 0) {
@@ -35,9 +37,7 @@ void read_benchmark_env() {
     }
   }
 }
-
-namespace jd {
-using dt = jd::data_type;
+namespace bench {
 bench_res_t bench_op::run_bench(bench_mode mode) {
   bench_res_t res;
   kb->gen_case();
@@ -49,14 +49,12 @@ bench_res_t bench_op::run_bench(bench_mode mode) {
     return res;
   }
   if (mode == bench_mode::acc) res.correct = kb->check_result();
-
   return res;
 }
 bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
   auto& p = kb->args.first;
   auto& q = kb->args.second;
   bench_res_t res;
-
   // prepare workspace
   const auto workspace_idx = kb->get_workspace_idx();
   const auto workspace_size = kb->kp->get_workspace_size();
@@ -75,20 +73,15 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
         },
     };
   }
-
   kb->kp->execute(p.rt_data);
-
   if (mode == bench_mode::acc) {
     res.stat = bench_status::success;
     return res;
   }
-
   read_benchmark_env();
-
   // Use op_desc to get kernel kind and tensor shape
   const auto& op_desc = kb->kp->get_sp()->kd()->get_operator_desc();
   const auto& ts_descs = op_desc.tensor_descs();
-
   // We may need to refresh some parts of runtime data, allocate new memory for them first
   std::vector<const void*> tmp_data(p.rt_data);
   std::vector<void*> new_data;
@@ -107,12 +100,10 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
     }
     ns += exec_time(kb->kp, tmp_data);
   }
-
   // get execution time and calculate GFLOPS
   ns = ns / benchmark_iter;
   res.ms = ns / 1e6;
   res.gflops = kb->calc_flop() / ns;
-
   // free new memory
   free_new_mem(&new_data);
   res.stat = bench_status::success;
@@ -124,41 +115,40 @@ void bench_op::refresh_data(std::vector<void*>* new_data_pointer, const std::vec
     int elem_num = std::accumulate(kb->ts_descs[idx[i]].shape().begin(), kb->ts_descs[idx[i]].shape().end(), size_t{1},
                                    std::multiplies<size_t>());
     switch (kb->ts_descs[idx[i]].dtype()) {
-      case dt::fp32:
+      case jd::data_type::fp32:
         init_vector(static_cast<float*>(new_data[i]), elem_num, kb->ranges[0], kb->ranges[1], rand());
         break;
-      case dt::s32:
+      case jd::data_type::s32:
         init_vector(static_cast<int32_t*>(new_data[i]), elem_num, kb->ranges[0], kb->ranges[1], rand());
         break;
-      case dt::u8:
+      case jd::data_type::u8:
         init_vector(static_cast<uint8_t*>(new_data[i]), elem_num, kb->ranges[0], kb->ranges[1], rand());
         break;
-      case dt::s8:
+      case jd::data_type::s8:
         init_vector(static_cast<int8_t*>(new_data[i]), elem_num, kb->ranges[0], kb->ranges[1], rand());
         break;
-      case dt::bf16:
-        init_vector(static_cast<bfloat16_t*>(new_data[i]), elem_num, kb->ranges[0], kb->ranges[1], rand());
+      case jd::data_type::bf16:
+        init_vector(static_cast<jd::bfloat16_t*>(new_data[i]), elem_num, kb->ranges[0], kb->ranges[1], rand());
         break;
       default:
         break;
     }
   }
 }
-double bench_op::exec_time(std::shared_ptr<kernel_proxy> kp, const std::vector<const void*>& rt_data) {
+double bench_op::exec_time(std::shared_ptr<jd::kernel_proxy> kp, const std::vector<const void*>& rt_data) {
   auto begin = std::chrono::high_resolution_clock::now();
   kp->execute(rt_data);
   auto end = std::chrono::high_resolution_clock::now();
   return std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
 }
-
-bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>* rt_data_pointer,
+bool bench_op::alloc_new_mem(const std::vector<jd::tensor_desc>& ts_descs, std::vector<const void*>* rt_data_pointer,
                              std::vector<void*>* new_data_pointer, const std::vector<int>& idx) {
   std::vector<const void*>& rt_data = *rt_data_pointer;
   std::vector<void*>& new_data = *new_data_pointer;
   for (size_t i = 0; i < idx.size(); ++i) {
     int elem_num = std::accumulate(ts_descs[idx[i]].shape().begin(), ts_descs[idx[i]].shape().end(), size_t{1},
                                    std::multiplies<size_t>());
-    int byte_size = elem_num * type_size[ts_descs[idx[i]].dtype()];
+    int byte_size = elem_num * jd::type_size[ts_descs[idx[i]].dtype()];
     void* new_mem = aligned_allocator_t<uint8_t, 64>::allocate(pad_to(byte_size, 64));
     SPARSE_LOG_IF(ERROR, !new_mem) << "malloc failed.";
     rt_data[idx[i]] = new_mem;
@@ -166,12 +156,10 @@ bool bench_op::alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vect
   }
   return true;
 }
-
 void bench_op::free_new_mem(std::vector<void*>* new_data_pointer) {
   std::vector<void*>& new_data = *new_data_pointer;
   for (size_t i = 0; i < new_data.size(); ++i) {
     aligned_allocator_t<uint8_t, 64>::deallocate(new_data[i]);
   }
 }
-
-}  // namespace jd
+}  // namespace bench

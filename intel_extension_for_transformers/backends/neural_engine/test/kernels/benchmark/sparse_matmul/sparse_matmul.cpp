@@ -12,23 +12,25 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "sparse_matmul/sparse_matmul.hpp"
-#include "sparse_matmul/spmm_vnni.hpp"
-#include "sparse_matmul/spmm_amx_bf16_x16.hpp"
-#include "sparse_matmul/spmm_avx512f.hpp"
-namespace jd {
+#include "sparse_matmul.hpp"
 
+#include <functional>
+#include <utility>
+
+#include "spmm_vnni.hpp"
+#include "spmm_amx_bf16_x16.hpp"
+#include "spmm_avx512f.hpp"
+
+namespace bench {
 double sparse_matmul_bench::calc_flop() const {
-  const auto& src0_desc = ts_descs[ssd::WEI];
-  const auto& src1_desc = ts_descs[ssd::SRC];
+  const auto& src0_desc = ts_descs[jd::ssd::WEI];
+  const auto& src1_desc = ts_descs[jd::ssd::SRC];
   int oc = src0_desc.shape()[0];
   int ic = src0_desc.shape()[1];
-
   // Since avx512f kernel performs activation x weight, the shape of weight tensor is {ic, oc}
   if (src0_desc.dtype() == jd::data_type::fp32 && src1_desc.dtype() == jd::data_type::fp32) {
     std::swap(oc, ic);
   }
-
   if (std::find(src1_desc.shape().begin(), src1_desc.shape().end(), ic) == src1_desc.shape().end()) {
     LOG(WARNING) << "ic is not found in SRC shape!\n";
     return 0.0;
@@ -37,7 +39,6 @@ double sparse_matmul_bench::calc_flop() const {
       std::accumulate(src1_desc.shape().begin(), src1_desc.shape().end(), 1, std::multiplies<size_t>()) / ic;
   return static_cast<double>(oc) * other_dim * ic * 2;
 }
-
 bench_res_t sparse_matmul_bench::set_config(int argc, char** argv) {
   if (!strcmp(argv[0], "vnni")) {
     smb = std::make_shared<spmm_vnni_bench>();
@@ -51,5 +52,4 @@ bench_res_t sparse_matmul_bench::set_config(int argc, char** argv) {
   }
   return smb->set_config(--argc, ++argv);
 }
-
-}  // namespace jd
+}  // namespace bench

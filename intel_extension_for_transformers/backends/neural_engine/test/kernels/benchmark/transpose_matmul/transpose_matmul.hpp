@@ -11,23 +11,17 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MATMUL_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MATMUL_HPP_
-
-#include <algorithm>
-#include <functional>
 #include <memory>
-#include <utility>
 #include <vector>
-
 #include "benchmark_utils.hpp"
+#include "common_utils.hpp"
 #include "kernels/matmul_types.hpp"
-namespace jd {
-
+namespace bench {
 class transpose_matmul_bench : public kernel_bench {
  protected:
-  using io = ssd::matmul_io::io;
+  using io = jd::ssd::matmul_io::io;
 
  private:
   std::shared_ptr<transpose_matmul_bench> smb;
@@ -49,7 +43,6 @@ class transpose_matmul_bench : public kernel_bench {
       }
     }
   }
-
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return smb->calc_flop(); };
   std::vector<int> get_refresh_data_idx() const override { return smb->get_refresh_data_idx(); }
@@ -62,10 +55,9 @@ class transpose_matmul_bench : public kernel_bench {
   void set_kernel_proxy() override {
     args = smb->args;
     ts_descs = smb->ts_descs;
-    transpose_matmul_desc spmm_desc(args.first.op_desc);
-    kp = std::make_shared<transpose_matmul>(spmm_desc);
+    jd::transpose_matmul_desc spmm_desc(args.first.op_desc);
+    kp = std::make_shared<jd::transpose_matmul>(spmm_desc);
   };
 };
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MATMUL_HPP_

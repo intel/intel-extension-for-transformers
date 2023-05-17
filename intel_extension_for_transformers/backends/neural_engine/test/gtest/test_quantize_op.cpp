@@ -50,13 +50,7 @@ void Dynamic_Quantize_Batch(const std::vector<Tensor*>& input, const std::vector
   int quantized_dim_elt_num = src_desc->shape().back();
   int batch_num =
       std::accumulate(src_desc->shape().begin(), src_desc->shape().end() - 1, size_t(1), std::multiplies<size_t>());
-  // Convert input tensor to float array
-  std::vector<float> fp32_src(src_desc->size(), 0);
-  if (src_desc->dtype() == "fp32") {
-    jd::cast_to_float_array<float>(input[0]->data(), &fp32_src, src_desc->size());
-  } else {
-    jd::cast_to_float_array<jd::bfloat16_t>(input[0]->data(), &fp32_src, src_desc->size());
-  }
+
   const float* data_used = static_cast<const float*>(input[0]->data());
   // Allocate memory for output tensors
   auto mat_dst = reinterpret_cast<int8_t*>(const_cast<void*>(output[0]->data()));

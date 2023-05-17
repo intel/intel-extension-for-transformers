@@ -12,13 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "mha_dense/mha_dense.hpp"
+#include "mha_dense.hpp"
 
-#include "mha_dense/mha_dense_dynamic.hpp"
-#include "mha_dense/mha_dense_static.hpp"
+#include "mha_dense_dynamic.hpp"
+#include "mha_dense_static.hpp"
 
-namespace jd {
-
+namespace bench {
 bench_res_t mha_dense_bench::set_config(int argc, char** argv) {
   if (!strcmp(argv[0], "static")) {
     smb = std::make_shared<mha_dense_static_bench>();
@@ -30,5 +29,4 @@ bench_res_t mha_dense_bench::set_config(int argc, char** argv) {
   }
   return smb->set_config(--argc, ++argv);
 }
-
-}  // namespace jd
+}  // namespace bench

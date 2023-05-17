@@ -23,14 +23,12 @@
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
 #include "kernels/spmm_types.hpp"
-#include "kernels/spmm_ref.hpp"
+#include "src/cpu/kernels/spmm_ref.hpp"
 
 #define OMP_NUM_THREADS "OMP_NUM_THREADS"
 #define WORKSPACE
 
-using dt = jd::data_type;
-using ft = jd::format_type;
-
+namespace test {
 struct op_args_t {
   jd::operator_desc op_desc;
   std::vector<const void*> rt_data;
@@ -73,14 +71,14 @@ bool check_result(const test_params_t& t) {
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
     const auto& dst_type = p.op_desc.tensor_descs()[jd::ssd::DST].dtype();
-    if (dst_type == dt::fp32) {
-      result = jd::compare_data<float>(buf1, size1, buf2, size2, 5e-3);
-    } else if (dst_type == dt::s32) {
-      result = jd::compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
-    } else if (dst_type == dt::u8) {
-      result = jd::compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
-    } else if (dst_type == dt::s8) {
-      result = jd::compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
+    if (dst_type == jd::data_type::fp32) {
+      result = compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+    } else if (dst_type == jd::data_type::s32) {
+      result = compare_data<int32_t>(buf1, size1, buf2, size2, 5e-3);
+    } else if (dst_type == jd::data_type::u8) {
+      result = compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
+    } else if (dst_type == jd::data_type::s8) {
+      result = compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
     }
     if (p.rt_data.size() > jd::ssd::DST_M2) {
       // Check M1
@@ -90,7 +88,7 @@ bool check_result(const test_params_t& t) {
       size2 = q.op_desc.tensor_descs()[jd::ssd::DST_M1].size();
       // Should compare buffer with different addresses
       EXPECT_NE(buf1, buf2);
-      result &= jd::compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+      result &= compare_data<float>(buf1, size1, buf2, size2, 5e-3);
 
       // Check M2
       buf1 = p.rt_data[jd::ssd::DST_M2];
@@ -99,7 +97,7 @@ bool check_result(const test_params_t& t) {
       size2 = q.op_desc.tensor_descs()[jd::ssd::DST_M2].size();
       // Should compare buffer with different addresses
       EXPECT_NE(buf1, buf2);
-      result &= jd::compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+      result &= compare_data<float>(buf1, size1, buf2, size2, 5e-3);
     }
   }
   return result;
@@ -126,102 +124,48 @@ TEST_P(SpmmVNNIKernelTest, ) {
   }
   auto op_desc = t.args.first.op_desc;
   auto op_attrs = op_desc.attrs();
-  const uint64_t data_addr = jd::str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
+  const uint64_t data_addr = str_to_num<uint64_t>(op_attrs["sparse_ptr"]);
   jd::bsr_data_t<int8_t>* bsr_data = reinterpret_cast<jd::bsr_data_t<int8_t>*>(data_addr);
   delete bsr_data;
 }
 
-template <typename T>
-void prepare_sparse_data(T* vector_data, jd::dim_t rows, jd::dim_t cols, jd::dim_t blk_row, jd::dim_t blk_col,
-                         float sparsity, uint32_t* seed = nullptr) {
-  uint32_t default_seed = 123;
-  if (seed == nullptr) seed = &default_seed;
-  std::srand(default_seed);
-  for (int i = 0; i < rows; i += blk_row) {
-    for (int j = 0; j < cols; j += blk_col) {
-      bool fill_zero = std::rand() % 100 <= (sparsity * 100);
-      if (fill_zero) {
-        for (int bi = i; bi < i + blk_row; ++bi) {
-          for (int bj = j; bj < j + blk_col; ++bj) {
-            vector_data[bi * cols + bj] = 0;
-          }
-        }
-      }
-    }
-  }
-}
-
-std::pair<const void*, const void*> make_data_obj(const std::vector<int64_t>& a_shape, const dt& a_dt,
-                                                  bool is_clear = false, float sparsity = 0.f,
-                                                  const std::vector<float>& ranges = {-10, 10}) {
-  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), size_t{1}, std::multiplies<size_t>());
-  int bytes_size = elem_num * jd::type_size[a_dt];
-  void* data_ptr = nullptr;
-  if (is_clear) {
-    data_ptr = new uint8_t[bytes_size];
-    memset(data_ptr, 0, bytes_size);
-  } else {
-    if (a_dt == dt::fp32) {
-      data_ptr = new float[elem_num];
-      jd::init_vector(static_cast<float*>(data_ptr), elem_num, ranges[0], ranges[1]);
-    } else if (a_dt == dt::s32) {
-      data_ptr = new int32_t[elem_num];
-      jd::init_vector(static_cast<int32_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
-    } else if (a_dt == dt::u8) {
-      data_ptr = new uint8_t[elem_num];
-      jd::init_vector(static_cast<uint8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
-    } else if (a_dt == dt::s8) {
-      data_ptr = new int8_t[elem_num];
-      jd::init_vector(static_cast<int8_t*>(data_ptr), elem_num, ranges[0], ranges[1]);
-      if (sparsity != 0.f) {
-        int8_t* s8_ptr = static_cast<int8_t*>(data_ptr);
-        prepare_sparse_data(s8_ptr, a_shape[0], a_shape[1], 4, 1, sparsity);
-      }
-    }
-  }
-
-  void* data_ptr_copy = new uint8_t[bytes_size];
-  memcpy(data_ptr_copy, data_ptr, bytes_size);
-  return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
-}
-
-std::vector<float> make_output_scale(jd::dim_t size, const std::vector<float>& ranges = {0, 10}) {
+std::vector<float> make_output_scale(dim_t size, const std::vector<float>& ranges = {0, 10}) {
   std::vector<float> output_scale(size, 0);
-  jd::init_vector(output_scale.data(), size, ranges[0], ranges[1]);
+  init_vector(output_scale.data(), size, ranges[0], ranges[1]);
   return output_scale;
 }
 
-std::vector<float> make_output_zo(jd::dim_t size, const std::vector<float>& ranges = {-100, -1}) {
+std::vector<float> make_output_zo(dim_t size, const std::vector<float>& ranges = {-100, -1}) {
   std::vector<float> output_zo(size, 0);
-  jd::init_vector(output_zo.data(), size, ranges[0], ranges[1]);
+  init_vector(output_zo.data(), size, ranges[0], ranges[1]);
   return output_zo;
 }
 
-std::pair<op_args_t, op_args_t> gen_case(jd::dim_t M, jd::dim_t K, jd::dim_t N, float sparsity, jd::dim_t micro_bs = -1,
-                                         int nthr = 0, jd::data_type dt_dst = dt::s8,
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity, dim_t micro_bs = -1,
+                                         int nthr = 0, jd::data_type dt_dst = jd::data_type::s8,
                                          std::unordered_map<std::string, std::string> op_attrs = {},
                                          std::vector<jd::postop_alg> postop_algs = {}) {
   bool append_sum = (op_attrs["append_sum"] == "true");
   bool mean_var = (op_attrs["welford"] == "true");
-  LOG_IF(FATAL, append_sum && dt_dst != dt::fp32) << "append_sum must be applied with fp32 dst type";
+  LOG_IF(FATAL, append_sum && dt_dst != jd::data_type::fp32) << "append_sum must be applied with fp32 dst type";
   micro_bs = micro_bs <= 0 ? N : micro_bs;
   LOG_IF(FATAL, N % micro_bs != 0) << "micro_bs must be a multiple of N";
-  jd::dim_t num_mbs = N / micro_bs;
+  dim_t num_mbs = N / micro_bs;
 
   // Step 1: Construct runtime data
-  jd::tensor_desc wei_desc = {{M, K}, dt::s8, ft::bsr};
-  jd::tensor_desc src_desc = {{num_mbs, K, micro_bs}, dt::u8, ft::ab};
-  jd::tensor_desc bia_desc = {{M, 1}, dt::s32, ft::ab};
-  jd::tensor_desc dst_desc = {{num_mbs, M, micro_bs}, dt_dst, ft::ab};
-  jd::tensor_desc scales_desc = {{M, 1}, dt::fp32, ft::ab};
+  jd::tensor_desc wei_desc = {{M, K}, jd::data_type::s8, jd::format_type::bsr};
+  jd::tensor_desc src_desc = {{num_mbs, K, micro_bs}, jd::data_type::u8, jd::format_type::ab};
+  jd::tensor_desc bia_desc = {{M, 1}, jd::data_type::s32, jd::format_type::ab};
+  jd::tensor_desc dst_desc = {{num_mbs, M, micro_bs}, dt_dst, jd::format_type::ab};
+  jd::tensor_desc scales_desc = {{M, 1}, jd::data_type::fp32, jd::format_type::ab};
   std::vector<jd::tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc, scales_desc};
-  if (dt_dst == dt::fp32 && mean_var == true) {
-    jd::tensor_desc mean_desc = {{num_mbs, micro_bs}, dt::fp32, ft::a};
-    jd::tensor_desc var_desc = {{num_mbs, micro_bs}, dt::fp32, ft::a};
+  if (dt_dst == jd::data_type::fp32 && mean_var == true) {
+    jd::tensor_desc mean_desc = {{num_mbs, micro_bs}, jd::data_type::fp32, jd::format_type::a};
+    jd::tensor_desc var_desc = {{num_mbs, micro_bs}, jd::data_type::fp32, jd::format_type::a};
     ts_descs.push_back(mean_desc);
     ts_descs.push_back(var_desc);
 #ifdef WORKSPACE
-    jd::tensor_desc workspace_desc = {{M * 2, N}, dt::fp32, ft::ab};
+    jd::tensor_desc workspace_desc = {{M * 2, N}, jd::data_type::fp32, jd::format_type::ab};
     ts_descs.push_back(workspace_desc);
 #endif
   }
@@ -235,7 +179,7 @@ std::pair<op_args_t, op_args_t> gen_case(jd::dim_t M, jd::dim_t K, jd::dim_t N, 
     bool is_clear = (index == jd::ssd::DST && !append_sum);
     float data_sparsity = (index == jd::ssd::WEI) ? sparsity : 0;
     auto ranges = (index == jd::ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
-    auto data_pair = make_data_obj(tsd.shape(), tsd.dtype(), is_clear, data_sparsity, ranges);
+    auto data_pair = make_data_obj(tsd.shape(), tsd.dtype(), is_clear, ranges, data_sparsity);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -254,16 +198,16 @@ std::pair<op_args_t, op_args_t> gen_case(jd::dim_t M, jd::dim_t K, jd::dim_t N, 
     op_attrs["postop_list"] = std::accumulate(postop_algs.begin() + 1, postop_algs.end(),
                                               std::string(jd::postop_alg_name[postop_algs[0]]), accu_op);
     for (auto& alg : postop_algs) {
-      jd::postop_attr attr(dt::fp32, jd::postop_type::eltwise, alg, 0.0, 0.0, scale);
+      jd::postop_attr attr(jd::data_type::fp32, jd::postop_type::eltwise, alg, 0.0, 0.0, scale);
       apply_postops_list.push_back(attr);
     }
   }
-  if (dt_dst == dt::s8 || dt_dst == dt::u8) {
+  if (dt_dst == jd::data_type::s8 || dt_dst == jd::data_type::u8) {
     jd::postop_attr attr(dt_dst, jd::postop_type::eltwise, jd::postop_alg::quantize, zero_point, 0.0, scale);
     apply_postops_list.push_back(attr);
   }
-  jd::operator_desc an_op_desc(jd::kernel_kind::sparse_matmul, jd::kernel_prop::forward_inference,
-                               jd::engine_kind::cpu, ts_descs, op_attrs, apply_postops_list);
+  jd::operator_desc an_op_desc(jd::kernel_kind::sparse_matmul, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                               ts_descs, op_attrs, apply_postops_list);
 
   // Step 3: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1, sparsity, nthr};
@@ -275,7 +219,7 @@ std::pair<op_args_t, op_args_t> gen_case(jd::dim_t M, jd::dim_t K, jd::dim_t N, 
 std::string level_to_string(const jd::ssd::subfunc_level& l) { return std::to_string(static_cast<uint8_t>(l)); }
 
 static auto case_func = []() {
-  std::vector<std::vector<jd::dim_t>> bert_sizes = {
+  std::vector<std::vector<dim_t>> bert_sizes = {
       // mini
       {256, 256, 128},
       {256, 256, 384},
@@ -319,11 +263,11 @@ static auto case_func = []() {
 
   for (auto& algs : postop_lists) {
     for (auto bert_size : bert_sizes) {
-      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, dt::u8, {}, algs)});
-      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, dt::s8, {}, algs)});
-      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, dt::fp32, {}, algs)});
-      cases.push_back(
-          {gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, dt::fp32, {{"append_sum", "true"}}, algs)});
+      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, jd::data_type::u8, {}, algs)});
+      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, jd::data_type::s8, {}, algs)});
+      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, jd::data_type::fp32, {}, algs)});
+      cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2], .9f, -1, 0, jd::data_type::fp32,
+                                {{"append_sum", "true"}}, algs)});
     }
   }
 
@@ -332,47 +276,47 @@ static auto case_func = []() {
 
     if (!use_benchmark) {
       // Append sum with super high sparsity
-      cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::s8)});
-      cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
-      cases.push_back({gen_case(32, 32, 128, 1.0f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, jd::data_type::s8)});
+      cases.push_back({gen_case(32, 32, 128, .99f, -1, nthr, jd::data_type::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 128, 1.0f, -1, nthr, jd::data_type::fp32, {{"append_sum", "true"}})});
 
       // Append sum with small batch size
-      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::s8)});
-      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32)});
-      cases.push_back(
-          {gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}, {"welford", "true"}}, {})});
-      cases.push_back(
-          {gen_case(256, 1024, 384, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}, {"welford", "true"}}, {})});
-      cases.push_back(
-          {gen_case(256, 1024, 1536, .7f, 384, nthr, dt::fp32, {{"append_sum", "true"}, {"welford", "true"}}, {})});
-      cases.push_back(
-          {gen_case(1024, 1024, 1536, .7f, 384, nthr, dt::fp32, {{"append_sum", "true"}, {"welford", "true"}}, {})});
+      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, jd::data_type::s8)});
+      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, jd::data_type::fp32)});
+      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, jd::data_type::fp32,
+                                {{"append_sum", "true"}, {"welford", "true"}}, {})});
+      cases.push_back({gen_case(256, 1024, 384, .7f, -1, nthr, jd::data_type::fp32,
+                                {{"append_sum", "true"}, {"welford", "true"}}, {})});
+      cases.push_back({gen_case(256, 1024, 1536, .7f, 384, nthr, jd::data_type::fp32,
+                                {{"append_sum", "true"}, {"welford", "true"}}, {})});
+      cases.push_back({gen_case(1024, 1024, 1536, .7f, 384, nthr, jd::data_type::fp32,
+                                {{"append_sum", "true"}, {"welford", "true"}}, {})});
 
-      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
-      cases.push_back({gen_case(32, 32, 16, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
-      cases.push_back({gen_case(32, 32, 48, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
-      cases.push_back({gen_case(32, 32, 224, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 32, .7f, -1, nthr, jd::data_type::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 16, .7f, -1, nthr, jd::data_type::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 48, .7f, -1, nthr, jd::data_type::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 224, .7f, -1, nthr, jd::data_type::fp32, {{"append_sum", "true"}})});
 
       // Test blocking
-      cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, dt::s8)});
-      cases.push_back({gen_case(256, 1024, 384, .7f, -1, nthr, dt::s8, {{"micro_oc", "128"}})});
-      cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, dt::s8, {{"micro_oc", "128"}})});
+      cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, jd::data_type::s8)});
+      cases.push_back({gen_case(256, 1024, 384, .7f, -1, nthr, jd::data_type::s8, {{"micro_oc", "128"}})});
+      cases.push_back({gen_case(256, 1024, 384, .7f, 64, nthr, jd::data_type::s8, {{"micro_oc", "128"}})});
 
       // Test subfunc_level
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32,
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, jd::data_type::fp32,
                                 {{"sub_func", level_to_string(jd::ssd::subfunc_level::none)}})});
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32,
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, jd::data_type::fp32,
                                 {{"sub_func", level_to_string(jd::ssd::subfunc_level::non_kdims)}})});
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32,
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, jd::data_type::fp32,
                                 {{"sub_func", level_to_string(jd::ssd::subfunc_level::kdims)}})});
 
       // case: sparse: s8xu8+s32=s8, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::s8)});
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, jd::data_type::s8)});
       // case: sparse: s8xu8+s32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) = dst(M, N)
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32)});
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, jd::data_type::fp32)});
       // case: sparse: s8xu8+s32+append_fp32=fp32, weight(M, K) * activation(K, N) + bias(M, 1) + append(M, N) =
       // dst(M, N)
-      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, dt::fp32, {{"append_sum", "true"}})});
+      cases.push_back({gen_case(32, 32, 128, .7f, -1, nthr, jd::data_type::fp32, {{"append_sum", "true"}})});
     }
 
     // multiple cores with multiple batches
@@ -380,11 +324,12 @@ static auto case_func = []() {
     if (bs != 1 && use_benchmark) {
       // without 3d input
       for (auto bert_size : bert_sizes) {
-        cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2] * bs, .9f, -1, nthr, dt::s8)});
+        cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2] * bs, .9f, -1, nthr, jd::data_type::s8)});
       }
       // with 3d input
       for (auto bert_size : bert_sizes) {
-        cases.push_back({gen_case(bert_size[0], bert_size[1], bert_size[2] * bs, .9f, bert_size[2], nthr, dt::s8)});
+        cases.push_back(
+            {gen_case(bert_size[0], bert_size[1], bert_size[2] * bs, .9f, bert_size[2], nthr, jd::data_type::s8)});
       }
     }
   }
@@ -397,10 +342,10 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   auto& wei_shape = tensor_descs[jd::ssd::WEI].shape();
   auto& src_shape = tensor_descs[jd::ssd::SRC].shape();
   auto attrs_map = tpi.param.args.first.op_desc.attrs();
-  jd::dim_t oc = wei_shape[0];
-  jd::dim_t ic = wei_shape[1];
-  jd::dim_t bs = std::accumulate(src_shape.begin(), src_shape.end(), jd::dim_t{1}, std::multiplies<jd::dim_t>()) / ic;
-  jd::dim_t micro_bs = src_shape.back();
+  dim_t oc = wei_shape[0];
+  dim_t ic = wei_shape[1];
+  dim_t bs = std::accumulate(src_shape.begin(), src_shape.end(), dim_t{1}, std::multiplies<dim_t>()) / ic;
+  dim_t micro_bs = src_shape.back();
 
   params.push_back("c" + std::to_string(static_cast<int>(tpi.param.args.first.nthr)));
   params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparisty * 100)));
@@ -408,13 +353,13 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   params.push_back(std::to_string(ic));
   params.push_back(std::to_string(bs));
   switch (tensor_descs[jd::ssd::DST].dtype()) {
-    case dt::s8:
+    case jd::data_type::s8:
       params.push_back("s8");
       break;
-    case dt::fp32:
+    case jd::data_type::fp32:
       params.push_back("fp32");
       break;
-    case dt::u8:
+    case jd::data_type::u8:
       params.push_back("u8");
       break;
     default:
@@ -429,7 +374,8 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   if (attrs_map["postop_list"] != "") params.push_back(attrs_map["postop_list"]);
   if (tensor_descs.size() == jd::ssd::DST_M2 + 1 || tensor_descs.size() == jd::ssd::WORK_SPACE + 1)
     params.push_back("mean_var");
-  return jd::join_str(params, "_");
+  return join_str(params, "_");
 }
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, SpmmVNNIKernelTest, case_func(), test_suffix);
+}  // namespace test

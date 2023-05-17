@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef ENGINE_SPARSELIB_INCLUDE_ENGINE_FACTORY_HPP_
-#define ENGINE_SPARSELIB_INCLUDE_ENGINE_FACTORY_HPP_
+#ifndef ENGINE_SPARSELIB_SRC_ENGINE_FACTORY_HPP_
+#define ENGINE_SPARSELIB_SRC_ENGINE_FACTORY_HPP_
 #include <memory>
 #include <unordered_map>
 
@@ -37,4 +37,4 @@ class engine_factory {
 };
 
 }  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_ENGINE_FACTORY_HPP_
+#endif  // ENGINE_SPARSELIB_SRC_ENGINE_FACTORY_HPP_

@@ -11,29 +11,20 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_MATMUL_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_MATMUL_HPP_
 
-#include <functional>
-#include <iostream>
-#include <map>
 #include <memory>
-#include <set>
-#include <sstream>
-#include <string>
 #include <unordered_map>
-#include <utility>
+#include <string>
 #include <vector>
-#include <limits>
-
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
+#include "kernels/exposed_enum.hpp"
 
 #define DYNAMIC_QUANT_MATMUL_ARG_NUM 5
-
-namespace jd {
+namespace bench {
 class dynamic_quant_matmul_bench : public kernel_bench {
   using io = jd::exposed_enum::dynamic_quant_matmul::io;
 
@@ -54,14 +45,10 @@ class dynamic_quant_matmul_bench : public kernel_bench {
     free(const_cast<void*>(q_rt_data[io::SCALE_DST]));
     free(const_cast<void*>(q_rt_data[io::WORKSPACE]));
   }
-
   bench_res_t set_config(int argc, char** argv) override;
-
   double calc_flop() const override {
     double FLOPs = 0.0f;
-
     FLOPs += 2. * b * m * n * k;
-
     return FLOPs;
   }
   std::vector<int> get_refresh_data_idx() const override {
@@ -75,11 +62,9 @@ class dynamic_quant_matmul_bench : public kernel_bench {
   // Just like that in gtest file
   void gen_case() override;
   void set_kernel_proxy() override {
-    dynamic_quant_matmul_desc desc(args.first.op_desc);
-    kp = std::make_shared<dynamic_quant_matmul>(desc);
+    jd::dynamic_quant_matmul_desc desc(args.first.op_desc);
+    kp = std::make_shared<jd::dynamic_quant_matmul>(desc);
   }
 };
-
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_DYNAMIC_QUANT_MATMUL_HPP_

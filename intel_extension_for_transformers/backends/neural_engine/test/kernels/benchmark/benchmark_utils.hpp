@@ -11,66 +11,52 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_
-
-#include <glog/logging.h>
-
 #include <cstring>
-#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
 #include "interface.hpp"
-
 /*
  * @brief Internal Control Variables
  */
 extern int benchmark_iter;
 extern bool benchmark_refresh;
-
 /*
  * @brief Read environment vars and set internal control variables
  */
 void read_benchmark_env();
-
-namespace jd {
-
+namespace bench {
 enum class bench_status : uint8_t {
   success,
   fail,
   wrong_input,
   unimplemented,
 };
-
 struct bench_res_t {
   bench_status stat;
   bool correct;
   double ms;
   double gflops;
 };
-
 enum class bench_mode : uint8_t {
   acc,
   perf,
 };
-
 struct op_args_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::vector<const void*> rt_data;
 };
-
 // Kernel developers will implement utility functions by themselves
 class kernel_bench {
  protected:
-  std::vector<tensor_desc> ts_descs;
+  std::vector<jd::tensor_desc> ts_descs;
   std::vector<float> ranges = {10.0, 10.0};  // Usually size = 2, range of tensors' values
   std::pair<op_args_t, op_args_t> args;
-  std::shared_ptr<kernel_proxy> kp;
+  std::shared_ptr<jd::kernel_proxy> kp;
 
  public:
   kernel_bench() {}
@@ -92,10 +78,8 @@ class kernel_bench {
   virtual void set_kernel_proxy() = 0;
   // The index of workspace pointer in rt_data; Use negative values for kernels which do not need workspace
   virtual int get_workspace_idx() const { return -1; }
-
   friend class bench_op;
 };
-
 class bench_op {
  private:
   std::shared_ptr<kernel_bench> kb;
@@ -116,11 +100,10 @@ class bench_op {
    *        add a case for it in calc_flop and get_refresh_data_idx in benchmark_utils.cpp
    */
   bench_res_t benchmarkOrExecute(bench_mode mode);
-
   /*
    * @brief Get execution time of kernel.
    */
-  double exec_time(std::shared_ptr<kernel_proxy> kp, const std::vector<const void*>& rt_data);
+  double exec_time(std::shared_ptr<jd::kernel_proxy> kp, const std::vector<const void*>& rt_data);
   /*
    * @brief Refresh some parts of runtime data for kernel.
    */
@@ -128,25 +111,20 @@ class bench_op {
   /*
    * @brief Calculate FLOP.
    */
-  double calc_flop(const kernel_kind, const std::vector<tensor_desc>& ts_descs);
-
+  double calc_flop(const jd::kernel_kind, const std::vector<jd::tensor_desc>& ts_descs);
   /*
    * @brief Get indices of data that needs refreshing which indicate their positions in tensor vector.
    */
-  std::vector<int> get_refresh_data_idx(const kernel_kind ker_kind);
-
+  std::vector<int> get_refresh_data_idx(const jd::kernel_kind ker_kind);
   /*
    * @brief Allocate new memory for some parts of runtime data for kernel.
    */
-  bool alloc_new_mem(const std::vector<tensor_desc>& ts_descs, std::vector<const void*>* rt_data_pointer,
+  bool alloc_new_mem(const std::vector<jd::tensor_desc>& ts_descs, std::vector<const void*>* rt_data_pointer,
                      std::vector<void*>* new_data_pointer, const std::vector<int>& idx);
-
   /*
    * @brief Free new memory for some parts of runtime data for kernel.
    */
   void free_new_mem(std::vector<void*>* new_data_pointer);
 };
-
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_

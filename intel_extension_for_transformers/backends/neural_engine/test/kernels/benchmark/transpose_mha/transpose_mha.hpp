@@ -11,10 +11,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MHA_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MHA_HPP_
-
 #include <functional>
 #include <iostream>
 #include <map>
@@ -26,18 +24,15 @@
 #include <utility>
 #include <vector>
 #include <limits>
-
 #include "benchmark_utils.hpp"
 #include "common_utils.hpp"
 #include "interface.hpp"
 #include "kernels/transpose_mha_types.hpp"
-
 #define TRANSPOSE_MHA_ARG_NUM 4
-
-namespace jd {
+namespace bench {
 class transpose_mha_bench : public kernel_bench {
  protected:
-  using io = ssd::transpose_mha_io::io;
+  using io = jd::ssd::transpose_mha_io::io;
 
  private:
   int64_t head_num;
@@ -57,12 +52,10 @@ class transpose_mha_bench : public kernel_bench {
     aligned_allocator_t<int8_t>::deallocate(const_cast<void*>(rt_data[io::SRC_V]));
     aligned_allocator_t<uint8_t>::deallocate(const_cast<void*>(rt_data[io::DST]));
     aligned_allocator_t<uint8_t>::deallocate(const_cast<void*>(rt_data[io::TMP2M]));
-
     for (std::underlying_type<io>::type i = io::SL_PAD; i <= io::transpose_mha_io_MAX; i++) {
       delete reinterpret_cast<const char*>(rt_data[i]);
     }
   }
-
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override {
     const auto& spmm_shape = ts_descs[io::SRC_K].shape();
@@ -70,7 +63,6 @@ class transpose_mha_bench : public kernel_bench {
     const auto head_num = spmm_shape[1];
     const auto head_size = spmm_shape[2];
     const auto seq_len = spmm_shape[3];
-
     double FLOPs = 0.0f;
     // K x Q
     FLOPs += 2. * batch_size * head_num * seq_len * head_size * seq_len;
@@ -78,7 +70,6 @@ class transpose_mha_bench : public kernel_bench {
     FLOPs += 6. * batch_size * seq_len * head_num * head_size;
     // V x A
     FLOPs += 2. * batch_size * head_num * head_size * seq_len * seq_len;
-
     return FLOPs;
   }
   std::vector<int> get_refresh_data_idx() const override {
@@ -91,11 +82,9 @@ class transpose_mha_bench : public kernel_bench {
   // Just like that in gtest file
   void gen_case() override;
   void set_kernel_proxy() override {
-    transpose_mha_desc desc(args.first.op_desc);
-    kp = std::make_shared<transpose_mha>(desc);
+    jd::transpose_mha_desc desc(args.first.op_desc);
+    kp = std::make_shared<jd::transpose_mha>(desc);
   }
 };
-
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_TRANSPOSE_MHA_HPP_

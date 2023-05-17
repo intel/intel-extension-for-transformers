@@ -11,38 +11,29 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_SPMM_AVX512F_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_SPMM_AVX512F_HPP_
 
-#include <omp.h>
-#include <glog/logging.h>
-#include <iostream>
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
-#include <numeric>
-#include <exception>
-#include <functional>
-#include <utility>
+
 #include "interface.hpp"
 #include "benchmark_utils.hpp"
-#include "sparse_matmul/sparse_matmul.hpp"
+#include "sparse_matmul.hpp"
+#include "common_utils.hpp"
+
 #define SPMM_AVX512F_ARG_NUM 4
 
-namespace jd {
-
+namespace bench {
 class spmm_avx512f_bench : public sparse_matmul_bench {
  private:
   int64_t M, K, N;
   float sparse_ratio;
-  std::vector<postop_alg> postop_algs;
-
+  std::vector<jd::postop_alg> postop_algs;
  public:
   spmm_avx512f_bench() {}
   virtual ~spmm_avx512f_bench() {}
-
   bench_res_t set_config(int argc, char** argv) override;
   // Just like that in gtest file
   void get_true_data() override;
@@ -51,18 +42,6 @@ class spmm_avx512f_bench : public sparse_matmul_bench {
   // Just like that in gtest file
   void gen_case() override;
 };
-
-template <typename T>
-void prepare_blocked_sparse_data_spmm_avx512f(T* data, const std::vector<dim_t>& a_shape,
-                                              const std::vector<dim_t>& block_shape, float sparsity,
-                                              unsigned int* seed);
-
-std::pair<const void*, const void*> make_data_obj_spmm_avx512f(const std::vector<dim_t>& a_shape, const data_type& a_dt,
-                                                               bool is_clear = false,
-                                                               float sparsity = 0.f,  // 0 for dense
-                                                               format_type a_ft = format_type::uncoded,
-                                                               const std::vector<float>& ranges = {-10, 10});
-
-}  // namespace jd
+}  // namespace bench
 
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_SPMM_AVX512F_HPP_

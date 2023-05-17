@@ -21,6 +21,7 @@
 #include "../common.hpp"
 #include "../operator.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
+#include "kernels/exposed_enum.hpp"
 
 namespace executor {
 using dnnl::algorithm;

@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "param_types.hpp"
-#include "utils.hpp"
+#include "common.h"
 
 namespace jd {
 class SPARSE_API_ tensor_desc {

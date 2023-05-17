@@ -17,11 +17,12 @@
 
 #include "unit_test_utils.hpp"
 #include "gtest/gtest.h"
+#include "interface.hpp"
 
-namespace jd {
+namespace test {
 struct OpArgs {
   std::vector<const void*> data;
-  operator_desc conf;
+  jd::operator_desc conf;
 };
 
 struct test_params_t {
@@ -39,18 +40,18 @@ bool CheckResult(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
 
-  gather_desc gather_d(p.conf);
-  gather gather_ker(gather_d);
+  jd::gather_desc gather_d(p.conf);
+  jd::gather gather_ker(gather_d);
   gather_ker.execute(p.data);
 
   // Should compare buffer with different addresses
-  if (p.conf.tensor_descs()[2].dtype() == data_type::s8) {
+  if (p.conf.tensor_descs()[2].dtype() == jd::data_type::s8) {
     return compare_data<int8_t>(p.data[2], p.conf.tensor_descs()[2].size(), q.data[2], q.conf.tensor_descs()[2].size());
-  } else if (p.conf.tensor_descs()[2].dtype() == data_type::fp32) {
+  } else if (p.conf.tensor_descs()[2].dtype() == jd::data_type::fp32) {
     return compare_data<float>(p.data[2], p.conf.tensor_descs()[2].size(), q.data[2], q.conf.tensor_descs()[2].size());
   } else {
-    return compare_data<uint16_t>(p.data[2], p.conf.tensor_descs()[2].size(), q.data[2],
-                                  q.conf.tensor_descs()[2].size());
+    return compare_data<jd::bfloat16_t>(p.data[2], p.conf.tensor_descs()[2].size(), q.data[2],
+                                    q.conf.tensor_descs()[2].size());
   }
 }
 
@@ -75,10 +76,10 @@ void binary_add(void* dst, void* append_src) {
   *dst_T = *dst_T + *src_T;
 }
 
-std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_descs,
+std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<jd::tensor_desc> const& ts_descs,
                                            std::vector<std::string> append_ops = {}, int src_axis = 0,
                                            int idx_axis = 0) {
-  data_type input_dt = ts_descs[0].dtype();
+  jd::data_type input_dt = ts_descs[0].dtype();
   auto src_shape = ts_descs[0].shape();
   auto idx_shape = ts_descs[1].shape();
   auto dst_shape = ts_descs[2].shape();
@@ -88,7 +89,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
   attr_map["src_axis"] = static_cast<char>(src_axis + '0');
 
   // Step 2: Construct Tensor ptr
-  auto make_tensor_obj = [&](const tensor_desc a_tensor_config, const bool is_idx) {
+  auto make_tensor_obj = [&](const jd::tensor_desc a_tensor_config, const bool is_idx) {
     void* tensor_data = sparselib_ut_memo(nullptr, a_tensor_config.size(), a_tensor_config.dtype(), memo_mode::MALLOC);
     void* tensor_data_copy =
         sparselib_ut_memo(nullptr, a_tensor_config.size(), a_tensor_config.dtype(), memo_mode::MALLOC);
@@ -103,13 +104,13 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
       memcpy(tensor_data_copy, tensor_data, a_tensor_config.size() * sizeof(int32_t));
     } else {
       // init other tensor
-      if (input_dt == data_type::s8 || input_dt == data_type::u8)
+      if (input_dt == jd::data_type::s8 || input_dt == jd::data_type::u8)
         init_vector(static_cast<int8_t*>(tensor_data), a_tensor_config.size());
-      else if (input_dt == data_type::fp32)
+      else if (input_dt == jd::data_type::fp32)
         init_vector(static_cast<float*>(tensor_data), a_tensor_config.size());
       else
-        init_vector(static_cast<uint16_t*>(tensor_data), a_tensor_config.size());
-      memcpy(tensor_data_copy, tensor_data, a_tensor_config.size() * get_data_size(input_dt));
+        init_vector(static_cast<jd::bfloat16_t*>(tensor_data), a_tensor_config.size());
+      memcpy(tensor_data_copy, tensor_data, a_tensor_config.size() * jd::type_size.at(input_dt));
     }
     return std::pair<void*, void*>{tensor_data, tensor_data_copy};
   };
@@ -123,8 +124,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
   std::vector<const void*> rt_data_copy = {src0_tensors.second, src1_tensors.second, dst_data_copy};
   std::vector<void*> append_vec_copys = {};
 
-  std::vector<binaryop_attr> binaryops;
-  std::vector<binaryop_attr> binaryops_copy;
+  std::vector<jd::binaryop_attr> binaryops;
+  std::vector<jd::binaryop_attr> binaryops_copy;
   for (size_t k = 0; k < append_ops.size(); k++) {
     auto& append_op = append_ops[k];
     if (k == 0)
@@ -135,8 +136,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
       auto appends = make_tensor_obj(ts_descs[3 + k], false);
       rt_data.push_back(appends.first);
       rt_data_copy.push_back(appends.second);
-      binaryops.push_back({binaryop_alg::add, input_dt});
-      binaryops_copy.push_back({binaryop_alg::add, input_dt});
+      binaryops.push_back({jd::binaryop_alg::add, input_dt});
+      binaryops_copy.push_back({jd::binaryop_alg::add, input_dt});
       append_vec_copys.push_back(appends.second);
       attr_map["binaryop_list"] += "add";
     }
@@ -158,9 +159,10 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
   for (int i = 0; i < outer_size; ++i) {
     for (int j = 0; j < idx_shape[idx_axis]; ++j) {
       int indices_val = src1_data_copy[(i * idx_shape[idx_axis] + j) % idx_size];
-      memcpy(dst_data_copy + (i * idx_shape[idx_axis] + j) * inner_size * get_data_size(input_dt),
-             src0_data_copy + (i * src_shape[src_axis] + indices_val) * inner_size % src_size * get_data_size(input_dt),
-             get_data_size(input_dt) * inner_size);
+      memcpy(
+          dst_data_copy + (i * idx_shape[idx_axis] + j) * inner_size * jd::type_size.at(input_dt),
+          src0_data_copy + (i * src_shape[src_axis] + indices_val) * inner_size % src_size * jd::type_size.at(input_dt),
+          jd::type_size.at(input_dt) * inner_size);
     }
   }
   // TODO(yucheng/zhe): refactor here when postop-injector avaliable
@@ -172,26 +174,27 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(std::vector<tensor_desc> const& ts_de
         if (append_ops[k] == "append_sum") {
           int broad_cast_i = i;
           if (ts_descs[k + 3].shape()[0] == 1) broad_cast_i = 0;
-          if (input_dt == data_type::s8) {
-            binary_add<int8_t>(dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
+          if (input_dt == jd::data_type::s8) {
+            binary_add<int8_t>(dst_data_copy + (i * dst_shape[1] + j) * jd::type_size.at(input_dt),
                                reinterpret_cast<char*>(append_vec_copys[k]) +
-                                   (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
-          } else if (input_dt == data_type::u8) {
-            binary_add<uint8_t>(dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
+                                   (broad_cast_i * dst_shape[1] + j) * jd::type_size.at(input_dt));
+          } else if (input_dt == jd::data_type::u8) {
+            binary_add<uint8_t>(dst_data_copy + (i * dst_shape[1] + j) * jd::type_size.at(input_dt),
                                 reinterpret_cast<char*>(append_vec_copys[k]) +
-                                    (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
-          } else if (input_dt == data_type::fp32) {
-            binary_add<float>(dst_data_copy + (i * dst_shape[1] + j) * get_data_size(input_dt),
+                                    (broad_cast_i * dst_shape[1] + j) * jd::type_size.at(input_dt));
+          } else if (input_dt == jd::data_type::fp32) {
+            binary_add<float>(dst_data_copy + (i * dst_shape[1] + j) * jd::type_size.at(input_dt),
                               reinterpret_cast<char*>(append_vec_copys[k]) +
-                                  (broad_cast_i * dst_shape[1] + j) * get_data_size(input_dt));
+                                  (broad_cast_i * dst_shape[1] + j) * jd::type_size.at(input_dt));
           }
         }
       }
     }
   }
-  operator_desc gather_d(kernel_kind::gather, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
-  operator_desc gather_d_copy(kernel_kind::gather, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                              attr_map);
+  jd::operator_desc gather_d(jd::kernel_kind::gather, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                             ts_descs, attr_map);
+  jd::operator_desc gather_d_copy(jd::kernel_kind::gather, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                                  ts_descs, attr_map);
   gather_d.set_binaryop_list(binaryops);
   gather_d_copy.set_binaryop_list(binaryops_copy);
   OpArgs op_args = {rt_data, gather_d};
@@ -204,36 +207,36 @@ static auto CasesFp32 = []() {
   std::vector<test_params_t> cases;
 
   // Config
-  std::vector<int64_t> src_shape;
-  std::vector<int64_t> idx_shape;
-  std::vector<int64_t> dst_shape;
-  tensor_desc src0, src1, dst, binary0, binary1;
+  std::vector<dim_t> src_shape;
+  std::vector<dim_t> idx_shape;
+  std::vector<dim_t> dst_shape;
+  jd::tensor_desc src0, src1, dst, binary0, binary1;
 
   src_shape = {4, 4, 1, 8};
   idx_shape = {1};
   dst_shape = {4, 1, 1, 8};
-  src0 = {src_shape, data_type::fp32, jd::format_type::undef};
-  src1 = {idx_shape, data_type::s32, jd::format_type::undef};
-  dst = {dst_shape, data_type::fp32, jd::format_type::undef};
+  src0 = {src_shape, jd::data_type::fp32, jd::format_type::undef};
+  src1 = {idx_shape, jd::data_type::s32, jd::format_type::undef};
+  dst = {dst_shape, jd::data_type::fp32, jd::format_type::undef};
   cases.push_back({GenerateFp32Case({src0, src1, dst}, {}, 1, 0), false});
 
   src_shape = {61, 76};
   idx_shape = {1, 22, 32};
   dst_shape = {1, 22, 32, 76};
-  src0 = {src_shape, data_type::fp32, jd::format_type::undef};
-  src1 = {idx_shape, data_type::s32, jd::format_type::undef};
-  dst = {dst_shape, data_type::fp32, jd::format_type::undef};
+  src0 = {src_shape, jd::data_type::fp32, jd::format_type::undef};
+  src1 = {idx_shape, jd::data_type::s32, jd::format_type::undef};
+  dst = {dst_shape, jd::data_type::fp32, jd::format_type::undef};
   cases.push_back({GenerateFp32Case({src0, src1, dst}, {}, 0, 2), false});
 
-  for (data_type dt : {data_type::fp32, data_type::bf16, data_type::s8}) {
+  for (jd::data_type data_type : {jd::data_type::fp32, jd::data_type::bf16, jd::data_type::s8}) {
     for (int inner_size : {1024, 1000}) {
       src_shape = {30522, inner_size, 1, 1};
       idx_shape = {256};
       dst_shape = {idx_shape[0]};
       for (size_t i = 1; i < src_shape.size(); i++) dst_shape.push_back(src_shape[i]);
-      src0 = {src_shape, dt, jd::format_type::undef};
-      src1 = {idx_shape, data_type::s32, jd::format_type::undef};
-      dst = {dst_shape, dt, jd::format_type::undef};
+      src0 = {src_shape, data_type, jd::format_type::undef};
+      src1 = {idx_shape, jd::data_type::s32, jd::format_type::undef};
+      dst = {dst_shape, data_type, jd::format_type::undef};
       binary0 = dst;
       binary1 = binary0;
       cases.push_back({GenerateFp32Case({src0, src1, dst}, {}), false});
@@ -241,14 +244,14 @@ static auto CasesFp32 = []() {
       cases.push_back({GenerateFp32Case({src0, src1, dst, binary0, binary1}, {"append_sum", "append_sum"}), false});
 
       dst_shape = {8, 32 * inner_size};
-      dst = {dst_shape, dt, jd::format_type::undef};
+      dst = {dst_shape, data_type, jd::format_type::undef};
       binary0 = dst;
       binary1 = binary0;
       cases.push_back({GenerateFp32Case({src0, src1, dst}, {}), false});
       cases.push_back({GenerateFp32Case({src0, src1, dst, binary0}, {"append_sum"}), false});
       cases.push_back({GenerateFp32Case({src0, src1, dst, binary0, binary1}, {"append_sum", "append_sum"}), false});
 
-      binary0 = {{1, 32 * inner_size}, dt, jd::format_type::undef};
+      binary0 = {{1, 32 * inner_size}, data_type, jd::format_type::undef};
       binary1 = binary0;
       cases.push_back({GenerateFp32Case({src0, src1, dst, binary0}, {"append_sum"}), false});
       cases.push_back({GenerateFp32Case({src0, src1, dst, binary0, binary1}, {"append_sum", "append_sum"}), false});
@@ -268,16 +271,16 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
 
   auto add_dt_info = [&](const std::string& tensor_dt) {
     switch (tensor_desc[0].dtype()) {
-      case data_type::s8:
+      case jd::data_type::s8:
         params.push_back(tensor_dt + "_s8");
         break;
-      case data_type::fp32:
+      case jd::data_type::fp32:
         params.push_back(tensor_dt + "_fp32");
         break;
-      case data_type::u8:
+      case jd::data_type::u8:
         params.push_back(tensor_dt + "_u8");
         break;
-      case data_type::bf16:
+      case jd::data_type::bf16:
         params.push_back(tensor_dt + "_bf16");
         break;
       default:
@@ -299,4 +302,4 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
 }
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, GatherOpTest, CasesFp32(), test_suffix);
-}  // namespace jd
+}  // namespace test

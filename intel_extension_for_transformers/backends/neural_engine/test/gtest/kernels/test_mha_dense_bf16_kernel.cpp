@@ -16,14 +16,13 @@
 #include <string>
 #include <cmath>
 
-#include "amx_utils.hpp"
 #include "gtest/gtest.h"
-#include "kernels/mha_dense_ref.hpp"
+#include "src/cpu/kernels/mha_dense_ref.hpp"
 #include "unit_test_utils.hpp"
+#include "interface.hpp"
 
-namespace jd {
-using dt = data_type;
-using io  = exposed_enum::mha_dense::io;
+namespace test {
+using io = jd::exposed_enum::mha_dense::io;
 
 struct test_params_t {
   dim_t bs;
@@ -38,7 +37,7 @@ struct test_params_t {
 };
 
 struct test_data_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::vector<const void*> rt_data_kern;
   std::vector<const void*> rt_data_ref;
 };
@@ -61,15 +60,15 @@ inline static std::string TestParam2str(testing::TestParamInfo<test_params_t> tp
 
 bool check_result(const int nthr, const bool expect_to_fail, const test_data_t& d) {
   try {
-    std::shared_ptr<const kernel_desc_t> mha_dense_ref_desc;
-    kernel_desc_t::create<mha_dense_ref_kd_t>(mha_dense_ref_desc, d.op_desc);
-    std::shared_ptr<const kernel_t> mha_dense_ref_kernel;
-    kernel_t::create<mha_dense_ref_k_t, mha_dense_ref_kd_t>(mha_dense_ref_kernel, mha_dense_ref_desc);
+    std::shared_ptr<const jd::kernel_desc_t> mha_dense_ref_desc;
+    jd::kernel_desc_t::create<jd::mha_dense_ref_kd_t>(mha_dense_ref_desc, d.op_desc);
+    std::shared_ptr<const jd::kernel_t> mha_dense_ref_kernel;
+    jd::kernel_t::create<jd::mha_dense_ref_k_t, jd::mha_dense_ref_kd_t>(mha_dense_ref_kernel, mha_dense_ref_desc);
     mha_dense_ref_kernel->execute(d.rt_data_ref);
 
     n_thread_t with_n_thread(nthr);
-    mha_dense_desc mha_dense_desc(d.op_desc);
-    mha_dense mha_dense_kernel(mha_dense_desc);
+    jd::mha_dense_desc mha_dense_desc(d.op_desc);
+    jd::mha_dense mha_dense_kernel(mha_dense_desc);
     const auto tmp_p = std::shared_ptr<char>(aligned_allocator_t<char>::allocate(mha_dense_kernel.get_workspace_size()),
                                              [](char* ptr) { aligned_allocator_t<char>::deallocate(ptr); });
     auto data_p(d.rt_data_kern);
@@ -87,58 +86,25 @@ bool check_result(const int nthr, const bool expect_to_fail, const test_data_t& 
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
     switch (d.op_desc.tensor_descs()[io::DST].dtype()) {
-      case dt::bf16:
-        return compare_data<bfloat16_t>(buf1, dst_size, buf2, dst_size, 5e-2);
+      case jd::data_type::bf16:
+        return compare_data<jd::bfloat16_t>(buf1, dst_size, buf2, dst_size, 5e-2);
       default:
         SPARSE_LOG(ERROR) << "Unexpected dst type";
     }
   }
   return false;
 }
-
-std::pair<const void*, const void*> make_tensor_obj(const tensor_desc& ts_desc, float min_value, float max_value) {
-  int64_t elem_num = std::accumulate(ts_desc.shape().begin(), ts_desc.shape().end(), 1LL, std::multiplies<int64_t>());
-  int bytes_size = elem_num * type_size[ts_desc.dtype()];
-  void* data_ptr = nullptr;
-  if (min_value == 0.f && max_value == 0.f) {
-    data_ptr = new uint8_t[bytes_size];
-    memset(data_ptr, 0, bytes_size);
-  } else {
-    const auto seed = std::uniform_int_distribution<>()(rand_gen);
-    if (ts_desc.dtype() == dt::fp32) {
-      data_ptr = new float[elem_num];
-      init_vector(static_cast<float*>(data_ptr), elem_num, min_value, max_value, seed);
-    } else if (ts_desc.dtype() == dt::bf16) {
-      data_ptr = new bfloat16_t[elem_num];
-      init_vector(static_cast<bfloat16_t*>(data_ptr), elem_num, min_value, max_value, seed);
-    } else if (ts_desc.dtype() == dt::s32) {
-      data_ptr = new int32_t[elem_num];
-      init_vector(static_cast<int32_t*>(data_ptr), elem_num, min_value, max_value, seed);
-    } else if (ts_desc.dtype() == dt::u8) {
-      data_ptr = new uint8_t[elem_num];
-      init_vector(static_cast<uint8_t*>(data_ptr), elem_num, min_value, max_value, seed);
-    } else if (ts_desc.dtype() == dt::s8) {
-      data_ptr = new int8_t[elem_num];
-      init_vector(static_cast<int8_t*>(data_ptr), elem_num, min_value, max_value, seed);
-    }
-  }
-
-  void* data_ptr_copy = new uint8_t[bytes_size];
-  memcpy(data_ptr_copy, data_ptr, bytes_size);
-  return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
-}
-
 test_data_t gen_data(const test_params_t& p) {
   n_thread_t with_nthr(p.nthr);
-  std::vector<tensor_desc> ts_descs(io::SIZE, tensor_desc{});
-  ts_descs[io::SRC_Q] = {{p.bs, p.sl_m, p.head_num, p.head_size}, data_type::bf16, format_type::abcd};
-  ts_descs[io::SRC_K] = {{p.bs, p.sl_n, p.head_num, p.head_size}, data_type::bf16, format_type::abcd};
-  ts_descs[io::SRC_V] = {{p.bs, p.sl_n, p.head_num, p.head_size}, data_type::bf16, format_type::abcd};
-  ts_descs[io::DST] = {{p.bs, p.sl_m, p.head_num, p.head_size}, data_type::bf16, format_type::abcd};
-  ts_descs[io::ATT_SCALE] = {{1}, data_type::fp32, format_type::a};
+  std::vector<jd::tensor_desc> ts_descs(io::SIZE, jd::tensor_desc{});
+  ts_descs[io::SRC_Q] = {{p.bs, p.sl_m, p.head_num, p.head_size}, jd::data_type::bf16, jd::format_type::abcd};
+  ts_descs[io::SRC_K] = {{p.bs, p.sl_n, p.head_num, p.head_size}, jd::data_type::bf16, jd::format_type::abcd};
+  ts_descs[io::SRC_V] = {{p.bs, p.sl_n, p.head_num, p.head_size}, jd::data_type::bf16, jd::format_type::abcd};
+  ts_descs[io::DST] = {{p.bs, p.sl_m, p.head_num, p.head_size}, jd::data_type::bf16, jd::format_type::abcd};
+  ts_descs[io::ATT_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
   // TODO(Yi): enable broadcasting
-  if (p.has_badd) ts_descs[io::BINARY_ADD] = {{1, 1, p.sl_m, p.sl_n}, data_type::fp32, format_type::abcd};
-  if (p.has_pmask) ts_descs[io::MASK] = {{p.bs}, data_type::s32, format_type::a};
+  if (p.has_badd) ts_descs[io::BINARY_ADD] = {{1, 1, p.sl_m, p.sl_n}, jd::data_type::fp32, jd::format_type::abcd};
+  if (p.has_pmask) ts_descs[io::MASK] = {{p.bs}, jd::data_type::s32, jd::format_type::a};
 
   // Step 1.1: Construct Operator config obj
   std::unordered_map<std::string, std::string> attr_map;
@@ -146,15 +112,16 @@ test_data_t gen_data(const test_params_t& p) {
   attr_map["stable_softmax"] = "False";
 
   // Step 2: Construct Tensor ptr
-  const auto att_scale_val = 1.f / std::sqrt(p.sl_n);
-  const std::pair<const void*, const void*> empty_tensor_data{};
-  auto Qs = make_tensor_obj(ts_descs[io::SRC_Q], -1, 1);
-  auto Ks = make_tensor_obj(ts_descs[io::SRC_K], -1, 1);
-  auto Vs = make_tensor_obj(ts_descs[io::SRC_V], -1, 1);
-  auto dsts = make_tensor_obj(ts_descs[io::DST], 0, 0);
-  auto att_scales = make_tensor_obj(ts_descs[io::ATT_SCALE], att_scale_val, att_scale_val);
-  auto badds = p.has_badd ? make_tensor_obj(ts_descs[io::BINARY_ADD], -1.f, 1.f) : empty_tensor_data;
-  auto pmasks = p.has_pmask ? make_tensor_obj(ts_descs[io::MASK], 1, p.sl_n) : empty_tensor_data;
+  const float att_scale_val = 1.f / std::sqrt(p.sl_n);
+  const std::pair<const void*, const void*> empty_tensor_data{nullptr, nullptr};
+  auto Qs = make_data_obj(ts_descs[io::SRC_Q], false, {-1, 1});
+  auto Ks = make_data_obj(ts_descs[io::SRC_K], false, {-1, 1});
+  auto Vs = make_data_obj(ts_descs[io::SRC_V], false, {-1, 1});
+  auto dsts = make_data_obj(ts_descs[io::DST], true);
+  auto att_scales = make_data_obj(ts_descs[io::ATT_SCALE], false, {att_scale_val, att_scale_val});
+  auto badds = p.has_badd ? make_data_obj(ts_descs[io::BINARY_ADD], false, {-1.f, 1.f}) : empty_tensor_data;
+  auto pmasks =
+      p.has_pmask ? make_data_obj(ts_descs[io::MASK], false, {1, static_cast<float>(p.sl_n)}) : empty_tensor_data;
 
   std::vector<const void*> data_p(io::SIZE, nullptr);
   data_p[io::SRC_Q] = Qs.first;
@@ -174,7 +141,8 @@ test_data_t gen_data(const test_params_t& p) {
   if (p.has_badd) data_q[io::BINARY_ADD] = badds.second;
   if (p.has_pmask) data_q[io::MASK] = pmasks.second;
 
-  operator_desc op_desc(kernel_kind::mha_dense, kernel_prop::forward_inference, engine_kind::cpu, ts_descs, attr_map);
+  jd::operator_desc op_desc(jd::kernel_kind::mha_dense, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                            ts_descs, attr_map);
   return {op_desc, data_p, data_q};
 }
 
@@ -224,4 +192,4 @@ TEST_P(MhaDenseBf16KernTest, ) {
       if (p != nullptr) delete[] reinterpret_cast<const char*>(p);
 }
 INSTANTIATE_TEST_SUITE_P(SparseLib, MhaDenseBf16KernTest, case_func(), TestParam2str);
-}  // namespace jd
+}  // namespace test

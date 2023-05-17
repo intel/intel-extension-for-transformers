@@ -11,55 +11,41 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_matmul_AVX512F_8BIT_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_matmul_AVX512F_8BIT_HPP_
-
-#include <omp.h>
-
-#include <algorithm>
-#include <exception>
-#include <functional>
-#include <iostream>
-#include <numeric>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
-#include <utility>
 #include <vector>
 
 #include "benchmark_utils.hpp"
 #include "interface.hpp"
-#include "transpose_matmul/transpose_matmul.hpp"
-
+#include "transpose_matmul.hpp"
 #define matmul_avx512f_8bit_ARG_NUM 3
-
-namespace jd {
+namespace bench {
 class matmul_avx512f_8bit_bench : public transpose_matmul_bench {
  private:
   int64_t M;
   int64_t K;
   int64_t N;
-  data_type src1_dtype;
+  jd::data_type src1_dtype;
   std::unordered_map<std::string, std::string> op_attrs = {};
 
  public:
   matmul_avx512f_8bit_bench() {}
   virtual ~matmul_avx512f_8bit_bench() {
-  //   for (auto op_args : {t.args.first, t.args.second}) {
-  //   for (auto rt_data : op_args.rt_data) {
-  //     char* data = reinterpret_cast<char*>(const_cast<void*>(rt_data));
-  //     delete[] data;
-  //   }
-  //   // auto tensor = op_args.op_desc.tensor_descs()[io::SRC1];
-  //   auto attr = op_args.op_desc.attrs();
-  //   if (attr["weight_8bit"] != "") {
-  //     int8_t* weight = reinterpret_cast<int8_t*>(str_to_num<intptr_t>(attr["weight_8bit"]));
-  //     delete[] weight;
-  //   }
-  // }
+    //   for (auto op_args : {t.args.first, t.args.second}) {
+    //   for (auto rt_data : op_args.rt_data) {
+    //     char* data = reinterpret_cast<char*>(const_cast<void*>(rt_data));
+    //     delete[] data;
+    //   }
+    //   // auto tensor = op_args.op_desc.tensor_descs()[io::SRC1];
+    //   auto attr = op_args.op_desc.attrs();
+    //   if (attr["weight_8bit"] != "") {
+    //     int8_t* weight = reinterpret_cast<int8_t*>(str_to_num<intptr_t>(attr["weight_8bit"]));
+    //     delete[] weight;
+    //   }
+    // }
   }
-
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return static_cast<double>(M) * N * K * 2; };
   // Just like that in gtest file
@@ -71,6 +57,5 @@ class matmul_avx512f_8bit_bench : public transpose_matmul_bench {
     // return {};
   }
 };
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_matmul_AVX512F_8BIT_HPP_

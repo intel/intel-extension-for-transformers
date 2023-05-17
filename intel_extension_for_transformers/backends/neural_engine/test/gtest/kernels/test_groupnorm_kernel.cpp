@@ -14,17 +14,19 @@
 #include <map>
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
-#include "kernels/groupnorm_ref.hpp"
+#include "src/cpu/kernels/groupnorm_ref.hpp"
+#include "kernels/exposed_enum.hpp"
+#include "interface.hpp"
 
-namespace jd {
+namespace test {
 
-using idx = exposed_enum::groupnorm::io;
+using idx = jd::exposed_enum::groupnorm::io;
 
 struct op_args_t {
-  operator_desc op_desc;
-  std::shared_ptr<std::vector<bfloat16_t>> bf16_src;
+  jd::operator_desc op_desc;
+  std::shared_ptr<std::vector<jd::bfloat16_t>> bf16_src;
   std::shared_ptr<std::vector<float>> fp32_src;
-  std::shared_ptr<std::vector<bfloat16_t>> bf16_dst;
+  std::shared_ptr<std::vector<jd::bfloat16_t>> bf16_dst;
   std::shared_ptr<std::vector<float>> fp32_dst;
   std::shared_ptr<std::vector<float>> gamma;
   std::shared_ptr<std::vector<float>> beta;
@@ -39,15 +41,15 @@ bool check_result(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   const auto& op_desc = p.op_desc;
-  auto dt = op_desc.tensor_descs()[0].dtype();
+  auto data_type = op_desc.tensor_descs()[0].dtype();
   auto op_attr = op_desc.attrs();
   std::vector<const void*> data1(idx::SIZE);
   std::vector<const void*> data2(idx::SIZE);
   try {
-    groupnorm_desc groupnorm_desc(op_desc);
-    groupnorm groupnorm_ker(groupnorm_desc);
+    jd::groupnorm_desc groupnorm_desc(op_desc);
+    jd::groupnorm groupnorm_ker(groupnorm_desc);
 
-    if (dt == data_type::bf16) {
+    if (data_type == jd::data_type::bf16) {
       data1[idx::SRC] = p.bf16_src->data();
       data1[idx::DST] = p.bf16_dst->data();
       data2[idx::SRC] = q.bf16_src->data();
@@ -70,10 +72,10 @@ bool check_result(const test_params_t& t) {
     data2[idx::WORKSPACE] = tmp_buf.get();
 
     groupnorm_ker.execute(data1);
-    std::shared_ptr<const kernel_desc_t> groupnorm_ref_desc;
-    kernel_desc_t::create<groupnorm_ref_kd_t>(groupnorm_ref_desc, q.op_desc);
-    std::shared_ptr<const kernel_t> groupnorm_ref_ker;
-    kernel_t::create<groupnorm_ref_k_t, groupnorm_ref_kd_t>(groupnorm_ref_ker, groupnorm_ref_desc);
+    std::shared_ptr<const jd::kernel_desc_t> groupnorm_ref_desc;
+    jd::kernel_desc_t::create<jd::groupnorm_ref_kd_t>(groupnorm_ref_desc, q.op_desc);
+    std::shared_ptr<const jd::kernel_t> groupnorm_ref_ker;
+    jd::kernel_t::create<jd::groupnorm_ref_k_t, jd::groupnorm_ref_kd_t>(groupnorm_ref_ker, groupnorm_ref_desc);
     groupnorm_ref_ker->execute(data2);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
@@ -88,8 +90,8 @@ bool check_result(const test_params_t& t) {
     auto size = p.fp32_dst->size();
     auto buf2 = data2[idx::DST];
     bool ans = false;
-    if (dt == data_type::bf16) {
-      ans = compare_data<bfloat16_t>(buf1, size, buf2, size, 1e-2);
+    if (data_type == jd::data_type::bf16) {
+      ans = compare_data<jd::bfloat16_t>(buf1, size, buf2, size, 1e-2);
     } else {
       ans = compare_data<float>(buf1, size, buf2, size, 5e-3);
     }
@@ -111,15 +113,17 @@ TEST_P(GroupNormKernelTest, ) {
   EXPECT_TRUE(check_result(t));
 }
 
-std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_descs,
+std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_descs,
                                          std::unordered_map<std::string, std::string> op_attrs,
-                                         const std::vector<postop_attr>& postop_attr = {}) {
-  operator_desc groupnorm_desc(kernel_kind::groupnorm, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                               op_attrs, postop_attr);
+                                         const std::vector<jd::postop_attr>& postop_attr = {}) {
+  jd::operator_desc groupnorm_desc(jd::kernel_kind::groupnorm, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                                   ts_descs, op_attrs, postop_attr);
 
   auto gen_data = [](auto type, int size, float bound1, float bound2, bool clear = false) {
-    auto ptr = std::shared_ptr<std::vector<decltype(type)>>(new std::vector<decltype(type)>(size, 0));
-    if (!clear) init_vector(ptr->data(), ptr->size(), bound1, bound2);
+    auto ptr = std::shared_ptr<std::vector<decltype(type)>>(new std::vector<decltype(type)>(size));
+    if (!clear) {
+      init_vector(ptr->data(), ptr->size(), bound1, bound2);
+    }
     return ptr;
   };
 
@@ -128,12 +132,12 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
   auto fp32_src = gen_data(static_cast<float>(1), src_size, 0.f, 5.f);
   auto gamma = gen_data(static_cast<float>(1), channel_size, 1.f, 5.f);
   auto beta = gen_data(static_cast<float>(1), channel_size, 1.f, 5.f);
-  std::shared_ptr<std::vector<bfloat16_t>> bf16_src(new std::vector<bfloat16_t>(src_size, 0));
-  cast_from_float_array<bfloat16_t>(*fp32_src, bf16_src->data(), src_size);
+  std::shared_ptr<std::vector<jd::bfloat16_t>> bf16_src(new std::vector<jd::bfloat16_t>(src_size));
+  cast_from_float_array<jd::bfloat16_t>((*fp32_src).data(), reinterpret_cast<void*>(bf16_src->data()), src_size);
   auto fp32_dst = gen_data(static_cast<float>(1), src_size, 0.f, 0.f, true);
-  auto bf16_dst = gen_data(static_cast<bfloat16_t>(1), src_size, 0.f, 0.f, true);
+  auto bf16_dst = gen_data(static_cast<jd::bfloat16_t>(1.f), src_size, 0.f, 0.f, true);
   auto correct_fp32_dst = gen_data(static_cast<float>(1), src_size, 0.f, 0.f, true);
-  auto correct_bf16_dst = gen_data(static_cast<bfloat16_t>(1), src_size, 0.f, 0.f, true);
+  auto correct_bf16_dst = gen_data(static_cast<jd::bfloat16_t>(1.f), src_size, 0.f, 0.f, true);
 
   op_args_t p = {groupnorm_desc, bf16_src, fp32_src, bf16_dst, fp32_dst, gamma, beta};
   op_args_t q = {groupnorm_desc, bf16_src, fp32_src, correct_bf16_dst, correct_fp32_dst, gamma, beta};
@@ -142,14 +146,14 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
 
 static auto case_func = []() {
   std::vector<test_params_t> cases;
-  std::vector<std::vector<int64_t>> problem_size = {{1, 8, 16, 16}, {1, 8, 64, 64}, {2, 8, 16, 16}, {2, 8, 64, 64}};
-  postop_attr swish_attr = {data_type::bf16, postop_type::eltwise, postop_alg::swish, 2.f};
+  std::vector<std::vector<dim_t>> problem_size = {{1, 8, 16, 16}, {1, 8, 64, 64}, {2, 8, 16, 16}, {2, 8, 64, 64}};
+  jd::postop_attr swish_attr = {jd::data_type::bf16, jd::postop_type::eltwise, jd::postop_alg::swish, 2.f};
   for (auto&& shape : problem_size) {
-    tensor_desc src_desc = {shape, jd::data_type::bf16, jd::format_type::abcd};
-    tensor_desc dst_desc = {shape, jd::data_type::bf16, jd::format_type::abcd};
-    tensor_desc gamma_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
-    tensor_desc beta_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
-    tensor_desc workspace_desc = {{}, jd::data_type::fp32, jd::format_type::a};
+    jd::tensor_desc src_desc = {shape, jd::data_type::bf16, jd::format_type::abcd};
+    jd::tensor_desc dst_desc = {shape, jd::data_type::bf16, jd::format_type::abcd};
+    jd::tensor_desc gamma_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
+    jd::tensor_desc beta_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
+    jd::tensor_desc workspace_desc = {{}, jd::data_type::fp32, jd::format_type::a};
     cases.push_back({gen_case({src_desc, dst_desc, gamma_desc, beta_desc, workspace_desc},
                               {{"eps", "0.01"}, {"groups", "4"}}, {swish_attr}),
                      false});
@@ -159,4 +163,4 @@ static auto case_func = []() {
 };
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, GroupNormKernelTest, case_func());
-}  // namespace jd
+}  // namespace test

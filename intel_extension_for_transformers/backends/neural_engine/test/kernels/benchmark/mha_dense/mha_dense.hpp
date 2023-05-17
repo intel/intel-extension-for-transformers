@@ -11,24 +11,22 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_HPP_
 
-#include <functional>
-#include <memory>
-#include <utility>
 #include <vector>
+#include <memory>
 
 #include "benchmark_utils.hpp"
+#include "common_utils.hpp"
+#include "kernels/exposed_enum.hpp"
 
-namespace jd {
-
+namespace bench {
 class mha_dense_bench : public kernel_bench {
   std::shared_ptr<mha_dense_bench> smb;
 
  protected:
-  using io = exposed_enum::mha_dense::io;
+  using io = jd::exposed_enum::mha_dense::io;
 
  public:
   mha_dense_bench() {}
@@ -39,7 +37,6 @@ class mha_dense_bench : public kernel_bench {
           if (rt_data != nullptr) aligned_allocator_t<uint8_t, 64>::deallocate(const_cast<void*>(rt_data));
     }
   }
-
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return smb->calc_flop(); }
   std::vector<int> get_refresh_data_idx() const override { return smb->get_refresh_data_idx(); }
@@ -53,10 +50,9 @@ class mha_dense_bench : public kernel_bench {
   void set_kernel_proxy() override {
     args = smb->args;
     ts_descs = smb->ts_descs;
-    mha_dense_desc mha_dense_desc(args.first.op_desc);
-    kp = std::make_shared<mha_dense>(mha_dense_desc);
+    jd::mha_dense_desc mha_dense_desc(args.first.op_desc);
+    kp = std::make_shared<jd::mha_dense>(mha_dense_desc);
   };
 };
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_HPP_

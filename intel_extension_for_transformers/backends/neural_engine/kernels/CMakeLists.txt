@@ -25,8 +25,12 @@ set(EXTERNAL_LIBRARY_PAYH "")
 
 file(GLOB SOURCES
   ${PROJECT_SOURCE_DIR}/src/*.cpp
-  ${PROJECT_SOURCE_DIR}/src/kernels/*.cpp
-  ${PROJECT_SOURCE_DIR}/src/jit_domain/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/data_type/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/cpu/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/cpu/engine/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/cpu/memory_storege/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/cpu/jit_domain/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/cpu/kernels/*.cpp
 )
 
 file(GLOB_RECURSE HEADERS
@@ -37,6 +41,7 @@ file(GLOB GPU_SOURCES
   ${PROJECT_SOURCE_DIR}/src/gpu/*.cpp
   ${PROJECT_SOURCE_DIR}/src/gpu/engine/*.cpp
   ${PROJECT_SOURCE_DIR}/src/gpu/memory_storage/*.cpp
+  ${PROJECT_SOURCE_DIR}/src/gpu/stream/*.cpp
   ${PROJECT_SOURCE_DIR}/src/gpu/kernels/*.cpp
   ${PROJECT_SOURCE_DIR}/src/gpu/kernels/opencl/*.cpp
   ${PROJECT_SOURCE_DIR}/src/gpu/kernels/opencl/gemm/*.cpp
@@ -50,10 +55,12 @@ if (NE_WITH_SPARSELIB_GPU)
   set(SOURCES ${SOURCES} ${GPU_SOURCES})
   add_definitions(-DSPARSELIB_GPU)
 endif()
-
 if (NE_DYNAMIC_LINK)
     add_library(${HOST_LIBRARY_NAME} SHARED ${SOURCES} ${HEADERS})
     target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_KERNEL_BUILD)
+    if (NE_WITH_TESTS OR NE_WITH_SPARSELIB_BENCHMARK)
+      target_compile_definitions(${HOST_LIBRARY_NAME} PRIVATE SPARSE_TEST)
+    endif()
 else()
     add_library(${HOST_LIBRARY_NAME} STATIC ${SOURCES} ${HEADERS})
     if (WIN32)
@@ -106,9 +113,8 @@ set_target_properties(${HOST_LIBRARY_NAME}
 message( STATUS "EXTERNAL_INCLUDE_PAYH ${EXTERNAL_INCLUDE_PAYH}" )
 target_include_directories(${HOST_LIBRARY_NAME}
     PUBLIC
+        ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/include
-        ${PROJECT_SOURCE_DIR}/include/gpu
-        ${PROJECT_SOURCE_DIR}/src
 )
 
 ## link against the third party libraries

@@ -11,7 +11,6 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #ifndef ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_STATIC_HPP_
 #define ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_STATIC_HPP_
 
@@ -22,10 +21,9 @@
 
 #include "benchmark_utils.hpp"
 #include "interface.hpp"
-#include "mha_dense/mha_dense.hpp"
+#include "mha_dense.hpp"
 
-namespace jd {
-
+namespace bench {
 class mha_dense_static_bench : public mha_dense_bench {
  private:
   int64_t head_num;
@@ -34,22 +32,18 @@ class mha_dense_static_bench : public mha_dense_bench {
   int64_t sl_m;
   int64_t sl_n;
   int32_t mask = -1;  // valid seqlen
-  data_type dt_dst, dt_src;
-  format_type ft_kv = format_type::undef;
+  jd::data_type dt_dst, dt_src;
+  jd::format_type ft_kv = jd::format_type::undef;
   int badd_dim;  // #dimention of the binary_add src tensor; Non-positive number for disabling binary_add
   std::unordered_map<std::string, std::string> op_attrs;
 
  public:
   static constexpr int MIN_ARG_NUM = 4;
-
   mha_dense_static_bench() : mha_dense_bench() {}
   virtual ~mha_dense_static_bench() {}  // leave memory deallocation to its parent class
-
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const final;
-  std::vector<int> get_refresh_data_idx() const override {
-    return {io::SRC_Q, io::SRC_K, io::SRC_V, io::DST};
-  }
+  std::vector<int> get_refresh_data_idx() const override { return {io::SRC_Q, io::SRC_K, io::SRC_V, io::DST}; }
   // Just like that in gtest file
   void get_true_data() override;
   // Just like that in gtest file
@@ -57,11 +51,9 @@ class mha_dense_static_bench : public mha_dense_bench {
   // Just like that in gtest file
   void gen_case() override;
   void set_kernel_proxy() override {
-    mha_dense_desc mha_dense_desc(args.first.op_desc);
-    kp = std::make_shared<mha_dense>(mha_dense_desc);
+    jd::mha_dense_desc mha_dense_desc(args.first.op_desc);
+    kp = std::make_shared<jd::mha_dense>(mha_dense_desc);
   }
 };
-
-}  // namespace jd
-
+}  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_MHA_DENSE_STATIC_HPP_

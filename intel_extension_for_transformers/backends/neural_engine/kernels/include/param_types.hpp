@@ -16,9 +16,7 @@
 #define ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_
 #include <cassert>
 #include <cstdint>
-#include <map>
 #include <unordered_map>
-#include <vector>
 
 namespace jd {
 // The main kinds of kernel.
@@ -59,7 +57,7 @@ enum class binaryop_alg : uint8_t { undef, add, sub, mul, per_channel_quant, per
 
 enum class postop_type : uint8_t { eltwise };
 
-static std::map<postop_alg, const char*> postop_alg_name = {
+static std::unordered_map<postop_alg, const char*> postop_alg_name = {
     {postop_alg::exp, "exp"},           {postop_alg::tanh, "tanh"},
     {postop_alg::gelu, "gelu"},         {postop_alg::relu, "relu"},
     {postop_alg::quantize, "quantize"}, {postop_alg::dequantize, "dequantize"},
@@ -91,7 +89,7 @@ enum class data_type : uint8_t {
   fp32,
   s32,
 };
-const std::map<data_type, const char*> data_type_name{
+const std::unordered_map<data_type, const char*> data_type_name{
     {data_type::u8, "u8"},           {data_type::s8, "s8"},     {data_type::f8_e4m3, "f8_e4m3"},
     {data_type::f8_e5m2, "f8_e5m2"}, {data_type::u16, "u16"},   {data_type::s16, "s16"},
     {data_type::fp16, "fp16"},       {data_type::bf16, "bf16"}, {data_type::fp32, "fp32"},
@@ -124,7 +122,7 @@ constexpr format_type plain_format(const int n) {
                   : (assert(false), format_type::undef);
 }
 
-static const std::map<format_type, const char*> format_type_name = {
+static const std::unordered_map<format_type, const char*> format_type_name = {
     {format_type::a, "a"},       {format_type::ab, "ab"},     {format_type::ba, "ba"},     {format_type::abc, "abc"},
     {format_type::abcd, "abcd"}, {format_type::acbd, "acbd"}, {format_type::csr, "csr"},   {format_type::csc, "csc"},
     {format_type::bsr, "bsr"},   {format_type::bsc, "bsc"},   {format_type::csrp, "csrp"},
@@ -178,8 +176,5 @@ class binaryop_attr {
   void set_zp(float* zp) { this->zp = zp; }
 };
 
-static std::unordered_map<data_type, const int> type_size = {
-    {data_type::fp32, 4}, {data_type::s32, 4}, {data_type::fp16, 2},    {data_type::bf16, 2},
-    {data_type::u8, 1},   {data_type::s8, 1},  {data_type::f8_e4m3, 1}, {data_type::f8_e5m2, 1}};
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_

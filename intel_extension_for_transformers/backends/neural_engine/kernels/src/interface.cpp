@@ -14,6 +14,8 @@
 
 #include "interface.hpp"
 #include "singleton.hpp"
+#include "engine_factory.hpp"
+#include "src/utils.hpp"
 
 namespace jd {
 kernel_desc_proxy::kernel_desc_proxy(const operator_desc& op_desc) {

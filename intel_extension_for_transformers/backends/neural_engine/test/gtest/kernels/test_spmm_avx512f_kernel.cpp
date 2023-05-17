@@ -18,21 +18,17 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
-#include <numeric>
 #include <exception>
 
 #include "interface.hpp"
 #include "gtest/gtest.h"
 #include "unit_test_utils.hpp"
 #include "kernels/spmm_types.hpp"
+#include "kernels/sparse_data.hpp"
 
-namespace jd {
-using dt = jd::data_type;
-using ft = jd::format_type;
-
+namespace test {
 struct op_args_t {
-  operator_desc op_desc;
+  jd::operator_desc op_desc;
   std::vector<const void*> rt_data;
   float sparsity;  // sparsity of weight matrix; for testcase labeling
 };
@@ -42,27 +38,27 @@ struct test_params_t {
   bool expect_to_fail;
 };
 
-void get_true_data(const operator_desc& op_desc, const std::vector<const void*>& rt_data) {
+void get_true_data(const jd::operator_desc& op_desc, const std::vector<const void*>& rt_data) {
   // shape configure alias
   const auto& ts_descs = op_desc.tensor_descs();
-  const auto& wei_desc = ts_descs[ssd::WEI];
-  const auto& src_desc = ts_descs[ssd::SRC];
-  const auto& bias_desc = ts_descs[ssd::BIAS];
+  const auto& wei_desc = ts_descs[jd::ssd::WEI];
+  const auto& src_desc = ts_descs[jd::ssd::SRC];
+  const auto& bias_desc = ts_descs[jd::ssd::BIAS];
   int dims = wei_desc.shape().size();
   int M = src_desc.shape()[0];
   int K = wei_desc.shape()[0];
   int N = wei_desc.shape()[1];
   bool has_bias = !bias_desc.shape().empty();
   auto attrs_map = op_desc.attrs();
-  std::vector<int64_t> left_stride = {K, 1};
-  std::vector<int64_t> right_stride = {N, 1};
-  std::vector<int64_t> dst_stride = {N, 1};
+  std::vector<dim_t> left_stride = {K, 1};
+  std::vector<dim_t> right_stride = {N, 1};
+  std::vector<dim_t> dst_stride = {N, 1};
 
   // runtime data alias
-  const auto left_fp32 = static_cast<const float*>(rt_data[ssd::SRC]);
-  const auto right_fp32 = static_cast<const float*>(rt_data[ssd::WEI]);
-  const auto bias_fp32 = static_cast<const float*>(rt_data[ssd::BIAS]);
-  auto dst_fp32 = static_cast<float*>(const_cast<void*>(rt_data[ssd::DST]));
+  const auto left_fp32 = static_cast<const float*>(rt_data[jd::ssd::SRC]);
+  const auto right_fp32 = static_cast<const float*>(rt_data[jd::ssd::WEI]);
+  const auto bias_fp32 = static_cast<const float*>(rt_data[jd::ssd::BIAS]);
+  auto dst_fp32 = static_cast<float*>(const_cast<void*>(rt_data[jd::ssd::DST]));
 
   // Computing the kernel
   SPARSE_LOG_IF(FATAL, dims != 2) << "Weight must be 2D!";
@@ -92,11 +88,11 @@ void get_true_data(const operator_desc& op_desc, const std::vector<const void*>&
 bool check_result(const test_params_t& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
-  sparse_matmul* spmm_kern = nullptr;
+  jd::sparse_matmul* spmm_kern = nullptr;
   try {
     const auto& op_desc = p.op_desc;
-    sparse_matmul_desc spmm_desc(op_desc);
-    spmm_kern = new sparse_matmul(spmm_desc);
+    jd::sparse_matmul_desc spmm_desc(op_desc);
+    spmm_kern = new jd::sparse_matmul(spmm_desc);
     spmm_kern->execute(p.rt_data);
   } catch (const std::exception& e) {
     if (t.expect_to_fail) {
@@ -108,16 +104,16 @@ bool check_result(const test_params_t& t) {
   if (spmm_kern != nullptr) {
     auto attrs_map = p.op_desc.attrs();
     const uint64_t& sparse_addr = str_to_num<uint64_t>(attrs_map["sparse_ptr"]);
-    auto sparse_data_ptr = reinterpret_cast<bsc_data_t<float>*>(sparse_addr);
+    auto sparse_data_ptr = reinterpret_cast<jd::bsc_data_t<float>*>(sparse_addr);
     delete sparse_data_ptr;
     delete spmm_kern;
   }
   if (!t.expect_to_fail) {
     get_true_data(q.op_desc, q.rt_data);
-    auto buf1 = p.rt_data[ssd::DST];
-    auto size1 = p.op_desc.tensor_descs()[ssd::DST].size();
-    auto buf2 = q.rt_data[ssd::DST];
-    auto size2 = q.op_desc.tensor_descs()[ssd::DST].size();
+    auto buf1 = p.rt_data[jd::ssd::DST];
+    auto size1 = p.op_desc.tensor_descs()[jd::ssd::DST].size();
+    auto buf2 = q.rt_data[jd::ssd::DST];
+    auto size2 = q.op_desc.tensor_descs()[jd::ssd::DST].size();
     // Should compare buffer with different addresses
     EXPECT_NE(buf1, buf2);
     return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
@@ -146,89 +142,26 @@ TEST_P(SpmmAVX512FKernelTest, ) {
   }
 }
 
-template <typename T>
-void prepare_blocked_sparse_data(T* data, const std::vector<dim_t>& a_shape, const std::vector<dim_t>& block_shape,
-                                 float sparsity, unsigned int* seed) {
-  dim_t K = a_shape[0], N = a_shape[1], BK = block_shape[0], BN = block_shape[1];
-  LOG_IF(FATAL, (K % BK | N % BN) != 0) << "Matrix dim must be a multiple of block dim.";
-  LOG_IF(FATAL, sparsity < 0 || sparsity > 1) << "Sparsity should be a value between 0 and 1.";
-  dim_t nb_k = K / BK;
-  dim_t nb_n = N / BN;
-  std::srand(*seed);
-  for (int ibk = 0; ibk < nb_k; ++ibk) {
-    for (int ibn = 0; ibn < nb_n; ++ibn) {
-      bool fill_zero = std::rand() % 100 <= (sparsity * 100);
-      if (fill_zero) {
-        dim_t i_start = ibk * BK;
-        dim_t j_start = ibn * BN;
-        for (dim_t i = i_start; i < i_start + BK; ++i) {
-          for (dim_t j = j_start; j < j_start + BN; ++j) {
-            data[i * N + j] = 0.f;
-          }
-        }
-      }
-    }
-  }
-}
-
-std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_shape, const dt& a_dt,
-                                                  bool is_clear = false, float sparsity = 0.f,  // 0 for dense
-                                                  ft a_ft = ft::uncoded, const std::vector<float>& ranges = {-10, 10}) {
-  int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), size_t{1}, std::multiplies<size_t>());
-  int bytes_size = elem_num * type_size[a_dt];
-  void* data_ptr = nullptr;
-  if (is_clear) {
-    data_ptr = new uint8_t[bytes_size];
-    memset(data_ptr, 0, bytes_size);
-  } else {
-    switch (a_dt) {
-      case dt::fp32:
-        data_ptr = new float[elem_num];
-        init_vector(static_cast<float*>(data_ptr), elem_num, ranges[0], ranges[1]);
-        break;
-      default:
-        assert(false);
-        break;
-    }
-    if (sparsity != 0.f) {
-      switch (a_ft) {
-        case ft::bsc: {
-          std::vector<dim_t> block_shape = {1, 16};
-          unsigned int seed = 123;
-          prepare_blocked_sparse_data(static_cast<float*>(data_ptr), a_shape, block_shape, sparsity, &seed);
-          break;
-        }
-        default:
-          break;
-      }
-    }
-  }
-
-  void* data_ptr_copy = new uint8_t[bytes_size];
-  memcpy(data_ptr_copy, data_ptr, bytes_size);
-  return std::pair<const void*, const void*>{data_ptr, data_ptr_copy};
-}
-
 std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsity,
-                                         std::vector<postop_alg> postop_algs = {}) {
+                                         std::vector<jd::postop_alg> postop_algs = {}) {
   // Step 1: Construct operator config
   std::unordered_map<std::string, std::string> op_attrs = {};
 
   // Step 2: Construct runtime data
-  tensor_desc src_desc = {{M, K}, dt::fp32, ft::ab};
-  tensor_desc wei_desc = {{K, N}, dt::fp32, ft::bsc};
-  tensor_desc bia_desc = {{N, 1}, dt::fp32, ft::ab};
-  tensor_desc dst_desc = {{M, N}, dt::fp32, ft::abc};
-  std::vector<tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
+  jd::tensor_desc src_desc = {{M, K}, jd::data_type::fp32, jd::format_type::ab};
+  jd::tensor_desc wei_desc = {{K, N}, jd::data_type::fp32, jd::format_type::bsc};
+  jd::tensor_desc bia_desc = {{N, 1}, jd::data_type::fp32, jd::format_type::ab};
+  jd::tensor_desc dst_desc = {{M, N}, jd::data_type::fp32, jd::format_type::abc};
+  std::vector<jd::tensor_desc> ts_descs = {wei_desc, src_desc, bia_desc, dst_desc};
 
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
   for (size_t i = 0; i < ts_descs.size(); ++i) {
-    bool is_clear = i == ssd::DST || i == ssd::BIAS;
-    std::vector<float> ranges = (i == ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
-    float data_sparsity = (i == ssd::WEI) ? sparsity : 0;
+    bool is_clear = i == jd::ssd::DST || i == jd::ssd::BIAS;
+    std::vector<float> ranges = (i == jd::ssd::SCALES) ? std::vector<float>{0, 1} : std::vector<float>{-10, 10};
+    float data_sparsity = (i == jd::ssd::WEI) ? sparsity : 0;
     auto data_pair =
-        make_data_obj(ts_descs[i].shape(), ts_descs[i].dtype(), is_clear, data_sparsity, ts_descs[i].ftype(), ranges);
+        make_data_obj(ts_descs[i].shape(), ts_descs[i].dtype(), is_clear, ranges, data_sparsity, ts_descs[i].ftype());
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -236,20 +169,21 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, float sparsi
   for (auto p : rt_data1) rt_data_ins.push_back(static_cast<const float*>(p));
 
   // Step 3: sparse data encoding
-  bsc_data_t<float> bsc_obj = spns::tobsc<float>(K, N, 1, 16, static_cast<const float*>(rt_data1[ssd::WEI]));
-  auto sparse_ptr = new bsc_data_t<float>(bsc_obj);  // Will be deleted in `check_result`
+  jd::bsc_data_t<float> bsc_obj =
+      jd::spns::tobsc<float>(K, N, 1, 16, static_cast<const float*>(rt_data1[jd::ssd::WEI]));
+  auto sparse_ptr = new jd::bsc_data_t<float>(bsc_obj);  // Will be deleted in `check_result`
   op_attrs["sparse_ptr"] = std::to_string(reinterpret_cast<uint64_t>(sparse_ptr));
   if (postop_algs.size()) {
-    auto accu_op = [](std::string str_lists, postop_alg alg) { return str_lists + '_' + postop_alg_name[alg]; };
+    auto accu_op = [](std::string str_lists, jd::postop_alg alg) { return str_lists + '_' + jd::postop_alg_name[alg]; };
     op_attrs["postop_list"] = std::accumulate(postop_algs.begin() + 1, postop_algs.end(),
-                                              std::string(postop_alg_name[postop_algs[0]]), accu_op);
+                                              std::string(jd::postop_alg_name[postop_algs[0]]), accu_op);
   }
-  std::vector<postop_attr> apply_postops_list;
-  std::for_each(postop_algs.begin(), postop_algs.end(), [&apply_postops_list](postop_alg alg) {
-    return apply_postops_list.push_back({data_type::fp32, postop_type::eltwise, alg});
+  std::vector<jd::postop_attr> apply_postops_list;
+  std::for_each(postop_algs.begin(), postop_algs.end(), [&apply_postops_list](jd::postop_alg alg) {
+    return apply_postops_list.push_back({jd::data_type::fp32, jd::postop_type::eltwise, alg});
   });
-  operator_desc an_op_desc(kernel_kind::sparse_matmul, kernel_prop::forward_inference, engine_kind::cpu, ts_descs,
-                           op_attrs, apply_postops_list);
+  jd::operator_desc an_op_desc(jd::kernel_kind::sparse_matmul, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
+                               ts_descs, op_attrs, apply_postops_list);
 
   // Step 4: op_args_t testcase pair
   op_args_t op_args = {an_op_desc, rt_data1, sparsity};
@@ -263,14 +197,14 @@ static auto case_func = []() {
 
   // Config
 
-  std::vector<std::vector<postop_alg>> postop_lists = {
+  std::vector<std::vector<jd::postop_alg>> postop_lists = {
       {},
-      {postop_alg::gelu},
-      {postop_alg::exp},
-      {postop_alg::gelu, postop_alg::exp},
+      {jd::postop_alg::gelu},
+      {jd::postop_alg::exp},
+      {jd::postop_alg::gelu, jd::postop_alg::exp},
   };
 
-  for (std::vector<postop_alg> algs : postop_lists) {
+  for (std::vector<jd::postop_alg> algs : postop_lists) {
     cases.push_back({gen_case(128, 256, 256, .7f, algs)});
     cases.push_back({gen_case(384, 256, 256, .7f, algs)});
     cases.push_back({gen_case(128, 1024, 256, .7f, algs)});
@@ -299,12 +233,12 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   auto tensor_desc = tpi.param.args.first.op_desc.tensor_descs();
   auto attrs_map = tpi.param.args.first.op_desc.attrs();
   params.push_back("sp" + std::to_string(static_cast<int>(tpi.param.args.first.sparsity * 100)));
-  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[0]));
-  params.push_back(std::to_string(tensor_desc[ssd::SRC].shape()[1]));
-  params.push_back(std::to_string(tensor_desc[ssd::WEI].shape()[1]));
+  params.push_back(std::to_string(tensor_desc[jd::ssd::SRC].shape()[0]));
+  params.push_back(std::to_string(tensor_desc[jd::ssd::SRC].shape()[1]));
+  params.push_back(std::to_string(tensor_desc[jd::ssd::WEI].shape()[1]));
   if (!attrs_map["postop_list"].empty()) params.push_back(attrs_map["postop_list"]);
   return join_str(params, "_");
 }
 
 INSTANTIATE_TEST_SUITE_P(SparseLib, SpmmAVX512FKernelTest, case_func(), test_suffix);
-}  // namespace jd
+}  // namespace test
