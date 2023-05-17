@@ -34,6 +34,7 @@ Submodules
    decoder_attn_reshape/index.rst
    einsumwitharange/index.rst
    embeddingbag/index.rst
+   embeddings_to_2d_before_inner_product/index.rst
    gelu/index.rst
    generate_sequence/index.rst
    innerproductwithbiasgelu/index.rst
@@ -62,6 +63,7 @@ Submodules
    matmul_with_bias_tanh/index.rst
    matmul_with_bias_unsqueeze/index.rst
    matmul_with_transpose/index.rst
+   matmul_with_transpose_scale_add/index.rst
    merged_embeddingbag/index.rst
    operator_adaptor/index.rst
    output_data/index.rst
@@ -71,6 +73,7 @@ Submodules
    position_embeddings_v1/index.rst
    qkv_merge/index.rst
    qkv_reshape/index.rst
+   quant_gather_to_bf16/index.rst
    quantize_fusion/index.rst
    quantized_graph_dtype_refactor/index.rst
    remove_constant_op/index.rst
