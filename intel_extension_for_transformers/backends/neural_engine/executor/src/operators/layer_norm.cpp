@@ -37,11 +37,50 @@ LayerNormOperator::LayerNormOperator(const shared_ptr<OperatorConfig>& conf) : O
   if (iter != attrs_map.end()) {
     output_dtype_ = attrs_map["output_dtype"];
   }
+  iter = attrs_map.find("reshape");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_, attrs_map["reshape"], ",");
+  }
+  iter = attrs_map.find("reshape_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&reshape_dims_, attrs_map["reshape_dims"], ",");
+  }
+  iter = attrs_map.find("mul");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&mul_, attrs_map["mul"], ",");
+  }
 }
 
 void LayerNormOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (!transpose_mode_ || input[0]->dtype() != "fp32") {
     PreparewithOnednn(input, output);
+  }
+}
+
+void LayerNormOperator::DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (!reshape_.empty()) {
+    vector<int64_t> pre_dst_shape;
+    vector<int64_t> ref_shape;
+    if (!reshape_dims_.empty()) {
+      ref_shape = input.back()->shape();
+    }
+    pre_dst_shape = GetDstShape(reshape_, output[0]->size(), ref_shape, reshape_dims_);
+    vector<int64_t> dst_shape(pre_dst_shape);
+    if (!mul_.empty()) {
+      dst_shape.clear();
+      int j = 0;
+      int64_t mul_size = 1;
+      for (int i = 0; i < mul_.size(); ++i) mul_size *= pre_dst_shape[mul_[i]];
+      for (int i = 0; i < pre_dst_shape.size(); ++i) {
+        if (j < mul_.size() && i == mul_[j]) {
+          if (j == 0) dst_shape.push_back(mul_size);
+          j++;
+        } else {
+          dst_shape.push_back(pre_dst_shape[i]);
+        }
+      }
+    }
+    output[0]->set_shape(dst_shape);
   }
 }
 
@@ -51,6 +90,7 @@ void LayerNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   } else {
     ReshapewithOnednn(input, output);
   }
+  DstReshapeFusion(input, output);
 }
 
 void LayerNormOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {

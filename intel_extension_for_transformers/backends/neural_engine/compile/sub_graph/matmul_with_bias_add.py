@@ -19,8 +19,8 @@
 
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
+from .subgraph_matcher import EXECUTOR_TYPE
 from .. import graph_utils as util
-from ..onnx_utils import bias_to_int32
 import copy
 
 
@@ -33,55 +33,40 @@ class MatMulWithBiasAdd(Pattern):
     """
     def __call__(self, model):
         """The __call__ function of this pattern class."""
-        pattern_mapping_config = {
-            'MatMulWithBiasAdd': [
-                {
-                    'patterns': {
-                        'in': [[(0, 'MatMulWithBias'), (1, ['Add', 'AddV2'])]],
-                        'out': [[(0, 'MatMulWithBiasAdd')]]
-                    },
-                    'search_mode': 'op_type',
-                    'node_names': {
-                        0: 1
-                    },
-                    'input_tensors': {
-                        0: [[{
-                            0: [0]
-                        }, {
-                            0: [1]
-                        }, {
-                            0: [2]
-                        }, {
-                            1: [0, 1]
-                        }], [[0, 1, 2, 3], 4]]
-                    },
-                    'output_tensors': {
-                        0: [[{
-                            1: [0]
-                        }], [[0], 1]]
-                    },
-                    'returns': [0]
-                },
-            ]
-        }
+        match_ret = {}
+        for node in model.nodes:
+            if node.op_type in ['MatMulWithBias', 'InnerProduct'] and node.name not in match_ret:
+                dst_ops = []
+                for d in node.output_tensors[0].dest_op:
+                    dst_ops.append(model.get_node_by_name(d))
+                if node.output_tensors[0].name not in model.output_tensors_name and \
+                   len(dst_ops) == 1 and EXECUTOR_TYPE.get(dst_ops[0].op_type,
+                   dst_ops[0].op_type) == 'BinaryAdd':
+                    add_s_ops = [model.get_node_by_name(t.source_op[0]) for t in
+                                    dst_ops[0].input_tensors]
+                    if [EXECUTOR_TYPE.get(o.op_type, o.op_type) for o in add_s_ops] == \
+                       ['InnerProduct', 'InnerProduct']:
+                        ids = [model.get_node_id(o.name) for o in add_s_ops]
+                        match_ret[model.nodes[max(ids)].name] = dst_ops[0].name
+                    else:
+                        match_ret[node.name] = dst_ops[0].name
 
-        def _set_attr(new_node_names, ret_old_nodes, model):
-            for i in range(len(new_node_names)):
-                mat_node_idx = model.get_node_id(new_node_names[i][0])
-                attr = OrderedDict()
-                if 'src0_perm' in ret_old_nodes[i][0].attr.keys():
-                    attr['src0_perm'] = ret_old_nodes[i][0].attr['src0_perm']
-                if 'src1_perm' in ret_old_nodes[i][0].attr.keys():
-                    attr['src1_perm'] = ret_old_nodes[i][0].attr['src1_perm']
-                attr['append_op'] = 'sum'
-                model.nodes[mat_node_idx].attr = attr
-
-        pattern_dict = pattern_mapping_config['MatMulWithBiasAdd'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("MatMulWithBiasAdd",
-                                                                    pattern_dict, model)
-        if len(new_node_names) != 0:
-            _set_attr(new_node_names, ret_old_nodes, model)
-
-            return model
+        for k, v in match_ret.items():
+            mat_node_id = model.get_node_id(k)
+            mat_node = copy.deepcopy(model.nodes[mat_node_id])
+            a_node = model.get_node_by_name(v)
+            a_node_name = a_node.name
+            append_idx = 1 if mat_node.output_tensors[0].name == a_node.input_tensors[0].name \
+                           else 0
+            mat_node.input_tensors.append(copy.deepcopy(a_node.input_tensors[append_idx]))
+            mat_node.output_tensors[0] = copy.deepcopy(a_node.output_tensors[0])
+            mat_node.attr['append_op'] = 'sum'
+            mat_node.name = a_node_name
+            for t in mat_node.input_tensors:
+                t.dest_op = [mat_node.name]
+            mat_node.output_tensors[0].source_op = [mat_node.name]
+            mat_node.op_type = 'MatMulWithBiasAdd'
+            model.remove_nodes([k, v])
+            model.insert_nodes(mat_node_id, [mat_node])
 
         return model

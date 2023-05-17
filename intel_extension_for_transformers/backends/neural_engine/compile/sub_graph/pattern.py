@@ -125,7 +125,8 @@ supported_patterns = [
     'RemoveSlice',
     'RemoveRange',
     'RemoveLastView',
-    
+
+    'MatMulWithTransposeScaleAdd',
     'InsertQuantNode',
     'InsertBF16Node',
     'TorchInsertBF16Node',
@@ -139,6 +140,8 @@ supported_patterns = [
     'StableDiffusion_MHA',
 
     'OperatorAdaptor',
+    'EmbeddingsTo2DBeforeInnerProduct',
+    'QuantGatherToBF16',
     'MultiHeadAttention',
     'OutputData',
     'QuantizedGraphDtypeRefactor',

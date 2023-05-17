@@ -340,18 +340,32 @@ class Graph(object):
             else:
                 non_consts_len += 1
         self._nodes[0].output_tensors = self._nodes[0].output_tensors[:non_consts_len]
+        const_idx = non_consts_len - 1
+        const_info = {}
         for i in range(len(self._nodes)):
             for j in range(len(self._nodes[i].input_tensors)):
                 t = self._nodes[i].input_tensors[j]
                 if (t.source_op == [] or self._node_id.get(t.source_op[-1], None) == 0) \
                                       and isinstance(t.data, np.ndarray):
-                    data = t.data
-                    start = len(weight_bytes)
-                    data_bytes = data.tobytes()
-                    weight_bytes.extend(data_bytes)
-                    offset = len(data_bytes)
-                    self._nodes[i].input_tensors[j].location = [start, offset]
-                    self._nodes[0].output_tensors.append(self._nodes[i].input_tensors[j])
+                    if t.name not in const_info:
+                        const_idx += 1
+                        const_info[t.name] = const_idx
+                        data = t.data
+                        start = len(weight_bytes)
+                        data_bytes = data.tobytes()
+                        weight_bytes.extend(data_bytes)
+                        offset = len(data_bytes)
+                        self._nodes[i].input_tensors[j].location = [start, offset]
+                        self._nodes[0].output_tensors.append(self._nodes[i].input_tensors[j])
+                    else:
+                        if self._nodes[0].output_tensors[const_info[t.name]].data.dtype != \
+                           self._nodes[i].input_tensors[j].data.dtype:
+                            logger.error("tensor {} has different dtypes in multi-nodes!".
+                                         format(t.name))
+                            import sys; sys.exit(1)
+                        dest_op = set(self._nodes[0].output_tensors[const_info[t.name]].dest_op +
+                                      self._nodes[i].input_tensors[j].dest_op)
+                        self._nodes[0].output_tensors[const_info[t.name]].dest_op = list(dest_op)
         weight_bytes = bytes(weight_bytes)
         return weight_bytes
 

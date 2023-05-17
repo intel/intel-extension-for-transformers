@@ -113,6 +113,7 @@ class InnerProductOperator : public Operator {
   vector<int64_t> compensation_;
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
+  vector<int64_t> squeeze_dims_;
   memory scale_f32_mem_;
   weight_compression weight_comp_;
 #ifdef WITH_SPARSELIB

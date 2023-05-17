@@ -60,6 +60,45 @@ void GatherOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
   dst_->set_dtype(src_->dtype());
 }
 
+void GatherOperator::DstShapeInfer(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+#ifdef WITH_SPARSELIB
+  int64_t src_axis = stoi(src_axis_);
+  int64_t idx_axis = stoi(idx_axis_);
+  int64_t dst_axis_size = idx_->shape()[idx_axis];
+  vector<int64_t> idx_shape = idx_->shape();
+  vector<int64_t> src_shape = src_->shape();
+  std::vector<int64_t> dst_shape;
+  if (src_axis != 0 && idx_axis != 0) {
+    LOG_IF(FATAL, src_axis != idx_axis) << "src_axis should equal to idx_axis when both of them are not zero";
+    for (size_t i = 0; i < src_axis; i++) {
+      LOG_IF(FATAL, src_shape[i] < idx_shape[i]) << "src shape less than idx on dim:" << i;
+      dst_shape.push_back(idx_shape[i]);
+    }
+  } else {
+    if (src_axis != 0) {
+      for (size_t i = 0; i < src_axis; i++) {
+        dst_shape.push_back(src_shape[i]);
+      }
+    } else {
+      if (idx_axis != 0) {
+        for (size_t i = 0; i < idx_axis; i++) {
+          dst_shape.push_back(idx_shape[i]);
+        }
+      }
+    }
+  }
+  dst_shape.push_back(dst_axis_size);
+  size_t inner_size = 1;
+  LOG_IF(FATAL, idx_axis != idx_shape.size() - 1)
+      << "Not support gather in multi-dims now, idx_axis should be the last dim of idx";
+  for (size_t i = src_axis + 1; i < src_shape.size(); i++) {
+    inner_size *= src_shape[i];
+    dst_shape.push_back(src_shape[i]);
+  }
+  dst_->set_shape(dst_shape);
+#endif
+}
+
 void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // todo: add Reshape
 #ifdef WITH_SPARSELIB
@@ -87,9 +126,7 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
     }
     output[0]->set_shape(dst_shape);
   } else {
-    auto dst_shape = src_->shape();
-    dst_shape[stoi(src_axis_)] = idx_->shape()[stoi(idx_axis_)];
-    dst_->set_shape(dst_shape);
+    DstShapeInfer(input, output);
   }
 
   std::unordered_map<std::string, std::string> attr_map;
@@ -103,6 +140,7 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   ts_descs.emplace_back(idx_->shape(), jd::data_type::s32, jd::format_type::undef);
   ts_descs.emplace_back(gather_dst_shape, dt, jd::format_type::undef);
   if (binary_add_) {
+    LOG_IF(FATAL, append_->dtype() != "fp32") << "Gather only supports fp32 binary_add operation";
     attr_map["binaryop_list"] = "binary_add";
     binaryops.push_back({append_->mutable_data(), jd::binaryop_alg::add, dt});
     ts_descs.emplace_back(append_->shape(), dt, jd::format_type::undef);
@@ -128,6 +166,7 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
     }
     output[0]->set_shape(dst_shape);
   }
+
   if (!keep_dims_ && input[0]->shape() == vector<int64_t>({1}) && input[1]->shape().size() > 1) {
     vector<int64_t> dst_shape = output[0]->shape();
     auto axis = stoi(src_axis_);

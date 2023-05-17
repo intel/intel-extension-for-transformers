@@ -42,7 +42,7 @@ def removeUnusedNode(graph, unused_nodes):
         node.destroy()
 
 def fuse_padding_seq(graph):
-    old_g = """
+    old_g_0 = """
             graph(%input_ids.1, %attention_mask.1, %3, %4, %5, %6, %7, %8, %9, %10):
                 %11 : int = aten::size(%input_ids.1, %9)
                 %12 : int[] = prim::ListConstruct(%11, %8)
@@ -55,12 +55,46 @@ def fuse_padding_seq(graph):
                 %19 : Tensor = aten::mul(%18, %10)
                 return (%19)
             """
-    new_g = """
+    new_g_0 = """
             graph(%input_ids.1, %attention_mask.1, %3, %4, %5, %6, %7, %8, %9, %10):
                 %19 = aten::padding_sequence(%attention_mask.1, %10)
                 return (%19)
             """
-    torch._C._jit_pass_custom_pattern_based_rewrite_graph(old_g, new_g, graph)
+    old_g_1 = """
+            graph(%attention_mask.1, %11, %12, %13, %14, %15, %17, %8):
+                %231 : Tensor = aten::slice(%attention_mask.1, %11, %11, %12, %13)
+                %232 : Tensor = aten::unsqueeze(%231, %13)
+                %233 : Tensor = aten::unsqueeze(%232, %14)
+                %extended_attention_mask.1 : Tensor = aten::slice(%233, %15, %11, %12, %13)
+                %236 : Tensor = aten::rsub(%extended_attention_mask.1, %17, %13)
+                %attention_mask0.1 : Tensor = aten::mul(%236, %8)
+                return (%attention_mask0.1)
+            """
+    new_g_1 = """
+            graph(%attention_mask.1, %11, %12, %13, %14, %15, %17, %8):
+                %attention_mask0.1 = aten::padding_sequence(%attention_mask.1, %8)
+                return (%attention_mask0.1)
+            """
+    graph_pairs = [(old_g_0, new_g_0), (old_g_1, new_g_1)]
+    for g_pair in graph_pairs:
+        torch._C._jit_pass_custom_pattern_based_rewrite_graph(g_pair[0], g_pair[1], graph)
+
+def fuse_position_ids(graph):
+    old_g_0 = """
+            graph(%input_ids.1, %13, %21, %7, %11):
+                %238 : int = aten::size(%input_ids.1, %13)
+                %240 : Tensor = aten::add(%238, %21, %13)
+                %input.13 : Tensor = aten::slice(%7, %13, %11, %240, %13)
+                return (%input.13)
+            """
+    new_g_0 = """
+            graph(%input_ids.1, %13, %21, %7, %11):
+                %input.13 : Tensor = aten::slice_position_ids(%7, %13, %11, %input_ids.1, %13)
+                return (%input.13)
+            """
+    graph_pairs = [(old_g_0, new_g_0)]
+    for g_pair in graph_pairs:
+        torch._C._jit_pass_custom_pattern_based_rewrite_graph(g_pair[0], g_pair[1], graph)
 
 class TorchExtractor(object):
     """The TorchExtractor class.
@@ -87,6 +121,7 @@ class TorchExtractor(object):
                                  'aten::alias', 'aten::Int', 'aten::ScalarImplicit'])
         logger.info('Start to extarct torch model ops...')
         fuse_padding_seq(graph)
+        fuse_position_ids(graph)
         new_graph = Graph()
         new_graph.framework_modeling_config['framework'] = 'torch'
         graph_nodes_dict = {}
@@ -148,7 +183,23 @@ class TorchExtractor(object):
                     import sys; sys.exit(1)
 
                 if out_tensor.dtype == torch.float64:
-                    out_tensor = out_tensor.to(torch.float32)
+                    fp32_info = torch.finfo(torch.float32)
+                    if out_tensor.max().item() <= fp32_info.max and \
+                       out_tensor.min().item() >= fp32_info.min:
+                        out_tensor = out_tensor.to(torch.float32)
+                    else:
+                        logger.error("Neural Engine does not support float64 dtype tensor {}."\
+                                     .format(tensor_name))
+                        import sys; sys.exit(1)
+                if out_tensor.dtype == torch.int64:
+                    int32_info = torch.iinfo(torch.int32)
+                    if out_tensor.max().item() <= int32_info.max and \
+                       out_tensor.min().item() >= int32_info.min:
+                        out_tensor = out_tensor.to(torch.int32)
+                    else:
+                        logger.error("Neural Engine does not support int64 dtype tensor {}."\
+                                     .format(tensor_name))
+                        import sys; sys.exit(1)
                 weight = out_tensor.detach().numpy()
                 weight_tensor = Tensor(name=tensor_name,
                     source_op=[],
@@ -161,7 +212,8 @@ class TorchExtractor(object):
         
 
         for in_tensor in model_input_tensors:
-            if in_tensor.name.split('.')[0] in ['attention_mask', 'position_ids', 'input_ids']:
+            if in_tensor.name.split('.')[0] in ['attention_mask', 'position_ids', 'input_ids',
+                                                'token_type_ids']:
                 in_tensor.dtype = 'int32'  # TODO: refine this
         input_data_node = construct_node('input_data',
                                             'Input',
@@ -171,9 +223,8 @@ class TorchExtractor(object):
         new_graph.input_tensors_name = input_tensors_name
         for node in graph.nodes():
             if node.kind() not in op_maps:
-                logger.error("node kind {} is not mapped.".format(node.kind()))
-                import sys; sys.exit(1)
-            op_type = op_maps[node.kind()]
+                logger.warning("node kind {} is not mapped.".format(node.kind()))
+            op_type = op_maps.get(node.kind(), node.kind())
             if op_type not in OPERATORS.keys():
                     op_type = "OpAny"
             new_node = OPERATORS[op_type]()

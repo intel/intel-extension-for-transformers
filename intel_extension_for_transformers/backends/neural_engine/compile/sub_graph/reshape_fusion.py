@@ -195,6 +195,9 @@ class ReshapeFusion(Pattern):
                     attr["append_op"] = "binary_add"
                     attr["reshape"] = ret_old_nodes[i][2].attr['dst_shape']
                     attr["reshape_dims"] = ret_old_nodes[i][2].attr['dims']
+                    # for binary_add pre reshape and dst reshape
+                    # [bsxseq_len, hidden_size] -> [bs, seq_lenxhidden_size] ->
+                    # [bsxseq_len, hidden_size]
                     attr["mul"] = ret_old_nodes[i][2].attr['mul']
                     gather_node.attr = attr
                     if len(new_node_names[i]) >= 2:

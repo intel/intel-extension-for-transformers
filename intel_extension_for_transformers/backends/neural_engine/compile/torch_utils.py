@@ -49,7 +49,8 @@ op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant', 'prim::List
            'aten::rsqrt': 'Rsqrt', 'aten::floor_divide': 'Div', 'aten::pow': 'Pow',
            'aten::full': 'Full', 'aten::zeros': 'Zeros', 'aten::repeat': 'Repeat',
            'aten::silu': 'Swish', 'prim::ListUnpack': 'ListUnpack', 'aten::ne': 'NotEqual',
-           'aten::div': 'Div', 'aten::padding_sequence' : 'PaddingSequence'}
+           'aten::div': 'Div', 'aten::padding_sequence' : 'PaddingSequence',
+           'aten::slice_position_ids': 'SlicePositionIds', 'aten::squeeze': 'Squeeze'}
 
 
 
@@ -109,5 +110,5 @@ def torch_extract_operator(node, model, nodes_dict, engine_graph=None):
                 )
         output_tensors.append(output_tensor)
 
-    return op_maps[op_type], input_tensors, output_tensors
+    return op_maps.get(op_type, op_type), input_tensors, output_tensors
 

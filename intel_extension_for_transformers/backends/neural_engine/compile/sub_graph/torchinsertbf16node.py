@@ -22,7 +22,6 @@ from .. import graph_utils as util
 from ..ops import Tensor
 from .subgraph_matcher import EXECUTOR_TYPE
 import numpy as np
-from .. import graph_utils as util
 
 
 @pattern_registry(pattern_type='TorchInsertBF16Node')

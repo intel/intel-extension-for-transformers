@@ -101,7 +101,7 @@ bool gather_k_t::execute(const std::vector<const void*>& rt_data) const {
       for (size_t k = 0; k < params.binaryop_attrs.size(); k++)
         data_param.binaryop_addrs[k] =
             reinterpret_cast<char*>(const_cast<void*>(rt_data[3 + k])) +
-            (((i * params.dst_axis_size + j) * params.inner_size) % params.binary_ts_sizes[i]) * params.dt_size;
+            (((i * params.dst_axis_size + j) * params.inner_size) % params.binary_ts_sizes[k]) * params.dt_size;
       (*jit_impl)(&data_param);
     }
   }

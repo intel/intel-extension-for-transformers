@@ -86,7 +86,7 @@ pattern_default_setting = {
     'GroupNorm': True,
 
     # transpose_mode_int8
-     'QKVMerge': False,
+    'QKVMerge': False,
 
     # 'TextEncoder
     'TextEncoder_WordEmbedding': False,
@@ -140,7 +140,9 @@ pattern_default_setting = {
     'RemoveRange': True,
     'RemoveLastView': True,
     
-    
+    'MatMulWithTransposeScaleAdd': True,
+    'EmbeddingsTo2DBeforeInnerProduct': True,
+    'QuantGatherToBF16': False,
     'TorchInsertBF16Node': True,
     'MultiHeadAttention': True,
     'Int8BF16MixedPrecisionChecker': False,

@@ -56,7 +56,13 @@ class Gather(Operator):
                 self._attr['axis'] = 0
             
         if framework == 'torch':
-            pass
+            if node.kind() == 'aten::embedding':
+                # indices: bs x seq_len
+                # weights: max_size x hidden_size
+                # dst: bs x seq_len x hidden_size
+                self._attr['batch_dims'] = 0
+                self._attr['axis'] = 1
+                self._attr['embedding'] = True
 # tf.gather(params, indices, validate_indices=None, axis=None, batch_dims=0, name=None)
 # argument validate_indices is deprecated
 # indices must be an integer tensor of any dimension (usually 0-D or 1-D).

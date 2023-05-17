@@ -39,6 +39,7 @@ class GatherOperator : public Operator {
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void DstShapeInfer(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
  private:
   Tensor* idx_ = nullptr;

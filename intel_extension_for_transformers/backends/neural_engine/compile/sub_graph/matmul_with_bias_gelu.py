@@ -36,7 +36,7 @@ class MatMulWithBiasGelu(Pattern):
             'MatMulWithBiasGelu': [
                 {
                     'patterns': {
-                        'in': [[(0, 'MatMulWithBias'), (1, ['Gelu'])]],
+                        'in': [[(0, ['MatMulWithBias', 'InnerProduct']), (1, ['Gelu'])]],
                         'out': [[(0, 'MatMulWithBiasGelu')]]
                     },
                     'search_mode': 'op_type',

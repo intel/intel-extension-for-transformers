@@ -52,6 +52,8 @@ class LayerNormOperator : public Operator {
   void ReshapewithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
+  void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
  private:
   std::string output_dtype_;
   bool weight_cached_;
@@ -70,6 +72,9 @@ class LayerNormOperator : public Operator {
   jd::tensor_desc dst_desc_;
   jd::layernorm_ba layernorm_ba_ker;
 #endif
+  vector<int64_t> reshape_;
+  vector<int64_t> reshape_dims_;
+  vector<int64_t> mul_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_LAYER_NORM_HPP_

@@ -566,5 +566,61 @@
     },
     "launcher": {
     }
+  },
+  "electra_base_chinese_generator": {
+    "working_dir": "huggingface/pytorch/language-modeling/deployment/fill-mask/electra_base_chinese",
+    "data_dir": "",
+    "hf_model_name": "hfl/chinese-legal-electra-base-generator",
+    "prepare": {
+      "cmd": "python export_ir.py",
+      "params": {
+         "model_name": "/tf_dataset2/models/nlp_toolkit/chinese-legal-electra-base-generator",
+         "dtype": "fp32/bf16",
+         "output_model": "gen_ir",
+         "pt_file": "gen_model.pt"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_electra.py",
+      "params": {
+        "generator_model_name": "/tf_dataset2/models/nlp_toolkit/chinese-legal-electra-base-generator",
+        "generator_ir_path": "gen_ir",
+        "generator_or_discriminator": "generator",
+        "mode": "accuracy/performance",
+        "seq_len": 16,
+        "warm_up": 100,
+        "iterations": 1000
+      }
+    },
+    "launcher": {
+    }
+  },
+  "electra_base_chinese_discriminator": {
+    "working_dir": "huggingface/pytorch/language-modeling/deployment/fill-mask/electra_base_chinese",
+    "data_dir": "",
+    "hf_model_name": "hfl/chinese-electra-base-discriminator",
+    "prepare": {
+      "cmd": "python export_ir.py",
+      "params": {
+         "model_name": "/tf_dataset2/models/nlp_toolkit/chinese-electra-base-discriminator",
+         "dtype": "fp32/bf16",
+         "output_model": "dis_ir",
+         "pt_file": "dis_model.pt"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_electra.py",
+      "params": {
+        "discriminator_model_name": "/tf_dataset2/models/nlp_toolkit/chinese-electra-base-discriminator",
+        "discriminator_ir_path": "dis_ir",
+        "generator_or_discriminator": "discriminator",
+        "mode": "accuracy/performance",
+        "seq_len": 16,
+        "warm_up": 100,
+        "iterations": 1000
+      }
+    },
+    "launcher": {
+    }
   }
 }

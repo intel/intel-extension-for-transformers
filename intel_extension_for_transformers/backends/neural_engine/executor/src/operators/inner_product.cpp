@@ -71,6 +71,10 @@ InnerProductOperator::InnerProductOperator(const shared_ptr<OperatorConfig>& con
   if (iter != attrs_map.end()) {
     StringSplit<int64_t>(&reshape_dims_, attrs_map["reshape_dims"], ",");
   }
+  iter = attrs_map.find("squeeze_dims");
+  if (iter != attrs_map.end()) {
+    StringSplit<int64_t>(&squeeze_dims_, attrs_map["squeeze_dims"], ",");
+  }
   iter = attrs_map.find("append_op");
   binary_add_ = (iter != attrs_map.end() && iter->second == "binary_add") ? true : false;
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
@@ -422,6 +426,24 @@ void InnerProductOperator::DstReshapeFusion(const vector<Tensor*>& input, const 
     vector<int64_t> dst_shape = GetDstShape(reshape, output[0]->size(), ref_shape, reshape_dims_);
     output[0]->set_shape(dst_shape);
   }
+  if (!squeeze_dims_.empty()) {
+      vector<int64_t> dst_shape = output[0]->shape();
+      vector<int64_t> squeeze_shape;
+      int j = 0;
+      int64_t axis = 0;
+      for (int i = 0; i < dst_shape.size(); ++i) {
+        if (j < squeeze_dims_.size()) {
+          axis = squeeze_dims_[j] < 0 ? squeeze_dims_[j] + dst_shape.size() : squeeze_dims_[j];
+        }
+        if (axis != i) {
+          squeeze_shape.push_back(dst_shape[i]);
+        } else {
+          LOG_IF(FATAL, dst_shape[i] != 1) << "Only support to squeeze axis which has size 1!";
+          j++;
+        }
+      }
+      output[0]->set_shape(squeeze_shape);
+    }
 }
 
 void InnerProductOperator::PrepareSparse(const vector<Tensor*>& input, const vector<Tensor*>& output) {

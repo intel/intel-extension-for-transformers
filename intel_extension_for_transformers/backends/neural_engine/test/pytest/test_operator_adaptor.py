@@ -56,12 +56,13 @@ class TestOperatorAdaptor(unittest.TestCase):
         output_tensors = [Tensor(name='gather2:0', source_op=['gather2'], dest_op=[])]
         gather2_node.construct('gather2', 'Gather', input_tensors=input_tensors, 
                                 output_tensors=output_tensors)
+        gather2_node._filling_method = 'extract_from_onnxruntime'
 
         graph.insert_nodes(len(graph.nodes), [input_data_node, gather1_node, gather2_node])
         graph = OperatorAdaptor()(graph)
         self.assertEqual(3, len(graph.nodes))
-        self.assertEqual(0, graph.nodes[1].input_tensors[0].data.item())
-        self.assertEqual('construct', graph.nodes[2].filling_method)
+        self.assertEqual(0, graph.nodes[1].input_tensors[1].data.item())
+        self.assertEqual(0, graph.nodes[2].input_tensors[1].data.item())
 
     def test_reshape_non_2d_src_before_inner_product(self):
         graph = Graph()
@@ -92,6 +93,32 @@ class TestOperatorAdaptor(unittest.TestCase):
         self.assertEqual('Reshape', graph.nodes[2].op_type)
         self.assertEqual('-1,768', graph.nodes[2].attr['dst_shape'])
 
+    def test_ip_squeeze(self):
+        graph = Graph()
+        graph.framework_modeling_config['framework'] = 'torch'
+        input_data_node = OPERATORS['Input']()
+        input_tensors = []
+        output_tensors = [Tensor(), Tensor(), Tensor()]
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        ip_node = OPERATORS['InnerProduct']()
+        input_tensors = [Tensor(name='ip_src0'),
+                         Tensor(name='ip_idx:0', data=np.array(1).astype("float32"))]
+        output_tensors = [Tensor(name='ip:0', source_op=['ip'], dest_op=['squeeze'])]
+        ip_node.construct('ip', 'InnerProduct', input_tensors=input_tensors,
+                                output_tensors=output_tensors)
+
+        squeeze_node = OPERATORS['Squeeze']()
+        input_tensors = [Tensor(name='ip:0', source_op=['ip'], dest_op=['squeeze'])]
+        output_tensors = [Tensor(name='squeeze:0', source_op=['squeeze'], dest_op=[])]
+        squeeze_node.construct('squeeze', 'Squeeze', input_tensors=input_tensors,
+                                output_tensors=output_tensors, attr=OrderedDict({'axes': 1}))
+
+        graph.insert_nodes(len(graph.nodes), [input_data_node, ip_node, squeeze_node])
+        graph = OperatorAdaptor()(graph)
+        self.assertEqual(2, len(graph.nodes))
+        self.assertEqual(1, graph.nodes[1].attr['squeeze_dims'])
 
 if __name__ == "__main__":
     unittest.main()
