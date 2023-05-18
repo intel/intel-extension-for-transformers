@@ -60,6 +60,7 @@ Submodules
    reduce_sum/index.rst
    reorder/index.rst
    reshape/index.rst
+   resize/index.rst
    rsub/index.rst
    scatter_elements/index.rst
    shape/index.rst

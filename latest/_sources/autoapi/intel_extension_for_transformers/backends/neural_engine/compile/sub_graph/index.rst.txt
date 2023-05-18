@@ -23,7 +23,6 @@ Submodules
    attentionBlock_ConstantOfShapeWithMul/index.rst
    attentionBlock_QKVPreReshape/index.rst
    attentionBlock_QKVReshape/index.rst
-   attentionBlock_Resize2Gather/index.rst
    attentionBlock_WeightReshapeTo4D/index.rst
    attention_mask_length_adaptive_keep_indices/index.rst
    attention_output_layer_norm_length_adaptive_keep_indices/index.rst
@@ -84,8 +83,6 @@ Submodules
    reshape_before_and_after_attention_out_layer_norm_gather_elements/index.rst
    reshape_before_restore_hidden_states/index.rst
    reshape_fusion/index.rst
-   resnetBlock_instancenormReshapeFromConv/index.rst
-   resnetBlock_instancenormReshapeFromdiv/index.rst
    restore_hidden_states_in_length_adaptive_update_indices/index.rst
    rms_norm/index.rst
    rotary_pos_emb/index.rst
@@ -119,10 +116,7 @@ Submodules
    transformer2Dmodel_QKVReshape4D/index.rst
    transformer2Dmodel_encoderHiddenStatesReshape/index.rst
    transformer2Dmodel_getSampleBatch/index.rst
-   transformer2Dmodel_instancenormReshapeFromAdd/index.rst
-   transformer2Dmodel_instancenormReshapeFromConcat/index.rst
    transformer2Dmodel_sampleSlice/index.rst
-   transformer2Dmodel_upBlockResize/index.rst
    transpose_batch_matmul/index.rst
    word_embeddings/index.rst
 
