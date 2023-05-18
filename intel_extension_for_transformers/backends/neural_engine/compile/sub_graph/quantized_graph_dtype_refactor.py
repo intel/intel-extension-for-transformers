@@ -157,7 +157,7 @@ class QuantizedGraphDtypeCheck(Pattern):
         bf16_op = [
             'InnerProduct', 'Slice', 'Matmul', 'Reshape', 'BinaryOp', 'BinaryAdd', 'Reorder',
             'Concat', 'Softmax', 'LayerNorm', 'LogSoftmax', 'Convolution', 'Gather', 'GroupNorm',
-            'Sigmoid', 'Gelu', 'MultiHeadAttention'
+            'Sigmoid', 'Gelu', 'MultiHeadAttention', 'Resampling'
         ]
         s8_op = ['InnerProduct', 'Reshape', 'Shape', 'BinaryOp']
         checker = {'bf16': bf16_op, 's8': s8_op}

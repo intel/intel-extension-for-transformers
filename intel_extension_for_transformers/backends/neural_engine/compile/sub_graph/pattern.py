@@ -61,7 +61,6 @@ supported_patterns = [
     'TextEncoder_CasualAttentionMask',
 
     #Vae decoder & Transformer2Dmodel
-    'AttentionBlock_Resize2Gather',
     'GroupNorm',
     'GroupNormSwish',
     'AttentionBlock_QKVPreReshape',
@@ -79,7 +78,6 @@ supported_patterns = [
     'Transformer2Dmodel_AttentionMaskAddReshape',
     'Transformer2Dmodel_FFNInputSlice',
     'Transformer2Dmodel_FFNInputSlice_1',
-    'Transformer2DModel_UpBlockResize',
 
     # General
     'QKVReshape',

@@ -51,7 +51,6 @@ unet_pattern_config = {
         'GroupNorm': True,
 
         # vae deocder & Transformer2Dmodel
-        'AttentionBlock_Resize2Gather': True,
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
         'AttentionBlock_ConstantOfShapeWithMul': True,
@@ -66,7 +65,6 @@ unet_pattern_config = {
         'Transformer2Dmodel_AttentionMaskAddReshape': True,
         'Transformer2Dmodel_FFNInputSlice': True,
         'Transformer2Dmodel_FFNInputSlice_1': True,
-        'Transformer2DModel_UpBlockResize': True,
 
         # for all stable diffusion models
         'StableDiffusion_bf16Convert': True,

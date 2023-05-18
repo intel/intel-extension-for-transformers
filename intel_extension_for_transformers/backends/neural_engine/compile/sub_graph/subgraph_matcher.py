@@ -71,6 +71,7 @@ EXECUTOR_TYPE = {
     'Neg': "BinaryOp",
     "Sin": "CosSin",
     "Cos": "CosSin",
+    "Resize": "Resampling",
 }
 
 pattern_default_setting = {
@@ -99,7 +100,6 @@ pattern_default_setting = {
     'TextEncoder_CasualAttentionMask': False,
 
     # vae deocder & Transformer2Dmodel
-    'AttentionBlock_Resize2Gather': False,
     'AttentionBlock_QKVPreReshape': False,
     'AttentionBlock_AttentionMaskAddReshape': False,
     'AttentionBlock_ConstantOfShapeWithMul': False,
@@ -115,7 +115,6 @@ pattern_default_setting = {
     'Transformer2Dmodel_AttentionMaskAddReshape': False,
     'Transformer2Dmodel_FFNInputSlice': False,
     'Transformer2Dmodel_FFNInputSlice_1': False,
-    'Transformer2DModel_UpBlockResize': False,
 
     # for all stable diffusion models
     'StableDiffusion_bf16Convert': False,
