@@ -100,7 +100,7 @@ We provide FP32/BF16 inference, INT8 inference, and other advanced compression t
   <tr>
     <td>Quant aware training</td>
     <td>FxGraph mode</td>
-    <td><a href="https://huggingface.co/abeja/gpt-neox-japanese-2.7b" target="_blank" rel="noopener noreferrer"><b>abeja/gpt-neox-japanese-2.7b</b></a></td>
+    <td><a href="https://huggingface.co/EleutherAI/gpt-neox-125m" target="_blank" rel="noopener noreferrer"><b>EleutherAI/gpt-neox-125m</b></a></td>
     <td>train dataset<br>- wikitext<br>validation dataset<br>- wikitext</td>
   </tr>
   <tr>
