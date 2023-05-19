@@ -1,0 +1,1 @@
+add_unit_test(buff_compare kernel_func.hpp main.cpp)

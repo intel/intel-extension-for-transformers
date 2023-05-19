@@ -1,0 +1,107 @@
+# Intel® Xe Templates for Linear Algebra [v0.3.1](./CHANGELOG.md)
+Intel® Xe Templates for Linear Algebra (Intel® XeTLA) is a collection of SYCL/eSIMD templates that enable high-performance General Matrix Multiply (GEMM), Convolution (CONV), and related computations on Intel Xe GPU architecture. Intel® XeTLA offers reusable C++ templates for subgroup, workgroup, and kernel levels, allowing developers to optimize and specialize kernels based on data types, tiling policies, algorithms, fusion policies, and more. 
+
+One of the key features of Intel® XeTLA is its ability to abstract and hide details of Xe hardware implementations, particularly those related to matrix computations, such as the systolic array and other low level instructions. This ensures that SYCL/DPC++ developers can focus on leveraging the performance benefits of Intel® XeTLA without being burdened by hardware-specific instructions.
+
+<!-- @cond -->
+## Compatibility
+
+### Hardware
+Intel® Data Center GPU Max Series, Driver Version: [602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html)
+
+### Software
+Intel® XeTLA requires a C++20 host compiler.
+
+- Operating Systems
+
+    Ubuntu 22.04(64-bit)
+
+- Package
+    |Package|Version|Installation|
+    |-|-|-|
+    |Intel GPU driver|[602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html)|[Install Intel GPU driver](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series)|
+    |Intel® oneAPI Base Toolkit|[2023.1](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html)|[Install Intel® oneAPI Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html)|
+
+<!-- @endcond -->
+
+## Features
+
+### GEMM
+- Data type
+    - Vector-engine-based: `fp32`
+    - Matrix-engine-based: `tf32`, `fp16`, `bf16`
+- Memory layout
+    - Matrix A: row-major, col-major
+    - Matrix B: row-major, col-major
+    - Matrix C: row-major
+- Epilogue
+    - Bias_add
+    - Relu
+    - Gelu forward + backward
+
+<!-- @cond -->
+
+## Documentation
+
+- [Quick Start](media/docs/quick_start.md) introduces how to build and run tests/examples.
+- [API Reference](https://silver-eureka-80eaaa34.pages.github.io/) provides a comprehensive reference of the library APIs.
+- [Programming Guidelines](./media/docs/programming_guidelines.md) explains programming model, functionalities, implementation details, and annotated examples.
+- [Terminology](./media/docs/terminology.md) describes terms used in the project.
+- [Release Notes](./CHANGELOG.md) describes new features and known issues.
+ 
+## Project Structure
+
+```
+include/                       # Definitions of Intel® XeTLA APIs
+    common/                    #    - Low level APIs that wrap the same functionality APIs from ESIMD
+    experimental/              #    - Experimental features
+    group/                     #    - Group level APIs 
+    kernel/                    #    - Kernel level APIs
+    subgroup/                  #    - Subgroup level APIs
+    xetla.hpp                  #    - Unified and unique external head file
+
+tests/                         # Tests to verify correctness of Intel® XeTLA APIs
+    integration/               #    - Integration testes
+    unit/                      #    - Unit tests
+    utils/                     #    - Utils implement of unit and integration tests
+
+examples/                      # Examples of Intel® XeTLA basic/fused kernels
+
+tools/                         # Tools for code format, build environment...
+
+media/                         # Documents
+```
+
+## Contributing
+
+Refer to [Contributing Guidelines](./CONTRIBUTING.md).
+
+
+## Limitations
+
+Refer to [Limitations](./media/docs/limitations.md).
+
+<!-- @endcond -->
+
+## Security
+
+See Intel's [Security Center](https://www.intel.com/content/www/us/en/security-center/default.html)
+for information on how to report a potential security issue or vulnerability.
+
+See also: [Security Policy](SECURITY.md)
+
+## Copyright
+
+Copyright (c) 2022-2023 Intel Corporation
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+

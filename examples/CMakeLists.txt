@@ -1,0 +1,13 @@
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR})
+
+add_subdirectory(01_basic_gemm)
+add_subdirectory(02_basic_brgemm)
+add_subdirectory(03_gemm_relu_bias)
+add_subdirectory(04_brgemm_polynomial)
+add_subdirectory(05_batch_gemm)
+add_subdirectory(06_splitk_brgemm)
+add_subdirectory(07_gemm_softmax)
+add_subdirectory(08_multi_layer_perceptron)
+add_subdirectory(09_multi_head_attention)
+add_subdirectory(10_gate_recurrent_unit)

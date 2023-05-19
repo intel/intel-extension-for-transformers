@@ -1,57 +1,72 @@
-# Contributing
+# Contributing Guidelines
 
-### License
+## Code Contribution Guidelines
 
-<PROJECT NAME> is licensed under the terms in [LICENSE]<link to license file in repo>. By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
+When submitting your contribution, please make sure that it is:
 
-### Sign your work
+* *Tested*: Intel® XeTLA uses gtests for lightweight functional testing. Be sure to extend the existing tests when fixing an issue.
+* *Documented*: Intel® XeTLA uses Doxygen for inline comments in public header files that is used to build reference manual and markdown (also processed by Doxygen) for user guide.
 
-Please use the sign-off line at the end of the patch. Your signature certifies that you wrote the patch or otherwise have the right to pass it on as an open-source patch. The rules are pretty simple: if you can certify
-the below (from [developercertificate.org](http://developercertificate.org/)):
+All code in Intel® XeTLA gets promoted to main branch only through GitHub pull requests. Requirements for promotion:
 
+- The request is reviewed and approved by maintainers for all affected components.
+- All discussions in the pull request are resolved.
+- Continuous integration pipeline passed without errors.
+- The pull request author is responsible for collecting all the necessary approvals, rebasing of the changes, and resolving the discussions.
+
+To simplify the work of reviewers, make sure that the commits in the pull request adhere to the following requirements:
+
+- Commit message should follow the format:
+  `<scope>: <short description>`
+  Scope examples:
+  * `feature`, `api`, `doc`, `tests`, `common`
+  * Example commit message:
+    ~~~git
+      doc: update environment section in readme
+    ~~~
+* Intel® XeTLA branches maintain linear history. Rebase the changes on top of target branch before creating a pull request. Rebase again after resolving all the discussions, as well as in case of merge conflicts.
+
+- Use `git add -p`  and `git rebase -i` liberally to split unrelated changes into multiple self-contained commits. This is a courtesy to reviewers: smaller commits are easier to comprehend. It also helps with bisecting in the future. Of course judgement needs to be applied whether to split changes or not. For example, split code cleanup and the actual fix into two separate patches.
+
+## Coding Standards
+
+### Automatic Detection
+
+Intel® XeTLA uses [clang-tidy](https://clang.llvm.org/extra/clang-tidy/) in order to diagnose and fix common style violations and easy-to-fix issues in the code base. For instructions on how to use `clang-tidy`, please refer to the [clang-tidy RFC](https://github.com/oneapi-src/oneDNN/blob/rfcs/rfcs/20200813-clang-tidy/README.md).
+The list of clang-tidy checks the Intel® XeTLA code base follows is available in the `.clang-tidy` file found in the Intel® XeTLA top-level directory.
+
+### Automatic Doxygen Comments Generation
+If you use vscode, you can use *Doxygen Documentation Generator* plugin to automatically generate the comments.
+For consistency, please set Comment Prefix to `/// `, First Line to ` `, Last line to `/// `
+
+
+### Coding Style
+
+The coding style consistency in Intel® XeTLA is maintained using `clang-format`. When submitting your contribution, please make sure that it adheres to the existing coding style with the following command:
+```sh
+clang-format-14 -style=file:tools/clang-format/_clang-format -i foo.cpp
 ```
-Developer Certificate of Origin
-Version 1.1
+This will format the code using file [_clang-format](./tools/clang-format/_clang-format).
 
-Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
-660 York Street, Suite 102,
-San Francisco, CA 94110 USA
+A pre-commit hook is also provided to ensure you do the clang-format when doing git commit, please refer to [enable clang-format in git](./tools/scripts/clang_format.sh).
 
-Everyone is permitted to copy and distribute verbatim copies of this
-license document, but changing it is not allowed.
+### General
 
-Developer's Certificate of Origin 1.1
+- Use properly named constants whenever possible (unless this code is auto-generated).
+  * For example,
+    ~~~cpp
+    if (x < 4) y = 64;
+    ~~~
+  
+    In this example, 4 and 64 should be named, in which case the code becomes:
+    ~~~cpp
+    if (x < sizeof(float)) y = cache_line_size;
+    ~~~
+  
+- Don't use `using namespace XXX` in header files.
 
-By making a contribution to this project, I certify that:
+- Avoid code duplication (look for similarities), unless it is necessary.
 
-(a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the open source license
-    indicated in the file; or
-
-(b) The contribution is based upon previous work that, to the best
-    of my knowledge, is covered under an appropriate open source
-    license and I have the right under that license to submit that
-    work with modifications, whether created in whole or in part
-    by me, under the same open source license (unless I am
-    permitted to submit under a different license), as indicated
-    in the file; or
-
-(c) The contribution was provided directly to me by some other
-    person who certified (a), (b) or (c) and I have not modified
-    it.
-
-(d) I understand and agree that this project and the contribution
-    are public and that a record of the contribution (including all
-    personal information I submit with it, including my sign-off) is
-    maintained indefinitely and may be redistributed consistent with
-    this project or the open source license(s) involved.
-```
-
-Then you just add a line to every git commit message:
-
-    Signed-off-by: Joe Smith <joe.smith@email.com>
-
-Use your real name (sorry, no pseudonyms or anonymous contributions.)
-
-If you set your `user.name` and `user.email` git configs, you can sign your
-commit automatically with `git commit -s`.
+- Declare variables in the innermost possible scope until there are some circumstances that make you declare them somewhere else.
+  
+- Consider using utils to improve readability (`IMPLICATION`, `one_of`,`everyone_is`).

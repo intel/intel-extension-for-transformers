@@ -1,0 +1,16 @@
+__pycache__/
+.pytest_cache
+*.py[cod]
+*$py.class
+build
+.cache/
+*.so
+*.dll
+*.pyc
+
+# test output of ci
+/_output
+/_report
+
+# windows
+.vs
