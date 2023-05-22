@@ -18,7 +18,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -50,7 +50,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
          "max_throughput": {
           "mode": "max_throughput",
@@ -82,7 +82,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -114,7 +114,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -146,7 +146,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -178,7 +178,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -210,7 +210,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -242,7 +242,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -274,7 +274,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -306,7 +306,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -338,7 +338,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -370,7 +370,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -402,7 +402,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -432,7 +432,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",
@@ -463,7 +463,7 @@
       }
     },
     "launcher": {
-      "cmd": "huggingface/pytorch/text-classification/deployment/launcher.py",
+      "cmd": "huggingface/pytorch/neural_engine_utils/launcher.py",
       "params": {
         "max_throughput": {
           "mode": "max_throughput",

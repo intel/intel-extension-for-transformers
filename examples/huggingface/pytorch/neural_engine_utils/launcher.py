@@ -395,7 +395,7 @@ class Launcher():
     sockets = CPUinfo().get_sockets()
     current_path = os.path.abspath(os.getcwd())
     launcher_env = os.environ.copy()
-    project_path = Path(os.path.abspath(os.getcwd())).parent.parent.parent.parent.parent.absolute()
+    project_path = Path(os.path.abspath(os.getcwd())).parent.parent.parent.parent.absolute()
 
     def __init__(self):
         print("Launcher init")
@@ -768,7 +768,7 @@ def main():
     args = parse_args()
 
     script_path = Path(os.path.abspath(os.getcwd()))
-    project_path = script_path.parent.parent.parent.absolute()
+    project_path = script_path.parent.parent.parent.parent.absolute()
 
     dump_log_path = "{}/{}".format(script_path, args.output_file)
     if os.path.exists(dump_log_path):
