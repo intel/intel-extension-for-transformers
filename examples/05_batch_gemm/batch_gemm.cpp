@@ -16,40 +16,7 @@
 #include "tests/utils/utils.hpp"
 #include "xetla.hpp"
 
-using namespace cl::sycl;
-using namespace gpu::xetla;
-using namespace gpu;
-
 enum class batch_impl_t { for_loop = 0, nd_range = 1 };
-
-template <typename data_type_a, typename data_type_b, typename data_type_c,
-        typename data_type_acc = float>
-int batch_gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
-        uint32_t batch_size, uint32_t m, uint32_t k, uint32_t n,
-        mem_layout mem_layout_a_ = mem_layout::row_major,
-        mem_layout mem_layout_b_ = mem_layout::row_major) {
-    bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;
-    bool is_col_major_b = mem_layout_b_ == mem_layout::col_major;
-    // define slice of each matrices
-    uint32_t size_a_slice = m * k;
-    uint32_t size_b_slice = k * n;
-    uint32_t size_c_slice = m * n;
-    buff_cmp::buff_vals<data_type_c> data(C, batch_size * m, n, n);
-    std::vector<data_type_acc> gold_C(batch_size * m * n, 0);
-    for (uint32_t batch = 0; batch < batch_size; batch++) {
-        get_gemm_gold<data_type_a, data_type_b, data_type_acc>(m, n, k,
-                mem_layout_a_, mem_layout_b_, A + size_a_slice * batch,
-                B + size_b_slice * batch, gold_C.data() + size_c_slice * batch);
-    }
-    buff_cmp::buff_vals<data_type_c, data_type_acc> other(
-            gold_C.data(), batch_size * m, n, n);
-
-    bool result
-            = buff_cmp::xetla_buff_cmp(data, other, "batch_gemm validation");
-
-    std::cout << (!result ? "FAILED\n" : "PASSED\n");
-    return result ? 0 : 1;
-}
 
 template <batch_impl_t batch_impl = batch_impl_t::for_loop>
 void batch_gemm_run(uint32_t iter) {
@@ -216,7 +183,7 @@ void batch_gemm_run(uint32_t iter) {
     }
 
     ASSERT_EQ(0,
-            batch_gemm_result_validate(A, B, C, batch_size, matrix_m, matrix_k,
+            gemm_result_validate(A, B, C, batch_size, matrix_m, matrix_k,
                     matrix_n, mem_layout::row_major, mem_layout::row_major));
 
     //performance

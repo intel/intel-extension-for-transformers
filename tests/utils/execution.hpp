@@ -19,6 +19,7 @@
 #include "profiling.hpp"
 
 using namespace cl::sycl;
+using namespace gpu;
 using namespace gpu::xetla;
 
 template <class Test, typename data_type_a, typename data_type_b,

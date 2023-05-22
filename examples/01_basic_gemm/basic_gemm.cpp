@@ -16,32 +16,6 @@
 #include "tests/utils/utils.hpp"
 #include "xetla.hpp"
 
-using namespace cl::sycl;
-using namespace gpu::xetla;
-using namespace gpu;
-
-template <typename data_type_a, typename data_type_b, typename data_type_c,
-        typename data_type_acc = float>
-int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
-        uint32_t m, uint32_t k, uint32_t n,
-        mem_layout mem_layout_a_ = mem_layout::row_major,
-        mem_layout mem_layout_b_ = mem_layout::row_major) {
-    bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;
-    bool is_col_major_b = mem_layout_b_ == mem_layout::col_major;
-    buff_cmp::buff_vals<data_type_c> data(C, m, n, n);
-    std::vector<data_type_acc> gold_C(m * n, 0);
-    get_gemm_gold<data_type_a, data_type_b, data_type_acc>(
-            m, n, k, mem_layout_a_, mem_layout_b_, A, B, gold_C.data());
-    buff_cmp::buff_vals<data_type_c, data_type_acc> other(
-            gold_C.data(), m, n, n);
-
-    bool result
-            = buff_cmp::xetla_buff_cmp(data, other, "basic_gemm validation");
-
-    std::cout << (!result ? "FAILED\n" : "PASSED\n");
-    return result ? 0 : 1;
-}
-
 void basic_gemm_run(uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
@@ -162,7 +136,7 @@ void basic_gemm_run(uint32_t iter) {
     }
 
     ASSERT_EQ(0,
-            gemm_result_validate(A, B, C, matrix_m, matrix_k, matrix_n,
+            gemm_result_validate(A, B, C, 1, matrix_m, matrix_k, matrix_n,
                     mem_layout::row_major, mem_layout::row_major));
 
     //performance

@@ -19,8 +19,6 @@
 #include "utils/common.hpp"
 #include <gtest/gtest.h>
 
-using namespace cl::sycl;
-
 template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_param>
 int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,

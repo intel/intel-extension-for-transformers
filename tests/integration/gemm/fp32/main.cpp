@@ -23,7 +23,6 @@ using data_type_a = float;
 using data_type_b = float;
 using data_type_c = float;
 using data_type_acc = float;
-using namespace cl::sycl;
 
 std::string esimd_compile_string
         = " -vc-codegen -doubleGRF  -Xfinalizer ' -printregusage -noLocalSplit "

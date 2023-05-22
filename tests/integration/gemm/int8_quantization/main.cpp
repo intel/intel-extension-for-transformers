@@ -19,7 +19,6 @@
 #include "utils/common.hpp"
 #include <gtest/gtest.h>
 
-using namespace cl::sycl;
 class Test1;
 
 template <typename data_type_a, typename data_type_b, typename data_type_c,

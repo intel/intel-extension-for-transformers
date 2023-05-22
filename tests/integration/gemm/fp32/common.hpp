@@ -18,6 +18,7 @@
 
 #include "kernel_func.hpp"
 #include "utils/buff_compare.hpp"
+#include "utils/common.hpp"
 #include "utils/gemm_gen.hpp"
 #include <gtest/gtest.h>
 
@@ -190,18 +191,8 @@ class result_validate {
 
 public:
     int operator()(dtype_a *A, dtype_b *B, dtype_c *C) {
-
-        buff_cmp::buff_vals<dtype_c> data(
-                C, Test::mat_m, Test::mat_n, Test::mat_n);
-        std::vector<dtype_acc> acc_buffer(Test::mat_m * Test::mat_n, 0);
-        get_gemm_gold(Test::mat_m, Test::mat_n, Test::mat_k, Test::layout_a,
-                Test::layout_b, A, B, acc_buffer.data());
-        buff_cmp::buff_vals<dtype_c, dtype_acc> other(
-                acc_buffer.data(), Test::mat_m, Test::mat_n, Test::mat_n);
-        bool result = buff_cmp::xetla_buff_cmp(data, other,
-                Test::name(Test::mat_m, Test::mat_n, Test::mat_k, Test::wg_m,
-                        Test::wg_n, Test::sg_m, Test::sg_n, Test::sg_k,
-                        Test::layout_a, Test::layout_b));
-        return result ? 0 : 1;
+        return gemm_result_validate<dtype_a, dtype_b, dtype_c, dtype_acc>(A, B,
+                C, 1, Test::mat_m, Test::mat_k, Test::mat_n, Test::layout_a,
+                Test::layout_b);
     }
 };

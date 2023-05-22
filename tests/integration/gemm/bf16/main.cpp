@@ -19,8 +19,6 @@
 #include "utils/utils.hpp"
 #include <gtest/gtest.h>
 
-using namespace cl::sycl;
-
 std::string esimd_compile_string
         = " -vc-codegen -doubleGRF "
           " -vc-disable-indvars-opt "

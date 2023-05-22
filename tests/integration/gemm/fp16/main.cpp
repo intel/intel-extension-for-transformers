@@ -393,38 +393,9 @@ class result_validate {
 
 public:
     int operator()(dtype_a *A, dtype_b *B, dtype_c *C) {
-
-        buff_cmp::buff_vals<dtype_c> data(
-                C, Test::mat_m, Test::mat_n, Test::mat_n);
-        std::vector<dtype_acc> acc_buffer(Test::mat_m * Test::mat_n, 0);
-
-        {
-            bool is_col_major_a = Test::layout_a == mem_layout::col_major;
-            bool is_col_major_b = Test::layout_b == mem_layout::col_major;
-            for (int i = 0; i < Test::mat_m; i++) {
-                for (int j = 0; j < Test::mat_n; j++) {
-                    for (int k = 0; k < Test::mat_k; k++) {
-                        dtype_acc a_temp = is_col_major_a
-                                ? A[i + k * Test::mat_m]
-                                : A[i * Test::mat_k + k];
-                        dtype_acc b_temp = is_col_major_b
-                                ? B[k + j * Test::mat_k]
-                                : B[k * Test::mat_n + j];
-                        acc_buffer[i * Test::mat_n + j]
-                                = acc_buffer[i * Test::mat_n + j]
-                                + a_temp * b_temp;
-                    }
-                }
-            }
-        }
-
-        buff_cmp::buff_vals<dtype_c, dtype_acc> other(
-                acc_buffer.data(), Test::mat_m, Test::mat_n, Test::mat_n);
-        bool result = buff_cmp::xetla_buff_cmp(data, other,
-                Test::name(Test::mat_m, Test::mat_n, Test::mat_k, Test::wg_m,
-                        Test::wg_n, Test::sg_m, Test::sg_n, Test::sg_k,
-                        Test::layout_a, Test::layout_b));
-        return result ? 0 : 1;
+        return gemm_result_validate<dtype_a, dtype_b, dtype_c, dtype_acc>(A, B,
+                C, 1, Test::mat_m, Test::mat_k, Test::mat_n, Test::layout_a,
+                Test::layout_b);
     }
 };
 
@@ -453,6 +424,6 @@ TYPED_TEST_P(fp16_gemm_test, esimd) {
 }
 REGISTER_TYPED_TEST_SUITE_P(fp16_gemm_test, esimd);
 using tests = ::testing::Types<Test0, Test1, Test2, Test3, Test4, Test5, Test6,
-        Test7, Test8, Test9, Test10, Test11, Test12,
-        Test13 /*comment these shapes due to taking long time, Test14, Test15, Test16*/>;
+        Test7, Test8, Test9, Test10, Test11, Test12, Test13, Test14, Test15,
+        Test16>;
 INSTANTIATE_TYPED_TEST_SUITE_P(fp16_gemm_test_suite, fp16_gemm_test, tests);
