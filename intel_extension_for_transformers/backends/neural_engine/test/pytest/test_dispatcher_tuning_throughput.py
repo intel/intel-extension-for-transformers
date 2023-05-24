@@ -70,7 +70,7 @@ class MRPCDataSet():
 def load_model(engine_model_path):
     model = Graph()
     model.graph_init(os.path.join(engine_model_path, "conf.yaml"),
-                    os.path.join(engine_model_path, "model.bin"))
+                    os.path.join(engine_model_path, "model.bin"), load_weight=True)
     return model
 def run():
     os.environ['GLOG_minloglevel']='2'

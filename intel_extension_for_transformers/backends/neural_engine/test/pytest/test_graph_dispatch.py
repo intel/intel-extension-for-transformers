@@ -21,6 +21,7 @@ import numpy as np
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 import sys
 import copy
+from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 
 def is_win():
     return sys.platform.startswith('win')
@@ -48,7 +49,8 @@ class TestGraphDispatch(unittest.TestCase):
             int8_model_path = "D:\\dataset\\nlptoolkit_ut_model\\bert_mini_int8_original_IR"
         self.assertTrue(os.path.exists(int8_model_path),
             'INT8 IR model is not found, please set your own model path!')
-        int8_model = compile(int8_model_path)
+        int8_model = Graph()
+        int8_model.graph_init(int8_model_path + '/conf.yaml', int8_model_path + '/model.bin', load_weight=True)
         int8_output_dict = int8_model.inference([input_0, input_1, input_2])
         int8_output = copy.deepcopy(list(int8_output_dict.values())[0])
         # sparse graph tuning

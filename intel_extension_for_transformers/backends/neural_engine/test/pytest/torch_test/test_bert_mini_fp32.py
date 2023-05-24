@@ -57,7 +57,7 @@ class TestTorchModel(unittest.TestCase):
         graph = compile(pt_file)
         graph.save(file_name)
         newgraph = Graph()
-        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
+        newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin', load_weight=True)
         self.assertTrue(newgraph.nodes[-1].name == 'output_data')
         self.assertTrue(newgraph.nodes[-1].input_tensors[-1].name == '268')
         # out = newgraph.inference([ids.numpy(), tok.numpy(), att.numpy(), ids.numpy()])

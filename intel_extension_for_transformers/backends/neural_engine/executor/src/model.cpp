@@ -170,6 +170,7 @@ void Model::Init(const ModelConfig& conf) {
       SetOutput(op_conf, operator_id, output_id, &tensor_name_index_);
     }
   }
+  weight_root_ = "None";
   ConstructLLGA(op_configs);
   input_vecs_.resize(operators_.size());
   output_vecs_.resize(operators_.size());

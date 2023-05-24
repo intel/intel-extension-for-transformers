@@ -483,7 +483,7 @@ class Graph(object):
 
         return output_dict
 
-    def graph_init(self, config, weight_data=None):
+    def graph_init(self, config, weight_data=None, load_weight=False):
         """The initialization of the neural engine graph.
 
         Example::
@@ -506,9 +506,9 @@ class Graph(object):
             cfg = f.read()
         d = yaml.load(cfg, Loader=yaml.FullLoader)
         bin_file = None
-        if weight_data != None:
+        if load_weight and weight_data != None:
             bin_file = open(weight_data, 'rb')
-
+        output_list = []
         tensor_name_2_class = OrderedDict()
         for node in d['model']['operator']:
             op = None
@@ -527,7 +527,7 @@ class Graph(object):
                         tensor_dtype = attrs["dtype"]
                     tensor_location = None
                     tensor_data = None
-                    if 'location' in attrs.keys():
+                    if load_weight and 'location' in attrs.keys():
                         tensor_location = attrs['location']
                         bin_file.seek(tensor_location[0], 0)
                         tensor_data = copy.deepcopy(bin_file.read(tensor_location[1]))
@@ -556,6 +556,8 @@ class Graph(object):
             elif optype == 'Output':
                 input_tensors = []
                 for tensor_name in d['model']['operator'][node]['input']:
+                    if not load_weight:
+                        output_list.append(tensor_name)
                     tensor = tensor_name_2_class[tensor_name]
                     input_tensors.append(tensor)
                 op = util.construct_node(node, 'Output', copy.deepcopy(input_tensors))
@@ -581,7 +583,10 @@ class Graph(object):
                 op = util.construct_node(node, optype, copy.deepcopy(input_tensors),
                                          copy.deepcopy(output_tensors), attr)
             self.insert_nodes(len(self.nodes), [op])
-
+        if not load_weight and weight_data:
+            import neural_engine_py as dp
+            model = dp.Model(config, weight_data)
+            self._engine = [model, output_list]
         if bin_file:
             bin_file.close()
 
