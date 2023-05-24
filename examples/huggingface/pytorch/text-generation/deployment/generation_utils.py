@@ -2938,7 +2938,7 @@ class GenerationMixin:
                 if first_token:
                     seq_len = input_ids.size()[1]
 
-                    model_inputs["past_key_values"] = tuple([(torch.zeros([1,32,1,128]), torch.zeros([1,32,1,128])) for i in range(model_kwargs["past_kv_nums"])])
+                    model_inputs["past_key_values"] = tuple([(torch.zeros([1,model_kwargs["past_kv_nums"],1,128]), torch.zeros([1,model_kwargs["past_kv_nums"],1,128])) for i in range(model_kwargs["past_kv_nums"])])
                     model_inputs["attention_mask"] = model_inputs["attention_mask"][:1,:]
                     model_inputs["input_ids"] = model_inputs["input_ids"][:1,:]
                     model_inputs["attention_mask"] = torch.cat([torch.zeros(1, 1), model_inputs["attention_mask"]], dim=-1)
@@ -2950,7 +2950,7 @@ class GenerationMixin:
 
                 input_ids_1 = model_inputs['input_ids'].cpu().numpy().astype(np.int32)
                 attention_mask_1 = model_inputs['attention_mask'].cpu().numpy().astype(np.int32)
-                past_k_v = [model_inputs['past_key_values'][i][j] for i in range(32) for j in range(2)]
+                past_k_v = [model_inputs['past_key_values'][i][j] for i in range(model_kwargs["past_kv_nums"]) for j in range(2)]
                 predictions = engine_model.inference([input_ids_1, attention_mask_1] + past_k_v)
 
                 for key in predictions:

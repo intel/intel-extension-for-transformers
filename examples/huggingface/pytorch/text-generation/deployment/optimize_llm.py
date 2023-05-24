@@ -39,6 +39,9 @@ attention_mask = attention_mask.unsqueeze(0)
 traced_model = None
 if 'llama' in model_type:
     past_key_value_torch = tuple([(torch.zeros([1,32,34,128]), torch.zeros([1,32,34,128])) for i in range(32)])
+if 'llama_13b' in model_type:
+    past_key_value_torch = tuple([(torch.zeros([1,40,34,128]), torch.zeros([1,40,34,128])) for i in range(40)])
+
 if args.pt_file and os.path.exists(args.pt_file):
     print('PT model exists, compile will be executed.')
     traced_model = torch.jit.load(args.pt_file)

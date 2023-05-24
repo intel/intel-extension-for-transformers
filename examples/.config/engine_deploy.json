@@ -502,7 +502,7 @@
     "data_dir": "",
     "hf_model_name": "EleutherAI/gpt-j-6B",
     "prepare": {
-      "cmd": "python gen_ir.py",
+      "cmd": "python optimize_llm.py",
       "params": {
          "model": "/tf_dataset2/models/pytorch/gpt-j-6B",
          "dtype": "fp32/bf16/int8",
@@ -511,10 +511,10 @@
       }
     },
     "benchmark": {
-      "cmd": "python run_gptj.py",
+      "cmd": "python run_llm.py",
       "params": {
         "max-new-tokens": "32",
-        "ir_path": "ir"        
+        "model_path": "ir"
       }
     },
     "launcher": {
@@ -525,7 +525,7 @@
     "data_dir": "",
     "hf_model_name": "EleutherAI/gpt-j-6B",
     "prepare": {
-      "cmd": "python gen_ir.py",
+      "cmd": "python optimize_llm.py",
       "params": {
          "model": "/tf_dataset2/models/pytorch/gpt-j-6B",
          "dtype": "fp32/bf16/int8",
@@ -534,10 +534,10 @@
       }
     },
     "benchmark": {
-      "cmd": "python run_gptj.py",
+      "cmd": "python run_llm.py",
       "params": {
         "max-new-tokens": "32",
-        "ir_path": "ir"        
+        "model_path": "ir"
       }
     },
     "launcher": {
@@ -548,20 +548,21 @@
     "data_dir": "",
     "hf_model_name": "decapoda-research/llama-7b-hf",
     "prepare": {
-      "cmd": "python gen_ir.py",
+      "cmd": "python optimize_llm.py",
       "params": {
          "model": "/tf_dataset2/models/nlp_toolkit/llama-7b-hf",
          "dtype": "fp32/bf16/int8",
          "output_model": "ir",
          "pt_file": "pt",
-         "model_type": "llama"
+         "model_type": "llama_7b"
       }
     },
     "benchmark": {
-      "cmd": "python run_llama.py",
+      "cmd": "python run_llm.py",
       "params": {
         "max-new-tokens": "32",
-        "ir_path": "ir"        
+        "model_path": "ir",
+        "model_type": "llama_7b"
       }
     },
     "launcher": {
