@@ -103,6 +103,7 @@ function run_tuning {
                 DATASET_NAME="NeelNanda/pile-10k"
                 model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
                 approach="PostTrainingStatic"
+		extra_cmd=$extra_cmd" --int8_bf16_mixed"
         fi
     elif [ "${topology}" = "opt_2.7b" ]; then
         if [ "${backend}" = "ipex" ]; then
@@ -124,13 +125,14 @@ function run_tuning {
         extra_cmd=$extra_cmd" --int8_bf16_mixed"
     elif [ "${topology}" = "llama_7b" ]; then
         if [ "${backend}" = "ipex" ]; then
+            alpha=0.8
             extra_cmd=$extra_cmd" --ipex"
+	    extra_cmd=$extra_cmd" --calib_iters 100"
         fi
         script="run_clm_no_trainer.py"
         DATASET_NAME="NeelNanda/pile-10k"
         model_name_or_path="decapoda-research/llama-7b-hf"
         approach="PostTrainingStatic"
-	    extra_cmd=$extra_cmd" --int8_bf16_mixed"
     elif [ "${topology}" = "bert" ]; then
         if [ "${task}" = "mlm" ]; then
             script="run_mlm.py"
@@ -203,7 +205,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --smooth_quant --sampling_size 400 --torchscript"
     fi
 
-    if [ ${script} = "run_clm_no_trainer.py" ];then
+    if [ "${script}" = "run_clm_no_trainer.py" ];then
         python -u ./${script} \
             --model ${model_name_or_path} \
             --output_dir ${tuned_checkpoint} \

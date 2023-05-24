@@ -120,6 +120,7 @@ class Evaluator:
         return acc
 
 if re.search("llama", args.model):
+    import transformers
     from transformers import LlamaForCausalLM, LlamaTokenizer
     user_model = LlamaForCausalLM.from_pretrained(
         args.model,
@@ -158,7 +159,7 @@ if args.quantize:
             prepared_model(calib_input[0])
 
     from neural_compressor import PostTrainingQuantConfig, quantization
-    if re.search("gpt", args.model):
+    if re.search("gpt", user_model.config.model_type):
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
@@ -197,7 +198,7 @@ if args.int8 or args.int8_bf16_mixed:
     user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)))
     user_model.eval()
 
-if args.accuracy_only:
+if args.accuracy:
     user_model.eval()
     from intel_extension_for_transformers.evaluation import evaluate
     results = evaluate(

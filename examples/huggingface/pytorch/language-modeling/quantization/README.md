@@ -9,11 +9,6 @@ The script `run_clm_no_trainer.py` supports `GPTJ`, `OPT`, `LLaMA`, `BLOOM` quan
 # Prerequisite
 ## 1. Create Environment
 ```
-WORK_DIR=$PWD
-# Create Environment (conda)
-conda create -n llm python=3.9 -y
-conda install mkl mkl-include -y
-conda install gperftools jemalloc==5.2.1 -c conda-forge -y
 
 # Installation
 git clone https://github.com/intel/intel-extension-for-transformers.git
@@ -24,15 +19,6 @@ python setup.py install
 cd examples/huggingface/pytorch/language-modeling/quantization
 pip install -r requirements.txt
 
-
-# Setup Environment Variables
-export KMP_BLOCKTIME=1
-export KMP_SETTINGS=1
-export KMP_AFFINITY=granularity=fine,compact,1,0
-# IOMP
-export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libiomp5.so
-# Tcmalloc is a recommended malloc implementation that emphasizes fragmentation avoidance and scalable concurrency support.
-export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 ```
 
 # Run
@@ -53,7 +39,7 @@ python run_clm_no_trainer.py \
     --quantize \
     --dataset NeelNanda/pile-10k \
     --sq \
-    --alpha 0.5 \
+    --alpha 1.0 \
     --output_dir "saved_results" \
     --ipex \
 ```
@@ -71,7 +57,7 @@ python run_clm_no_trainer.py \
     --output_dir "saved_results"  # load int8 model
 # to validate FP32 model, please remove "--int8" and "--output_dir".
 ```
-### OPT-2.7b
+### OPT-1.3b/2.7b/6.7b
 
 #### Quantization
 
@@ -95,7 +81,37 @@ python run_clm_no_trainer.py \
     --model facebook/opt-2.7b \
     --accuracy_only \
     --batch_size 112 \
-    --tasks "winogrande" "copa" "piqa" "rte" "hellaswag" "openbookqa" "lambada_openai" "lambada_standard" \
+    --tasks "lambada_openai" "lambada_standard" \
+    --int8 \
+    --ipex \
+    --output_dir "saved_results"  # load int8 model
+# to validate FP32 model, please remove "--int8" and "--output_dir".
+```
+## LLAMA-7b/13b
+>Note: LLAMA requires IPEX requirements >= 2.1 to get better accuracy, please source install from [intel_extension_for_pytorch](https://github.com/intel/intel-extension-for-pytorch.git).
+#### Quantization
+
+```bash
+# "--sq" is used to enable smooth quant
+# "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+python run_clm_no_trainer.py \
+    --model decapoda-research/llama-7b-hf \
+    --quantize \
+    --dataset NeelNanda/pile-10k \
+    --sq \
+    --alpha 0.8 \
+    --ipex \
+    --output_dir "saved_results" \
+    --int8_bf16_mixed
+```
+
+#### Accuracy with lm_eval
+```bash
+python run_clm_no_trainer.py \
+    --model decapoda-research/llama-7b-hf \
+    --accuracy_only \
+    --batch_size 112 \
+    --tasks  "lambada_openai" "lambada_standard" \
     --int8 \
     --ipex \
     --output_dir "saved_results"  # load int8 model

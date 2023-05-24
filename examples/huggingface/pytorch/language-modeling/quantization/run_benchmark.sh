@@ -13,7 +13,7 @@ function init_params {
   iters=100
   batch_size=16
   tuned_checkpoint=saved_results
-  lm_eval_tasks="lambada_openai  lambada_standard"
+  lm_eval_tasks="lambada_openai  piqa"
   for var in "$@"
   do
     case $var in
@@ -67,12 +67,10 @@ function run_benchmark {
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy"
     elif [[ ${mode} == "benchmark" ]]; then
-        mode_cmd=" --benchmark "
-    elif [[ ${mode} == "benchmark_only" ]]; then
-        mode_cmd=" --benchmark_only "
-    else
-        echo "Error: No such mode: ${mode}"
+        echo "Error: Only support accuracy now."
+        echo "Please go to text-generation folder to get accuracy."
         exit 1
+
     fi
 
     if [ "${topology}" = "gpt_neo" ]; then

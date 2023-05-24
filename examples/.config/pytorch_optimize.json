@@ -1416,14 +1416,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_j_6b_clm_ipex",
+        "topology": "gpt_j",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_j_6b_clm_ipex",
+        "topology": "gpt_j",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
         "mode": "accuracy",
         "batch_size": "112",
         "iters": "100",
@@ -1437,14 +1443,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "opt_2.7b_clm_ipex",
+        "topology": "opt_2.7b",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "opt_2.7b_clm_ipex",
+        "topology": "opt_2.7b",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
         "mode": "accuracy",
         "batch_size": "112",
         "iters": "100",
@@ -1458,14 +1470,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "opt_6.7b_clm_ipex",
+        "topology": "opt_6.7b",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "opt_6.7b_clm_ipex",
+        "topology": "opt_6.7b",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
         "mode": "accuracy",
         "batch_size": "112",
         "iters": "100",
@@ -1479,14 +1497,20 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "llama_7b_clm_ipex",
+        "topology": "llama_7b",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
         "output_model": "saved_results"
       }
     },
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "llama_7b_clm_ipex",
+        "topology": "llama_7b",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
         "mode": "accuracy",
         "batch_size": "112",
         "iters": "100",
