@@ -22,6 +22,7 @@ import time
 import numpy as np
 import json
 
+import lm_eval
 from lm_eval.base import LM, CachingLM
 from lm_eval.tasks import get_task_dict
 from lm_eval.utils import run_task_tests
@@ -34,6 +35,18 @@ MODEL_REGISTRY = {
 
 }
 
+def itrex_bootstrap_stderr(f, xs, iters):
+    from lm_eval.metrics import _bootstrap_internal, sample_stddev
+    res = []
+    chunk_size = min(1000, iters)
+    it = _bootstrap_internal(f, chunk_size)
+    for i in range(iters // chunk_size):
+        bootstrap = it((i, xs))
+        res.extend(bootstrap)
+    return sample_stddev(res)
+
+# to avoid out-of-memory caused by Popen for large language models.
+lm_eval.metrics.bootstrap_stderr = itrex_bootstrap_stderr
 
 def get_model(model_name):
     return MODEL_REGISTRY[model_name]
@@ -98,8 +111,11 @@ def evaluate(model,
     if isinstance(model, str):
         if model_args is None:
             model_args = ""
+        kwargs = {"batch_size": batch_size, "device": device}
+        if user_model:
+            kwargs["init_empty_weights"] = True
         lm = get_model(model).create_from_arg_string(
-            model_args, {"batch_size": batch_size, "device": device}
+            model_args, kwargs,
         )
     else:
         assert isinstance(model, LM)

@@ -49,7 +49,7 @@ python run_clm_no_trainer.py \
 # FP32 Accuracy
 python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
-    --accuracy_only \
+    --accuracy \
     --batch_size 112 \
     --tasks "lambada_openai" "lambada_standard"\
     --int8 \
@@ -79,7 +79,7 @@ python run_clm_no_trainer.py \
 ```bash
 python run_clm_no_trainer.py \
     --model facebook/opt-2.7b \
-    --accuracy_only \
+    --accuracy \
     --batch_size 112 \
     --tasks "lambada_openai" "lambada_standard" \
     --int8 \

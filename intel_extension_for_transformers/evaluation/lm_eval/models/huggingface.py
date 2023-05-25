@@ -97,6 +97,7 @@ class HuggingFaceAutoLM(BaseLM):
         offload_folder: Optional[str] = "./offload",
         dtype: Optional[Union[str, torch.dtype]] = None,
         device: Optional[Union[int, str]] = "cuda",
+        init_empty_weights: Optional[bool] = False,
     ):
         """Initializes a HuggingFace `AutoModel` and `AutoTokenizer` for evaluation.
         Args:
@@ -141,6 +142,8 @@ class HuggingFaceAutoLM(BaseLM):
                 Converts the model weights to `dtype`, if specified. Strings get
                 converted to `torch.dtype` objects (e.g. `float16` -> `torch.float16`).
                 Use `dtype="auto"` to derive the type from the model’s weights.
+            init_empty_weights (bool, optional, defaults to False):):
+                Initialize model with empty weights if model is not used for inference.
         """
         super().__init__()
 
@@ -160,6 +163,7 @@ class HuggingFaceAutoLM(BaseLM):
                 not add_special_tokens
             ), "Evaluating causal models with `add_special_tokens=True` is currently not supported."
 
+        self.init_empty_weights = init_empty_weights
         self._batch_size = batch_size  # TODO: Adaptive batch size
         self._max_gen_toks = max_gen_toks
         self._max_length = max_length
@@ -203,13 +207,6 @@ class HuggingFaceAutoLM(BaseLM):
         torch.set_grad_enabled(False)
 
         self._device = device
-        if use_accelerate and "lm_head" in self.model.hf_device_map:
-            # `accelerate` can place `lm_head` weights on a different device than
-            # the user specified one so we force `self._device` to be the same as
-            # `lm_head`'s.
-            self._device = self.model.hf_device_map["lm_head"]
-        if not use_accelerate:
-            self.model.to(self._device)
 
     def _create_auto_model(
         self,
@@ -223,15 +220,20 @@ class HuggingFaceAutoLM(BaseLM):
         torch_dtype: Optional[Union[str, torch.dtype]] = None,
     ) -> transformers.AutoModel:
         """Returns a pre-trained pytorch model from a pre-trained model configuration."""
-        model = self.AUTO_MODEL_CLASS.from_pretrained(
-            pretrained,
-            revision=revision + ("/" + subfolder if subfolder is not None else ""),
-            device_map=device_map,
-            max_memory=max_memory,
-            offload_folder=offload_folder,
-            torch_dtype=torch_dtype,
-            trust_remote_code=True
-        )
+        if self.init_empty_weights:
+            from accelerate import init_empty_weights
+            with init_empty_weights():
+                model = self.AUTO_MODEL_CLASS.from_config(self._config)
+        else:
+            model = self.AUTO_MODEL_CLASS.from_pretrained(
+                pretrained,
+                revision=revision + ("/" + subfolder if subfolder is not None else ""),
+                device_map=device_map,
+                max_memory=max_memory,
+                offload_folder=offload_folder,
+                torch_dtype=torch_dtype,
+                trust_remote_code=True
+            )
         return model
 
     def _create_auto_tokenizer(
