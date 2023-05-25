@@ -28,3 +28,6 @@ intel_extension_for_transformers.egg-info/
 /examples/**/*ir*/
 version.txt
 build_tmp
+
+/workflows/chatbot/demo/front_end/node_modules
+/workflows/chatbot/demo/front_end/front_end/.svelte-kit
