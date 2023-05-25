@@ -21,7 +21,7 @@ Classes
 
 
 
-.. py:class:: AutoCausalLM(pretrained: str, tokenizer: Optional[str] = None, subfolder: Optional[str] = None, revision: Optional[str] = 'main', batch_size: Optional[int] = 1, max_gen_toks: Optional[int] = 256, max_length: Optional[int] = None, add_special_tokens: Optional[bool] = None, use_accelerate: Optional[bool] = False, device_map_option: Optional[str] = 'auto', max_memory_per_gpu: Optional[Union[int, str]] = None, max_cpu_memory: Optional[Union[int, str]] = None, offload_folder: Optional[str] = './offload', dtype: Optional[Union[str, torch.dtype]] = None, device: Optional[Union[int, str]] = 'cuda')
+.. py:class:: AutoCausalLM(pretrained: str, tokenizer: Optional[str] = None, subfolder: Optional[str] = None, revision: Optional[str] = 'main', batch_size: Optional[int] = 1, max_gen_toks: Optional[int] = 256, max_length: Optional[int] = None, add_special_tokens: Optional[bool] = None, use_accelerate: Optional[bool] = False, device_map_option: Optional[str] = 'auto', max_memory_per_gpu: Optional[Union[int, str]] = None, max_cpu_memory: Optional[Union[int, str]] = None, offload_folder: Optional[str] = './offload', dtype: Optional[Union[str, torch.dtype]] = None, device: Optional[Union[int, str]] = 'cuda', init_empty_weights: Optional[bool] = False)
 
 
 
@@ -30,7 +30,7 @@ Classes
    https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForCausalLM
 
 
-.. py:class:: AutoSeq2SeqLM(pretrained: str, tokenizer: Optional[str] = None, subfolder: Optional[str] = None, revision: Optional[str] = 'main', batch_size: Optional[int] = 1, max_gen_toks: Optional[int] = 256, max_length: Optional[int] = None, add_special_tokens: Optional[bool] = None, use_accelerate: Optional[bool] = False, device_map_option: Optional[str] = 'auto', max_memory_per_gpu: Optional[Union[int, str]] = None, max_cpu_memory: Optional[Union[int, str]] = None, offload_folder: Optional[str] = './offload', dtype: Optional[Union[str, torch.dtype]] = None, device: Optional[Union[int, str]] = 'cuda')
+.. py:class:: AutoSeq2SeqLM(pretrained: str, tokenizer: Optional[str] = None, subfolder: Optional[str] = None, revision: Optional[str] = 'main', batch_size: Optional[int] = 1, max_gen_toks: Optional[int] = 256, max_length: Optional[int] = None, add_special_tokens: Optional[bool] = None, use_accelerate: Optional[bool] = False, device_map_option: Optional[str] = 'auto', max_memory_per_gpu: Optional[Union[int, str]] = None, max_cpu_memory: Optional[Union[int, str]] = None, offload_folder: Optional[str] = './offload', dtype: Optional[Union[str, torch.dtype]] = None, device: Optional[Union[int, str]] = 'cuda', init_empty_weights: Optional[bool] = False)
 
 
 
