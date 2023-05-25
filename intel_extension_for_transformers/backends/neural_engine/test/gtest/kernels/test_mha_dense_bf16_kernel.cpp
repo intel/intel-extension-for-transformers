@@ -171,6 +171,8 @@ static auto case_func = []() {
   cases.push_back(test_params_t{2, 1024, 77, 1, 80, false, false, 1, false});
   cases.push_back(test_params_t{2, 256, 77, 1, 160, false, false, 1, false});
 
+  cases.push_back(test_params_t{1, 256, 9216, 1, 64, false, false, 1, false});
+
   return ::testing::ValuesIn(cases);
 };
 

@@ -110,6 +110,13 @@ class mha_dense_bf16_k_t : public kernel_t {
   static constexpr int PAD_SIZE = 32;
   const int sl_n_pad_, head_size_pad_;
 
+  const size_t reo_k_size_;           // workspace size for storing the reorderd K matrix
+  const size_t reo_v_size_;           // workspace size for storing the reorderd K matrix
+  const size_t thread_reo_q_size_;    // workspace size for each threads for storing the reorderd Q matrix
+  const size_t thread_softmax_size_;  // workspace size for each threads for storing the softmax results
+  const size_t thread_dst_size_;      // workspace size for each threads for storing the dst results of the 2nd matmul
+  const size_t thread_total_bytes_;   // total workspace size for each threads
+  const size_t tmp_badd_size_;        // workspace size for processed binary-add data
   const size_t workspace_size_;
 
   const tile_param_t amx_full_tile_param_;

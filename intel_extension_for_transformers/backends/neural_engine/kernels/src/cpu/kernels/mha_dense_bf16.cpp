@@ -107,10 +107,19 @@ mha_dense_bf16_k_t::mha_dense_bf16_k_t(const std::shared_ptr<const kernel_desc_t
       ld_dst_(head_size_ * head_num_),
       sl_n_pad_(pad_to(sl_n_, PAD_SIZE)),
       head_size_pad_(pad_to(head_size_, PAD_SIZE)),
-      workspace_size_(sizeof(bfloat16_t) * bs_ * head_num_ * sl_n_pad_ * head_size_pad_ +    // reorder K
-                      sizeof(bfloat16_t) * bs_ * head_num_ * sl_n_pad_ * head_size_pad_ +    // reorder V
-                      get_data_size(dt_dst) * omp_get_max_threads() * 32 * head_size_pad_ +  // tmp dst
-                      sizeof(float) * bs_ * sl_m_ * sl_n_pad_ +                              // tmp badd
+      reo_k_size_(bs_ * head_num_ * sl_n_pad_ * head_size_pad_),
+      reo_v_size_(bs_ * head_num_ * sl_n_pad_ * head_size_pad_),
+      thread_reo_q_size_(32 * head_size_pad_),
+      thread_softmax_size_(32 * sl_n_pad_),
+      thread_dst_size_(32 * head_size_pad_),
+      thread_total_bytes_(sizeof(bfloat16_t) * thread_reo_q_size_ +    //
+                          sizeof(bfloat16_t) * thread_softmax_size_ +  //
+                          get_data_size(dt_dst) * thread_dst_size_),
+      tmp_badd_size_(bs_ * sl_m_ * sl_n_pad_),
+      workspace_size_(sizeof(bfloat16_t) * reo_k_size_ +                     //
+                      sizeof(bfloat16_t) * reo_v_size_ +                     //
+                      omp_get_max_threads() * thread_total_bytes_ +          //
+                      sizeof(float) * tmp_badd_size_ +                       //
                       sizeof(float) * pad_to(sl_m_, PAD_SIZE) * sl_n_pad_),  // extra space for badd to read
       amx_full_tile_param_(16, 16, 32, true, 2),
       amx_full_tile_cfg_(amx_full_tile_param_),
@@ -147,12 +156,9 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
   const auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rt_data[io::DST]));
 
   const auto reo_k = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rt_data[io::WORKSPACE]));
-  const auto reo_k_size = bs_ * head_num_ * sl_n_pad_ * head_size_pad_;
-  const auto reo_v = reinterpret_cast<bfloat16_t*>(reo_k + reo_k_size);
-  const auto reo_v_size = bs_ * head_num_ * sl_n_pad_ * head_size_pad_;
-  const auto tmp_dst = reinterpret_cast<bfloat16_t*>(reo_v + reo_v_size);
-  const auto tmp_dst_size = omp_get_max_threads() * 32 * head_size_pad_;
-  const auto tmp_mask = reinterpret_cast<float*>(tmp_dst + tmp_dst_size);  // of size (bs_ * sl_m_ * sl_n_pad_)
+  const auto reo_v = reinterpret_cast<bfloat16_t*>(reo_k + reo_k_size_);
+  const auto tmp_thread = reinterpret_cast<char*>(reo_v + reo_v_size_);
+  const auto tmp_mask = reinterpret_cast<float*>(tmp_thread + omp_get_max_threads() * thread_total_bytes_);
 
   const auto att_scale = reinterpret_cast<const float*>(rt_data[io::ATT_SCALE])[0];
 
@@ -216,7 +222,13 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
 #pragma omp parallel for collapse(2)
   for (int ibat = 0; ibat < bs_ * head_num_; ibat++) {
     for (int i_m = 0; i_m < sl_m_; i_m += m_tile) {
-      const int curr_thread_num = omp_get_thread_num();
+      const int thread_num = omp_get_thread_num();
+      const auto curr_reo_q = reinterpret_cast<bfloat16_t*>(tmp_thread + thread_num * thread_total_bytes_);
+      const auto curr_softmax = reinterpret_cast<bfloat16_t*>(curr_reo_q + thread_reo_q_size_);
+      assert(dt_dst == data_type::bf16);
+      const auto curr_tmp_dst = reinterpret_cast<bfloat16_t*>(curr_softmax + thread_softmax_size_);
+
+
       // init amx for each omp thread
       ker_amx_cfg_(&amx_full_tile_cfg_);
       const auto ibs = ibat / head_num_;  // batch_size idx
@@ -224,17 +236,6 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
       const int curr_pmask = has_pmask ? pmask[ibs] : sl_n_;
       const int curr_pmask_pad = pad_to(curr_pmask, PAD_SIZE);
       auto ioffset = ibs * sl_m_ * ld_src_ + ihn * head_size_;  // offset for Q & DST
-      char heapbuffer[520 * 1024];
-      // step1:
-      // curr_reo_q[heap]  // m_tile * head_size
-      // curr_reo_q[heap] + reo_k[workspace] = curr_a[heap]  // m_tile * sl_n
-      // step2:
-      // curr_a[heap] + reo_v[workspace] = dst
-      // let m_tile=32 k=40  sl_n=4096  head_size_pad_=64
-      // MaxMem = [curr_a 32x4096x2] [curr_reo_q 32*64*2] = 256+4KB
-      const auto curr_a = reinterpret_cast<bfloat16_t*>(heapbuffer);
-      const auto curr_a_size = m_tile * sl_n_pad_;
-      const auto curr_reo_q = reinterpret_cast<bfloat16_t*>(curr_a + curr_a_size);
 
       auto curr_q = src_q + ioffset + i_m * ld_src_;
       const jit_padding_copy2d::rt_data_t rtdata_reoder_q{
@@ -256,7 +257,7 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
       const jit_mha_bf16_row_amx_32x32_softmax::rt_data_t rtdata_qksoftmax{
           /*.matA = */ curr_reo_q,
           /*.matB = */ curr_k,
-          /*.matC = */ curr_a,
+          /*.matC = */ curr_softmax,
           /*.matD = */ qksoftmax_badd,
           /*.m = */ m_tile,
           /*.n = */ curr_pmask_pad,
@@ -269,10 +270,10 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
 
       const auto is_tail_m = i_m + m_tile > sl_m_;
       const auto curr_dst = dst + ioffset + i_m * ld_dst_;
-      const auto mmav_dst = (!is_tail_m) ? curr_dst : tmp_dst + curr_thread_num * m_tile * head_size_pad_;
+      const auto mmav_dst = (!is_tail_m) ? curr_dst : curr_tmp_dst;
       auto curr_v = reo_v + ibat * sl_n_pad_ * head_size_pad_;
       const jit_mha_bf16_row_amx_32x32::rt_data_t rtdata_mmav{
-          /*.matA = */ curr_a,
+          /*.matA = */ curr_softmax,
           /*.matB = */ curr_v,
           /*.matC = */ mmav_dst,
           /*.m = */ m_tile,
