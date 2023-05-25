@@ -88,7 +88,7 @@ void jit_gemm_avx512f_8bit_t::generate() {
     add(reg_iterk, KTile);
     cmp(reg_iterk, reg_ksize);  // k iteration variable
     jb(".kloop");
-    alphabeta_process(MTile, NRegs, parambase, reg_tmp, reg_tmp1);
+    alphabeta_process(MTile, NRegs, parambase, reg_tmp, reg_tmp1, reg_tmp2);
     jmp(".retl", T_NEAR);
 
     L(".lastloop");
@@ -99,7 +99,7 @@ void jit_gemm_avx512f_8bit_t::generate() {
     add(reg_iterk, KTile);
     cmp(reg_iterk, reg_ksize);  // k iteration variable
     jb(".k1loop");
-    alphabeta_process(MTile, 1, parambase, reg_tmp, reg_tmp1);
+    alphabeta_process(MTile, 1, parambase, reg_tmp, reg_tmp1, reg_tmp2);
 
     L(".retl");
     vreg_pop(rsp);
@@ -155,7 +155,8 @@ void jit_gemm_avx512f_8bit_t::generate_fma(int MTile, int _NRegs, int KTile, con
   }
 }
 void jit_gemm_avx512f_8bit_t::alphabeta_process(int MTile, int _NRegs, const Xbyak::Reg64& parambase,
-                                                const Xbyak::Reg64& reg_tmp, const Xbyak::Reg64& reg_tmp1) {
+                                                const Xbyak::Reg64& reg_tmp, const Xbyak::Reg64& reg_tmp1,
+                                                const Xbyak::Reg64& reg_tmp2) {
   inLocalLabel();
   // load scale
   if (param_.has_scale0) {
@@ -205,12 +206,22 @@ void jit_gemm_avx512f_8bit_t::alphabeta_process(int MTile, int _NRegs, const Xby
 
   L(".afterbeta");
   mov(reg_tmp, ptr[parambase + OFFSET(matC)]);
+  if (param_.has_append_sum) {
+    mov(reg_tmp2, ptr[parambase + OFFSET(matE)]);
+  }
   load32(reg_tmp1, ptr[parambase + OFFSET(cstep)]);
   for (int i = 0; i < MTile; i++) {
     for (int j = 0; j < _NRegs; j++) {
+      if (param_.has_append_sum) {
+        load_bf16_fp32(zmms_b_[j], ptr[reg_tmp2 + j * 32]);
+        vaddps(zmms_c_[i * NRegs + j], zmms_b_[j]);
+      }
       store_fp32_bf16(zmms_c_[i * NRegs + j], ptr[reg_tmp + j * 32]);
     }
     add(reg_tmp, reg_tmp1);
+    if (param_.has_append_sum) {
+      add(reg_tmp2, reg_tmp1);
+    }
   }
   jmp(".retl", T_NEAR);
 

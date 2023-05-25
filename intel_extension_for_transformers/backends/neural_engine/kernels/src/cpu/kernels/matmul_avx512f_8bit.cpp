@@ -47,6 +47,8 @@ bool matmul_avx512f_8bit_kd_t::params_init() {
   SPARSE_LOG_IF(WARNING, jit_param_.alpha == 0.f)
       << "Alpha for matmul is set to 0 meaning that the base result will be discarded";
 
+  bool has_append_sum = shapes.size() > io::APPEND_SUM && !shapes[io::APPEND_SUM].empty();
+  jit_param_.has_append_sum = has_append_sum;
   if (has_bias) {
     if (attrs["beta"] != "") jit_param_.beta = str_to_num<float>(attrs["beta"]);
     SPARSE_LOG_IF(WARNING, has_bias && jit_param_.beta == 0.f)
@@ -126,6 +128,9 @@ bool matmul_avx512f_8bit_k_t::execute(const std::vector<const void*>& rt_data) c
   bfloat16_t* matC = const_cast<bfloat16_t*>(reinterpret_cast<const bfloat16_t*>(rt_data[io::DST0]));
   bfloat16_t* matD = const_cast<bfloat16_t*>(reinterpret_cast<const bfloat16_t*>(rt_data[io::SRC2]));
   float* scale = const_cast<float*>(reinterpret_cast<const float*>(rt_data[io::SCALE0]));
+  bfloat16_t* matE = derived_kd()->jit_param().has_append_sum
+                         ? const_cast<bfloat16_t*>(reinterpret_cast<const bfloat16_t*>(rt_data[io::APPEND_SUM]))
+                         : nullptr;
 #pragma omp parallel
   {
     int tidx = omp_get_thread_num();
@@ -137,6 +142,7 @@ bool matmul_avx512f_8bit_k_t::execute(const std::vector<const void*>& rt_data) c
       int kbatch = pad_to_le(mCacheAdapter.mKBatch, jit_ker_->KTile);
       auto cptr = matC + colidx + rowidx * ldc;
       auto dptr = matD + colidx + rowidx * ldd;
+      auto eptr = derived_kd()->jit_param().has_append_sum ? matE + colidx + rowidx * ldc : nullptr;
       auto scaleptr = scale + colidx;
       for (int iterk = 0; iterk < K_; iterk += kbatch) {
         int kbatch_remain = iterk + kbatch <= K_ ? kbatch : K_ - iterk;
@@ -148,20 +154,22 @@ bool matmul_avx512f_8bit_k_t::execute(const std::vector<const void*>& rt_data) c
               int tmpcol = j + in;
               if (j + in < colremain) {
                 int nsize = remainsize(j + in, colremain, jit_ker_->NTile);
-                ssd::matmul_fp8_data_t parm = ssd::matmul_fp8_data_t{aptr + i * lda,
-                                                                     bptr + tmpcol * K_,
-                                                                     cptr + i * ldc + tmpcol,
-                                                                     dptr + i * ldd + tmpcol,
-                                                                     scaleptr + tmpcol,
-                                                                     kbatch_remain,
-                                                                     nsize,
-                                                                     lda * 2,
-                                                                     static_cast<int>(K_),
-                                                                     ldc * 2,
-                                                                     ldd,
-                                                                     iterk,
-                                                                     derived_kd()->jit_param().alpha,
-                                                                     derived_kd()->jit_param().beta};
+                ssd::matmul_fp8_data_t parm =
+                    ssd::matmul_fp8_data_t{aptr + i * lda,
+                                           bptr + tmpcol * K_,
+                                           cptr + i * ldc + tmpcol,
+                                           dptr + i * ldd + tmpcol,
+                                           derived_kd()->jit_param().has_append_sum ? eptr + i * ldc + tmpcol : nullptr,
+                                           scaleptr + tmpcol,
+                                           kbatch_remain,
+                                           nsize,
+                                           lda * 2,
+                                           static_cast<int>(K_),
+                                           ldc * 2,
+                                           ldd,
+                                           iterk,
+                                           derived_kd()->jit_param().alpha,
+                                           derived_kd()->jit_param().beta};
                 (*jit_ker_)(&parm);
               }
             }

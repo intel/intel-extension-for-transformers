@@ -206,6 +206,9 @@ std::pair<const void*, const void*> make_data_obj(const std::vector<dim_t>& a_sh
                                                   bool is_clear = false, const std::vector<float>& ranges = {-10, 10},
                                                   float sparsity = 0.f, jd::format_type a_ft = jd::format_type::uncoded,
                                                   const void* src_data = nullptr, const int seed = 5489u) {
+  if (a_shape.empty()) {
+    return {nullptr, nullptr};
+  }
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), size_t{1}, std::multiplies<size_t>());
   int bytes_size = elem_num * jd::type_size[a_dt];
   void* data_ptr = nullptr;

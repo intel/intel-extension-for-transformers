@@ -110,9 +110,8 @@ TEST_P(MMAVX512FP8KernelTest, ) {
   }
 }
 
-std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N,
-                                         jd::data_type src1_dtype = jd::data_type::bf16, int nthr = 0,
-                                         std::unordered_map<std::string, std::string> attrs = {},
+std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, jd::data_type src1_dtype = jd::data_type::bf16,
+                                         int nthr = 0, std::unordered_map<std::string, std::string> attrs = {},
                                          std::vector<jd::postop_attr> postop_attr = {}) {
   // Step 1: Construct operator config
   jd::tensor_desc src0_desc = {{M, K}, jd::data_type::bf16, jd::format_type::ab};
@@ -120,17 +119,20 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N,
   jd::tensor_desc dst_desc = {{M, N}, jd::data_type::bf16, jd::format_type::ab};
   jd::tensor_desc bias_desc = {{N}, jd::data_type::bf16, jd::format_type::a};
   jd::tensor_desc scale_desc = {{N}, jd::data_type::fp32, jd::format_type::a};
-  std::vector<jd::tensor_desc> ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc, scale_desc};
+  jd::tensor_desc zp0_desc = {{1}, jd::data_type::fp32, jd::format_type::a};
+  jd::tensor_desc append_sum_desc = {{M, N}, jd::data_type::bf16, jd::format_type::a};
+  std::vector<jd::tensor_desc> ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc, scale_desc, zp0_desc};
+  if (attrs["append_sum"] != "") {
+    ts_descs.push_back(append_sum_desc);
+  }
 
   // Step 2: Construct runtime data
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;
-  int tensor_num = ts_descs.size();
-  for (int index = 0; index < tensor_num; ++index) {
+  for (size_t index = 0; index < ts_descs.size(); ++index) {
     auto& tsd = ts_descs[index];
-    bool is_clear = (index == io::DST0);
-    auto ranges = std::vector<float>{-10, 10};
-    auto data_pair = make_data_obj(tsd.shape(), tsd.dtype(), is_clear, ranges);
+    auto ranges = (index == io::ZP0) ? std::vector<float>{0.f, 0.f} : std::vector<float>{-10, 10};
+    auto data_pair = make_data_obj(tsd.shape(), tsd.dtype(), false, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
@@ -183,6 +185,14 @@ static auto case_func = []() {
     cases.push_back({gen_case(4, 2, 16, jd::data_type::f8_e4m3, nthr, {{"alpha", "1.f"}, {"beta", "0.f"}})});
     cases.push_back({gen_case(4, 2, 16, jd::data_type::f8_e5m2, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
     cases.push_back({gen_case(4, 2, 16, jd::data_type::s8, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
+
+    cases.push_back(
+        {gen_case(4, 2, 16, jd::data_type::f8_e4m3, nthr, {{"append_sum", "1"}, {"alpha", "1.f"}, {"beta", "0.f"}})});
+    cases.push_back(
+        {gen_case(4, 2, 16, jd::data_type::f8_e5m2, nthr, {{"append_sum", "1"}, {"alpha", "1.f"}, {"beta", "1.f"}})});
+    cases.push_back(
+        {gen_case(4, 2, 16, jd::data_type::s8, nthr, {{"append_sum", "1"}, {"alpha", "1.f"}, {"beta", "1.f"}})});
+
     cases.push_back({gen_case(4, 4096, 4096, jd::data_type::f8_e5m2, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
     cases.push_back({gen_case(4, 4096, 4096, jd::data_type::s8, nthr, {{"alpha", "1.f"}, {"beta", "1.f"}})});
     cases.push_back({gen_case(4, 4096, 4096, jd::data_type::bf16, nthr,
@@ -219,6 +229,9 @@ std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   }
   if (attrs["postop_list"] != "") {
     params.push_back(attrs["postop_list"]);
+  }
+  if (attrs["append_sum"] != "") {
+    params.push_back("append_sum");
   }
   return join_str(params, "_");
 }

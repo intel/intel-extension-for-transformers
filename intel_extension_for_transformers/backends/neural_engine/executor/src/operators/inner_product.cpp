@@ -284,12 +284,21 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
           std::vector<jd::tensor_desc> ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc, scales_desc};
 
           vector<jd::postop_attr> postop_chain;
+          if (append_sum_) {
+            op_attrs_["postop_list"] = "append_sum";
+            jd::tensor_desc append_sum_desc = {{weight_comp_.PreferedM, shape[0]},
+                                               jd::data_type::bf16, jd::format_type::ab};
+            jd::tensor_desc zp0_desc = {{1}, jd::data_type::fp32, jd::format_type::a};
+            ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc, scales_desc, zp0_desc, append_sum_desc};
+          }
           if (gelu_tanh_) {
             jd::postop_attr gelu_attr(jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::gelu);
             postop_chain.push_back(gelu_attr);
           }
           if (swish_) {
-            jd::postop_attr gelu_attr(jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::swish);
+            op_attrs_["postop_list"] = "swish";
+            // default swish alpha is 1
+            jd::postop_attr gelu_attr(jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::swish, 1);
             postop_chain.push_back(gelu_attr);
           }
           jd::operator_desc op_desc(jd::kernel_kind::transpose_matmul, jd::kernel_prop::forward_inference,
@@ -1234,6 +1243,11 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
     auto& src1_shape = src1_->shape();
     std::vector<const void*> rt{src0_->data(), NULL, dst_->data(), has_bias_ ? bias_->data() : NULL,
                                 weight_comp_.scales_.data()};
+    if (append_sum_) {
+      // inplace use the append sum as dst data
+      rt = {src0_->data(), NULL, dst_->data(), has_bias_ ? bias_->data() : NULL,
+            weight_comp_.scales_.data(), NULL, dst_->data()};
+    }
     matmul_kern_.execute(rt);
     return;
   }

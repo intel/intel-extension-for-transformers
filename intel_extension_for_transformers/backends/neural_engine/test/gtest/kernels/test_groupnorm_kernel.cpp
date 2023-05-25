@@ -161,6 +161,14 @@ static auto case_func = []() {
 
   return ::testing::ValuesIn(cases);
 };
-
-INSTANTIATE_TEST_SUITE_P(SparseLib, GroupNormKernelTest, case_func());
+std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
+  auto attrs = tpi.param.args.first.op_desc.attrs();
+  const auto shapes = tpi.param.args.first.op_desc.tensor_shapes();
+  std::vector<std::string> params;
+  for (auto num : shapes[0]) {
+    params.push_back(std::to_string(num));
+  }
+  return join_str(params, "_");
+}
+INSTANTIATE_TEST_SUITE_P(SparseLib, GroupNormKernelTest, case_func(), test_suffix);
 }  // namespace test

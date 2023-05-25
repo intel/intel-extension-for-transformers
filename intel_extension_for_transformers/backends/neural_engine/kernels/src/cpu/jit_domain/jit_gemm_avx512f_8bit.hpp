@@ -73,7 +73,7 @@ class jit_gemm_avx512f_8bit_t : public jit_generator {
                     const Xbyak::Reg64& reg_astep, const Xbyak::Reg64& reg_bstep, const Xbyak::Reg64& reg_tmp,
                     const Xbyak::Reg64& reg_tmp1);
   void alphabeta_process(int MTile, int _NRegs, const Xbyak::Reg64& parambase, const Xbyak::Reg64& reg_tmp,
-                         const Xbyak::Reg64& reg_tmp1);
+                         const Xbyak::Reg64& reg_tmp1, const Xbyak::Reg64& reg_tmp2);
   void vreg_push(const Xbyak::Reg64& baseaddr) {
 #ifdef _WIN32
     for (int i = 0; i < 10; i++) {

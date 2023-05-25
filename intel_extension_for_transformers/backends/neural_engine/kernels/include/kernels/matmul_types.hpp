@@ -31,7 +31,8 @@ enum io {
   SRC2,
   SCALE0,
   ZP0,
-  matmul_io_MAX = ZP0,
+  APPEND_SUM,
+  matmul_io_MAX = APPEND_SUM,
 };
 }  // namespace matmul_io
 
@@ -58,6 +59,7 @@ struct matmul_fp8_param_t {
   };
   data_type weight_type = data_type::undef;
   bool has_scale0 = false;
+  bool has_append_sum = false;
   std::vector<postop_attr> postop_attrs;
   int thread_num = 0;
 };
@@ -79,7 +81,7 @@ struct matmul_u8_data_t {
 struct matmul_fp8_data_t {
   bfloat16_t* matA;
   uint8_t* matB;
-  bfloat16_t *matC, *matD;
+  bfloat16_t *matC, *matD, *matE;
   float* scale;
   int k, n, astep, bstep, cstep, dstep;
   int kpos;

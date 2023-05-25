@@ -125,6 +125,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   std::vector<data_type> dtypes(descs.size());
   std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
   bool has_binary_add = shapes.size() > io::SRC2 && !shapes[io::SRC2].empty();
+  bool has_append_sum = shapes.size() > io::APPEND_SUM && !shapes[io::APPEND_SUM].empty();
 
   const auto& left_dt = dtypes[io::SRC0];
   data_type right_dt = dtypes[io::SRC1];
@@ -165,6 +166,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto dst_data = const_cast<void*>(rt_data[io::DST0]);
   const auto badd_data = rt_data.size() > io::SRC2 ? rt_data[io::SRC2] : nullptr;
   const auto scale_data = rt_data.size() > io::SCALE0 ? rt_data[io::SCALE0] : nullptr;
+  const auto append_sum_data = rt_data.size() > io::APPEND_SUM ? rt_data[io::APPEND_SUM] : nullptr;
   // ptr alias
   auto left_fp32 = static_cast<const float*>(left_data);
   auto left_bf16 = static_cast<const bfloat16_t*>(left_data);
@@ -183,6 +185,10 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto badd_fp32 = static_cast<const float*>(badd_data);
   auto badd_bf16 = static_cast<const bfloat16_t*>(badd_data);
   auto scale_fp32 = static_cast<const float*>(scale_data);
+  auto append_sum_u8 = static_cast<const uint8_t*>(append_sum_data);
+  auto append_sum_s8 = static_cast<const int8_t*>(append_sum_data);
+  auto append_sum_fp32 = static_cast<const float*>(append_sum_data);
+  auto append_sum_bf16 = static_cast<const bfloat16_t*>(append_sum_data);
 
   std::vector<postop_attr> post_attr = op_desc.apply_postops_list();
   if ((dst_dt != data_type::fp32 && dst_dt != data_type::bf16) &&
@@ -248,7 +254,17 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
           if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty()) {
             scale_value = dtypes[io::SCALE0] == data_type::fp32 ? scale_fp32[scale_idx] : 1.f;
           }
-          value = apply_postop_list(alpha * scale_value * value + beta * badd_value + zp, post_attr);
+          float append_sum_value = 0.f;
+          if (append_sum_data != nullptr && has_append_sum) {
+            append_sum_value = dtypes[io::APPEND_SUM] == data_type::fp32 ? append_sum_fp32[dst_idx]
+                               : dtypes[io::APPEND_SUM] == data_type::u8 ? static_cast<float>(append_sum_u8[dst_idx])
+                               : dtypes[io::APPEND_SUM] == data_type::s8 ? static_cast<float>(append_sum_s8[dst_idx])
+                               : dtypes[io::APPEND_SUM] == data_type::bf16
+                                   ? static_cast<float>(append_sum_bf16[dst_idx])
+                                   : 0.f;
+          }
+          value = apply_postop_list(alpha * scale_value * value + beta * badd_value + zp + append_sum_value, post_attr);
+
           // Quantize dst data
           if (dst_dt == data_type::fp32) {
             dst_fp32[dst_idx] = value;
