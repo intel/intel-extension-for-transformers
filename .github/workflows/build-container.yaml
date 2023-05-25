@@ -1,0 +1,55 @@
+#########################################################
+# DO NOT PUBLISH
+#########################################################
+name: ITREX Containers Weekly Builder
+on:
+  workflow_dispatch: # Can be manually executed
+  schedule: # 1/week Sunday at 07:00AM
+    - cron: "5 7 * * 0"
+
+jobs:
+  build:
+    container: # MLOps Dev container for Compose Automation
+      image: amr-registry.caas.intel.com/aiops/compose-dev
+      env: # Add ENVS to control compose building
+        http_proxy: ${{ secrets.HTTP_PROXY }}
+        https_proxy: ${{ secrets.HTTPS_PROXY }}
+        no_proxy: ${{ secrets.NO_PROXY }}
+      credentials: # CAAS Registry Creds
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_TOKEN }}
+    runs-on: [aia-devops] # Runner Label
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+        set-safe-directory: true
+    - name: Build Container
+      run: docker compose build
+      working-directory: ./docker
+  push:
+    needs: [build]
+    strategy:
+      matrix:
+        container: ["devel", "prod"] # name of Compose container
+    container:
+      image: amr-registry.caas.intel.com/aiops/compose-dev
+      env: # Add ENVS to control compose building
+        http_proxy: ${{ secrets.HTTP_PROXY }}
+        https_proxy: ${{ secrets.HTTPS_PROXY }}
+        no_proxy: ${{ secrets.NO_PROXY }}
+      credentials: # CAAS Registry Creds
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_TOKEN }}
+    runs-on: [aia-devops]
+    steps:
+    - uses: docker/login-action@v2
+      with: # CAAS Registry Creds
+        registry: amr-registry.caas.intel.com
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_TOKEN }}
+    - name: Push Container # tlt-<num>-<container>
+      run: |
+        docker tag intel/ai-tools:itrex-${{ matrix.container }}-latest amr-registry.caas.intel.com/aiops/mlops-ci:itrex-ww$(date +"%U")-${{ matrix.container }}
+        docker push amr-registry.caas.intel.com/aiops/mlops-ci:itrex-ww$(date +"%U")-${{ matrix.container }}

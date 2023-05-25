@@ -1,38 +1,67 @@
-# Build Intel Extension for Transformers with Docker Image
-## Prepare Docker Image
-For linux usage, we recomment using image: quay.io/pypa/manylinux2014_x86_64
-```
-docker pull quay.io/pypa/manylinux2014_x86_64
-docker run -i -t --name="xTransformers" --hostname="xTransformers" -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY quay.io/pypa/manylinux2014_x86_64
+# Docker
+Follow these instructions to set up and run our provided Docker image.
+
+## Set Up Docker Engine and Docker Compose
+You'll need to install Docker Engine on your development system. Note that while **Docker Engine** is free to use, **Docker Desktop** may require you to purchase a license. See the [Docker Engine Server installation instructions](https://docs.docker.com/engine/install/#server) for details.
+
+To build and run this workload inside a Docker Container, ensure you have Docker Compose installed on your machine. If you don't have this tool installed, consult the official [Docker Compose installation documentation](https://docs.docker.com/compose/install/linux/#install-the-plugin-manually).
+
+```bash
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+mkdir -p $DOCKER_CONFIG/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.7.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+docker compose version
 ```
 
-## Set Up Environment
-Install GCC and G++ for binary build.
+## Set Up Docker Image
+Build or Pull the provided docker images.
+
+```bash
+cd docker
+docker compose build
 ```
-yum update && yum install -y wget git gcc
+OR
+```bash
+docker pull intel/ai-tools:itrex-0.1.1
+docker pull intel/ai-tools:itrex-devel-0.1.1
 ```
 
-To use different python version, recommend to install minconda for package control
-```
-wget  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Mini*
+## Use Docker Image
+Utilize the TLT CLI without installation by using the provided docker image and docker compose.
+
+```bash
+docker compose run base-devel
+docker compose run base-devel python setup.py sdist
+docker compose run base-devel python tests/<test_mytest>.py
 ```
 
-## Build Binary
-Use conda create dependent python environment, download [intel-extension-for-transformer](https://github.com/intel/intel-extension-for-transformers), then build .whl. Finally, use auditwheel to make it feasible across linux OS
+# Kubernetes
+## 1. Install Helm
+- Install [Helm](https://helm.sh/docs/intro/install/)
+```bash
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
+chmod 700 get_helm.sh && \
+./get_helm.sh
 ```
-conda create -n python38 python=3.8 -y
-git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel-extension-for-transformers
-git submodule update --init --recursive
-[[ -f requirements.txt ]] && pip install -r requirements.txt
-python setup.py sdist bdist_wheel
-pip install auditwheel==5.1.2
-auditwheel repair dist/intel_extension_for_transformers*.whl
-cp wheelhouse/intel_extension_for_transformers*.whl ./
+## 2. Setting up Training Operator
+Install the standalone operator from GitHub/Artifacthub or use a pre-existing Kubeflow configuration.
+```bash
+kubectl apply -k "github.com/kubeflow/training-operator/manifests/overlays/standalone"
 ```
-If you only use backends, just add "--backends" while installing. The new package is named intel_extension_for_transformers_backends.
+OR
+```bash
+helm repo add cowboysysop https://cowboysysop.github.io/charts/
+helm install <release name> cowboysysop/training-operator
 ```
-python3 setup.py sdist bdist_wheel --backends
+## 3. Deploy ITREX Distributed Job
+For more customization information, see the chart [README](./chart/README.md)
+```bash
+export NAMESPACE=kubeflow
+helm install --namespace ${NAMESPACE} --set ... itrex-distributed ./chart
 ```
->**Note**: Please check either intel_extension_for_transformers or intel_extension_for_transformers_backends installed in env to prevent possible confilcts. You can pip uninstall intel_extension_for_transformers/intel_extension_for_transformers_backends before installing.
+## 4. View 
+To view your workflow progress
+```bash
+kubectl get -o yaml pytorchjob itrex-distributed -n ${NAMESPACE}
+```
