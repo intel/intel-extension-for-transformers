@@ -84,18 +84,18 @@ function run_benchmark {
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi
-    elif [ "${topology}" = "opt_2.7b" ]; then
-        script="run_generation.py"
-        model_name_or_path="facebook/opt-2.7b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
-    elif [ "${topology}" = "opt_6.7b" ]; then
-        script="run_generation.py"
-        model_name_or_path="facebook/opt-6.7b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
+    # elif [ "${topology}" = "opt_2.7b" ]; then
+    #     script="run_generation.py"
+    #     model_name_or_path="facebook/opt-2.7b"
+    #     if [ "${backend}" = "ipex" ]; then
+    #         extra_cmd=$extra_cmd" --ipex"
+    #     fi
+    # elif [ "${topology}" = "opt_6.7b" ]; then
+    #     script="run_generation.py"
+    #     model_name_or_path="facebook/opt-6.7b"
+    #     if [ "${backend}" = "ipex" ]; then
+    #         extra_cmd=$extra_cmd" --ipex"
+    #     fi
     elif [ "${topology}" = "llama_7b" ]; then
         script="run_generation.py"
         model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
@@ -105,6 +105,19 @@ function run_benchmark {
     elif [ "${topology}" = "llama_13b" ]; then
         script="run_generation.py"
         model_name_or_path="decapoda-research/llama-13b-hf"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "bloom_7b1" ]; then
+        script="run_generation.py"
+        # model_name_or_path="bigscience/bloom-7b1"
+        model_name_or_path="/tf_dataset2/models/pytorch/bloom-7b1"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "bloomz-3b" ]; then
+        script="run_generation.py"
+        model_name_or_path="bigscience/bloomz-3b"
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi

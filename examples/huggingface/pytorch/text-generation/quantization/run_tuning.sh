@@ -64,15 +64,28 @@ function run_tuning {
             extra_cmd=$extra_cmd" --int8_bf16_mixed"
             alpha=1.0
         fi
-    elif [ "${topology}" = "opt_2.7b" ]; then
+    # elif [ "${topology}" = "opt_2.7b" ]; then
+    #     script="run_generation.py"
+    #     model_name_or_path="facebook/opt-2.7b"
+    #     if [ "${backend}" = "ipex" ]; then
+    #         extra_cmd=$extra_cmd" --ipex"
+    #     fi
+    # elif [ "${topology}" = "opt_6.7b" ]; then
+    #     script="run_generation.py"
+    #     model_name_or_path="facebook/opt-6.7b"
+    #     if [ "${backend}" = "ipex" ]; then
+    #         extra_cmd=$extra_cmd" --ipex"
+    #     fi
+    elif [ "${topology}" = "bloom_7b1" ]; then
         script="run_generation.py"
-        model_name_or_path="facebook/opt-2.7b"
+        # model_name_or_path="bigscience/bloom-7b1"
+        model_name_or_path="/tf_dataset2/models/pytorch/bloom-7b1"
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi
-    elif [ "${topology}" = "opt_6.7b" ]; then
+    elif [ "${topology}" = "bloomz-3b" ]; then
         script="run_generation.py"
-        model_name_or_path="facebook/opt-6.7b"
+        model_name_or_path="bigscience/bloomz-3b"
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi

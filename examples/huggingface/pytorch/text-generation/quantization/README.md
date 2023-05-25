@@ -1,5 +1,5 @@
 # Step-by-Step
-We provide the inference benchmarking script `run_generation.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B),  [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), more models are working in progress.
+We provide the inference benchmarking script `run_generation.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B),  [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1), more models are working in progress.
 
 >**Note**: The default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
 
@@ -10,7 +10,7 @@ Recommend python 3.7 or higher version is recommended. The dependent packages ar
 
 ```shell
 pip install intel-extension-for-transformers
-pip install -r requirements.txt # llama series models need source install intel-extension-for-pytorch
+pip install -r requirements.txt # Please source install intel-extension-for-pytorch before its 2.1 release.
 ```
 Here is how to install intel-extension-for-pytorch from source.
 ```shell
@@ -27,7 +27,7 @@ We use the local GPTJ defination script `modeling_gptj.py` in `run_generation.py
 -   position_ids = torch.arange(past_length, input_shape[-1] + past_length, dtype=torch.long, device=device)
 +   position_ids = torch.arange(past_length, torch.tensor(input_shape[-1]) + torch.tensor(past_length), dtype=torch.long, device=device)
 ```
-The change for `llama` series models in `modeling_llama.py`, `dolly_v2_3b` series models in `modeling_gpt_neox.py` similar.
+The changes for `llama` series models in `modeling_llama.py`, `dolly_v2_3b` series models in `modeling_gpt_neox.py`， `bloom` series models in `modeling_bloom.py` are similar to the above.
 
 # Run
 

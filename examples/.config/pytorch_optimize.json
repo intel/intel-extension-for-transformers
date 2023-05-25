@@ -1518,5 +1518,28 @@
         "config": "saved_results"
       }
     }
+  },
+  "bloom_7b1": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "bloom_7b1",
+        "output_model": "saved_results",
+        "backend": "ipex"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "bloom_7b1",
+        "backend": "ipex",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
   }
 }

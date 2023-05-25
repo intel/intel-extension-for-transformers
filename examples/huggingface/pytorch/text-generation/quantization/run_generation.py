@@ -14,12 +14,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 import transformers
 from modeling_gptj import GPTJForCausalLM
 from modeling_llama import LlamaForCausalLM
+from modeling_bloom import BloomForCausalLM
 from modeling_gpt_neox import GPTNeoXForCausalLM
 from optimum.utils import NormalizedConfigManager
 
 # to use modeling gptj modification base transformers 4.28.1:
 transformers.models.gptj.modeling_gptj.GPTJForCausalLM = GPTJForCausalLM
 transformers.models.llama.modeling_llama.LlamaForCausalLM = LlamaForCausalLM
+transformers.models.bloom.modeling_bloom.BloomForCausalLM = BloomForCausalLM
 transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM = GPTNeoXForCausalLM
 
 import numpy as np
@@ -53,7 +55,7 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument("--benchmark", action="store_true")
-parser.add_argument("--num_iter", default=100, type=int, help="num iter")
+parser.add_argument("--iters", default=100, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
 parser.add_argument("--batch_size", default=1, type=int, help="batch size")
 args = parser.parse_args()
@@ -321,7 +323,7 @@ if args.benchmark:
 
     # start
     total_time = 0.0
-    num_iter = args.num_iter
+    num_iter = args.iters
     num_warmup = args.num_warmup
 
     with torch.inference_mode(), torch.no_grad():
