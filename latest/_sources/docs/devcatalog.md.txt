@@ -82,7 +82,7 @@ In this example, we show how to use the quantization API for model optimization.
 #### 3.1 Install Requirements
 ```bash
 pip install transformers==4.23.1 datasets onnx onnxruntime torch
-pip install git+https://github.com/intel/neural-compressor.git
+pip install neural-compressor
 ```
 
 #### 3.2 Prepare Datasets
