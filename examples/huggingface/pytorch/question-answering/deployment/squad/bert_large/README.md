@@ -75,19 +75,13 @@ Python API Command as follows:
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=1
 ```
-Shell script is also avaiable:
-```shell
-bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=1
-```
+
 
 If you just want a quick start, you could try a small set of dataset, like this:
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
 ```
-or run shell
-```shell
-bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=1 --max_eval_samples=10
-```
+
 > **Note**: The accuracy of partial dataset is unauthentic.
 
 ## Performance
@@ -95,10 +89,7 @@ Python API command as follows:
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --seq_len=384
 ```
-Shell script is also avaiable:
-```shell
-bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --seq_len=384
-```
+
 You could use C++ API as well. First, you need to compile the model to IR. And then, you could run C++. 
 > **Note**: The warmup below is recommended to be 1/10 of iterations and no less than 3.
 ```

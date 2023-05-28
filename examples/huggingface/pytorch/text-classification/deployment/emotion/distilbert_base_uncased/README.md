@@ -65,10 +65,6 @@ By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quanti
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy--data_dir=./data --batch_size=4
 ```
-or run shell
-```shell
-bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data--batch_size=4
-```
 
 ## 2. Performance 
 By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
@@ -76,10 +72,7 @@ By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quanti
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx --mode=performance --batch_size=8 --seq_len=128
 ```
-or run shell
-```shell
-bash run_benchmark.sh --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128
-```
+
 or compile framwork model to IR using python API
 ```
 from intel_extension_for_transformers.backends.neural_engine.compile importcompile

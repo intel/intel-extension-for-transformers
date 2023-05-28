@@ -79,22 +79,12 @@ Neural Engine will automatically detect weight structured sparse ratio, as long 
   ```shell
   GLOG_minloglevel=2 python run_executor.py --input_model=./sparse_int8_ir  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
   ```
-  or run shell
-  ```shell
-  bash run_benchmark.sh --input_model=./sparse_int8_ir  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
-  ```
 
 ## Performance
   run python
   
   ```shell
   GLOG_minloglevel=2 python run_executor.py --input_model=./sparse_int8_ir --mode=performance --batch_size=8 --seq_len=128
-  ```
-  
-  or run shell
-  
-  ```shell
-  bash run_benchmark.sh --input_model=./sparse_int8_ir  --mode=performance --batch_size=8 --seq_len=128
   ```
   
   or run C++
