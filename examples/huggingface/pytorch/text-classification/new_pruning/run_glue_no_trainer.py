@@ -20,11 +20,10 @@ import os
 import random
 from pathlib import Path
 import sys
-
-from intel_extension_for_transformers.optimization.config import WeightPruningConfig
-from intel_extension_for_transformers.optimization.pytorch_pruner.pruning import Pruning
-
 sys.path.insert(0, './')
+
+from intel_extension_for_transformers.optimization import WeightPruningConfig, Pruning
+
 import datasets
 from datasets import load_dataset, load_metric
 from torch.utils.data import DataLoader

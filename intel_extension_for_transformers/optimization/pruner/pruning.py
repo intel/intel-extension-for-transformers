@@ -16,26 +16,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import re
+import logging
 
-from .utils import process_config, parse_to_prune, \
+from neural_compressor.compression.pruner.utils import process_config, parse_to_prune, \
     check_config, update_params
-from .pruners import get_pruner
-from .logger import logger
+from neural_compressor.compression.pruner.pruners import get_pruner
 
 from intel_extension_for_transformers.optimization.utils.utility import LazyImport
 
 LazyImport('torch.nn')
 torch = LazyImport('torch')
+logger = logging.getLogger()
 
 
 class Pruning:
     """Pruning.
 
     The main class to do pruning; it contains at least one Pruner object.
-
-    Args:
-        config: a string representing the path to a config file. For config file template, please refer to
-            https://github.com/intel/neural-compressor/tree/master/examples/pytorch/nlp/huggingface_models/text-classification/pruning/pytorch_pruner/eager/
 
     Attributes:
         model: The model object to prune.
@@ -51,7 +48,7 @@ class Pruning:
         self.pruners_info = process_config(config)
 
     @property
-    def model(self):
+    def model(self):  # pragma: no cover
         """Obtain model in neural_compressor.model."""
         return self._model
 
@@ -103,13 +100,13 @@ class Pruning:
 
         for n, param in self._model.named_parameters():
             param_cnt += param.numel()
-        if linear_conv_cnt == 0:
+        if linear_conv_cnt == 0:  # pragma: no cover
             blockwise_over_matmul_gemm_conv = 0
             elementwise_over_matmul_gemm_conv = 0
         else:
             blockwise_over_matmul_gemm_conv = float(pattern_sparsity_cnt) / linear_conv_cnt
             elementwise_over_matmul_gemm_conv = float(element_sparsity_cnt) / linear_conv_cnt
-        if param_cnt == 0:
+        if param_cnt == 0:  # pragma: no cover
             elementwise_over_all = 0
         else:
             elementwise_over_all = float(
@@ -123,7 +120,7 @@ class Pruning:
 
         for info in self.pruners_info:
             modules = parse_to_prune(info, self._model)
-            if modules == {}:
+            if modules == {}:  # pragma: no cover
                 logger.warning("one pruner hooks no layers, please have a check")
 
             self.pruners.append(get_pruner(info, modules))

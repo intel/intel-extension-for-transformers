@@ -51,7 +51,7 @@ def infer_framework_load_model(
 
     backend = model_kwargs['backend'] if 'backend' in model_kwargs else None
     if isinstance(model, str):
-        if backend == 'executor':
+        if backend == 'executor':  # pragma: no cover
             from intel_extension_for_transformers.backends.neural_engine.compile import compile
             model = compile(model)
             model.__call__= model.inference

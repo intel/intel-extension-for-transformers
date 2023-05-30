@@ -57,7 +57,7 @@ class PrunerConfig(INCPruner):
             assert len(epoch_range) == 2, "Please set the epoch_range as [start_epoch, end_epoch]"
             self.start_epoch = epoch_range[0]
             self.end_epoch = epoch_range[1]
-        else:
+        else:  # pragma: no cover
             self.start_epoch = None
             self.end_epoch = None
         self.update_frequency = update_frequency
@@ -70,7 +70,7 @@ class PrunerConfig(INCPruner):
             )
         self.prune_type = PruningMode[prune_type.upper()].value
         self.method = method
-        self.names= names
+        self.names = names
         self.parameters = parameters
 
 

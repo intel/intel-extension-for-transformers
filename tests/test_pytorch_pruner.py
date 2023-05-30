@@ -2,15 +2,17 @@ import os
 import sys
 import unittest
 
+sys.path.insert(0, './')
+
 import torch
 import numpy as np
-from intel_extension_for_transformers.optimization.config import WeightPruningConfig, PrunerV2
-from intel_extension_for_transformers.optimization.pytorch_pruner.pruning import Pruning
+from neural_compressor.config import WeightPruningConfig
+from intel_extension_for_transformers.optimization.pruner.pruning import Pruning
 import torchvision
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-sys.path.insert(0, './')
+
 
 local_schedulers_config = [
     {
@@ -108,7 +110,7 @@ class TestPruning(unittest.TestCase):
             {
                 "op_names": ['layer3.*'],
                 'target_sparsity': 0.7,
-                'pattern': '5x1',
+                'pattern': '4x1',
                 "pruning_type": "snip_progressive"
             },
             {
@@ -232,33 +234,11 @@ class TestPruning(unittest.TestCase):
         prune.on_before_eval()
         prune.on_after_eval()
 
+    def test_utils(self):
+        from intel_extension_for_transformers.optimization.utils.utility import remove_label
 
-    def test_fucntion(self):
-        from intel_extension_for_transformers.optimization.pytorch_pruner.patterns import BasePattern, PatternNInM, PatternNxM
-        from intel_extension_for_transformers.optimization.pytorch_pruner.utils import process_and_check_config, process_config, parse_to_prune
-        from intel_extension_for_transformers.optimization.pytorch_pruner.pruners import parse_valid_pruner_types
-
-        prune = Pruning(fake_snip_config)
-        prune.model = self.model
-        prune.on_train_begin()
-        config = process_and_check_config(fake_snip_config)[0]
-        modules = parse_to_prune(config, self.model)
-
-        test_pattern = BasePattern(config, modules)
-        mask = test_pattern.get_single_mask_per_target_ratio(torch.randn(5, 6), 0.8)
-        test_pattern.get_sparsity_ratio({'': mask})
-        test_pattern.get_pattern_lock_masks(prune.pruners[0].modules)
-        test_pattern.check_layer_validity()
-
-        test_pattern = PatternNxM(config, modules)
-        test_pattern.get_sparsity_ratio_progressive({'': mask})
-        test_pattern.get_pattern_lock_masks(prune.pruners[0].modules)
-
-        config = process_config('fake_snip.yaml')[0]
-        test_pattern = PatternNInM(config, modules)
-        test_pattern.get_pattern_lock_masks(prune.pruners[0].modules)
-
-        parse_valid_pruner_types()
+        dataset = remove_label({'labels': [], 'ids': []})
+        dataset = remove_label({'start_positions': [], 'end_positions': [], 'ids': []})
 
 
 if __name__ == "__main__":

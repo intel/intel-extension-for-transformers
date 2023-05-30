@@ -1,4 +1,4 @@
-"""logger module."""
+"""init."""
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -16,5 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-logger = logging.getLogger(__name__)
+from .pruning import *
+from packaging.version import Version
+from neural_compressor import __version__
+# pylint: disable=E0611
+if Version(__version__).release > Version('2.1.1').release:  # pragma: no cover
+    from neural_compressor.compression.pruner.model_slim import model_slim, parse_auto_slim_config

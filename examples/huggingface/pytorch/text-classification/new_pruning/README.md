@@ -6,7 +6,7 @@ This document describes the step-by-step instructions for reproducing the prunin
 ## Environment
 ```shell
 # install dependencies
-cd examples/optimization/pytorch/huggingface/pytorch_pruner
+cd examples/huggingface/pytorch/text-classification/new_pruning
 pip install -r requirements.txt
 ```
 
