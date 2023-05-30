@@ -46,7 +46,7 @@ class regs_pool {
   Xbyak::CodeGenerator* code_;
   const size_t stack_size_;
   const size_t stack_align_;
-  const bool make_epilog_;
+  const bool make_epilog_, evex_;
 
   std::array<int, reg_kind_size> ridx_next;       // The index of next register to be allocated
   const std::array<int, reg_kind_size> ridx_max;  // max number of registers  to be allocated
@@ -73,7 +73,9 @@ class regs_pool {
       case reg_kind::gpr:
         return sf_.t[idx].getIdx();
       case reg_kind::xmm:
-        if (idx < 16) {
+        if (!evex_) {
+          return idx;
+        } else if (idx < 16) {
           return idx + 16;  // map 0-15 to zmm16-zmm31
         } else {
           return idx - 16;  // map 15-31 to zmm0-zmm15
@@ -140,12 +142,13 @@ class regs_pool {
    */
   regs_pool(  //
       Xbyak::CodeGenerator* const code, const int pNum, const std::array<int, 3UL> reg_num = zero_x3,
-      const size_t stack_size = 0, const bool make_epilog = true, const size_t stack_align = 8)
+      const size_t stack_size = 0, const bool make_epilog = true, const size_t stack_align = 8, const bool evex = true)
       : sf_(code, pNum, reg_num[get_reg_kind_i<Reg64>()], 0, false),  // stack memory and epilogue managed here
         code_(code),
         stack_size_(stack_size),
         stack_align_(stack_align),
         make_epilog_(make_epilog),
+        evex_(evex),
         ridx_next(zero_x3),
         ridx_max({reg_num[0] & (~UseRCX) & (~UseRDX), reg_num[1], reg_num[2]}),
         ridx_touched(zero_x3),
@@ -153,7 +156,7 @@ class regs_pool {
     // availability check
     SPARSE_LOG_IF(FATAL, get_max<Reg64>() + pNum > 15)  // #{pNum + num_gpr [+rcx] + [rdx]} <= 14
         << "No more GPR registers!";
-    SPARSE_LOG_IF(FATAL, get_max<Zmm>() > 32) << "No more XMM registers!";
+    SPARSE_LOG_IF(FATAL, get_max<Zmm>() > (evex ? 32 : 16)) << "No more XMM registers!";
     SPARSE_LOG_IF(FATAL, get_max<Opmask>() > 7) << "No more mask registers!";
     SPARSE_LOG_IF(FATAL, stack_align < 8 || (stack_align & (stack_align - 1)) != 0)
         << "stack alignment must be a power of 2!";
@@ -211,7 +214,7 @@ class regs_pool {
 
 #ifdef _WIN32
     // restore xmm on demend
-    static constexpr int CALLER_SAVED_XMM = 32 - xmm_to_preserve;
+    const int CALLER_SAVED_XMM = (evex_ ? 32 : 16) - xmm_to_preserve;
     const auto num_to_save = get_max<Zmm>() - CALLER_SAVED_XMM;
     if (num_to_save > 0) {
       for (int i = 0; i < num_to_save; ++i)

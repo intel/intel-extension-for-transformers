@@ -18,8 +18,8 @@ namespace jd {
 
 void jit_binary_injector::binary_injector_init(jit_generator* ptr) { h = ptr; }
 void jit_binary_injector::set_mask(Opmask mask) { this->mask = mask; }
-void jit_binary_injector::compute_vector(Zmm zmm_src1, RegExp src2, binaryop_attr op_attr, bool enable_mask,
-                                         bool broadcast) {
+void jit_binary_injector::compute_vector(const Xmm& zmm_src1, const RegExp& src2, const binaryop_attr& op_attr,
+                                         bool enable_mask, bool broadcast) {
   switch (op_attr.op_alg) {
     case binaryop_alg::add:
       add(zmm_src1, src2, op_attr.op_dt, enable_mask, broadcast);
@@ -42,7 +42,7 @@ void jit_binary_injector::compute_vector(Zmm zmm_src1, RegExp src2, binaryop_att
   }
 }
 
-void jit_binary_injector::per_channel_quant(Zmm src1, RegExp src2, binaryop_attr op_attr) {
+void jit_binary_injector::per_channel_quant(const Xmm& src1, const RegExp& src2, const binaryop_attr& op_attr) {
   get_addr(reg_tmp, op_attr, addr_type::scale);
   h->vbroadcastss(zmm_tmp, h->dword[reg_tmp + src2]);
   get_addr(reg_tmp, op_attr, addr_type::zp);
@@ -58,7 +58,7 @@ void jit_binary_injector::per_channel_quant(Zmm src1, RegExp src2, binaryop_attr
   }
 }
 
-void jit_binary_injector::per_channel_dequant(Zmm src1, RegExp src2, binaryop_attr op_attr) {
+void jit_binary_injector::per_channel_dequant(const Xmm& src1, const RegExp& src2, const binaryop_attr& op_attr) {
   if (op_attr.op_dt == data_type::u8)
     h->vpmovzxbd(src1, Xmm(src1.getIdx()));  // u8->s32
   else if (op_attr.op_dt == data_type::s8)
@@ -72,7 +72,7 @@ void jit_binary_injector::per_channel_dequant(Zmm src1, RegExp src2, binaryop_at
   mul(src1, reg_tmp + src2, data_type::fp32, false, true);
 }
 
-void jit_binary_injector::mul(Zmm src1, RegExp src2, data_type op_dt, bool enable_mask, bool broadcast) {
+void jit_binary_injector::mul(const Xmm& src1, const RegExp& src2, data_type op_dt, bool enable_mask, bool broadcast) {
   if (op_dt == data_type::fp16) {
     h->vmulph(enable_mask ? src1 | mask : src1, src1, broadcast ? h->ptr_b[src2] : h->ptr[src2]);
   } else if (op_dt == data_type::fp32) {
@@ -82,7 +82,7 @@ void jit_binary_injector::mul(Zmm src1, RegExp src2, data_type op_dt, bool enabl
   }
 }
 
-void jit_binary_injector::add(Zmm src1, RegExp src2, data_type op_dt, bool enable_mask, bool broadcast) {
+void jit_binary_injector::add(const Xmm& src1, const RegExp& src2, data_type op_dt, bool enable_mask, bool broadcast) {
   if (op_dt == data_type::fp32)
     h->vaddps(enable_mask ? src1 | mask : src1, src1, broadcast ? h->ptr_b[src2] : h->ptr[src2]);
   if (op_dt == data_type::s32)
@@ -93,7 +93,7 @@ void jit_binary_injector::add(Zmm src1, RegExp src2, data_type op_dt, bool enabl
     h->vpaddusb(enable_mask ? src1 | mask : src1, src1, broadcast ? h->ptr_b[src2] : h->ptr[src2]);
 }
 
-void jit_binary_injector::sub(Zmm src1, RegExp src2, data_type op_dt, bool enable_mask, bool broadcast) {
+void jit_binary_injector::sub(const Xmm& src1, const RegExp& src2, data_type op_dt, bool enable_mask, bool broadcast) {
   if (op_dt == data_type::fp32)
     h->vsubps(enable_mask ? src1 | mask : src1, src1, broadcast ? h->ptr_b[src2] : h->ptr[src2]);
   if (op_dt == data_type::s32)
@@ -104,12 +104,12 @@ void jit_binary_injector::sub(Zmm src1, RegExp src2, data_type op_dt, bool enabl
     h->vpsubusb(enable_mask ? src1 | mask : src1, src1, broadcast ? h->ptr_b[src2] : h->ptr[src2]);
 }
 
-void jit_binary_injector::init_quantization(Zmm zmm, Reg64 reg) {
+void jit_binary_injector::init_quantization(const Xmm& zmm, const Reg64& reg) {
   zmm_tmp = zmm;
   reg_tmp = reg;
 }
 
-void jit_binary_injector::get_addr(Reg64 reg, binaryop_attr op_attr, addr_type type) {
+void jit_binary_injector::get_addr(const Reg64& reg, binaryop_attr op_attr, addr_type type) {
   int64_t addr;
   switch (type) {
     case addr_type::normal:

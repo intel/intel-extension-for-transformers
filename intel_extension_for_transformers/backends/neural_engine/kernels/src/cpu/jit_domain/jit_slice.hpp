@@ -15,47 +15,56 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SLICE_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SLICE_HPP_
 
-#include <utility>
 #include <vector>
-#include <map>
-#include "jit_generator.hpp"
-#include "src/utils.hpp"
-#include "kernels/slice_types.hpp"
-#include "jit_binary_injector.hpp"
 
-#define SLICE_GET_OFF(field) offsetof(ssd::slice_data_t, field)
+#include "jit_binary_injector.hpp"
+#include "jit_generator.hpp"
+#include "regs_pool.hpp"
 
 namespace jd {
 class jit_slice_t : public jit_generator {
-  using Zmm = Xbyak::Zmm;
-  using Reg32 = Xbyak::Reg32;
-  using Reg64 = Xbyak::Reg64;
-  using Opmask = Xbyak::Opmask;
-
  public:
-  explicit jit_slice_t(const ssd::slice_param_t& param) : jit_generator(), param_(param) { assign_regs(); }
+  struct param_t {
+    bool use_avx512;
+    int step;
+    int src_axis_size;
+    int inner_size;
+    int copy_size;
+    int dt_size;
+  };
+  struct rt_data_t {
+    const void* src;
+    void* dst;
+  };
+
+  explicit jit_slice_t(const param_t& param)
+      : jit_generator(),
+        use_avx512(param.use_avx512),
+        step(param.step),
+        src_axis_size(param.src_axis_size),
+        inner_size(param.inner_size),
+        copy_size(param.copy_size),
+        dt_size(param.dt_size) {
+    SPARSE_LOG_IF(FATAL, dt_size != 1 && dt_size != 2 && dt_size != 4) << "Unexpected dt_size: " << dt_size;
+  }
   virtual ~jit_slice_t() {}
 
  private:
   void generate() override;
-  void assign_regs();
-  void copy_continuously();
-  void copy_by_step();
 
-  void load_params() {
-    mov(src_addr, ptr[reg_param + SLICE_GET_OFF(src)]);
-    mov(dst_addr, ptr[reg_param + SLICE_GET_OFF(dst)]);
-  }
+  template <bool USE_AVX512>
+  void generate_();
+  template <bool USE_AVX512>
+  inline void copy_by_step(regs_pool* const rp, const Reg64 dst, const Reg64 src);
+  template <bool USE_AVX512>
+  inline void copy_continuously(regs_pool* const rp, const Reg64 dst, const Reg64 src);
 
- private:
-  ssd::slice_param_t param_;
-  jit_binary_injector binary_injector;
-
-  Reg64 reg_param;
-  Reg64 src_addr;
-  Reg64 dst_addr;
-  Opmask extend_tail_mask;
-  std::vector<Reg64> binaryop_addr;
+  const bool use_avx512;
+  const int step;
+  const int src_axis_size;
+  const int inner_size;
+  const int copy_size;
+  const int dt_size;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SLICE_HPP_

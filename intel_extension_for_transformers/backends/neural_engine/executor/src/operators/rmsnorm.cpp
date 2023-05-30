@@ -64,7 +64,7 @@ static inline __m512 bf16_load(float* addr) {
 #endif
 }
 #elif __AVX2__
-__m256 bf16_load(float* addr) {
+static inline __m256 bf16_load(float* addr) {
   auto bf16_data = _mm_loadu_ps(addr);
   auto y = _mm256_cvtepu16_epi32(_mm_castps_si128(bf16_data));
   return _mm256_castsi256_ps(_mm256_bslli_epi128(y, 2));

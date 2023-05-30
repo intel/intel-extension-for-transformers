@@ -158,4 +158,36 @@ void jit_generator::tile_product_amx_bf16ps(const Xbyak::Operand& reg_ksize, con
 const std::array<float16_t, 3> exp_approx_f16_coeff = {
     float16_t(exp_approx_f32_coeff[0]), float16_t(exp_approx_f32_coeff[1]), float16_t(exp_approx_f32_coeff[2])};
 
+void jit_generator::vmov_avx2(const RegExp& dst, const RegExp& src, const int bytes, const Xmm& tmp_xmm,
+                              const Reg64& tmp_r64) {
+  SPARSE_LOG_IF(FATAL, bytes <= 0 || bytes >= 32) << "AVX2 tail length between 1 and 31";
+  if (bytes >= 16) {
+    vmovups(tmp_xmm, xword[src]);
+    vmovups(xword[dst], tmp_xmm);
+    if (bytes > 16) vmovups(tmp_xmm, xword[src + (bytes - 16)]);
+    if (bytes > 16) vmovups(xword[dst + (bytes - 16)], tmp_xmm);
+  } else if (bytes >= 8) {
+    mov(tmp_r64, qword[src]);
+    mov(qword[dst], tmp_r64);
+    if (bytes > 8) mov(tmp_r64, qword[src + (bytes - 8)]);
+    if (bytes > 8) mov(qword[dst + (bytes - 8)], tmp_r64);
+  } else if (bytes >= 4) {
+    const auto tmp_r32 = tmp_r64.cvt32();
+    mov(tmp_r32, dword[src]);
+    mov(dword[dst], tmp_r32);
+    if (bytes > 4) mov(tmp_r32, dword[src + (bytes - 4)]);
+    if (bytes > 4) mov(dword[dst + (bytes - 4)], tmp_r32);
+  } else if (bytes >= 2) {
+    const auto tmp_r32 = tmp_r64.cvt32();
+    movzx(tmp_r32, word[src]);
+    mov(word[dst], tmp_r32.cvt16());
+    if (bytes > 2) movzx(tmp_r32, word[src + (bytes - 2)]);
+    if (bytes > 2) mov(word[dst + (bytes - 2)], tmp_r32.cvt16());
+  } else if (bytes == 1) {
+    const auto tmp_r32 = tmp_r64.cvt32();
+    movzx(tmp_r32, byte[src]);
+    mov(byte[dst], tmp_r32.cvt8());
+  }
+}
+
 }  // namespace jd

@@ -54,10 +54,21 @@ add_library(host_operators STATIC
 )
 
 if(WIN32)
-  target_compile_options(host_operators PRIVATE /arch:AVX512)
+    if(NE_WITH_AVX2)
+    set(COMPILER_ARCH_OPTION /arch:AVX2)
+    else()
+    set(COMPILER_ARCH_OPTION /arch:AVX512)
+    endif()
 else()
-  target_compile_options(host_operators PRIVATE -march=skylake-avx512)
+    if(NE_WITH_AVX2)
+    set(COMPILER_ARCH_OPTION -mavx2)
+    else()
+    set(COMPILER_ARCH_OPTION -march=skylake-avx512)
+    endif()
 endif()
+
+target_compile_options(host_operators PRIVATE ${COMPILER_ARCH_OPTION})
+
 
 # Header file include path
 target_include_directories(host_operators
@@ -108,11 +119,8 @@ function(register_gtest_func)
         PRIVATE
             ${libs}
     )
-    if(WIN32)
-      target_compile_options(${exe} PRIVATE /arch:AVX512)
-    else()
-      target_compile_options(${exe} PRIVATE -march=skylake-avx512)
-    endif()
+    
+    target_compile_options(${exe} PRIVATE ${COMPILER_ARCH_OPTION})
     set_target_properties(${exe}
       PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

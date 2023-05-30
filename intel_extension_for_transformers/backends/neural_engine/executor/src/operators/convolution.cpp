@@ -547,12 +547,12 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   convolution_pd_ = dnnl::convolution_forward::primitive_desc(convolution_d, attr_, eng_);
   memory::desc scratchpad_md = convolution_pd_.scratchpad_desc();
   if (scratchpad_) {
-    free(scratchpad_);
+    aligned_free(scratchpad_);
     scratchpad_ = nullptr;
   }
 
-  scratchpad_ = reinterpret_cast<void*>(
-    aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
+  scratchpad_ =
+      reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
   memory scratchpad_m = memory(scratchpad_md, eng_, scratchpad_);
   memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
 

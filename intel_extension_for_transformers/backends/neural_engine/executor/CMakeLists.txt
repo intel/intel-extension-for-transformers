@@ -42,10 +42,15 @@ add_library(neural_engine SHARED ${SRC_SET})
 target_compile_definitions(neural_engine PRIVATE NEURALENGINE_SHARED_LIB_)
 
 if(WIN32)
-target_compile_options(neural_engine PRIVATE /arch:AVX512)
+    if(NE_WITH_AVX2)
+    target_compile_options(neural_engine PRIVATE /arch:AVX2)
+    else()
+    target_compile_options(neural_engine PRIVATE /arch:AVX512)
+    endif()
 else()
-target_compile_options(neural_engine PRIVATE -march=native)
+    target_compile_options(neural_engine PRIVATE -march=native)
 endif()
+
 target_compile_definitions(neural_engine PRIVATE NEURALENGINE_BUILD)
 
 set(DEP_LIBS

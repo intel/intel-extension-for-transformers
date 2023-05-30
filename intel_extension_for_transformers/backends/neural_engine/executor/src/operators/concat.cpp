@@ -287,6 +287,8 @@ void ConcatOperator::Forward(const vector<Tensor*>& input,
         _mm512_mask_storeu_epi8(dst_addr + loop_size, tail_mask, reg);
       }
     }
+#else
+    LOG(ERROR) << "AVX2 concat not implemented";
 #endif
   }
 

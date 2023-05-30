@@ -43,7 +43,7 @@ class GroupNormOperator : public Operator {
   explicit GroupNormOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~GroupNormOperator() {
 #ifdef WITH_SPARSELIB
-    if (work_space != nullptr) aligned_free(work_space);
+    if (work_space != nullptr) free(work_space);
 #endif
   }
 

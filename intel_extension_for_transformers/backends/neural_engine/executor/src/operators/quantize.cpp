@@ -128,6 +128,7 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
     }
     // quantize
     if (src_data != nullptr && dst_data != nullptr) {
+#if __AVX512F__
       if (src_->dtype() == "bf16") {
         if (dst_->dtype() == "s8") {
           Quantize_bf16_s8(src_->size(), src_data, scales_, dst_data);
@@ -138,7 +139,6 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
         }
         return;
       }
-#if __AVX512F__
       if (dst_->dtype() == "u8") {
         Quantize_fp32_u8(src_->size(), src_data, min_data, scales_, dst_data);
       } else if (dst_->dtype() == "s8") {

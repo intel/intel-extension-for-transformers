@@ -243,7 +243,7 @@ vector<Tensor*> make_transposed_int8_tensor_obj(const vector<shared_ptr<TensorCo
                                   reinterpret_cast<char*>(dst_data) + y * tensors[0]->shape()[1]);
 #else
         executor::Quantize(tensors[0]->shape()[1], tensors[0]->dtype(), &transposed_data[y * tensors[0]->shape()[1]],
-                           min_data + y, scales, dst_data + y * tensors[0]->shape()[1]);
+                           min_data + y, scales, reinterpret_cast<char*>(dst_data) + y * tensors[0]->shape()[1]);
 #endif
       }
     }

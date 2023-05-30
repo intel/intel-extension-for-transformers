@@ -197,7 +197,7 @@ void MatmulOperator::MapTensors(const vector<Tensor*>& input, const vector<Tenso
   }
 }
 
-#if __AVX512F__ && !__AMXINT8__
+#if (__AVX512F__ || __AVX2__) && !__AMXINT8__
 void MatmulOperator::SetTransposeMode() {
   if (dst_->dtype() == "fp32" && binary_add_ && src0_->dtype() == "fp32") {
     vector<int64_t> src0_perm_transpose{2, 0, 3, 1};
@@ -209,6 +209,8 @@ void MatmulOperator::SetTransposeMode() {
     transpose_mode_ = (dst_perm_ == dst_perm_transpose) && (src1_perm_ == src1_perm_transpose);
   }
 }
+#elif __AVX2__
+void MatmulOperator::SetTransposeMode() { assert(false); }  // avx2 not implemented
 #endif
 
 void MatmulOperator::DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -359,7 +361,6 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   //   std::cout <<  "here is matmul src1 shape "  << input[1]->shape()[i]<< std::endl;
 
   // }
-
 
   vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
   vector<int64_t> src1_shape = GetShapes(src1_shape_origin, src1_perm_);
@@ -607,17 +608,11 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   src1_m_.set_data_handle(const_cast<void*>(src1_data), eng_stream_);
   dst_m_.set_data_handle(dst_data, eng_stream_);
 
-
-
-
-
-
   // 2. Reorder the data when the primitive memory and user memory are different
 
   memory any_src0_m = src0_m_;
   memory any_src1_m = src1_m_;
   memory any_dst_m = dst_m_;
-
 
   if (matmul_pd_.src_desc() != src0_m_.get_desc()) {
     any_src0_m = memory(matmul_pd_.src_desc(), eng_);
@@ -633,7 +628,6 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
     any_dst_m = memory(matmul_pd_.dst_desc(), eng_);
   }
-
 
   // the runtime calculation of dynamic quantization
 
@@ -651,7 +645,6 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   memory_args_[DNNL_ARG_SRC_0] = any_src0_m;
   if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m;
   memory_args_[DNNL_ARG_DST] = any_dst_m;
-
 
   // has post_op: binary_add
   if (post_ != nullptr && binary_add_) {

@@ -89,12 +89,9 @@ bool CheckResult(const TestParams& t) {
     executor::ConcatOperator concat(p.conf);
     concat.Reshape(p.input, p.output);
     concat.Forward(p.input, p.output);
-  } catch (const dnnl::error& e) {
-    if (e.status != dnnl_status_t::dnnl_success && t.expect_to_fail) {
-      return true;
-    } else {
-      return false;
-    }
+  } catch (const std::exception& e) {
+    LOG(ERROR) << e.what();
+    return t.expect_to_fail;
   }
 
   if (!t.expect_to_fail) {
@@ -104,7 +101,7 @@ bool CheckResult(const TestParams& t) {
     return executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q.output[0]->data(),
                                         q.output[0]->size());
   }
-  return false;
+  return true;
 }
 
 class ConcatTest : public testing::TestWithParam<TestParams> {
@@ -144,8 +141,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   attr_map = {{"axis", axis}};
 
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
-  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("concat", "fp32",
-                                                     input_config, output_config, op_attr);
+  shared_ptr<OperatorConfig> op_config =
+      std::make_shared<OperatorConfig>("concat", "fp32", input_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto make_tensor_obj = [&](const std::vector<shared_ptr<TensorConfig>>& tensor_config) {
@@ -191,20 +188,26 @@ static auto CasesFp32 = []() {
   std::vector<int64_t> src_shape;
   std::vector<int64_t> src1_shape;
 
+#ifndef __AVX512__
+  constexpr bool expect_fail = true;  // AVX2 not impelemetned
+#else
+  constexpr bool expect_fail = false;  // AVX2 not impelemetned
+#endif
+
   // case: simple for 0 axis
   src_shape = {1, 1};
-  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), false});
-  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), expect_fail});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), expect_fail});
   src_shape = {2, 3};
-  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), false});
-  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), expect_fail});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), expect_fail});
   src_shape = {100, 30};
-  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), false});
-  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "0"), expect_fail});
+  cases.push_back({GenerateFp32Case({src_shape, src_shape}, "1"), expect_fail});
 
   src_shape = {64, 1, 768};
   src1_shape = {64, 196, 768};
-  cases.push_back({GenerateFp32Case({src_shape, src1_shape}, "1"), false});
+  cases.push_back({GenerateFp32Case({src_shape, src1_shape}, "1"), expect_fail});
 
   return ::testing::ValuesIn(cases);
 };

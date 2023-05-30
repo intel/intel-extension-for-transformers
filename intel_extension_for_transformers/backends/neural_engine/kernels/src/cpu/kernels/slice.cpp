@@ -14,70 +14,87 @@
 
 #include "slice.hpp"
 
+#include <functional>
+
+#define KERNEL_INIT_CHECK(f)                                         \
+  if (!(f)) {                                                        \
+    SPARSE_LOG(ERROR) << "MHA dense kernel requires `" << #f << "`"; \
+    return false;                                                    \
+  }
+
 namespace jd {
 
 bool slice_kd_t::init() {
-  if (!isa_available(avx512_core)) return false;
-  auto& tensor_desc = op_desc_.tensor_descs();
-  auto op_attrs = op_desc_.attrs();
-  param_.begin = str_to_num<int>(op_attrs["begin"]);
-  param_.step = str_to_num<int>(op_attrs["step"]);
-  size_t axis = str_to_num<int>(op_attrs["axis"]);
-  SPARSE_LOG_IF(FATAL, param_.step > 3) << "step only support 1,2 now";
-  auto& src_shape = tensor_desc[0].shape();
-  param_.src_axis_size = src_shape[axis];
-  for (size_t i = 0; i < src_shape.size(); i++)
-    if (i < axis)
-      param_.outer_size *= src_shape[i];
-    else if (i == axis)
-      param_.dst_axis_size = shape()[axis];
-    else
-      param_.inner_size *= src_shape[i];
-  SPARSE_LOG_IF(FATAL, param_.begin + (param_.dst_axis_size - 1) * param_.step >= param_.src_axis_size)
-      << "slice out of range. Please check begin, step and length(the axis of dst tensor)";
-  param_.dt_size = get_data_size(tensor_desc[0].dtype());
+  const auto& attrs = op_desc_.attrs();
+  KERNEL_INIT_CHECK(attrs.find("step") != attrs.end());
+  KERNEL_INIT_CHECK(attrs.find("begin") != attrs.end());
+  KERNEL_INIT_CHECK(attrs.find("axis") != attrs.end());
+  KERNEL_INIT_CHECK(attrs.size() == 3)
+  step_ = str_to_num<int>(attrs.at("step"));
+  begin_ = str_to_num<int>(attrs.at("begin"));
+  axis_ = str_to_num<int>(attrs.at("axis"));
 
-  if (param_.step == 1)
-    param_.copy_size = param_.dst_axis_size * param_.inner_size * param_.dt_size;
-  else if (param_.inner_size > 1)
-    param_.copy_size = param_.inner_size * param_.dt_size;
-  else
-    param_.copy_size = (param_.dst_axis_size - 1) * param_.dt_size * param_.step;
+  SPARSE_LOG_IF(FATAL, step_ > 3) << "step only support 1,2 now";
+
   return true;
 }
 
+slice_k_t::slice_k_t(const std::shared_ptr<const kd_t>& kd)
+    : kernel_t(kd),
+      ts_descs(derived_kd()->get_operator_desc().tensor_descs()),
+      src_shape(ts_descs[0].shape()),
+      dst_shape(ts_descs[1].shape()),
+      axis(derived_kd()->axis()),
+      begin(derived_kd()->begin()),
+      step(derived_kd()->step()),
+      dt_size(get_data_size(ts_descs[0].dtype())),
+      outer_size(std::accumulate(src_shape.cbegin(), src_shape.cbegin() + axis, 1, std::multiplies<int>())),
+      src_axis_size(src_shape[axis]),
+      dst_axis_size(dst_shape[axis]),
+      inner_size(std::accumulate(src_shape.cbegin() + axis + 1, src_shape.cend(), 1, std::multiplies<int>())) {
+  const auto src_axis_size = src_shape[axis];
+  SPARSE_LOG_IF(FATAL, begin + (dst_axis_size - 1) * step + 1 > src_axis_size)
+      << "slice out of range. Please check begin, step and length(the axis of dst tensor)";
+}
+
 bool slice_k_t::init() {
-  auto& params = derived_kd()->params();
-  jit_kers_ = new jit_slice_t(params);
-  if (!jit_kers_->create_kernel()) return false;
+  const auto copy_size = (step == 1)        ? dst_axis_size * inner_size * dt_size
+                         : (inner_size > 1) ? inner_size * dt_size
+                                            : dst_axis_size * dt_size * step;
+
+  jit_kern_.reset(new jit_slice_t({
+      /* .use_avx512 = */ isa_available(avx512_core),
+      /* .step = */ step,
+      /* .src_axis_size = */ src_axis_size,
+      /* .inner_size = */ inner_size,
+      /* .copy_size = */ copy_size,
+      /* .dt_size = */ dt_size,
+  }));
+  if (!jit_kern_->create_kernel()) return false;
   return true;
 }
 
 bool slice_k_t::execute(const std::vector<const void*>& rt_data) const {
-  auto& params = derived_kd()->params();
-  const auto& jit_impl = jit_kers_;
-
-  if (params.inner_size > 1 && params.step > 1) {
+  const auto src = reinterpret_cast<const char*>(rt_data[0]);
+  const auto dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[1]));
+  if (inner_size > 1 && step > 1) {
 #pragma omp parallel for collapse(2)
-    for (int i = 0; i < params.outer_size; i++)
-      for (int j = 0; j < params.dst_axis_size; j++) {
-        ssd::slice_data_t data_param =
-            ssd::slice_data_t(const_cast<char*>(reinterpret_cast<const char*>(rt_data[0]) +
-                                                (i * params.src_axis_size + params.begin + j * params.step) *
-                                                    params.inner_size * params.dt_size),
-                              const_cast<char*>(reinterpret_cast<const char*>(rt_data[1]) +
-                                                (i * params.dst_axis_size + j) * params.inner_size * params.dt_size));
-        (*jit_impl)(&data_param);
+    for (int i = 0; i < outer_size; i++)
+      for (int j = 0; j < dst_axis_size; j++) {
+        jit_slice_t::rt_data_t data_param{
+            src + (i * src_axis_size + begin + j * step) * inner_size * dt_size,
+            dst + (i * dst_axis_size + j) * inner_size * dt_size,
+        };
+        (*jit_kern_)(&data_param);
       }
   } else {
 #pragma omp parallel for
-    for (int i = 0; i < params.outer_size; i++) {
-      ssd::slice_data_t data_param = ssd::slice_data_t(
-          const_cast<char*>(reinterpret_cast<const char*>(rt_data[0]) +
-                            (i * params.src_axis_size + params.begin) * params.inner_size * params.dt_size),
-          const_cast<char*>(reinterpret_cast<const char*>(rt_data[1]) +
-                            i * params.dst_axis_size * params.inner_size * params.dt_size));
-      (*jit_impl)(&data_param);
+    for (int i = 0; i < outer_size; i++) {
+      jit_slice_t::rt_data_t data_param{
+          src + (i * src_axis_size + begin) * inner_size * dt_size,
+          dst + i * dst_axis_size * inner_size * dt_size,
+      };
+      (*jit_kern_)(&data_param);
     }
   }
   return true;

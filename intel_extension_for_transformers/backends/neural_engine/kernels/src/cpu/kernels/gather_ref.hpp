@@ -23,7 +23,6 @@
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "src/utils.hpp"
-#include "kernels/gather_types.hpp"
 
 namespace jd {
 class gather_ref_k_t;
@@ -34,18 +33,14 @@ class gather_ref_kd_t : public kernel_desc_t {
 
   virtual ~gather_ref_kd_t() {}
 
- public:
   bool init() override { return true; };
   DECLARE_COMMON_PD_T(gather_ref_k_t, gather_ref_kd_t);
 
- public:
   inline std::vector<dim_t> shape() const { return op_desc_.tensor_descs()[2].shape(); }
   const operator_desc& get_operator_desc() const override { return op_desc_; }
-  const ssd::gather_param_t& params() const { return param_; }
 
  private:
   operator_desc op_desc_;
-  ssd::gather_param_t param_;
 };
 
 class gather_ref_k_t : public kernel_t {
@@ -54,12 +49,9 @@ class gather_ref_k_t : public kernel_t {
   explicit gather_ref_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
   virtual ~gather_ref_k_t() {}
 
- public:
   bool init() override { return true; };
-
   bool execute(const std::vector<const void*>& rt_data) const override;
 
- public:
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 };
 

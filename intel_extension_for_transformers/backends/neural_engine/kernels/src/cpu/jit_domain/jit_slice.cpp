@@ -13,101 +13,177 @@
 //  limitations under the License.
 
 #include "jit_slice.hpp"
-#include "kernels/slice_types.hpp"
+
+#define GET_OFF(field) offsetof(rt_data_t, field)
 
 namespace jd {
 
-void jit_slice_t::copy_continuously() {
-  int loops = param_.copy_size / (512 / 8);
-  int offset;
-  for (int m = 0; m < loops; ++m) {
-    offset = m * 512 / 8;
-    vmovdqu32(Zmm(m % 16), ptr[src_addr + offset]);
-    vmovdqu32(ptr[dst_addr + offset], Zmm(m % 16));
+template <bool USE_AVX512>
+void jit_slice_t::copy_continuously(regs_pool* const rp, const Reg64 dst, const Reg64 src) {
+  using VMM = std::conditional_t<USE_AVX512, Zmm, Ymm>;
+  constexpr auto BYTES_VMM = USE_AVX512 ? BYTES_ZMM : BYTES_YMM;
+  const auto loops = copy_size / BYTES_VMM;
+
+  const auto vreg_xs = rp->reg<VMM>();
+  for (size_t m = 0; m < loops; ++m) {
+    const auto offset = m * BYTES_VMM;
+    vmovups(vreg_xs, ptr[src + offset]);
+    vmovups(ptr[dst + offset], vreg_xs);
   }
 
-  int remain = param_.copy_size % (512 / 8) / param_.dt_size;
-  int mask = (1LL << remain) - 1, extend_mask = (1LL << (remain * param_.dt_size)) - 1;
   // tail
-  if (mask != 0) {
-    mov(r10, extend_mask);
-    kmovq(extend_tail_mask, r10);
-    offset = loops * 512 / 8;
-    vmovdqu8(Zmm(0) | extend_tail_mask, ptr[src_addr + offset]);
-    vmovdqu8(ptr[dst_addr + offset] | extend_tail_mask, Zmm(0));
-  }
-}
-
-void jit_slice_t::copy_by_step() {
-  int loops = param_.copy_size / (512 / 8);
-  int src_offset;
-  int dst_offset;
-  for (int m = 0; m < loops; ++m) {
-    src_offset = m * 512 / 8;
-    dst_offset = m * 256 / 8;
-    vmovdqu32(Zmm(m % 16), ptr[src_addr + src_offset]);
-    switch (param_.dt_size) {
-      case 4:
-        vpmovqd(ptr[dst_addr + dst_offset], Zmm(m % 16));
-        break;
-      case 2:
-        vpmovdw(ptr[dst_addr + dst_offset], Zmm(m % 16));
-        break;
-      case 1:
-        vpmovwb(ptr[dst_addr + dst_offset], Zmm(m % 16));
-        break;
-      default:
-        break;
-    }
-  }
-  int remain = (param_.copy_size % (512 / 8)) / param_.dt_size;
-  int mask = (1LL << remain) - 1;
-  // tail
-  if (mask != 0) {
-    mov(r10.cvt32(), mask);
-    kmovd(extend_tail_mask, r10.cvt32());
-    src_offset = loops * 512 / 8;
-    dst_offset = loops * 256 / 8;
-    vmovdqu32(Zmm(0), ptr[src_addr + src_offset]);
-    switch (param_.dt_size) {
-      case 4:
-        vpmovqd(ptr[dst_addr + dst_offset] | extend_tail_mask, Zmm(0));
-        break;
-      case 2:
-        vpmovdw(ptr[dst_addr + dst_offset] | extend_tail_mask, Zmm(0));
-        break;
-      case 1:
-        vpmovwb(ptr[dst_addr + dst_offset] | extend_tail_mask, Zmm(0));
-        break;
-      default:
-        break;
+  const int tail_bytes = copy_size % BYTES_VMM;
+  const auto bytes_mask = (1LL << tail_bytes) - 1;
+  const auto extend_tail_mask = rp->reg<Opmask>();
+  const auto tmp_r64 = rp->reg<Reg64>();
+  if (tail_bytes != 0) {
+    const auto offset = loops * BYTES_VMM;
+    if (USE_AVX512) {
+      mov(tmp_r64, bytes_mask);
+      kmovq(extend_tail_mask, tmp_r64);
+      vmovdqu8(vreg_xs | extend_tail_mask, ptr[src + offset]);
+      vmovdqu8(ptr[dst + offset] | extend_tail_mask, vreg_xs);
+    } else {
+      vmov_avx2(dst + offset, src + offset, tail_bytes, Xmm(vreg_xs.getIdx()), tmp_r64);
     }
   }
 }
 
-void jit_slice_t::generate() {
-  this->preamble();
-  load_params();
-  if (param_.inner_size > 1 && param_.step > 1)
-    prefetchnta(ptr[param_.inner_size * param_.step * param_.dt_size + src_addr]);
-  else
-    prefetchnta(ptr[param_.inner_size * param_.src_axis_size * param_.dt_size + src_addr]);
-  if (param_.inner_size == 1 && param_.step > 1)
-    copy_by_step();
-  else
-    copy_continuously();
-  this->postamble();
+template <bool USE_AVX512>
+void jit_slice_t::copy_by_step(regs_pool* const rp, const Reg64 dst, const Reg64 src) {
+  using VMM = std::conditional_t<USE_AVX512, Zmm, Ymm>;
+  constexpr auto BYTES_VMM = USE_AVX512 ? BYTES_ZMM : BYTES_YMM;
+  const auto loops = copy_size / BYTES_VMM;
+
+  const auto tmp_r64 = rp->reg<Reg64>();
+  for (size_t m = 0; m < loops; ++m) {
+    const auto src_offset = m * BYTES_VMM;
+    const auto dst_offset = m * BYTES_VMM / 2;
+    if (USE_AVX512) {
+      const auto vreg_xs = rp->reg<VMM>();
+      vmovups(vreg_xs, ptr[src + src_offset]);
+      switch (dt_size) {
+        case 4:
+          vpmovqd(ptr[dst + dst_offset], vreg_xs);
+          break;
+        case 2:
+          vpmovdw(ptr[dst + dst_offset], vreg_xs);
+          break;
+        case 1:
+          vpmovwb(ptr[dst + dst_offset], vreg_xs);
+          break;
+        default:
+          SPARSE_LOG(FATAL) << "Unexpected dt_size";
+      }
+    } else {
+      const auto xmms = rp->regs<Xmm, 4>();
+      switch (dt_size) {
+        case 4:
+          vmovd(xmms[0], dword[src + src_offset + 0]);
+          vmovd(xmms[1], dword[src + src_offset + 16]);
+          vpinsrd(xmms[0], xmms[0], dword[src + src_offset + 8], 1);
+          vpinsrd(xmms[1], xmms[1], dword[src + src_offset + 24], 1);
+          vpunpcklqdq(xmms[0], xmms[0], xmms[1]);
+          vmovups(xword[dst + dst_offset], xmms[0]);
+          break;
+        case 2:
+          vmovd(xmms[0], dword[src + src_offset + 0]);
+          vmovd(xmms[1], dword[src + src_offset + 8]);
+          vpinsrw(xmms[0], xmms[0], word[src + src_offset + 4], 1);
+          vpinsrw(xmms[1], xmms[1], word[src + src_offset + 12], 1);
+          vmovd(xmms[2], dword[src + src_offset + 16]);
+          vmovd(xmms[3], dword[src + src_offset + 24]);
+          vpinsrw(xmms[2], xmms[2], word[src + src_offset + 20], 1);
+          vpinsrw(xmms[3], xmms[3], word[src + src_offset + 28], 1);
+          vpunpckldq(xmms[0], xmms[0], xmms[1]);
+          vpunpckldq(xmms[2], xmms[2], xmms[3]);
+          vpunpcklqdq(xmms[0], xmms[0], xmms[2]);
+          vmovups(xword[dst + dst_offset], xmms[0]);
+          break;
+        case 1:
+          for (size_t ii = 0; ii < BYTES_VMM / 2; ++ii) {
+            movzx(tmp_r64.cvt32(), word[src + src_offset + ii * 2]);
+            mov(byte[dst + dst_offset + ii], tmp_r64.cvt8());
+          }
+          break;
+        default:
+          SPARSE_LOG(FATAL) << "Unexpected dt_size";
+      }
+    }
+  }
+  // tail
+  const auto tail_mask = rp->reg<Opmask>();
+  const auto tail = copy_size % BYTES_VMM / dt_size / 2;  // in terms of #elemets in dst
+  const int mask = (1LL << tail) - 1;
+  if (tail != 0) {
+    const auto src_offset = loops * BYTES_VMM;
+    const auto dst_offset = loops * BYTES_VMM / 2;
+    if (USE_AVX512) {
+      const auto vreg_xs = rp->reg<VMM>();
+      mov(tmp_r64.cvt32(), mask);
+      kmovd(tail_mask, tmp_r64.cvt32());
+      vmovups(vreg_xs, ptr[src + src_offset]);
+      switch (dt_size) {
+        case 4:
+          vpmovqd(ptr[dst + dst_offset] | tail_mask, vreg_xs);
+          break;
+        case 2:
+          vpmovdw(ptr[dst + dst_offset] | tail_mask, vreg_xs);
+          break;
+        case 1:
+          vpmovwb(ptr[dst + dst_offset] | tail_mask, vreg_xs);
+          break;
+        default:
+          SPARSE_LOG(FATAL) << "Unexpected dt_size";
+      }
+    } else {
+      const auto xmms = rp->regs<Xmm, 4>();
+      SPARSE_LOG_IF(FATAL, tail <= 0 || tail >= BYTES_VMM / dt_size) << "Unexpected tail length!";
+      switch (dt_size) {
+        case 4:
+          for (size_t ii = 0; ii < tail; ++ii) {  // TODO?
+            mov(tmp_r64, qword[src + src_offset + ii * 8]);
+            mov(dword[dst + dst_offset + ii * 4], tmp_r64.cvt32());
+          }
+          break;
+        case 2:
+          for (size_t ii = 0; ii < tail; ++ii) {
+            mov(tmp_r64.cvt32(), dword[src + src_offset + ii * 4]);
+            mov(word[dst + dst_offset + ii * 2], tmp_r64.cvt16());
+          }
+          break;
+        case 1:
+          for (size_t ii = 0; ii < tail; ++ii) {
+            movzx(tmp_r64.cvt32(), word[src + src_offset + ii * 2]);
+            mov(byte[dst + dst_offset + ii * 1], tmp_r64.cvt8());
+          }
+          break;
+        default:
+          SPARSE_LOG(FATAL) << "Unexpected dt_size";
+      }
+    }
+  }
 }
 
-void jit_slice_t::assign_regs() {
-  src_addr = r15;
-  dst_addr = r13;
-  extend_tail_mask = Xbyak::Opmask(3);
-#ifdef _WIN32
-  reg_param = rcx;
-#else
-  reg_param = rdi;
-#endif
+template <bool USE_AVX512>
+void jit_slice_t::generate_() {
+  const auto use_by_step = inner_size == 1 && step > 1;
+  regs_pool rp(this, 1, {3, (USE_AVX512 || !use_by_step) ? 1 : 4, 1}, 0, true, 8, USE_AVX512);
+  const auto src_addr = rp.reg<Reg64>();
+  const auto dst_addr = rp.reg<Reg64>();
+  mov(src_addr, ptr[rp.p[0] + GET_OFF(src)]);
+  mov(dst_addr, ptr[rp.p[0] + GET_OFF(dst)]);
+
+  if (inner_size > 1 && step > 1)
+    prefetchnta(ptr[inner_size * step * dt_size + src_addr]);
+  else
+    prefetchnta(ptr[inner_size * src_axis_size * dt_size + src_addr]);
+
+  if (use_by_step)
+    copy_by_step<USE_AVX512>(&rp, dst_addr, src_addr);
+  else
+    copy_continuously<USE_AVX512>(&rp, dst_addr, src_addr);
 }
 
+void jit_slice_t::generate() { use_avx512 ? generate_<true>() : generate_<false>(); }
 }  // namespace jd

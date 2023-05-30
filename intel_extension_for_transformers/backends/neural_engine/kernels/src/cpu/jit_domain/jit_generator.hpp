@@ -33,6 +33,7 @@ using Zmm = Xbyak::Zmm;
 using Ymm = Xbyak::Ymm;
 using Xmm = Xbyak::Xmm;
 using Reg64 = Xbyak::Reg64;
+using Reg32 = Xbyak::Reg32;
 using Opmask = Xbyak::Opmask;
 using RegExp = Xbyak::RegExp;
 
@@ -305,6 +306,17 @@ class jit_generator : public Xbyak::CodeGenerator {
   void tile_product_amx_bf16ps(const Xbyak::Operand& reg_ksize, const Reg64& src0, const Reg64& src1,
                                const Reg64& src0_stride, const Reg64& src1_stride, const Reg64& reg_tmp0,
                                const Reg64& reg_tmp1, std::function<Xbyak::Address(int, int)> dst_addr);
+
+  /**
+   * @brief Mov 1 ~ 31 bytes with AVX2
+   *
+   * @param dst destination address
+   * @param src source address
+   * @param bytes  number of bytes to move
+   * @param tmp_xmm a volatile XMM register for intermediate use
+   * @param tmp_r64 a volatile Reg64 register for intermediate use
+   */
+  void vmov_avx2(const RegExp& dst, const RegExp& src, const int bytes, const Xmm& tmp_xmm, const Reg64& tmp_r64);
 
   const uint8_t* jit_ker_ = nullptr;
   static constexpr uint64_t MAX_CODE_SIZE = 128 * 1024;

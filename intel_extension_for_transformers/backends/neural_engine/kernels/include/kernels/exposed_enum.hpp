@@ -62,6 +62,13 @@ namespace dynamic_quant {
 enum io { SRC, MAT_DST, SCALE_DST, SIZE };
 }
 
+namespace gather {
+enum io { SRC, IDX, DST, BINARY0, BINARY1, BINARY2, BINARY3, BINARY4, SIZE };
+}
+namespace slice {
+enum io { SRC, DST, SIZE };
+}
+
 }  // namespace exposed_enum
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_EXPOSED_ENUM_HPP_

@@ -21,6 +21,7 @@
 #include "../operator.hpp"
 #ifdef WITH_SPARSELIB
 #include "kernels/include/interface.hpp"
+#include "kernels/include/kernels/exposed_enum.hpp"
 #endif
 namespace executor {
 
@@ -28,7 +29,6 @@ namespace executor {
  * @brief A Gather operator.
  *
  */
-
 class GatherOperator : public Operator {
  public:
   explicit GatherOperator(const shared_ptr<OperatorConfig>& conf);
@@ -51,13 +51,13 @@ class GatherOperator : public Operator {
   bool binary_add_ = false;
 #ifdef WITH_SPARSELIB
   jd::gather gather_;
+  std::vector<const void*> rt_data_;
 #endif
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
   vector<int64_t> mul_;
   bool keep_dims_ = true;
 
-  std::vector<const void*> rt_data_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_GATHER_HPP_

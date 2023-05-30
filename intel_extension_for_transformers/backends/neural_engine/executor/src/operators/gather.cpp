@@ -17,13 +17,20 @@
 
 namespace executor {
 #ifdef WITH_SPARSELIB
-static unordered_map<string, jd::data_type> type2sparsemem{
+using io = jd::exposed_enum::gather::io;
+using dt = jd::data_type;
+using ft = jd::format_type;
+static const unordered_map<string, jd::data_type> type2sparsemem{
     {"fp32", jd::data_type::fp32}, {"s32", jd::data_type::s32}, {"fp16", jd::data_type::fp16},
     {"u8", jd::data_type::u8},     {"s8", jd::data_type::s8},   {"bf16", jd::data_type::bf16}};
-
 #endif
 
-GatherOperator::GatherOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
+GatherOperator::GatherOperator(const shared_ptr<OperatorConfig>& conf)
+    : Operator(conf),
+#ifdef WITH_SPARSELIB
+      rt_data_(io::SIZE),
+#endif
+      keep_dims_(true) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   idx_axis_ = (iter != attrs_map.end() && iter->second != "") ? iter->second : "0";
@@ -44,7 +51,7 @@ GatherOperator::GatherOperator(const shared_ptr<OperatorConfig>& conf) : Operato
     StringSplit<int64_t>(&mul_, attrs_map["mul"], ",");
   }
   iter = attrs_map.find("keep_dims");
-  keep_dims_ = (iter != attrs_map.end() && iter->second != "true")? false : true;
+  keep_dims_ = (iter != attrs_map.end() && iter->second != "true") ? false : true;
 }
 
 void GatherOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -56,7 +63,6 @@ void GatherOperator::MapTensors(const vector<Tensor*>& input, const vector<Tenso
 
 void GatherOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   MapTensors(input, output);
-  rt_data_.resize(input.size() + 1);
   dst_->set_dtype(src_->dtype());
 }
 
@@ -100,18 +106,15 @@ void GatherOperator::DstShapeInfer(const vector<Tensor*>& input, const vector<Te
 }
 
 void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  // todo: add Reshape
+  // TODO(Yucheng): add Reshape
 #ifdef WITH_SPARSELIB
   vector<int64_t> pre_dst_shape;
   if (!reshape_.empty()) {
     vector<int64_t> ref_shape;
-    if (!reshape_dims_.empty()) {
-      ref_shape = input.back()->shape();
-    }
+    if (!reshape_dims_.empty()) ref_shape = input.back()->shape();
     pre_dst_shape = GetDstShape(reshape_, input[0]->size(), ref_shape, reshape_dims_);
-    vector<int64_t> dst_shape(pre_dst_shape);
     if (!mul_.empty()) {
-      dst_shape.clear();
+      vector<int64_t> dst_shape;
       int j = 0;
       int64_t mul_size = 1;
       for (int i = 0; i < mul_.size(); ++i) mul_size *= pre_dst_shape[mul_[i]];
@@ -124,7 +127,7 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
         }
       }
     }
-    output[0]->set_shape(dst_shape);
+    output[0]->set_shape(pre_dst_shape);
   } else {
     DstShapeInfer(input, output);
   }
@@ -132,18 +135,18 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   std::unordered_map<std::string, std::string> attr_map;
   attr_map["idx_axis"] = idx_axis_;
   attr_map["src_axis"] = src_axis_;
-  std::vector<jd::tensor_desc> ts_descs;
-  jd::data_type dt = type2sparsemem[src_->dtype()];
+  std::vector<jd::tensor_desc> ts_descs(io::SIZE);
+  jd::data_type dt = type2sparsemem.at(src_->dtype());
   std::vector<jd::binaryop_attr> binaryops;
   vector<int64_t> gather_dst_shape(dst_->shape());
-  ts_descs.emplace_back(src_->shape(), dt, jd::format_type::undef);
-  ts_descs.emplace_back(idx_->shape(), jd::data_type::s32, jd::format_type::undef);
-  ts_descs.emplace_back(gather_dst_shape, dt, jd::format_type::undef);
+  ts_descs[io::SRC] = {src_->shape(), dt, jd::plain_format(src_->shape().size())};
+  ts_descs[io::IDX] = {idx_->shape(), dt::s32, jd::plain_format(idx_->shape().size())};
+  ts_descs[io::DST] = {gather_dst_shape, dt, jd::plain_format(gather_dst_shape.size())};
   if (binary_add_) {
     LOG_IF(FATAL, append_->dtype() != "fp32") << "Gather only supports fp32 binary_add operation";
     attr_map["binaryop_list"] = "binary_add";
     binaryops.push_back({append_->mutable_data(), jd::binaryop_alg::add, dt});
-    ts_descs.emplace_back(append_->shape(), dt, jd::format_type::undef);
+    ts_descs[io::BINARY0] = {append_->shape(), dt, jd::plain_format(append_->shape().size())};
   }
 
   jd::operator_desc op_desc(jd::kernel_kind::gather, jd::kernel_prop::forward_inference, jd::engine_kind::cpu, ts_descs,
@@ -183,18 +186,18 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
 }
 
 void GatherOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  // 0. Alias variables part
-  rt_data_[0] = src_->data();
-  rt_data_[1] = idx_->data();
-  rt_data_[2] = dst_->data();
-  if (binary_add_) {
-    rt_data_[3] = append_->data();
-  }
 #ifdef WITH_SPARSELIB
+  // 0. Alias variables part
+  rt_data_[io::SRC] = src_->data();
+  rt_data_[io::IDX] = idx_->data();
+  rt_data_[io::DST] = dst_->data();
+  if (binary_add_) rt_data_[io::BINARY0] = append_->data();
   gather_.execute(rt_data_);
-#endif
   // 2. unref tensors
   this->unref_tensors(input);
+#else
+  LOG(FATAL) << "Gather operator relies on SparseLib!";
+#endif
 }
 
 REGISTER_OPERATOR_CLASS(Gather);

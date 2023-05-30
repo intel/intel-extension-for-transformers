@@ -114,6 +114,7 @@ class build_ext(build_ext):
             executable_path.mkdir(parents=True,exist_ok=True)
             cmake_args = [
                 '-DCMAKE_BUILD_TYPE=Release',
+                '-DNE_WITH_AVX2=OFF',
                 '-DNE_WITH_SPARSELIB=ON',
                 '-DNE_WITH_TESTS=OFF',
                 '-DPYTHON_EXECUTABLE={}'.format(sys.executable)
@@ -149,6 +150,7 @@ class build_ext(build_ext):
             cmake_args = [
                 '-G Ninja',
                 '-DCMAKE_BUILD_TYPE=Release',
+                '-DNE_WITH_AVX2=OFF',
                 '-DNE_WITH_SPARSELIB=ON',
                 '-DNE_WITH_TESTS=OFF',
                 "-DCMAKE_C_COMPILER=cl.exe",

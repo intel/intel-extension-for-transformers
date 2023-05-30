@@ -238,9 +238,7 @@ void SoftmaxOperator::MapTensors(const vector<Tensor*>& input, const vector<Tens
 
 void SoftmaxOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
 #ifndef __AVX512F__
-  if (output_dtype_ == "u8") {
-    LOG(ERROR) << "Output dtype u8 in Softmax only supports AVX512!";
-  }
+  LOG_IF(ERROR, output_dtype_ == "u8") << "Output dtype u8 in Softmax only supports AVX512!";
 #endif
 
   MapTensors(input, output);
@@ -274,6 +272,10 @@ void SoftmaxOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*
   } else if (output_dtype_ == "u8") {
 #if __AVX512F__
     Forward_u8(input, output);
+#else
+    /* uint8_t* dst_u8 = */ static_cast<uint8_t*>(dst_->mutable_data());
+    LOG(ERROR) << "AVX2 softmax not implemented!";
+    this->unref_tensors(input);
 #endif
   } else {
     LOG(ERROR) << "Output dtype in Softmax is: " << output_dtype_ << ", not supported!";

@@ -297,10 +297,10 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
       vector<float> scales = executor::GetScales(min_data + y, max_data + y, 1, tensors[0]->dtype());
 #if __AVX512F__
       executor::Quantize_avx512(channel_size, tensors[0]->dtype(), origin_fp32_data + y * channel_size, min_data + y,
-                                scales, dst_data + y * channel_size);
+                                scales, reinterpret_cast<char*>(dst_data) + y * channel_size);
 #else
       executor::Quantize(channel_size, tensors[0]->dtype(), origin_fp32_data + y * channel_size, min_data + y, scales,
-                         dst_data + y * channel_size);
+                         reinterpret_cast<char*>(dst_data) + y * channel_size);
 #endif
       memcpy(max_data + y, scales.data(), 1 * sizeof(float));
     }

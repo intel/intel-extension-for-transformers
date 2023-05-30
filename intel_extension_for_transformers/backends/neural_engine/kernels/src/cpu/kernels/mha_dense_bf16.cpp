@@ -28,7 +28,7 @@ using ft = format_type;
 
 bool mha_dense_bf16_kd_t::init() {
   if (!isa_available(avx512_core_bf16_amx_bf16)) return false;
-  auto attrs = op_desc_.attrs();
+  const auto attrs = op_desc_.attrs();
   KERNEL_INIT_CHECK(attrs.find("approx_exp") != attrs.end() && attrs.at("approx_exp") == "True");
   KERNEL_INIT_CHECK(attrs.find("stable_softmax") != attrs.end() && attrs.at("stable_softmax") == "False");
   KERNEL_INIT_CHECK(attrs.find("merged_QKV") == attrs.end() || attrs.at("merged_QKV") != "True");  // no merge support
