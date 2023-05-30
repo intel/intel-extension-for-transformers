@@ -15,7 +15,7 @@ Subpackages
    dynamic/index.rst
    mixture/index.rst
    nas/index.rst
-   pytorch_pruner/index.rst
+   pruner/index.rst
    utils/index.rst
 
 
