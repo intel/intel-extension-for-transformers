@@ -117,6 +117,7 @@ class build_ext(build_ext):
                 '-DNE_WITH_AVX2=OFF',
                 '-DNE_WITH_SPARSELIB=ON',
                 '-DNE_WITH_TESTS=OFF',
+                '-DDNNL_CPU_RUNTIME=OMP',
                 '-DPYTHON_EXECUTABLE={}'.format(sys.executable)
             ]
 
@@ -153,6 +154,7 @@ class build_ext(build_ext):
                 '-DNE_WITH_AVX2=OFF',
                 '-DNE_WITH_SPARSELIB=ON',
                 '-DNE_WITH_TESTS=OFF',
+                '-DDNNL_CPU_RUNTIME=OMP',
                 "-DCMAKE_C_COMPILER=cl.exe",
                 "-DCMAKE_CXX_COMPILER=cl.exe",
                 '-DEIGEN_BUILD_DOC=OFF',

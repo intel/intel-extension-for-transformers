@@ -73,9 +73,7 @@ class LlamaMatMulWithTranspose(Pattern):
                             0: [0]
                         }, {
                             0: [1]
-                        }, {
-                            'input_data': [0]
-                        }], [[0, 1, 2], 3]]
+                        }], [[0, 1], 2]]
                     },
                     'output_tensors': {
                          0: [[{
@@ -133,7 +131,6 @@ class LlamaMatMulWithTranspose(Pattern):
                 attr = OrderedDict()
                 attr['dst_perm'] = "0, 2, 1, 3"
                 attr['reshape'] = "-1, 4096"
-                attr['reshape_dims'] = "1"
                 mat_node_idx.attr = attr
 
         pattern_dict = pattern_mapping_config['LlamaMatMulWithTranspose'][2]
