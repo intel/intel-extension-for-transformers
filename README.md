@@ -44,7 +44,7 @@ Intel® XeTLA requires a C++20 host compiler.
 ## Documentation
 
 - [Quick Start](media/docs/quick_start.md) introduces how to build and run tests/examples.
-- [API Reference](https://silver-eureka-80eaaa34.pages.github.io/) provides a comprehensive reference of the library APIs.
+- [API Reference](https://intel.github.io/xetla) provides a comprehensive reference of the library APIs.
 - [Programming Guidelines](./media/docs/programming_guidelines.md) explains programming model, functionalities, implementation details, and annotated examples.
 - [Terminology](./media/docs/terminology.md) describes terms used in the project.
 - [Release Notes](./CHANGELOG.md) describes new features and known issues.
