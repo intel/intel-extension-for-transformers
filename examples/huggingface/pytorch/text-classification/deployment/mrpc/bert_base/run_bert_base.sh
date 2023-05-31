@@ -177,7 +177,7 @@ elif [[ ${MODE} == "latency" ]]; then
       --dataset_name=glue \
       --task_name=${DATASET} \
       --tokenizer_dir=./model_and_tokenizer \
-      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-throughput-pipeline.log" 
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
     status=$?
     if [ ${status} != 0 ]; then
         echo "Benchmark process returned non-zero exit code."

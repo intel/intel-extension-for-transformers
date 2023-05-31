@@ -39,16 +39,17 @@ cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/langua
 pip install -r requirements.txt
 ```
 
-## Environment Variables
-Preload libjemalloc.so can improve the performance when inference under multi instance.
-```shell
-export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
+## Environment Variables (Optional)
 ```
-Using weight sharing can save memory and improve the performance when multi instance.
-```shell
+# Preload libjemalloc.so may improve the performance when inference under multi instance.
+conda install jemalloc==5.2.1 -c conda-forge -y
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
+
+# Using weight sharing can save memory and may improve the performance when multi instances.
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
+>**Note**: This step is optional.
 
 # Inference Pipeline
 

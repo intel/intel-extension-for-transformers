@@ -35,55 +35,62 @@ python setup.py install
 ```
 Install package for examples
 ```shell
-cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/sparse/distilbert_base_uncased
+cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/sparse/distilbert_base_uncased
 pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
-## Environment Variables 
-Preload libjemalloc.so can improve the performance when multi instance.
+## Environment Variables (Optional) 
 ```
-export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
-```
-Using weight sharing can save memory and improve the performance when multi instance.
-```
+# Preload libjemalloc.so may improve the performance when inference under multi instance.
+conda install jemalloc==5.2.1 -c conda-forge -y
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
+
+# Using weight sharing can save memory and may improve the performance when multi instances.
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
+>**Note**: This step is optional.
+
 # Inference Pipeline
 Neural Engine can parse ONNX model and Neural Engine IR. 
-We provide with three mode: accuracy, throughput or latency. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+We provide with three `mode`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 
 ```shell
-bash run_bert_large.sh --model=Intel/distilbert-base-uncased-squadv1.1-sparse-80-1X4-block --dataset=squad --precision=fp32
+bash run_bert_large.sh --model=Intel/distilbert-base-uncased-squadv1.1-sparse-80-1X4-block --dataset=squad --precision=fp32 --mode=throughput
 ```
-
 By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash run_bert_large.sh --model=Intel/distilbert-base-uncased-squadv1.1-sparse-80-1X4-block --dataset=squad --precision=int8
+bash run_bert_large.sh --model=Intel/distilbert-base-uncased-squadv1.1-sparse-80-1X4-block --dataset=squad --precision=int8 --mode=throughput
 ```
 
-Then you can generate transposed sparse model to get better performance, command as follows:
+By setting `precision=dynamic_int8`, you could benchmark dynamic quantized int8 model.
 ```shell
-python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx
+bash run_bert_mini.sh --model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block --dataset=sst2 --precision=dynamic_int8 --mode=throughput
 ```
+
 
 ### Benchmark
 Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/kernels) and high performance layernorm op with transpose mode to improve inference performance.
 
+Before using Python API to benchmark, need to transpose onnx model to IR, command as follows:
+```shell
+python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx --output_dir=./sparse_int8_ir
+```
+
 ## Accuracy
   run python
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./sparse_int8_ir  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
+  GLOG_minloglevel=2 python run_executor.py --input_model=./sparse_int8_ir  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --dataset_name=squad --batch_size=8
   ```
 
 ## Performance
   run python
   
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./sparse_int8_ir --mode=performance --batch_size=8 --seq_len=128
+  GLOG_minloglevel=2 python run_executor.py --input_model=./sparse_int8_ir --mode=performance --batch_size=1 --seq_len=128
   ```
   
   or run C++

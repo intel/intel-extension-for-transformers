@@ -172,7 +172,7 @@ elif [[ ${MODE} == "latency" ]]; then
       --iteration=${ITERATION} \
       --dataset_name=${DATASET} \
       --tokenizer_dir=bhadresh-savani/distilbert-base-uncased-emotion \
-      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-throughput-pipeline.log" 
+      ${mode_cmd} 2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
     status=$?
     if [ ${status} != 0 ]; then
         echo "Benchmark process returned non-zero exit code."

@@ -28,33 +28,39 @@ python setup.py install
 ```
 Install package for examples
 ```shell
-cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/emotion/distilbert_base_uncased
+cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/emotion/distilbert_base_uncased
 pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
-## 2. Environment Variables
-Preload libjemalloc.so can improve the performance when multi instance.
+## 2. Environment Variables (Optional)
 ```
-export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
-```
-Using weight sharing can save memory and improve the performance when multi instance.
-```
+# Preload libjemalloc.so may improve the performance when inference under multi instance.
+conda install jemalloc==5.2.1 -c conda-forge -y
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
+
+# Using weight sharing can save memory and may improve the performance when multi instances.
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
+>**Note**: This step is optional.
+
 # Inference Pipeline
 
 Neural Engine can parse ONNX model and Neural Engine IR. 
-We provide with three mode: accuracy, throughput or latency. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+We provide with three `mode`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
-GLOG_minloglevel=2 bash run_emotion.sh --model=bhadresh-savani/distilbert-base-uncased-emotion --dataset=emotion --precision=fp32 
+GLOG_minloglevel=2 bash run_emotion.sh --model=bhadresh-savani/distilbert-base-uncased-emotion --dataset=emotion --precision=fp32 --mode=throughput 
 ```
 By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-GLOG_minloglevel=2 bash run_emotion.sh -m bhadresh-savani/distilbert-base-uncased-emotion -d emotion -p int8
+GLOG_minloglevel=2 bash run_emotion.sh -m bhadresh-savani/distilbert-base-uncased-emotion --dataset=emotion --precision=int8 --mode=throughput
+```
+By setting `precision=dynamic_int8`, you could benchmark dynamic quantized int8 model.
+```shell
+GLOG_minloglevel=2 bash run_emotion.sh -m bhadresh-savani/distilbert-base-uncased-emotion --dataset=emotion --precision=dynamic_int8 --mode=throughput
 ```
 
 # Benchmark
@@ -63,14 +69,14 @@ If you want to run local onnx model inference, we provide with python API and C+
 By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
 
 ```shell
-GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy--data_dir=./data --batch_size=4
+GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx  --tokenizer_dir=bhadresh-savani/distilbert-base-uncased-emotion --mode=accuracy --dataset_name=emotion --batch_size=1 
 ```
 
 ## 2. Performance 
 By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
 
 ```shell
-GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx --mode=performance --batch_size=8 --seq_len=128
+GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx --mode=performance --batch_size=1 --seq_len=128 --tokenizer_dir=bhadresh-savani/distilbert-base-uncased-emotion --dataset_name=emotion
 ```
 
 or compile framwork model to IR using python API

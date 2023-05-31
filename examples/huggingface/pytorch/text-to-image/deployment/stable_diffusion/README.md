@@ -36,11 +36,13 @@ pip install -r requirements.txt
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
-## Environment Variables (optional)
+## Environment Variables (Optional)
 ```
-export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
+# Preload libjemalloc.so may improve the performance when inference under multi instance.
+conda install jemalloc==5.2.1 -c conda-forge -y
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
 
-# Using weight sharing can save memory and improve the performance when multi instances.
+# Using weight sharing can save memory and may improve the performance when multi instances.
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```

@@ -31,54 +31,49 @@ python setup.py install
 ```
 Install required dependencies for examples
 ```shell
-cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/sst2/bert_mini
+cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/image-classification/deployment/imagenet
 pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
-### Environment Variables
+### Environment Variables (Optional)
 ```
-export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
-```
-Using weight sharing can save memory and improve the performance when multi instances.
-```
+# Preload libjemalloc.so may improve the performance when inference under multi instance.
+conda install jemalloc==5.2.1 -c conda-forge -y
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
+
+# Using weight sharing can save memory and may improve the performance when multi instances.
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
+>**Note**: This step is optional.
+
 ## Inference Pipeline
 Neural Engine can parse ONNX model and Neural Engine IR.
-We provide with three mode: accuracy, throughput or latency. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+We provide with three `mode`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
-bash run_vit.sh --input_model=google/vit-base-patch16-224  --task_name=imagenet-1k --precision=fp32
+bash run_vit.sh --model=google/vit-base-patch16-224  --dataset=imagenet-1k --precision=fp32 --mode=throughput
 ```
 By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash run_vit.sh --input_model=google/vit-base-patch16-224  --task_name=imagenet-1k --precision=int8
+bash run_vit.sh --model=google/vit-base-patch16-224  --dataset=imagenet-1k --precision=int8 --mode=throughput
 ```
 Note: the input_model could be changed from a vit base model to a vit large model.
 
 ## Benchmark
 If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
-
-By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model. 
 ### Accuracy  
 
 Python API command as follows:
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=./data --batch_size=8
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=accuracy --data_dir=path-to-dataset --batch_size=1 --warm_up=100 --iteration=1000
   ```
 
 ### Performance
 Python API command as follows:
   ```shell
-  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128
+  GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --warm_up=100 --iteration=1000
   ```
 
-  Or compile framwork model to IR using python API
-  ```
-  from intel_extension_for_transformers.backends.neural_engine.compile import compile
-  graph = compile('./model_and_tokenizer/int8-model.onnx')
-  graph.save('./ir')
-  ```

@@ -36,35 +36,42 @@ python setup.py install
 
 Install required dependencies for examples
 ```shell
-cd <intel_extension_for_transformers_folder>/examples/deployment/neural_engine/mrpc/bert_base
+cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/mrpc/bert_base_cased
 pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
-## Environment Variables
-Preload libjemalloc.so can improve the performance when multi instance.
+## Environment Variables (Optional)
 ```
-export LD_PRELOAD=<intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/executor/third_party/jemalloc/lib/libjemalloc.so
-```
-Using weight sharing can save memory and improve the performance when multi instance.
-```
+# Preload libjemalloc.so may improve the performance when inference under multi instance.
+conda install jemalloc==5.2.1 -c conda-forge -y
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
+
+# Using weight sharing can save memory and may improve the performance when multi instances.
 export WEIGHT_SHARING=1
 export INST_NUM=<inst num>
 ```
+>**Note**: This step is optional.
 
 # Inference Pipeline
 Neural Engine can parse ONNX model and Neural Engine IR. 
-We provide with three mode: accuracy, throughput or latency. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+We provide with three `mode`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 
 ```shell
-bash run_bert_base_cased.sh --model=gchhablani/bert-base-cased-finetuned-mrpc --dataset=mrpc --precision=fp32
+bash run_bert_base_cased.sh --model=gchhablani/bert-base-cased-finetuned-mrpc --dataset=mrpc --precision=fp32 --mode=throughput
 ```
 
 By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash run_bert_base_cased.sh --model=gchhablani/bert-base-cased-finetuned-mrpc --dataset=mrpc --precision==int8
+bash run_bert_base_cased.sh --model=gchhablani/bert-base-cased-finetuned-mrpc --dataset=mrpc --precision=int8 --mode=throughput
 ```
+
+By setting `precision=dynamic_int8`, you could benchmark dynamic quantized int8 model.
+```shell
+bash run_bert_base_cased.sh --model=gchhablani/bert-base-cased-finetuned-mrpc --dataset=mrpc --precision=dynamic_int8 --mode=throughput
+```
+
 
 You could also compile the model to IR using python API as follows:
 ```python
@@ -81,12 +88,12 @@ By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quanti
 
 Python API Command as follows:
 ```shell
-GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8
+GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --dataset_name=glue --task_name=mrpc --batch_size=8
 ```
 
 If you just want a quick start, you could try a small set of dataset, like this:
 ```shell
-GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --data_dir=./data --batch_size=8 --max_eval_samples=10
+GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx  --tokenizer_dir=./model_and_tokenizer --mode=accuracy --dataset_name=glue --task_name=mrpc --batch_size=8 --max_eval_samples=10
 ```
 
 >**Note**: The accuracy of partial dataset is unauthentic.
@@ -94,7 +101,7 @@ GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/in
 ## Performance
 Python API command as follows:
 ```shell
-GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=8 --seq_len=128
+GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizer/int8-model.onnx --mode=performance --batch_size=1 --dataset_name=glue --task_name=mrpc --seq_len=128
 ```
 
 

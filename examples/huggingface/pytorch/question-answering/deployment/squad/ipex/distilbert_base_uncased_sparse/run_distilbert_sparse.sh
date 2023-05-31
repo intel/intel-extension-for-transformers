@@ -166,7 +166,7 @@ elif [[ ${MODE} == "latency" ]]; then
       --seq_len=${SEQUENCE_LEN} \
       --warm_up=${WARM_UP} \
       --iteration=${ITERATION} \
-      --dataset_name=${DATASET}  2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-throughput-pipeline.log" 
+      --dataset_name=${DATASET}  2>&1 | tee "$OUTPUT_DIR/$LOG_NAME-latency-pipeline.log" 
     status=$?
     if [ ${status} != 0 ]; then
         echo "Benchmark process returned non-zero exit code."
