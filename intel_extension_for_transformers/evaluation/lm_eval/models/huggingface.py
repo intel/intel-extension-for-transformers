@@ -223,7 +223,7 @@ class HuggingFaceAutoLM(BaseLM):
         if self.init_empty_weights:
             from accelerate import init_empty_weights
             with init_empty_weights():
-                model = self.AUTO_MODEL_CLASS.from_config(self._config)
+                model = self.AUTO_MODEL_CLASS.from_config(self._config, trust_remote_code=True)
         else:
             model = self.AUTO_MODEL_CLASS.from_pretrained(
                 pretrained,
