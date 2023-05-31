@@ -15,7 +15,6 @@
 
 - pip install torch==1.13.1
 - pip install torchvision==0.14.1
-- pip install torchaudio==0.13.1
 - pip install intel_extension_for_pytorch==1.13.0
 
 - pip install transformers diffusers bottle gevent accelerate

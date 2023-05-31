@@ -1,0 +1,10 @@
+Task: Your role is to create a total of 8 varied instructions based on the provided content to evaluate the language model's performance. These instructions will be given to a language model and we will evaluate the language model for completing the instructions.
+
+Requirements:
+1. The instructions should cover a wide range of task types including, but not limited to, open-ended generation, QA, classification, decision-making, code generation, etc.
+2. For each task, generate an appropriate correct response and a false answer. 
+3. All instructions must be written in English. 
+4. Each generated instruction should follow this format: {id "Instruction:[content] Correct Answer:[answer] Fake Answer:[answer]" ###}. 
+5. Avoid vague references like "from the previous text" or "given the content" in the instruction. Clearly state the required content in each instruction. 
+6. Begin each instruction instance with a numerical ID, starting from 1. 
+

@@ -13,13 +13,15 @@
 
 - conda install jemalloc gperftools -c conda-forge -y
 
-- conda install pytorch torchvision torchaudio cpuonly -c pytorch-nightly
+- conda install pytorch torchvision cpuonly -c pytorch-nightly
 
 - pip install farm-haystack==1.14.0
 
+- pip install SentencePiece peft evaluate nltk datasets
+
 - pip install transformers diffusers accelerate intel_extension_for_transformers
 
-- pip install fastapi uvicorn
+- pip install fastapi uvicorn sse_starlette
 
 # Install elasticsearch
 - su ubuntu  # run elasticsearch with non-root user
