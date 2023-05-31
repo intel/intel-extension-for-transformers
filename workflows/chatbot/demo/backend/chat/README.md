@@ -13,7 +13,11 @@
 
 - conda install jemalloc gperftools -c conda-forge -y
 
-- conda install pytorch torchvision torchaudio cpuonly -c pytorch-nightly
+- conda install pytorch torchvision cpuonly -c pytorch
+
+- pip install intel_extension_for_pytorch
+
+- pip install SentencePiece peft evaluate nltk datasets
 
 - pip install transformers diffusers accelerate intel_extension_for_transformers
 
