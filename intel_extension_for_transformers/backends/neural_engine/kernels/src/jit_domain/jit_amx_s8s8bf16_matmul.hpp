@@ -17,10 +17,9 @@
 
 #include <memory>
 #include <string>
-
 #include "jit_generator.hpp"
-#include "kernels/dynamic_quant_matmul_types.hpp"
 #include "utils.hpp"
+#include "kernels/dynamic_quant_matmul_types.hpp"
 namespace jd {
 class jit_amx_s8s8bf16_matmul_t : public jit_generator {
  public:

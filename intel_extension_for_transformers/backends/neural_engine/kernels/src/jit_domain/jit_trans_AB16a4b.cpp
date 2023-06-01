@@ -19,10 +19,10 @@
 
 namespace jd {
 
-void jit_trans_AB16a4b::transpose_16x16_ps(regs_pool* const rp, const Xbyak::Reg64& src, const Xbyak::Reg64& dst,
-                                           const Xbyak::Opmask& mask, bool is_tail) {
-  const auto mat = rp->regs<Zmm, 16>();
-  const auto tmp = rp->regs<Zmm, 16>();
+void jit_trans_AB16a4b::transpose_16x16_ps(const Xbyak::Reg64& src, const Xbyak::Reg64& dst, const Xbyak::Opmask& mask,
+                                           bool is_tail) {
+  const auto mat = regs<Xbyak::Zmm, 16>(0);
+  const auto tmp = regs<Xbyak::Zmm, 16>(16);
   const auto tail_len = M % 16;
 
   // move in
@@ -72,35 +72,36 @@ void jit_trans_AB16a4b::transpose_16x16_ps(regs_pool* const rp, const Xbyak::Reg
 }
 
 void jit_trans_AB16a4b::generate() {
+  Xbyak::util::StackFrame sf(this, 1, 5);
+  std::shared_ptr<void> use_vregs = {(preserve_xmm(), nullptr), [&](...) { recover_xmm(); }};
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
-  const auto m_tiles = M / 16;
-  regs_pool rp(this, 1, {m_tiles <= 1 ? 3 : 5, 32, 1});
 
-  const auto reg_src = rp.reg<Reg64>();
-  const auto reg_dst = rp.reg<Reg64>();
-  const auto reg_tmp = rp.reg<Reg64>();
-  const auto mask_n = rp.reg<Opmask>();
+  const auto reg_src = sf.t[0];
+  const auto reg_dst = sf.t[1];
+  const auto reg_tmp = sf.t[2];
+  const auto mask_n = k1;
 
-  mov(reg_src, ptr[rp.p[0] + GET_OFF(src)]);
-  mov(reg_dst, ptr[rp.p[0] + GET_OFF(dst)]);
+  mov(reg_src, ptr[sf.p[0] + GET_OFF(src)]);
+  mov(reg_dst, ptr[sf.p[0] + GET_OFF(dst)]);
 
   if (N != 64) {
     mov(reg_tmp, (1ULL << N) - 1ULL);
     kmovq(mask_n, reg_tmp);
   }
 
+  const auto m_tiles = M / 16;
   if (m_tiles == 1) {
-    transpose_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n);
+    transpose_16x16_ps(reg_src, reg_dst, N == 64 ? k0 : mask_n);
     lea(reg_src, ptr[reg_src + ld_src * 16]);
     lea(reg_dst, ptr[reg_dst + BYTES_ZMM * (pad_n / 4)]);
   } else if (m_tiles > 1) {
     Xbyak::Label m_loop;
-    const auto reg_msize = rp.reg<Reg64>();
-    const auto reg_iterm = rp.reg<Reg64>();
+    const auto reg_msize = sf.t[3];
+    const auto reg_iterm = sf.t[4];
     mov(reg_msize, m_tiles);
     xor_(reg_iterm, reg_iterm);
     L(m_loop);
-    transpose_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n);
+    transpose_16x16_ps(reg_src, reg_dst, N == 64 ? k0 : mask_n);
     lea(reg_src, ptr[reg_src + ld_src * 16]);
     lea(reg_dst, ptr[reg_dst + BYTES_ZMM * (pad_n / 4)]);
     lea(reg_iterm, ptr[reg_iterm + 1]);
@@ -109,7 +110,7 @@ void jit_trans_AB16a4b::generate() {
   }
 
   const auto m_tail = M % 16;
-  if (m_tail > 0) transpose_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n, true);
+  if (m_tail > 0) transpose_16x16_ps(reg_src, reg_dst, N == 64 ? k0 : mask_n, true);
 }
 
 }  // namespace jd

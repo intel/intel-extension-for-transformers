@@ -14,8 +14,6 @@
 
 #include "jit_domain/jit_transpose_mha.hpp"
 
-#include "regs_pool.hpp"
-
 namespace jd {
 
 void MHA_stage1_kernel::packedf32_bf16(int idx0, int idx1) {
@@ -1057,34 +1055,46 @@ void MHA_Matmul_s8u8u8_vnni_byte_8x48::generate() {
   inLocalLabel();  // use local label for multiple instance
   Xbyak::Label l_nloop, l_nloop_end;
   Xbyak::Label l_tail[3], l_tail_tbl, l_tail_end;
+  int XmmReserve = 16 * 10;
+  int TmpValueReserve = 64;
+  int TmpSpace = XmmReserve + TmpValueReserve;
   {
-    regs_pool rp(this, 1, {8 | regs_pool::UseRCX | regs_pool::UseRDX, 31, 1});
-    const auto reg_src0 = rp.reg<Reg64>();
-    const auto reg_src1 = rp.reg<Reg64>();
-    const auto reg_dst = rp.reg<Reg64>();
-    const auto reg_astep = rp.reg<Reg64>();
-    const auto reg_cstep = rp.reg<Reg64>();
-    const auto reg_ksize = rp.reg<Reg64>();
-    const auto vreg_scale = rp.reg<Zmm>();  // scale_src0 * scale_src1 / scale_dst
-    const auto vreg_zero = rp.reg<Zmm>();
-    const auto vreg_zp = rp.reg<Zmm>();
-    const auto vreg_tile = rp.regs<Zmm, TH_ * TW_>();
-    const auto vreg_src1 = rp.regs<Zmm, TW_>();
+    Xbyak::util::StackFrame st(this, 1, 8 | Xbyak::util::UseRCX | Xbyak::util::UseRDX, TmpSpace);
+#ifdef _WIN32
+    for (int i = 0; i < 10; i++) {
+      movaps(xword[rsp + i * 16], Xmm(6 + i));
+    }
+#endif
+    const Xbyak::Reg64& parambase = st.p[0];
+    const Xbyak::Reg64& reg_src0 = st.t[0];
+    const Xbyak::Reg64& reg_src1 = st.t[1];
+    const Xbyak::Reg64& reg_dst = st.t[2];
+    const Xbyak::Reg64& reg_astep = st.t[3];
+    const Xbyak::Reg64& reg_cstep = st.t[4];
+    const Xbyak::Reg64& reg_ksize = st.t[5];
+    const Xbyak::Reg64& reg_iterk = st.t[6];
+    const Xbyak::Reg64& reg_tmp = st.t[7];
+    const Xbyak::Reg32& reg_tmp32 = reg_tmp.cvt32();
+    const Xbyak::Reg64& reg_ret = rax;
+    const Xbyak::Opmask& mask_tail16 = k1;
+    const Xbyak::Zmm& vreg_scale = zmm31;  // scale_src0 * scale_src1 / scale_dst
+    const Xbyak::Zmm& vreg_zero = zmm30;
+    const Xbyak::Zmm& vreg_zp = zmm29;
+    const Xbyak::Zmm& vreg_tmp = zmm28;
+    const auto vreg_tile = regs<Zmm, TH_ * TW_>(0);
+    const auto vreg_src1 = regs<Zmm, TW_>(vreg_tile.size());
 
     // code for a k loop
     const auto generate_kloop = [&](const int TW_max = TW_, const Opmask& mask16 = Opmask(0)) {
       constexpr int KTile = 8;
-      mov(reg_src0, ptr[rp.p[0] + offsetof(rt_data_t, matA)]);
+      mov(reg_src0, ptr[parambase + offsetof(rt_data_t, matA)]);
       for (size_t i = 0; i < vreg_tile.size(); i++) vxorps(vreg_tile[i], vreg_tile[i]);
-      const auto reg_iterk = rp.reg<Reg64>();
       xor_(reg_iterk, reg_iterk);
       Xbyak::Label l_kloop;
       L(l_kloop);
-      const auto reg_tmp = rp.reg<Reg64>();
       for (int k = 0; k < KTile; k += 4) {       // unrolling along K
         xor_(reg_tmp.cvt32(), reg_tmp.cvt32());  // reg_tmp <- reg_astep * TH_
         for (int i = 0; i < TH_; ++i) {
-          const auto vreg_tmp = rp.reg<Zmm>();
           vpbroadcastd(vreg_tmp, dword[reg_src0 + reg_tmp]);  // load src0
           for (int j = 0; j < TW_max; ++j) {
             if (i == 0) vmovdqu8(vreg_src1[j], zword[reg_src1 + j * BYTES_ZMM]);  // load src1
@@ -1112,28 +1122,25 @@ void MHA_Matmul_s8u8u8_vnni_byte_8x48::generate() {
       }
     };
 
-    mov(reg_ksize.cvt32(), ptr[rp.p[0] + offsetof(rt_data_t, K)]);
-    mov(reg_astep.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, astep)]);
+    mov(reg_ksize.cvt32(), ptr[parambase + offsetof(rt_data_t, K)]);
+    mov(reg_astep.cvt32(), dword[parambase + offsetof(rt_data_t, astep)]);
 
-    mov(reg_src1, ptr[rp.p[0] + offsetof(rt_data_t, matB)]);
-    mov(reg_dst, ptr[rp.p[0] + offsetof(rt_data_t, matC)]);
-    mov(reg_cstep.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, cstep)]);
+    mov(reg_src1, ptr[parambase + offsetof(rt_data_t, matB)]);
+    mov(reg_dst, ptr[parambase + offsetof(rt_data_t, matC)]);
+    mov(reg_cstep.cvt32(), dword[parambase + offsetof(rt_data_t, cstep)]);
 
     // init vregs
-    vbroadcastss(vreg_scale, ptr[rp.p[0] + offsetof(rt_data_t, scaleAB)]);
-    vdivps(vreg_scale, vreg_scale, zword_b[rp.p[0] + offsetof(rt_data_t, scaleC)]);
-    vpbroadcastd(vreg_zp, ptr[rp.p[0] + offsetof(rt_data_t, zpC)]);
+    vbroadcastss(vreg_scale, ptr[parambase + offsetof(rt_data_t, scaleAB)]);
+    vdivps(vreg_scale, vreg_scale, zword_b[parambase + offsetof(rt_data_t, scaleC)]);
+    vpbroadcastd(vreg_zp, ptr[parambase + offsetof(rt_data_t, zpC)]);
     vcvtdq2ps(vreg_zp, vreg_zp);  // int32 => fp32
     vxorps(vreg_zero, vreg_zero);
 
     // N / 48
-    {
-      xor_(edx, edx);
-      mov(eax, dword[rp.p[0] + offsetof(rt_data_t, N)]);
-      const auto reg_tmp = rp.reg<Xbyak::Reg32>();
-      mov(reg_tmp, 48);
-      div(reg_tmp);
-    }
+    xor_(edx, edx);
+    mov(eax, dword[parambase + offsetof(rt_data_t, N)]);
+    mov(reg_tmp.cvt32(), 48);
+    div(reg_tmp.cvt32());
     const auto& reg_ntiles = eax;
     const auto& reg_ntail = edx;
 
@@ -1152,24 +1159,19 @@ void MHA_Matmul_s8u8u8_vnni_byte_8x48::generate() {
     L(l_nloop_end);
 
     // tail processing with jmptbl
-    const auto mask_tail16 = rp.reg<Opmask>();
-    {
-      const auto reg_tmp = rp.reg<Reg64>();
-      const Xbyak::Reg32 reg_tmp32 = reg_tmp.cvt32();
-      cmp(reg_ntail, 0);
-      je(l_tail_end, T_NEAR);
-      const auto& reg_tmp2 = reg_ntiles;
-      mov(reg_tmp32, reg_ntail);
-      and_(reg_tmp32, 16 - 1);              // reg_ntail % 16
-      mov(reg_tmp2, 1U);                    // (1 << (reg_ntail % 16)) - 1
-      shlx(reg_tmp2, reg_tmp2, reg_tmp32);  // (1 << (reg_ntail % 16)) - 1
-      sub(reg_tmp2, 1);                     // (1 << (reg_ntail % 16)) - 1
-      kmovw(mask_tail16, reg_tmp2);
+    cmp(reg_ntail, 0);
+    je(l_tail_end, T_NEAR);
+    const auto& reg_tmp2 = reg_ntiles;
+    mov(reg_tmp32, reg_ntail);
+    and_(reg_tmp32, 16 - 1);              // reg_ntail % 16
+    mov(reg_tmp2, 1U);                    // (1 << (reg_ntail % 16)) - 1
+    shlx(reg_tmp2, reg_tmp2, reg_tmp32);  // (1 << (reg_ntail % 16)) - 1
+    sub(reg_tmp2, 1);                     // (1 << (reg_ntail % 16)) - 1
+    kmovw(mask_tail16, reg_tmp2);
 
-      shr(reg_ntail, 4);  //  reg_ntail / 16
-      mov(reg_tmp, l_tail_tbl);
-      jmp(ptr[reg_tmp + reg_ntail.cvt64() * sizeof(nullptr)]);
-    }
+    shr(reg_ntail, 4);  //  reg_ntail / 16
+    mov(reg_tmp, l_tail_tbl);
+    jmp(ptr[reg_tmp + reg_ntail.cvt64() * sizeof(nullptr)]);
 
     L(l_tail[0]);
     generate_kloop(1, mask_tail16);
@@ -1184,8 +1186,12 @@ void MHA_Matmul_s8u8u8_vnni_byte_8x48::generate() {
 
     L(l_tail_end);
 
-    const Xbyak::Reg64& reg_ret = rax;
     mov(reg_ret, 0);
+#ifdef _WIN32
+    for (int i = 0; i < 10; i++) {
+      movaps(Xmm(i + 6), xword[rsp + i * 16]);
+    }
+#endif
   }
 
   align(sizeof(nullptr));

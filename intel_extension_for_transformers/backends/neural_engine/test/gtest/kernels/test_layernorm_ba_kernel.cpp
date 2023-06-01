@@ -174,8 +174,8 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<tensor_desc>& ts_desc
     for (int i = 0; i < row; i++) {
       for (int j = 0; j < col; j++) {
         float rand_val = std::rand() % 256 - 128 + rand_float_postfix();  // NOLINT
-        assign_val(src, in_dt, rand_val, k * row * col + i * col + j);
-        assign_val(src_ref, in_dt, rand_val, k * row * col + i * col + j);
+        assign_val(src, in_dt, rand_val, i * col + j);
+        assign_val(src_ref, in_dt, rand_val, i * col + j);
       }
     }
   }
