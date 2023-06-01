@@ -56,7 +56,14 @@ class ItrexInfer(DlsaInference):
             )
 
         elif self.args.dtype_inf == "bf16":
-            pass
+            self.training_args.use_ipex = True
+            self.training_args.bf16 = True
+            self.trainer = Trainer(
+                model=self.model,  # the instantiated HF model to be trained
+                args=self.training_args,  # training arguments, defined above
+                compute_metrics=compute_metrics,  # evaluation metrics
+                tokenizer=self.tokenizer,
+            )
 
         elif self.args.dtype_inf == "int8":
             self.trainer = NLPTrainer(

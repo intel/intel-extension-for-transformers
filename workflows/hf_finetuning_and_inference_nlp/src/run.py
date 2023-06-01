@@ -56,6 +56,7 @@ def main():
             raise ValueError(error_msg)
 
         finetune.e2e_finetune()
+
     elif args.pipeline == "inference":
         if args.infer_impl == "trainer":
             from infer_trainer import TrainerInfer
@@ -68,8 +69,32 @@ def main():
             raise ValueError(error_msg)
 
         infer.e2e_infer()
+
+    elif args.pipeline == "inference_only":
+        if args.dataset != "local":
+            error_msg = f"Now only support local datasets for inference_only pipeline."
+            raise ValueError(error_msg)
+        
+        if args.infer_impl == "trainer":
+            from infer_trainer import TrainerInfer
+            infer = TrainerInfer(**kwargs)
+        elif args.infer_impl == "itrex":
+            from infer_itrex import ItrexInfer
+            infer = ItrexInfer(**kwargs)
+        else:
+            error_msg = f"Now only support trainer and itrex implementation for inference pipeline."
+            raise ValueError(error_msg)
+        
+        infer.e2e_infer_setup_only()
+
+        if type(args.local_dataset["inference_input"]) == str:
+            args.local_dataset["inference_input"] = args.local_dataset["inference_input"].split(",")
+            
+        for f in args.local_dataset["inference_input"]:
+            infer.e2e_infer_only(f)
+
     else:
-        error_msg = f"Now only support finetune and inference pipeline."
+        error_msg = f"Now only support finetune, inference and inference_only pipeline."
         raise ValueError(error_msg)
 
 if __name__ == "__main__":

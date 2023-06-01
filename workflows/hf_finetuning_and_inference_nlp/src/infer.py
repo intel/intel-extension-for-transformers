@@ -34,14 +34,32 @@ class DlsaInference(object):
 
         self.bench = Benchmark()
         self.track = self.bench.track
+        self.inference_filename = None
 
     def e2e_infer(self):
         with self.track("Total Run"):
+            self.load_tokenizer = True
+            self.tokenize_data = True
             self._load_data()
             self._preprocess()
             self._load_model()
             self._do_infer()
-            # self.bench.summary()
+
+    def e2e_infer_setup_only(self):
+        with self.track("Inference Setup Only Run"):
+            self.load_tokenizer = True
+            self.tokenize_data = False
+            self._preprocess()
+            self._load_model()
+    
+    def e2e_infer_only(self, filename):
+        with self.track("Inference Only Run"):
+            self.load_tokenizer = False
+            self.tokenize_data = True
+            self.inference_filename = filename
+            self._load_data()
+            self._preprocess()
+            self._do_infer()
 
     def _load_data(self):
         with self.track("Load Data"):
@@ -49,6 +67,8 @@ class DlsaInference(object):
             self.text_column = []
             if self.args.dataset == "local":
                 dataset_cfg = self.args.local_dataset
+                if self.inference_filename is not None:
+                    dataset_cfg["inference_input"] = self.inference_filename
                 class_names = dataset_cfg["label_list"]
                 self.num_labels = len(class_names)
                 customer_features = {v: k for k, v in dataset_cfg["features"].items()}
@@ -108,38 +128,40 @@ class DlsaInference(object):
 
     def _preprocess(self):
         with self.track("Pre-process"):
-            with self.track("----Init tokenizer"):
-                self.tokenizer = AutoTokenizer.from_pretrained(
-                    self.args.tokenizer_name
-                    if self.args.tokenizer_name
-                    else self.args.model_name_or_path
-                )
-
-            max_seq_len = min(self.args.max_seq_len, self.tokenizer.model_max_length)
-
-            with self.track("----Tokenize + Extract Features"):
-
-                def preprocess(examples):
-                    return self.tokenizer(
-                        examples[self.text_column],
-                        padding="max_length",
-                        truncation=True,
-                        max_length=max_seq_len,
+            if self.load_tokenizer:
+                with self.track("----Init tokenizer"):
+                    self.tokenizer = AutoTokenizer.from_pretrained(
+                        self.args.tokenizer_name
+                        if self.args.tokenizer_name
+                        else self.args.model_name_or_path
                     )
 
-                kwargs = dict(
-                    function=preprocess,
-                    batched=True,
-                    num_proc=self.args.preprocessing_num_workers,
-                    remove_columns=self.remove_columns,
-                    load_from_cache_file=not self.args.overwrite_cache,
-                )
+            if self.tokenize_data:
+                max_seq_len = min(self.args.max_seq_len, self.tokenizer.model_max_length)
 
-                self.test_data = (
-                    self.test_data.map(**kwargs)
-                    if self.training_args.do_predict
-                    else None
-                )
+                with self.track("----Tokenize + Extract Features"):
+
+                    def preprocess(examples):
+                        return self.tokenizer(
+                            examples[self.text_column],
+                            padding="max_length",
+                            truncation=True,
+                            max_length=max_seq_len,
+                        )
+
+                    kwargs = dict(
+                        function=preprocess,
+                        batched=True,
+                        num_proc=self.args.preprocessing_num_workers,
+                        remove_columns=self.remove_columns,
+                        load_from_cache_file=not self.args.overwrite_cache,
+                    )
+
+                    self.test_data = (
+                        self.test_data.map(**kwargs)
+                        if self.training_args.do_predict
+                        else None
+                    )
 
     def _load_model(self):
         raise NotImplementedError

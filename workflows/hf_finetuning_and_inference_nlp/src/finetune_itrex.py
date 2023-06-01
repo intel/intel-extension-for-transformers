@@ -53,6 +53,9 @@ class FinetuneItrex(DlsaFinetune):
     def _do_finetune(self):
         if self.training_args.do_train:
             with self.track("Fine-Tune"):
+                if self.args.dtype_ft == "bf16":
+                    self.training_args.use_ipex = True
+                    self.training_args.bf16 = True
                 self.trainer = NLPTrainer(
                     model=self.model,  # the instantiated HF model to be trained
                     args=self.training_args,  # training arguments, defined above
