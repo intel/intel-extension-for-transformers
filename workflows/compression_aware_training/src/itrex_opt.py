@@ -29,6 +29,8 @@ from datasets import load_dataset, load_metric
 # Need to use itrex domain toolkit
 from intel_extension_for_transformers.optimization import (
     DistillationConfig,
+    PrunerConfig,
+    PruningConfig,
     OptimizedModel,
     QuantizationConfig,
     metrics,
@@ -117,7 +119,9 @@ class ItrexOpt(object):
         if self.optim_args.distillation:
             self._do_distillation()
         if self.optim_args.quantization:
-            self._do_quantization()
+            self._do_quantization_aware_training()
+        if self.optim_args.sat:
+            self._do_sparsity_aware_training()
 
     def _prepare_env(self):
         # Setup logging
@@ -278,7 +282,7 @@ class ItrexOpt(object):
             use_auth_token=True if self.model_args.use_auth_token else None,
         )
 
-        if self.optim_args.distillation:
+        if self.optim_args.distillation or self.optim_args.sat:
             teacher_config = AutoConfig.from_pretrained(
                 self.optim_args.teacher_model_name_or_path,
                 num_labels=self.num_labels,
@@ -471,7 +475,7 @@ class ItrexOpt(object):
         self.eval_dataset = eval_dataset
         self.data_collator = data_collator
 
-        if self.optim_args.distillation:
+        if self.optim_args.distillation or self.optim_args.sat:
             # prepare datasets for teacher model
             teacher_processed_datasets = self.raw_datasets.map(
                 functools.partial(
@@ -522,6 +526,9 @@ class ItrexOpt(object):
                 }
 
         # Initialize and setup our itrexTrainer
+        from neural_compressor.adaptor.torch_utils.symbolic_trace import symbolic_trace
+        self.model = symbolic_trace(self.model, self.optim_args.quantization_approach=="QuantizationAwareTraining")
+
         self.trainer = NLPTrainer(
             model=self.model,
             args=self.training_args,
@@ -719,7 +726,7 @@ class ItrexOpt(object):
                     print("Throughput: {:.5f} samples/sec".format(throughput))
             assert ret, "No metric returned, Please check inference metric!"
 
-    def _do_quantization(self):
+    def _do_quantization_aware_training(self):
         metric_name = (
             self.optim_args.metric_name
             if self.optim_args.metric_name is not None
@@ -789,4 +796,205 @@ class ItrexOpt(object):
                     print("Latency: {:.5f} ms".format(1000 / throughput))
                     print("Throughput: {:.5f} samples/sec".format(throughput))
                     break
+            assert ret, "No metric returned, Please check inference metric!"
+
+    def _do_sparsity_aware_training(self):
+        class BertModelforLogitsOutputOnly(torch.nn.Module):
+            def __init__(self, model):
+                super(BertModelforLogitsOutputOnly, self).__init__()
+                self.model = model
+
+            def forward(self, *args, **kwargs):
+                output = self.model(*args, **kwargs)
+                return output["logits"]
+
+        # #############################################################################################
+        print(
+            "Step 4: Inference teacher model: get logits for usage in pruning child model."
+        )
+        print(
+            "###############################################################################################"
+        )
+
+        # get logits of teacher model
+        def dict_tensor_to_model_device(batch, model):
+            device = next(model.parameters()).device
+            for k in batch:
+                batch[k] = batch[k].to(device)
+
+        def get_logits(teacher_model, train_dataset, teacher_train_dataset):
+            logger.info(
+                "***** Inferencing teacher model to Get logits of teacher *****"
+            )
+            logger.info(f"  Num examples = {len(train_dataset) }")
+            teacher_model.eval()
+            npy_file = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "{}.{}.npy".format(
+                    self.data_args.task_name,
+                    self.optim_args.teacher_model_name_or_path.replace("/", "."),
+                ),
+            )
+            if os.path.exists(npy_file):
+                teacher_logits = [x for x in np.load(npy_file)]
+            else:
+                sampler = None
+                if self.training_args.world_size > 1:
+                    from transformers.trainer_pt_utils import ShardSampler
+
+                    sampler = ShardSampler(
+                        teacher_train_dataset,
+                        batch_size=self.training_args.per_device_eval_batch_size,
+                        num_processes=self.training_args.world_size,
+                        process_index=self.training_args.process_index,
+                    )
+                    teacher_model = torch.nn.parallel.DistributedDataParallel(
+                        teacher_model,
+                        device_ids=[self.training_args.local_rank]
+                        if self.training_args._n_gpu != 0
+                        else None,
+                        output_device=self.training_args.local_rank
+                        if self.training_args._n_gpu != 0
+                        else None,
+                    )
+                train_dataloader = DataLoader(
+                    teacher_train_dataset,
+                    collate_fn=self.data_collator,
+                    sampler=sampler,
+                    batch_size=self.training_args.per_device_eval_batch_size,
+                )
+                train_dataloader = tqdm(train_dataloader, desc="Evaluating")
+                teacher_logits = []
+                for step, batch in enumerate(train_dataloader):
+                    dict_tensor_to_model_device(batch, teacher_model)
+                    outputs = teacher_model(**batch)
+                    if self.training_args.world_size > 1:
+                        outputs_list = [
+                            None for i in range(self.training_args.world_size)
+                        ]
+                        torch.distributed.all_gather_object(outputs_list, outputs)
+                        outputs = torch.concat(outputs_list, dim=0)
+                    teacher_logits += [x for x in outputs.cpu().numpy()]
+                if self.training_args.world_size > 1:
+                    teacher_logits = teacher_logits[: len(teacher_train_dataset)]
+                if self.training_args.local_rank in [-1, 0]:
+                    np.save(npy_file, np.array(teacher_logits))
+            return train_dataset.add_column("teacher_logits", teacher_logits)
+
+        with torch.no_grad():
+            self.train_dataset = get_logits(
+                BertModelforLogitsOutputOnly(self.teacher_model),
+                self.train_dataset,
+                self.teacher_train_dataset,
+            )
+
+        para_counter = lambda model: sum(p.numel() for p in model.parameters())
+        logger.info(
+            "***** Number of teacher model parameters: {:.2f}M *****".format(
+                para_counter(self.teacher_model) / 10**6
+            )
+        )
+        logger.info(
+            "***** Number of student model parameters: {:.2f}M *****".format(
+                para_counter(self.model) / 10**6
+            )
+        )
+
+        # #############################################################################################
+        print(
+            "Step 6: Prune teacher model to student Model"
+        )
+        print(
+            "#####################################################################################"
+        )
+
+        metric_name = (
+            self.optim_args.metric_name
+            if self.optim_args.metric_name is not None
+            else "eval_"
+            + (
+                "pearson"
+                if self.data_args.task_name == "stsb"
+                else "matthews_correlation"
+                if self.data_args.task_name == "cola"
+                else "accuracy"
+            )
+        )
+        # #############################################################################################
+        print(
+            "Step 7: Do the actual Pruning using itrex to get the pruned student model"
+        )
+        print(
+            "# #############################################################################################"
+        )
+
+        # Initialize and setup our itrexTrainer
+        if self.optim_args.sat and self.optim_args.orchestrate_optimizations:
+
+            if not self.training_args.do_train:
+                raise ValueError("do_train must be set to True for pruning.")
+
+            tune_metric = metrics.Metric(
+                name=metric_name, is_relative=self.optim_args.is_relative, criterion=self.optim_args.perf_tol
+            )
+            prune_type = 'PatternLock' \
+                if self.optim_args.pruning_approach else self.optim_args.pruning_approach
+            target_sparsity_ratio = self.optim_args.target_sparsity_ratio \
+                if self.optim_args.target_sparsity_ratio else None
+            pruner_config = PrunerConfig(prune_type=prune_type, target_sparsity_ratio=target_sparsity_ratio)
+            pruning_conf = PruningConfig(framework="pytorch_fx",pruner_config=[pruner_config], metrics=tune_metric)
+            distillation_conf = DistillationConfig(framework="pytorch_fx", metrics=tune_metric)
+        
+            objective = objectives.performance
+            quantization_conf = QuantizationConfig(
+                approach=self.optim_args.quantization_approach,
+                max_trials=600,
+                metrics=[tune_metric],
+                objectives=[objective]
+            )
+            conf_list = [pruning_conf, distillation_conf, quantization_conf]
+            model = self.trainer.orchestrate_optimizations(config_list=conf_list, teacher_model=self.teacher_model)
+
+        # ############################################################
+        print(
+            "Step 8: run inference on pruned student Model for accuracy"
+        )
+        print(
+            "#########################################################################"
+        )
+
+        # Check Accuracy
+        if (
+            self.optim_args.benchmark
+            or self.optim_args.accuracy_only
+            or self.optim_args.sat
+        ):
+            # Load the model obtained after distillation
+            # Can we do QAT also? Intel Neural Compressor (INC) quantization
+            model = OptimizedModel.from_pretrained(
+                self.training_args.output_dir,
+            )
+            model.eval()
+            self.trainer.model = model
+            results = self.trainer.evaluate()  # Actual Inference for accuracy
+            logger.info("metrics keys: {}".format(results.keys()))
+            bert_task_acc_keys = [
+                "eval_f1",
+                "eval_accuracy",
+                "eval_matthews_correlation",
+                "eval_pearson",
+                "eval_mcc",
+                "eval_spearmanr",
+            ]
+            ret = False
+            for key in bert_task_acc_keys:
+                if key in results.keys():
+                    ret = True
+                    throughput = results.get("eval_samples_per_second")
+                    print(
+                        "Batch size = ", self.training_args.per_device_eval_batch_size
+                    )
+                    print("Final Eval {} Accuracy: {}".format(key, results[key]))
+                    print("Latency: {:.5f} ms".format(1000 / throughput))
+                    print("Throughput: {:.5f} samples/sec".format(throughput))
             assert ret, "No metric returned, Please check inference metric!"

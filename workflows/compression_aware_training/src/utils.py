@@ -186,15 +186,17 @@ class OptimizationArguments:
     Arguments pertaining to what type of optimization we are going to apply on the model.
     """
 
-    distillation: bool = field(
+    sat: bool = field(
         default=False,
-        metadata={"help": "Whether or not to apply distillation."},
+        metadata={"help": "Whether or not to apply prune."},
     )
-    teacher_model_name_or_path: str = field(
-        default=False,
-        metadata={
-            "help": "Path to pretrained model or model identifier from huggingface.co/models"
-        },
+    pruning_approach: Optional[str] = field(
+        default="BasicMagnitude",
+        metadata={"help": "Pruning approach. Supported approach is basic_magnite."},
+    )
+    target_sparsity_ratio: Optional[float] = field(
+        default=None,
+        metadata={"help": "Targeted sparsity when pruning the model."},
     )
     metric_name: Optional[str] = field(
         default=None,
@@ -202,38 +204,50 @@ class OptimizationArguments:
     )
     tolerance_mode: Optional[str] = field(
         default="absolute",
-        metadata={
-            "help": "Metric tolerance model, expected to be relative or absolute."
-        },
+        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
     )
-    perf_tol: Optional[float] = field(
-        default=0.02,
-        metadata={"help": "Performance tolerance when optimizing the model."},
-    )
-    benchmark: bool = field(default=False, metadata={"help": "run benchmark."})
-    accuracy_only: bool = field(
-        default=False,
-        metadata={
-            "help": "Whether to only test accuracy for model tuned by Neural Compressor."
-        },
-    )
-
-    # for quantization
     quantization: bool = field(
         default=False,
         metadata={"help": "Whether or not to apply quantization."},
     )
     quantization_approach: Optional[str] = field(
         default="PostTrainingStatic",
-        metadata={
-            "help": "Quantization approach. Supported approach are PostTrainingStatic, "
-            "PostTrainingDynamic and QuantizationAwareTraining."
-        },
+        metadata={"help": "Quantization approach. Supported approach are PostTrainingStatic, "
+                  "PostTrainingDynamic and QuantizationAwareTraining."},
+    )
+    metric_name: Optional[str] = field(
+        default=None,
+        metadata={"help": "Metric used for the tuning strategy."},
     )
     is_relative: Optional[bool] = field(
         default=True,
-        metadata={
-            "help": "Metric tolerance model, expected to be relative or absolute."
-        },
+        metadata={"help": "Metric tolerance model, expected to be relative or absolute."},
     )
-    int8: bool = field(default=False, metadata={"help": "load int8 model."})
+    perf_tol: Optional[float] = field(
+        default=0.01,
+        metadata={"help": "Performance tolerance when optimizing the model."},
+    )
+    int8: bool = field(
+        default=False,
+        metadata={"help":"run benchmark."}
+    )
+    distillation: bool = field(
+        default=False,
+        metadata={"help": "Whether or not to apply distillation."},
+    )
+    teacher_model_name_or_path: str = field(
+        default=False,
+        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
+    )
+    orchestrate_optimizations: bool = field(
+        default=False,
+        metadata={"help":"for one shot."}
+    )
+    benchmark: bool = field(
+        default=False,
+        metadata={"help": "run benchmark."}
+    )
+    accuracy_only: bool = field(
+        default=False,
+        metadata={"help":"Whether to only test accuracy for model tuned by Neural Compressor."}
+    )

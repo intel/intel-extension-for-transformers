@@ -15,7 +15,7 @@ The workflow provides a generic way to do model Compression Aware Training suppo
 ## Validated Hardware Details 
 | Supported Hardware           | Precision  |
 | ---------------------------- | ---------- |
-| CPU and GPU|INT8 |
+| CPU and GPU|FP32, INT8 |
 
 ## How it Works
 ### Architecture
@@ -75,17 +75,21 @@ output: Distilled Bert Mini, or Distilled and Quantized bert mini
 
 See [config/README.md](./config/README.md) for options.
 
-Run both traditional distillation followed by Quantization aware training
+Run both traditional Distillation followed by Quantization Aware Training
 ```bash
 python src/run.py config/distillation_with_qat.yaml
 ```
-Run traditional distillation only
+Run traditional Distillation only
 ```bash
 python src/run.py config/distillation.yaml
 ```
-Run Quantization aware training training only
+Run Quantization Aware Training only
 ```bash
 python src/run.py config/qat.yaml
+```
+Run Sparsity Aware Training only
+```bash
+python src/run.py config/sat.yaml
 ```
 
 ## Run Using Docker
