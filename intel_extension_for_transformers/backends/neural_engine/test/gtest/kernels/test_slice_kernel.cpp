@@ -76,13 +76,13 @@ test_data_t gen_data(const test_params_t& p) {
     void* rt_data_ref = sparselib_ut_memo(nullptr, a_tensor_config.size(), a_tensor_config.dtype(), memo_mode::MALLOC);
 
     // init other tensor
-    if (p.input_dt == dt::s8 || p.input_dt == dt::u8)
+    if (p.input_dt == dt::s8 || p.input_dt == dt::u8) {
       init_vector(static_cast<int8_t*>(rt_data), a_tensor_config.size());
-    else if (p.input_dt == dt::fp32)
+    } else if (p.input_dt == dt::fp32) {
       init_vector(static_cast<float*>(rt_data), a_tensor_config.size());
-    else if (p.input_dt == dt::bf16)
+    } else if (p.input_dt == dt::bf16) {
       init_vector(static_cast<jd::bfloat16_t*>(rt_data), a_tensor_config.size());
-    else {
+    } else {
       SPARSE_LOG(FATAL) << "Unexpected dtype!";
     }
     memcpy(rt_data_ref, rt_data, a_tensor_config.size() * jd::type_size.at(p.input_dt));

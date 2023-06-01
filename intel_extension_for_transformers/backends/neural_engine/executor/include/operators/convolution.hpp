@@ -38,7 +38,6 @@ class ConvolutionOperator : public Operator {
  public:
   explicit ConvolutionOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~ConvolutionOperator() {
-    if (scratchpad_) aligned_free(scratchpad_);
   }
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;

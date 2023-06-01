@@ -352,16 +352,6 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   vector<int64_t> src0_shape_origin = src0_->shape();
   vector<int64_t> src1_shape_origin = src1_->shape();
 
-  // std::cout <<  "here is matmul " << std::endl;
-  // for (int i = 0; i < input[0]->shape().size() ; ++i) {
-  //   std::cout <<  "here is matmul src0 shape "  << input[0]->shape()[i]<< std::endl;
-
-  // }
-  // for (int i = 0; i < input[1]->shape().size() ; ++i) {
-  //   std::cout <<  "here is matmul src1 shape "  << input[1]->shape()[i]<< std::endl;
-
-  // }
-
   vector<int64_t> src0_shape = GetShapes(src0_shape_origin, src0_perm_);
   vector<int64_t> src1_shape = GetShapes(src1_shape_origin, src1_perm_);
   vector<int64_t> src0_stride = GetStrides(src0_shape_origin, src0_perm_);
@@ -492,7 +482,23 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
     binary_m_ = memory(binary_md, eng_);
   }
   attr_.set_post_ops(po);
+
+  attr_.set_scratchpad_mode(dnnl::scratchpad_mode::user);
+
   matmul_pd_ = dnnl::matmul::primitive_desc(matmul_d, attr_, eng_);
+
+  memory::desc scratchpad_md = matmul_pd_.scratchpad_desc();
+
+  if (scratchpad_) {
+    free(scratchpad_);
+    scratchpad_ = nullptr;
+  }
+
+  scratchpad_ = reinterpret_cast<void*>(
+    aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
+
+  memory scratchpad_m = memory(scratchpad_md, eng_, scratchpad_);
+  memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
 
   // 2.4 Prepare memory objects (cached)
   src0_m_ = memory(src0_md, eng_);
@@ -543,28 +549,6 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
     MatMulPrimitiveFwdFactory::Set(key, matmul_p_);
   }
   DstReshapeFusion(input, output);
-
-  // any_src0_m_ = src0_m_;
-  // any_src1_m_ = src1_m_;
-  // any_dst_m_ = dst_m_;
-  // if (matmul_pd_.src_desc() != src0_m_.get_desc()) {
-  //   any_src0_m_ = memory(matmul_pd_.src_desc(), eng_);
-  //   reorder_prim_src_ = dnnl::reorder(src0_m_, any_src0_m_);
-
-  //   src_reorder_ = true;
-  // }
-  // if (!cache_weight_ && (matmul_pd_.weights_desc() != src1_m_.get_desc())) {
-  //   any_src1_m_ = memory(matmul_pd_.weights_desc(), eng_);
-  //   reorder_prim_weight_ = dnnl::reorder(src1_m_, any_src1_m_);
-
-  //   weight_reorder_ = true;
-  // }
-  // if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
-  //   any_dst_m_ = memory(matmul_pd_.dst_desc(), eng_);
-  //   reorder_prim_dst_ = dnnl::reorder(any_dst_m_, dst_m_);
-
-  //   dst_reorder_ = true;
-  // }
 }
 
 // 2. inference kernel(for int8 and f32)
@@ -669,12 +653,6 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   this->unref_tensors(input);
 
   if (is_dynamic_) {
-    // float minx = *(float*)dst_data, maxx = *(float*)dst_data;
-    // for (int i = 0; i < matmul_fp32_res.size(); i++) {
-    //   minx = std::min(minx, *((float*)dst_data + i));
-    //   maxx = std::max(maxx, *((float*)dst_data + i));
-    // }
-    // std::cout << minx << "\t" << maxx << std::endl;
     // quantize the fp32 result of matmul
     if (output.size() > 1) {
       runtime_minmax(reinterpret_cast<float*>(matmul_fp32_res.mutable_data()), matmul_fp32_res.size(),
@@ -730,8 +708,6 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
   rescales.resize(channel_size);
   const float* src0_scales = reinterpret_cast<const float*>(src0_max_->data());
   const float* src1_scales = reinterpret_cast<const float*>(src1_max_->data());
-  // std::cout << name_ << "\tsrc0:\t" << src0_scales[0] << std::endl;
-  // std::cout << name_ << "\tsrc1:\t" << src1_scales[0] << std::endl;
   if (channel_size == 1) {
     rescales[0] = output_scale_ / src0_scales[0] / src1_scales[0];
   } else {

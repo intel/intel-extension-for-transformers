@@ -102,6 +102,7 @@ class InnerProductOperator : public Operator {
   bool append_eltwise_;
   bool is_dynamic_ = false;
   float output_scale_ = 1.f;
+  void* scratchpad_ = nullptr;
   vector<float> dst_scales_;
   vector<float> rescales_;
   string output_dtype_ = "fp32";

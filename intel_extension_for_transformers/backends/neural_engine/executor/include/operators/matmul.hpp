@@ -79,6 +79,7 @@ class MatmulOperator : public Operator {
   bool transpose_mode_ = false;
   float output_scale_ = 1.f;
   float ouput_zp_ = 0.f;
+  void* scratchpad_ = nullptr;
   string output_dtype_ = "fp32";
   vector<float> dst_scales_;
   vector<int64_t> src0_perm_;

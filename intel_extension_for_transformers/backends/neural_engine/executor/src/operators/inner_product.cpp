@@ -1152,7 +1152,22 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     binary_m_ = memory(binary_md, eng_);
   }
   if (append_eltwise_ || append_sum_ || binary_add_ || is_dynamic_) attr_.set_post_ops(po);
+
+  attr_.set_scratchpad_mode(dnnl::scratchpad_mode::user);
   inner_product_pd_ = dnnl::inner_product_forward::primitive_desc(inner_product_d, attr_, eng_);
+
+  memory::desc scratchpad_md = inner_product_pd_.scratchpad_desc();
+
+  if (scratchpad_) {
+    free(scratchpad_);
+    scratchpad_ = nullptr;
+  }
+
+  scratchpad_ = reinterpret_cast<void*>(
+    aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
+
+  memory scratchpad_m = memory(scratchpad_md, eng_, scratchpad_);
+  memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
 
   // 2.4 Prepare memory objects (cached)
   src0_m_ = memory(src0_md, eng_);
