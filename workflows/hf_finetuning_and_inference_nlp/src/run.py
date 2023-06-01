@@ -16,7 +16,7 @@
 
 from transformers import TrainingArguments
 from transformers import logging as hf_logging
-import yaml, argparse
+import yaml, argparse, os, sys
 
 
 hf_logging.set_verbosity_info()
@@ -25,12 +25,21 @@ hf_logging.set_verbosity_info()
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_file", type=str, required=True)
+    parser.add_argument("--local_rank", type=int, required=False)
+    parser.add_argument("--no_cuda", action='store_true', required=False)
     args = parser.parse_args()
 
     with open(args.config_file, "r") as f:
         data = yaml.safe_load(f)
 
-    training_args = TrainingArguments(output_dir="./output_dir")
+    training_args = None
+    if int(os.environ.get("LOCAL_RANK", -1)) != -1 and '--no_cuda' in sys.argv:
+        from intel_extension_for_transformers.optimization.utils.utility import distributed_init
+        distributed_init()
+        training_args = TrainingArguments(output_dir=data["training_args"].get("output_dir", "./output_dir"), no_cuda=True)
+    else:
+        training_args = TrainingArguments(output_dir=data["training_args"].get("output_dir", "./output_dir"))
+
     for item in data["training_args"]:
         setattr(training_args, item, data["training_args"][item])
 

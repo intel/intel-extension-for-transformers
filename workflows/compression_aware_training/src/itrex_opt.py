@@ -90,21 +90,45 @@ class ItrexOpt(object):
                 OptimizationArguments,
             )
         )
-        if len(args) == 2 and args[1].endswith(".yaml"):
-            model_args, data_args, training_args, optim_args = parser.parse_yaml_file(
-                yaml_file=os.path.abspath(args[1])
-            )
-        elif len(args) == 2 and args[1].endswith(".json"):
-            model_args, data_args, training_args, optim_args = parser.parse_json_file(
-                json_file=os.path.abspath(args[1])
-            )
+        
+        if "--local-rank=0" not in args:
+            if len(args) == 2 and args[1].endswith(".yaml"):
+                model_args, data_args, training_args, optim_args = parser.parse_yaml_file(
+                    yaml_file=os.path.abspath(args[1])
+                )
+            elif len(args) == 2 and args[1].endswith(".json"):
+                model_args, data_args, training_args, optim_args = parser.parse_json_file(
+                    json_file=os.path.abspath(args[1])
+                )
+            else:
+                (
+                    model_args,
+                    data_args,
+                    training_args,
+                    optim_args,
+                ) = parser.parse_args_into_dataclasses()
         else:
-            (
-                model_args,
-                data_args,
-                training_args,
-                optim_args,
-            ) = parser.parse_args_into_dataclasses()
+            filename = None
+            for arg in args:
+                if arg.endswith(".yaml") or arg.endswith(".json"):
+                    filename = arg
+                    break
+            if filename is None:
+                (
+                    model_args,
+                    data_args,
+                    training_args,
+                    optim_args,
+                ) = parser.parse_args_into_dataclasses()
+            elif filename.endswith(".yaml"):
+                model_args, data_args, training_args, optim_args = parser.parse_yaml_file(
+                    yaml_file=os.path.abspath(filename)
+                )
+            else:
+                model_args, data_args, training_args, optim_args = parser.parse_json_file(
+                    json_file=os.path.abspath(filename)
+                )
+
 
         self.model_args = model_args
         self.data_args = data_args
