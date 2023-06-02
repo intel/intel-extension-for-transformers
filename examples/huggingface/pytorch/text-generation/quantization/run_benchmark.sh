@@ -84,18 +84,24 @@ function run_benchmark {
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi
-    # elif [ "${topology}" = "opt_2.7b" ]; then
-    #     script="run_generation.py"
-    #     model_name_or_path="facebook/opt-2.7b"
-    #     if [ "${backend}" = "ipex" ]; then
-    #         extra_cmd=$extra_cmd" --ipex"
-    #     fi
-    # elif [ "${topology}" = "opt_6.7b" ]; then
-    #     script="run_generation.py"
-    #     model_name_or_path="facebook/opt-6.7b"
-    #     if [ "${backend}" = "ipex" ]; then
-    #         extra_cmd=$extra_cmd" --ipex"
-    #     fi
+    elif [ "${topology}" = "opt_1.3b" ]; then
+        script="run_generation.py"
+        model_name_or_path="facebook/opt-1.3b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "opt_2.7b" ]; then
+        script="run_generation.py"
+        model_name_or_path="facebook/opt-2.7b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+    elif [ "${topology}" = "opt_6.7b" ]; then
+        script="run_generation.py"
+        model_name_or_path="facebook/opt-6.7b"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
     elif [ "${topology}" = "llama_7b" ]; then
         script="run_generation.py"
         model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"

@@ -1438,6 +1438,33 @@
       }
     }
   },
+   "opt_1.3b_clm_ipex": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "opt_1.3b",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "opt_1.3b",
+        "task": "clm",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "opt_2.7b_clm_ipex": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
@@ -1536,6 +1563,87 @@
         "backend": "ipex",
         "mode": "accuracy",
         "batch_size": "112",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "opt_1.3b_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "opt_1.3b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "opt_1.3b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "1",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "opt_2.7b_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "opt_2.7b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "opt_2.7b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "1",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "opt_6.7b_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "opt_6.7b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "opt_6.7b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "1",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"

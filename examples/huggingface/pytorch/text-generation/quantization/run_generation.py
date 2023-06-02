@@ -16,6 +16,7 @@ from modeling_gptj import GPTJForCausalLM
 from modeling_llama import LlamaForCausalLM
 from modeling_bloom import BloomForCausalLM
 from modeling_gpt_neox import GPTNeoXForCausalLM
+from modeling_opt import OPTForCausalLM
 from optimum.utils import NormalizedConfigManager
 
 # to use modeling gptj modification base transformers 4.28.1:
@@ -23,7 +24,7 @@ transformers.models.gptj.modeling_gptj.GPTJForCausalLM = GPTJForCausalLM
 transformers.models.llama.modeling_llama.LlamaForCausalLM = LlamaForCausalLM
 transformers.models.bloom.modeling_bloom.BloomForCausalLM = BloomForCausalLM
 transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM = GPTNeoXForCausalLM
-
+transformers.models.opt.modeling_opt.OPTForCausalLM = OPTForCausalLM
 import numpy as np
 from itertools import chain
 
