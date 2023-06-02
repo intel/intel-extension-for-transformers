@@ -240,9 +240,9 @@ class ItrexOpt(object):
         # See more about loading any type of standard or custom dataset at
         # https://huggingface.co/docs/datasets/loading_datasets.html.
 
-        print("Step 1: Load the emotion dataset")
-        print("################################")
-        # Load the emotion dataset Labels
+        print("Step 1: Load the dataset")
+        print("#######################")
+        # Load the dataset Labels
         if self.data_args.task_name is not None:
             is_regression = self.data_args.task_name == "stsb"
             if not is_regression:
@@ -667,10 +667,10 @@ class ItrexOpt(object):
 
         # #############################################################################################
         print(
-            "Step 6: Distill teacher model(bert-based-uncased-emotion) to student Model (Bert Mini)"
+            "Step 6: Distill teacher model to student Model "
         )
         print(
-            "#####################################################################################"
+            "###############################################"
         )
 
         metric_name = (

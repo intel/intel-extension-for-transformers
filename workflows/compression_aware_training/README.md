@@ -8,9 +8,10 @@ Learn to use Intel's XPU hardware and Intel optimized software for Model Compres
 The workflow provides a generic way to do model Compression Aware Training supporting the following Compression types specified below.
 
 ### Compression Aware Training Types Supported
-1. Distillation (Distill the Finetuned teacher model for your task to a smaller student model) 
-2. Quantization Aware Training (QAT) 
+1. Distillation : Distill the Finetuned teacher model for your task to a smaller student model
+2. Quantization Aware Training (QAT)
 3. Distillation followed by Quantization Aware Training (QAT)
+4. Sparsity Aware Training (SAT) : Training while preserving the sparsity of a pruned sparse model  
 
 ## Validated Hardware Details 
 | Supported Hardware           | Precision  |
@@ -90,6 +91,28 @@ python src/run.py config/qat.yaml
 Run Sparsity Aware Training only
 ```bash
 python src/run.py config/sat.yaml
+```
+
+#### 3. Running Distributed Data Parallel (MultiNode) in Bash or Terminal
+```
+<MASTER_ADDRESS>         is the address of the master node, it won't be necessary for single node case,
+<NUM_PROCESSES_PER_NODE> is the desired processes to use in current node. 
+                         for node with GPU, usually set to number of GPUs in this node. 
+                         for node without GPU and use CPU for training, it's recommended set to 1.
+<NUM_NODES>              is the number of nodes to use.
+<NODE_RANK>              is the rank of the current node, rank starts from 0 to *`<NUM_NODES>`*`-1`.
+
+Also please note that to use CPU for training in each node with multi nodes settings, argument `--no_cuda` is mandatory. 
+In multi nodes setting, following command needs to be launched in each node.
+All the commands should be the same except for *NODE_RANK*, 
+which should be integer from 0 to *`<NUM_NODES>`*`-1` assigned to each node.
+```
+Example template for running on 2 Nodes CPU with 1 process per node
+```bash
+python -m torch.distributed.launch --master_addr=10.10.10.1 --nproc_per_node=1 --nnodes=2 --node_rank=0  src/run.py config/distillation.yaml
+```
+```bash
+python -m torch.distributed.launch --master_addr=10.19.17.1 --nproc_per_node=1 --nnodes=2 --node_rank=1  src/run.py config/distillation.yaml
 ```
 
 ## Run Using Docker
@@ -246,7 +269,7 @@ You can see more examples of the workflow [here](../../examples/huggingface/) or
 
 ## Troubleshooting
 
-If a unsuitable Task Name is provided then the below exception is thrown. Either pass the loacal_dataset parameters or provide any other huggingface dataset.
+1. If a unsuitable Task Name is provided then the below exception is thrown. Either pass the loacal_dataset parameters or provide any other huggingface dataset.
 ```
 Traceback (most recent call last):
   File "/DataDisk_4/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/compression_aware_training/src/run.py", line 27, in <module>
@@ -263,6 +286,15 @@ Traceback (most recent call last):
   File "/DataDisk_4/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/compression_aware_training/src/utils.py", line 111, in __post_init__
     raise ValueError(
 ValueError: Unknown task, you should pick one in emotion,cola,mnli,mrpc,qnli,qqp,rte,sst2,stsb,wnli
+```
+
+2. If you see the following libGL.so.1 error while running the workflow
+```
+Exception:  "ImportError: libGL.so.1: cannot open shared object file: No such file or directory"
+
+Fix: Install the following packages for the error to go away.
+1. pip install opencv-python-headless
+2. conda install -c anaconda mesa-libgl-cos6-x86_64 (if it is a conda environment)
 ```
 
 ## Support
