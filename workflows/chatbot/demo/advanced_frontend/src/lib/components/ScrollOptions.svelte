@@ -42,15 +42,27 @@
 			<div class="flex flex-col justify-start scroll-out overflow-hidden">
 				{#each lists[selected] as option}
 					<label class="label flex-col items-start bg-transparent text-white text-sm my-2">
-						<span>{option.label}: {option.value}</span>
-						<input
-							class="w-full input-range bg-blue-400"
-							type="range"
-							max={option.maxRange}
-							min={option.minRange}
-							step={option.step}
-							bind:value={option.value}
-						/>
+						{#if option.type == 'range'}
+							<span>{option.label}: {option.value}</span>
+							<input
+								class="w-full input-range bg-blue-400"
+								type="range"
+								max={option.maxRange}
+								min={option.minRange}
+								step={option.step}
+								bind:value={option.value}
+							/>
+						{:else if option.type == 'file'}
+							<span>{option.label}: </span>
+							<input class="w-full input-range bg-blue-400 mt-5 border-none" type="file" on:change={(event) => {
+								if (event?.target?.files.length == 0) return;
+								let reader = new FileReader();
+								reader.onload = (e) => {
+									option.articles = e.target?.result;
+								}
+								reader.readAsText(event?.target?.files[0]);
+							}}/>
+						{/if}
 					</label>
 				{/each}
 			</div>

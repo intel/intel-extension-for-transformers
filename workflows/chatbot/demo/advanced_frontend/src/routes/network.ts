@@ -6,7 +6,7 @@ const LLMA_URL = env.LLMA_URL;
 const GPT_J_6B_URL = env.GPT_J_6B_URL;
 const KNOWLEDGE_URL = env.KNOWLEDGE_URL;
 
-function chatMessage(chatMessages: ChatMessage[], type: ChatMessageType): SSE {
+function chatMessage(chatMessages: ChatMessage[], type: ChatMessageType, articles = []): SSE {
 	// chatMessage
 	const initWord =
 		"A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human questions.\n";
@@ -43,6 +43,7 @@ function chatMessage(chatMessages: ChatMessage[], type: ChatMessageType): SSE {
 		"knowledge": {
 			"query": knowledgeContent, 
 			"domain": type.knowledge, 
+			"articles": articles,
 			"debug": false,
 		}
 	}
@@ -56,4 +57,12 @@ function chatMessage(chatMessages: ChatMessage[], type: ChatMessageType): SSE {
 	return eventSource;
 }
 
-export default { modelList: chatServer.modelList, chatMessage };
+function chatGPT(msgs: ChatMessage[], api_key: string): SSE {
+	return new SSE("https://api.openai.com/v1/chat/completions", {
+			headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key},
+			payload: JSON.stringify({"model": "gpt-3.5-turbo", "messages": msgs}),
+	})
+}
+
+
+export default { modelList: chatServer.modelList, chatMessage, chatGPT };
