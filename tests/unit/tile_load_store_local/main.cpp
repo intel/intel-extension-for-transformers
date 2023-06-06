@@ -38,6 +38,15 @@ TEST(tile_transpose_store_local, esimd) {
             Range, result_validate);
 }
 
+TEST(tile_transpose_store_local_bf16, esimd) {
+    cl::sycl::nd_range<1> Range({1}, {1});
+    auto result_validate = std::bind(
+            tile_load_store_result_validate<bf16>, _1, _2, _3, 64, 32, 32);
+    kernel_run<bf16,
+            tile_transpose_store_local_func<bf16, 64, 64, 64, 32, 32, 16, 16>>(
+            Range, result_validate);
+}
+
 TEST(tile_load_store_1d_local, esimd) {
     cl::sycl::nd_range<1> Range({1}, {1});
     auto result_validate = std::bind(

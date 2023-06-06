@@ -756,8 +756,7 @@ public:
                        && (block_bytes % max_store_bytes) == 0)
                             ? 32
                             : 16);
-    static constexpr uint32_t num_channel_x
-            = block_size_x * sizeof(dtype) / sizeof(store_dtype);
+    static constexpr uint32_t num_channel_x = block_size_x;
     static constexpr uint32_t num_channel_y
             = is_simd16_vec ? 1 : num_channel / num_channel_x;
     static constexpr uint32_t store_elems = num_channel_y * num_vector_size

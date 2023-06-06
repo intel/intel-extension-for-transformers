@@ -60,7 +60,8 @@ struct tile_transpose_store_local_func {
         /// 1) transpose the data in global mem
         /// 2) load the col major data and transpose store to slm
         using tile_desc = tile_desc_t<twidth, theight, bwidth, bheight,
-                reg_layout::tiled>;
+                sizeof(dtype) == 4 ? reg_layout::tiled
+                                   : reg_layout::vnni_tiled>;
         using mat_t = tile_t<dtype, tile_desc>;
         using payload_matA_t
                 = mem_payload_t<dtype, tile_desc, msg_type::block_2d,
@@ -82,11 +83,6 @@ struct tile_transpose_store_local_func {
         mat_t mat;
         payload_matA_t payload_matA(a, swidth, sheight, spitch, 0, 0);
         tile_load(mat, payload_matA);
-        payload_global_t matB_st(b, swidth, sheight, spitch, 0, 0);
-        tile_store(mat, matB_st);
-        payload_global_t matB_ld(b, swidth, sheight, spitch, 0, 0);
-        mat.reg = 0;
-        tile_load(mat, matB_ld);
         mat_slm_t mat_slm;
         slm_store_payload_t local_store_A(
                 (uint32_t)0, twidth, theight, twidth, 0, 0);
