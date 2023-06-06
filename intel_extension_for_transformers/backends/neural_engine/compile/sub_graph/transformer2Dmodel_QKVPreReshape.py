@@ -33,6 +33,44 @@ class Transformer2Dmodel_QKVPreReshape(Pattern):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
             'Transformer2Dmodel_QKVPreReshape': [
+                # v2-1 only
+                {
+                    'patterns': {
+                        'in': [[(0, 'Mul'), (1, 'Unsqueeze'), (6, 'Concat'), (7, 'Reshape')],
+                               [(), (2, 'Unsqueeze'), (6, 'Concat')], [(), (3, 'Unsqueeze'), (6, 'Concat')],
+                               [(), (4, 'GroupNorm'), (5, 'Transpose'), (7, 'Reshape')]],
+                        'out': [[(0, 'GroupNorm'), (1, 'Transpose'), (2, 'Reshape')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 4,
+                        1: 5,
+                        2: 7,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            4: [0]
+                        }, {
+                            4: [1]
+                        }, {
+                            4: [2]
+                        }], [[0, 1, 2], 3]],
+                        1: [[], [[], 1]],
+                        2: [[], [[], 1]],
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            4: [0]
+                        }], [[0], 1]],
+                        1: [[{
+                            5: [0]
+                        }], [[0], 1]],
+                        2: [[{
+                            7: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [4, 5, 6, 7]
+                },
                 {
                     'patterns': {
                         'in': [[(0, 'Mul'), (1, 'Unsqueeze'), (6, 'Concat'), (7, 'Reshape')],
@@ -79,11 +117,19 @@ class Transformer2Dmodel_QKVPreReshape(Pattern):
                                                                         pattern_dict, model)
 
             if len(new_node_names) != 0:
-                logger.info('Transformer2Dmodel_QKVPreReshape mathched...')
+                if i == 0:
+                    logger.info('Transformer2Dmodel_QKVPreReshape for V2-1 mathched...')
+                    for node in model.nodes:
+                        if node.op_type == 'Softmax':
+                            attr = OrderedDict()
+                            attr['version'] = 'V2'
+                            node.attr = attr
+                else:
+                    logger.info('Transformer2Dmodel_QKVPreReshape mathched...')
                 logger.debug('Transformer2Dmodel_QKVPreReshape = {}'.format(new_node_names))
                 for j in range(len(new_node_names)):
                     # the first new node
-                    assert ret_old_nodes[j][0].op_type == 'Conv'
+                    assert ret_old_nodes[j][0].op_type == 'Conv' or ret_old_nodes[j][0].op_type == 'GroupNorm'
                     conv_node_idx = model.get_node_id(new_node_names[j][0])
                     model.nodes[conv_node_idx].attr = ret_old_nodes[j][0].attr
 

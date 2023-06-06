@@ -59,6 +59,11 @@ MultiHeadAttentionOperator::MultiHeadAttentionOperator(const shared_ptr<Operator
     StringSplit<int64_t>(&dst_reshape_, attrs_map["reshape"], ",");
   }
 
+  iter = attrs_map.find("stable_softmax");
+  if (iter != attrs_map.end()) {
+    stable_softmax_ = true;
+  }
+
   if (dst_reshape_.size() > 0 && dst_reshape_[0] != -1) {
     is_sparse_ = true;
     int max_threads = std::min(32, omp_get_max_threads());
@@ -291,7 +296,11 @@ void MultiHeadAttentionOperator::ReshapeDense(const vector<Tensor*>& input, cons
   }
   dst_->set_shape(attn_shape);
   attr_map["approx_exp"] = "True";
-  attr_map["stable_softmax"] = Q_->dtype() == "s8" ? "True" : "False";
+  if (stable_softmax_ == false) {
+    attr_map["stable_softmax"] = Q_->dtype() == "s8" ? "True" : "False";
+  } else {
+    attr_map["stable_softmax"] = "True";
+  }
 
   std::vector<jd::tensor_desc> ts_descs(io::SIZE, jd::tensor_desc());
   // scale and zero point

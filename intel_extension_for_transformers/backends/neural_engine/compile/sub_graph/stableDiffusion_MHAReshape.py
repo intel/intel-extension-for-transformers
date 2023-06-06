@@ -100,9 +100,10 @@ class StableDiffusion_MHAReshape(Pattern):
 
                 # the softmax node
                 softmax_node = model.get_node_by_name(new_node_names[j][1])
+                old_softmax_node = ret_old_nodes[j][6]
                 assert softmax_node.op_type == 'Softmax'
-                attr = OrderedDict()
-                softmax_node.attr = attr
+                assert old_softmax_node.op_type == 'Softmax'
+                softmax_node.attr = old_softmax_node.attr
 
                 # # the second matmul node
                 attr = OrderedDict()

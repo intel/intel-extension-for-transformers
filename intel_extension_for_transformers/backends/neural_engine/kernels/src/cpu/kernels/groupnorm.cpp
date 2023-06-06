@@ -34,7 +34,6 @@ bool groupnorm_kd_t::init() {
   KERNEL_INIT_CHECK(src_shape.size() == 4);  // src shape must be NCHW.
   param_.dt = src_desc.dtype();
   param_.HW = std::accumulate(src_shape.begin() + 2, src_shape.end(), 1, std::multiplies<int>());
-  KERNEL_INIT_CHECK(param_.HW % (64 / get_data_size(param_.dt)) == 0);  // can't process un-aligned case now.
   param_.postop_attrs = op_desc_.apply_postops_list();
   return true;
 }

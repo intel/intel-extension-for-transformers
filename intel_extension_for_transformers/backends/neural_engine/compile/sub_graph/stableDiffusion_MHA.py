@@ -81,8 +81,8 @@ class StableDiffusion_MHA(Pattern):
                         attr['dst_perm'] = ret_old_nodes[i][2].attr['dst_perm']
                     if 'reshape' in ret_old_nodes[i][2].attr.keys():
                         attr['reshape'] = ret_old_nodes[i][2].attr['reshape']
-                        # if 'output_dtype' in ret_old_nodes[i][2].attr.keys():
-                        #     attr['output_dtype'] = ret_old_nodes[i][2].attr['output_dtype']
+                    if 'version' in ret_old_nodes[i][1].attr.keys() and ret_old_nodes[i][1].attr['version'] == 'V2':
+                        attr['stable_softmax'] = True
                     attr['output_dtype'] = 'bf16'
                 elif len(ret_old_nodes[i]) == 6:
                     if 'src0_perm' in ret_old_nodes[i][0].attr.keys():

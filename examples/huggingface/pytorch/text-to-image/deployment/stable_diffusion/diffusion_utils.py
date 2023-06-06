@@ -281,6 +281,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
             else:
                 attention_mask = None
 
+            # The ITREX Text Encdoer Code
             prompt_embeds = text_encoder_graph.inference([text_input_ids])
             bsz, seq_length = text_input_ids.shape
             encoder_hidden_state = prompt_embeds['last_hidden_state:0']
@@ -289,7 +290,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
             prompt_embeds = torch.from_numpy(prompt_embeds['last_hidden_state:0']).reshape(
                 bsz, seq_length, -1)
 
-            # pytorch text_encoder
+            # Original Pytorch Diffuser Text Encoder Code
             # prompt_embeds = self.text_encoder(
             #     text_input_ids.to(device),
             #     attention_mask=attention_mask,
@@ -337,7 +338,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
             else:
                 attention_mask = None
 
-            # text_encoder engine inference
+            # The ITREX Text Encdoer Code
             negative_prompt_embeds = text_encoder_graph.inference([uncond_input.input_ids])
             bsz, seq_length = uncond_input.input_ids.shape
             encoder_hidden_state = negative_prompt_embeds['last_hidden_state:0']
@@ -375,10 +376,10 @@ class StableDiffusionPipeline(DiffusionPipeline):
 
     def decode_latents(self, latents, vae_decoder_graph):
         latents = 1 / 0.18215 * latents
-        # pytorch vae_decoder
+        # Original Pytorch Diffuser Vae Code
         # image = self.vae.decode(latents).sample
 
-        # vae_decoder engine infernece
+        # The ITREX Vae Codes
         output = vae_decoder_graph.inference([latents])
         image = torch.from_numpy(output['sample:0'])
 
@@ -618,10 +619,10 @@ class StableDiffusionPipeline(DiffusionPipeline):
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
 
-                # pytorch unet: predict the noise residual
+                # Original Pytorch Diffuser Unet Code: predict the noise residual
                 # noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
 
-                # unet engine infernece
+                # The ITREX Unet Code
                 t_1d = torch.tensor([t], dtype=torch.float32)
                 engine_output = engine_graph[1].inference([latent_model_input, t_1d, prompt_embeds])
                 noise_pred = torch.from_numpy(engine_output['out_sample:0'])

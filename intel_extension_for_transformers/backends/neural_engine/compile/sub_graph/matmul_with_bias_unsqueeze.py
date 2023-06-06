@@ -28,6 +28,7 @@ class MatMulWithBiasUnsqueeze(Pattern):
     Fuse the original sub-graph into the custom acceleration 'MatMulWithBiasUnsqueeze' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
+
     def __call__(self, model):
         """The __call__ function of this pattern class."""
         pattern_mapping_config = {
@@ -49,7 +50,9 @@ class MatMulWithBiasUnsqueeze(Pattern):
                             0: [1]
                         }, {
                             0: [2]
-                        }], [[0, 1, 2], 3]],
+                        }, {
+                            'input_data': [2]
+                        }], [[0, 1, 2, 3], 4]],
                     },
                     'output_tensors': {
                         0: [[{
@@ -77,7 +80,9 @@ class MatMulWithBiasUnsqueeze(Pattern):
                 x, y = innerproduct_node.input_tensors[1].shape
                 if ret_old_nodes[j][0].attr['src1_perm'] == '0,1':
                     innerproduct_node.attr['reshape'] = '-1,' + str(x) + ',1,1'
+                    innerproduct_node.attr['reshape_dims'] = 0
                 if ret_old_nodes[j][0].attr['src1_perm'] == '1,0':
                     innerproduct_node.attr['reshape'] = '-1,' + str(y) + ',1,1'
+                    innerproduct_node.attr['reshape_dims'] = 0
 
         return model

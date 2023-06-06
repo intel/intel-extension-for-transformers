@@ -61,15 +61,16 @@ class jit_groupnorm_t : public jit_generator {
   void prepare_mask(Reg64 reg_tmp, Opmask sum_write_mask);
   void sum_code_gen(regs_pool* rp, Reg64 reg_src, Reg64 reg_sum_x, Reg64 reg_sum_powx, Opmask sun_write_mask,
                     const Xbyak::Label& data_label, size_t sum_dim);
-  void norm(regs_pool* rp, Reg64 reg_src, Reg64 reg_dst, Reg64 reg_sum_x, Reg64 reg_sum_powx, Reg64 reg_gamma,
-            Reg64 reg_beta, const Xbyak::Label& div_const_label, const Xbyak::Label& eps_label,
-            size_t channels_per_group = 1);
+  void calc_scale_and_norm(regs_pool* rp, Reg64 reg_src, Reg64 reg_dst, Reg64 reg_sum_x, Reg64 reg_sum_powx,
+                           Reg64 reg_gamma, Reg64 reg_beta, const Xbyak::Label& div_const_label,
+                           const Xbyak::Label& eps_label, size_t channels_per_group = 1);
 
  protected:
   groupnorm_param_t param_;
   Opmask sum_write_mask;
   jit_eltwise_injector eltwise_injector_;
   int unroll;
+  int reg_tmp_idx;
 
  private:
   void generate() override;

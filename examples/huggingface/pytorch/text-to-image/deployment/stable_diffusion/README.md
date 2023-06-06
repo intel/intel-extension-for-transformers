@@ -1,6 +1,13 @@
 Step-by-Step
 =========
-This document describes the end-to-end workflow for Text-to-image generative AI models [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) and [runwayml/stable-diffusion-v1-5](https://github.com/runwayml/stable-diffusion) across the Neural Engine backend.
+This document describes the end-to-end workflow for Text-to-image generative AI models across the Neural Engine backend.
+
+Supported Text-to-image Generative AI models:
+1. [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4)
+2. [runwayml/stable-diffusion-v1-5](https://github.com/runwayml/stable-diffusion)
+3. [stabilityai/stable-diffusion-2-1](https://huggingface.co/stabilityai/stable-diffusion-2-1)
+
+The inference and accuracy of the above pretrained models are verified in the default configs.
 
 # Prerequisite
 
@@ -50,11 +57,12 @@ export INST_NUM=<inst num>
 # End-to-End Workflow
 ## 1. Prepare Models
 
-The stable diffusion mainly includes three onnx models: text_encoder, unet, vae_decoder.
+The stable diffusion mainly includes three sub models: 
+1. Text Encoder 
+2. Unet 
+3. Vae Decoder.
 
-The pretrained model [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) and [runwayml/stable-diffusion-v1-5](https://github.com/runwayml/stable-diffusion) provied by diffusers are the same in the default config.
-
-Here we take CompVis/stable-diffusion-v1-4 as an example.
+Here we take the [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) as an example.
 
 ### 1.1 Download Models
 Export FP32 ONNX models from the hugginface diffusers module, command as follows:
@@ -112,10 +120,10 @@ python export_ir.py --onnx_model=./model/vae_decoder_bf16/bf16-model.onnx --patt
 Python API command as follows:
 ```python
 # FP32 IR
-python run_executor.py --ir_path=./fp32_ir --mode=latency
+python run_executor.py --ir_path=./fp32_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
 
 # BF16 IR
-python run_executor.py --ir_path=./bf16_ir --mode=latency
+python run_executor.py --ir_path=./bf16_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
 ```
 
 ## 3. Accuracy
@@ -125,10 +133,10 @@ By setting --accuracy to check FID socre.
 Python API command as follows:
 ```python
 # FP32 IR
-python run_executor.py --ir_path=./fp32_ir --mode=accuracy
+python run_executor.py --ir_path=./fp32_ir --mode=accuracy --input_model=CompVis/stable-diffusion-v1-4
 
 # BF16 IR
-python run_executor.py --ir_path=./bf16_ir --mode=accuracy
+python run_executor.py --ir_path=./bf16_ir --mode=accuracy --input_model=CompVis/stable-diffusion-v1-4
 ```
 
 ## 4. Try Text to Image
@@ -138,13 +146,13 @@ Try using one sentence to create a picture!
 ```python
 # Running FP32 models or BF16 models, just import differnt IRs.
 # FP32 models
-python run_executor.py --ir_path=./fp32_ir
+python run_executor.py --ir_path=./fp32_ir --input_model=CompVis/stable-diffusion-v1-4
 ```
 ![picture1](./images/astronaut_rides_horse.png)
 
 ```python
 # BF16 models
-python run_executor.py --ir_path=./bf16_ir
+python run_executor.py --ir_path=./bf16_ir --input_model=CompVis/stable-diffusion-v1-4
 ```
 ![picture2](./images/astronaut_rides_horse_from_engine_1.png)
 

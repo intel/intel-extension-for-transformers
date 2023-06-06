@@ -82,11 +82,13 @@ class Transformer2Dmodel_AttentionMaskAddReshape(Pattern):
                     mat_node_idx = model.get_node_id(new_node_names[j][1])
                     model.nodes[mat_node_idx].attr = ret_old_nodes[j][2].attr
                     # the first new node
-                    # get output_channel
                     new_reshape_node = model.nodes[model.get_node_id(new_node_names[j][0])]
                     add_node = model.get_node_by_name(new_reshape_node.input_tensors[0].source_op[0])
+
                     matmulwithbias_node = model.get_node_by_name(add_node.input_tensors[0].source_op[0])
-                    output_channel = matmulwithbias_node.input_tensors[1].data.shape[1]
+                    # stable diffusion v2.1 is Add here.
+                    if matmulwithbias_node.op_type == 'MatmulWithBias':
+                        output_channel = matmulwithbias_node.input_tensors[1].data.shape[1]
 
                     # get H * W
                     div_node = model.get_node_by_name(ret_old_nodes[j][3].input_tensors[0].source_op[0])
@@ -94,7 +96,7 @@ class Transformer2Dmodel_AttentionMaskAddReshape(Pattern):
                     new_reshape_node.input_tensors.pop(1)
                     new_reshape_node.input_tensors.append(div_node.output_tensors[0])
                     attr = OrderedDict()
-                    attr['dst_shape'] = '-1,-1,-1,' + str(output_channel)
+                    attr['dst_shape'] = '-1,-1,-1,-1'
                     attr['dims'] = '0, 2, 3'
                     new_reshape_node.attr = attr
 

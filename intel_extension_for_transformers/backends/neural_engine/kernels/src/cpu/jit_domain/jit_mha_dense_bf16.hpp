@@ -355,9 +355,10 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
   static constexpr int MTile = 32, NTile = 32;
   static constexpr int KTile = 32;
 
-  explicit jit_mha_bf16_row_amx_32x32_softmax(bool has_badd, const tile_param_t* pre_amx_cfg)
+  explicit jit_mha_bf16_row_amx_32x32_softmax(bool has_badd, bool stable_softmax, const tile_param_t* pre_amx_cfg)
       : jit_generator(),
         binary_add(has_badd),
+        stable_softmax(stable_softmax),
         pre_amx_cfg_(pre_amx_cfg),
         required_amx_cfg_{16, 16, KTile, true, 2},
         required_tile_cfg_(required_amx_cfg_) {}
@@ -371,11 +372,13 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
     const int amx_config_size = need_cfg_amx ? sizeof(tileconfig_t) : 0;
     const int TmmReserve = MTile * NTile * sizeof(float);
     const int ExpSumReserve = MTile * BYTES_ZMM;  // reserve for Expsum buffer
-    const int TmpSpace = amx_config_size + TmmReserve + ExpSumReserve;
+    const int MaxValReserve = MTile * BYTES_ZMM;  // reserve for max_val buffer
+    const int TmpSpace = amx_config_size + TmmReserve + ExpSumReserve + MaxValReserve;
     const int TTmmStart = amx_config_size;
     const int TExpsumStart = TTmmStart + TmmReserve;
+    const int TMaxValStart = TTmmStart + TmmReserve + ExpSumReserve;
 
-    Xbyak::Label l_exp_approx_coeff, l_log2e, l_ln2, l_255f, l_amx_cfg;
+    Xbyak::Label l_exp_approx_coeff, l_log2e, l_ln2, l_neginf, l_amx_cfg;
     {
       regs_pool rp(this, 1, {9, 32, 0}, TmpSpace, true, 64);  // align 64
 
@@ -384,6 +387,25 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
         local_cfg = {(sttilecfg(ptr[rsp]), ldtilecfg(ptr[rip + l_amx_cfg]), nullptr),
                      [&](...) { ldtilecfg(ptr[rsp]); }};
       }
+
+      const auto prepare_log2e = [&]() {
+        const auto vreg = rp.reg<Zmm>();
+        vbroadcastss(vreg, dword[rip + l_log2e]);
+        return vreg;
+      };
+      const auto prepare_ln2 = [&]() {
+        const auto vreg = rp.reg<Zmm>();
+        vbroadcastss(vreg, dword[rip + l_ln2]);
+        return vreg;
+      };
+      const auto prepare_c = [&]() {
+        const auto c = rp.regs<Zmm, 3>();
+        vbroadcastss(c[0], dword[rip + l_exp_approx_coeff]);
+        vbroadcastss(c[1], dword[rip + l_exp_approx_coeff + 4]);
+        vbroadcastss(c[2], dword[rip + l_exp_approx_coeff + 8]);
+        return c;
+      };
+
       const auto reg_ksize = rp.reg<Reg64>();
       mov(reg_ksize.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, k)]);
 
@@ -391,20 +413,19 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
       xor_(reg_iterm, reg_iterm);
       L(".mloop");
       {
-        const auto vreg_zero = rp.reg<Zmm>();
-        vxorps(vreg_zero, vreg_zero);
-        for (int i = 0; i < MTile; i++) vmovaps(ptr[rsp + TExpsumStart + i * 64], vreg_zero);
+        const auto vreg_tmp = rp.reg<Zmm>();
+        vxorps(vreg_tmp, vreg_tmp);
+        for (int i = 0; i < MTile; i++) vmovaps(ptr[rsp + TExpsumStart + i * 64], vreg_tmp);
+        if (stable_softmax) {
+          vpbroadcastd(vreg_tmp, dword[rip + l_neginf]);
+          for (int i = 0; i < MTile; i++) vmovaps(ptr[rsp + TMaxValStart + i * 64], vreg_tmp);
+        }
       }
 
       {
-        const auto vreg_log2e = rp.reg<Zmm>();
-        const auto vreg_ln2 = rp.reg<Zmm>();
-        const auto c = rp.regs<Zmm, 3>();
-        vbroadcastss(vreg_log2e, dword[rip + l_log2e]);
-        vbroadcastss(vreg_ln2, dword[rip + l_ln2]);
-        vbroadcastss(c[0], dword[rip + l_exp_approx_coeff]);
-        vbroadcastss(c[1], dword[rip + l_exp_approx_coeff + 4]);
-        vbroadcastss(c[2], dword[rip + l_exp_approx_coeff + 8]);
+        const auto vreg_log2e = prepare_log2e();
+        const auto vreg_ln2 = prepare_ln2();
+        const auto c = prepare_c();
 
         const auto reg_itern = rp.reg<Reg64>();
         xor_(reg_itern.cvt32(), reg_itern.cvt32());
@@ -473,17 +494,74 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
               !binary_add  // (optionally) add mask and scale
                   ? vmulps(vregs_xs[ii], vregs_xs[ii], zword_b[rp.p[0] + offsetof(rt_data_t, scaleAB)])
                   : vfmadd132ps(vregs_xs[ii], vreg_badd, zword_b[rp.p[0] + offsetof(rt_data_t, scaleAB)]);
-              exp_approx_f32(vregs_xs[ii], vregs_xs[ii], vreg_log2e, vreg_ln2, c, rp.regs<Zmm, 2>());
-              vpsrld(vreg_badd, vregs_xs[ii], 16);
-              vpmovdw(ptr[curr_matC], vreg_badd);
-              vaddps(vregs_xs[ii], vregs_xs[ii], ptr[rsp + TExpsumStart + (i + ii) * 64]);
-              vmovaps(zword[rsp + TExpsumStart + (i + ii) * 64], vregs_xs[ii]);
+              if (!stable_softmax)
+                exp_approx_f32(vregs_xs[ii], vregs_xs[ii], vreg_log2e, vreg_ln2, c, rp.regs<Zmm, 2>());
+              vcvtneps2bf16(Ymm(vreg_badd.getIdx()), vregs_xs[ii]);
+              vmovaps(yword[curr_matC], Ymm(vreg_badd.getIdx()));
+              (!stable_softmax) ? vaddps(vregs_xs[ii], vregs_xs[ii], ptr[rsp + TExpsumStart + (i + ii) * 64])
+                                : vmaxps(vregs_xs[ii], vregs_xs[ii], ptr[rsp + TMaxValStart + (i + ii) * 64]);
+              vmovaps(zword[rsp + (stable_softmax ? TMaxValStart : TExpsumStart) + (i + ii) * 64], vregs_xs[ii]);
             }
           }
         }
         add(reg_itern, NTile);
         cmp(reg_itern.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)]);
         jb(".nloop");
+      }
+      if (stable_softmax) {
+        for (int i = 0; i < MTile; i += 16) {  // round max to bf16 representable values
+          const auto vregs_max = rp.regs<Zmm, 16>();
+          for (int ii = 0; ii < 16; ++ii) vmovaps(vregs_max[ii], zword[rsp + TMaxValStart + (i + ii) * BYTES_ZMM]);
+          transpose_16x16_ps(vregs_max, rp.regs<Zmm, 16>());
+          reduce_vmms(vregs_max, &CodeGenerator::vmaxps);
+          vcvtneps2bf16(Ymm(vregs_max[0].getIdx()), vregs_max[0]);
+          vpmovzxwd(vregs_max[0], Ymm(vregs_max[0].getIdx()));
+          vpslld(vregs_max[0], vregs_max[0], 16);
+          vmovaps(zword[rsp + TMaxValStart + i * BYTES_ZMM], vregs_max[0]);
+        }
+
+        const auto vreg_log2e = prepare_log2e();
+        const auto vreg_ln2 = prepare_ln2();
+        const auto c = prepare_c();
+
+        const auto reg_itern = rp.reg<Reg64>();
+        xor_(reg_itern.cvt32(), reg_itern.cvt32());
+        L(".nstableloop");
+        const auto reg_matC = rp.reg<Reg64>();
+        const auto reg_cstep = rp.reg<Reg64>();
+        imul(reg_cstep.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)], sizeof(bfloat16_t));
+        mov(reg_matC, ptr[rp.p[0] + offsetof(rt_data_t, matC)]);
+        lea(reg_matC, ptr[reg_matC + reg_itern * sizeof(bfloat16_t)]);
+        {  // reg_matC += reg_cstep * reg_iterm
+          auto reg_tmp = rp.reg<Reg64>();
+          mov(reg_tmp, reg_iterm);
+          imul(reg_tmp.cvt32(), reg_cstep);
+          add(reg_matC, reg_tmp);
+        }
+        // calc f32 exp, accumulate exp to buffer
+        for (int in = 0; in < NTile; in += 16) {
+          const auto curr_matC = rp.reg<Reg64>();
+          auto badd_ptr = rp.reg<Reg64>();
+          for (int i = 0; i < MTile; i += 16) {
+            const auto vregs_xs = rp.regs<Zmm, 16>();
+            for (int ii = 0; ii < 16; ii++) {
+              (i == 0 && ii == 0) ? lea(curr_matC, ptr[reg_matC + in * sizeof(bfloat16_t)])
+                                  : lea(curr_matC, ptr[curr_matC + reg_cstep]);
+              const auto vreg_tmp = rp.reg<Zmm>();
+              vpmovzxwd(vregs_xs[ii], ptr[curr_matC]);
+              vpslld(vregs_xs[ii], vregs_xs[ii], 16);
+              vsubps(vregs_xs[ii], vregs_xs[ii], zword_b[rsp + TMaxValStart + i * BYTES_ZMM + ii * sizeof(float)]);
+              exp_approx_f32(vregs_xs[ii], vregs_xs[ii], vreg_log2e, vreg_ln2, c, rp.regs<Zmm, 2>());
+              vcvtneps2bf16(Ymm(vreg_tmp.getIdx()), vregs_xs[ii]);
+              vmovaps(yword[curr_matC], Ymm(vreg_tmp.getIdx()));
+              vaddps(vregs_xs[ii], vregs_xs[ii], zword[rsp + TExpsumStart + (i + ii) * 64]);
+              vmovaps(zword[rsp + TExpsumStart + (i + ii) * 64], vregs_xs[ii]);
+            }
+          }
+        }
+        add(reg_itern, NTile);
+        cmp(reg_itern.cvt32(), dword[rp.p[0] + offsetof(rt_data_t, n)]);
+        jb(".nstableloop");
       }
 
       // normalize all temp exp values
@@ -540,8 +618,8 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
     db(bit_cast<uint32_t>(std::log(2.f)), sizeof(float));
     L(l_exp_approx_coeff);
     db(reinterpret_cast<const uint8_t*>(exp_approx_f32_coeff.data()), sizeof(exp_approx_f32_coeff));
-    L(l_255f);
-    db(bit_cast<uint32_t>(255.f), sizeof(float));
+    L(l_neginf);
+    db(bit_cast<uint32_t>(-INFINITY), sizeof(float));
     if (need_cfg_amx) {
       align(sizeof(tileconfig_t));
       L(l_amx_cfg);
@@ -549,7 +627,7 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
     }
   }
 
-  const bool binary_add;
+  const bool binary_add, stable_softmax;
   const tile_param_t* const pre_amx_cfg_;
   const tile_param_t required_amx_cfg_;
   const tileconfig_t required_tile_cfg_;

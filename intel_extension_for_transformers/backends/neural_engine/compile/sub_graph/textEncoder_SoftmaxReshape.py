@@ -77,7 +77,9 @@ class TextEncoder_SoftmaxReshape(Pattern):
 
         def _set_attr(node_names, model):
             attr = OrderedDict()
-            mul_size = 12
+            reshape_node = model.get_node_by_name('position_embeddings/after/reshape')
+            # 12 or 16
+            mul_size = int(reshape_node.input_tensors[0].shape[1] / 64)
             # mul_size + max_seq + seq 12,77,77
             attr['dst_shape'] = str(mul_size) + ',-1,-1'
             attr['dims'] = '1,1'

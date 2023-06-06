@@ -25,7 +25,7 @@ from diffusers import DPMSolverMultistepScheduler
 import os
 
 
-def benchmark(pipe, neural_engine_graph):
+def benchmark(pipe, neural_engine_graph, generator):
     print('Benchmark start...')
     warmup = 4
     total = 8
@@ -34,7 +34,7 @@ def benchmark(pipe, neural_engine_graph):
         prompt = "a photo of an astronaut riding a horse on mars"
         for i in range(total):
             start2 = time.time()
-            pipe(prompt, engine_graph=neural_engine_graph, num_inference_steps=20).images[0]
+            pipe(prompt, engine_graph=neural_engine_graph, num_inference_steps=20, generator=generator).images[0]
             end2 = time.time()
             if i >= warmup:
                 total_time += end2 - start2
@@ -73,11 +73,11 @@ def accuracy(pipe, original_pipe, neural_engine_graph, generator):
         return fid
 
 
-def executor(pipe, neural_engine_graph, prompt, name, size):
+def executor(pipe, neural_engine_graph, prompt, name, size, generator):
     print('Executor start...')
     for i in range(size):
         save_time = time.strftime("_%H_%M_%S")
-        image = pipe(prompt, engine_graph=neural_engine_graph).images[0]
+        image = pipe(prompt, engine_graph=neural_engine_graph, generator=generator).images[0]
         image.save(name + str(i) + save_time + '.png')
     return
 
@@ -97,7 +97,7 @@ def parse_args():
     parser.add_argument("--name", default="output_image", type=str, help="output image name.")
     parser.add_argument("--mode", type=str, help="Benchmark mode of latency or accuracy.")
     parser.add_argument("--seed", type=int, default=666, help="random seed")
-    parser.add_argument("--size", type=int, default=1, help="the number of output images")
+    parser.add_argument("--size", type=int, default=1, help="the number of output images per prompt")
     return parser.parse_args()
 
 
@@ -107,18 +107,18 @@ def main():
     pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model, schedule=dpm)
     neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path)
 
+    generator = torch.Generator("cpu").manual_seed(args.seed)
     if args.mode == "latency":
-        benchmark(pipe, neural_engine_graph)
+        benchmark(pipe, neural_engine_graph, generator)
         return
 
     if args.mode == "accuracy":
         from diffusers import StableDiffusionPipeline
-        generator = torch.Generator("cpu").manual_seed(args.seed)
         original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
         accuracy(pipe, original_pipe, neural_engine_graph, generator)
         return
 
-    executor(pipe, neural_engine_graph, args.prompt, args.name, args.size)
+    executor(pipe, neural_engine_graph, args.prompt, args.name, args.size, generator)
 
     return
 

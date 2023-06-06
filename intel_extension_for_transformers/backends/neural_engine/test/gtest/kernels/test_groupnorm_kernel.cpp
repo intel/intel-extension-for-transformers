@@ -120,9 +120,11 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_
                                    ts_descs, op_attrs, postop_attr);
 
   auto gen_data = [](auto type, int size, float bound1, float bound2, bool clear = false) {
-    auto ptr = std::shared_ptr<std::vector<decltype(type)>>(new std::vector<decltype(type)>(size));
+    auto pad_size = (size + 63) / 64 * 64;
+    auto ptr = std::shared_ptr<std::vector<decltype(type)>>(new std::vector<decltype(type)>(pad_size));
     if (!clear) {
-      init_vector(ptr->data(), ptr->size(), bound1, bound2);
+      init_vector(ptr->data(), size, bound1, bound2);
+      init_vector(ptr->data() + size, pad_size - size, 0, 0);
     }
     return ptr;
   };
@@ -146,27 +148,47 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_
 
 static auto case_func = []() {
   std::vector<test_params_t> cases;
-  std::vector<std::vector<dim_t>> problem_size = {{1, 8, 16, 16}, {1, 8, 64, 64}, {2, 8, 16, 16}, {2, 8, 64, 64}};
-  jd::postop_attr swish_attr = {jd::data_type::bf16, jd::postop_type::eltwise, jd::postop_alg::swish, 2.f};
-  for (auto&& shape : problem_size) {
-    jd::tensor_desc src_desc = {shape, jd::data_type::bf16, jd::format_type::abcd};
-    jd::tensor_desc dst_desc = {shape, jd::data_type::bf16, jd::format_type::abcd};
-    jd::tensor_desc gamma_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
-    jd::tensor_desc beta_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
-    jd::tensor_desc workspace_desc = {{}, jd::data_type::fp32, jd::format_type::a};
-    cases.push_back({gen_case({src_desc, dst_desc, gamma_desc, beta_desc, workspace_desc},
-                              {{"eps", "0.01"}, {"groups", "4"}}, {swish_attr}),
-                     false});
+  std::vector<jd::data_type> dt_types = {jd::data_type::bf16, jd::data_type::fp32};
+  std::vector<std::vector<dim_t>> problem_size = {{1, 8, 16, 16}, {1, 8, 64, 64}, {2, 8, 16, 16},
+                                                  {2, 8, 64, 64}, {2, 8, 7, 7},   {2, 8, 111, 101}};
+  jd::postop_attr swish_attr = {jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::swish, 2.f};
+  for (auto&& dt : dt_types) {
+    for (auto&& shape : problem_size) {
+      jd::tensor_desc src_desc = {shape, dt, jd::format_type::abcd};
+      jd::tensor_desc dst_desc = {shape, dt, jd::format_type::abcd};
+      jd::tensor_desc gamma_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
+      jd::tensor_desc beta_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
+      jd::tensor_desc workspace_desc = {{}, jd::data_type::fp32, jd::format_type::a};
+      cases.push_back({gen_case({src_desc, dst_desc, gamma_desc, beta_desc, workspace_desc},
+                                {{"eps", "0.01"}, {"groups", "4"}}, {swish_attr}),
+                       false});
+    }
   }
-
   return ::testing::ValuesIn(cases);
 };
 std::string test_suffix(testing::TestParamInfo<test_params_t> tpi) {
   auto attrs = tpi.param.args.first.op_desc.attrs();
+  auto dt = tpi.param.args.first.op_desc.tensor_dtypes()[0];
   const auto shapes = tpi.param.args.first.op_desc.tensor_shapes();
   std::vector<std::string> params;
   for (auto num : shapes[0]) {
     params.push_back(std::to_string(num));
+  }
+  switch (dt) {
+    case jd::data_type::fp32:
+      params.push_back("fp32");
+      break;
+    case jd::data_type::bf16:
+      params.push_back("bf16");
+      break;
+    case jd::data_type::s8:
+      params.push_back("s8");
+      break;
+    case jd::data_type::u8:
+      params.push_back("u8");
+      break;
+    default:
+      break;
   }
   return join_str(params, "_");
 }

@@ -34,6 +34,30 @@ class Transformer2Dmodel_QKVReshape(Pattern):
         pattern_mapping_config = {
             # this pattern is espciall for nodes that the length of concat equals 3.
             'Transformer2Dmodel_QKVReshape': [
+                # v2-1 only
+                {
+                    'patterns': {
+                        'in': [[(0, 'Mul'), (1, 'Unsqueeze'), (4, 'Concat'), (5, 'Reshape'), (6, 'Cast')],
+                               [(), (2, 'Unsqueeze'), (4, 'Concat')], [(), (3, 'Unsqueeze'), (4, 'Concat')]],
+                        'out': [[(0, 'Reshape')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 5,
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            5: [0]
+                        }], [[0], 1]],
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            6: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': [5, 0, 6]
+                },
+                # v1-4 & v1-5
                 {
                     'patterns': {
                         'in': [[(0, 'Mul'), (1, 'Unsqueeze'), (4, 'Concat'), (5, 'Reshape')],

@@ -70,6 +70,7 @@ class MultiHeadAttentionOperator : public Operator {
   float scaleQ = 0, scaleK = 0, scaleV = 0, scaleRet = 0;
   int bs_ = 0, seq_len_ = 0, head_num_ = 0, head_size_ = 0, hidden_size_ = 0, zeropointRet = 0;
 
+  bool stable_softmax_ = false;
   bool is_sparse_ = false;
   jd::mha_dense mha_dense_;
   jd::transpose_mha mha_transpose_;

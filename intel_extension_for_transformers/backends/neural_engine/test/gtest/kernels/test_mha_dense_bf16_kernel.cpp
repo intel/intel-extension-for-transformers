@@ -32,6 +32,7 @@ struct test_params_t {
   dim_t head_size;
   bool has_pmask;
   bool has_badd;
+  bool stable_softmax;
   int nthr;
   bool expect_to_fail;
 };
@@ -48,13 +49,14 @@ inline static std::string TestParam2str(testing::TestParamInfo<test_params_t> tp
   auto&& p = tpi.param;
   std::vector<std::string> params;
   params.push_back("c" + std::to_string(tpi.param.nthr));
-  params.push_back(std::to_string(p.bs));         // bs
-  params.push_back(std::to_string(p.sl_m));       // sl_m
-  params.push_back(std::to_string(p.sl_n));       // sl_n
-  params.push_back(std::to_string(p.head_num));   // head_num
-  params.push_back(std::to_string(p.head_size));  // head_size
-  if (p.has_pmask) params.push_back("pmask");     // has_pmask
-  if (p.has_badd) params.push_back("badd");       // has_badd
+  params.push_back(std::to_string(p.bs));                      // bs
+  params.push_back(std::to_string(p.sl_m));                    // sl_m
+  params.push_back(std::to_string(p.sl_n));                    // sl_n
+  params.push_back(std::to_string(p.head_num));                // head_num
+  params.push_back(std::to_string(p.head_size));               // head_size
+  if (p.has_pmask) params.push_back("pmask");                  // has_pmask
+  if (p.has_badd) params.push_back("badd");                    // has_badd
+  params.push_back(p.stable_softmax ? "stable" : "unstable");  // stable_softmax
   return join_str(params, "_");
 }
 
@@ -109,7 +111,7 @@ test_data_t gen_data(const test_params_t& p) {
   // Step 1.1: Construct Operator config obj
   std::unordered_map<std::string, std::string> attr_map;
   attr_map["approx_exp"] = "True";
-  attr_map["stable_softmax"] = "False";
+  attr_map["stable_softmax"] = p.stable_softmax ? "True" : "False";
 
   // Step 2: Construct Tensor ptr
   const float att_scale_val = 1.f / std::sqrt(p.sl_n);
@@ -149,29 +151,32 @@ test_data_t gen_data(const test_params_t& p) {
 static auto case_func = []() {
   std::vector<test_params_t> cases;
 
-  // case param: bs sl_m sl_n head_num head_size has_pmask has_badd nthr expect_to_fail
-  cases.push_back(test_params_t{1, 64, 64, 1, 32, false, true, 1, false});
-  cases.push_back(test_params_t{2, 64, 64, 1, 32, false, true, 1, false});
-  cases.push_back(test_params_t{2, 1024, 1024, 1, 40, false, true, 1, false});
-  cases.push_back(test_params_t{2, 1024, 1024, 1, 80, false, true, 1, false});
-  cases.push_back(test_params_t{2, 256, 256, 1, 160, false, true, 1, false});
+  // case param: bs sl_m sl_n head_num head_size has_pmask has_badd stable_softmax nthr expect_to_fail
+  cases.push_back(test_params_t{1, 64, 64, 1, 32, false, true, false, 1, false});
+  cases.push_back(test_params_t{2, 64, 64, 1, 32, false, true, false, 1, false});
+  cases.push_back(test_params_t{2, 1024, 1024, 1, 40, false, true, false, 0, false});
+  cases.push_back(test_params_t{2, 1024, 1024, 1, 80, false, true, false, 0, false});
+  cases.push_back(test_params_t{2, 256, 256, 1, 160, false, true, false, 0, false});
 
-  cases.push_back(test_params_t{1, 64, 32, 1, 32, false, true, 1, false});
-  cases.push_back(test_params_t{1, 64, 33, 1, 32, false, true, 1, false});
-  cases.push_back(test_params_t{1, 64, 61, 1, 32, false, true, 1, false});
-  cases.push_back(test_params_t{1, 1, 61, 1, 32, false, true, 1, false});
-  cases.push_back(test_params_t{1, 1, 61, 1, 32, true, true, 1, false});
-  cases.push_back(test_params_t{1, 1, 35, 1, 64, true, true, 1, false});
-  cases.push_back(test_params_t{2, 1, 42, 1, 64, false, true, 1, false});
-  cases.push_back(test_params_t{1, 64, 33, 1, 32, true, true, 3, false});
-  cases.push_back(test_params_t{1, 64, 33, 1, 32, true, true, 0, false});
+  cases.push_back(test_params_t{1, 64, 32, 1, 32, false, true, false, 1, false});
+  cases.push_back(test_params_t{1, 64, 33, 1, 32, false, true, false, 1, false});
+  cases.push_back(test_params_t{1, 64, 61, 1, 32, false, true, false, 1, false});
+  cases.push_back(test_params_t{1, 1, 61, 1, 32, false, true, false, 1, false});
+  cases.push_back(test_params_t{1, 1, 61, 1, 32, true, true, false, 1, false});
+  cases.push_back(test_params_t{1, 1, 35, 1, 64, true, true, false, 1, false});
+  cases.push_back(test_params_t{2, 1, 42, 1, 64, false, true, false, 1, false});
+  cases.push_back(test_params_t{1, 64, 33, 1, 32, true, true, false, 3, false});
+  cases.push_back(test_params_t{1, 64, 33, 1, 32, true, true, false, 0, false});
 
   // stable diffusion cases
-  cases.push_back(test_params_t{2, 1024, 77, 1, 40, false, false, 1, false});
-  cases.push_back(test_params_t{2, 1024, 77, 1, 80, false, false, 1, false});
-  cases.push_back(test_params_t{2, 256, 77, 1, 160, false, false, 1, false});
+  cases.push_back(test_params_t{2, 1024, 77, 1, 40, false, false, false, 0, false});
+  cases.push_back(test_params_t{2, 1024, 77, 1, 80, false, false, false, 0, false});
+  cases.push_back(test_params_t{2, 256, 77, 1, 160, false, false, false, 0, false});
+  cases.push_back(test_params_t{2, 1024, 77, 1, 40, false, false, true, 0, false});
+  cases.push_back(test_params_t{2, 1024, 77, 1, 80, false, false, true, 0, false});
+  cases.push_back(test_params_t{2, 256, 77, 1, 160, false, false, true, 0, false});
 
-  cases.push_back(test_params_t{1, 256, 9216, 1, 64, false, false, 1, false});
+  cases.push_back(test_params_t{1, 256, 9216, 1, 64, false, false, true, 0, false});
 
   return ::testing::ValuesIn(cases);
 };

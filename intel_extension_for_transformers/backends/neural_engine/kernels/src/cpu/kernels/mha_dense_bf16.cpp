@@ -30,7 +30,8 @@ bool mha_dense_bf16_kd_t::init() {
   if (!isa_available(avx512_core_bf16_amx_bf16)) return false;
   const auto attrs = op_desc_.attrs();
   KERNEL_INIT_CHECK(attrs.find("approx_exp") != attrs.end() && attrs.at("approx_exp") == "True");
-  KERNEL_INIT_CHECK(attrs.find("stable_softmax") != attrs.end() && attrs.at("stable_softmax") == "False");
+  KERNEL_INIT_CHECK(attrs.find("stable_softmax") != attrs.end() &&
+                    (attrs.at("stable_softmax") == "False" || attrs.at("stable_softmax") == "True"));
   KERNEL_INIT_CHECK(attrs.find("merged_QKV") == attrs.end() || attrs.at("merged_QKV") != "True");  // no merge support
   KERNEL_INIT_CHECK(std::all_of(attrs.cbegin(), attrs.cend(), [](auto&& kv) {  // no unrecognized attr
     return is_any_of({"approx_exp", "stable_softmax", "merged_QKV"}, [&kv](auto&& k) { return kv.first == k; });
@@ -127,7 +128,7 @@ mha_dense_bf16_k_t::mha_dense_bf16_k_t(const std::shared_ptr<const kernel_desc_t
       kern_tr_v(32, sizeof(bfloat16_t)),
       kern_tr_q(),
       kern_qksoftmax(has_pmask || has_badd || sl_n_pad_ != sl_n_,  // pmask is applied via binary add
-                     &amx_full_tile_param_),
+                     derived_kd()->get_operator_desc().attrs().at("stable_softmax") == "True", &amx_full_tile_param_),
       kern_mmav(&amx_full_tile_param_) {}
 
 bool mha_dense_bf16_k_t::init() {
@@ -227,7 +228,6 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
       const auto curr_softmax = reinterpret_cast<bfloat16_t*>(curr_reo_q + thread_reo_q_size_);
       assert(dt_dst == data_type::bf16);
       const auto curr_tmp_dst = reinterpret_cast<bfloat16_t*>(curr_softmax + thread_softmax_size_);
-
 
       // init amx for each omp thread
       ker_amx_cfg_(&amx_full_tile_cfg_);
