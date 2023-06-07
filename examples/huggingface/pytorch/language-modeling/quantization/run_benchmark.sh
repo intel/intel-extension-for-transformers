@@ -64,15 +64,6 @@ function init_params {
 function run_benchmark {
     extra_cmd=''
 
-    if [[ ${mode} == "accuracy" ]]; then
-        mode_cmd=" --accuracy"
-    elif [[ ${mode} == "benchmark" ]]; then
-        echo "Error: Only support accuracy now."
-        echo "Please go to text-generation folder to get accuracy."
-        exit 1
-
-    fi
-
     if [ "${topology}" = "gpt_neo" ]; then
         if [ "${task}" = "clm" ]; then
             script="run_clm.py"
@@ -146,6 +137,18 @@ function run_benchmark {
     fi
 
     echo $extra_cmd
+    if [[ ${mode} == "accuracy" ]]; then
+        mode_cmd=" --accuracy"
+    elif [[ ${mode} == "benchmark" ]]; then
+	if [ "${script}" == "run_clm_no_trainer.py" ]; then
+            echo "Error: Only support accuracy now."
+            echo "Please go to text-generation folder to get performance."
+            exit 1
+	 fi
+	 mode_cmd=" --benchmark"
+
+    fi
+
 
     if [ "${script}" == "run_clm_no_trainer.py" ];then
         python -u ./${script} \
