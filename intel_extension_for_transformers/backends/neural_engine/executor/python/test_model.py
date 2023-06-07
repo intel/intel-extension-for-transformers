@@ -17,7 +17,7 @@
 
 import argparse
 import numpy as np
-from neural_engine_py import Model
+from intel_extension_for_transformers.neural_engine_py import Model
 
 parser = argparse.ArgumentParser(description='Deep engine Model Executor')
 parser.add_argument('--weight',  default='', type=str, help='weight of the model')

@@ -405,7 +405,7 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
 
   return true;
 }
-
+#ifdef __AVX512F__
 static inline __m512 snd_order_poly_exp(__m512 z, __m512 f, const float c[]) {
   const auto c0 = _mm512_set1_ps(c[0]);
   const auto c1 = _mm512_set1_ps(c[1]);
@@ -717,5 +717,11 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
 }
 #ifdef WITH_GCC_FLAGS
 #pragma GCC diagnostic pop
+#endif
+#else
+bool mha_dense_k_t::execute_tiny(const std::vector<const void*>&) const {
+  SPARSE_LOG(ERROR) << "mha_dense execute_tiny for AVX2 not implemented!";
+  return false;
+}
 #endif
 }  // namespace jd

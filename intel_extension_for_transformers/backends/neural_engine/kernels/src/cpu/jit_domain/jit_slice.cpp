@@ -141,7 +141,7 @@ void jit_slice_t::copy_by_step(regs_pool* const rp, const Reg64 dst, const Reg64
       SPARSE_LOG_IF(FATAL, tail <= 0 || tail >= BYTES_VMM / dt_size) << "Unexpected tail length!";
       switch (dt_size) {
         case 4:
-          for (size_t ii = 0; ii < tail; ++ii) {  // TODO?
+          for (size_t ii = 0; ii < tail; ++ii) {  // TODO(Yucheng): Can we use overlapping for the tail?
             mov(tmp_r64, qword[src + src_offset + ii * 8]);
             mov(dword[dst + dst_offset + ii * 4], tmp_r64.cvt32());
           }

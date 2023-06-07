@@ -65,7 +65,7 @@ void jit_gather_t::generate_() {
   const auto tail_mask = rp.reg<Opmask>();
   const auto extend_tail_mask = rp.reg<Opmask>();
   if (tail_size) {
-    if (binaryop_attrs_.size() > 0 && USE_AVX512) {  //  TODO(Zhe): binary injector without EVEX
+    if (binaryop_attrs_.size() > 0 && USE_AVX512) {  // TODO(Zhe): binary injector without EVEX
       mov(reg_tmp, (1ULL << tail_size) - 1);
       kmovq(tail_mask, reg_tmp);
       binary_injector.set_mask(tail_mask);

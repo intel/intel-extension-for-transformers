@@ -60,7 +60,7 @@ model.graph_init(conf.yaml, model.bin)
 # or get model from compile
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 model = compile(model.onnx)
-import neural_engine_py as dp
+import intel_extension_for_transformers.neural_engine_py as dp
 options = dp.ExecutionOptions()
 options.enable_op_tuning = True
 model.execution_options = options
@@ -90,7 +90,7 @@ InnerProduct 14124194128933833351 SparseLib 4,1024,384 0 2
 You can set the table file path and tuning warmup iterations if you want to simulate real deployment conditions.
 
 ```python
-import neural_engine_py as dp
+import intel_extension_for_transformers.neural_engine_py as dp
 options = dp.ExecutionOptions()
 options.enable_op_tuning = True
 # set tuning warmup iterations
@@ -116,7 +116,7 @@ for i in range(iterations):
 # get performance here
 
 # 2. tuning
-import neural_engine_py as dp
+import intel_extension_for_transformers.neural_engine_py as dp
 options = dp.ExecutionOptions()
 options.enable_op_tuning = True
 options.warmup_iter = num_iterations

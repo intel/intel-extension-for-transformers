@@ -1,3 +1,4 @@
+# dependencies required for development
 neural-compressor
 numpy
 packaging

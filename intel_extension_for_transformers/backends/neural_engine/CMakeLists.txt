@@ -8,6 +8,7 @@ set(NE_THIRD_PARTY_DIR "${NE_ROOT}/third_party")
 set(NE_CMAKE_DIR "${NE_ROOT}/cmake")
 list(APPEND CMAKE_MODULE_PATH ${NE_CMAKE_DIR})
 
+set(NE_VERSION_STRING "Unknown" CACHE STRING "The version string used by neural engine C++ interface")
 option(NE_WITH_SPARSELIB "Enable sparselib with sparse gemm ops" ON)
 option(NE_WITH_SPARSELIB_ONLY "Only for sparselib" OFF)
 option(NE_WITH_SPARSELIB_BENCHMARK "Enable sparselib sparse benchmark" OFF)

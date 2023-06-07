@@ -126,6 +126,7 @@ target_link_libraries(neural_engine_py
 add_executable(neural_engine_bin
     src/nlp_executor.cc
 )
+add_compile_definitions(neural_engine_bin PRIVATE NE_VERSION_STRING=${NE_VERSION_STRING})
 
 add_dependencies(neural_engine_bin
     neural_engine

@@ -2,6 +2,7 @@ datasets>=1.17
 mlflow
 nlpaug
 sacremoses
+neural-compressor
 onnx>=1.10
 onnxruntime>=1.11
 --find-links https://download.pytorch.org/whl/torch_stable.html

@@ -15,6 +15,10 @@
 #include "executor.hpp"
 #include "gflags/gflags.h"
 
+#ifndef NE_VERSION_STRING  // Release version passed from cmake
+#define NE_VERSION_STRING Unknown
+#endif
+
 DEFINE_int32(batch_size, 1, "image batch sizes");
 DEFINE_int32(seq_len, 384, "default seq len");
 DEFINE_int32(iterations, 10, "iterations");
@@ -91,7 +95,11 @@ void run_net() {
   std::cout << " Throughput is " << 1000. / latency << std::endl;
 }
 
+// Use double macro to convert macro to string. ref: https://stackoverflow.com/a/6852934/21847662
+#define STR_LITERAL(str) #str
+#define SET_VERSION(x) gflags::SetVersionString(STR_LITERAL(x))
 int main(int argc, char** argv) {
+  SET_VERSION(NE_VERSION_STRING);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   executor::GlobalInit(argv[0]);
   run_net();

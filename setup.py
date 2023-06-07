@@ -1,255 +1,267 @@
 """Setup and install modules."""
-from io import open
-from setuptools import find_packages, setup, Extension
-from setuptools.command.build_ext import build_ext
 import os
-import re
+import subprocess
 import sys
-import shutil
-from packaging.version import Version
-from subprocess import check_output
+import time
+from io import open
+from pathlib import Path
+
+from cmake import CMAKE_BIN_DIR
+from cpuinfo import get_cpu_info
+from setuptools import Extension, find_packages, setup
+from setuptools.command.build_ext import build_ext
+
+cpu_flags = get_cpu_info()['flags']
+
+
+def check_env_flag(name: str, default: bool = False) -> bool:
+    if default:  # if a flag meant to be true if not set / mal-formatted
+        return not os.getenv(name, "").upper() in ["OFF", "0", "FALSE", "NO", "N"]
+    else:
+        return os.getenv(name, "").upper() in ["ON", "1", "TRUE", "YES", "Y"]
+
+
+BACKENDS_ONLY = check_env_flag("BACKENDS_ONLY", False)
+""" Whether to only packaging backends """
+
+CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
+""" Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
+
+CMAKE_GENERATOR = os.environ.get("CMAKE_GENERATOR", "Ninja")
+""" The CMake generator to be used; default to Ninja """
+
+CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
+""" Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
+
+CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "")
+""" Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
+
+NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
+""" Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF """
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
-try:
-    filepath = './intel_extension_for_transformers/version.py'
-    with open(filepath) as version_file:
-        __version__, = re.findall('__version__ = "(.*)"', version_file.read())
-except Exception as error:
-    assert False, "Error: Could not open '%s' due %s\n" % (filepath, error)
-
-# define package data
-package_data_dict = {
-            '': ['*.py', '*.yaml'],
-            'executor': ['*.py'],
-        }
-
 # define install requirements
-install_requires_list = ['packaging', 'numpy', 'schema']
-bac_install_requires_list = ['pyyaml', 'tqdm']
-opt_install_requires_list = ['transformers>=4.12.0']
+install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
+opt_install_requires_list = ['neural_compressor', 'transformers>=4.12.0']
+project_name = "intel_extension_for_transformers"
 
-# define scripts
-scripts_list = ['intel_extension_for_transformers/backends/neural_engine/bin/neural_engine']
-
-# --develop: only install backends
-only_install_backends = False
-if "--backends" in sys.argv:
-    only_install_backends = True
-    sys.argv.remove("--backends")
-
-if only_install_backends:
-    project_name = "intel_extension_for_transformers_backends"
-    packages_list = ["intel_extension_for_transformers", "intel_extension_for_transformers.backends"]
-    bac_packages_list = find_packages("intel_extension_for_transformers/backends")
-    bac_packages_list = ["intel_extension_for_transformers.backends." + i for i in bac_packages_list]
-    packages_list.extend(bac_packages_list)
-    install_requires_list.extend(bac_install_requires_list)
+if BACKENDS_ONLY:
+    project_name += "_backends"
+    packages_list = find_packages(include=[
+        "intel_extension_for_transformers",
+        "intel_extension_for_transformers.backends",
+        "intel_extension_for_transformers.backends.*",
+    ])
 else:
-    project_name = "intel_extension_for_transformers"
     packages_list = find_packages()
     install_requires_list.extend(opt_install_requires_list)
-
-def which(thefile):
-    """Get the path where the file is located."""
-    path = os.environ.get("PATH", os.defpath).split(os.pathsep)
-    if path == None:
-        return None
-    for d in path:
-        fname = os.path.join(d, thefile)
-        fnames = [fname]
-        if sys.platform == 'win32':
-            exts = os.environ.get('PATHEXT', '').split(os.pathsep)
-            if exts == None:
-                return None
-            fnames += [fname + ext for ext in exts]
-        for name in fnames:
-            if os.access(name, os.F_OK | os.X_OK) and not os.path.isdir(name):
-                return name
-    return None
-
-
-def get_version(cmd):
-    """Returns cmake version."""
-    try:
-        for line in check_output([cmd, '--version']).decode('utf-8').split('\n'):
-            if 'version' in line:
-                print(line.strip().split(' ')[2])
-                return Version(line.strip().split(' ')[2])
-    except Exception as error:
-        return Version('0.0.0')
-
-
-def get_cmake_command():
-    """Returns cmake command."""
-    cmake_command = 'cmake'
-    if sys.platform == 'win32':
-        return cmake_command
-    cmake3 = which('cmake3')
-    cmake = which('cmake')
-    if cmake3 is not None:
-        if cmake is not None:
-            bare_version = get_version('cmake')
-            if (bare_version < Version("3.12.0") and get_version('cmake3') > bare_version):
-                cmake_command = 'cmake3'
-        else:
-            cmake_command = 'cmake3'
-    elif cmake is None:
-        raise RuntimeError('no cmake or cmake3 found')
-    return cmake_command
-
-
-class build_ext(build_ext):
-    """Extension builder."""
-    def build_extension(self, ext):
-        """Build the neural engine extension."""
-        if not sys.platform.startswith("win"):
-            import pathlib
-            cwd = pathlib.Path().absolute()
-
-            build_temp = pathlib.Path(self.build_temp)
-            build_temp.mkdir(parents=True, exist_ok=True)
-            extdir = pathlib.Path(self.get_ext_fullpath(ext.name))
-            executable_path = extdir.parent.absolute()
-            executable_path.mkdir(parents=True,exist_ok=True)
-            cmake_args = [
-                '-DCMAKE_BUILD_TYPE=Release',
-                '-DNE_WITH_AVX2=OFF',
-                '-DNE_WITH_SPARSELIB=ON',
-                '-DNE_WITH_TESTS=OFF',
-                '-DDNNL_CPU_RUNTIME=OMP',
-                '-DPYTHON_EXECUTABLE={}'.format(sys.executable)
-            ]
-
-            build_args = ['-j']
-            cmake_command = get_cmake_command()
-            os.chdir(str(build_temp))
-            self.spawn([cmake_command, ext.sourcedir] + cmake_args)
-            self.spawn(['make'] + build_args)
-
-            import glob
-            import shlex
-            import subprocess
-            bin_lists=glob.glob('bin/neural_engine*')
-            bin_lists.extend(glob.glob('lib/*.so*'))
-            for path in bin_lists:
-                command = f'cp -d {path} {executable_path}'
-                args = shlex.split(command)
-                p=subprocess.Popen(args)
-                p.wait()
-                print(path)
-            os.chdir(str(cwd))
-        else:
-            import pathlib
-            cwd = pathlib.Path().absolute()
-    
-            build_temp = pathlib.Path(self.build_temp)
-            build_temp.mkdir(parents=True, exist_ok=True)
-            extdir = pathlib.Path(self.get_ext_fullpath(ext.name))
-            executable_path = extdir.parent.absolute()
-            executable_path.mkdir(parents=True,exist_ok=True)
-            cmake_args = [
-                '-G Ninja',
-                '-DCMAKE_BUILD_TYPE=Release',
-                '-DNE_WITH_AVX2=OFF',
-                '-DNE_WITH_SPARSELIB=ON',
-                '-DNE_WITH_TESTS=OFF',
-                '-DDNNL_CPU_RUNTIME=OMP',
-                "-DCMAKE_C_COMPILER=cl.exe",
-                "-DCMAKE_CXX_COMPILER=cl.exe",
-                '-DEIGEN_BUILD_DOC=OFF',
-                '-DPYTHON_EXECUTABLE={}'.format(sys.executable)
-            ]
-            build_args = [
-                '--build',
-                './',
-                '-j'
-            ]
-            cmake_command = get_cmake_command() 
-            os.chdir(str(build_temp))
-            self.spawn([cmake_command, ext.sourcedir] + cmake_args)
-            self.spawn(['cmake'] + build_args)
-            import glob
-            
-            bin_lists=glob.glob('bin/*.exe')
-            bin_lists.extend(glob.glob('bin/*.dll'))
-            bin_lists.extend(glob.glob('lib/*.pyd'))
-            for path in bin_lists:
-                shutil.copy(path, executable_path, follow_symlinks=False)
-            os.chdir(str(cwd))
 
 
 class CMakeExtension(Extension):
     """CMakeExtension class."""
+
     def __init__(self, name, sourcedir=""):
         """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
 
 
+class CMakeBuild(build_ext):
+    """Extension builder."""
+
+    _copy_targes: bool = False
+
+    @staticmethod
+    def _is_target_file(file_name: str) -> bool:
+        if file_name.endswith(".dll") or file_name.endswith(".exe"):
+            return True
+        if file_name.endswith(".so") or ".so." in file_name:
+            return True
+        if sys.platform == "linux" and ('.' not in file_name):
+            return True
+        return False
+
+    def get_source_files(self):
+        """ The primary purpose of this function is to help populating the `sdist` with all the files necessary to build the distribution. -- setuptools doc"""
+        files = super().get_source_files()
+        if not os.path.isdir(os.path.join(cwd, ".git")):
+            return files
+
+        for ext in self.extensions:
+            if not isinstance(ext, CMakeExtension):
+                continue
+            files.extend(
+                subprocess.check_output(
+                    ["git", "ls-files", "--recurse-submodules", "--", ext.sourcedir], cwd=cwd
+                ).decode("utf-8").splitlines()
+            )
+        return files
+
+    def build_extension(self, ext: CMakeExtension) -> None:
+        # Must be in this form due to bug in .resolve() only fixed in Python 3.10+
+        ext_fullpath = Path.cwd() / self.get_ext_fullpath(ext.name)
+        extdir = ext_fullpath.parent.resolve()
+
+        output_dir = f"{extdir}{os.sep}"
+        cmake_args = [
+            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={output_dir}",
+            f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={output_dir}",
+            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{CMAKE_BUILD_TYPE.upper()}={output_dir}",
+            f"-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_{CMAKE_BUILD_TYPE.upper()}={output_dir}",
+            f"-DPYTHON_EXECUTABLE={sys.executable}",
+            f"-DCMAKE_BUILD_TYPE={CMAKE_BUILD_TYPE}",
+            f"-DNE_VERSION_STRING={self.distribution.get_version()}",
+            f"-DDNNL_CPU_RUNTIME=OMP",
+            f"-DNE_WITH_AVX2={'ON' if NE_WITH_AVX2 else 'OFF'}",
+            f"-DNE_WITH_TESTS=OFF",
+        ]
+        if sys.platform == "linux":  # relative_rpath
+            cmake_args.append('-DCMAKE_BUILD_RPATH=$ORIGIN/')
+
+        build_args = []
+        my_env: dict[str, str] = os.environ.copy()
+
+        # Using Ninja-build since it a) is available as a wheel and b)
+        # multithreads automatically. MSVC would require all variables be
+        # exported for Ninja to pick it up, which is a little tricky to do.
+        generator = CMAKE_GENERATOR
+
+        if generator == "Ninja":
+            try:
+                import ninja
+
+                ninja_executable_path = Path(ninja.BIN_DIR) / "ninja"
+                cmake_args += [
+                    f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja_executable_path}",
+                ]
+            except ImportError:
+                generator = ""
+        if generator:
+            cmake_args += [f"-G{generator}"]
+
+        if self.compiler.compiler_type == "msvc":
+
+            # Single config generators are handled "normally"
+            single_config = any(x in generator for x in {"NMake", "Ninja"})
+
+            # CMake allows an arch-in-generator style for backward compatibility
+            contains_arch = any(x in generator for x in {"Win64"})
+
+            # Specify the arch if using MSVC generator, but only if it doesn't
+            # contain a backward-compatibility arch spec already in the
+            # generator name.
+            PLAT_TO_CMAKE = {  # Convert distutils Windows platform specifiers to CMake -A arguments
+                "win32": "Win32",
+                "win-amd64": "x64",
+            }
+            if not single_config and not contains_arch:
+                cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
+
+            if generator == "Ninja":
+                # temporary solution based on that of pytorch
+                from distutils import _msvccompiler  # type: ignore[import]
+                vc_env = _msvccompiler._get_vc_env("x64")
+                # Keys in `_get_vc_env` are always lowercase while OS environ keys are always uppercase on Windows.
+                # https://stackoverflow.com/a/7797329
+                my_env = {**my_env, **{k.upper(): v for k, v in vc_env.items()}}
+
+            # Multi-config generators have a different way to specify configs
+            if not single_config:
+                build_args += ["--config", CMAKE_BUILD_TYPE]
+
+        if CMAKE_ARGS:
+            cmake_args += [item for item in CMAKE_ARGS.split(" ") if item]
+
+        if not CMAKE_BUILD_PARALLEL_LEVEL:
+            parallel_level = getattr(self, 'parallel', '') or ''
+            build_args += [f"-j{parallel_level}"]
+
+        # we avoid using self.build_tmp for incremental builds
+        build_dir = Path("build") / ext.name.split('.')[-1]
+        if not build_dir.exists():
+            build_dir.mkdir(parents=True)
+        cmake_path = os.path.join(CMAKE_BIN_DIR, "cmake")
+        config_command = [cmake_path, *cmake_args, ext.sourcedir]
+        build_command = [cmake_path, "--build", ".", *build_args]
+        print(' '.join(config_command))
+        subprocess.run(config_command, cwd=build_dir, check=True, env=my_env)
+        print(' '.join(build_command))
+        subprocess.run(build_command, cwd=build_dir, check=True, env=my_env)
+        if (self._copy_targes):
+            for f in next(os.walk(output_dir))[2]:
+                if CMakeBuild._is_target_file(f):
+                    self.copy_file(
+                        os.path.join(output_dir, f),
+                        os.path.join(cwd, *ext.name.split('.')[:-1], f)
+                    )
+
+    def get_output_mapping(self):
+        mapping: dict[str, str] = getattr(super(), 'get_output_mapping')()
+        for ext in self.extensions:
+            if not isinstance(ext, CMakeExtension):
+                continue
+            build_lib = (Path(self.build_lib) /
+                         ext.name.replace('.', os.sep)).parent
+            ext_dir = Path(self.get_ext_fullpath(ext.name)).parent.resolve()
+            for f in next(os.walk(build_lib.resolve()))[2]:
+                mapping[str(build_lib / f)] = str(ext_dir / f)
+        return mapping
+
+    def run(self) -> None:
+        self._copy_targes = self.inplace or \
+            getattr(self, 'editable_mode', False)
+        return super().run()
+
+
 def check_submodules():
     """Check submodules information."""
-    def check_for_files(folder, files):
-        if not any(os.path.exists(os.path.join(folder, f)) for f in files):
-            report("Could not find any of {} in {}".format(", ".join(files), folder))
-            report("Did you run 'git submodule update --init --recursive'?")
-            sys.exit(1)
-
-    def not_exists_or_empty(folder):
-        return not os.path.exists(folder) or (os.path.isdir(folder)
-                                              and len(os.listdir(folder)) == 0)
-
-    git_modules_path = os.path.join(cwd, ".gitmodules")
-    with open(git_modules_path) as f:
-        folders = [
-            os.path.join(cwd,
-                         line.split("=", 1)[1].strip()) for line in f.readlines()
-            if line.strip().startswith("path")
-        ]
-
-    # If none of the submodule folders exists, try to initialize them
-    if all(not_exists_or_empty(folder)
-           for folder in folders) and not sys.platform.startswith("win"):
-        try:
-            print(' --- Trying to initialize submodules')
-            start = time.time()
-            subprocess.check_call(["git", "submodule", "update", "--init", "--recursive"], cwd=cwd)
-            end = time.time()
-            print(' --- Submodule initialization took {:.2f} sec'.format(end - start))
-        except Exception:
-            print(' --- Submodule initalization failed')
-            print('Please run:\n\tgit submodule update --init --recursive')
-            sys.exit(1)
+    if not os.path.exists(".git"):
+        return
+    try:
+        print(' --- Trying to initialize submodules')
+        start = time.time()
+        subprocess.check_call(
+            ["git", "submodule", "update", "--init", "--recursive", "--depth=1"], cwd=cwd)
+        end = time.time()
+        print(f' --- Submodule initialization took {end - start:.2f} sec')
+    except Exception:
+        print(' --- Submodule initalization failed')
+        print('Please run:\n\tgit submodule update --init --recursive')
+        sys.exit(1)
 
 
 if __name__ == '__main__':
     check_submodules()
 
     setup(
-        name = project_name,
-        version = __version__,
-        author = "Intel AIA/AIPC Team",
-        author_email =
-        "feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
-        description = "Repository of Intel® Intel Extension for Transformers",
-        long_description = open("README.md", "r", encoding='utf-8').read(),
-        long_description_content_type =" text/markdown",
-        keywords =
-        'quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
-        license = 'Apache 2.0',
-        url="https://github.com/intel/",
-        ext_modules = [CMakeExtension("neural_engine_py", str(cwd) + '/intel_extension_for_transformers/backends/neural_engine/')],
-        packages = packages_list,
-        include_package_data = True,
-        package_dir = {'':'.'},
-        package_data = package_data_dict,
-        cmdclass = {
-            'build_ext': build_ext,
+        name=project_name,
+        author="Intel AIA/AIPC Team",
+        author_email="feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
+        description="Repository of Intel® Intel Extension for Transformers",
+        long_description=open("README.md", "r", encoding='utf-8').read(),
+        long_description_content_type="text/markdown",
+        keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
+        license='Apache 2.0',
+        url="https://github.com/intel/intel-extension-for-transformers",
+        ext_modules=[CMakeExtension(
+            "intel_extension_for_transformers.neural_engine_py", 'intel_extension_for_transformers/backends/neural_engine/')],
+        packages=packages_list,
+        package_dir={'': '.'},
+        # otherwise CMakeExtension's source files will be included in final installation
+        include_package_data=False,
+        package_data={
+            '': ['*.yaml'],
         },
-        install_requires = install_requires_list,
-        scripts = scripts_list,
-        python_requires = '>=3.7.0',
-        classifiers = [
+        cmdclass={'build_ext': CMakeBuild},
+        install_requires=install_requires_list,
+        entry_points={
+            'console_scripts': [
+                'neural_engine = intel_extension_for_transformers.backends.neural_engine:neural_engine_bin',
+            ]
+        },
+        python_requires='>=3.7.0',
+        classifiers=[
             'Intended Audience :: Science/Research',
             'Programming Language :: Python :: 3',
             'Topic :: Scientific/Engineering :: Artificial Intelligence',

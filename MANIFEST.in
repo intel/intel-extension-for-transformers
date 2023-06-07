@@ -1,0 +1,5 @@
+include .gitmodules
+
+global-exclude torchoutput.pkl
+prune .github
+prune docker

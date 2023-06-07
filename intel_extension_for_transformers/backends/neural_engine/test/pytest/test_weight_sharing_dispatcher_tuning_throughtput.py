@@ -42,7 +42,7 @@ import os
 import sys
 import random
 import numpy as np
-import neural_engine_py as dp
+import intel_extension_for_transformers.neural_engine_py as dp
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 
 

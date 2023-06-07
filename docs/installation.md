@@ -1,39 +1,23 @@
 # Installation
 
-1. [Linux Installation](#linux-installation)
+1. [Install from Pypi](#install-from-pypi)
 
-    1.1. [Prerequisites](#prerequisites)
+2. [Install from Source](#install-from-source)
 
-    1.2. [Install from Pypi](#install-from-pypi)
+    2.1. [Prerequisites](#prerequisites)
 
-    1.3. [Install from Source](#install-from-source)
-
-2. [Windows Installation](#windows-installation)
-
-    2.1. [Prerequisites](#prerequisites-1)
-
-    2.2. [Install from Pypi](#install-from-pypi-1)
-
-    2.3. [Install from Source](#install-from-source-1)
+    2.2. [Install Intel Extension for Transformers](#install-intel-extension-for-transformers)
 
 3. [System Requirements](#system-requirements)
 
-   3.1. [Validated Hardware Environment](#validated-hardware-environment)
+    3.1. [Validated Hardware Environment](#validated-hardware-environment)
 
-   3.2. [Validated Software Environment](#validated-software-environment)
+    3.2. [Validated Software Environment](#validated-software-environment)
 
-## Linux Installation
-### Prerequisites
-The following prerequisites and requirements must be satisfied for a successful installation:
+## Install from Pypi
+Binary builds for python 3.7, 3.8, 3.9 and 3.10 are available in Pypi
 
-- Python version: 3.7 or 3.8 or 3.9 or 3.10
-```
-# Install Dependency
-pip install -r requirements.txt
-```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
-
-### Install from Pypi
 
 ```Bash
 # install stable basic version from pypi
@@ -45,48 +29,25 @@ pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers
 # or install nightly version with only backend
 pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers-backend
 ```
-```Shell
+```Bash
 # install stable basic version from from conda
 conda install -c intel intel_extension_for_transformers
 ```
 
-### Install from Source
-```Bash
-git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
-cd intel_extension_for_transformers
-# Install Dependency
-pip install -r requirements.txt
-git submodule update --init --recursive
-# Install intel_extension_for_transformers
-python setup.py install
-```
-
-## Windows Installation
+## Install from Source
 
 ### Prerequisites
-
 The following prerequisites and requirements must be satisfied for a successful installation:
+- Python version: 3.7 or 3.8 or 3.9 or 3.10
+- GCC (on Linux) or Visual Studio (on Windows)
 
-- Python version: 3.7 or 3.8 or 3.9
-- Visual Studio
-
-### Install from Pypi
-
-```Bat
-pip install intel-extension-for-transformers
-```
-
-### Install from Source
-
-```Bat
-git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
+### Install Intel Extension for Transformers
+```Bash
+git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel_extension_for_transformers
-# Install Dependency
-pip install -r requirements.txt
-git submodule update --init --recursive
 # Install intel_extension_for_transformers
-python setup.py install
-  ```
+pip install -v .
+```
 
 ## System Requirements
 ### Validated Hardware Environment

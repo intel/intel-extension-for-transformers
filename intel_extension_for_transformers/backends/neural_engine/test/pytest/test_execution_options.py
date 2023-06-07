@@ -17,7 +17,7 @@
 
 import unittest
 import numpy as np
-import neural_engine_py as dp
+import intel_extension_for_transformers.neural_engine_py as dp
 import os
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor

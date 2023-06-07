@@ -5,6 +5,7 @@
 */__pycache__
 *.snapshot
 *.so
+*.so.*
 *.pb
 *.ckpt
 *.log
@@ -14,7 +15,14 @@ tags
 build/
 _build
 dist/
-intel_extension_for_transformers.egg-info/
+
+# build / dist files
+/intel_extension_for_transformers/intel_extension_for_transformers[.-]*/
+/intel_extension_for_transformers/neural_engine_*
+/intel_extension_for_transformers/*.dll
+/intel_extension_for_transformers/_version.py
+/intel_extension_for_transformers[.-]*
+/neural_engine_py*
 
 /.vs
 
@@ -27,7 +35,6 @@ intel_extension_for_transformers.egg-info/
 /examples/**/tmp/
 /examples/**/model_and_tokenizer/
 /examples/**/*ir*/
-version.txt
 build_tmp
 
 /workflows/chatbot/demo/front_end/node_modules

@@ -808,9 +808,14 @@ __m256i cvt_fp32_to_bf16(const __m512 src) {
 #endif
 }
 #elif __AVX2__
+const uint8_t avx2_bf16_convert_maigc_num[32] = {0x02, 0x03, 0x06, 0x07, 0x0a, 0x0b, 0x0e, 0x0f, 0x80, 0x80, 0x80,
+                                                 0x80, 0x80, 0x80, 0x80, 0x80, 0x02, 0x03, 0x06, 0x07, 0x0a, 0x0b,
+                                                 0x0e, 0x0f, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
 __m128i cvt_fp32_to_bf16(const __m256 src) {
-  auto y = _mm256_bsrli_epi128(_mm256_castps_si256(src), 2);
-  return _mm256_cvtepi32_epi16(y);
+  auto shuffle_v = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(avx2_bf16_convert_maigc_num));
+  __m256i trunc_elements = _mm256_shuffle_epi8(_mm256_castps_si256(src), shuffle_v);
+  __m256i ordered = _mm256_permute4x64_epi64(trunc_elements, 0x58);
+  return _mm256_castsi256_si128(ordered);
 }
 #endif
 
@@ -974,6 +979,7 @@ void runtime_minmax(const float* data, size_t length, float* min_num, float* max
   *max_num = *std::max_element(block_maxs.begin(), block_maxs.end());
 }
 
+#ifdef __AVX512F__
 void block_minmax_avx512(const float* Input, size_t N, float* Min, float* Max) {
   float tmp_min = std::numeric_limits<float>::max();
   float tmp_max = std::numeric_limits<float>::lowest();
@@ -1058,6 +1064,7 @@ void block_minmax_avx512(const float* Input, size_t N, float* Min, float* Max) {
   *Min = tmp_min;
   *Max = tmp_max;
 }
+#else
 void block_minmax(const float* Input, size_t N, float* Min, float* Max) {
   float tmp_min = std::numeric_limits<float>::max();
   float tmp_max = std::numeric_limits<float>::lowest();
@@ -1142,6 +1149,7 @@ void block_minmax(const float* Input, size_t N, float* Min, float* Max) {
   *Min = tmp_min;
   *Max = tmp_max;
 }
+#endif
 
 /************ InnerProductPrimitiveFwdFactory member function ************/
 size_t InnerProductPrimitiveFwdFactory::GenKey(const string& src0_dtype, const string& src1_dtype,

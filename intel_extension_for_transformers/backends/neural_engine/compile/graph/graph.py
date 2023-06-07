@@ -60,7 +60,8 @@ class Graph(object):
             "Please reset the execution_option property if you want change some "
             "options when inference, like 'graph.execution_options = your_new_options'. "
             "Do not use 'graph.execution_options.some_option = value' directly!")
-        import neural_engine_py as dp
+        # pylint: disable=E0611
+        import intel_extension_for_transformers.neural_engine_py as dp
         options = dp.ExecutionOptions()
         options_list = [
             option for option in dir(options)
@@ -408,7 +409,8 @@ class Graph(object):
 
     def engine_init(self, net_info={}, weight_data=b""):
         """Pybind engine executor."""
-        import neural_engine_py as dp
+        # pylint: disable=E0611
+        import intel_extension_for_transformers.neural_engine_py as dp
         if not weight_data:
             weight_data = self.weight_data
         if not net_info:
@@ -584,7 +586,8 @@ class Graph(object):
                                          copy.deepcopy(output_tensors), attr)
             self.insert_nodes(len(self.nodes), [op])
         if not load_weight and weight_data:
-            import neural_engine_py as dp
+            # pylint: disable=E0611
+            import intel_extension_for_transformers.neural_engine_py as dp
             model = dp.Model(config, weight_data)
             self._engine = [model, output_list]
         if bin_file:
