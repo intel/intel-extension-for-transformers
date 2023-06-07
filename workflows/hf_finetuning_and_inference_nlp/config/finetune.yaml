@@ -6,9 +6,11 @@ args:
   # Add the fine tuning configurations below
   pipeline: "finetune"
   finetune_impl: "itrex"
-  dtype_ft: "fp32"
+  dtype_ft: "bf16"
   max_seq_len: 64
   smoke_test: false
+  use_ipex: false
+  use_onednn: true
   max_train_samples: null
   max_test_samples: null
   preprocessing_num_workers: 8
@@ -19,6 +21,6 @@ training_args:
   num_train_epochs: 1
   do_train: true
   do_predict: true
-  per_device_train_batch_size: 100
-  per_device_eval_batch_size: 100
+  per_device_train_batch_size: 512
+  per_device_eval_batch_size: 512
   output:dir: "./output_dir"

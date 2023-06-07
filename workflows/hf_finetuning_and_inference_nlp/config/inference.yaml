@@ -17,6 +17,8 @@ args:
   pipeline: "inference"   
   infer_impl: "itrex"
   dtype_inf: "fp32"
+  use_ipex: true 
+  use_onednn: true
   max_seq_len: 64
   smoke_test: false
   max_train_samples: null

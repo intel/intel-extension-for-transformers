@@ -48,7 +48,8 @@ class ItrexInfer(DlsaInference):
             )
 
         if self.args.dtype_inf == "fp32":
-            self.trainer = Trainer(
+            self.training_args.use_ipex = vars(self.args).get("use_ipex", False)
+            self.trainer = NLPTrainer(
                 model=self.model,  # the instantiated HF model to be trained
                 args=self.training_args,  # training arguments, defined above
                 compute_metrics=compute_metrics,  # evaluation metrics
@@ -56,9 +57,9 @@ class ItrexInfer(DlsaInference):
             )
 
         elif self.args.dtype_inf == "bf16":
-            self.training_args.use_ipex = True
+            self.training_args.use_ipex = vars(self.args).get("use_ipex", False)
             self.training_args.bf16 = True
-            self.trainer = Trainer(
+            self.trainer = NLPTrainer(
                 model=self.model,  # the instantiated HF model to be trained
                 args=self.training_args,  # training arguments, defined above
                 compute_metrics=compute_metrics,  # evaluation metrics
@@ -92,12 +93,18 @@ class ItrexInfer(DlsaInference):
             raise ValueError(error_msg)
 
     def _do_infer(self):
-        if self.training_args.do_predict:
-            with self.track("Inference"):
-                preds, _, metrics = self.trainer.predict(self.test_data)
-        print(
-            f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
-        )
+        
+        if self.args.dtype_inf == "bf16" and not (self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
+                    raise ValueError("BF16 with both IPEX and OneDNN disabled is currently not implemented...")
+
+        with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
+
+            if self.training_args.do_predict:
+                with self.track("Inference"):
+                    preds, _, metrics = self.trainer.predict(self.test_data)
+            print(
+                f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
+            )
 
         save_performance_metrics(self.trainer, self.test_data, 
-                                 path.join(self.training_args.output_dir, self.args.inference_output) )
+                                path.join(self.training_args.output_dir, self.args.inference_output) )

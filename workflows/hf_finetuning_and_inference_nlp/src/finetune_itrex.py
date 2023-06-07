@@ -53,8 +53,8 @@ class FinetuneItrex(DlsaFinetune):
     def _do_finetune(self):
         if self.training_args.do_train:
             with self.track("Fine-Tune"):
+                self.training_args.use_ipex = vars(self.args).get("use_ipex", False)
                 if self.args.dtype_ft == "bf16":
-                    self.training_args.use_ipex = True
                     self.training_args.bf16 = True
                 self.trainer = NLPTrainer(
                     model=self.model,  # the instantiated HF model to be trained
@@ -65,18 +65,24 @@ class FinetuneItrex(DlsaFinetune):
                     tokenizer=self.tokenizer,
                 )
 
-                train_result = self.trainer.train()
+                if self.args.dtype_ft == "bf16" and not (self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
+                    raise ValueError("BF16 with both IPEX and OneDNN disabled is currently not implemented...")
+
+                with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
+                    train_result = self.trainer.train()
+                
                 self.trainer.save_model()
                 
                 save_train_metrics(train_result, self.trainer, len(self.train_data))
                
     def _do_infer(self):
-        if self.training_args.do_predict:
-            with self.track("Inference"):
-                preds, _, metrics = self.trainer.predict(self.test_data)
-        print(
-            f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
-        )
+        with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
+            if self.training_args.do_predict:
+                with self.track("Inference"):
+                    preds, _, metrics = self.trainer.predict(self.test_data)
+            print(
+                f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
+            )
                 
         save_performance_metrics(self.trainer, self.train_data, 
                                  path.join(self.training_args.output_dir, self.args.finetune_output) )
