@@ -11,7 +11,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.clm_model = AutoModelForCausalLM.from_pretrained(
-            "facebook/opt-125m",
+            "hf-internal-testing/tiny-random-gptj",
             torchscript=True
         )
         tmp_model = torch.jit.trace(self.clm_model, self.clm_model.dummy_inputs["input_ids"])
@@ -24,16 +24,16 @@ class TestLmEvaluationHarness(unittest.TestCase):
     def test_evaluate_for_casualLM(self):
         results = evaluate(
             model="hf-causal",
-            model_args='pretrained="facebook/opt-125m",tokenizer="facebook/opt-125m",dtype=float32',
+            model_args='pretrained="hf-internal-testing/tiny-random-gptj",tokenizer="hf-internal-testing/tiny-random-gptj",dtype=float32',
             tasks=["piqa"],
             limit=20,
         )
-        self.assertEqual(results["results"]["piqa"]["acc"], 0.70)
+        self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
     def test_evaluate_for_Seq2SeqLM(self):
         results = evaluate(
             model="hf-seq2seq",
-            model_args='pretrained="t5-small",tokenizer="t5-small",dtype=float32',
+            model_args='pretrained="hf-internal-testing/tiny-random-t5",tokenizer="hf-internal-testing/tiny-random-t5",dtype=float32',
             tasks=["piqa"],
             limit=20,
         )
@@ -42,12 +42,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
     def test_evaluate_for_JitModel(self):
         results = evaluate(
             model="hf-causal",
-            model_args='pretrained="facebook/opt-125m",tokenizer="facebook/opt-125m",dtype=float32',
+            model_args='pretrained="hf-internal-testing/tiny-random-gptj",tokenizer="hf-internal-testing/tiny-random-gptj",dtype=float32',
             user_model=self.jit_model,
             tasks=["piqa"],
             limit=20,
         )
-        self.assertEqual(results["results"]["piqa"]["acc"], 0.70)
+        self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
     def test_lambada_for_llama(self):
         results = evaluate(
@@ -56,7 +56,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
                 tasks=["lambada_openai", "lambada_standard"],
                 limit=20,
                 )
-        print(results)
         self.assertEqual(results["results"]["lambada_standard"]["acc"], 0.75)
         self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
 if __name__ == "__main__":

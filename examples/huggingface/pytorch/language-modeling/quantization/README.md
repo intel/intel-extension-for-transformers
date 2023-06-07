@@ -87,7 +87,7 @@ python run_clm_no_trainer.py \
     --output_dir "saved_results"  # load int8 model
 # to validate FP32 model, please remove "--int8" and "--output_dir".
 ```
-## LLAMA-7b/13b
+### LLAMA-7b/13b/30b
 >Note: LLAMA requires IPEX requirements >= 2.1 to get better accuracy, please source install from [intel_extension_for_pytorch](https://github.com/intel/intel-extension-for-pytorch.git).
 #### Quantization
 

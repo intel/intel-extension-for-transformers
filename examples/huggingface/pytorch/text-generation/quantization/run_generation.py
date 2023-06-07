@@ -58,7 +58,14 @@ parser.add_argument(
 parser.add_argument("--benchmark", action="store_true")
 parser.add_argument("--iters", default=100, type=int, help="num iter")
 parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
-parser.add_argument("--batch_size", default=1, type=int, help="batch size")
+parser.add_argument("--accuracy", action="store_true")
+parser.add_argument("--batch_size", default=1, type=int,
+                    help="batch size num.")
+parser.add_argument("--save_accuracy_path", default=None,
+                    help="Save accuracy results path.")
+parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
+                    "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
+                    help="tasks list for accuracy validation")
 args = parser.parse_args()
 
 calib_size = 1
@@ -91,64 +98,9 @@ user_model.eval()
 if args.ipex:
     import intel_extension_for_pytorch as ipex
     from optimum.intel.generation.modeling import TSModelForCausalLM
-    from typing import Optional, Tuple, Union
-    from huggingface_hub import hf_hub_download
-    from transformers.utils import WEIGHTS_NAME
-
-    # Will remove the function when the PR merge to optimum-intel.
-    @classmethod
-    def _from_pretrained(
-        cls,
-        model_id: Union[str, Path],
-        config: PretrainedConfig,
-        use_auth_token: Optional[Union[bool, str, None]] = None,
-        revision: Optional[Union[str, None]] = None,
-        force_download: bool = False,
-        cache_dir: Optional[str] = None,
-        file_name: Optional[str] = WEIGHTS_NAME,
-        local_files_only: bool = False,
-        use_cache: bool = True,
-        **kwargs,
-    ):
-        if not getattr(config, "torchscript", False):
-            raise ValueError(
-                "`torchscript` should be set to True to load TorchScript model"
-            )
-
-        # Load the model from local directory
-        if os.path.isdir(model_id):
-            file_name = os.path.join(model_id, file_name)
-            model = cls.load_model(file_name)
-            model_save_dir = model_id
-        # Download the model from the hub
-        else:
-            model_cache_path = hf_hub_download(
-                repo_id=model_id,
-                filename=file_name,
-                use_auth_token=use_auth_token,
-                revision=revision,
-                cache_dir=cache_dir,
-                force_download=force_download,
-                local_files_only=local_files_only,
-            )
-            model_save_dir = Path(model_cache_path).parent
-            model = cls.load_model(model_cache_path)
-
-        return cls(
-            model,
-            config=config,
-            model_save_dir=model_save_dir,
-            use_cache=use_cache,
-            **kwargs,
-        )
-
-    torch._C._jit_set_texpr_fuser_enabled(False)
-    TSModelForCausalLM._from_pretrained = _from_pretrained
-
 
 # quantize
 if args.quantize:
-
     def generate_dummy_past_key_values(input_bs, user_model):
         normalized_config = NormalizedConfigManager.get_normalized_config_class(
             user_model.config.model_type
@@ -326,6 +278,7 @@ if args.benchmark:
     total_time = 0.0
     num_iter = args.iters
     num_warmup = args.num_warmup
+    prompt = [prompt] * args.batch_size
 
     with torch.inference_mode(), torch.no_grad():
         for i in range(num_iter):
@@ -345,3 +298,22 @@ if args.benchmark:
     print("Inference latency: %.3f sec." % latency)
     throughput = (num_iter - num_warmup) / total_time
     print("Throughput: {} samples/sec".format(throughput))
+
+if args.accuracy:
+    from intel_extension_for_transformers.evaluation import evaluate
+    results = evaluate(
+        model="hf-causal",
+        model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
+        user_model=user_model,
+        batch_size=args.batch_size,
+        tasks=args.tasks,
+    )
+    dumped = json.dumps(results, indent=2)
+    if args.save_accuracy_path:
+        with open(args.save_accuracy_path, "w") as f:
+            f.write(dumped)
+    for task_name in args.tasks:
+        if task_name == "wikitext":
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
+        else:
+            print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))

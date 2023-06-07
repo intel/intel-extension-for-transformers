@@ -26,7 +26,10 @@ parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa",
 args = parser.parse_args()
 
 if args.ipex:
-    import intel_extension_for_pytorch as ipex
+    try:
+        import intel_extension_for_pytorch as ipex
+    except:
+        assert False,"Please install intel_extension_for_pytorch, `pip install intel_extension_for_pytorch`"
 
 if re.search("llama", args.model):
     from transformers import LlamaForCausalLM, LlamaTokenizer

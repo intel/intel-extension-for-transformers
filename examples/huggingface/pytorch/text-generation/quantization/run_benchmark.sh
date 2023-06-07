@@ -13,6 +13,7 @@ function init_params {
   iters=100
   batch_size=1
   tuned_checkpoint=saved_results
+  lm_eval_tasks="lambada_openai "
   for var in "$@"
   do
     case $var in
@@ -64,9 +65,9 @@ function run_benchmark {
     extra_cmd=''
 
     if [[ ${mode} == "accuracy" ]]; then
-        echo "Error: Only support benchmark now."
-        echo "Please go to language modeling folder to get accuracy."
-        exit 1
+        mode_cmd=" --accuracy "
+	extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
+	batch_size=112
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
     else
@@ -145,7 +146,6 @@ function run_benchmark {
     if [ "${script}" == "run_generation.py" ];then
         python -u ./${script} \
             --model ${model_name_or_path} \
-            --benchmark \
             --output_dir ${tuned_checkpoint} \
             --batch_size ${batch_size} \
             ${mode_cmd} \

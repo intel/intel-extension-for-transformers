@@ -50,3 +50,12 @@ python run_generation.py \
     --int8_bf16_mixed \
     --ipex
 ```
+## 3. Accuracy
+```bash
+python run_generation.py \
+   --model EleutherAI/gpt-j-6b \
+   --accuracy \
+   --int8_bf16_mixed \
+   --ipex \
+   --tasks "lambada_openai"
+```
