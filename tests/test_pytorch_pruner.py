@@ -6,8 +6,9 @@ sys.path.insert(0, './')
 
 import torch
 import numpy as np
-from neural_compressor.config import WeightPruningConfig
-from intel_extension_for_transformers.optimization.pruner.pruning import Pruning
+# from neural_compressor.config import WeightPruningConfig
+# from intel_extension_for_transformers.optimization.pruner.pruning import Pruning
+from intel_extension_for_transformers.optimization.pruner import WeightPruningConfig, Pruning
 import torchvision
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset

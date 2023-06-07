@@ -45,5 +45,3 @@ from .quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from .utils import metrics
 from .utils import objectives
 from .utils.utility import LazyImport
-from .pruner.pruning import Pruning
-from neural_compressor.config import WeightPruningConfig
