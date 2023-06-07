@@ -76,7 +76,8 @@ void GroupNormOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
                             ts_descs, op_attrs_, postops);
   jd::groupnorm_desc groupnorm_desc(op_desc);
   groupnorm_ker = jd::groupnorm(groupnorm_desc);
-  work_space = static_cast<float*>(malloc(groupnorm_ker.get_workspace_size()));
+  if (work_space) MemoryAllocator::get().UnrefMemory(work_space);
+  work_space = MemoryAllocator::get().GetMemory(groupnorm_ker.get_workspace_size(), 1);
 }
 
 void GroupNormOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {

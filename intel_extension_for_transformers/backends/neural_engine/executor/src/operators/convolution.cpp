@@ -59,7 +59,7 @@ ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
   }
   iter = attrs_map.find("format_any");
   if (iter != attrs_map.end()) {
-    format_any_ = attrs_map["format_any"] == "true";
+    format_any_ = attrs_map["format_any"] == "True" || attrs_map["format_any"] == "true";
   }
   iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
@@ -67,7 +67,7 @@ ConvolutionOperator::ConvolutionOperator(const shared_ptr<OperatorConfig>& conf)
   }
   iter = attrs_map.find("gelu_split");
   if (iter != attrs_map.end()) {
-    gelu_split_ = attrs_map["gelu_split"] == "true";
+    gelu_split_ = attrs_map["gelu_split"] == "True" || attrs_map["gelu_split"] == "true";
   }
   iter = attrs_map.find("reshape");
   if (iter != attrs_map.end()) {
@@ -378,7 +378,6 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   if (is_dynamic_ && (output_scale_ != 1.f || src_min_ != nullptr || weight_min_ != nullptr)) {
     if (src_min_ != nullptr && weight_max_ != nullptr) {
       int mask = weight_min_->size() > 1 ? 2 : 0;
-      // should be {DNNL_RUNTIME_F32_VAL} according to document but onednn's code has a bug
       attr_.set_output_scales(mask, {DNNL_RUNTIME_F32_VAL});
       vector<int64_t> scale_shape;
       // scale_shape.push_back(1);
@@ -480,9 +479,11 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   memory::desc any_src_md = memory::desc(src_shape, type2mem[src_->dtype()], memory::format_tag::any);
   memory::desc src_md = memory::desc(src_shape, type2mem[src_->dtype()], src_stride);
 
-  memory::desc any_dst_md =
-      memory::desc(dst_shape_origin, type2mem[is_dynamic_ ? "fp32" : dst_->dtype()], memory::format_tag::any);
-  memory::desc dst_md = memory::desc(dst_shape_origin, type2mem[is_dynamic_ ? "fp32" : dst_->dtype()], dst_stride);
+  std::string dynamic_output_dtype = output_dtype_ == "bf16" ? "bf16" : "fp32";
+  memory::desc any_dst_md = memory::desc(dst_shape_origin, type2mem[is_dynamic_ ? dynamic_output_dtype : output_dtype_],
+                                         memory::format_tag::any);
+  memory::desc dst_md =
+      memory::desc(dst_shape_origin, type2mem[is_dynamic_ ? dynamic_output_dtype : output_dtype_], dst_stride);
 
   // 1.5 Set dst shape and strides
   dst_->set_shape(dst_shape);
@@ -595,12 +596,12 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
 // 2. inference kernel(for int8 and f32)
 void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
-  Tensor convolution_fp32_res;
+  Tensor convolution_dynamic_res;
   void* dst_data;
   if (is_dynamic_) {
-    convolution_fp32_res = *dst_;
-    convolution_fp32_res.set_dtype("fp32");
-    dst_data = convolution_fp32_res.mutable_data();
+    convolution_dynamic_res = *dst_;
+    convolution_dynamic_res.set_dtype(output_dtype_ == "bf16" ? "bf16" : "fp32");
+    dst_data = convolution_dynamic_res.mutable_data();
   } else {
     dst_data = dst_->mutable_data();
   }
@@ -613,7 +614,7 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
     if (life_count == 1) {
       post_->unref_data(true);
       if (is_dynamic_)
-        convolution_fp32_res.set_data(post_data_ptr);
+        convolution_dynamic_res.set_data(post_data_ptr);
       else
         dst_->set_data(post_data_ptr);
     } else {
@@ -673,35 +674,33 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
   this->unref_tensors(input);
   if (is_dynamic_) {
     if (output.size() > 1) {
-      runtime_minmax(reinterpret_cast<float*>(convolution_fp32_res.mutable_data()), convolution_fp32_res.size(),
+      runtime_minmax(reinterpret_cast<float*>(convolution_dynamic_res.mutable_data()), convolution_dynamic_res.size(),
                      reinterpret_cast<float*>(dst_min_->mutable_data()),
                      reinterpret_cast<float*>(dst_max_->mutable_data()));
       // quantize
       if (output_dtype_ == "u8" || output_dtype_ == "s8") {
         auto scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
 #if __AVX512F__
-        Quantize_avx512(convolution_fp32_res.size(), dst_->dtype(), convolution_fp32_res.data(),
+        Quantize_avx512(convolution_dynamic_res.size(), dst_->dtype(), convolution_dynamic_res.data(),
                         static_cast<const float*>(dst_min_->data()), scales, dst_->mutable_data());
 #else
-        Quantize(convolution_fp32_res.size(), dst_->dtype(), convolution_fp32_res.data(),
+        Quantize(convolution_dynamic_res.size(), dst_->dtype(), convolution_dynamic_res.data(),
                  static_cast<const float*>(dst_min_->data()), scales, dst_->mutable_data());
 #endif
-        convolution_fp32_res.unref_data();
-        float* dst_min_data = reinterpret_cast<float*>(dst_min_->mutable_data());
-        for (int i = 0; i < dst_min_->size(); i++) {
-          scales[i] /= rescales[i];
-          dst_min_data[i] *= rescales[i];
-        }
-        memcpy(dst_max_->mutable_data(), scales.data(), dst_max_->size() * sizeof(float));
+        convolution_dynamic_res.unref_data();
+        // float* dst_min_data = reinterpret_cast<float*>(dst_min_->mutable_data());
+        float* dst_max_data = reinterpret_cast<float*>(dst_max_->mutable_data());
+        *dst_max_data = 1.0 / scales[0];
+        // memcpy(dst_max_->mutable_data(), scales.data(), dst_max_->size() * sizeof(float));
       } else {
         // copy fp32_res to dst if not quantize
-        void* res_ptr = const_cast<void*>(convolution_fp32_res.data());
-        convolution_fp32_res.unref_data(true);
+        void* res_ptr = const_cast<void*>(convolution_dynamic_res.data());
+        convolution_dynamic_res.unref_data(true);
         dst_->set_data(res_ptr);
       }
     } else {
-      void* res_ptr = const_cast<void*>(convolution_fp32_res.data());
-      convolution_fp32_res.unref_data(true);
+      void* res_ptr = const_cast<void*>(convolution_dynamic_res.data());
+      convolution_dynamic_res.unref_data(true);
       dst_->set_data(res_ptr);
     }
   }
@@ -717,15 +716,13 @@ void ConvolutionOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, 
   // std::cout << name_ << "\tsrc0:\t" << src0_scales[0] << std::endl;
   // std::cout << name_ << "\tsrc1:\t" << src1_scales[0] << std::endl;
   if (channel_size == 1) {
-    rescales[0] = output_scale_ / src0_scales[0] / src1_scales[0];
+    rescales[0] = output_scale_ * src1_scales[0] * src0_scales[0];
   } else {
 #pragma omp parallel for
-    for (int i = 0; i < channel_size; i++) rescales[i] = output_scale_ / src0_scales[0] / src1_scales[i];
+    for (int i = 0; i < channel_size; i++) rescales[i] = output_scale_ * src1_scales[i] * src0_scales[0];
   }
   scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales.data()), eng_stream_);
   memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
-  // if (!(dst_->dtype() == "u8" || dst_->dtype() == "s8"))
-  // memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = scale_f32_mem_;
   // The bias loaded from file is not scaled. So need rescaled runtime.
   if (has_bias_) {
     auto& dynamic_bias = *dynamic_bias_ptr;
@@ -749,8 +746,9 @@ void ConvolutionOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, 
 
   if (src_->dtype() == "u8") {
     auto& src0_zero_points = *src0_zero_points_ptr;
+    float tmp = 1.0f / *src0_scales;
     src0_zero_points =
-        GetZeroPoints(reinterpret_cast<const float*>(src_min_->data()), src0_scales, src_->dtype(), src_min_->size());
+        GetZeroPoints(reinterpret_cast<const float*>(src_min_->data()), &tmp, src_->dtype(), src_min_->size());
     zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);
     memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = zp_src0_mem_;
   }

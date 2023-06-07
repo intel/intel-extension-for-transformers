@@ -31,11 +31,11 @@ dynamic_quant_matmul_ref_kd_t::dynamic_quant_matmul_ref_kd_t(const operator_desc
   auto dst_shape = ts_desc[2].shape();
   prob_size_[batch] = activation_shape.size() == 3 ? activation_shape[0] : 1;
   prob_size_[m] = activation_shape.size() == 3 ? activation_shape[1] : activation_shape[0];
-  prob_size_[n] = dst_shape[2];
+  prob_size_[n] = dst_shape.back();
   prob_size_[k] = weight_shape[0];
   dst_dt_ = ts_desc[2].dtype();
   if (op_attrs.count("append_sum") != 0) append_sum_ = true;
-  SPARSE_LOG_IF(FATAL, append_sum_ && dst_dt_ != data_type::fp32)
+  SPARSE_LOG_IF(FATAL, append_sum_ && (dst_dt_ != data_type::fp32 && dst_dt_ != data_type::bf16))
       << "dst data type must be fp32 when append_sum enable.";
 }
 
@@ -157,8 +157,18 @@ bool dynamic_quant_matmul_ref_k_t::execute(const std::vector<const void*>& rt_da
        prob_size[n], prob_size[k]);
   dequant_add_bias(fp32_dst_mat.data(), scale_a, scale_w, prob_size[batch], prob_size[m], prob_size[n], add_bias, bias,
                    postop_list);
-  if (append_sum)
-    fp32_append_sum(reinterpret_cast<float*>(dst_mat), &fp32_dst_mat, prob_size[batch], prob_size[m], prob_size[n]);
+  if (append_sum) {
+    float* append_value;
+    std::vector<float> cvt_append_value;
+    if (derived_kd()->check_dst_dt() == data_type::fp32) {
+      append_value = reinterpret_cast<float*>(dst_mat);
+    } else {
+      cvt_append_value.resize(prob_size[batch] * prob_size[m] * prob_size[n]);
+      cast_to_float_array<bfloat16_t>(dst_mat, &cvt_append_value, cvt_append_value.size());
+      append_value = cvt_append_value.data();
+    }
+    fp32_append_sum(append_value, &fp32_dst_mat, prob_size[batch], prob_size[m], prob_size[n]);
+  }
   if (derived_kd()->check_dst_dt() == data_type::s8) {
     get_dynamic_quant_scale(fp32_dst_mat.data(), scale_dst, prob_size[batch], prob_size[m], prob_size[n]);
     s8_quant_mat(dst_mat, fp32_dst_mat, scale_dst, prob_size[batch], prob_size[m], prob_size[n]);

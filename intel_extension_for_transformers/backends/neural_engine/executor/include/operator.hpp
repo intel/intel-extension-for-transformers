@@ -40,7 +40,7 @@ namespace executor {
  * (input) Tensor%s (if any) and compute their output Tensor%s (if any).
  */
 
-enum KERNEL_TYPE { Unsupported = 0, Dense = 1, Sparse = 2, SparseLib = 3 };
+enum KERNEL_TYPE { Unsupported = 0, Dense = 1, Sparse = 2, SparseLib = 3, Runtime = 4 };
 class Model;  // forward declaration
 
 class Operator {

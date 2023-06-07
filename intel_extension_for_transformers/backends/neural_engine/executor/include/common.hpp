@@ -41,7 +41,6 @@
 #include "oneapi/dnnl/dnnl.hpp"
 #include "interface.hpp"
 
-
 #ifdef NEURALENGINE_SHARED_LIB_
 #ifndef NEURALENGINE_API_
 #ifdef _MSC_VER
@@ -81,7 +80,7 @@ void* read_file_to_type(const string& root, const string& type, const vector<int
                         const vector<int64_t>& location);
 
 template <typename T>
-void InitVector(T* v, int buffer_size);
+void InitVector(T* v, int num_size, float range1 = -10, float range2 = 10, int seed = 5489u);
 
 int64_t Product(const vector<int64_t>& shape);
 

@@ -63,18 +63,17 @@ class MultiHeadAttentionOperator : public Operator {
   float output_scale_ = 1.f;
   vector<int64_t> dst_reshape_;
   vector<int64_t> src_shape_;
-  float QK_rescale_ = 0, softmax_rescale_ = 0, QKV_rescale_ = 0, QKV_zeropoint_ = 0;
-
-  vector<float> Q_scales, K_scales, V_scales, QK_scales, dst_scales, QK_rescales;
-
-  float scaleQ = 0, scaleK = 0, scaleV = 0, scaleRet = 0;
-  int bs_ = 0, seq_len_ = 0, head_num_ = 0, head_size_ = 0, hidden_size_ = 0, zeropointRet = 0;
+  vector<float> Q_scales_, K_scales_, V_scales_, softmax_scales_, dst_scales_;
+  int bs_ = 0, seq_len_q_ = 0, seq_len_kv_ = 0, head_num_ = 0, head_size_qk_ = 0, head_size_v_ = 0, hidden_size_ = 0,
+      QKV_zeropoint_ = 0;
 
   bool stable_softmax_ = false;
   bool is_sparse_ = false;
+  bool is_dynamic_ = false;
   jd::mha_dense mha_dense_;
   jd::transpose_mha mha_transpose_;
   std::vector<const void*> rt_data_;
+  void* workspace_;
 };
 
 }  // namespace executor

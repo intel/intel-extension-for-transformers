@@ -39,7 +39,9 @@ using dnnl::prop_kind;
 class InnerProductOperator : public Operator {
  public:
   explicit InnerProductOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~InnerProductOperator();
+  virtual ~InnerProductOperator() {
+    if (scratchpad_) MemoryAllocator::get().UnrefMemory(scratchpad_);
+  }
 
  public:
   // void ParseOperatorConfig();
@@ -52,6 +54,10 @@ class InnerProductOperator : public Operator {
 
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
+
+  void DynamicReshape(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void DynamicForward(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  void DynamicPrepare(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
   void ReshapeDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output);
@@ -73,7 +79,7 @@ class InnerProductOperator : public Operator {
   void PrepareSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void ShapeInferSparseLib(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
-  void DynamicForward(vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
+  void RuntimeMemoryArgs(vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
   void RuntimeMinmax();
   void CalculateCompensation(const vector<int64_t>& src1_shape, const vector<int64_t>& src1_stride,
                              const vector<int64_t>& zero_point_stride);
@@ -101,6 +107,7 @@ class InnerProductOperator : public Operator {
 
   bool append_eltwise_;
   bool is_dynamic_ = false;
+  bool per_token_ = false;
   float output_scale_ = 1.f;
   void* scratchpad_ = nullptr;
   vector<float> dst_scales_;
@@ -126,7 +133,10 @@ class InnerProductOperator : public Operator {
   std::unordered_map<std::string, std::string> op_attrs_;
   jd::sparse_matmul spmm_kern_;
   jd::transpose_matmul matmul_kern_;
+  std::vector<const void*> rt_data_;
 #endif
+  jd::dynamic_quant_matmul dynamic_quant_matmul_ker_;
+  jd::dynamic_quant dynamic_quant_ker_;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream eng_stream_ = dnnl::stream(eng_);
   dnnl::inner_product_forward::primitive_desc inner_product_pd_;
@@ -165,6 +175,7 @@ class InnerProductOperator : public Operator {
 
   Tensor* dst_min_ = nullptr;
   Tensor* dst_max_ = nullptr;
+  Tensor* inner_product_dynamic_res_ = nullptr;
 
   float sparse_threshold_ = 0.52;
 
@@ -175,6 +186,8 @@ class InnerProductOperator : public Operator {
   int64_t M_NBLK_ = 4;
   string append_op_;
   int64_t seq_len_ = 0;
+
+  void* transposed_weight_;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_INNER_PRODUCT_HPP_

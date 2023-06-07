@@ -53,6 +53,9 @@ void BinaryOpOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor
   if (input[0]->dtype() == "s32" || input[1]->dtype() == "s32") {
     LOG(WARNING) << "int32 isn't supported by dnnl, which will be cast to float32.";
   }
+  if (output_dtype_.empty()) {
+    output_dtype_ = input[0]->dtype();
+  }
   output[0]->set_dtype(output_dtype_);
 }
 

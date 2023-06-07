@@ -74,6 +74,7 @@ bool mha_dense_kd_t::init() {
 
   KERNEL_INIT_CHECK(head_size == 32 || head_size == 64 || head_size % 64 == 0)
   KERNEL_INIT_CHECK(src_sl_m == 1 || src_sl_m >= 16)
+  KERNEL_INIT_CHECK(src_sl_n <= mha_dense_k_t::MAX_SL_N)
 
   KERNEL_INIT_CHECK(is_any_of({data_type::u8, data_type::s8, data_type::fp32, data_type::bf16},
                               [dst_dt](auto t) { return dst_dt == t; }))
@@ -83,7 +84,7 @@ bool mha_dense_kd_t::init() {
   KERNEL_INIT_CHECK((tensor_desc[io::K_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
   KERNEL_INIT_CHECK((tensor_desc[io::V_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
   KERNEL_INIT_CHECK((tensor_desc[io::SRC_DST_SCALE] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
-  KERNEL_INIT_CHECK((tensor_desc[io::SRC_DST_ZP] == jd::tensor_desc{{1}, data_type::fp32, format_type::a}));
+  KERNEL_INIT_CHECK((tensor_desc[io::SRC_DST_ZP] == jd::tensor_desc{{1}, data_type::s32, format_type::a}));
 
   const auto has_badd = has_binary_add();
   if (src_sl_m == 1) {
@@ -295,7 +296,7 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       const auto k_scale = reinterpret_cast<const float*>(rt_data[io::K_SCALE])[0];
       const auto v_scale = reinterpret_cast<const float*>(rt_data[io::V_SCALE])[0];
       const auto dst_scale = reinterpret_cast<const float*>(rt_data[io::SRC_DST_SCALE])[0];
-      const auto dst_zp = reinterpret_cast<const float*>(rt_data[io::SRC_DST_ZP])[0];
+      const auto dst_zp = static_cast<float>(reinterpret_cast<const int32_t*>(rt_data[io::SRC_DST_ZP])[0]);
 
       // reorder K
       for (int i = 0; i < sl_n; i += 16)
@@ -563,7 +564,7 @@ bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const 
       const auto k_scale = reinterpret_cast<const float*>(rt_data[io::K_SCALE])[0];
       const auto v_scale = reinterpret_cast<const float*>(rt_data[io::V_SCALE])[0];
       const auto dst_scale = reinterpret_cast<const float*>(rt_data[io::SRC_DST_SCALE])[0];
-      const auto dst_zp = reinterpret_cast<const float*>(rt_data[io::SRC_DST_ZP])[0];
+      const auto dst_zp = static_cast<float>(reinterpret_cast<const int32_t*>(rt_data[io::SRC_DST_ZP])[0]);
 
       const int src_q_offset = ibs * src_sl_m_ * ld_q_ + ihn * head_size_;
       const int src_kv_offset = kv_ft_ == format_type::abcd   ? ibs * src_sl_n_ * ld_kv_ + ihn * head_size_

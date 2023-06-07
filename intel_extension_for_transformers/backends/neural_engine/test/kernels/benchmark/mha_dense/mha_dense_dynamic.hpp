@@ -44,7 +44,7 @@ class mha_dense_dynamic_bench : public mha_dense_bench {
     // K x Q
     FLOPs += 2. * batch_size * head_num * sl_M * head_size * sl_N;
     // Softmax
-    FLOPs += 6. * batch_size * sl_M * head_num * head_size;
+    FLOPs += 6. * batch_size * sl_M * head_num * sl_N;
     // V x A
     FLOPs += 2. * batch_size * head_num * sl_M * sl_N * head_size;
     return FLOPs;

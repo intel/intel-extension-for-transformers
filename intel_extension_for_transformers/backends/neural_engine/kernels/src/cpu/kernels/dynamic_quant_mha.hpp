@@ -96,15 +96,17 @@ class dynamic_quant_mha_k_t : public kernel_t {
   size_t get_workspace_size() const override;
 
  private:
-  std::vector<std::vector<dim_t>> t_shapes_;
-  int32_t batch_size_, head_num_, M_, head_size_, N_;
+  const std::vector<std::vector<dim_t>> t_shapes_;
+  const int32_t batch_size_, head_num_, M_, head_size_, N_;
+  const bool has_attscale;
+  const bool has_badd;
 
   jit_amx_config_t ker_amx_cfg_;
   jit_amx_release_t ker_amx_rls_;
   std::unique_ptr<jit_trans_AB16a4b_16x> ker_seq_cpy_k_;
   std::unique_ptr<jit_trans_BA16b4a_trq10n_x16> ker_seq_cpy_v_;
-  std::unique_ptr<jit_mmsoftmax_batch_amx_s8_ab_BA16b4a_u8_16x> ker_qxk_;
-  std::unique_ptr<jit_mm_batch_amx_u8s8_ab_AB16a4b_dynamic_quant_16x> ker_axv_;
+  std::unique_ptr<jit_mmexp_amx_s8_ab_BA16b4a_u8_16x> ker_qxk_;
+  std::unique_ptr<jit_scale_mm_amx_u8s8_ab_BA16b_16x> ker_axv_;
 
   const tile_param_t amx_full_tile_param_;
   const tileconfig_t amx_full_tile_cfg_;

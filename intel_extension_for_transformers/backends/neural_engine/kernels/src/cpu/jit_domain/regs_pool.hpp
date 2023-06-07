@@ -196,11 +196,11 @@ class regs_pool {
    */
   inline void close(const bool call_ret = true) {
     // Usage check: do we asked more than what we actually used?
-    SPARSE_LOG_IF(WARNING, get_max<Reg64>() > get_touched<Reg64>())
+    SPARSE_DLOG_IF(WARNING, get_max<Reg64>() > get_touched<Reg64>())
         << "Asked too many GPRs! Actually used: " << get_touched<Reg64>() << "/" << get_max<Reg64>();
-    SPARSE_LOG_IF(WARNING, get_max<Zmm>() > get_touched<Zmm>())
+    SPARSE_DLOG_IF(WARNING, get_max<Zmm>() > get_touched<Zmm>())
         << "Asked too many XMMs! Actually used: " << get_touched<Zmm>() << "/" << get_max<Zmm>();
-    SPARSE_LOG_IF(WARNING, get_max<Opmask>() > get_touched<Opmask>())
+    SPARSE_DLOG_IF(WARNING, get_max<Opmask>() > get_touched<Opmask>())
         << "Asked too many masks! Actually used: " << get_touched<Opmask>() << "/" << get_max<Opmask>();
 
     // free stack space

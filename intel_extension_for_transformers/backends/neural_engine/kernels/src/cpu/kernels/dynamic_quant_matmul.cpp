@@ -29,7 +29,7 @@ dynamic_quant_matmul_kd_t::dynamic_quant_matmul_kd_t(const operator_desc& op_des
   auto dst_shape = ts_desc[2].shape();
   prob_size_[batch] = activation_shape.size() == 3 ? activation_shape[0] : 1;
   prob_size_[m] = activation_shape.size() == 3 ? activation_shape[1] : activation_shape[0];
-  prob_size_[n] = dst_shape[2];
+  prob_size_[n] = dst_shape.back();
   prob_size_[k] = weight_shape[0];
   int reuse_data_size = prob_size_[n] * (prob_size_[k] + 16);
   float large_wei_threshold = 1.f;
@@ -65,7 +65,7 @@ bool dynamic_quant_matmul_kd_t::split_execute_init() {
   bool append_sum = op_desc_.attrs().count("append_sum") != 0 ? true : false;
   auto dst_dt = ts_descs[2].dtype();
   if (append_sum)
-    SPARSE_LOG_IF(FATAL, dst_dt != data_type::fp32)
+    SPARSE_LOG_IF(FATAL, dst_dt != data_type::fp32 && dst_dt != data_type::bf16)
         << "only support fp32 dst data type when append sum feature enable.";
   for (int i = 0; i < activation_cores; i++) {
     for (int j = 0; j < weight_cores; j++) {

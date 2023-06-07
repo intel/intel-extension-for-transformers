@@ -408,15 +408,17 @@ void SoftmaxOperator::Forward_dnnl(const vector<Tensor*>& input, const vector<Te
                    reinterpret_cast<float*>(dst_max_->mutable_data()));
     // quantize
     if (output_dtype_ == "u8") {
-      auto scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
-      memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
+      auto scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      // memcpy(dst_max_->mutable_data(), scales.data(), dst_max_->size() * sizeof(float));
 #if __AVX512F__
       Quantize_avx512(fp32_res.size(), dst_->dtype(), fp32_res.data(), static_cast<const float*>(dst_min_->data()),
-                      scales_, dst_->mutable_data());
+                      scales, dst_->mutable_data());
 #else
-      Quantize(fp32_res.size(), dst_->dtype(), fp32_res.data(), static_cast<const float*>(dst_min_->data()), scales_,
+      Quantize(fp32_res.size(), dst_->dtype(), fp32_res.data(), static_cast<const float*>(dst_min_->data()), scales,
                dst_->mutable_data());
 #endif
+      float* dst_max_data = reinterpret_cast<float*>(dst_max_->mutable_data());
+      *dst_max_data = 1.0 / scales[0];
     } else {
       LOG(ERROR) << "Output dtype in Softmax is: " << output_dtype_ << ", not supported!";
     }

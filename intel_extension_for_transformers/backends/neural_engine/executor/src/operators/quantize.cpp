@@ -23,9 +23,9 @@ QuantizeOperator::QuantizeOperator(const shared_ptr<OperatorConfig>& conf) : Ope
   if (iter != attrs_map.end()) {
     output_dtype_ = attrs_map["output_dtype"];
   }
-  auto iter2 = attrs_map.find("batch");
-  if (iter2 != attrs_map.end() && attrs_map["batch"] == "1") {
-    per_batch_ = true;
+  iter = attrs_map.find("per_token");
+  if (iter != attrs_map.end()) {
+    per_token_ = attrs_map["per_token"] == "true" || attrs_map["per_token"] == "True";
   }
 }
 
@@ -34,10 +34,9 @@ QuantizeOperator::~QuantizeOperator() {}
 void QuantizeOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int input_size = input.size();
   dst_ = output[0];
-  dst_min_ = output[1];
-  dst_max_ = output[2];
   if (output.size() > 1) {
-    is_dynamic_ = true;
+    dst_min_ = output[1];
+    dst_max_ = output[2];
   }
   switch (input_size) {
     case 1: {
@@ -56,48 +55,39 @@ void QuantizeOperator::MapTensors(const vector<Tensor*>& input, const vector<Ten
 void QuantizeOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   MapTensors(input, output);
   dst_->set_dtype(output_dtype_);
-  if ((output_dtype_ == "u8" || output_dtype_ == "s8") && (src_min_ != nullptr && src_max_ != nullptr)) {
-    scales_ = GetScales(src_min_->data(), src_max_->data(), src_min_->size(), dst_->dtype());
-  } else if (is_dynamic_ == true) {
-    dst_min_->set_dtype("fp32");
-    dst_max_->set_dtype("fp32");
+  if (output_dtype_ == "u8" || output_dtype_ == "s8") {
+    if (src_min_ != nullptr && src_max_ != nullptr) {
+      scales_ = GetScales(src_min_->data(), src_max_->data(), src_min_->size(), dst_->dtype());
+    } else {
+      dst_min_->set_dtype("fp32");
+      dst_max_->set_dtype("fp32");
+      is_dynamic_ = true;
+      DLOG(INFO) << name_ << " is dynamic !!!";
+    }
   }
-}
-void QuantizeOperator::Reshape_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  vector<int64_t> input_shape = src_->shape();
-  dst_->set_shape(input_shape);
-  std::unordered_map<std::string, std::string> op_attrs;
-  dst_max_->set_shape({input_shape[0]});
-  mat_desc_ = {src_->shape(), type2sparsemem_[src_->dtype()], jd::format_type::undef};        // fp32
-  dst_mat_desc_ = {dst_->shape(), type2sparsemem_[dst_->dtype()], jd::format_type::undef};  // s8
-  scale_desc_ = {dst_max_->shape(), type2sparsemem_[dst_max_->dtype()], jd::format_type::undef};    // fp32
-
-  vector<jd::tensor_desc> ts_descs = {mat_desc_, dst_mat_desc_, scale_desc_};
-  op_attrs["input_dt"] = src_->dtype();
-  jd::operator_desc op_desc(jd::kernel_kind::dynamic_quant, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
-                            ts_descs, op_attrs);
-  jd::dynamic_quant_desc dynamic_quant_desc(op_desc);
-  dynamic_quant_ = jd::dynamic_quant(dynamic_quant_desc);
-}
-
-void QuantizeOperator::Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  std::vector<const void*> runtime_data(3);
-  runtime_data[io::SRC] = src_->data();
-  runtime_data[io::MAT_DST] = dst_->data();
-  runtime_data[io::SCALE_DST] = dst_max_->data();
-  dynamic_quant_.execute(runtime_data);
 }
 
 void QuantizeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  // Part1: Derive operator's user proper shape and strides
-  // 1.1: Prepare Tensor origin shape
-  if (is_dynamic_ && output_dtype_ == "s8" && per_batch_ == true) {
-    Reshape_Sparselib(input, output);
-  } else {
-    const vector<int64_t>& src_shape = src_->shape();
-    // 1.2 Set dst dtype and shape
-    dst_->set_shape(src_shape);
-    if (is_dynamic_ && per_batch_ == false) {
+  const vector<int64_t>& src_shape = src_->shape();
+  dst_->set_shape(src_shape);
+  if (is_dynamic_) {
+    if (per_token_) {
+      DLOG_IF(ERROR, output_dtype_ != "s8") << "per_token dynamic only support s8";
+      std::unordered_map<std::string, std::string> op_attrs;
+      dst_min_->set_shape({src_shape[0]});
+      dst_max_->set_shape({src_shape[0]});
+      mat_desc_ = {src_->shape(), src_->dtype() == "fp32" ? jd::data_type::fp32 : jd::data_type::bf16,
+                   jd::format_type::undef};                                            // fp32
+      dst_mat_desc_ = {dst_->shape(), jd::data_type::s8, jd::format_type::undef};      // s8
+      scale_desc_ = {dst_max_->shape(), jd::data_type::fp32, jd::format_type::undef};  // fp32
+
+      vector<jd::tensor_desc> ts_descs = {mat_desc_, dst_mat_desc_, scale_desc_};
+      op_attrs["input_dt"] = src_->dtype();
+      jd::operator_desc op_desc(jd::kernel_kind::dynamic_quant, jd::kernel_prop::forward_inference,
+                                jd::engine_kind::cpu, ts_descs, op_attrs);
+      jd::dynamic_quant_desc dynamic_quant_desc(op_desc);
+      dynamic_quant_ = jd::dynamic_quant(dynamic_quant_desc);
+    } else {
       dst_min_->set_shape({1});
       dst_max_->set_shape({1});
     }
@@ -105,20 +95,29 @@ void QuantizeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor
 }
 
 void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  if (is_dynamic_ && output_dtype_ == "s8" && per_batch_ == true) {
-    Forward_Sparselib(input, output);
+  const void* src_data = src_->data();
+  void* dst_data = dst_->mutable_data();
+  if (is_dynamic_ && per_token_) {
+    std::vector<const void*> runtime_data(3);
+    runtime_data[io::SRC] = src_data;
+    runtime_data[io::MAT_DST] = dst_data;
+    runtime_data[io::SCALE_DST] = dst_max_->mutable_data();
+    dynamic_quant_.execute(runtime_data);
   } else {
-    const void* src_data = src_->data();
-    void* dst_data = dst_->mutable_data();
     const float* min_data = src_min_ != nullptr ? static_cast<const float*>(src_min_->data()) : nullptr;
     if (is_dynamic_) {
-      runtime_minmax(reinterpret_cast<float*>(src_->mutable_data()), src_->size(),
-                     reinterpret_cast<float*>(dst_min_->mutable_data()),
-                     reinterpret_cast<float*>(dst_max_->mutable_data()));
-
-      scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      if (src_->dtype() == "fp32") {
+        runtime_minmax(reinterpret_cast<float*>(src_->mutable_data()), src_->size(),
+                       reinterpret_cast<float*>(dst_min_->mutable_data()),
+                       reinterpret_cast<float*>(dst_max_->mutable_data()));
+        scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      } else {
+        std::cout << "!!! BF16 quantize!!!" << std::endl;
+        scales_.push_back(10.0f);
+      }
       min_data = static_cast<const float*>(dst_min_->data());
-      memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
+      float* scale = reinterpret_cast<float*>(dst_max_->mutable_data());
+      *scale = 1.0f / scales_[0];
     }
     if (min_data == nullptr) {
       if (dst_->dtype() == "u8") {

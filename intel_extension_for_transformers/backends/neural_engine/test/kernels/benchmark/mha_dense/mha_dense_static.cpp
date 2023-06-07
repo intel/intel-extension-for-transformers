@@ -50,10 +50,10 @@ std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_de
   return {data_ptr, data_ptr_copy};
 }
 double mha_dense_static_bench::calc_flop() const {
-  float flops = 0;
-  flops += 2 * sl_m * head_size * sl_n;  // Q x K
-  flops += 6 * sl_m * sl_n;              // softmax: 1max + 3reduction + 2softmax  (copied from softmax benchmark)
-  flops += 2 * sl_n * sl_m * head_size;  // A x V
+  double flops = 0;
+  flops += 2. * sl_m * head_size * sl_n;  // Q x K
+  flops += 6. * sl_m * sl_n;              // softmax: 1max + 3reduction + 2softmax  (copied from softmax benchmark)
+  flops += 2. * sl_n * sl_m * head_size;  // A x V
   flops *= head_num * batch_size;
   return flops;
 }
@@ -146,11 +146,11 @@ void mha_dense_static_bench::gen_case() {
   ts_descs[io::SRC_Q] = {{batch_size, sl_m, head_num, head_size}, dt_src, jd::format_type::abcd};
   ts_descs[io::SRC_K] = {{batch_size, sl_n, head_num, head_size}, dt_src, ft_kv};
   ts_descs[io::SRC_V] = {{batch_size, sl_n, head_num, head_size}, dt_src, ft_kv};
-  if (dt_src != jd::data_type::bf16) ts_descs[io::MASK] = {{batch_size}, jd::data_type::s32, jd::format_type::a};
+  if (dt_src != jd::data_type::bf16)
+    ts_descs[io::MASK] = {
+        {batch_size}, jd::data_type::s32, jd::format_type::a};  // TODO(Yi): change given dt_src is confusing
   ts_descs[io::DST] = {{batch_size, sl_m, head_num, head_size}, dt_dst, jd::format_type::abcd};
-  if (dt_src == jd::data_type::bf16) {  // TODO(Yi): change given dt_src is confusing
-    ts_descs[io::BINARY_ADD] = {{1, 1, sl_m, sl_n}, jd::data_type::fp32, jd::format_type::abcd};
-  } else if (badd_dim > 0) {
+  if (badd_dim > 0) {
     SPARSE_LOG_IF(FATAL, badd_dim > 4) << "Unsupported binary add dimension";
     ts_descs[io::BINARY_ADD] = {std::vector<dim_t>(badd_full.cend() - badd_dim, badd_full.cend()), jd::data_type::fp32,
                                 jd::plain_format(badd_dim)};

@@ -17,7 +17,7 @@
 
 import unittest
 from collections import OrderedDict
-from intel_extension_for_transformers.backends.neural_engine.compile.compile import _dynamic_quantization
+from intel_extension_for_transformers.backends.neural_engine.compile.dynamic_quantize import _dynamic_quantization, _quantize2bf16
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS, Operator
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
@@ -27,7 +27,6 @@ from copy import deepcopy
 
 
 class TestDynamicQuantization(unittest.TestCase):
-
     @classmethod
     def setUpClass(self):
         pass
@@ -45,20 +44,14 @@ class TestDynamicQuantization(unittest.TestCase):
         output_tensors = [
             Tensor(name='input0', shape=[-1], dtype="fp32"),
         ]
-        input_data_node.construct('input_data',
-                                  'Input',
-                                  input_tensors=input_tensors,
-                                  output_tensors=output_tensors)
+        input_data_node.construct('input_data', 'Input', input_tensors=input_tensors, output_tensors=output_tensors)
 
         Layernorm_node = OPERATORS['Reshape']()
         input_tensors = [
             Tensor(name='input0', dest_op=['reshape'], dtype="fp32"),
         ]
         output_tensors = [
-            Tensor(name='layernorm_output',
-                   source_op=['reshape'],
-                   dest_op=['Q', "K", "V", "Att"],
-                   dtype="fp32")
+            Tensor(name='layernorm_output', source_op=['reshape'], dest_op=['Q', "K", "V", "Att"], dtype="fp32")
         ]
         Layernorm_node.construct('reshape',
                                  'Reshape',
@@ -146,9 +139,7 @@ class TestDynamicQuantization(unittest.TestCase):
                    data=np.array(np.random.random((256)), dtype="float32"),
                    dtype="fp32"),
         ]
-        output_tensors = [
-            Tensor(name='qk', source_op=['qk_matmul'], dest_op=['softmax'], dtype="fp32")
-        ]
+        output_tensors = [Tensor(name='qk', source_op=['qk_matmul'], dest_op=['softmax'], dtype="fp32")]
         qk_node.construct('qk_matmul',
                           'Matmul',
                           input_tensors=input_tensors,
@@ -162,28 +153,16 @@ class TestDynamicQuantization(unittest.TestCase):
                           }))
 
         softmax_node = OPERATORS['Softmax']()
-        input_tensors = [
-            Tensor(name='qk', source_op=['qk_matmul'], dest_op=['softmax'], dtype="fp32")
-        ]
-        output_tensors = [
-            Tensor(name='a',
-                   source_op=['softmax'],
-                   dest_op=['av_matmul', 'output_data'],
-                   dtype="fp32")
-        ]
-        softmax_node.construct('softmax',
-                               'Softmax',
-                               input_tensors=input_tensors,
-                               output_tensors=output_tensors)
+        input_tensors = [Tensor(name='qk', source_op=['qk_matmul'], dest_op=['softmax'], dtype="fp32")]
+        output_tensors = [Tensor(name='a', source_op=['softmax'], dest_op=['av_matmul', 'output_data'], dtype="fp32")]
+        softmax_node.construct('softmax', 'Softmax', input_tensors=input_tensors, output_tensors=output_tensors)
 
         av_node = OPERATORS['Matmul']()
         input_tensors = [
             Tensor(name='a', source_op=['softmax'], dest_op=['av_matmul'], dtype="fp32"),
             Tensor(name='v', source_op=['V'], dest_op=['av_matmul'], dtype="fp32")
         ]
-        output_tensors = [
-            Tensor(name='av', source_op=['av_matmul'], dest_op=['Att'], dtype="fp32")
-        ]
+        output_tensors = [Tensor(name='av', source_op=['av_matmul'], dest_op=['Att'], dtype="fp32")]
         av_node.construct('av_matmul',
                           'Matmul',
                           input_tensors=input_tensors,
@@ -207,8 +186,7 @@ class TestDynamicQuantization(unittest.TestCase):
                    shape=[256],
                    data=np.array(np.random.random((256)), dtype="float32"),
                    dtype="fp32"),
-            Tensor(name='layernorm_output', source_op=['layernorm'], dest_op=['Att'],
-                   dtype="fp32"),
+            Tensor(name='layernorm_output', source_op=['layernorm'], dest_op=['Att'], dtype="fp32"),
         ]
         output_tensors = [Tensor(name='att', source_op=['Att'], dest_op=['output_data'])]
         Att_node.construct('Att',
@@ -221,9 +199,7 @@ class TestDynamicQuantization(unittest.TestCase):
                            }))
 
         output_node = OPERATORS['Output']()
-        input_tensors = [
-            Tensor(name='att', source_op=['Att'], dest_op=['output_data'], dtype="fp32")
-        ]
+        input_tensors = [Tensor(name='att', source_op=['Att'], dest_op=['output_data'], dtype="fp32")]
         output_tensors = []
         output_node.construct(
             'output_data',
@@ -233,8 +209,8 @@ class TestDynamicQuantization(unittest.TestCase):
         )
 
         graph.insert_nodes(len(graph.nodes), [
-            input_data_node, Layernorm_node, Q_node, K_node, V_node, qk_node, softmax_node,
-            av_node, Att_node, output_node
+            input_data_node, Layernorm_node, Q_node, K_node, V_node, qk_node, softmax_node, av_node, Att_node,
+            output_node
         ])
         int8_model = _dynamic_quantization(deepcopy(graph))
         graph.save("fp32")
@@ -258,15 +234,9 @@ class TestDynamicQuantization(unittest.TestCase):
                    dest_op=['av_matmul'],
                    data=np.array(np.random.random((256)), dtype="float32"),
                    dtype="fp32"),
-            Tensor(name='bias',
-                   shape=[256],
-                   dest_op=['av_matmul'],
-                   data=np.zeros((256), dtype="float32"),
-                   dtype="fp32")
+            Tensor(name='bias', shape=[256], dest_op=['av_matmul'], data=np.zeros((256), dtype="float32"), dtype="fp32")
         ]
-        output_tensors = [
-            Tensor(name='av', source_op=['av_matmul'], dest_op=["output"], dtype="fp32")
-        ]
+        output_tensors = [Tensor(name='av', source_op=['av_matmul'], dest_op=["output"], dtype="fp32")]
         Convolution_node.construct('av_matmul',
                                    'Convolution',
                                    input_tensors=input_tensors,
@@ -274,6 +244,7 @@ class TestDynamicQuantization(unittest.TestCase):
                                    attr=OrderedDict({}))
         graph.insert_nodes(3, [input_data_node, Convolution_node, output_node])
         int8_model = _dynamic_quantization(deepcopy(graph))
+        bf16_model = _quantize2bf16(int8_model)
 
 
 if __name__ == "__main__":

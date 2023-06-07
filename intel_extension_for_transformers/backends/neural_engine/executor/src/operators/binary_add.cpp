@@ -19,20 +19,19 @@
 namespace executor {
 
 // binary op doesn't support int32
-static unordered_map<string, dnnl::memory::data_type> type2mem{
-    {"fp32", dnnl::memory::data_type::f32}, {"fp16", dnnl::memory::data_type::f16},
-    {"u8", dnnl::memory::data_type::u8},    {"s8", dnnl::memory::data_type::s8},
-    {"bf16", dnnl::memory::data_type::bf16}};
+static unordered_map<string, dnnl::memory::data_type> type2mem{{"fp32", dnnl::memory::data_type::f32},
+                                                               {"fp16", dnnl::memory::data_type::f16},
+                                                               {"u8", dnnl::memory::data_type::u8},
+                                                               {"s8", dnnl::memory::data_type::s8},
+                                                               {"bf16", dnnl::memory::data_type::bf16}};
 
 BinaryAddOperator::BinaryAddOperator(const shared_ptr<OperatorConfig>& conf) : Operator(conf) {
   auto attrs_map = operator_conf_->attributes();
   static unordered_map<string, algorithm> str2algo{
-    {"add", algorithm::binary_add}, {"sub", algorithm::binary_sub},
-    {"mul", algorithm::binary_mul}, {"div", algorithm::binary_div},
-    {"gt", algorithm::binary_gt}, {"ge", algorithm::binary_ge},
-    {"lt", algorithm::binary_lt}, {"le", algorithm::binary_le},
-    {"eq", algorithm::binary_eq}, {"ne", algorithm::binary_ne},
-    {"min", algorithm::binary_min}, {"max", algorithm::binary_max}};
+      {"add", algorithm::binary_add}, {"sub", algorithm::binary_sub}, {"mul", algorithm::binary_mul},
+      {"div", algorithm::binary_div}, {"gt", algorithm::binary_gt},   {"ge", algorithm::binary_ge},
+      {"lt", algorithm::binary_lt},   {"le", algorithm::binary_le},   {"eq", algorithm::binary_eq},
+      {"ne", algorithm::binary_ne},   {"min", algorithm::binary_min}, {"max", algorithm::binary_max}};
   auto iter = attrs_map.find("append_op");
   append_sum_ = (iter != attrs_map.end() && iter->second == "sum") ? true : false;
   iter = attrs_map.find("algorithm");
@@ -52,6 +51,9 @@ BinaryAddOperator::BinaryAddOperator(const shared_ptr<OperatorConfig>& conf) : O
 // In-place mode requires the dst and src data types to be the same.
 // Different data types will unavoidably lead to correctness issues.
 void BinaryAddOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  if (output_dtype_.empty()) {
+    output_dtype_ = input[0]->dtype();
+  }
   output[0]->set_dtype(output_dtype_);
 }
 

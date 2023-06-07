@@ -140,8 +140,8 @@ std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_de
   return make_tensor_obj(ts_desc, value, value);
 }
 
-test_data_t gen_data(const dim_t bs, const dim_t sl_m, const dim_t sl_n, const dim_t head_num,
-                     const dim_t head_size, int badd_dim = 0, const jd::data_type dt_dst = jd::data_type::u8,
+test_data_t gen_data(const dim_t bs, const dim_t sl_m, const dim_t sl_n, const dim_t head_num, const dim_t head_size,
+                     int badd_dim = 0, const jd::data_type dt_dst = jd::data_type::u8,
                      const jd::format_type kv_ft = jd::format_type::abcd) {
   std::vector<dim_t> badd_fullshape = {bs, head_num, sl_m, sl_n};
   std::vector<jd::tensor_desc> ts_descs(io::SIZE, jd::tensor_desc{});
@@ -160,7 +160,7 @@ test_data_t gen_data(const dim_t bs, const dim_t sl_m, const dim_t sl_n, const d
   ts_descs[io::K_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
   ts_descs[io::V_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
   ts_descs[io::SRC_DST_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  ts_descs[io::SRC_DST_ZP] = {{1}, jd::data_type::fp32, jd::format_type::a};
+  ts_descs[io::SRC_DST_ZP] = {{1}, jd::data_type::s32, jd::format_type::a};
 
   // Step 1.1: Construct Operator config obj
   std::unordered_map<std::string, std::string> attr_map;

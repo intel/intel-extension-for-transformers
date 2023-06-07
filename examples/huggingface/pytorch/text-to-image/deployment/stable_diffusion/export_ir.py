@@ -19,7 +19,7 @@ import argparse
 from intel_extension_for_transformers.backends.neural_engine.compile import compile, autocast
 
 text_encoder_pattern_config = {
-    'pattern_switch' : {
+    'pattern_switch': {
         # General Pattern
         'PaddingSequence': False,
         'AttentionReshape': False,
@@ -200,9 +200,12 @@ vae_decoder_pattern_config = {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--onnx_model", default="./model", type=str, help="onnx model path.")
-    parser.add_argument("--pattern_config", default="./", type=str, help="pattern graph path.")
-    parser.add_argument("--output_path", default="./ir", type=str, help="pattern graph path.")
+    parser.add_argument("--onnx_model", default="./model",
+                        type=str, help="onnx model path.")
+    parser.add_argument("--pattern_config", default="./",
+                        type=str, help="pattern graph path.")
+    parser.add_argument("--output_path", default="./ir",
+                        type=str, help="pattern graph path.")
     parser.add_argument("--dtype", default="fp32", type=str)
     args = parser.parse_args()
 
@@ -215,6 +218,10 @@ if __name__ == '__main__':
 
     if args.dtype == "bf16":
         args.pattern_config['pattern_switch']['StableDiffusion_MHA'] = True
+        with autocast(args.dtype):
+            graph = compile(args.onnx_model, args.pattern_config)
+            graph.save(args.output_path)
+    elif args.dtype == "dynamic_int8":
         with autocast(args.dtype):
             graph = compile(args.onnx_model, args.pattern_config)
             graph.save(args.output_path)

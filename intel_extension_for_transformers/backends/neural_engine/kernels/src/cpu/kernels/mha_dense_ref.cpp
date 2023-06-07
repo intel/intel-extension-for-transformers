@@ -178,7 +178,9 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
       attrs.find("softmax_rescale") != attrs.end() ? str_to_num<float>(attrs.at("softmax_rescale")) : UINT8_MAX;
 
   const auto has_badd = ts_descs_[io::BINARY_ADD].dtype() != data_type::undef;
-  const float def_scale = 1.f, def_zp = 0.f;  // default scale and zp
+  // default scale and zp
+  const float def_scale = 1.f;
+  const int32_t def_zp = 0;
 
   const auto q_scale_num = ts_descs_[io::Q_SCALE].size();
   const auto k_scale_num = ts_descs_[io::K_SCALE].size();
@@ -189,7 +191,7 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
   const auto k_scale_f32 = reinterpret_cast<const float*>(rt_data[io::K_SCALE]);
   const auto v_scale_f32 = reinterpret_cast<const float*>(rt_data[io::V_SCALE]);
   const auto dst_scale_f32 = reinterpret_cast<const float*>(rt_data[io::SRC_DST_SCALE]);
-  const auto dst_zp_f32 = reinterpret_cast<const float*>(rt_data[io::SRC_DST_ZP]);
+  const auto dst_zp_s32 = reinterpret_cast<const int32_t*>(rt_data[io::SRC_DST_ZP]);
 
 #pragma omp parallel for collapse(3)
   for (int ibs = 0; ibs < bs_; ibs++) {
@@ -222,7 +224,7 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
         const auto k_scale = k_scale_num == 0 ? &def_scale : k_scale_f32 + (k_scale_num == 1 ? 0 : ibs * sl_n_);
         const auto v_scale = v_scale_num == 0 ? &def_scale : v_scale_f32 + (v_scale_num == 1 ? 0 : ibs * sl_n_);
         const auto dst_scale = dst_scale_num == 0 ? &def_scale : dst_scale_f32 + (dst_scale_num == 1 ? 0 : ibs * sl_m_);
-        const auto dst_zp = dst_zp_num == 0 ? &def_zp : dst_zp_f32 + (dst_zp_num == 1 ? 0 : ibs * sl_m_);
+        const auto dst_zp = dst_zp_num == 0 ? &def_zp : dst_zp_s32 + (dst_zp_num == 1 ? 0 : ibs * sl_m_);
 
         const auto att_scale_idx = ts_descs_[io::ATT_SCALE].size() <= 1 ? 0 : ibs;
         const float att_scale = reinterpret_cast<const float*>(rt_data[io::ATT_SCALE])[att_scale_idx];

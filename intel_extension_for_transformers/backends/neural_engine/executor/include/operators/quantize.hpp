@@ -60,8 +60,6 @@ class QuantizeOperator : public Operator {
 #ifdef WITH_SPARSELIB
   jd::dynamic_quant dynamic_quant_;
 #endif
-  void Reshape_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void Forward_Sparselib(const vector<Tensor*>& input, const vector<Tensor*>& output);
   Tensor* src_ = nullptr;
   Tensor* src_min_ = nullptr;
   Tensor* src_max_ = nullptr;
@@ -69,7 +67,7 @@ class QuantizeOperator : public Operator {
   Tensor* dst_min_ = nullptr;
   Tensor* dst_max_ = nullptr;
   bool is_dynamic_ = false;
-  bool per_batch_ = false;  // false represent per_tensor
+  bool per_token_ = false;  // false represent per_tensor
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_QUANTIZE_HPP_

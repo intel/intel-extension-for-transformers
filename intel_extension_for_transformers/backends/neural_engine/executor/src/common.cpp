@@ -73,20 +73,19 @@ void* read_file_to_type(const string& root, const string& type, const vector<int
 }
 
 template <typename T>
-void InitVector(T* v, int buffer_size) {
-  std::mt19937 gen;
-  static int seed = 0;
-  gen.seed(seed);
-  std::uniform_real_distribution<float> u(-10, 10);
-  for (int i = 0; i < buffer_size; ++i) {
+void InitVector(T* v, int num_size, float range1, float range2, int seed) {
+  float low_value = std::max(range1, static_cast<float>(std::numeric_limits<T>::lowest()) + 1);
+  std::mt19937 gen(seed);
+  std::uniform_real_distribution<float> u(low_value, range2);
+  for (int i = 0; i < num_size; ++i) {
     v[i] = static_cast<T>(u(gen));
   }
-  seed++;
 }
-template void InitVector<float>(float* v, int buffer_size);
-template void InitVector<uint16_t>(uint16_t* v, int buffer_size);  // bf16
-template void InitVector<int8_t>(int8_t* v, int buffer_size);
-template void InitVector<uint8_t>(uint8_t* v, int buffer_size);
+template void InitVector<float>(float* v, int num_size, float range1, float range2, int seed);
+template void InitVector<uint16_t>(uint16_t* v, int num_size, float range1, float range2, int seed);  // bf16
+template void InitVector<int8_t>(int8_t* v, int num_size, float range1, float range2, int seed);
+template void InitVector<uint8_t>(uint8_t* v, int num_size, float range1, float range2, int seed);
+template void InitVector<int32_t>(int32_t* v, int num_size, float range1, float range2, int seed);
 
 // Displayed in milliseconds.
 int64_t Time() {
@@ -150,8 +149,8 @@ bool CompareData(const void* buf1, int64_t elem_num1, const void* buf_true, int6
   for (int64_t i = 0; i < elem_num1; ++i) {
     auto err = fabs(buf1_data[i] - buf2_data[i]);
     if (err > eps) {
-      LOG(ERROR) << "idx: " << i << ", true: " << static_cast<int>(buf1_data[i])
-                 << ", predict: " << static_cast<int>(buf2_data[i]) << ", err: " << err << ", eps: " << eps;
+      LOG(ERROR) << "idx: " << i << ", predict: " << static_cast<int>(buf1_data[i])
+                 << ", true: " << static_cast<int>(buf2_data[i]) << ", err: " << err << ", eps: " << eps;
       return false;
     }
   }
@@ -198,7 +197,6 @@ bool CompareShape(const vector<int64_t>& shape1, const vector<int64_t>& shape2) 
 vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, const string& dtype) {
   const float* mins_p = static_cast<const float*>(mins);
   const float* maxs_p = static_cast<const float*>(maxs);
-  // std::cout << mins_p[0] << "\t" << maxs_p[0] << std::endl;
   vector<float> scales;
   if (dtype == "u8") {
     for (int i = 0; i < size; i++) {

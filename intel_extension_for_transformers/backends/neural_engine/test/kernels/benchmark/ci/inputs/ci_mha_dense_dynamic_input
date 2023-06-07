@@ -1,4 +1,4 @@
-### ncores_per_inst batch_size head_num sl_M head_size sl_N
+### ncores_per_inst kern batch_size head_num sl_M head_size sl_N
 
 $it_per_core=10
 1 dynamic 2 8 4096 40 4096

@@ -77,11 +77,15 @@ python prepare_model.py --input_model=CompVis/stable-diffusion-v1-4 --output_pat
 ```
 
 ### 1.2 Compile Models
-Export three FP32 onnx sub models of the stable diffusion to Nerual Engine IRs.
+Both bf16 model and fp32 model can be dynamic quantized to Int8 by adding ` --cast_type=dynamic_int8`. Text_encoder is not recommended to be dynamic quantized.
+
+Export three FP32 onnx sub models of the stable diffusion to Nerual Engine IRs. 
 
 ```bash
 # just running the follow bash comand to get all IRs.
 bash export_model.sh --input_model=model --precision=fp32
+# just running the follow bash comand to dynamic quantized to Int8 based on fp32 and to get all IRs.
+bash export_model.sh --input_model=model --precision=fp32 --cast_type=dynamic_int8
 ```
 
 If you want to export models seperately, command as follows:
@@ -122,6 +126,9 @@ Python API command as follows:
 # FP32 IR
 python run_executor.py --ir_path=./fp32_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
 
+# Dynamic int8 based on FP32 IR
+python run_executor.py --ir_path=./fp32_dynamic_int8_ir --mode=latency
+
 # BF16 IR
 python run_executor.py --ir_path=./bf16_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
 ```
@@ -134,6 +141,9 @@ Python API command as follows:
 ```python
 # FP32 IR
 python run_executor.py --ir_path=./fp32_ir --mode=accuracy --input_model=CompVis/stable-diffusion-v1-4
+
+# Dynamic int8 based on FP32 IR
+python run_executor.py --ir_path=./fp32_dynamic_int8_ir --mode=accuracy
 
 # BF16 IR
 python run_executor.py --ir_path=./bf16_ir --mode=accuracy --input_model=CompVis/stable-diffusion-v1-4

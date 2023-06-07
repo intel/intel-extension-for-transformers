@@ -43,7 +43,7 @@ class GroupNormOperator : public Operator {
   explicit GroupNormOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~GroupNormOperator() {
 #ifdef WITH_SPARSELIB
-    if (work_space != nullptr) free(work_space);
+    if (work_space != nullptr) MemoryAllocator::get().UnrefMemory(work_space);
 #endif
   }
 
@@ -64,7 +64,7 @@ class GroupNormOperator : public Operator {
   jd::tensor_desc gamma_desc_;
   jd::tensor_desc beta_desc_;
   jd::groupnorm groupnorm_ker;
-  void* work_space;
+  void* work_space = nullptr;
 #endif
 };
 }  // namespace executor

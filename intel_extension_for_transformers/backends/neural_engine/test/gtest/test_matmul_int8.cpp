@@ -40,9 +40,22 @@ bool CheckResult(const TestParams& t) {
   const auto& p = t.args.first;
   const auto& q = t.args.second;
   try {
+    int scales_num = 4;
+    vector<void*> tmp_data(scales_num);
+    vector<Tensor> tmp_tensor(scales_num);
+    for (int i = p.input.size() - scales_num, j = 0; i < p.input.size(); i++, j++) {
+      tmp_data[j] = p.input[i]->mutable_data();
+      p.input[i]->unref_data(true);
+      tmp_tensor[j].add_tensor_life(1);
+      tmp_tensor[j].set_data(tmp_data[j]);
+    }
     executor::MatmulOperator matmul(p.conf);
     matmul.Prepare(p.input, p.output);
     matmul.Reshape(p.input, p.output);
+    for (int i = p.input.size() - scales_num, j = 0; i < p.input.size(); i++, j++) {
+      tmp_tensor[j].unref_data(true);
+      p.input[i]->set_data(tmp_data[j]);
+    }
     matmul.Forward(p.input, p.output);
   } catch (const dnnl::error& e) {
     if (e.status != dnnl_status_t::dnnl_success && t.expect_to_fail) {
@@ -143,16 +156,6 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   return dst_tensor;
 }
 
-template <typename T>
-void init_vector(T* v, int num_size, float range1 = -10, float range2 = 10, int seed = 5489u) {
-  float low_value = std::max(range1, static_cast<float>(std::numeric_limits<T>::lowest()) + 1);
-  std::mt19937 gen(seed);
-  std::uniform_real_distribution<float> u(low_value, range2);
-  for (int i = 0; i < num_size; ++i) {
-    v[i] = u(gen);
-  }
-}
-
 Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, float bound1 = -10, float bound2 = 10) {
   // step1: set shape
   Tensor* a_tensor = new Tensor(*a_tensor_config);
@@ -160,7 +163,7 @@ Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, fl
   a_tensor->add_tensor_life(1);
   // step3: library buffer can only be obtained afterwards
   auto tensor_data = a_tensor->mutable_data();
-  init_vector(static_cast<float*>(tensor_data), a_tensor->size(), bound1, bound2);
+  executor::InitVector(static_cast<float*>(tensor_data), a_tensor->size(), bound1, bound2);
   return a_tensor;
 }
 
@@ -197,7 +200,8 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
           data = data > 127 ? 127 : data;
           *dst_data_ = static_cast<int8_t>(data);
         }
-      memcpy(max_data + y, scales.data(), 1 * sizeof(float));
+      max_data[y] = 1.0 / scales[0];
+      // memcpy(max_data + y, scales.data(), 1 * sizeof(float));
     }
   } else {
     executor::runtime_minmax(origin_fp32_data, tensors[0]->size(), min_data, max_data);
@@ -207,7 +211,8 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
 #else
     executor::Quantize(tensors[0]->size(), tensors[0]->dtype(), origin_fp32_data, min_data, scales, dst_data);
 #endif
-    memcpy(max_data, scales.data(), 1 * sizeof(float));
+    *max_data = 1.0 / scales[0];
+    // memcpy(max_data, scales.data(), 1 * sizeof(float));
   }
   return tensors;
 }

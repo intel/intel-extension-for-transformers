@@ -113,7 +113,16 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
               RegExp write_back_addr = reg_dst + reg_dst_offset * sizeof(float) +
                                        ((no_mask_tail_n + idx) * align_build_N + row_loop * dst_n_dim_) * sizeof(float);
               // append sum
-              if (param_.append_sum) vaddps(zmms[2], zmms[2], ptr[write_back_addr]);
+              if (param_.append_sum) {
+                if (param_.dst_dt == data_type::fp32) {
+                  vaddps(zmms[2], zmms[2], ptr[write_back_addr]);
+                } else {
+                  auto append_value_zmm = rp.reg<Zmm>();
+                  vmovups(Ymm(append_value_zmm.getIdx()), ptr[write_back_addr]);
+                  bf16_cvt_fp32(append_value_zmm);
+                  vaddps(zmms[2], zmms[2], append_value_zmm);
+                }
+              }
               vmovups(need_mask ? ptr[write_back_addr] | matC_n_mask_ : ptr[write_back_addr], zmms[2]);
             }
           }

@@ -56,7 +56,7 @@ MatmulOperator::MatmulOperator(const shared_ptr<OperatorConfig>& conf)
   }
   iter = attrs_map.find("format_any");
   if (iter != attrs_map.end()) {
-    format_any_ = attrs_map["format_any"] == "true";
+    format_any_ = attrs_map["format_any"] == "True" || attrs_map["format_any"] == "true";
   }
   iter = attrs_map.find("output_dtype");
   if (iter != attrs_map.end()) {
@@ -64,7 +64,7 @@ MatmulOperator::MatmulOperator(const shared_ptr<OperatorConfig>& conf)
   }
   iter = attrs_map.find("cache_weight");
   if (iter != attrs_map.end()) {
-    cache_weight_ = attrs_map["cache_weight"] == "true";
+    cache_weight_ = attrs_map["cache_weight"] == "True" || attrs_map["cache_weight"] == "true";
   }
   iter = attrs_map.find("reshape");
   if (iter != attrs_map.end()) {
@@ -583,7 +583,7 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
       int data_size = post_->size();
       string data_type = post_->dtype();
       memcpy(dst_data, post_data_ptr, data_size * type2bytes[data_type]);
-      LOG(WARNING) << "post tensor will be used by multi node...";
+      DLOG(WARNING) << "post tensor will be used by multi node...";
     }
   }
 
@@ -623,9 +623,6 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   }
 
   // 3. Insert memory args
-  // memory_args_[DNNL_ARG_SRC_0] = any_src0_m_;
-  // if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m_;
-  // memory_args_[DNNL_ARG_DST] = any_dst_m_;
   memory_args_[DNNL_ARG_SRC_0] = any_src0_m;
   if (!cache_weight_) memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m;
   memory_args_[DNNL_ARG_DST] = any_dst_m;
@@ -641,9 +638,6 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   matmul_p_.execute(eng_stream_, memory_args_);
 
   // 5. Reorder the data of dst memory (When it is format_any)
-  // if (dst_reorder_) {
-  //   reorder_prim_dst_.execute(eng_stream_, any_dst_m_, dst_m_);
-  // }
   if (matmul_pd_.dst_desc() != dst_m_.get_desc()) {
     dnnl::reorder(any_dst_m, dst_m_).execute(eng_stream_, any_dst_m, dst_m_);
   }
@@ -661,7 +655,9 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
       // quantize
       if (output_dtype_ == "u8" || output_dtype_ == "s8") {
         auto scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
-        memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
+        float* dst_max_data = reinterpret_cast<float*>(dst_max_->mutable_data());
+        *dst_max_data = 1.0 / scales_[0];
+        // memcpy(dst_max_->mutable_data(), scales_.data(), dst_max_->size() * sizeof(float));
 #if __AVX512F__
         Quantize_avx512(matmul_fp32_res.size(), dst_->dtype(), matmul_fp32_res.data(),
                         static_cast<const float*>(dst_min_->data()), scales_, dst_->mutable_data());
@@ -709,10 +705,10 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
   const float* src0_scales = reinterpret_cast<const float*>(src0_max_->data());
   const float* src1_scales = reinterpret_cast<const float*>(src1_max_->data());
   if (channel_size == 1) {
-    rescales[0] = output_scale_ / src0_scales[0] / src1_scales[0];
+    rescales[0] = output_scale_ * src0_scales[0] * src1_scales[0];
   } else {
 #pragma omp parallel for
-    for (int i = 0; i < channel_size; i++) rescales[i] = output_scale_ / src0_scales[0] / src1_scales[i];
+    for (int i = 0; i < channel_size; i++) rescales[i] = output_scale_ * src0_scales[0] * src1_scales[i];
   }
   scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales.data()), eng_stream_);
   memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
@@ -737,8 +733,9 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
 
   if (src0_->dtype() == "u8") {
     auto& src0_zero_points = *src0_zero_points_ptr;
-    src0_zero_points = GetZeroPoints(reinterpret_cast<const float*>(src0_min_->data()), src0_scales, src0_->dtype(),
-                                     src0_min_->size());
+    float tmp = 1.0 / *src0_scales;
+    src0_zero_points =
+        GetZeroPoints(reinterpret_cast<const float*>(src0_min_->data()), &tmp, src0_->dtype(), src0_min_->size());
     zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);
     memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = zp_src0_mem_;
   }

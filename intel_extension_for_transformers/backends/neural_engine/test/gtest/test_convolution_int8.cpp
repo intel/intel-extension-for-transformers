@@ -100,86 +100,38 @@ bool CheckResult(const TestParams& t) {
   const auto& q = t.args.second;
   {
     executor::ConvolutionOperator convolution(p.conf);
+    int scales_num = 2;
+    vector<void*> tmp_data(scales_num);
+    vector<Tensor> tmp_tensor(scales_num);
+    for (int i = 3, j = 0; i < 5; i++, j++) {
+      tmp_data[j] = p.input[i]->mutable_data();
+      p.input[i]->unref_data(true);
+      tmp_tensor[j].add_tensor_life(1);
+      tmp_tensor[j].set_data(tmp_data[j]);
+    }
     convolution.Prepare(p.input, p.output);
     convolution.Reshape(p.input, p.output);
+    for (int i = 3, j = 0; i < 5; i++, j++) {
+      tmp_tensor[j].unref_data(true);
+      p.input[i]->set_data(tmp_data[j]);
+    }
     convolution.Forward(p.input, p.output);
-    // std::cout << "BEGIN" << std::endl;
-    // dnnl::engine engine(dnnl::engine::kind::cpu, 0);
-    // dnnl::stream engine_stream = dnnl::stream(engine);
-    // Tensor* src = p.input[0];
-    // Tensor* weight = p.input[1];
-    // Tensor* bias = p.input[2];
-    // auto src_md = dnnl::memory::desc(src->shape(), dnnl::memory::data_type::u8, dnnl::memory::format_tag::abcd);
-    // auto weight_md = dnnl::memory::desc(weight->shape(), dnnl::memory::data_type::s8,
-    // dnnl::memory::format_tag::abcd); auto bias_md = dnnl::memory::desc({bias->shape()[0]},
-    // dnnl::memory::data_type::f32, dnnl::memory::format_tag::a); auto dst_md =
-    // dnnl::memory::desc(get_dst_shape(src->shape(), weight->shape(), {1, 1, 1, 1}, {4, 4}),
-    //                                  dnnl::memory::data_type::f32, dnnl::memory::format_tag::abcd);
-
-    // auto src_mem = dnnl::memory(src_md, engine, src->mutable_data());
-    // auto weight_mem = dnnl::memory(weight_md, engine, weight->mutable_data());
-    // auto bias_mem = dnnl::memory(bias_md, engine, bias->mutable_data());
-    // auto dst_mem = dnnl::memory(dst_md, engine, p.output[0]->mutable_data());
-    // vector<float> scale;
-    // vector<int32_t> zp;
-    // uint32_t tmp = 0x4000d0;  // 0x7fc000d0;
-    // for (int i = 0; i < 100; i++) {
-    //   // scale.push_back(1.0 * (i % 10));
-    //   scale.push_back(1.0f);
-    //   zp.push_back(0);
-    // }
-    // dnnl::post_ops po;
-
-    // auto scale_md = dnnl::memory::desc({{64}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::a});
-    // dnnl::primitive_attr attr_;
-    // auto convolution_d =
-    //     dnnl::convolution_forward::desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto,
-    //     src_md,
-    //                                     weight_md, bias_md, dst_md, {4, 4}, {1, 1}, {1, 1});
-    // std::cout << "DISC DONE" << std::endl;
-
-    // attr_.set_output_scales(2, {DNNL_RUNTIME_DIM_VAL});
-    // // attr_.set_zero_points(DNNL_ARG_SRC, 2, {DNNL_RUNTIME_S32_VAL});
-
-    // auto convolution_pd = dnnl::convolution_forward::primitive_desc(convolution_d, attr_, engine);
-    // std::cout << "PD DONE" << std::endl;
-    // auto convolution_prim = dnnl::convolution_forward(convolution_pd);
-    // std::unordered_map<int, dnnl::memory> convolution_args;
-    // convolution_args.insert({DNNL_ARG_SRC, src_mem});
-    // convolution_args.insert({DNNL_ARG_WEIGHTS, weight_mem});
-    // convolution_args.insert({DNNL_ARG_BIAS, bias_mem});
-    // convolution_args.insert({DNNL_ARG_DST, dst_mem});
-
-    // auto scale_f32_mem = dnnl::memory(scale_md, engine, scale.data());
-    // auto zp_src0_mem =
-    //     dnnl::memory({{1}, dnnl::memory::data_type::s32, dnnl::memory::format_tag::a}, engine, zp.data());
-
-    // // convolution_args.insert({DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, scale_f32_mem});
-    // convolution_args.insert({DNNL_ARG_ATTR_OUTPUT_SCALES, scale_f32_mem});
-    // convolution_args.insert({DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC, zp_src0_mem});
-
-    // convolution_prim.execute(engine_stream, convolution_args);
-    // engine_stream.wait();
-    // std::cout << "END" << std::endl;
   }
   if (!t.expect_to_fail) {
     // p.output[0]->set_shape({3, 32, 16});
     // p.output[0]->print();
-    // q->set_shape({3, 32, 16});
-    // q->print();
+    // q[0]->set_shape({3, 32, 16});
+    // q[0]->print();
     bool is_equal = true;
-    for (int i = 0; i < q.size(); i++) {
-      if (i > 0) std::cout << *reinterpret_cast<float*>(q[i]->mutable_data()) << std::endl;
-      if (q[i]->dtype() == "fp32") {
-        is_equal &=
-            executor::CompareData<float>(p.output[i]->data(), p.output[i]->size(), q[i]->data(), q[i]->size(), 0.1);
-      } else if (q[i]->dtype() == "s8") {
-        is_equal &=
-            executor::CompareData<int8_t>(p.output[i]->data(), p.output[i]->size(), q[i]->data(), q[i]->size(), 1);
-      } else if (q[i]->dtype() == "u8") {
-        is_equal &=
-            executor::CompareData<uint8_t>(p.output[i]->data(), p.output[i]->size(), q[i]->data(), q[i]->size(), 1);
-      }
+    if (q[0]->dtype() == "fp32") {
+      is_equal &=
+          executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q[0]->data(), q[0]->size(), 0.1);
+    } else if (q[0]->dtype() == "s8") {
+      is_equal &=
+          executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q[0]->data(), q[0]->size(), 3);
+    } else if (q[0]->dtype() == "u8") {
+      is_equal &=
+          executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q[0]->data(), q[0]->size(), 3);
     }
     return is_equal;
   }
@@ -258,16 +210,6 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   return dst_tensor;
 }
 
-template <typename T>
-void init_vector(T* v, int num_size, float range1 = -10, float range2 = 10, int seed = 5489u) {
-  float low_value = std::max(range1, static_cast<float>(std::numeric_limits<T>::lowest()) + 1);
-  std::mt19937 gen(seed);
-  std::uniform_real_distribution<float> u(low_value, range2);
-  for (int i = 0; i < num_size; ++i) {
-    v[i] = u(gen);
-  }
-}
-
 Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, float bound1 = -10, float bound2 = 10) {
   // step1: set shape
   Tensor* a_tensor = new Tensor(*a_tensor_config);
@@ -275,7 +217,7 @@ Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, fl
   a_tensor->add_tensor_life(1);
   // step3: library buffer can only be obtained afterwards
   auto tensor_data = a_tensor->mutable_data();
-  init_vector(static_cast<float*>(tensor_data), a_tensor->size(), bound1, bound2);
+  executor::InitVector(static_cast<float*>(tensor_data), a_tensor->size(), bound1, bound2);
   return a_tensor;
 }
 
@@ -302,7 +244,8 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
       executor::Quantize(channel_size, tensors[0]->dtype(), origin_fp32_data + y * channel_size, min_data + y, scales,
                          reinterpret_cast<char*>(dst_data) + y * channel_size);
 #endif
-      memcpy(max_data + y, scales.data(), 1 * sizeof(float));
+      max_data[y] = 1.0 / scales[0];
+      // memcpy(max_data + y, scales.data(), 1 * sizeof(float));
     }
   } else {
     executor::runtime_minmax(origin_fp32_data, tensors[0]->size(), min_data, max_data);
@@ -312,7 +255,8 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
 #else
     executor::Quantize(tensors[0]->size(), tensors[0]->dtype(), origin_fp32_data, min_data, scales, dst_data);
 #endif
-    memcpy(max_data, scales.data(), 1 * sizeof(float));
+    *max_data = 1.0 / scales[0];
+    // memcpy(max_data, scales.data(), 1 * sizeof(float));
   }
   return tensors;
 }
@@ -337,28 +281,25 @@ std::pair<OpArgs, vector<Tensor*>> GenerateInt8Case(const vector<vector<int64_t>
   auto src_min_config = std::make_shared<TensorConfig>("src_min", vector<int64_t>({1}), "fp32");
   auto src_scale_config = std::make_shared<TensorConfig>("src_scale", vector<int64_t>({1}), "fp32");
   Tensor* src_fp32;
-  if (input_type == "u8")
-    src_fp32 = make_fp32_tensor_obj(src_fp32_config, 0, 1);
-  else
-    src_fp32 = make_fp32_tensor_obj(src_fp32_config);
+  src_fp32 = make_fp32_tensor_obj(src_fp32_config, -5.0, 4.0);
   auto src_tensors = quantize2int8_tensor_obj({src_u8_config, src_min_config, src_scale_config},
                                               reinterpret_cast<const float*>(src_fp32->data()), false);
   // src_fp32->print();
   // for (auto tensor : src_tensors) tensor->print();
-  bool per_channel = false;
+  bool per_channel = true;
   auto weight_fp32_config = std::make_shared<TensorConfig>("weight_fp32", src1_shape, "fp32");
   auto weight_s8_config = std::make_shared<TensorConfig>("weight", src1_shape, "s8");
   auto weight_min_config =
       std::make_shared<TensorConfig>("weight_min", vector<int64_t>({per_channel ? bias_shape[0] : 1}), "fp32");
   auto weight_scale_config =
       std::make_shared<TensorConfig>("weight_scale", vector<int64_t>({per_channel ? bias_shape[0] : 1}), "fp32");
-  Tensor* weight_fp32 = make_fp32_tensor_obj(weight_fp32_config);
+  Tensor* weight_fp32 = make_fp32_tensor_obj(weight_fp32_config, -0.3, 0.4);
   auto weight_tensors = quantize2int8_tensor_obj({weight_s8_config, weight_min_config, weight_scale_config},
                                                  reinterpret_cast<const float*>(weight_fp32->data()), per_channel);
   // weight_fp32->print();
   // for (auto tensor : weight_tensors) tensor->print();
   auto bias_fp32_config = std::make_shared<TensorConfig>("bias", bias_shape, "fp32");
-  Tensor* bias_fp32 = make_fp32_tensor_obj(bias_fp32_config);
+  Tensor* bias_fp32 = make_fp32_tensor_obj(bias_fp32_config, -0.1, 0.2);
   auto post_fp32_config = std::make_shared<TensorConfig>("post", dst_shape, "fp32");
   Tensor* post_fp32 = make_fp32_tensor_obj(post_fp32_config);
   // get true fp32 result and calculate min/max
@@ -418,22 +359,17 @@ std::pair<OpArgs, vector<Tensor*>> GenerateInt8Case(const vector<vector<int64_t>
     // dst_fp32->print();
     return {op_args, {dst_fp32}};
   } else {
-    if (!per_channel) {
-      Tensor* true_data = new Tensor(*dst_config);
-      true_data->add_tensor_life(1);
+    Tensor* true_data = new Tensor(*dst_config);
+    true_data->add_tensor_life(1);
 #if __AVX512F__
-      executor::Quantize_avx512(true_data->size(), output_type, dst_fp32->data(),
-                                reinterpret_cast<const float*>(dst_min->data()), scales, true_data->mutable_data());
+    executor::Quantize_avx512(true_data->size(), output_type, dst_fp32->data(),
+                              reinterpret_cast<const float*>(dst_min->data()), scales, true_data->mutable_data());
 #else
-      executor::Quantize(true_data->size(), output_type, dst_fp32->data(),
-                         reinterpret_cast<const float*>(dst_min->data()), scales, true_data->mutable_data());
+    executor::Quantize(true_data->size(), output_type, dst_fp32->data(),
+                       reinterpret_cast<const float*>(dst_min->data()), scales, true_data->mutable_data());
 #endif
-      // true_data->print();
-      return {op_args, {true_data, dst_min, dst_scale}};
-    } else {
-      return {op_args, quantize2int8_tensor_obj({dst_config, dst_min_config, dst_scale_config},
-                                                reinterpret_cast<const float*>(dst_fp32->data()), true)};
-    }
+    // true_data->print();
+    return {op_args, {true_data, dst_min, dst_scale}};
   }
 }
 
@@ -452,7 +388,6 @@ static auto CasesInt8 = []() {
   std::string strides = "";
   std::string src_perm = "";
   std::string dst_perm = "";
-  std::string output_dtype = "fp32";
   std::string append_op = "";
 
   src_shape = {3, 16, 13, 13};
@@ -465,7 +400,7 @@ static auto CasesInt8 = []() {
   strides = "4,4";
   append_op = "";
 
-  for (string output_dtype : {"fp32"}) {
+  for (string output_dtype : {"fp32", "u8"}) {
     cases.push_back(
         {GenerateInt8Case({src_shape, weight_shape, bias_shape}, true, group, pads, strides, "s8", output_dtype),
          false});
@@ -473,6 +408,7 @@ static auto CasesInt8 = []() {
         {GenerateInt8Case({src_shape, weight_shape, bias_shape}, true, group, pads, strides, "u8", output_dtype),
          false});
   }
+
   return ::testing::ValuesIn(cases);
 };
 

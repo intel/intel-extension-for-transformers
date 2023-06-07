@@ -15,6 +15,15 @@
 #include "dynamic_quant_mha.hpp"
 
 #include <algorithm>
+#ifdef WITH_GCC_FLAGS
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105593
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#include <immintrin.h>
+#pragma GCC diagnostic pop
+#else
+#include <immintrin.h>
+#endif
 
 namespace jd {
 
@@ -49,7 +58,10 @@ bool dynamic_quant_mha_kd_t::init() {
   KERNEL_INIT_CHECK((shapes[io::SRC_K] == std::vector<dim_t>{batch_size, N, head_num, head_size}));
   KERNEL_INIT_CHECK((shapes[io::SRC_V] == std::vector<dim_t>{batch_size, N, head_num, head_size}));
   KERNEL_INIT_CHECK((shapes[io::DST] == std::vector<dim_t>{batch_size, M, head_num, head_size}));
-  KERNEL_INIT_CHECK((shapes[io::BINARY_ADD] == std::vector<dim_t>{batch_size, 1, 1, N}));
+  KERNEL_INIT_CHECK((shapes[io::BINARY_ADD].size() == 0 ||  //
+                     shapes[io::BINARY_ADD] == std::vector<dim_t>{batch_size, 1, 1, N}));
+
+  KERNEL_INIT_CHECK((shapes[io::ATT_SCALE].empty() || shapes[io::ATT_SCALE] == std::vector<dim_t>{1}));
 
   KERNEL_INIT_CHECK((shapes[io::Q_SCALE] == std::vector<dim_t>{batch_size, M}));
   KERNEL_INIT_CHECK((shapes[io::K_SCALE] == std::vector<dim_t>{batch_size, N}));
@@ -75,13 +87,14 @@ bool dynamic_quant_mha_kd_t::init() {
       [&](const data_type t) { return t == data_type::s8; }));
   KERNEL_INIT_CHECK(is_all_of(
       {
-          dtypes[io::BINARY_ADD],
           dtypes[io::Q_SCALE],
           dtypes[io::K_SCALE],
           dtypes[io::V_SCALE],
           dtypes[io::DST_SCALE],
       },
       [&](const data_type t) { return t == data_type::fp32; }));
+  KERNEL_INIT_CHECK(shapes[io::ATT_SCALE].size() == 0 || dtypes[io::ATT_SCALE] == data_type::fp32);
+  KERNEL_INIT_CHECK(shapes[io::BINARY_ADD].size() == 0 || dtypes[io::BINARY_ADD] == data_type::fp32);
 
   return true;
 }
@@ -95,6 +108,8 @@ dynamic_quant_mha_k_t::dynamic_quant_mha_k_t(const std::shared_ptr<const kernel_
       M_(t_shapes_[io::SRC_Q][1]),
       head_size_(t_shapes_[io::SRC_Q][3]),
       N_(t_shapes_[io::SRC_K][1]),
+      has_attscale(t_shapes_[io::ATT_SCALE].size() != 0),
+      has_badd(t_shapes_[io::BINARY_ADD].size() != 0),
       amx_full_tile_param_(16, 16, 64, false, 4),
       amx_full_tile_cfg_(amx_full_tile_param_) {}
 
@@ -106,9 +121,10 @@ bool dynamic_quant_mha_k_t::init() {
   if (!ker_seq_cpy_k_->create_kernel()) return false;
   ker_seq_cpy_v_.reset(new jit_trans_BA16b4a_trq10n_x16());
   if (!ker_seq_cpy_v_->create_kernel()) return false;
-  ker_qxk_.reset(new jit_mmsoftmax_batch_amx_s8_ab_BA16b4a_u8_16x({/*.pre_amx_cfg = */ &amx_full_tile_param_}));
+  ker_qxk_.reset(new jit_mmexp_amx_s8_ab_BA16b4a_u8_16x(
+      {/*.has_bias = */ has_badd || N_ % 16 != 0, /*.K = */ head_size_, /*.pre_amx_cfg = */ &amx_full_tile_param_}));
   if (!ker_qxk_->create_kernel()) return false;
-  ker_axv_.reset(new jit_mm_batch_amx_u8s8_ab_AB16a4b_dynamic_quant_16x({/*.pre_amx_cfg = */ &amx_full_tile_param_}));
+  ker_axv_.reset(new jit_scale_mm_amx_u8s8_ab_BA16b_16x({/*.pre_amx_cfg = */ &amx_full_tile_param_}));
   if (!ker_axv_->create_kernel()) return false;
 
   return true;
@@ -118,7 +134,8 @@ size_t dynamic_quant_mha_k_t::get_workspace_size() const {
   return sizeof(float) * batch_size_ * pad_to(N_, 64) +                                              // mask
          sizeof(int8_t) * batch_size_ * head_num_ * (pad_to(N_, 64) * pad_to(head_size_, 64)) * 2 +  // K & V
          sizeof(float) * batch_size_ * head_num_ * pad_to(head_size_, 64) +                          // v scale
-         sizeof(float) * omp_get_max_threads() * 16 * head_num_ * pad_to(N_, 64);                    // softmax dst
+         sizeof(float) * omp_get_max_threads() * 16 *
+             (pad_to(N_, 64) + head_num_ * pad_to(head_size_, 16));  // exp &  dst
 }
 
 bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
@@ -139,6 +156,7 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
   const auto head_size = head_size_ > 0 ? head_size_ : reinterpret_cast<const int32_t*>(rt_data[io::HEAD_SIZE])[0];
   const auto M = M_ > 0 ? M_ : reinterpret_cast<const int32_t*>(rt_data[io::M])[0];
   const auto N = N_ > 0 ? N_ : reinterpret_cast<const int32_t*>(rt_data[io::N])[0];
+  const auto att_scale = has_attscale ? reinterpret_cast<const float*>(rt_data[io::ATT_SCALE])[0] : 1.f;
 
   const auto head_size_pad16 = pad_to(head_size, 16);
   const auto head_size_pad64 = pad_to(head_size, 64);
@@ -152,13 +170,14 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
   const auto head_tmp_k_size = head_size_pad64 * N_pad16;
   const auto head_tmp_v_size = N_pad64 * head_size_pad16;
   const auto head_tmp_v_scale_size = head_size_pad16;
-  const auto tmp_thread_size = head_num * 16 * N_pad64;  // for softmax result
+  const auto tmp_thread_size =
+      16 * N_pad64 + 16 * head_num * head_size_pad16;  // for softmax result & axv un-quant f32 result
 
   auto tmp_mask = reinterpret_cast<float*>(workspace);
   const auto tmp_k = reinterpret_cast<int8_t*>(tmp_mask + tmp_mask_size);
   const auto tmp_v = reinterpret_cast<int8_t*>(tmp_k + batch_size * head_num * head_tmp_k_size);
   const auto tmp_v_scale = reinterpret_cast<float*>(tmp_v + batch_size * head_num * head_tmp_v_size);
-  const auto tmp_threads = reinterpret_cast<uint8_t*>(tmp_v_scale + batch_size * head_num * head_tmp_v_scale_size);
+  const auto tmp_threads = reinterpret_cast<float*>(tmp_v_scale + batch_size * head_num * head_tmp_v_scale_size);
   // const auto tmp_end = reinterpret_cast<char*>(tmp_threads + max_threads * tmp_thread_size);
   // assert(workspace + 16 * 1024 * 1204 < tmp_end);
 
@@ -204,9 +223,12 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
 
   if (N != N_pad16) {
     for (int ibs = 0; ibs < batch_size; ++ibs) {
-      const auto curr_mask = mask + ibs * N;
       const auto curr_tmp_mask = tmp_mask + ibs * N_pad16;
-      std::copy_n(curr_mask, N, curr_tmp_mask);
+      if (has_badd) {
+        std::copy_n(mask + ibs * N, N, curr_tmp_mask);
+      } else {
+        std::fill_n(curr_tmp_mask, N, 0.f);
+      }
       std::fill_n(curr_tmp_mask + N, N_pad16 - N, -1000.f);
     }
   } else {
@@ -222,58 +244,86 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
         amx_init[omp_get_thread_num()] = true;
       }
 
-      const auto curr_tmp = tmp_threads + omp_get_thread_num() * tmp_thread_size;  // Of size `headsize x 16 x n_pad64`
-      const auto curr_q = src_q + (ibs * M + i) * head_size * head_num;
-      const auto curr_q_scale = q_scale + ibs * M + i;
-      const auto curr_tmp_k = tmp_k + ibs * head_num * head_tmp_k_size;
-      const auto curr_k_scale = k_scale + ibs * N;
-      const auto curr_mask = tmp_mask + ibs * N_pad16;
-      {  //  MMQK + softmax + 0-255quant
-        jit_mmsoftmax_batch_amx_s8_ab_BA16b4a_u8_16x::rt_data_t mm_qk_data{
-            /*.src0 = */ curr_q,
-            /*.src1 = */ curr_tmp_k,
-            /*.scale_src0 = */ curr_q_scale,
-            /*.scale_src1 = */ curr_k_scale,
-            /*.src_bias = */ curr_mask,
-            /*.dst = */ curr_tmp,
-            /*.K = */ head_size,
-            /*.N = */ N,
-            /*.ld_src0 = */ head_size * head_num,
-            /*.ld_src1 = */ head_size_pad64 * 16,
-            /*.ld_dst = */ N_pad64,
-            /*.batch_size = */ head_num,
-            /*.batchstep_src0 = */ static_cast<size_t>(head_size),
-            /*.batchstep_src0scale = */ 0ULL,
-            /*.batchstep_src1 = */ static_cast<size_t>(head_tmp_k_size),
-            /*.batchstep_src1scale = */ 0ULL,
-            /*.batchstep_dst = */ 16ULL * N_pad64,
-        };
-        (*ker_qxk_)(&mm_qk_data);
-      }
+      const auto curr_tmp_exp =
+          tmp_threads + omp_get_thread_num() * tmp_thread_size;  // Of size `headsize x 16 x n_pad64`
+      const auto curr_tmp_dst = curr_tmp_exp + 16 * N_pad64;
+      alignas(64) float absmax_dst[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-      const auto curr_tmp_v = tmp_v + ibs * head_num * head_tmp_v_size;
-      const auto curr_tmp_v_scale = tmp_v_scale + ibs * head_num * head_tmp_v_scale_size;
-      const auto curr_dst = dst + (ibs * M + i) * head_size * head_num;
-      const auto curr_dst_scale = dst_scale + ibs * M + i;
-      {  // MMAV + perchannel-q10n
-        jit_mm_batch_amx_u8s8_ab_AB16a4b_dynamic_quant_16x::rt_data_t mm_av_data{
-            /*.src0 = */ curr_tmp,
-            /*.src1 = */ curr_tmp_v,
-            /*.scale_src1 = */ curr_tmp_v_scale,
-            /*.dst = */ curr_dst,
-            /*.dst_scale = */ curr_dst_scale,
-            /*.K = */ N,
-            /*.N = */ head_size,
-            /*.ld_src0 = */ N_pad64,
-            /*.ld_src1 = */ N_pad64 * 16,
-            /*.ld_dst = */ head_size * head_num,
-            /*.batch_size = */ head_num,
-            /*.batchstep_src0 = */ 16ULL * N_pad64,
-            /*.batchstep_src1 = */ static_cast<size_t>(head_tmp_v_size),
-            /*.batchstep_src1scale = */ sizeof(float) * head_tmp_v_scale_size,
-            /*.batchstep_dst = */ static_cast<size_t>(head_size),
-        };
-        (*ker_axv_)(&mm_av_data);
+      for (int ihn = 0; ihn < head_num; ++ihn) {
+        const auto curr_q = src_q + (ibs * M + i) * head_size * head_num + head_size * ihn;
+        const auto curr_q_scale = q_scale + ibs * M + i;
+        const auto curr_tmp_k = tmp_k + (ibs * head_num + ihn) * head_tmp_k_size;
+        const auto curr_k_scale = k_scale + ibs * N;
+        const auto curr_mask = tmp_mask + ibs * N_pad16;
+        alignas(64) float scale_exp[16];
+        {  //  MMQK + softmax + 0-255quant
+          jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::rt_data_t mm_qk_data{
+              /*.src0 = */ curr_q,
+              /*.src1 = */ curr_tmp_k,
+              /*.scale_src0 = */ curr_q_scale,
+              /*.scale_src1 = */ curr_k_scale,
+              /*.src_bias = */ curr_mask,  // May not used if !has_badd && N %16 == 0
+              /*.dst = */ curr_tmp_exp,
+              /*.dst_scale = */ scale_exp,  // i.e. 255 / expsum
+              /*.scale = */ att_scale,
+              /*.K = */ head_size,
+              /*.N = */ N,
+              /*.ld_src0 = */ head_size * head_num,
+              /*.ld_src1 = */ head_size_pad64 * 16,
+          };
+          (*ker_qxk_)(&mm_qk_data);
+        }
+
+        const auto curr_tmp_v = tmp_v + (ibs * head_num + ihn) * head_tmp_v_size;
+        const auto curr_tmp_v_scale = tmp_v_scale + (ibs * head_num + ihn) * head_tmp_v_scale_size;
+        {  // MMAV + perchannel-q10n
+          jit_scale_mm_amx_u8s8_ab_BA16b_16x::rt_data_t mm_av_data{
+              /*.src0 = */ curr_tmp_exp,
+              /*.scale_src0 = */ scale_exp,
+              /*.src1 = */ curr_tmp_v,
+              /*.scale_src1 = */ curr_tmp_v_scale,
+              /*.dst = */ curr_tmp_dst + 16 * head_size_pad16 * ihn,
+              /*.absmax_dst = */ absmax_dst,
+              /*.K = */ N,
+              /*.N = */ head_size,
+              /*.ld_src1 = */ N_pad64 * 16,
+          };
+          (*ker_axv_)(&mm_av_data);
+        }
+      }
+      {
+        constexpr float epsilon = 1e-9f;
+        const auto ld_dst = head_size * head_num;
+        const auto curr_dst = dst + (ibs * M + i) * ld_dst;
+        const auto curr_dst_scale = dst_scale + ibs * M + i;
+        __m512 rcp_scale[16];
+        for (int ii = 0; ii < 16; ++ii) {
+          curr_dst_scale[ii] = absmax_dst[ii] / 127.f;
+          rcp_scale[ii] = _mm512_set1_ps(127.f / (absmax_dst[ii] + epsilon));
+        }
+        const auto nloop = (head_size - 1) / 16 * 16;
+        const auto ntail = head_size - nloop;
+        const __mmask16 ntail_mask = (1 << ntail) - 1;
+        for (int ihn = 0; ihn < head_num; ++ihn) {
+          const auto dst_f32 = curr_tmp_dst + ihn * 16 * head_size_pad16;
+          const auto dst_s8 = curr_dst + ihn * head_size;
+          int jj = 0;
+          for (; jj < nloop; jj += 16)
+            for (int ii = 0; ii < 16; ++ii) {
+              auto x = _mm512_load_ps(dst_f32 + (ii + jj) * 16);
+              x = _mm512_mul_ps(x, rcp_scale[ii]);
+              auto x_pd = _mm512_cvtps_epi32(x);
+              auto x_s8 = _mm512_cvtepi32_epi8(x_pd);
+              _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_s8 + jj + ii * ld_dst), x_s8);
+            }
+          for (int ii = 0; ii < 16; ++ii) {
+            auto x = _mm512_load_ps(dst_f32 + (ii + jj) * 16);
+            x = _mm512_mul_ps(x, rcp_scale[ii]);
+            auto x_pd = _mm512_cvtps_epi32(x);
+            auto x_s8 = _mm512_cvtepi32_epi8(x_pd);
+            _mm_mask_storeu_epi8(reinterpret_cast<__m128i*>(dst_s8 + jj + ii * ld_dst), ntail_mask, x_s8);
+          }
+        }
       }
     }
   }
@@ -284,4 +334,7 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
   return true;
 }
 
+#ifdef WITH_GCC_FLAGS
+#pragma GCC diagnostic pop
+#endif
 }  // namespace jd
