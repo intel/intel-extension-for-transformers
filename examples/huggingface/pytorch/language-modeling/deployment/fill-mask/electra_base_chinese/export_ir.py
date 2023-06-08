@@ -25,9 +25,9 @@ if os.path.exists(args.pt_file):
 else:
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     if is_generator:
-        pt_model = model = ElectraForMaskedLM.from_pretrained(model_id, torchscript=True)
+        pt_model = ElectraForMaskedLM.from_pretrained(model_id, torchscript=True)
     else:
-        pt_model = model = ElectraForPreTraining.from_pretrained(model_id, torchscript=True)
+        pt_model = ElectraForPreTraining.from_pretrained(model_id, torchscript=True)
     pt_model.eval()
     text = "我喜欢写[MASK]码"
     inputs = tokenizer(text, return_tensors="pt")

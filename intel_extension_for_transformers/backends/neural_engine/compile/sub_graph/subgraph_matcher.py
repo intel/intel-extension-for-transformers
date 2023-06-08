@@ -152,6 +152,7 @@ pattern_default_setting = {
     'LlamaMatMulWithTranspose': False,
     'LlamaRoraryPosEmb': False,
     'LlamaPostprocess': False,
+    'RemoveUnusedOperator': True,
 }
 
 class SubGraphMatcher(object):

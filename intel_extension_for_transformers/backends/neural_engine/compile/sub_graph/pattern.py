@@ -147,6 +147,7 @@ supported_patterns = [
 
     'Int8BF16MixedPrecisionChecker',
     'LlamaPostprocess',
+    'RemoveUnusedOperator',
 ]
 
 # for superbert, superbert patterns are huge patterns based on supported patterns
