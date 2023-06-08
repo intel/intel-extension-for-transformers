@@ -31,8 +31,10 @@ namespace gpu::xetla::kernel {
 /// @tparam sg_tile_m_ Is the num of rows processed by one subgroup in each inner loop. Mainly used for row reduction in the BWD path
 /// @tparam wg_num_m_ Is the num of total workgroups launched in y direction, will be used in static persistent thread mode.
 /// @tparam wg_num_n_ Is the num of total workgroups launched in x direction. Currently, it should be 1.
+/// @tparam chunk_size_ Is the size of chunks when processing n dimenstion. sg_tile_n % chunk_size == 0. Used only in FWD pass. Should be used when kernels have spills.
 template <uint32_t wg_tile_n_, uint32_t wg_tile_m_, uint32_t sg_tile_n_,
-        uint32_t sg_tile_m_ = 1, uint32_t wg_num_m_ = 1, uint32_t wg_num_n_ = 1>
+        uint32_t sg_tile_m_ = 1, uint32_t wg_num_m_ = 1, uint32_t wg_num_n_ = 1,
+        uint32_t chunk_size_ = 1>
 struct layer_norm_attr_t {
     static constexpr uint32_t wg_tile_m = wg_tile_m_;
     static constexpr uint32_t wg_tile_n = wg_tile_n_;
@@ -40,6 +42,7 @@ struct layer_norm_attr_t {
     static constexpr uint32_t sg_tile_n = sg_tile_n_;
     static constexpr uint32_t wg_num_m = wg_num_m_;
     static constexpr uint32_t wg_num_n = wg_num_n_;
+    static constexpr uint32_t chunk_size = chunk_size_;
 
     static_assert(sg_tile_m == 1,
             "Currently, we don't see the value to set sg_tile_m > 1. Maybe it "
@@ -50,6 +53,9 @@ struct layer_norm_attr_t {
             "workgroup.");
     static_assert(wg_tile_n % sg_tile_n == 0,
             "Current design we don't enable the boundary check");
+    static_assert(sg_tile_n_ % chunk_size == 0,
+            "Current design we don't enable the boundary check on chunking "
+            "mechanism");
 };
 
 } // namespace gpu::xetla::kernel

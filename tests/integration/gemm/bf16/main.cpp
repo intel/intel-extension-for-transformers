@@ -36,5 +36,5 @@ TYPED_TEST_P(bgemm_test, esimd) {
 }
 REGISTER_TYPED_TEST_SUITE_P(bgemm_test, esimd);
 using tests = ::testing::Types<Test0, Test1, Test2, Test3, Test4, Test5, Test6,
-        Test7, Test8, Test9, Test10, Test11, Test12>;
+        Test7, Test8, Test9, Test10, Test11>;
 INSTANTIATE_TYPED_TEST_SUITE_P(bgemm_test_suite, bgemm_test, tests);

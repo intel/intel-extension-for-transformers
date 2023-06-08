@@ -167,7 +167,26 @@ void gemm_relu_bias_run(uint32_t iter) {
             xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, brgemm_config,
             epilogue_t>;
 
-    cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(matrix_m, matrix_n);
+    // [ReLuBias] define the shape of bias matrix D, which should be identitcal to C
+    bias_op_t::shape_t bias_add_shape(matrix_n, 1, matrix_n);
+    // [ReLuBias] pass arguments of chained_tile_op_t<> to epilogue_args
+    using epilogue_args_t = epilogue_t::arguments_t;
+    epilogue_args_t epilogue_args({//epilogue_args init list
+            // [ReLuBias] 1. relu_op_t
+            // ReLU accepts no arguments
+            {},
+            // [ReLuBias] 2. bias_add_op_t
+            // It accepts the base pointer to matrix D, and its dimensions
+            {D, bias_add_shape}});
+    // [ReLuBias] assign epilogue_args to gemm_op_t::arguments_t
+    typename gemm_op_t::arguments_t arg(matrix_m, matrix_k, matrix_n, A,
+            matrix_k, B, matrix_n, C, matrix_n, epilogue_args);
+    cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(arg);
+    if (!gemm_op_t::can_implement(arg)) {
+        std::cout << "The arguments cannot be supported, aborting ... "
+                  << std::endl;
+        FAIL();
+    }
 
     constexpr uint32_t warmup = 10;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k
@@ -179,25 +198,9 @@ void gemm_relu_bias_run(uint32_t iter) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 xetla_exec_item<3> ei(item);
-
-                gemm_op_t gemm_op;
                 // allocate slm and nbarrier resource
                 slm_barrier_init<gemm_op_t>();
-                // [ReLuBias] define the shape of bias matrix D, which should be identitcal to C
-                bias_op_t::shape_t bias_add_shape(matrix_n, 1, matrix_n);
-                // [ReLuBias] pass arguments of chained_tile_op_t<> to epilogue_args
-                using epilogue_args_t = epilogue_t::arguments_t;
-                epilogue_args_t epilogue_args({//epilogue_args init list
-                        // [ReLuBias] 1. relu_op_t
-                        // ReLU accepts no arguments
-                        {},
-                        // [ReLuBias] 2. bias_add_op_t
-                        // It accepts the base pointer to matrix D, and its dimensions
-                        {D, bias_add_shape}});
-                // [ReLuBias] assign epilogue_args to gemm_op_t::arguments_t
-                typename gemm_op_t::arguments_t arg(matrix_m, matrix_k,
-                        matrix_n, A, matrix_k, B, matrix_n, C, matrix_n,
-                        epilogue_args);
+                gemm_op_t gemm_op;
                 gemm_op(ei, arg);
             });
         });

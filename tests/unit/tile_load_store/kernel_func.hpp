@@ -49,7 +49,8 @@ struct tile_load_store_func {
         using payload_load_t
                 = mem_payload_t<dtype, tile_desc_a, msg_type::block_2d,
                         a_mem_layout, mem_space::global, gpu_arch::Xe>;
-
+        using prefetch_payload_t = prefetch_payload_t<dtype, tile_desc_a,
+                a_mem_layout, mem_space::global, 1>;
         using payload_store_t
                 = mem_payload_t<dtype, tile_desc_c, msg_type::block_2d,
                         mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
@@ -66,8 +67,9 @@ struct tile_load_store_func {
                 {0, 0});
 
         payload_load_t payload_load(mem_desc_a);
+        prefetch_payload_t payload_prefetch(mem_desc_a);
         payload_store_t payload_store(mem_desc_c);
-
+        tile_prefetch(payload_prefetch);
         tile_load(matA, payload_load);
         matC.reg = matA.reg;
         tile_store(matC, payload_store);
@@ -161,11 +163,13 @@ struct tile_load_store_1d_func {
 
         using payload_t = mem_payload_t<dtype, tile_desc, msg_type::block_1d,
                 mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
-
+        using prefetch_payload_t = prefetch_payload_t<dtype, tile_desc,
+                mem_layout::row_major, mem_space::global, 1>;
         matA_t matA;
         payload_t payload_load(a, swidth, sheight, spitch, 0, 0);
+        prefetch_payload_t prefetch_payload(a, swidth, sheight, spitch, 0, 0);
         payload_t payload_store(c, swidth, sheight, spitch, 0, 0);
-
+        tile_prefetch(prefetch_payload);
         tile_load(matA, payload_load);
         tile_store(matA, payload_store);
     }

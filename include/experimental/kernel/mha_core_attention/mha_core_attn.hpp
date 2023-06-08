@@ -68,9 +68,9 @@ struct xetla_mha_core_attn_fwd_t {
 
     static constexpr uint32_t periodic_sync_interval = 0;
     static constexpr uint32_t prefetch_distance = 3;
-    static constexpr uint32_t accum_step
-            = 32 / sizeof(dtype_bin); //brgemm_config::accum_step;
-    using bgm_perf_tuning_knob = group::perf_tuning_knob_t<accum_step,
+    static constexpr uint32_t k_stride
+            = 32 / sizeof(dtype_bin); //brgemm_config::k_stride;
+    using bgm_perf_tuning_knob = group::perf_tuning_knob_t<k_stride,
             prefetch_distance, periodic_sync_interval>;
 
     using tile_attr_128x128 = group::tile_shape_t<128, 128, 32, 16>;
@@ -322,7 +322,7 @@ struct xetla_mha_core_attn_fwd_t {
                         {height_b, width_b, pitch_b}, {start_y_b, start_x_b});
 
                 brgemm_arg_128x256.inner_loop_count
-                        = (wg_tile_QKT_k + accum_step - 1) / accum_step;
+                        = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                 matAcc_128x256.init(0);
                 brgemm_op_128x256_t brgemm_op_128x256;
@@ -376,7 +376,7 @@ struct xetla_mha_core_attn_fwd_t {
                         {height_b, width_b, pitch_b}, {start_y_b, start_x_b});
 
                 brgemm_arg_128x128.inner_loop_count
-                        = (wg_tile_QKT_k + accum_step - 1) / accum_step;
+                        = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                 matAcc_128x128.init(0);
                 brgemm_op_128x128_t brgemm_op_128x128;
@@ -831,7 +831,7 @@ struct xetla_mha_core_attn_fwd_t {
                         {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
                 brgemm_arg_128x64.inner_loop_count
-                        = (wg_tile_out_k + accum_step - 1) / accum_step;
+                        = (wg_tile_out_k + k_stride - 1) / k_stride;
 
                 matAcc_128x64.init(0);
                 brgemm_op_128x64_t brgemm_op_128x64;
@@ -898,9 +898,9 @@ struct xetla_mha_core_attn_bwd_t {
     static constexpr uint32_t periodic_sync_interval = 0;
     static constexpr uint32_t prefetch_distance = 3;
 
-    static constexpr uint32_t accum_step
-            = 32 / sizeof(dtype_bin); //brgemm_config::accum_step;
-    using bgm_perf_tuning_knob = group::perf_tuning_knob_t<accum_step,
+    static constexpr uint32_t k_stride
+            = 32 / sizeof(dtype_bin); //brgemm_config::k_stride;
+    using bgm_perf_tuning_knob = group::perf_tuning_knob_t<k_stride,
             prefetch_distance, periodic_sync_interval>;
     using tile_attr_128x128 = group::tile_shape_t<128, 128, 32, 16>;
     using tile_attr_128x256 = group::tile_shape_t<256, 128, 32, 32>;
@@ -1261,7 +1261,7 @@ struct xetla_mha_core_attn_bwd_t {
             brgemm_arg_128x64.matB_base_desc.init({args->matdO_ptr},
                     {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
             brgemm_arg_128x64.inner_loop_count
-                    = (wg_tile_out_k + accum_step - 1) / accum_step;
+                    = (wg_tile_out_k + k_stride - 1) / k_stride;
             matAcc_128x64.init(0);
 
             brgemm_op_128x64_trnp_af_t brgemm_op_128x64_trnp_af;
@@ -1315,7 +1315,7 @@ struct xetla_mha_core_attn_bwd_t {
                     {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
             brgemm_arg_256x64.inner_loop_count
-                    = (wg_tile_out_k + accum_step - 1) / accum_step;
+                    = (wg_tile_out_k + k_stride - 1) / k_stride;
 
             matAcc_256x64.init(0);
 
@@ -1374,7 +1374,7 @@ struct xetla_mha_core_attn_bwd_t {
                         {height_b, width_b, pitch_b}, {start_y_b, start_x_b});
 
                 brgemm_arg_128x256.inner_loop_count
-                        = (wg_tile_QKT_k + accum_step - 1) / accum_step;
+                        = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                 matAcc_128x256.init(0);
 
@@ -1427,7 +1427,7 @@ struct xetla_mha_core_attn_bwd_t {
                         {height_b, width_b, pitch_b}, {start_y_b, start_x_b});
 
                 brgemm_arg_128x128.inner_loop_count
-                        = (wg_tile_QKT_k + accum_step - 1) / accum_step;
+                        = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                 matAcc_128x128.init(0);
 
@@ -1655,7 +1655,7 @@ struct xetla_mha_core_attn_bwd_t {
                         {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
                 brgemm_arg_128x64.inner_loop_count
-                        = (wg_tile_out_k + accum_step - 1) / accum_step;
+                        = (wg_tile_out_k + k_stride - 1) / k_stride;
 
                 matAcc_128x64.init(0);
 
@@ -1705,7 +1705,7 @@ struct xetla_mha_core_attn_bwd_t {
                     {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
             brgemm_arg_256x64.inner_loop_count
-                    = (wg_tile_out_k + accum_step - 1) / accum_step;
+                    = (wg_tile_out_k + k_stride - 1) / k_stride;
 
             matAcc_256x64.init(0);
             brgemm_op_256x64_trnp_a_t brgemm_op_256x64_trnp_a;
@@ -1757,7 +1757,7 @@ struct xetla_mha_core_attn_bwd_t {
                     {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
             brgemm_arg_128x64.inner_loop_count
-                    = (wg_tile_out_k + accum_step - 1) / accum_step;
+                    = (wg_tile_out_k + k_stride - 1) / k_stride;
 
             matAcc_128x64.init(0);
 

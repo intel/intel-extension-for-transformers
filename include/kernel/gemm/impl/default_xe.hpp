@@ -43,7 +43,7 @@ class gemm_t<dispatch_policy_default<gpu_arch::Xe>, brgemm_t_, epilogue_t_> {
     static constexpr uint32_t wg_tile_n = brgemm_t::wg_tile_n;
     static constexpr uint32_t sg_tile_m = brgemm_t::sg_tile_m;
     static constexpr uint32_t sg_tile_n = brgemm_t::sg_tile_n;
-    static constexpr uint32_t accum_step = brgemm_t::accum_step;
+    static constexpr uint32_t k_stride = brgemm_t::k_stride;
     using work_group_t = typename brgemm_t::work_group_t;
 
     static constexpr gpu_arch arch_tag = gpu_arch::Xe;
@@ -93,6 +93,9 @@ public:
 
         /// @brief Constructs arguments with default method.
         inline arguments_t() = default;
+
+        /// @brief Set for device copyable
+        static constexpr bool host_callable = true;
 
         /// @brief Constructs arguments with initialization list.
         /// @param matrix_m_ Is the size of the m dimension of the matrix multiplication (m x k x n).
@@ -195,15 +198,68 @@ public:
     };
 
     /// @brief Host helper function to get the expected nd_range under the current GEMM config.
-    /// @param matrix_m Is the size of the m dimension of the matrix multiplication (m x k x n).
-    /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
+    /// @param args Is the GEMM arguments for application-related runtime variables.
     /// @return Expected nd_range.
-    static cl::sycl::nd_range<3> get_nd_range(
-            uint32_t matrix_m, uint32_t matrix_n) {
+    static cl::sycl::nd_range<3> get_nd_range(arguments_t &args) {
         cl::sycl::range<3> local_range = get_local_range();
-        cl::sycl::range<3> group_range = get_group_range(matrix_m, matrix_n);
+        cl::sycl::range<3> group_range
+                = get_group_range(args.matrix_m, args.matrix_n);
         return cl::sycl::nd_range<3> {group_range * local_range, local_range};
     };
+
+    /// @brief Check if the arguments can be implemented.
+    /// @param args Is the GEMM arguments for application-related runtime variables.
+    /// @return Check result.
+    static bool can_implement(arguments_t &args) {
+        bool implementable = true;
+        if (brgemm_t::is_2d_block_a) {
+            bool implementable_a = detail::check_2d_block_restriction<dtype_a>(
+                    args.matA_base.base, args.matA_ld);
+            if (!implementable_a) {
+                std::cout << "matA is not well aligned!" << std::endl;
+            }
+            implementable &= implementable_a;
+        } else {
+            bool implementable_a = detail::check_dw_align<dtype_a>(
+                    args.matA_base.base, args.matA_ld);
+            if (!implementable_a) {
+                std::cout << "matA is not well aligned!" << std::endl;
+            }
+            implementable &= implementable_a;
+        }
+        if (brgemm_t::is_2d_block_b) {
+            bool implementable_b = detail::check_2d_block_restriction<dtype_b>(
+                    args.matB_base.base, args.matB_ld);
+            if (!implementable_b) {
+                std::cout << "matB is not well aligned!" << std::endl;
+            }
+            implementable &= implementable_b;
+        } else {
+            bool implementable_b = detail::check_dw_align<dtype_b>(
+                    args.matB_base.base, args.matB_ld);
+            if (!implementable_b) {
+                std::cout << "matB is not well aligned!" << std::endl;
+            }
+            implementable &= implementable_b;
+        }
+        if (epilogue_t::is_2d_block_c) {
+            bool implementable_c = detail::check_2d_block_restriction<dtype_c>(
+                    args.matC_base.base, args.matC_ld);
+            if (!implementable_c) {
+                std::cout << "matC is not well aligned!" << std::endl;
+            }
+            implementable &= implementable_c;
+        } else {
+            bool implementable_c = detail::check_dw_align<dtype_c>(
+                    args.matC_base.base, args.matC_ld);
+            if (!implementable_c) {
+                std::cout << "matC is not well aligned!" << std::endl;
+            }
+            implementable &= implementable_c;
+        }
+
+        return implementable;
+    }
 
     /// @brief Main execution function for GEMM.
     /// The processing order is 1) set group-level base and boundary -> 2) brgemm -> 3) epilogue.
@@ -212,7 +268,7 @@ public:
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.
     __XETLA_API KERNEL_FUNC void operator()(xetla_exec_item<3> &ei,
-            arguments_t &args, uint32_t slm_base = 0,
+            const arguments_t &args, uint32_t slm_base = 0,
             uint32_t nbarrier_base = 0) {
         // set up workgroup level coordinates and boundaries
         int start_n = ei.get_group(2) * wg_tile_n;
@@ -263,7 +319,7 @@ public:
             mem_desc_c.init(args.matC_base,
                     {boundary_n, boundary_m, args.matC_ld}, {start_n, start_m});
         }
-        uint32_t inner_loop_count = (wg_tile_k + accum_step - 1) / accum_step;
+        uint32_t inner_loop_count = (wg_tile_k + k_stride - 1) / k_stride;
         brgemm_args_t brgemm_args(mem_desc_a, mem_desc_b, inner_loop_count);
         brgemm_t brgemm;
         epilogue_t epilogue;

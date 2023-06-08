@@ -22,17 +22,16 @@ using namespace cl::sycl;
 
 #define SIMD 32
 
-#define B 16
-#define N 16
-#define F 512
-#define T 512
-#define H 64
+#define batch_num 16
+#define head_num 16
+#define sequence_len 512
+#define head_size 64
 
 template <typename dtype_in, typename dtype_out, typename data_type_acc = float>
-int mha_fwd_result_validate(dtype_in *Q_ptr, dtype_in *K_ptr, dtype_in *V_ptr,
-        dtype_in *bias_ptr, dtype_out *C_ptr, uint32_t qk_m, uint32_t qk_k,
+int sdp_fwd_result_validate(dtype_in *Q_ptr, dtype_in *K_ptr, dtype_in *V_ptr,
+        dtype_in *mask_ptr, dtype_out *C_ptr, uint32_t qk_m, uint32_t qk_k,
         uint32_t qk_n, uint32_t sv_m, uint32_t sv_k, uint32_t sv_n,
-        uint32_t batch_num, mem_layout mem_layout_qk_a_ = mem_layout::row_major,
+        uint32_t batch_cnt, mem_layout mem_layout_qk_a_ = mem_layout::row_major,
         mem_layout mem_layout_qk_b_ = mem_layout::row_major,
         mem_layout mem_layout_sv_a_ = mem_layout::row_major,
         mem_layout mem_layout_sv_b_ = mem_layout::row_major) {
@@ -41,11 +40,12 @@ int mha_fwd_result_validate(dtype_in *Q_ptr, dtype_in *K_ptr, dtype_in *V_ptr,
     uint32_t matrix_size_a = qk_m * qk_k;
     uint32_t matrix_size_b = qk_k * qk_n;
     uint32_t matrix_size_c = qk_m * qk_n;
-    std::vector<data_type_acc> tmp_Q(Q_ptr, Q_ptr + batch_num * matrix_size_a);
-    std::vector<data_type_acc> tmp_K(K_ptr, K_ptr + batch_num * matrix_size_b);
-    std::vector<data_type_acc> tmp_bias(bias_ptr, bias_ptr + B * matrix_size_c);
-    std::vector<data_type_acc> gold_C(batch_num * matrix_size_c, 0);
-    for (uint32_t batch_id = 0; batch_id < batch_num; batch_id++) {
+    std::vector<data_type_acc> tmp_Q(Q_ptr, Q_ptr + batch_cnt * matrix_size_a);
+    std::vector<data_type_acc> tmp_K(K_ptr, K_ptr + batch_cnt * matrix_size_b);
+    std::vector<data_type_acc> tmp_mask(
+            mask_ptr, mask_ptr + batch_num * matrix_size_c);
+    std::vector<data_type_acc> gold_C(batch_cnt * matrix_size_c, 0);
+    for (uint32_t batch_id = 0; batch_id < batch_cnt; batch_id++) {
         get_gemm_gold(qk_m, qk_n, qk_k, mem_layout_qk_a_, mem_layout_qk_b_,
                 tmp_Q.data() + batch_id * matrix_size_a,
                 tmp_K.data() + batch_id * matrix_size_b,
@@ -53,9 +53,10 @@ int mha_fwd_result_validate(dtype_in *Q_ptr, dtype_in *K_ptr, dtype_in *V_ptr,
         for (uint32_t i = 0; i < qk_m; i++) {
             for (uint32_t j = 0; j < qk_n; j++) {
                 uint32_t res_idx = batch_id * matrix_size_c + i * qk_n + j;
-                uint32_t bias_idx = batch_id / N * matrix_size_c + i * qk_n + j;
+                uint32_t mask_idx
+                        = batch_id / head_num * matrix_size_c + i * qk_n + j;
                 gold_C[res_idx] *= 0.125;
-                gold_C[res_idx] += tmp_bias[bias_idx];
+                gold_C[res_idx] += tmp_mask[mask_idx];
             }
         }
         for (uint32_t i = 0; i < qk_m; i++) {
@@ -77,41 +78,44 @@ int mha_fwd_result_validate(dtype_in *Q_ptr, dtype_in *K_ptr, dtype_in *V_ptr,
     matrix_size_a = sv_m * sv_k;
     matrix_size_b = sv_k * sv_n;
     matrix_size_c = sv_m * sv_n;
-    std::vector<data_type_acc> tmp_V(V_ptr, V_ptr + batch_num * matrix_size_b);
-    std::vector<data_type_acc> gold_C1(batch_num * matrix_size_c, 0);
+    std::vector<data_type_acc> tmp_V(V_ptr, V_ptr + batch_cnt * matrix_size_b);
+    std::vector<data_type_acc> gold_C1(batch_cnt * matrix_size_c, 0);
     // second gemm on host
-    for (uint32_t batch_id = 0; batch_id < batch_num; batch_id++) {
+    for (uint32_t batch_id = 0; batch_id < batch_cnt; batch_id++) {
         get_gemm_gold(sv_m, sv_n, sv_k, mem_layout_sv_a_, mem_layout_sv_b_,
                 gold_C.data() + batch_id * matrix_size_a,
                 tmp_V.data() + batch_id * matrix_size_b,
                 gold_C1.data() + batch_id * matrix_size_c);
     }
     // permute 0213
-    std::vector<data_type_acc> gold_C2(batch_num * matrix_size_c, 0);
-    for (uint32_t batch_id = 0; batch_id < batch_num; ++batch_id) {
+    std::vector<data_type_acc> gold_C2(batch_cnt * matrix_size_c, 0);
+    for (uint32_t batch_id = 0; batch_id < batch_cnt; ++batch_id) {
         for (uint32_t i = 0; i < sv_m; ++i) {
             for (uint32_t j = 0; j < sv_n; ++j) {
-                uint32_t src_id = F * H * batch_id + i * H + j;
+                uint32_t src_id = sequence_len * head_size * batch_id
+                        + i * head_size + j;
 
-                uint32_t h = src_id % H;
-                uint32_t f = src_id / H % F;
-                uint32_t n = src_id / (F * H) % N;
-                uint32_t b = src_id / (F * H * N) % B;
+                uint32_t h = src_id % head_size;
+                uint32_t f = src_id / head_size % sequence_len;
+                uint32_t n = src_id / (sequence_len * head_size) % head_num;
+                uint32_t b = src_id / (sequence_len * head_size * head_num)
+                        % batch_num;
 
-                uint32_t dst_id = b * N * F * H + f * N * H + n * H + h;
+                uint32_t dst_id = b * head_num * sequence_len * head_size
+                        + f * head_num * head_size + n * head_size + h;
                 gold_C2[dst_id] = gold_C1[src_id];
             }
         }
     }
-    buff_cmp::buff_vals<dtype_out> data(C_ptr, sv_m * batch_num, sv_n, sv_n);
+    buff_cmp::buff_vals<dtype_out> data(C_ptr, sv_m * batch_cnt, sv_n, sv_n);
     buff_cmp::buff_vals<dtype_out, data_type_acc> other(
-            gold_C1.data(), sv_m * batch_num, sv_n, sv_n);
-    bool result = buff_cmp::xetla_buff_cmp(data, other, "mha validation");
+            gold_C2.data(), sv_m * batch_cnt, sv_n, sv_n);
+    bool result = buff_cmp::xetla_buff_cmp(data, other, "sdp validation");
     std::cout << ((!result) ? "FAILED\n" : "PASSED\n");
     return result ? 0 : 1;
 }
 
-void mha_fwd_run(uint32_t iter) {
+void sdp_fwd_run(uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
     // Please contact us for support.
@@ -120,11 +124,11 @@ void mha_fwd_run(uint32_t iter) {
     using dtype_out = bf16;
     using dtype_sfx = float;
 
-    constexpr uint32_t batch_num = B * N;
+    constexpr uint32_t batch_cnt = batch_num * head_num;
     // arguments for first gemm
-    constexpr uint32_t matrix_m_qk = F;
-    constexpr uint32_t matrix_n_qk = T;
-    constexpr uint32_t matrix_k_qk = H;
+    constexpr uint32_t matrix_m_qk = sequence_len;
+    constexpr uint32_t matrix_n_qk = sequence_len;
+    constexpr uint32_t matrix_k_qk = head_size;
 
     constexpr uint32_t wg_tile_m_qk = 64;
     constexpr uint32_t wg_tile_n_qk = 512;
@@ -133,9 +137,9 @@ void mha_fwd_run(uint32_t iter) {
     constexpr uint32_t sg_tile_k_qk = 32;
 
     // arguments for second gemm
-    constexpr uint32_t matrix_m_sv = F;
-    constexpr uint32_t matrix_n_sv = H;
-    constexpr uint32_t matrix_k_sv = T;
+    constexpr uint32_t matrix_m_sv = sequence_len;
+    constexpr uint32_t matrix_n_sv = head_size;
+    constexpr uint32_t matrix_k_sv = sequence_len;
 
     constexpr uint32_t wg_tile_m_sv = 64;
     constexpr uint32_t wg_tile_n_sv = 64;
@@ -144,7 +148,7 @@ void mha_fwd_run(uint32_t iter) {
     constexpr uint32_t sg_tile_k_sv = 32;
 
     // buffer size of softmax row data
-    constexpr uint32_t softmax_sz = F;
+    constexpr uint32_t softmax_sz = sequence_len;
     // default set Thread num = 32 to maximize EU utilization
     constexpr uint32_t thread_num = 32;
 
@@ -157,33 +161,33 @@ void mha_fwd_run(uint32_t iter) {
     std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
 
     constexpr uint32_t size_qkv = matrix_m_qk * matrix_k_qk;
-    constexpr uint32_t size_bias = matrix_m_qk * matrix_n_qk;
+    constexpr uint32_t size_mask = matrix_m_qk * matrix_n_qk;
     constexpr uint32_t size_out = matrix_m_sv * matrix_n_sv;
 
     dtype_in *q = (dtype_in *)static_cast<dtype_in *>(malloc_shared(
-            batch_num * size_qkv * sizeof(dtype_in), Device, Context));
+            batch_cnt * size_qkv * sizeof(dtype_in), Device, Context));
     dtype_in *k = (dtype_in *)static_cast<dtype_in *>(malloc_shared(
-            batch_num * size_qkv * sizeof(dtype_in), Device, Context));
+            batch_cnt * size_qkv * sizeof(dtype_in), Device, Context));
     dtype_in *v = (dtype_in *)static_cast<dtype_in *>(malloc_shared(
-            batch_num * size_qkv * sizeof(dtype_in), Device, Context));
-    dtype_in *bias = (dtype_in *)static_cast<dtype_in *>(
-            malloc_shared(B * size_bias * sizeof(dtype_in), Device, Context));
+            batch_cnt * size_qkv * sizeof(dtype_in), Device, Context));
+    dtype_in *attn_mask = (dtype_in *)static_cast<dtype_in *>(malloc_shared(
+            batch_num * size_mask * sizeof(dtype_in), Device, Context));
     dtype_out *out = (dtype_out *)static_cast<dtype_out *>(malloc_shared(
-            batch_num * size_out * sizeof(dtype_out), Device, Context));
+            batch_cnt * size_out * sizeof(dtype_out), Device, Context));
 
-    for (uint32_t i = 0; i < batch_num * size_qkv; ++i) {
+    for (uint32_t i = 0; i < batch_cnt * size_qkv; ++i) {
         q[i] = dtype_in(random_float());
     }
-    for (uint32_t i = 0; i < batch_num * size_qkv; ++i) {
+    for (uint32_t i = 0; i < batch_cnt * size_qkv; ++i) {
         k[i] = dtype_in(random_float());
     }
-    for (uint32_t i = 0; i < batch_num * size_qkv; ++i) {
+    for (uint32_t i = 0; i < batch_cnt * size_qkv; ++i) {
         v[i] = dtype_in(random_float());
     }
-    for (uint32_t i = 0; i < B * size_bias; ++i) {
-        bias[i] = dtype_in(random_float());
+    for (uint32_t i = 0; i < batch_num * size_mask; ++i) {
+        attn_mask[i] = dtype_in(random_float());
     }
-    for (uint32_t i = 0; i < batch_num * size_out; ++i) {
+    for (uint32_t i = 0; i < batch_cnt * size_out; ++i) {
         out[i] = dtype_out(0.f);
     }
 
@@ -196,16 +200,17 @@ void mha_fwd_run(uint32_t iter) {
             "Given thread number should equal to pre-set value 32!");
     std::cout << "group_num_x: " << group_range_n
               << ", group_num_y: " << group_range_m
-              << ", group_num_z: " << batch_num << "\n";
+              << ", group_num_z: " << batch_cnt << "\n";
     std::cout << "group_size_x: " << subgroup_range_n
               << ", group_size_y: " << subgroup_range_m << std::endl;
-    cl::sycl::range<3> GroupRange {batch_num, group_range_m, group_range_n};
+    cl::sycl::range<3> GroupRange {batch_cnt, group_range_m, group_range_n};
     cl::sycl::range<3> LocalRange {1, subgroup_range_m, subgroup_range_n};
     cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
 
     constexpr uint32_t warmup = 10;
-    constexpr long ops = long(4 * B * N * F) * T * H;
-    profiling_helper prof("mha", ops, "gflops");
+    long ops = long(4 * batch_num * head_num * sequence_len) * sequence_len
+            * head_size;
+    profiling_helper prof("sdp", ops, "gflops");
     try {
         for (uint32_t i = 0; i < iter + warmup; i++) {
             if (i >= warmup) { prof.cpu_start(); }
@@ -262,13 +267,13 @@ void mha_fwd_run(uint32_t iter) {
                     // initialize gemm op: gemm result store to shared local memory
                     typename post_op0_t::arguments_t post_op0_arg(0.125);
                     typename post_op1_t::arguments_t post_op1_arg(
-                            bias + batch_id / N * size_bias
+                            attn_mask + batch_id / head_num * size_mask
                                     + wg_tile_m_qk * wg_tile_n_qk
                                             * ei.get_group(
-                                                    1), // bias pre-load ptr batch offset
-                            {matrix_n_qk, // bias tdesc width
-                                    matrix_m_qk, // bias tdesc height
-                                    matrix_n_qk} // bais tdesc pitch
+                                                    1), // attn_mask pre-load ptr batch offset
+                            {matrix_n_qk, // attn_mask tdesc width
+                                    matrix_m_qk, // attn_mask tdesc height
+                                    matrix_n_qk} // attn_mask tdesc pitch
                     );
                     typename gemm_op0_t::arguments_t arg0(matrix_m_qk,
                             matrix_k_qk, matrix_n_qk,
@@ -371,19 +376,22 @@ void mha_fwd_run(uint32_t iter) {
                     // Define a temprary vector as output buffer
                     xetla_vector<dtype_out, sg_tile_n_sv> out_reg;
                     // Calculate new coordination of each element
-                    uint32_t b = ei.get_group(0) / N;
-                    uint32_t n = ei.get_group(0) % N;
+                    uint32_t b = ei.get_group(0) / head_num;
+                    uint32_t n = ei.get_group(0) % head_num;
                     uint32_t f = start_m + brgemm1_t::get_matC_offset_y(g);
                     uint32_t h = start_n + brgemm1_t::get_matC_offset_x(g);
 
                     // transpose 8 * 16 tile and store to global
                     for (uint32_t j = 0; j < sg_tile_m_sv; ++j, ++f) {
-                        uint32_t dst_offset = b * N * F * H + n * F * H + f * H;
+                        uint32_t dst_offset
+                                = b * head_num * sequence_len * head_size
+                                + f * head_num * head_size + n * head_size;
                         out_reg = matC.reg.xetla_select<sg_tile_n_sv, 1>(
                                 j * sg_tile_n_sv);
                         xetla_fill_tdesc<dtype_out, sg_tile_n_sv, 1, 1>(
                                 transpose_tdecs.xetla_format<uint32_t>(),
-                                out + dst_offset, H, 1, H, h, 0);
+                                out + dst_offset, head_size, 1, head_size, h,
+                                0);
                         xetla_tstore_global<dtype_out, sg_tile_n_sv,
                                 cache_hint::write_back, cache_hint::write_back>(
                                 transpose_tdecs, out_reg);
@@ -403,9 +411,9 @@ void mha_fwd_run(uint32_t iter) {
     }
 
     ASSERT_EQ(0,
-            mha_fwd_result_validate(q, k, v, bias, out, matrix_m_qk,
+            sdp_fwd_result_validate(q, k, v, attn_mask, out, matrix_m_qk,
                     matrix_k_qk, matrix_n_qk, matrix_m_sv, matrix_k_sv,
-                    matrix_n_sv, batch_num, mem_layout::row_major,
+                    matrix_n_sv, batch_cnt, mem_layout::row_major,
                     mem_layout::col_major, mem_layout::row_major,
                     mem_layout::row_major));
 
@@ -415,32 +423,32 @@ void mha_fwd_run(uint32_t iter) {
     free(q, Context);
     free(k, Context);
     free(v, Context);
-    free(bias, Context);
+    free(attn_mask, Context);
     free(out, Context);
 }
 
 int main() {
-    // This example implements multi-head attention with batch_size: 16,
+    // This example implements scaled-dot-production with batch_size: 16,
     // num_heads: 16, sequence_lenth: 512, head_size: 64. It will be shown how to
     // remap the index space of each work-item used for gemm1, softmax and gemm2.
 
     // Description:
-    // Multi-head attention mechanism can be seen as two chained batch MatMul with
+    // Scaled-dot-production mechanism can be seen as two chained batch MatMul with
     // a softmax in the middle layer. It can be descripted as following
     // mathematical expression:
-    //   softmax(Q · (K.transpose(-1, -2)) * (1 / sqr_root(num_heads)) + B) · V
+    //   softmax(Q · (K.transpose(-1, -2)) * (1 / sqr_root(num_heads)) + attn_mask) · V
     // where:
     //   Q, K, V: input data
     //   shape(Q) = [16 x 16, 512, 64]
     //   shape(K) = [16 x 16, 512, 64]
     //   shape(V) = [16 x 16, 512, 64]
-    //   shape(B) = [16, 512, 512]
+    //   shape(attn_mask) = [16, 512, 512]
 
     // This kernel is designed to execute the following task:
-    // 1: S = (Q · (K.transpose(-1, -2))) * (1 / sqr_root(num_heads)) + B
+    // 1: S = (Q · (K.transpose(-1, -2))) * (1 / sqr_root(num_heads)) + attn_mask
     // 2: S' = softmax(S)
     // 3: O = S' · V
 
-    mha_fwd_run(10);
+    sdp_fwd_run(10);
     return 0;
 }

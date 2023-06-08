@@ -144,6 +144,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 128;
+    static constexpr size_t chunk_size = 128;
 
     static constexpr size_t wg_num_m = 4;
     static constexpr size_t wg_num_n = 1;
@@ -164,6 +165,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 140;
+    static constexpr size_t chunk_size = 140;
 
     static constexpr size_t wg_num_m = 16;
     static constexpr size_t wg_num_n = 1;
@@ -184,6 +186,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 96;
+    static constexpr size_t chunk_size = 96;
 
     static constexpr size_t wg_num_m = 4;
     static constexpr size_t wg_num_n = 1;
@@ -204,6 +207,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 64;
+    static constexpr size_t chunk_size = 64;
 
     static constexpr size_t wg_num_m = 2;
     static constexpr size_t wg_num_n = 1;
@@ -224,6 +228,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 128;
+    static constexpr size_t chunk_size = 128;
 
     static constexpr size_t wg_num_m = 2;
     static constexpr size_t wg_num_n = 1;
@@ -244,6 +249,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 128;
+    static constexpr size_t chunk_size = 128;
 
     static constexpr size_t wg_num_m = 2;
     static constexpr size_t wg_num_n = 1;
@@ -264,6 +270,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 128;
+    static constexpr size_t chunk_size = 128;
 
     static constexpr size_t wg_num_m = 2;
     static constexpr size_t wg_num_n = 1;
@@ -284,6 +291,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 64;
+    static constexpr size_t chunk_size = 64;
 
     static constexpr size_t wg_num_m = 2;
     static constexpr size_t wg_num_n = 1;
@@ -304,6 +312,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 128;
+    static constexpr size_t chunk_size = 128;
 
     static constexpr size_t wg_num_m = 4;
     static constexpr size_t wg_num_n = 1;
@@ -324,6 +333,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 128;
+    static constexpr size_t chunk_size = 128;
 
     static constexpr size_t wg_num_m = 4;
     static constexpr size_t wg_num_n = 1;
@@ -343,6 +353,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 128;
+    static constexpr size_t chunk_size = 128;
 
     static constexpr size_t wg_num_m = 16;
     static constexpr size_t wg_num_n = 1;
@@ -363,6 +374,7 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 96;
+    static constexpr size_t chunk_size = 96;
 
     static constexpr size_t wg_num_m = 4;
     static constexpr size_t wg_num_n = 1;
@@ -383,8 +395,71 @@ public:
     static constexpr size_t wg_n = mat_n;
     static constexpr size_t sg_m = 1;
     static constexpr size_t sg_n = 64;
+    static constexpr size_t chunk_size = 64;
 
     static constexpr size_t wg_num_m = 2;
+    static constexpr size_t wg_num_n = 1;
+
+    using data_type_x = fp16;
+    using data_type_y = fp16;
+    using data_type_weight = fp16;
+    using data_type_acc = float;
+    static constexpr ln_fwd_fused_kind ln_fused_op_kind
+            = ln_fwd_fused_kind::bias_dropout_resAdd_ln;
+};
+
+class ln_fwd_0_chunked {
+public:
+    static constexpr size_t mat_m = 32;
+    static constexpr size_t mat_n = 256;
+    static constexpr size_t wg_m = 4;
+    static constexpr size_t wg_n = mat_n;
+    static constexpr size_t sg_m = 1;
+    static constexpr size_t sg_n = 256;
+    static constexpr size_t chunk_size = 128;
+
+    static constexpr size_t wg_num_m = 4;
+    static constexpr size_t wg_num_n = 1;
+
+    using data_type_x = fp16;
+    using data_type_y = fp16;
+    using data_type_weight = fp16;
+    using data_type_acc = float;
+    static constexpr ln_fwd_fused_kind ln_fused_op_kind
+            = ln_fwd_fused_kind::ln_dropout;
+};
+class ln_fwd_1_chunked {
+public:
+    static constexpr size_t mat_m = 128;
+    static constexpr size_t mat_n = 512;
+    static constexpr size_t wg_m = 4;
+    static constexpr size_t wg_n = mat_n;
+    static constexpr size_t sg_m = 1;
+    static constexpr size_t sg_n = 512;
+    static constexpr size_t chunk_size = 128;
+
+    static constexpr size_t wg_num_m = 16;
+    static constexpr size_t wg_num_n = 1;
+
+    using data_type_x = fp16;
+    using data_type_y = fp16;
+    using data_type_weight = fp16;
+    using data_type_acc = float;
+    static constexpr ln_fwd_fused_kind ln_fused_op_kind
+            = ln_fwd_fused_kind::none;
+};
+
+class ln_fwd_2_chunked {
+public:
+    static constexpr size_t mat_m = 32;
+    static constexpr size_t mat_n = 256;
+    static constexpr size_t wg_m = 4;
+    static constexpr size_t wg_n = mat_n;
+    static constexpr size_t sg_m = 1;
+    static constexpr size_t sg_n = 256;
+    static constexpr size_t chunk_size = 128;
+
+    static constexpr size_t wg_num_m = 4;
     static constexpr size_t wg_num_n = 1;
 
     using data_type_x = fp16;

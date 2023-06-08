@@ -107,7 +107,16 @@ void basic_gemm_run(uint32_t iter) {
             gpu::xetla::kernel::dispatch_policy_default<gpu_arch::Xe>,
             brgemm_config, epilogue_t>;
 
-    cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(matrix_m, matrix_n);
+    // set up gemm arguments
+    typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A,
+            matrix_k, B, matrix_n, C, matrix_n);
+
+    cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(gemm_arg);
+    if (!gemm_op_t::can_implement(gemm_arg)) {
+        std::cout << "The arguments cannot be supported, aborting ... "
+                  << std::endl;
+        FAIL();
+    }
 
     uint32_t warmup = 10;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k;
@@ -118,13 +127,10 @@ void basic_gemm_run(uint32_t iter) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 xetla_exec_item<3> ei(item);
-                gemm_op_t gemm_op;
                 // allocate slm and nbarrier resource
                 slm_barrier_init<gemm_op_t>();
-                // set up gemm arguments
-                typename gemm_op_t::arguments_t arg(matrix_m, matrix_k,
-                        matrix_n, A, matrix_k, B, matrix_n, C, matrix_n);
-                gemm_op(ei, arg);
+                gemm_op_t gemm_op;
+                gemm_op(ei, gemm_arg);
             });
         });
         gpu_event.wait();

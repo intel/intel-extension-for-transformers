@@ -55,6 +55,10 @@ struct layer_norm_fwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
     static constexpr uint32_t sg_tile_n = layer_norm_attr::sg_tile_n;
     static constexpr uint32_t wg_num_m = layer_norm_attr::wg_num_m;
     static constexpr uint32_t wg_num_n = layer_norm_attr::wg_num_n;
+    static constexpr uint32_t chunk_size = layer_norm_attr::chunk_size;
+    static constexpr uint32_t n_chunks = sg_tile_n / chunk_size;
+    static_assert(sg_tile_n % chunk_size == 0,
+            "Current impl does not support tailing mechanism");
 
     static constexpr uint32_t wg_size_x
             = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
@@ -79,8 +83,8 @@ struct layer_norm_fwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
                 : 0;
     };
 
-    using ln_fwd_tile_desc_t = subgroup::tile_desc_t<sg_tile_n, 1, sg_tile_n, 1,
-            reg_layout::tiled>;
+    using ln_fwd_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1, chunk_size,
+            1, reg_layout::tiled>;
     using x_in_t = subgroup::tile_t<dtype_x, ln_fwd_tile_desc_t>;
     using gamma_in_t = subgroup::tile_t<dtype_weight, ln_fwd_tile_desc_t>;
     using beta_in_t = subgroup::tile_t<dtype_weight, ln_fwd_tile_desc_t>;
@@ -195,14 +199,17 @@ struct layer_norm_fwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
         x_in_payload.init(args->x_in_ptr, args->matrix_n, args->matrix_m,
                 args->mat_ld, start_n, start_m);
         // >>>>>>>>>> fused op fwd init
-        fused_op.init(fused_op_args, wg_idx, wg_idy, sg_idx, sg_idy);
 
-        gamma_in_payload.init(
-                args->gamma_ptr, args->matrix_n, 1, args->mat_ld, start_n, 0);
-        beta_in_payload.init(
-                args->beta_ptr, args->matrix_n, 1, args->mat_ld, start_n, 0);
-        subgroup::tile_load(gamma_in, gamma_in_payload);
-        subgroup::tile_load(beta_in, beta_in_payload);
+        if constexpr (n_chunks == 1) {
+            fused_op.init(
+                    fused_op_args, wg_idx, wg_idy, sg_idx, sg_idy, start_m);
+            gamma_in_payload.init(args->gamma_ptr, args->matrix_n, 1,
+                    args->mat_ld, start_n, 0);
+            beta_in_payload.init(args->beta_ptr, args->matrix_n, 1,
+                    args->mat_ld, start_n, 0);
+            subgroup::tile_load(gamma_in, gamma_in_payload);
+            subgroup::tile_load(beta_in, beta_in_payload);
+        }
         y_out_payload.init(args->y_out_ptr, args->matrix_n, args->matrix_m,
                 args->mat_ld, start_n, start_m);
         const dtype_acc sg_rn = 1.0f / sg_tile_n;
@@ -219,21 +226,51 @@ struct layer_norm_fwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
 
         for (int row = start_m; row < args->matrix_m;
                 row += wg_num_m * wg_tile_m) {
-            subgroup::tile_load(x_in, x_in_payload);
-            x_in_payload.update_tdesc(wg_num_m * wg_tile_m * args->mat_ld);
-            xetla_vector<dtype_acc, sg_tile_n> input
-                    = xetla_cvt<dtype_acc, dtype_x>(x_in.reg);
-            // >>>>>>>>>> fused op pre-processing
-            input = fused_op.pre_op(input);
+            if constexpr (n_chunks > 1) {
+                fused_op.init(
+                        fused_op_args, wg_idx, wg_idy, sg_idx, sg_idy, row);
+            }
+            xetla_vector<dtype_acc, chunk_size> input;
             xetla_vector<dtype_acc, 2> mu_m2;
-            // >>>>>>>>>> first do sg_level reduction
-            mu_m2[0] = xetla_reduce<dtype_acc, dtype_acc, sg_tile_n,
-                               reduce_op::sum>(input)
-                    * sg_rn;
-            xetla_vector<dtype_acc, sg_tile_n> diff
-                    = input - dtype_acc(mu_m2[0]);
-            mu_m2[1] = xetla_reduce<dtype_acc, dtype_acc, sg_tile_n,
-                    reduce_op::sum>(diff * diff);
+            mu_m2[0] = 0;
+            mu_m2[1] = 0;
+            if constexpr (n_chunks > 1) {
+                x_in_payload.init(args->x_in_ptr, args->matrix_n,
+                        args->matrix_m, args->mat_ld, start_n, row);
+            }
+#pragma unroll
+            for (int i = 0; i < n_chunks; i++) {
+                subgroup::tile_load(x_in, x_in_payload);
+                x_in_payload.update_tdesc(chunk_size);
+                input = xetla_cvt<dtype_acc, dtype_x>(x_in.reg);
+                // >>>>>>>>>> fused op pre-processing
+                input = fused_op.pre_op(input);
+                // >>>>>>>>>> first do sg_level reduction
+                mu_m2[0] += xetla_reduce<dtype_acc, dtype_acc, chunk_size,
+                        reduce_op::sum>(input);
+            }
+            mu_m2[0] *= sg_rn;
+            if constexpr (n_chunks > 1) {
+                fused_op.init(
+                        fused_op_args, wg_idx, wg_idy, sg_idx, sg_idy, row);
+                x_in_payload.init(args->x_in_ptr, args->matrix_n,
+                        args->matrix_m, args->mat_ld, start_n, row);
+            }
+#pragma unroll
+            for (int i = 0; i < n_chunks; i++) {
+                if constexpr (n_chunks > 1) {
+                    subgroup::tile_load(x_in, x_in_payload);
+                    x_in_payload.update_tdesc(chunk_size);
+                    input = xetla_cvt<dtype_acc, dtype_x>(x_in.reg);
+                    // >>>>>>>>>> fused op pre-processing
+                    input = fused_op.pre_op(input);
+                }
+
+                xetla_vector<dtype_acc, chunk_size> diff
+                        = input - dtype_acc(mu_m2[0]);
+                mu_m2[1] += xetla_reduce<dtype_acc, dtype_acc, chunk_size,
+                        reduce_op::sum>(diff * diff);
+            }
             // >>>>>>>>>> then do wg_level reduction
             if constexpr (wg_size_x > 1) {
                 uint32_t slm_store_base = (itr_count & 1) == 0
@@ -275,35 +312,56 @@ struct layer_norm_fwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
             }
             // to generate mixed instruction
             constexpr uint32_t SIMD = 64 / sizeof(dtype_acc);
-            xetla_vector<dtype_acc, sg_tile_n> beta
-                    = xetla_cvt<dtype_acc, dtype_weight, sg_tile_n>(
-                            beta_in.reg);
-            xetla_vector<dtype_acc, sg_tile_n> gamma
-                    = xetla_cvt<dtype_acc, dtype_weight>(gamma_in.reg);
-            xetla_vector<dtype_acc, sg_tile_n> output;
+            if constexpr (chunk_size > 1) {
+                gamma_in_payload.init(args->gamma_ptr, args->matrix_n, 1,
+                        args->mat_ld, start_n, 0);
+                beta_in_payload.init(args->beta_ptr, args->matrix_n, 1,
+                        args->mat_ld, start_n, 0);
+            }
+
+            xetla_vector<dtype_acc, chunk_size> output;
+
+            if constexpr (n_chunks > 1) {
+                fused_op.init(
+                        fused_op_args, wg_idx, wg_idy, sg_idx, sg_idy, row);
+                x_in_payload.init(args->x_in_ptr, args->matrix_n,
+                        args->matrix_m, args->mat_ld, start_n, row);
+            }
+            xetla_vector<dtype_acc, chunk_size> beta;
+            xetla_vector<dtype_acc, chunk_size> gamma;
 #pragma unroll
-            for (int i = 0; i < sg_tile_n / SIMD; i++) {
-                auto gamma_ref = gamma.xetla_select<SIMD, 1>(i * SIMD);
-                auto beta_ref = beta.xetla_select<SIMD, 1>(i * SIMD);
-                auto input_ref = input.xetla_select<SIMD, 1>(i * SIMD);
-                output.xetla_select<SIMD, 1>(i * SIMD)
-                        = beta_ref + (rs * (input_ref - mu)) * gamma_ref;
+            for (int i = 0; i < n_chunks; i++) {
+                if constexpr (n_chunks > 1) {
+                    subgroup::tile_load(gamma_in, gamma_in_payload);
+                    gamma_in_payload.update_tdesc(chunk_size);
+
+                    subgroup::tile_load(beta_in, beta_in_payload);
+                    beta_in_payload.update_tdesc(chunk_size);
+
+                    subgroup::tile_load(x_in, x_in_payload);
+                    x_in_payload.update_tdesc(chunk_size);
+                    input = xetla_cvt<dtype_acc, dtype_x>(x_in.reg);
+                    // >>>>>>>>>> fused op pre-processing
+                    input = fused_op.pre_op(input);
+                }
+                xetla_vector<dtype_acc, chunk_size> beta
+                        = xetla_cvt<dtype_acc, dtype_weight, chunk_size>(
+                                beta_in.reg);
+                xetla_vector<dtype_acc, chunk_size> gamma
+                        = xetla_cvt<dtype_acc, dtype_weight>(gamma_in.reg);
+
+                output = beta + (rs * (input - mu)) * gamma;
+                // >>>>>>>>>> fused op post-processing
+                output = fused_op.post_op(output);
+                y_out.reg = xetla_cvt<dtype_y, dtype_acc, chunk_size>(output);
+                subgroup::tile_store<cache_hint::uncached,
+                        cache_hint::write_back>(y_out, y_out_payload);
+                y_out_payload.update_tdesc(chunk_size);
             }
-            if constexpr ((sg_tile_n % SIMD) != 0) {
-                constexpr uint32_t start = sg_tile_n / SIMD * SIMD;
-                constexpr uint32_t SIMD_tail = sg_tile_n % SIMD;
-                auto gamma_ref = gamma.xetla_select<SIMD_tail, 1>(start);
-                auto beta_ref = beta.xetla_select<SIMD_tail, 1>(start);
-                auto input_ref = input.xetla_select<SIMD_tail, 1>(start);
-                output.xetla_select<SIMD_tail, 1>(start)
-                        = (rs * (input_ref - mu)) * gamma_ref + beta_ref;
-            }
-            // >>>>>>>>>> fused op post-processing
-            output = fused_op.post_op(output);
-            y_out.reg = xetla_cvt<dtype_y, dtype_acc, sg_tile_n>(output);
-            subgroup::tile_store<cache_hint::uncached, cache_hint::write_back>(
-                    y_out, y_out_payload);
-            y_out_payload.update_tdesc(wg_num_m * wg_tile_m * args->mat_ld);
+            x_in_payload.update_tdesc(
+                    wg_num_m * wg_tile_m * args->mat_ld - sg_tile_n);
+            y_out_payload.update_tdesc(
+                    wg_num_m * wg_tile_m * args->mat_ld - sg_tile_n);
         }
     }
 };

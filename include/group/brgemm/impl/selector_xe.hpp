@@ -37,11 +37,10 @@ constexpr int alignment_bytes_xe = load_store_attr_xe::alignment_in_bytes;
 template <typename dtype_a, typename dtype_b, mem_layout mem_layout_a,
         mem_layout mem_layout_b, mem_space mem_space_a, mem_space mem_space_b,
         int alignment_a, int alignment_b, typename dtype_acc,
-        typename tile_shape, int accum_step, int stages, int sync_freq>
+        typename tile_shape, int k_stride, int stages, int sync_freq>
 class brgemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b,
         mem_space_a, mem_space_b, alignment_a, alignment_b, dtype_acc,
-        tile_shape, accum_step, mma_engine::xmx, gpu_arch::Xe, stages,
-        sync_freq,
+        tile_shape, k_stride, mma_engine::xmx, gpu_arch::Xe, stages, sync_freq,
         std::enable_if_t<((sizeof(dtype_a) * alignment_a)
                                          % detail::alignment_bytes_xe
                                  == 0)
@@ -50,7 +49,7 @@ class brgemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b,
     using mem_desc_a = mem_desc_t<dtype_a, mem_layout_a, mem_space_a>;
     using mem_desc_b = mem_desc_t<dtype_b, mem_layout_b, mem_space_b>;
     using compute_attr = compute_attr_t<dtype_a, dtype_b, dtype_acc>;
-    using perf_tuning_knob = perf_tuning_knob_t<accum_step, stages, sync_freq>;
+    using perf_tuning_knob = perf_tuning_knob_t<k_stride, stages, sync_freq>;
     using compute_policy = compute_policy_default_xmx<compute_attr,
             perf_tuning_knob, gpu_arch::Xe>;
     using pre_processing = pre_processing_default_t<tile_shape, gpu_arch::Xe>;
@@ -64,11 +63,10 @@ public:
 template <typename dtype_a, typename dtype_b, mem_layout mem_layout_a,
         mem_layout mem_layout_b, mem_space mem_space_a, mem_space mem_space_b,
         int alignment_a, int alignment_b, typename dtype_acc,
-        typename tile_shape, int accum_step, int stages, int sync_freq>
+        typename tile_shape, int k_stride, int stages, int sync_freq>
 class brgemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b,
         mem_space_a, mem_space_b, alignment_a, alignment_b, dtype_acc,
-        tile_shape, accum_step, mma_engine::fpu, gpu_arch::Xe, stages,
-        sync_freq,
+        tile_shape, k_stride, mma_engine::fpu, gpu_arch::Xe, stages, sync_freq,
         std::enable_if_t<((sizeof(dtype_a) * alignment_a)
                                          % detail::alignment_bytes_xe
                                  == 0)
@@ -77,7 +75,7 @@ class brgemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b,
     using mem_desc_a = mem_desc_t<dtype_a, mem_layout_a, mem_space_a>;
     using mem_desc_b = mem_desc_t<dtype_b, mem_layout_b, mem_space_b>;
     using compute_attr = compute_attr_t<dtype_a, dtype_b, dtype_acc>;
-    using perf_tuning_knob = perf_tuning_knob_t<accum_step, stages, sync_freq>;
+    using perf_tuning_knob = perf_tuning_knob_t<k_stride, stages, sync_freq>;
     using compute_policy = compute_policy_default_fpu<compute_attr,
             perf_tuning_knob, gpu_arch::Xe>;
     using pre_processing = pre_processing_default_t<tile_shape, gpu_arch::Xe>;

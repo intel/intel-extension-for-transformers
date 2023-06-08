@@ -23,4 +23,36 @@
 #include "group/group.hpp"
 #include "subgroup/subgroup.hpp"
 
-namespace gpu::xetla::kernel {} // namespace gpu::xetla::kernel
+namespace gpu::xetla::kernel {
+namespace detail {
+
+template <typename T>
+inline bool check_2d_block_restriction(T *base, uint32_t mat_ld) {
+    bool implementable = true;
+    constexpr int pitch_alignment_bytes = 8;
+    constexpr int base_alignment_bytes = 64;
+    constexpr int min_pitch_bytes = 64;
+
+    implementable &= (mat_ld * sizeof(T) % pitch_alignment_bytes) == 0;
+    implementable &= mat_ld * sizeof(T) >= min_pitch_bytes;
+    implementable &= (uint64_t(base) % base_alignment_bytes) == 0;
+
+    return implementable;
+}
+
+template <typename T>
+inline bool check_dw_align(T *base, uint32_t mat_ld) {
+    bool implementable = true;
+    constexpr int pitch_alignment_bytes = 4;
+    constexpr int base_alignment_bytes = 4;
+    constexpr int min_pitch_bytes = 4;
+
+    implementable &= (mat_ld * sizeof(T) % pitch_alignment_bytes) == 0;
+    implementable &= mat_ld * sizeof(T) >= min_pitch_bytes;
+    implementable &= (uint64_t(base) % base_alignment_bytes) == 0;
+
+    return implementable;
+}
+} // namespace detail
+
+} // namespace gpu::xetla::kernel

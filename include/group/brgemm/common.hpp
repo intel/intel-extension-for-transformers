@@ -36,12 +36,12 @@ struct compute_attr_t {
 };
 
 /// @brief Fine-tune knobs for brgemm.
-/// @tparam accum_step_ Is the accumulate stride along k-dim.
+/// @tparam k_stride_ Is the accumulate stride along k-dim.
 /// @tparam stages_ Is the prefetch distance.
 /// @tparam sync_freq_ Is the group sync frequency.
-template <int accum_step_ = 8, int stages_ = 3, int sync_freq_ = 0>
+template <int k_stride_ = 8, int stages_ = 3, int sync_freq_ = 0>
 struct perf_tuning_knob_t {
-    static constexpr int accum_step = accum_step_;
+    static constexpr int k_stride = k_stride_;
     static constexpr int stages = stages_;
     static constexpr int sync_freq = sync_freq_;
 };

@@ -85,7 +85,7 @@ tile_prefetch(payload_t &payload) {
     using tile_desc = typename payload_t::tile_desc;
     using prefetch_dtype = typename payload_t::prefetch_dtype;
     constexpr uint32_t prefetch_len
-            = payload_t::mem_tile_size_x / payload_t::scale_factor;
+            = tile_desc::tile_size_x / payload_t::scale_factor;
     if constexpr (prefetch_len >= 64) {
 #pragma unroll
         for (int j = 0; j < prefetch_len / 64; j++) {

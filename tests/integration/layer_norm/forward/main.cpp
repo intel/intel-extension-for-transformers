@@ -124,8 +124,9 @@ void ln_fwd_run() {
                 constexpr bool store_for_bwd = true;
                 using ln_fwd_func = ln_fwd_func_t<data_type_x, data_type_y,
                         data_type_weight, data_type_acc, test::wg_n, test::wg_m,
-                        test::sg_n, test::sg_m, test::wg_num_m, test::wg_num_n,
-                        test::ln_fused_op_kind, store_for_bwd>;
+                        test::sg_n, test::sg_m, test::chunk_size,
+                        test::wg_num_m, test::wg_num_n, test::ln_fused_op_kind,
+                        store_for_bwd>;
                 constexpr uint32_t slm_size = ln_fwd_func::slm_size;
                 constexpr uint32_t barrier_count = ln_fwd_func::barrier_count;
 
@@ -220,4 +221,16 @@ TEST(ln_fwd_2_fp16, esimd) {
 
 TEST(ln_fwd_3_fp16, esimd) {
     ln_fwd_run<ln_fwd_3_fp16>();
+}
+
+TEST(ln_fwd_0_chunked, esimd) {
+    ln_fwd_run<ln_fwd_0_chunked>();
+}
+
+TEST(ln_fwd_1_chunked, esimd) {
+    ln_fwd_run<ln_fwd_1_chunked>();
+}
+
+TEST(ln_fwd_2_chunked, esimd) {
+    ln_fwd_run<ln_fwd_2_chunked>();
 }

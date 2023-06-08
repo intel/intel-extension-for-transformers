@@ -14,7 +14,6 @@
  * limitations under the License.
  *******************************************************************************/
 
-#include "softmax.hpp"
 #include "tests/utils/utils.hpp"
 #include "xetla.hpp"
 
@@ -117,11 +116,10 @@ void gemm_softmax_run(uint32_t iter) {
         C[i] = static_cast<data_type_c>(0.f);
     }
 
-    constexpr uint32_t wg_tile_m = 64;
+    constexpr uint32_t wg_tile_m = 128;
     constexpr uint32_t wg_tile_n = 512;
     constexpr uint32_t sg_tile_m = 32;
-    constexpr uint32_t sg_tile_n = 32;
-    constexpr uint32_t sg_tile_k = 16;
+    constexpr uint32_t sg_tile_n = 64;
 
     // buffer size of softmax row data
     constexpr uint32_t softmax_size = 512;
@@ -147,77 +145,134 @@ void gemm_softmax_run(uint32_t iter) {
     cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
 
     uint32_t warmup = 10;
-    long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k;
+    long ops
+            = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k * batch_num;
     profiling_helper prof("gemm_softmax", ops, "gflops");
     try {
         for (uint32_t i = 0; i < iter + warmup; i++) {
             if (i >= warmup) { prof.cpu_start(); }
             auto gpu_event = Queue.submit([&](handler &cgh) {
-                cgh.parallel_for<class
-                        Test>(Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                    using namespace gpu::xetla;
-                    using namespace gpu::xetla::group;
-                    using namespace gpu::xetla::kernel;
-                    using namespace gpu::xetla::subgroup;
+                cgh.parallel_for<class Test>(
+                        Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                            using namespace gpu::xetla;
+                            using namespace gpu::xetla::group;
+                            using namespace gpu::xetla::kernel;
+                            using namespace gpu::xetla::subgroup;
 
-                    xetla_exec_item<3> ei(item);
-                    uint32_t batch_id = ei.get_group(0);
-                    // disable sync in brgemm
-                    static constexpr uint32_t periodic_sync_interval = 0;
-                    static constexpr uint32_t prefetch_distance = 3;
-                    using tile_shape = tile_shape_t<wg_tile_n, wg_tile_m,
-                            sg_tile_n, sg_tile_m>;
+                            xetla_exec_item<3> ei(item);
+                            uint32_t batch_id = ei.get_group(0);
 
-                    using brgemm_t = typename brgemm_selector_t<data_type_a,
-                            data_type_b, mem_layout::row_major,
-                            mem_layout::col_major, mem_space::global,
-                            mem_space::global, 8, 8, float, tile_shape,
-                            sg_tile_k, mma_engine::xmx, gpu_arch::Xe,
-                            prefetch_distance, periodic_sync_interval>::brgemm;
-                    using epilogue_t = epilogue_t<
-                            epilogue_policy_tile_op<chained_tile_op_t<>,
-                                    result_overwrite, gpu_arch::Xe>,
-                            tile_shape,
-                            mem_desc_t<data_type_sfx, mem_layout::row_major,
-                                    mem_space::local>>;
-                    using gemm_op_t
-                            = gemm_t<dispatch_policy_default<gpu_arch::Xe>,
-                                    brgemm_t, epilogue_t>;
+                            using compute_attr = compute_attr_t<data_type_a,
+                                    data_type_b, data_type_sfx>;
 
-                    // initialize SLM size
-                    constexpr uint32_t slm_size
-                            = wg_tile_m * wg_tile_n * sizeof(data_type_sfx);
-                    xetla_local_init<slm_size>();
+                            // Performance tuning setting based on different shapes
+                            static constexpr uint32_t periodic_sync_interval
+                                    = 8;
+                            static constexpr uint32_t prefetch_distance = 3;
+                            // should larger than 8
+                            static constexpr uint32_t k_iter_num = 16;
+                            using perf_tuning_knob
+                                    = perf_tuning_knob_t<k_iter_num,
+                                            prefetch_distance,
+                                            periodic_sync_interval>;
 
-                    // initialize named barrier count
-                    // we only need to do thread sync while store gemm results to SLM
-                    // one barrier is enough for that
-                    xetla_nbarrier_init<1>();
-                    xetla_nbarrier_t<thread_num, thread_num> nbarrier;
-                    nbarrier.init_nbarrier(0, nbarrier_role::producer_consumer);
+                            // specific the computation, performance tuning and computation core
+                            using compute_policy
+                                    = compute_policy_default_xmx<compute_attr,
+                                            perf_tuning_knob, gpu_arch::Xe>;
 
-                    // initialize gemm op: gemm result store to shared local memory
+                            // define the memory layout & location of input/output
+                            using mem_desc_a_t = mem_desc_t<data_type_a,
+                                    mem_layout::row_major, mem_space::global>;
+                            using mem_desc_b_t = mem_desc_t<data_type_b,
+                                    mem_layout::col_major, mem_space::global>;
+                            using mem_desc_c_t = mem_desc_t<data_type_c,
+                                    mem_layout::row_major, mem_space::global>;
 
-                    typename gemm_op_t::arguments_t arg(matrix_m, matrix_k,
-                            matrix_n, A + batch_id * size_a, matrix_k,
-                            B + batch_id * size_b, matrix_k, 0, matrix_n);
-                    gemm_op_t gemm_op;
-                    gemm_op(ei, arg);
-                    xetla_fence<memory_kind::shared_local>();
-                    nbarrier.arrive_wait();
+                            // define mirco-kernel's configuration
+                            using tile_shape = tile_shape_t<wg_tile_n,
+                                    wg_tile_m, sg_tile_n, sg_tile_m>;
+                            using brgemm_t = brgemm_t<compute_policy,
+                                    tile_shape, mem_desc_a_t, mem_desc_b_t>;
+                            using brgemm_args_t = brgemm_t::arguments_t;
 
-                    // softmax start
-                    using softmax_op_t = xetla_softmax_fwd_t<data_type_sfx,
-                            data_type_c, tile_shape, mem_space::local,
-                            mem_space::global, SIMD, thread_num, softmax_size>;
-                    typename softmax_op_t::arguments_t arg1;
-                    softmax_op_t softmax_op;
+                            // epilogue function to overwrite the result
+                            using epilogue_t = epilogue_t<
+                                    epilogue_policy_default<gpu_arch::Xe>,
+                                    tile_shape, mem_desc_c_t>;
 
-                    arg1.data_in_base = 0;
-                    arg1.data_out_ptr = C + batch_id * size_c;
+                            // using experimental::group::softmax
+                            // define softmax forward op
+                            using softmax_fwd_t = softmax_t<
+                                    softmax_policy_fwd<data_type_sfx,
+                                            gpu_arch::Xe>,
+                                    tile_shape>;
+                            using softmax_fwd_args_t =
+                                    typename softmax_fwd_t::arguments_t;
 
-                    softmax_op(ei, &arg1);
-                });
+                            // initialize shared local memory and named barrier
+                            static constexpr uint32_t barrier_count
+                                    = brgemm_t::barrier_count
+                                    + softmax_fwd_t::get_barrier_count::count;
+                            static constexpr uint32_t slm_size
+                                    = brgemm_t::slm_size
+                                    + softmax_fwd_t::get_slm_size::size;
+                            xetla_nbarrier_init<barrier_count>();
+                            xetla_local_init<slm_size>();
+
+                            // matA & matB & matC base address and load width
+                            data_type_a *matA_ptr = A + batch_id * size_a;
+                            uint32_t matA_ld = matrix_k;
+                            data_type_b *matB_ptr = B + batch_id * size_b;
+                            uint32_t matB_ld = matrix_k;
+                            data_type_c *matC_ptr = C + batch_id * size_c;
+                            uint32_t matC_ld = matrix_n;
+
+                            // ecah workgroup gets it individual index to start computation
+                            int start_n = ei.get_group(2) * wg_tile_n;
+                            int start_m = ei.get_group(1) * wg_tile_m;
+                            int start_k = 0;
+                            uint32_t wg_tile_k = matrix_k;
+                            uint32_t boundary_n
+                                    = (start_n + wg_tile_n) > matrix_n
+                                    ? matrix_n
+                                    : (start_n + wg_tile_n);
+                            uint32_t boundary_m
+                                    = (start_m + wg_tile_m) > matrix_m
+                                    ? matrix_m
+                                    : (start_m + wg_tile_m);
+                            uint32_t boundary_k = wg_tile_k;
+                            uint32_t inner_loop_count
+                                    = (wg_tile_k + k_iter_num - 1) / k_iter_num;
+
+                            // initialize the memory description of matA & matB & matC
+                            mem_desc_a_t mem_desc_a(matA_ptr,
+                                    {boundary_k, boundary_m, matA_ld},
+                                    {start_k, start_m});
+                            mem_desc_b_t mem_desc_b(matB_ptr,
+                                    {boundary_n, boundary_k, matB_ld},
+                                    {start_n, start_k});
+                            mem_desc_c_t mem_desc_c(matC_ptr,
+                                    {boundary_n, boundary_m, matC_ld},
+                                    {start_n, start_m});
+
+                            // call brgemm function and result will be written in matAcc
+                            brgemm_args_t brgemm_args(
+                                    mem_desc_a, mem_desc_b, inner_loop_count);
+                            brgemm_t::work_group_t g(ei.get_local_linear_id());
+                            brgemm_t::matAcc_t matAcc(0);
+                            brgemm_t brgemm;
+                            brgemm(g, matAcc, brgemm_args);
+
+                            // for each matAcc, call softmax op
+                            softmax_fwd_t softmax_fwd;
+                            softmax_fwd_args_t softmax_fwd_args(1);
+                            softmax_fwd(g, matAcc, {}, softmax_fwd_args);
+
+                            // write matAcc value into pointer C
+                            epilogue_t epilogue;
+                            epilogue(g, matAcc, mem_desc_c);
+                        });
             });
             gpu_event.wait();
 

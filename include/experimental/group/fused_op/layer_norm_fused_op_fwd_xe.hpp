@@ -68,6 +68,8 @@ struct ln_fwd_fused_op_t<ln_fused_op_kind_, dtype_in_, dtype_out_, dtype_acc_,
     static constexpr uint32_t sg_tile_n = layer_norm_attr_::sg_tile_n;
     static constexpr uint32_t wg_num_m = layer_norm_attr_::wg_num_m;
     static constexpr uint32_t wg_num_n = layer_norm_attr_::wg_num_n;
+    static constexpr uint32_t chunk_size = layer_norm_attr_::chunk_size;
+    static constexpr uint32_t n_chunks = sg_tile_n / chunk_size;
 
     /// @brief
     ///
@@ -78,14 +80,14 @@ struct ln_fwd_fused_op_t<ln_fused_op_kind_, dtype_in_, dtype_out_, dtype_acc_,
     /// @param sg_idy
     /// @return
     __XETLA_API void init(arguments_t *args, uint32_t wg_idx, uint32_t wg_idy,
-            uint32_t sg_idx, uint32_t sg_idy) {}
+            uint32_t sg_idx, uint32_t sg_idy, uint32_t start_m) {}
 
     /// @brief
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> pre_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> pre_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         return input;
     }
 
@@ -93,14 +95,11 @@ struct ln_fwd_fused_op_t<ln_fused_op_kind_, dtype_in_, dtype_out_, dtype_acc_,
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> post_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> post_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         return input;
     }
 };
-
-/// @brief
-///
 /// @tparam dtype_in_
 /// @tparam dtype_out_
 /// @tparam dtype_acc_
@@ -123,6 +122,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_dropout_resAdd_ln, dtype_in_,
     static constexpr uint32_t sg_tile_n = layer_norm_attr_::sg_tile_n;
     static constexpr uint32_t wg_num_m = layer_norm_attr_::wg_num_m;
     static constexpr uint32_t wg_num_n = layer_norm_attr_::wg_num_n;
+    static constexpr uint32_t chunk_size = layer_norm_attr_::chunk_size;
+    static constexpr uint32_t n_chunks = sg_tile_n / chunk_size;
 
     static constexpr uint32_t wg_size_x
             = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
@@ -132,8 +133,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_dropout_resAdd_ln, dtype_in_,
     static_assert((sg_tile_n % (sizeof(uint32_t) / sizeof(dtype_mask)) == 0),
             "sg_tile_n need to be DW aligned");
 
-    using ln_fwd_tile_desc_t = subgroup::tile_desc_t<sg_tile_n, 1, sg_tile_n, 1,
-            reg_layout::tiled>;
+    using ln_fwd_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1, chunk_size,
+            1, reg_layout::tiled>;
     using bias_in_t = subgroup::tile_t<dtype_in, ln_fwd_tile_desc_t>;
     using bias_in_payload_t = subgroup::mem_payload_t<dtype_in,
             ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
@@ -175,9 +176,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_dropout_resAdd_ln, dtype_in_,
     /// @param sg_idy
     /// @return
     __XETLA_API void init(arguments_t *args, uint32_t wg_idx, uint32_t wg_idy,
-            uint32_t sg_idx, uint32_t sg_idy) {
+            uint32_t sg_idx, uint32_t sg_idy, uint32_t start_m) {
         int start_n = wg_idx * wg_tile_n + sg_idx * sg_tile_n;
-        int start_m = wg_idy * wg_tile_m + sg_idy * sg_tile_m;
         mat_ld = args->mat_ld;
         mask_ld = args->mask_ld;
         matrix_n = args->matrix_n;
@@ -191,41 +191,59 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_dropout_resAdd_ln, dtype_in_,
                 matrix_m, mat_ld, start_n, start_m);
         mask_in_payload.init(
                 args->mask_ptr, matrix_n, matrix_m, mask_ld, start_n, start_m);
-        subgroup::tile_load(bias_in, bias_in_payload);
+        if constexpr (n_chunks == 1) {
+            subgroup::tile_load(bias_in, bias_in_payload);
+        }
     }
 
     /// @brief
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> pre_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> pre_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         subgroup::tile_load(res_in, res_in_payload);
-        res_in_payload.update_tdesc(wg_num_m * wg_tile_m * mat_ld);
-        xetla_vector<dtype_acc, sg_tile_n> bias_input
+        if constexpr (n_chunks == 1) {
+            res_in_payload.update_tdesc(wg_num_m * wg_tile_m * mat_ld);
+        } else {
+            res_in_payload.update_tdesc(chunk_size);
+        }
+        if constexpr (n_chunks != 1) {
+            subgroup::tile_load(bias_in, bias_in_payload);
+            bias_in_payload.update_tdesc(chunk_size);
+        }
+        xetla_vector<dtype_acc, chunk_size> bias_input
                 = xetla_cvt<dtype_acc, dtype_in>(bias_in.reg);
         // bias_add
-        xetla_vector<dtype_acc, sg_tile_n> output
-                = reduce_helper<reduce_op::sum, dtype_acc, sg_tile_n>(
+        xetla_vector<dtype_acc, chunk_size> output
+                = reduce_helper<reduce_op::sum, dtype_acc, chunk_size>(
                         input, bias_input);
         if (dropout_prob != 0) {
             // dropout
             subgroup::tile_load(mask_in, mask_in_payload);
             SW_BARRIER();
-            mask_in_payload.update_tdesc(wg_num_m * wg_tile_m * mask_ld);
-            output = drop_out<dtype_acc, sg_tile_n>(
+            if constexpr (n_chunks == 1) {
+                mask_in_payload.update_tdesc(wg_num_m * wg_tile_m * mask_ld);
+            } else {
+                mask_in_payload.update_tdesc(chunk_size);
+            }
+            output = drop_out<dtype_acc, chunk_size>(
                     output, mask_in.reg, dropout_scale);
         }
         // res_add, generate mixed mode
-        xetla_vector<dtype_acc, sg_tile_n> res_input
+        xetla_vector<dtype_acc, chunk_size> res_input
                 = xetla_cvt<dtype_acc, dtype_in>(res_in.reg);
-        output = reduce_helper<reduce_op::sum, dtype_acc, sg_tile_n>(
+        output = reduce_helper<reduce_op::sum, dtype_acc, chunk_size>(
                 output, res_input);
         bias_dropout_res_out.reg = xetla_cvt<dtype_out, dtype_acc>(output);
         subgroup::tile_store<cache_hint::uncached>(
                 bias_dropout_res_out, bias_dropout_res_out_payload);
-        bias_dropout_res_out_payload.update_tdesc(
-                wg_num_m * wg_tile_m * mat_ld);
+        if constexpr (n_chunks == 1) {
+            bias_dropout_res_out_payload.update_tdesc(
+                    wg_num_m * wg_tile_m * mat_ld);
+        } else {
+            bias_dropout_res_out_payload.update_tdesc(chunk_size);
+        }
         return output;
     }
 
@@ -233,8 +251,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_dropout_resAdd_ln, dtype_in_,
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> post_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> post_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         return input;
     }
 };
@@ -263,6 +281,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_dropout, dtype_in_, dtype_out_,
     static constexpr uint32_t sg_tile_n = layer_norm_attr_::sg_tile_n;
     static constexpr uint32_t wg_num_m = layer_norm_attr_::wg_num_m;
     static constexpr uint32_t wg_num_n = layer_norm_attr_::wg_num_n;
+    static constexpr uint32_t chunk_size = layer_norm_attr_::chunk_size;
+    static constexpr uint32_t n_chunks = sg_tile_n / chunk_size;
 
     static constexpr uint32_t wg_size_x
             = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
@@ -272,8 +292,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_dropout, dtype_in_, dtype_out_,
     static_assert((sg_tile_n % (sizeof(uint32_t) / sizeof(dtype_mask)) == 0),
             "sg_tile_n need to be DW aligned");
 
-    using ln_fwd_tile_desc_t = subgroup::tile_desc_t<sg_tile_n, 1, sg_tile_n, 1,
-            reg_layout::tiled>;
+    using ln_fwd_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1, chunk_size,
+            1, reg_layout::tiled>;
     using mask_in_t = subgroup::tile_t<dtype_mask, ln_fwd_tile_desc_t>;
     using mask_in_payload_t = subgroup::mem_payload_t<dtype_mask,
             ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
@@ -294,8 +314,7 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_dropout, dtype_in_, dtype_out_,
     /// @param sg_idy
     /// @return
     __XETLA_API void init(arguments_t *args, uint32_t wg_idx, uint32_t wg_idy,
-            uint32_t sg_idx, uint32_t sg_idy) {
-        int start_m = wg_idy * wg_tile_m + sg_idy * sg_tile_m;
+            uint32_t sg_idx, uint32_t sg_idy, uint32_t start_m) {
         int start_n = wg_idx * wg_tile_n + sg_idx * sg_tile_n;
         dropout_scale = args->dropout_scale;
         mask_ld = args->mask_ld;
@@ -309,8 +328,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_dropout, dtype_in_, dtype_out_,
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> pre_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> pre_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         return input;
     }
 
@@ -318,14 +337,18 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_dropout, dtype_in_, dtype_out_,
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> post_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> post_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         // dropout
         subgroup::tile_load(mask_in, mask_in_payload);
         SW_BARRIER();
-        mask_in_payload.update_tdesc(wg_num_m * wg_tile_m * mask_ld);
-        xetla_vector<dtype_acc, sg_tile_n> output
-                = drop_out<dtype_acc, sg_tile_n>(
+        if constexpr (n_chunks == 1) {
+            mask_in_payload.update_tdesc(wg_num_m * wg_tile_m * mask_ld);
+        } else {
+            mask_in_payload.update_tdesc(chunk_size);
+        }
+        xetla_vector<dtype_acc, chunk_size> output
+                = drop_out<dtype_acc, chunk_size>(
                         input, mask_in.reg, dropout_scale);
         return output;
     }
@@ -355,14 +378,16 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_rng_dropout_resAdd_ln,
     static constexpr uint32_t sg_tile_n = layer_norm_attr_::sg_tile_n;
     static constexpr uint32_t wg_num_m = layer_norm_attr_::wg_num_m;
     static constexpr uint32_t wg_num_n = layer_norm_attr_::wg_num_n;
+    static constexpr uint32_t chunk_size = layer_norm_attr_::chunk_size;
+    static constexpr uint32_t n_chunks = sg_tile_n / chunk_size;
 
     static constexpr uint32_t wg_size_x
             = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
     static constexpr uint32_t wg_size_y
             = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
 
-    using ln_fwd_tile_desc_t = subgroup::tile_desc_t<sg_tile_n, 1, sg_tile_n, 1,
-            reg_layout::tiled>;
+    using ln_fwd_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1, chunk_size,
+            1, reg_layout::tiled>;
     using bias_in_t = subgroup::tile_t<dtype_in, ln_fwd_tile_desc_t>;
     using bias_in_payload_t = subgroup::mem_payload_t<dtype_in,
             ln_fwd_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
@@ -394,7 +419,7 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_rng_dropout_resAdd_ln,
     uint32_t matrix_n;
     uint32_t matrix_m;
     float dropout_prob;
-    dropout_fwd_t<sg_tile_n> dropout_fwd;
+    dropout_fwd_t<chunk_size> dropout_fwd;
 
     /// @brief
     ///
@@ -405,9 +430,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_rng_dropout_resAdd_ln,
     /// @param sg_idy
     /// @return
     __XETLA_API void init(arguments_t *args, uint32_t wg_idx, uint32_t wg_idy,
-            uint32_t sg_idx, uint32_t sg_idy) {
+            uint32_t sg_idx, uint32_t sg_idy, uint32_t start_m) {
         int start_n = wg_idx * wg_tile_n + sg_idx * sg_tile_n;
-        int start_m = wg_idy * wg_tile_m + sg_idy * sg_tile_m;
         xetla_vector<uint64_t, 1> rand_offset_ptr_v
                 = xetla_load_global<uint64_t, 1, data_size::default_size,
                         cache_hint::cached, cache_hint::cached>(
@@ -429,22 +453,32 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_rng_dropout_resAdd_ln,
                 + wg_idx * wg_size_x + sg_idx;
         dropout_fwd.init(args->rand_seed, linear_idx, rand_offset_ptr_v[0],
                 threshold, args->dropout_scale);
-        subgroup::tile_load(bias_in, bias_in_payload);
+        if constexpr (n_chunks == 1) {
+            subgroup::tile_load(bias_in, bias_in_payload);
+        }
     }
 
     /// @brief
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> pre_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> pre_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         subgroup::tile_load(res_in, res_in_payload);
-        res_in_payload.update_tdesc(wg_num_m * wg_tile_m * mat_ld);
-        xetla_vector<dtype_acc, sg_tile_n> bias_input
+        if constexpr (n_chunks == 1) {
+            res_in_payload.update_tdesc(wg_num_m * wg_tile_m * mat_ld);
+        } else {
+            res_in_payload.update_tdesc(chunk_size);
+        }
+        if constexpr (n_chunks != 1) {
+            subgroup::tile_load(bias_in, bias_in_payload);
+            bias_in_payload.update_tdesc(chunk_size);
+        }
+        xetla_vector<dtype_acc, chunk_size> bias_input
                 = xetla_cvt<dtype_acc, dtype_in>(bias_in.reg);
         // bias_add
-        xetla_vector<dtype_acc, sg_tile_n> output
-                = reduce_helper<reduce_op::sum, dtype_acc, sg_tile_n>(
+        xetla_vector<dtype_acc, chunk_size> output
+                = reduce_helper<reduce_op::sum, dtype_acc, chunk_size>(
                         input, bias_input);
         if (dropout_prob != 0) {
             // dropout
@@ -452,18 +486,26 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_rng_dropout_resAdd_ln,
             mask_out.reg = dropout_fwd.get_mask();
             subgroup::tile_store<cache_hint::uncached>(
                     mask_out, mask_out_payload);
-            mask_out_payload.update_tdesc(wg_num_m * wg_tile_m * mask_ld);
+            if constexpr (n_chunks == 1) {
+                mask_out_payload.update_tdesc(wg_num_m * wg_tile_m * mask_ld);
+            } else {
+                mask_out_payload.update_tdesc(chunk_size);
+            }
         }
         // res_add, generate mixed mode
-        xetla_vector<dtype_acc, sg_tile_n> res_input
+        xetla_vector<dtype_acc, chunk_size> res_input
                 = xetla_cvt<dtype_acc, dtype_in>(res_in.reg);
-        output = reduce_helper<reduce_op::sum, dtype_acc, sg_tile_n>(
+        output = reduce_helper<reduce_op::sum, dtype_acc, chunk_size>(
                 output, res_input);
         bias_dropout_res_out.reg = xetla_cvt<dtype_out, dtype_acc>(output);
         subgroup::tile_store<cache_hint::uncached>(
                 bias_dropout_res_out, bias_dropout_res_out_payload);
-        bias_dropout_res_out_payload.update_tdesc(
-                wg_num_m * wg_tile_m * mat_ld);
+        if constexpr (n_chunks == 1) {
+            bias_dropout_res_out_payload.update_tdesc(
+                    wg_num_m * wg_tile_m * mat_ld);
+        } else {
+            bias_dropout_res_out_payload.update_tdesc(chunk_size);
+        }
         return output;
     }
 
@@ -471,8 +513,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::bias_rng_dropout_resAdd_ln,
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> post_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> post_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         return input;
     }
 };
@@ -501,21 +543,25 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_rng_dropout, dtype_in_,
     static constexpr uint32_t sg_tile_n = layer_norm_attr_::sg_tile_n;
     static constexpr uint32_t wg_num_m = layer_norm_attr_::wg_num_m;
     static constexpr uint32_t wg_num_n = layer_norm_attr_::wg_num_n;
+    static constexpr uint32_t chunk_size = layer_norm_attr_::chunk_size;
+    static constexpr uint32_t n_chunks = sg_tile_n / chunk_size;
+    static_assert(sg_tile_n % chunk_size == 0,
+            "Current impl does not support tailing mechanism");
 
     static constexpr uint32_t wg_size_x
             = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
     static constexpr uint32_t wg_size_y
             = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
 
-    using mask_out_tile_desc_t = subgroup::tile_desc_t<sg_tile_n, 1, sg_tile_n,
-            1, reg_layout::tiled>;
+    using mask_out_tile_desc_t = subgroup::tile_desc_t<chunk_size, 1,
+            chunk_size, 1, reg_layout::tiled>;
     using mask_out_t = subgroup::tile_t<dtype_mask, mask_out_tile_desc_t>;
     using mask_out_payload_t = subgroup::mem_payload_t<dtype_mask,
             mask_out_tile_desc_t, msg_type::block_1d, mem_layout::row_major,
             mem_space::global, gpu_arch::Xe>;
     mask_out_t mask_out;
     mask_out_payload_t mask_out_payload;
-    dropout_fwd_t<sg_tile_n> dropout_fwd;
+    dropout_fwd_t<chunk_size> dropout_fwd;
     uint32_t mask_ld;
     uint32_t matrix_m;
     uint32_t matrix_n;
@@ -529,8 +575,7 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_rng_dropout, dtype_in_,
     /// @param sg_idy
     /// @return
     __XETLA_API void init(arguments_t *args, uint32_t wg_idx, uint32_t wg_idy,
-            uint32_t sg_idx, uint32_t sg_idy) {
-        int start_m = wg_idy * wg_tile_m + sg_idy * sg_tile_m;
+            uint32_t sg_idx, uint32_t sg_idy, uint32_t start_m) {
         int start_n = wg_idx * wg_tile_n + sg_idx * sg_tile_n;
         xetla_vector<uint64_t, 1> rand_offset_ptr_v
                 = xetla_load_global<uint64_t, 1, data_size::default_size,
@@ -552,8 +597,8 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_rng_dropout, dtype_in_,
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> pre_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> pre_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
         return input;
     }
 
@@ -561,13 +606,17 @@ struct ln_fwd_fused_op_t<ln_fwd_fused_kind::ln_rng_dropout, dtype_in_,
     ///
     /// @param input
     /// @return
-    __XETLA_API xetla_vector<dtype_acc, sg_tile_n> post_op(
-            xetla_vector<dtype_acc, sg_tile_n> input) {
-        xetla_vector<dtype_acc, sg_tile_n> output
+    __XETLA_API xetla_vector<dtype_acc, chunk_size> post_op(
+            xetla_vector<dtype_acc, chunk_size> input) {
+        xetla_vector<dtype_acc, chunk_size> output
                 = dropout_fwd.template process<dtype_acc>(input);
         mask_out.reg = dropout_fwd.get_mask();
         subgroup::tile_store<cache_hint::uncached>(mask_out, mask_out_payload);
-        mask_out_payload.update_tdesc(wg_num_m * wg_tile_m * mask_ld);
+        if constexpr (n_chunks == 1) {
+            mask_out_payload.update_tdesc(wg_num_m * wg_tile_m * mask_ld);
+        } else {
+            mask_out_payload.update_tdesc(chunk_size);
+        }
         return output;
     }
 };

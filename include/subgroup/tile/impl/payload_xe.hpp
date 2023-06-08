@@ -885,14 +885,14 @@ public:
 /// @tparam cooperative_num_ Is the thread nums to prefetch data
 template <typename dtype_, uint32_t tile_size_x_, uint32_t tile_size_y_,
         uint32_t block_size_x_, uint32_t block_size_y_, mem_layout mem_layout_,
-        uint32_t cooperative_num_>
+        uint32_t cooperative_num_, reg_layout reg_layout_>
 struct prefetch_payload_t<dtype_,
         tile_desc_t<tile_size_x_, tile_size_y_, block_size_x_, block_size_y_,
-                reg_layout::tiled>,
+                reg_layout_>,
         mem_layout_, mem_space::global, cooperative_num_, gpu_arch::Xe> {
     using dtype = dtype_;
     using tile_desc = tile_desc_t<tile_size_x_, tile_size_y_, block_size_x_,
-            block_size_y_, reg_layout::tiled>;
+            block_size_y_, reg_layout_>;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout_;
     static constexpr gpu_arch arch_tag = gpu_arch::Xe;
@@ -1043,15 +1043,16 @@ private:
 /// @tparam mem_layout Is the data layout
 /// @tparam cooperative_num_ Is the thread nums to prefetch data
 template <typename dtype_, uint32_t tile_size_x_, uint32_t block_size_x_,
-        mem_layout mem_layout_, uint32_t cooperative_num_>
+        mem_layout mem_layout_, uint32_t cooperative_num_,
+        reg_layout reg_layout_>
 struct prefetch_payload_t<dtype_,
-        tile_desc_t<tile_size_x_, 1, block_size_x_, 1, reg_layout::tiled>,
+        tile_desc_t<tile_size_x_, 1, block_size_x_, 1, reg_layout_>,
         mem_layout_, mem_space::global, cooperative_num_, gpu_arch::Xe> {
     using dtype = dtype_;
     // CL aligned, so we can use uint64_t
     using prefetch_dtype = uint64_t;
     using tile_desc
-            = tile_desc_t<tile_size_x_, 1, block_size_x_, 1, reg_layout::tiled>;
+            = tile_desc_t<tile_size_x_, 1, block_size_x_, 1, reg_layout_>;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout_;
     static constexpr gpu_arch arch_tag = gpu_arch::Xe;
@@ -1060,7 +1061,7 @@ private:
     // Fetches the entire CL.
     static constexpr uint32_t cacheline_elems = 64 / sizeof(dtype);
     static constexpr uint32_t mem_block_nums
-            = (tile_desc::tile_size_x_ + cacheline_elems - 1) / cacheline_elems;
+            = (tile_desc::tile_size_x + cacheline_elems - 1) / cacheline_elems;
     static constexpr uint32_t cooperative_num = cooperative_num_;
 
     // For mem_tile_nums < cooperative_num cases, mem_tile_size_x will be CL length
@@ -1107,7 +1108,7 @@ public:
         uint32_t offset_x = mem_desc.coord.x;
         uint32_t offset_y = mem_desc.coord.y;
         base_offset = offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
-        uint64_t ptr_temp = mem_desc.base.base;
+        uint64_t ptr_temp = (uint64_t)mem_desc.base.base;
         base_ptr = (prefetch_dtype *)ptr_temp
                 + (coop_id % cooperative_num) * mem_tile_size_x;
     }

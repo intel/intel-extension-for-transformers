@@ -60,7 +60,7 @@ class brgemm_t {};
 /// @tparam alignment_b Is the memory alignment of matB.
 /// @tparam dtype_acc Is the compute data type.
 /// @tparam tile_shape Is the workgroup-level tile shape.
-/// @tparam accum_step Is the accumulate stride along k-dim.
+/// @tparam k_stride Is the accumulate stride along k-dim.
 /// @tparam engine Is the compute engine type.
 /// @tparam arch Is the HW architecture.
 /// @tparam stages Is the prefetch distance.
@@ -68,7 +68,7 @@ class brgemm_t {};
 template <typename dtype_a, typename dtype_b, mem_layout mem_layout_a,
         mem_layout mem_layout_b, mem_space mem_space_a, mem_space mem_space_b,
         int alignment_a, int alignment_b, typename dtype_acc,
-        typename tile_shape, int accum_step, mma_engine engine, gpu_arch arch,
+        typename tile_shape, int k_stride, mma_engine engine, gpu_arch arch,
         int stages = 3, int sync_freq = 0, class enable = void>
 class brgemm_selector_t {};
 

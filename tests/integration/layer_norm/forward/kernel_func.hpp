@@ -22,11 +22,11 @@ using namespace gpu::xetla;
 
 template <typename dtype_x, typename dtype_y, typename dtype_weight,
         typename dtype_acc, int wg_n, int wg_m, int sg_n, int sg_m,
-        int wg_num_m, int wg_num_n, ln_fwd_fused_kind fused_op_kind,
-        bool store_for_bwd>
+        int chunk_size, int wg_num_m, int wg_num_n,
+        ln_fwd_fused_kind fused_op_kind, bool store_for_bwd>
 struct ln_fwd_func_t {
     using layer_norm_attr = gpu::xetla::kernel::layer_norm_attr_t<wg_n, wg_m,
-            sg_n, sg_m, wg_num_m, wg_num_n>;
+            sg_n, sg_m, wg_num_m, wg_num_n, chunk_size>;
     using ln_fused_op = gpu::xetla::group::ln_fwd_fused_op_t<fused_op_kind,
             dtype_x, dtype_x, dtype_acc, layer_norm_attr, gpu_arch::Xe>;
     using layer_norm_fwd = gpu::xetla::kernel::layer_norm_fwd_t<dtype_x,

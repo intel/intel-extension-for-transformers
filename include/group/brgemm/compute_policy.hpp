@@ -40,7 +40,7 @@ struct compute_policy_default_xmx<compute_attr_, perf_tuning_knob_,
         gpu_arch::Xe> {
     using compute_attr = compute_attr_;
     using perf_tuning_knob = perf_tuning_knob_;
-    static constexpr int accum_step = perf_tuning_knob::accum_step;
+    static constexpr int k_stride = perf_tuning_knob::k_stride;
     static constexpr int stages = perf_tuning_knob::stages;
     static constexpr int sync_freq = perf_tuning_knob::sync_freq;
     static constexpr gpu_arch arch_tag = gpu_arch::Xe;
@@ -71,7 +71,7 @@ struct compute_policy_default_fpu<compute_attr_, perf_tuning_knob_,
         gpu_arch::Xe> {
     using compute_attr = compute_attr_;
     using perf_tuning_knob = perf_tuning_knob_;
-    static constexpr int accum_step = perf_tuning_knob::accum_step;
+    static constexpr int k_stride = perf_tuning_knob::k_stride;
     static constexpr int stages = perf_tuning_knob::stages;
     static constexpr int sync_freq = perf_tuning_knob::sync_freq;
     static constexpr gpu_arch arch_tag = gpu_arch::Xe;

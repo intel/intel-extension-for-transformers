@@ -86,6 +86,12 @@ struct tf32 {
     //#endif
 };
 
+template <typename T, typename = void>
+struct is_host_callable : std::false_type {};
+template <typename T>
+struct is_host_callable<T, std::enable_if_t<T::host_callable == true>>
+    : std::true_type {};
+
 /// @brief Used to check if the type is xetla internal data type
 /// @tparam T is the data type
 template <typename T>
@@ -210,3 +216,10 @@ concept xetla_matrix_ref
 /// @} xetla_core_base_types
 
 } // namespace gpu::xetla
+
+namespace sycl {
+template <typename T>
+struct is_device_copyable<T,
+        std::enable_if_t<gpu::xetla::is_host_callable<T>::value>>
+    : std::true_type {};
+} // namespace sycl

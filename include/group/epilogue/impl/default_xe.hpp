@@ -33,6 +33,7 @@ template <typename tile_shape_, typename mem_desc_c_t_>
 class epilogue_t<epilogue_policy_default<gpu_arch::Xe>, tile_shape_,
         mem_desc_c_t_> {
 public:
+    using epilogue_policy = epilogue_policy_default<gpu_arch::Xe>;
     using update_method = result_overwrite;
     using tile_shape = tile_shape_;
     using mem_desc_c_t = mem_desc_c_t_;
@@ -67,6 +68,8 @@ private:
     }
 
 public:
+    static constexpr bool is_2d_block_c = msg_type_c == msg_type::block_2d;
+
     /// @brief Default epilogue.
     /// 1) Convert dtype_acc to dtype_c 2) Overwrite to memory.
     /// @tparam matAcc_t Is the type of the input tile.

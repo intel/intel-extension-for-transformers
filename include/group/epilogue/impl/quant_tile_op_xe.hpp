@@ -35,6 +35,8 @@ class epilogue_t<epilogue_policy_quant_op<tile_op_t_, quant_op_t_,
                          update_method_, gpu_arch::Xe>,
         tile_shape_, mem_desc_c_t_> {
 public:
+    using epilogue_policy = epilogue_policy_quant_op<tile_op_t_, quant_op_t_,
+            update_method_, gpu_arch::Xe>;
     using quant_op_t = quant_op_t_;
     using tile_op_t = tile_op_t_;
     using update_method = update_method_;
@@ -103,6 +105,10 @@ private:
                                                 : msg_type::scatter)
             : msg_type::atomic_add;
 
+    static_assert(!(std::is_same<update_method, result_reduce_sum>::value
+                          && mem_space_c == mem_space::local),
+            "Local memory not support result_reduce_sum");
+
     /// @brief Updates tile base descriptor based on the tid.
     __XETLA_API static void update_sg_tile_tdesc(
             work_group_t &g, mem_desc_c_t &mem_desc_c) {
@@ -114,6 +120,8 @@ private:
     }
 
 public:
+    static constexpr bool is_2d_block_c = msg_type_c == msg_type::block_2d;
+
     /// @brief Default epilogue.
     /// 1) Call tile_op/chained_tile_op 2) Call quant_op
     /// 3) Overwrite/reduce_sum to memory.

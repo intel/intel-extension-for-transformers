@@ -277,26 +277,6 @@ public:
     using data_type_acc = float;
 };
 
-class Test12 : public TestBase {
-public:
-    static constexpr size_t mat_m = 256;
-    static constexpr size_t mat_n = 256;
-    static constexpr size_t mat_k = 256;
-    static constexpr size_t wg_m = 32;
-    static constexpr size_t wg_n = 32;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 32;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t slm_kslicing = 1;
-    static constexpr uint32_t l3_kslicing = 1;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = float;
-    using data_type_b = float;
-    using data_type_c = float;
-    using data_type_acc = float;
-};
-
 template <typename dtype_a, typename dtype_b, typename dtype_c>
 class input_buffer_init {
 public:

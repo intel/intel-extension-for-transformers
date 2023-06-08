@@ -94,7 +94,7 @@ public:
     using pre_processing_t = pre_processing_t_;
     using compute_policy = compute_policy_default_fpu<compute_attr_,
             perf_tuning_knob_, gpu_arch::Xe>;
-    static constexpr uint32_t accum_step = compute_policy::accum_step;
+    static constexpr uint32_t k_stride = compute_policy::k_stride;
     static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
     static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
@@ -140,10 +140,10 @@ private:
     static constexpr uint32_t sync_freq = compute_policy::sync_freq;
 
     /******** set tile layout && worker scope **********/
-    static constexpr uint32_t tile_size_x_a = accum_step;
+    static constexpr uint32_t tile_size_x_a = k_stride;
     static constexpr uint32_t tile_size_y_a = sg_tile_m;
     static constexpr uint32_t tile_size_x_b = sg_tile_n;
-    static constexpr uint32_t tile_size_y_b = accum_step;
+    static constexpr uint32_t tile_size_y_b = k_stride;
     static constexpr uint32_t tile_size_x_c = sg_tile_n;
     static constexpr uint32_t tile_size_y_c = sg_tile_m;
 
@@ -216,6 +216,11 @@ public:
             = enable_periodic_sync ? barrier_count_x + barrier_count_y : 0;
     // current no slm path
     static constexpr uint32_t slm_size = 0;
+
+    static constexpr bool is_2d_block_a
+            = matA_payload_t::message_type == msg_type::block_2d;
+    static constexpr bool is_2d_block_b
+            = matB_payload_t::message_type == msg_type::block_2d;
     using pre_processing_arg_t = typename pre_processing_t::arguments_t;
 
     /// @brief Arguments for brgemm.
