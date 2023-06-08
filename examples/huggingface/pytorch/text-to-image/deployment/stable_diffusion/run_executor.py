@@ -85,7 +85,7 @@ def executor(pipe, neural_engine_graph, prompt, name, size, generator):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_model",
-                        default="CompVis/stable-diffusion-v1-4",
+                        default="runwayml/stable-diffusion-v1-5",
                         type=str,
                         help="Path to pretrained model or model identifier from huggingface.co/models.")
     parser.add_argument(
@@ -96,6 +96,7 @@ def parse_args():
     parser.add_argument("--ir_path", default="./ir", type=str, help="Neural engine IR path.")
     parser.add_argument("--name", default="output_image", type=str, help="output image name.")
     parser.add_argument("--mode", type=str, help="Benchmark mode of latency or accuracy.")
+    parser.add_argument("--pipeline", default="text2img", type=str, help="text2img or img2img pipeline.")
     parser.add_argument("--seed", type=int, default=666, help="random seed")
     parser.add_argument("--size", type=int, default=1, help="the number of output images per prompt")
     return parser.parse_args()
@@ -103,22 +104,37 @@ def parse_args():
 
 def main():
     args = parse_args()
-    dpm = DPMSolverMultistepScheduler.from_pretrained(args.input_model, subfolder="scheduler")
-    pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model, schedule=dpm)
     neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path)
+    if args.pipeline == "text2img":
+        dpm = DPMSolverMultistepScheduler.from_pretrained(args.input_model, subfolder="scheduler")
+        pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model, scheduler=dpm)
+        generator = torch.Generator("cpu").manual_seed(args.seed)
+        if args.mode == "latency":
+            benchmark(pipe, neural_engine_graph, generator)
+            return
 
-    generator = torch.Generator("cpu").manual_seed(args.seed)
-    if args.mode == "latency":
-        benchmark(pipe, neural_engine_graph, generator)
-        return
+        if args.mode == "accuracy":
+            from diffusers import StableDiffusionPipeline
+            original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
+            accuracy(pipe, original_pipe, neural_engine_graph, generator)
+            return
 
-    if args.mode == "accuracy":
-        from diffusers import StableDiffusionPipeline
-        original_pipe = StableDiffusionPipeline.from_pretrained(args.input_model)
-        accuracy(pipe, original_pipe, neural_engine_graph, generator)
-        return
+        executor(pipe, neural_engine_graph, args.prompt, args.name, args.size, generator)
 
-    executor(pipe, neural_engine_graph, args.prompt, args.name, args.size, generator)
+    if args.pipeline == "img2img":
+        from diffusion_utils_img2img import StableDiffusionImg2ImgPipeline
+        import requests
+        from PIL import Image
+        from io import BytesIO
+        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(args.input_model)
+        url = "https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg"
+        response = requests.get(url)
+        init_image = Image.open(BytesIO(response.content)).convert("RGB")
+        init_image = init_image.resize((768, 512))
+
+        prompt = "A fantasy landscape, trending on artstation"
+        images = pipe(prompt=prompt, image=init_image, engine_graph=neural_engine_graph, strength=0.75, guidance_scale=7.5).images
+        images[0].save("fantasy_landscape.png")
 
     return
 
