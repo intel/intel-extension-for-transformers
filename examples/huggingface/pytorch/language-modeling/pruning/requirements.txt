@@ -1,5 +1,5 @@
 accelerate
 datasets
-transformers
+transformers<=4.29.1
 torch
 tqdm
