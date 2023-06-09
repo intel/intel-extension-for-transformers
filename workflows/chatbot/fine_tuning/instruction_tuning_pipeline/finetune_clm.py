@@ -22,15 +22,19 @@ import logging
 import os
 import sys
 import transformers
-
+from transformers.modeling_utils import unwrap_model
 from dataclasses import dataclass, field
 from datasets import load_dataset
 from peft import (
     LoraConfig,
+    PromptEncoderConfig,
+    PrefixTuningConfig,
+    PromptTuningConfig,
     TaskType,
     get_peft_model,
     get_peft_model_state_dict
 )
+from peft.tuners.adaption_prompt import AdaptionPromptConfig
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
@@ -197,6 +201,39 @@ class FinetuneArguments:
         default_factory=lambda: ["q_proj", "v_proj"],
         metadata={
             "help": "Target modules for the LoRA method."
+        },
+    )
+    adapter_layers: int = field(
+        default=30,
+        metadata={
+            "help": "adapter layer number in the LLaMA-adapter."
+        },
+    )
+    adapter_len: int = field(
+        default=10,
+        metadata={
+            "help": "The length of the adaption prompt to insert in the LLaMA-adapter."
+        },
+    )
+    num_virtual_tokens: int = field(
+        default=10,
+        metadata={
+            "help": "The length of the vitrual tokens to insert in P-tuning/Prompt-tuning/Prefix-tuning"
+        },
+    )
+    ptun_hidden_size: int = field(
+        default=1024,
+        metadata={
+            "help": "The encoder hidden size in P-tuning"
+        },
+    )
+    peft: Optional[str] = field(
+        default="lora",
+        metadata={
+            "help": (
+                "apply peft. default set to lora"
+            ),
+            "choices": ["llama_adapter", "lora", "ptun", "prefix", "prompt"],
         },
     )
 
@@ -463,14 +500,34 @@ def main():
 
     if training_args.do_train:
         # PEFT settings
-        peft_config = LoraConfig(
-            r=finetune_args.lora_rank,
-            lora_alpha=finetune_args.lora_alpha,
-            lora_dropout=finetune_args.lora_dropout,
-            target_modules=finetune_args.lora_target_modules,
-            bias="none",
-            task_type=TaskType.CAUSAL_LM,
-        )
+        if finetune_args.peft == "lora":
+            peft_config = LoraConfig(
+                r=finetune_args.lora_rank,
+                lora_alpha=finetune_args.lora_alpha,
+                lora_dropout=finetune_args.lora_dropout,
+                target_modules=finetune_args.lora_target_modules,
+                bias="none",
+                task_type=TaskType.CAUSAL_LM,
+            )
+        elif finetune_args.peft == "llama_adapter":
+            peft_config = AdaptionPromptConfig(
+                adapter_layers=finetune_args.adapter_layers,
+                adapter_len=finetune_args.adapter_len,
+                task_type="CAUSAL_LM")
+        elif finetune_args.peft == "ptun":
+            peft_config = PromptEncoderConfig(
+                num_virtual_tokens=finetune_args.num_virtual_tokens,
+                encoder_hidden_size=finetune_args.ptun_hidden_size,
+                task_type="CAUSAL_LM")
+        elif finetune_args.peft == "prefix":
+            peft_config = PrefixTuningConfig(
+                num_virtual_tokens=finetune_args.num_virtual_tokens,
+                task_type="CAUSAL_LM")
+        elif finetune_args.peft == "prompt":
+            peft_config = PromptTuningConfig(
+                num_virtual_tokens=finetune_args.num_virtual_tokens,
+                task_type="CAUSAL_LM")
+
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
 
@@ -484,8 +541,11 @@ def main():
             data_collator=data_collator,
         )
         trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
-        model.save_pretrained(training_args.output_dir)
-        tokenizer.save_pretrained(training_args.output_dir)
+        with training_args.main_process_first(desc="save model"):
+            if is_main_process(training_args.local_rank):
+                unwrapped_model = unwrap_model(model)
+                unwrapped_model.save_pretrained(training_args.output_dir, state_dict=unwrapped_model.state_dict())
+                tokenizer.save_pretrained(training_args.output_dir)
 
 if __name__ == "__main__":
     main()

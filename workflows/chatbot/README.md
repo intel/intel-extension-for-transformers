@@ -77,12 +77,17 @@ python finetune_clm.py \
         --overwrite_output_dir \
         --log_level info \
         --save_strategy epoch \
-        --output_dir ./llama_finetuned_model
+        --output_dir ./llama_finetuned_model \
+        --peft lora \
 ```
 
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
 
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
+you could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LORA,
+see https://github.com/huggingface/peft
+
+add option "--use_fast_tokenizer False" when using latest transformers if you meet failure in llama fast tokenizer
 
 ## 2. Multi-node Fine-tuning
 
