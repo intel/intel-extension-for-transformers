@@ -31,6 +31,7 @@ class cpu_memory_storage_t : public memory_storage_t {
   }
   bool set_handle(void* handle) override {
     data_ = handle;
+    external_ = true;
     return true;
   }
   bool mmap(void** map_ptr, size_t size, const stream_t* stream) override;
@@ -40,7 +41,8 @@ class cpu_memory_storage_t : public memory_storage_t {
   size_t get_ptr_size() const override { return sizeof(void*); }
 
  private:
-  void* data_ = nullptr;
+  void* data_;
+  bool external_ = false;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_SRC_CPU_CPU_MEMORY_MANAGER_HPP_

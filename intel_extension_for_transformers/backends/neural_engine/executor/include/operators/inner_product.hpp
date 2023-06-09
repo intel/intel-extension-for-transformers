@@ -132,8 +132,9 @@ class InnerProductOperator : public Operator {
   jd::tensor_desc scales_desc_;
   std::unordered_map<std::string, std::string> op_attrs_;
   jd::sparse_matmul spmm_kern_;
-  jd::transpose_matmul matmul_kern_;
   std::vector<const void*> rt_data_;
+  std::shared_ptr<jd::kernel_t> matmul_kernel_;
+  const jd::engine_t* cpu_engine_;
 #endif
   jd::dynamic_quant_matmul dynamic_quant_matmul_ker_;
   jd::dynamic_quant dynamic_quant_ker_;

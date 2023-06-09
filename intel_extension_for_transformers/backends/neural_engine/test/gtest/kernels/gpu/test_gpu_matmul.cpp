@@ -61,7 +61,7 @@ bool check_result(const test_params_t& t) {
                         jd::copy_direction_t::host_to_device, stream);
     }
 
-    jd::context_t context(stream);
+    jd::exec_context_t context(stream);
     size_t i = 0;
     for (; i < 5; i++) {
       context.add_input(mems[i]);

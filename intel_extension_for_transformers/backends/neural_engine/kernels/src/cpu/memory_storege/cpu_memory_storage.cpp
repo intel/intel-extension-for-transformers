@@ -15,12 +15,20 @@
 #include "src/cpu/engine/cpu_engine.hpp"
 
 namespace jd {
-cpu_memory_storage_t::~cpu_memory_storage_t() { free(data_); }
+cpu_memory_storage_t::~cpu_memory_storage_t() {
+  if (!external_) {
+    free(data_);
+  }
+}
 bool cpu_memory_storage_t::allocate(size_t size) {
   data_ = malloc(size);
   return true;
 }
-bool cpu_memory_storage_t::mmap(void**, size_t, const stream_t*) { return true; }
+bool cpu_memory_storage_t::mmap(void** map_ptr, size_t size, const stream_t*) {
+  *map_ptr = data_;
+  size_ = size;
+  return true;
+}
 
 bool cpu_memory_storage_t::unmmap(void*, size_t, const stream_t*) { return true; }
 

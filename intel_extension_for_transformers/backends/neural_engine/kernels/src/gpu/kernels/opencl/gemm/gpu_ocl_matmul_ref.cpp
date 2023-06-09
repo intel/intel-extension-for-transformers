@@ -26,7 +26,7 @@ inline const char* get_kernels() {
 }
 
 bool gpu_ocl_matmul_ref_k_t::init() { return true; }
-bool gpu_ocl_matmul_ref_k_t::init(const context_t& context) {
+bool gpu_ocl_matmul_ref_k_t::init(const exec_context_t& context) {
   cl_int err;
   gpu_ocl_stream_t* stream = dynamic_cast<gpu_ocl_stream_t*>(context.get_stream());
   cl_queue_ = stream->get_queue();

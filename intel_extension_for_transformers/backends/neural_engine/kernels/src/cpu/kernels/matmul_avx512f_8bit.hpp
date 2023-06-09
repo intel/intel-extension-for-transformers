@@ -15,7 +15,6 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_KERNELS_matmul_AVX512F_8BIT_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_KERNELS_matmul_AVX512F_8BIT_HPP_
 
-#include <glog/logging.h>
 #include <memory>
 #include <vector>
 #include <algorithm>
@@ -85,7 +84,12 @@ class matmul_avx512f_8bit_k_t : public kernel_t {
   matmul_avx512f_8bit_k_t& operator=(const matmul_avx512f_8bit_k_t& other) = delete;
 
   bool init() override;
-  bool execute(const std::vector<const void*>& rt_data) const override;
+
+  [[deprecated("Please use exec_context_t instead of rt_data")]] bool execute(
+      const std::vector<const void*>& rt_data) const override;
+
+  bool execute(const exec_context_t& context) override;
+
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 
  private:
@@ -94,7 +98,7 @@ class matmul_avx512f_8bit_k_t : public kernel_t {
  private:
   jit_gemm_avx512f_8bit_t* jit_ker_ = nullptr;
   const std::vector<std::vector<dim_t>> t_shapes_;
-  const dim_t M_, K_, N_;  // dim of matrix multiplication
+  dim_t M_, K_, N_;  // dim of matrix multiplication
   int lda, ldb, ldc, ldd;
   GemmCacheAdpter<float> mCacheAdapter;
   Parallel2DGemmV2<float> mParallel;

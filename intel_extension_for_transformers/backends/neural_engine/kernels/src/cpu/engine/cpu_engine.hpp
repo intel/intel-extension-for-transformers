@@ -34,7 +34,7 @@ class cpu_engine_t : public engine_t {
   bool create_memory_storage(memory_storage_t** storage) const override;
   bool create_stream(stream_t**) const override { return false; }
   const std::vector<impl_list_item_t>* get_implementation_list(const operator_desc& op_desc) const override;
-  bool create_kernel(const operator_desc&, std::shared_ptr<kernel_t>&, const stream_t*) const override { return true; }
+  bool create_kernel(const operator_desc&, std::shared_ptr<kernel_t>&, const stream_t*) const override;
 
  public:
   static const std::vector<impl_list_item_t> empty_list;

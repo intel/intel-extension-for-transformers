@@ -52,8 +52,7 @@ class SPARSE_TEST_API_ gpu_ocl_matmul_ref_k_t : public kernel_t {
 
  public:
   bool init() override;
-  bool init(const context_t& context) override;
-  bool execute(const context_t&) const override { return true; }
+  bool init(const exec_context_t& context) override;
   bool execute() const override;
 
  private:

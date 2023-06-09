@@ -36,6 +36,24 @@ enum io {
 };
 }  // namespace matmul_io
 
+namespace matmul_input {
+enum input {
+  SRC0,
+  SRC1,
+  SRC2,
+  SCALE0,
+  ZP0,
+  APPEND_SUM,
+  matmul_io_MAX = APPEND_SUM,
+};
+}  // namespace matmul_input
+
+namespace matmul_output {
+enum output {
+  DST0,
+};
+}  // namespace matmul_output
+
 struct matmul_param_t {
   dim_t M;
   dim_t N;

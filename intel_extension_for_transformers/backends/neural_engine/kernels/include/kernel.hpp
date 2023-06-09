@@ -25,9 +25,9 @@ namespace jd {
  */
 enum mem_type_t { host_mem, ocl_mem, sycl_mem };
 class stream_t;
-struct context_t {
-  explicit context_t(stream_t* stream) : stream_(stream) {}
-  stream_t* get_stream() const { return stream_; }
+struct exec_context_t {
+  explicit exec_context_t(const stream_t* stream) : stream_(stream) {}
+  const stream_t* get_stream() const { return stream_; }
   void add_input(memory_storage_t* input) { inputs_.push_back(input); }
   void set_input(size_t index, memory_storage_t* input) {
     if (index < inputs_.size()) {
@@ -35,19 +35,14 @@ struct context_t {
     }
   }
   void set_inputs(const std::vector<memory_storage_t*>& inputs) { inputs_ = inputs; }
-  void add_output(memory_storage_t* input) { outputs_.push_back(input); }
+  void add_output(memory_storage_t* output) { outputs_.push_back(output); }
   void set_output(size_t index, memory_storage_t* output) {
     if (index < outputs_.size()) {
       outputs_[index] = output;
     }
   }
   void set_outputs(const std::vector<memory_storage_t*>& outputs) { outputs_ = outputs; }
-  void set_workspace(size_t index, memory_storage_t* workspace) {
-    if (index < workspaces_.size()) {
-      workspaces_[index] = workspace;
-    }
-  }
-  void set_workspaces(const std::vector<memory_storage_t*>& workspaces) { workspaces_ = workspaces; }
+
   std::vector<memory_storage_t*> inputs() const { return inputs_; }
   memory_storage_t* input(size_t index) const {
     if (index < inputs_.size()) {
@@ -63,23 +58,21 @@ struct context_t {
     return nullptr;
   }
 
-  std::vector<memory_storage_t*> workspaces() const { return workspaces_; }
-
-  memory_storage_t* workspace(size_t index) const {
-    if (index < workspaces_.size()) {
-      return workspaces_[index];
-    }
-    return nullptr;
-  }
+  void set_workspace(memory_storage_t* workspace) { workspace_ = workspace; }
+  memory_storage_t* workspace() const { return workspace_; }
 
   mem_type_t mem_type() const { return mem_type_; }
 
+  void set_dynamic_shape(const std::vector<dim_t> dynamic_shape) { dynamic_shape_ = dynamic_shape; }
+  const std::vector<dim_t> get_dynamic_shape() const { return dynamic_shape_; }
+
  private:
   mem_type_t mem_type_;
-  stream_t* stream_;
+  const stream_t* stream_;
   std::vector<memory_storage_t*> inputs_;
   std::vector<memory_storage_t*> outputs_;
-  std::vector<memory_storage_t*> workspaces_;
+  memory_storage_t* workspace_;
+  std::vector<dim_t> dynamic_shape_;
 };
 
 class SPARSE_TEST_API_ kernel_t {
@@ -113,10 +106,10 @@ class SPARSE_TEST_API_ kernel_t {
   }
   // init kernel_t
   virtual bool init() = 0;
-  virtual bool init(const context_t&) { return true; }
+  virtual bool init(const exec_context_t&) { return true; }
 
   virtual bool execute(const std::vector<const void*>&) const { return true; }
-  virtual bool execute(const context_t&) const { return true; }
+  virtual bool execute(const exec_context_t&) { return true; }
   virtual bool execute() const { return true; }
   virtual size_t get_workspace_size() const { return 0; }
 

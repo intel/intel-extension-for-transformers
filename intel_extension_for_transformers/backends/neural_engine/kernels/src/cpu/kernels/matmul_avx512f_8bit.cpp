@@ -22,6 +22,8 @@
 namespace jd {
 
 using io = ssd::matmul_io::io;
+using input = ssd::matmul_input::input;
+using output = ssd::matmul_output::output;
 
 bool matmul_avx512f_8bit_kd_t::init() {
   if (!isa_available(avx512_core_bf16)) return false;
@@ -131,6 +133,79 @@ bool matmul_avx512f_8bit_k_t::execute(const std::vector<const void*>& rt_data) c
   bfloat16_t* matE = derived_kd()->jit_param().has_append_sum
                          ? const_cast<bfloat16_t*>(reinterpret_cast<const bfloat16_t*>(rt_data[io::APPEND_SUM]))
                          : nullptr;
+#pragma omp parallel
+  {
+    int tidx = omp_get_thread_num();
+    int colidx, rowidx, rowsize, colsize;
+    mParallel.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+    if (rowsize > 0 && colsize > 0) {
+      int rowremain = remainsize(rowidx, M_, rowsize);
+      int colremain = remainsize(colidx, N_, colsize);
+      int kbatch = pad_to_le(mCacheAdapter.mKBatch, jit_ker_->KTile);
+      auto cptr = matC + colidx + rowidx * ldc;
+      auto dptr = matD + colidx + rowidx * ldd;
+      auto eptr = derived_kd()->jit_param().has_append_sum ? matE + colidx + rowidx * ldc : nullptr;
+      auto scaleptr = scale + colidx;
+      for (int iterk = 0; iterk < K_; iterk += kbatch) {
+        int kbatch_remain = iterk + kbatch <= K_ ? kbatch : K_ - iterk;
+        auto aptr = matA + rowidx * lda + iterk;
+        auto bptr = derived_kd()->jit_param().weight_8bit + colidx * K_ + iterk * 16;
+        for (int j = 0; j < colremain; j += mParallel.mNStep) {
+          for (int i = 0; i < rowremain; i += jit_ker_->MTile) {
+            for (int in = 0; in < mParallel.mNStep; in += jit_ker_->NTile) {
+              int tmpcol = j + in;
+              if (j + in < colremain) {
+                int nsize = remainsize(j + in, colremain, jit_ker_->NTile);
+                ssd::matmul_fp8_data_t parm =
+                    ssd::matmul_fp8_data_t{aptr + i * lda,
+                                           bptr + tmpcol * K_,
+                                           cptr + i * ldc + tmpcol,
+                                           dptr + i * ldd + tmpcol,
+                                           derived_kd()->jit_param().has_append_sum ? eptr + i * ldc + tmpcol : nullptr,
+                                           scaleptr + tmpcol,
+                                           kbatch_remain,
+                                           nsize,
+                                           lda * 2,
+                                           static_cast<int>(K_),
+                                           ldc * 2,
+                                           ldd,
+                                           iterk,
+                                           derived_kd()->jit_param().alpha,
+                                           derived_kd()->jit_param().beta};
+                (*jit_ker_)(&parm);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool matmul_avx512f_8bit_k_t::execute(const exec_context_t& context) {
+  bfloat16_t* matA = nullptr;
+  bfloat16_t* matC = nullptr;
+  bfloat16_t* matD = nullptr;
+  bfloat16_t* matE = nullptr;
+  float* scale = nullptr;
+
+  context.input(input::SRC0)->get_handle(reinterpret_cast<void**>(&matA));
+  context.input(input::SRC2)->get_handle(reinterpret_cast<void**>(&matD));
+  context.input(input::SCALE0)->get_handle(reinterpret_cast<void**>(&scale));
+
+  context.output(output::DST0)->get_handle(reinterpret_cast<void**>(&matC));
+  dim_t M = context.get_dynamic_shape().empty() ? M_ : context.get_dynamic_shape().front();
+  if (M_ != M) {
+    M_ = M;
+    CpuDevice* cpudevice = Singleton<CpuDevice>::GetInstance();
+    mCacheAdapter.update(M_, N_, K_, cpudevice->L2Cache, 16, 240);
+    mParallel.update(M_, N_, jit_ker_->MTile, jit_ker_->NTile, cpudevice->getThreads(), mCacheAdapter);
+  }
+
+  if (derived_kd()->jit_param().has_append_sum) {
+    context.input(input::APPEND_SUM)->get_handle(reinterpret_cast<void**>(&matE));
+  }
 #pragma omp parallel
   {
     int tidx = omp_get_thread_num();

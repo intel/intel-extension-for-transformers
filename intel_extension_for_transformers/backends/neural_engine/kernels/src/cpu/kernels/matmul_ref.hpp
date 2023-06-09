@@ -84,15 +84,16 @@ class SPARSE_TEST_API_ matmul_ref_k_t : public kernel_t {
  public:
   bool init() override;
   bool execute(const std::vector<const void*>& rt_data) const override;
+  bool execute(const exec_context_t& context) override;
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
   inline const std::vector<std::vector<dim_t>>& perm() const { return derived_kd()->perm(); }
 
  private:
-  const dim_t bs0_;
-  const dim_t bs1_;
-  const dim_t M_;
-  const dim_t K_;
-  const dim_t N_;
+  dim_t bs0_;
+  dim_t bs1_;
+  dim_t M_;
+  dim_t K_;
+  dim_t N_;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_SRC_CPU_KERNELS_MATMUL_REF_HPP_

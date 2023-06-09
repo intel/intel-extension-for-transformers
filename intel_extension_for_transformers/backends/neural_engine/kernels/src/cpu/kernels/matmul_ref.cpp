@@ -16,6 +16,8 @@
 
 namespace jd {
 using io = ssd::matmul_io::io;
+using input = ssd::matmul_input::input;
+using output = ssd::matmul_output::output;
 
 static const std::vector<dim_t> perm_plain4{0, 1, 2, 3};
 static const std::vector<std::vector<std::vector<dim_t>>> perm_list = {
@@ -167,6 +169,197 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   const auto badd_data = rt_data.size() > io::SRC2 ? rt_data[io::SRC2] : nullptr;
   const auto scale_data = rt_data.size() > io::SCALE0 ? rt_data[io::SCALE0] : nullptr;
   const auto append_sum_data = rt_data.size() > io::APPEND_SUM ? rt_data[io::APPEND_SUM] : nullptr;
+  // ptr alias
+  auto left_fp32 = static_cast<const float*>(left_data);
+  auto left_bf16 = static_cast<const bfloat16_t*>(left_data);
+  auto left_u8 = static_cast<const uint8_t*>(left_data);
+  auto left_s8 = static_cast<const int8_t*>(left_data);
+  auto right_fp32 = static_cast<const float*>(right_data);
+  auto right_f8_e4m3 = static_cast<const float8_e4m3_t*>(right_data);
+  auto right_f8_e5m2 = static_cast<const float8_e5m2_t*>(right_data);
+  auto right_u8 = static_cast<const uint8_t*>(right_data);
+  auto right_s8 = static_cast<const int8_t*>(right_data);
+  auto right_bf16 = static_cast<const bfloat16_t*>(right_data);
+  auto dst_fp32 = static_cast<float*>(dst_data);
+  auto dst_u8 = static_cast<uint8_t*>(dst_data);
+  auto dst_s8 = static_cast<int8_t*>(dst_data);
+  auto dst_bf16 = static_cast<bfloat16_t*>(dst_data);
+  auto badd_fp32 = static_cast<const float*>(badd_data);
+  auto badd_bf16 = static_cast<const bfloat16_t*>(badd_data);
+  auto scale_fp32 = static_cast<const float*>(scale_data);
+  auto append_sum_u8 = static_cast<const uint8_t*>(append_sum_data);
+  auto append_sum_s8 = static_cast<const int8_t*>(append_sum_data);
+  auto append_sum_fp32 = static_cast<const float*>(append_sum_data);
+  auto append_sum_bf16 = static_cast<const bfloat16_t*>(append_sum_data);
+
+  std::vector<postop_attr> post_attr = op_desc.apply_postops_list();
+  if ((dst_dt != data_type::fp32 && dst_dt != data_type::bf16) &&
+      (post_attr.size() == 0 || post_attr.back().dt != dst_dt)) {
+    post_attr.emplace_back(dst_dt, postop_type::eltwise, postop_alg::quantize, 0, 0, 1);
+  }
+  // Computing the kernel
+#pragma omp parallel for collapse(4)
+  for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0)
+    for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
+      for (dim_t i = 0; i < M_; ++i)
+        for (dim_t j = 0; j < N_; ++j) {
+          float value = 0;
+          dim_t dst_idx = ibs0 * dst_stride[0] + ibs1 * dst_stride[1] + i * dst_stride[2] + j * dst_stride[3];
+          dim_t bias_idx = ibs0 * bias_stride[0] + ibs1 * bias_stride[1] + i * bias_stride[2] + j * bias_stride[3];
+          dim_t scale_idx = 0;
+          if (!scale_stride.empty()) {
+            scale_idx = j * bias_stride.back();
+          }
+          for (dim_t k = 0; k < K_; ++k) {
+            dim_t l_idx = ibs0 * left_stride[0] + ibs1 * left_stride[1] + i * left_stride[2] + k * left_stride[3];
+            dim_t r_idx = ibs0 * right_stride[0] + ibs1 * right_stride[1] + k * right_stride[2] + j * right_stride[3];
+
+            float l_value = left_dt == data_type::fp32   ? left_fp32[l_idx]
+                            : left_dt == data_type::u8   ? left_u8[l_idx]
+                            : left_dt == data_type::s8   ? left_s8[l_idx]
+                            : left_dt == data_type::bf16 ? static_cast<float>(left_bf16[l_idx])
+                                                         : 0.f;
+
+            float r_value = right_dt == data_type::fp32      ? right_fp32[r_idx]
+                            : right_dt == data_type::u8      ? right_u8[r_idx]
+                            : right_dt == data_type::s8      ? right_s8[r_idx]
+                            : right_dt == data_type::bf16    ? static_cast<float>(right_bf16[r_idx])
+                            : right_dt == data_type::f8_e4m3 ? static_cast<float>(right_f8_e4m3[r_idx])
+                            : right_dt == data_type::f8_e5m2 ? static_cast<float>(right_f8_e5m2[r_idx])
+                                                             : 0.f;
+
+            if (attrs.find("weight_type") != attrs.end()) {
+              for (auto& it : data_type_name) {
+                if (it.second == attrs.at("weight_type")) {
+                  right_dt = it.first;
+                  break;
+                }
+              }
+              float fp32 = static_cast<float>(bfloat16_t(right_bf16[r_idx]));
+              if (right_dt == data_type::f8_e4m3) {
+                r_value = static_cast<float>(float8_e4m3_t(fp32));
+              } else if (right_dt == data_type::f8_e5m2) {
+                r_value = static_cast<float>(float8_e5m2_t(fp32));
+              } else if (right_dt == data_type::s8) {
+                int8_t int8 = fp32_to_int8(fp32);
+                r_value = int8_to_fp32(int8);
+              }
+            }
+            value += l_value * r_value;
+          }
+          float badd_value = 0;
+          if (badd_data != nullptr && has_binary_add)
+            badd_value = dtypes[io::SRC2] == data_type::fp32   ? badd_fp32[bias_idx]
+                         : dtypes[io::SRC2] == data_type::bf16 ? static_cast<float>(badd_bf16[bias_idx])
+                                                               : 0;
+          float scale_value = 1.f;
+          if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty()) {
+            scale_value = dtypes[io::SCALE0] == data_type::fp32 ? scale_fp32[scale_idx] : 1.f;
+          }
+          float append_sum_value = 0.f;
+          if (append_sum_data != nullptr && has_append_sum) {
+            append_sum_value = dtypes[io::APPEND_SUM] == data_type::fp32 ? append_sum_fp32[dst_idx]
+                               : dtypes[io::APPEND_SUM] == data_type::u8 ? static_cast<float>(append_sum_u8[dst_idx])
+                               : dtypes[io::APPEND_SUM] == data_type::s8 ? static_cast<float>(append_sum_s8[dst_idx])
+                               : dtypes[io::APPEND_SUM] == data_type::bf16
+                                   ? static_cast<float>(append_sum_bf16[dst_idx])
+                                   : 0.f;
+          }
+          value = apply_postop_list(alpha * scale_value * value + beta * badd_value + zp + append_sum_value, post_attr);
+
+          // Quantize dst data
+          if (dst_dt == data_type::fp32) {
+            dst_fp32[dst_idx] = value;
+          } else if (dst_dt == data_type::u8) {
+            dst_u8[dst_idx] = static_cast<uint8_t>(value);
+          } else if (dst_dt == data_type::s8) {
+            dst_s8[dst_idx] = static_cast<int8_t>(value);
+          } else if (dst_dt == data_type::bf16) {
+            dst_bf16[dst_idx] = value;
+          } else {
+            SPARSE_LOG(FATAL) << "unsupported dst type";
+          }
+        }
+  return true;
+}
+bool matmul_ref_k_t::execute(const exec_context_t& context) {
+  // configure alias
+  const matmul_ref_kd_t& ref_kd = *derived_kd();
+  auto& op_desc = ref_kd.get_operator_desc();
+  auto& descs = op_desc.tensor_descs();
+  auto& attrs = op_desc.attrs();
+  auto shapes = op_desc.tensor_shapes();
+  std::transform(shapes.begin(), shapes.end(), shapes.begin(),
+                 [](auto&& x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
+  std::vector<data_type> dtypes(descs.size());
+  std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
+  bool has_binary_add = shapes.size() > io::SRC2 && !shapes[io::SRC2].empty();
+  bool has_append_sum = shapes.size() > io::APPEND_SUM && !shapes[io::APPEND_SUM].empty();
+
+  const auto& left_dt = dtypes[io::SRC0];
+  data_type right_dt = dtypes[io::SRC1];
+
+  const auto& dst_dt = dtypes[io::DST0];
+
+  // alpha * src0 x src1 + beta * src2 = dst.
+  // TBD(yi): change naming of matmul variables
+  float alpha = 1.f, beta = 1.f, zp = 0.f;
+  if (attrs.find("alpha") != attrs.end()) alpha = str_to_num<float>(attrs.at("alpha"));
+  if (attrs.find("beta") != attrs.end()) beta = str_to_num<float>(attrs.at("beta"));
+  if (shapes.size() > io::ZP0 && !shapes[io::ZP0].empty()) {
+    float* zp0;
+    context.input(input::ZP0)->get_handle(reinterpret_cast<void**>(&zp0));
+    zp = zp0[0];
+  }
+  if (attrs.find("src0_scale") != attrs.end()) alpha /= str_to_num<float>(attrs.at("src0_scale"));
+  if (attrs.find("src1_scale") != attrs.end()) alpha /= str_to_num<float>(attrs.at("src1_scale"));
+  if (attrs.find("out_scale") != attrs.end()) alpha *= str_to_num<float>(attrs.at("out_scale"));
+
+  // stride for dims index afte perm. e.g. first elements is always for bs0
+  M_ = context.get_dynamic_shape().empty() ? M_ : context.get_dynamic_shape().front();
+
+  const std::vector<dim_t> left_dim{bs0_, bs1_, M_, K_};
+  const std::vector<dim_t> right_dim{bs0_, bs1_, K_, N_};
+  const std::vector<dim_t> dst_dim{bs0_, bs1_, M_, N_};
+  const auto perm0 = perm()[0];
+  const auto perm0left = apply_perm(left_dim, perm0);
+  const std::vector<dim_t> left_perm_stride = dim2stride(perm0left);
+  const std::vector<dim_t> right_perm_stride = dim2stride(apply_perm(right_dim, perm()[1]));
+  const std::vector<dim_t> dst_perm_stride = dim2stride(apply_perm(dst_dim, perm_inv(perm()[2])));
+  const std::vector<dim_t> left_stride = apply_perm(left_perm_stride, perm_inv(perm()[0]));
+  const std::vector<dim_t> right_stride = apply_perm(right_perm_stride, perm_inv(perm()[1]));
+  const std::vector<dim_t> dst_stride = apply_perm(dst_perm_stride, perm()[2]);
+  const std::vector<dim_t> bias_stride = dim2step(shapes[io::SRC2]);
+  std::vector<dim_t> scale_stride;
+  if (shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty()) {
+    scale_stride = dim2step(shapes[io::SCALE0]);
+  }
+
+  // runtime data alias
+  void* left_data = nullptr;
+  context.input(input::SRC0)->get_handle(&left_data);
+
+  void* right_data = nullptr;
+  context.input(input::SRC1)->get_handle(&right_data);
+
+  void* dst_data = nullptr;
+  context.output(output::DST0)->get_handle(&dst_data);
+
+  void* badd_data = nullptr;
+  if (context.inputs().size() > input::SRC2) {
+    context.input(input::SRC2)->get_handle(&badd_data);
+  }
+
+  void* scale_data = nullptr;
+  if (context.inputs().size() > input::SCALE0) {
+    context.input(input::SCALE0)->get_handle(&scale_data);
+  }
+
+  void* append_sum_data = nullptr;
+  if (context.inputs().size() > input::APPEND_SUM) {
+    context.input(input::APPEND_SUM)->get_handle(&append_sum_data);
+  }
+
   // ptr alias
   auto left_fp32 = static_cast<const float*>(left_data);
   auto left_bf16 = static_cast<const bfloat16_t*>(left_data);

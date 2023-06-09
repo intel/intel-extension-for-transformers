@@ -14,8 +14,10 @@
 
 #include "inner_product.hpp"
 #include "data_type/data_types.hpp"
+#include "kernels/matmul_types.hpp"
 #include "kernels/data_pack.hpp"
 #include "kernels/sparse_data.hpp"
+#include "engine_factory.hpp"
 #include "model.hpp"
 #include "kernels/exposed_enum.hpp"
 
@@ -306,8 +308,12 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
           }
           jd::operator_desc op_desc(jd::kernel_kind::transpose_matmul, jd::kernel_prop::forward_inference,
                                     jd::engine_kind::cpu, ts_descs, attrs, postop_chain);
-          jd::transpose_matmul_desc kernel_desc(op_desc);
-          matmul_kern_ = jd::transpose_matmul(kernel_desc);
+
+          static jd::engine_factory factory;
+          cpu_engine_ = factory.create(jd::engine_kind::cpu, jd::runtime_kind::undef);
+          jd::stream_t* stream = nullptr;
+          cpu_engine_->create_stream(reinterpret_cast<jd::stream_t**>(&stream));
+          cpu_engine_->create_kernel(op_desc, matmul_kernel_, stream);
         }
       }
     }
@@ -1470,7 +1476,22 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
       rt = {src0_->data(), NULL,        dst_->data(), has_bias_ ? bias_->data() : NULL, weight_comp_.scales_.data(),
             NULL,          dst_->data()};
     }
-    matmul_kern_.execute(rt);
+
+    jd::exec_context_t context(nullptr);
+    for (size_t index = 0; index < rt.size(); index++) {
+      jd::memory_storage_t* mem;
+      cpu_engine_->create_memory_storage(&mem);
+      mem->set_handle(const_cast<void*>(rt[index]));
+      if (index == jd::ssd::matmul_io::SRC0) {
+        context.set_dynamic_shape({input[0]->shape()[0]});
+      }
+      if (index == jd::ssd::matmul_io::DST0) {
+        context.add_output(mem);
+      } else {
+        context.add_input(mem);
+      }
+    }
+    matmul_kernel_->execute(context);
     return;
   }
 

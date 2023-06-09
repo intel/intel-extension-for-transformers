@@ -14,7 +14,6 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_STREAM_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_STREAM_HPP_
-// #include "engine.hpp"
 
 namespace jd {
 class engine_t;

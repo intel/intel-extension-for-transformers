@@ -37,6 +37,7 @@ class memory_storage_t {
   virtual bool is_null() const = 0;
   virtual size_t get_ptr_size() const = 0;
   size_t get_size() const { return size_; }
+  void set_size(size_t size) { size_ = size; }
 
  protected:
   size_t size_ = 0;

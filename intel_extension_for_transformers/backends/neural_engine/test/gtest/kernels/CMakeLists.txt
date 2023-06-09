@@ -23,9 +23,9 @@ if(UNIX)
   # Enable warning
   if(NOT NE_WITH_SPARSELIB_GPU)
     ## see https://github.com/google/sanitizers/issues/611 for details)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -Wno-error=deprecated-declarations")
   endif()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-missing-field-initializers")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-missing-field-initializers -Wno-error=deprecated-declarations")
 endif()
 
 include(FindISA.cmake)
