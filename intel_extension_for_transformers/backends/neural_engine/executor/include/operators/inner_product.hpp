@@ -161,6 +161,8 @@ class InnerProductOperator : public Operator {
   memory dst_m_;
   memory gelu_m_;
   memory binary_m_;
+  memory any_src1_m_last_;
+  memory any_bias_m_last_;
 
   Tensor* src0_ = nullptr;
   Tensor* src1_ = nullptr;
