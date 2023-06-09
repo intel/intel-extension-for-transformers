@@ -28,8 +28,13 @@ using namespace gpu::xetla;
 
 template <typename data_type_x, typename data_type_y,
         typename data_type_acc = float>
-int dropout_result_validate(data_type_x *In, data_type_y *Out, int m, int n,
-        uint8_t *buffer_mask, float drop_out_scale) {
+int dropout_result_validate(data_type_x *in_device, data_type_y *out_device,
+        int m, int n, uint8_t *buffer_mask_device, float drop_out_scale,
+        sycl::queue queue) {
+    auto in = alloc_host_and_copy<data_type_x>(in_device, m * n, queue);
+    auto out = alloc_host_and_copy<data_type_y>(out_device, m * n, queue);
+    auto buffer_mask
+            = alloc_host_and_copy<uint8_t>(buffer_mask_device, m * n, queue);
 
     std::vector<data_type_acc> acc(m * n, 0);
 
@@ -41,17 +46,21 @@ int dropout_result_validate(data_type_x *In, data_type_y *Out, int m, int n,
             positive_num += set_zero ? 1 : 0;
             acc[i * n + j] = set_zero
                     ? 0
-                    : data_type_acc(In[i * n + j]) * drop_out_scale;
+                    : data_type_acc(in[i * n + j]) * drop_out_scale;
         }
     }
     std::cout << "positive ratio is: "
               << float(positive_num) / float(m) / float(n) * 100.f << "%\n";
 
-    buff_cmp::buff_vals<data_type_y> gpu_out(Out, m, n, n);
+    buff_cmp::buff_vals<data_type_y> gpu_out(out, m, n, n);
     buff_cmp::buff_vals<data_type_y, data_type_acc> cpu_out(
             acc.data(), m, n, n);
     bool result
             = buff_cmp::xetla_buff_cmp(gpu_out, cpu_out, "compare dropout out");
+
+    free(in);
+    free(out);
+    free(buffer_mask);
 
     std::cout << (!result ? "FAILED\n" : "PASSED\n");
     return result ? 0 : 1;

@@ -21,10 +21,18 @@
 
 template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_param>
-int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
-        data_type_param *scale, data_type_param *offset, int m, int k, int n,
+int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
+        data_type_c *C_device, data_type_param *scale_device,
+        data_type_param *offset_device, int m, int k, int n,
         gpu::xetla::mem_layout mem_layout_a,
-        gpu::xetla::mem_layout mem_layout_b) {
+        gpu::xetla::mem_layout mem_layout_b, sycl::queue queue) {
+
+    auto A = alloc_host_and_copy<data_type_a>(A_device, m * k, queue);
+    auto B = alloc_host_and_copy<data_type_b>(B_device, k * n, queue);
+    auto C = alloc_host_and_copy<data_type_c>(C_device, m * n, queue);
+    auto scale = alloc_host_and_copy<data_type_param>(scale_device, n, queue);
+    auto offset = alloc_host_and_copy<data_type_param>(offset_device, n, queue);
+
     bool is_col_major_a = mem_layout_a == gpu::xetla::mem_layout::col_major;
     bool is_col_major_b = mem_layout_b == gpu::xetla::mem_layout::col_major;
     int err_cnt = 0;
@@ -63,6 +71,12 @@ int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
             }
         }
     }
+
+    free(A);
+    free(B);
+    free(C);
+    free(offset);
+    free(scale);
 
     if (err_cnt > 0) {
         std::cout << "pass rate: "

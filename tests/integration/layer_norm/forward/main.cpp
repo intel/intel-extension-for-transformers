@@ -45,71 +45,85 @@ void ln_fwd_run() {
     using data_type_acc = typename test::data_type_acc;
     using data_type_weight = typename test::data_type_weight;
 
-    queue Queue {};
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    queue queue {};
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    data_type_x *buffer_x = static_cast<data_type_x *>(
-            malloc_shared(size_in * sizeof(data_type_x), Device, Context));
-    data_type_x *buffer_bias_dropout_res = static_cast<data_type_x *>(
-            malloc_shared(size_in * sizeof(data_type_x), Device, Context));
-    data_type_weight *buffer_beta
-            = static_cast<data_type_weight *>(malloc_shared(
-                    size_beta * sizeof(data_type_weight), Device, Context));
-    data_type_weight *buffer_gamma
-            = static_cast<data_type_weight *>(malloc_shared(
-                    size_gamma * sizeof(data_type_weight), Device, Context));
-    data_type_x *buffer_bias = static_cast<data_type_x *>(
-            malloc_shared(size_bias * sizeof(data_type_x), Device, Context));
-    data_type_x *buffer_resAdd = static_cast<data_type_x *>(
-            malloc_shared(size_resAdd * sizeof(data_type_x), Device, Context));
-    data_type_acc *buffer_mu = static_cast<data_type_acc *>(
-            malloc_shared(size_mu * sizeof(data_type_acc), Device, Context));
-    data_type_acc *buffer_rs = static_cast<data_type_acc *>(
-            malloc_shared(size_rs * sizeof(data_type_acc), Device, Context));
-    data_type_y *buffer_y = static_cast<data_type_y *>(
-            malloc_shared(size_out * sizeof(data_type_y), Device, Context));
-    uint8_t *buffer_mask = static_cast<uint8_t *>(
-            malloc_shared(size_mask * sizeof(uint8_t), Device, Context));
-    uint64_t *buffer_rand_offset = static_cast<uint64_t *>(
-            malloc_shared(sizeof(uint64_t), Device, Context));
-    buffer_rand_offset[0] = 0;
-    for (unsigned i = 0; i < size_in; ++i) {
-        buffer_x[i] = (random_float() - 0.5) * 10;
-    }
-    for (unsigned i = 0; i < size_in; ++i) {
-        buffer_bias_dropout_res[i] = 0;
-    }
-    for (unsigned i = 0; i < size_bias; ++i) {
-        buffer_bias[i] = (random_float() - 0.5);
-    }
-    for (unsigned i = 0; i < size_resAdd; ++i) {
-        buffer_resAdd[i] = (random_float() - 0.5) * 10;
-    }
-    for (unsigned i = 0; i < size_beta; ++i) {
-        buffer_beta[i] = (i * 3) % 17;
-    }
-    for (unsigned i = 0; i < size_gamma; ++i) {
-        buffer_gamma[i] = (i * 5) % 13;
-    }
-    for (unsigned i = 0; i < size_out; ++i) {
-        buffer_y[i] = data_type_y(0);
-    }
-    for (unsigned i = 0; i < size_mu; ++i) {
-        buffer_mu[i] = data_type_acc(0);
-    }
-    for (unsigned i = 0; i < size_rs; ++i) {
-        buffer_rs[i] = data_type_acc(0);
-    }
+    auto buffer_x = alloc_device_and_init<data_type_x>(
+            size_in,
+            [](data_type_x *data, size_t idx) {
+                data[idx]
+                        = static_cast<data_type_x>((random_float() - 0.5) * 10);
+            },
+            queue, device, context);
+    auto buffer_bias_dropout_res = alloc_device_and_init<data_type_x>(
+            size_in,
+            [](data_type_x *data, size_t idx) {
+                data[idx] = static_cast<data_type_x>(0);
+            },
+            queue, device, context);
+    auto buffer_beta = alloc_device_and_init<data_type_weight>(
+            size_beta,
+            [](data_type_weight *data, size_t idx) {
+                data[idx] = static_cast<data_type_weight>((idx * 3) % 17);
+            },
+            queue, device, context);
+    auto buffer_gamma = alloc_device_and_init<data_type_weight>(
+            size_gamma,
+            [](data_type_weight *data, size_t idx) {
+                data[idx] = static_cast<data_type_weight>((idx * 5) % 13);
+            },
+            queue, device, context);
+    auto buffer_bias = alloc_device_and_init<data_type_x>(
+            size_bias,
+            [](data_type_x *data, size_t idx) {
+                data[idx] = static_cast<data_type_x>(random_float() - 0.5);
+            },
+            queue, device, context);
+    auto buffer_resAdd = alloc_device_and_init<data_type_x>(
+            size_resAdd,
+            [](data_type_x *data, size_t idx) {
+                data[idx]
+                        = static_cast<data_type_x>((random_float() - 0.5) * 10);
+            },
+            queue, device, context);
+    auto buffer_mu = alloc_device_and_init<data_type_acc>(
+            size_mu,
+            [](data_type_acc *data, size_t idx) {
+                data[idx] = static_cast<data_type_acc>(0);
+            },
+            queue, device, context);
+    auto buffer_rs = alloc_device_and_init<data_type_acc>(
+            size_rs,
+            [](data_type_acc *data, size_t idx) {
+                data[idx] = static_cast<data_type_acc>(0);
+            },
+            queue, device, context);
+    auto buffer_y = alloc_device_and_init<data_type_y>(
+            size_out,
+            [](data_type_y *data, size_t idx) {
+                data[idx] = static_cast<data_type_y>(0);
+            },
+            queue, device, context);
     uint32_t drop_threshold = drop_out_ratio * double(RAND_MAX);
-    for (unsigned i = 0; i < size_mask; ++i) {
-        buffer_mask[i] = (generate_random<double>(0.0, double(RAND_MAX))
-                                 > drop_threshold)
-                ? 0
-                : 1;
-    }
+    auto buffer_mask = alloc_device_and_init<uint8_t>(
+            size_mask,
+            [&drop_threshold](uint8_t *data, size_t idx) {
+                data[idx] = static_cast<uint8_t>(
+                        (generate_random<double>(0.0, double(RAND_MAX))
+                                > drop_threshold)
+                                ? 0
+                                : 1);
+            },
+            queue, device, context);
+    auto buffer_rand_offset = alloc_device_and_init<uint64_t>(
+            1,
+            [](uint64_t *data, size_t idx) {
+                data[idx] = static_cast<uint64_t>(0);
+            },
+            queue, device, context);
 
     cl::sycl::range<3> GroupRange {1, test::wg_num_m, test::wg_num_n};
     cl::sycl::range<3> LocalRange {1,
@@ -118,7 +132,7 @@ void ln_fwd_run() {
     cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
 
     try {
-        auto e_esimd = Queue.submit([&](handler &cgh) {
+        auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<
                     test>(Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 constexpr bool store_for_bwd = true;
@@ -150,25 +164,58 @@ void ln_fwd_run() {
         FAIL();
     }
 
+    auto buffer_x_host
+            = alloc_host_and_copy<data_type_x>(buffer_x, size_in, queue);
+    auto buffer_y_host
+            = alloc_host_and_copy<data_type_y>(buffer_y, size_out, queue);
+    auto buffer_gamma_host = alloc_host_and_copy<data_type_weight>(
+            buffer_gamma, size_gamma, queue);
+    auto buffer_beta_host = alloc_host_and_copy<data_type_weight>(
+            buffer_beta, size_beta, queue);
+    auto buffer_mu_host
+            = alloc_host_and_copy<data_type_acc>(buffer_mu, size_mu, queue);
+    auto buffer_rs_host
+            = alloc_host_and_copy<data_type_acc>(buffer_rs, size_rs, queue);
+    auto buffer_bias_host
+            = alloc_host_and_copy<data_type_x>(buffer_bias, size_bias, queue);
+    auto buffer_resAdd_host = alloc_host_and_copy<data_type_x>(
+            buffer_resAdd, size_resAdd, queue);
+    auto buffer_mask_host
+            = alloc_host_and_copy<uint8_t>(buffer_mask, size_mask, queue);
+    auto buffer_bias_dropout_res_host = alloc_host_and_copy<data_type_x>(
+            buffer_bias_dropout_res, size_in, queue);
+
     // validation
     ASSERT_EQ(0,
             (ln_fwd_result_validate<data_type_x, data_type_weight, data_type_y,
-                    data_type_acc>(buffer_x, buffer_y, buffer_gamma,
-                    buffer_beta, buffer_mu, buffer_rs, matrix_m, matrix_n,
-                    matrix_n, test::sg_n, buffer_bias, buffer_resAdd,
-                    buffer_mask, buffer_bias_dropout_res, drop_out_scale,
+                    data_type_acc>(buffer_x_host, buffer_y_host,
+                    buffer_gamma_host, buffer_beta_host, buffer_mu_host,
+                    buffer_rs_host, matrix_m, matrix_n, matrix_n, test::sg_n,
+                    buffer_bias_host, buffer_resAdd_host, buffer_mask_host,
+                    buffer_bias_dropout_res_host, drop_out_scale,
                     test::ln_fused_op_kind)));
 
-    free(buffer_x, Context);
-    free(buffer_beta, Context);
-    free(buffer_gamma, Context);
-    free(buffer_mu, Context);
-    free(buffer_rs, Context);
-    free(buffer_y, Context);
-    free(buffer_mask, Context);
-    free(buffer_resAdd, Context);
-    free(buffer_bias, Context);
-    free(buffer_rand_offset, Context);
+    free(buffer_x, context);
+    free(buffer_beta, context);
+    free(buffer_gamma, context);
+    free(buffer_mu, context);
+    free(buffer_rs, context);
+    free(buffer_y, context);
+    free(buffer_mask, context);
+    free(buffer_resAdd, context);
+    free(buffer_bias, context);
+    free(buffer_rand_offset, context);
+
+    free(buffer_x_host);
+    free(buffer_y_host);
+    free(buffer_gamma_host);
+    free(buffer_beta_host);
+    free(buffer_mu_host);
+    free(buffer_rs_host);
+    free(buffer_bias_host);
+    free(buffer_resAdd_host);
+    free(buffer_mask_host);
+    free(buffer_bias_dropout_res_host);
 }
 
 TEST(ln_fwd_0, esimd) {

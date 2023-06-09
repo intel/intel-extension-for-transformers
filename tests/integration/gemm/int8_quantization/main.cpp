@@ -51,39 +51,41 @@ static void igemm_quantize_run() {
     int size_a = matrix_m * matrix_k;
     int size_b = matrix_k * matrix_n;
     int size_c = matrix_m * matrix_n;
-    queue Queue {};
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    queue queue {};
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    data_type_a *A = static_cast<data_type_a *>(
-            malloc_shared(size_a * sizeof(data_type_a), Device, Context));
-    data_type_b *B = static_cast<data_type_b *>(
-            malloc_shared(size_b * sizeof(data_type_b), Device, Context));
-    data_type_c *C = static_cast<data_type_c *>(
-            malloc_shared(size_c * sizeof(data_type_c), Device, Context));
+    auto A = alloc_device_and_init<data_type_a>(
+            size_a,
+            [](data_type_a *data, size_t idx) {
+                data[idx] = (data_type_a)((idx * 3) % 17);
+            },
+            queue, device, context);
+    auto B = alloc_device_and_init<data_type_b>(
+            size_b,
+            [](data_type_b *data, size_t idx) {
+                data[idx] = (data_type_b)((idx * 5) % 19);
+            },
+            queue, device, context);
+    auto C = alloc_device_and_init<data_type_c>(
+            size_c,
+            [](data_type_c *data, size_t idx) { data[idx] = (data_type_c)0; },
+            queue, device, context);
 
-    data_type_param *offset = static_cast<data_type_param *>(
-            malloc_shared(matrix_n * sizeof(data_type_param), Device, Context));
-
-    data_type_param *scale = static_cast<data_type_param *>(
-            malloc_shared(matrix_n * sizeof(data_type_param), Device, Context));
-
-    for (unsigned i = 0; i < size_a; ++i) {
-        A[i] = data_type_a((i * 3) % 17);
-    }
-    for (unsigned i = 0; i < size_b; ++i) {
-        B[i] = data_type_b((i * 5) % 19);
-    }
-    for (unsigned i = 0; i < size_c; ++i) {
-        C[i] = data_type_c(0);
-    }
-
-    for (unsigned i = 0; i < matrix_n; ++i) {
-        offset[i] = (random_float() - 0.5f);
-        scale[i] = (random_float() - 0.5f);
-    }
+    auto offset = alloc_device_and_init<data_type_param>(
+            matrix_n,
+            [](data_type_param *data, size_t idx) {
+                data[idx] = (random_float() - 0.5f);
+            },
+            queue, device, context);
+    auto scale = alloc_device_and_init<data_type_param>(
+            matrix_n,
+            [](data_type_param *data, size_t idx) {
+                data[idx] = (random_float() - 0.5f);
+            },
+            queue, device, context);
 
     // here keep the same dim in CM and esimd, diff the index in kernel code
     cl::sycl::range<3> GroupRange {1, (matrix_m + wg_tile_m - 1) / wg_tile_m,
@@ -93,7 +95,7 @@ static void igemm_quantize_run() {
     cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
 
     try {
-        auto e_esimd = Queue.submit([&](handler &cgh) {
+        auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test1>(
                     Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         xetla_exec_item<3> ei(item);
@@ -125,13 +127,13 @@ static void igemm_quantize_run() {
     ASSERT_EQ(0,
             (gemm_result_validate<data_type_a, data_type_b, data_type_c,
                     data_type_param>(A, B, C, scale, offset, matrix_m, matrix_k,
-                    matrix_n, mem_layout_a, mem_layout_b)));
+                    matrix_n, mem_layout_a, mem_layout_b, queue)));
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
-    free(scale, Context);
-    free(offset, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
+    free(scale, context);
+    free(offset, context);
 }
 
 TEST(igemm_quantize, cm_esimd) {

@@ -39,32 +39,30 @@ void basic_brgemm_run(uint32_t iter) {
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
 
     // Define SYCL queue, context and device
-    auto Queue = queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    // Define and initialize the data required for the calculation
-    // Use shared data which will be migrated automatically between both CPU and
-    // GPU
-    data_type_a *A = static_cast<data_type_a *>(
-            malloc_shared(size_a * sizeof(data_type_a), Device, Context));
-    data_type_b *B = static_cast<data_type_b *>(
-            malloc_shared(size_b * sizeof(data_type_b), Device, Context));
-    data_type_c *C = static_cast<data_type_c *>(
-            malloc_shared(size_c * sizeof(data_type_c), Device, Context));
-
-    // Init data in GEMM A, B and C
-    for (uint32_t i = 0; i < size_a; ++i) {
-        A[i] = static_cast<data_type_a>(random_float());
-    }
-    for (uint32_t i = 0; i < size_b; ++i) {
-        B[i] = static_cast<data_type_b>(random_float());
-    }
-    for (uint32_t i = 0; i < size_c; ++i) {
-        C[i] = static_cast<data_type_c>(0.0f);
-    }
+    auto A = alloc_device_and_init<data_type_a>(
+            size_a,
+            [](data_type_a *data, size_t idx) {
+                data[idx] = static_cast<data_type_a>(random_float());
+            },
+            queue, device, context);
+    auto B = alloc_device_and_init<data_type_b>(
+            size_b,
+            [](data_type_b *data, size_t idx) {
+                data[idx] = static_cast<data_type_b>(random_float());
+            },
+            queue, device, context);
+    auto C = alloc_device_and_init<data_type_c>(
+            size_c,
+            [](data_type_c *data, size_t idx) {
+                data[idx] = static_cast<data_type_c>(0.0f);
+            },
+            queue, device, context);
 
     // Define the shape of workgroup and subgroup
     // It's tunable parameters based on different input shape and hardware for
@@ -100,7 +98,7 @@ void basic_brgemm_run(uint32_t iter) {
     profiling_helper prof("basic_brgemm", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
-        auto gpu_event = Queue.submit([&](handler &cgh) {
+        auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 using namespace gpu::xetla;
@@ -205,14 +203,15 @@ void basic_brgemm_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             gemm_result_validate(A, B, C, 1, matrix_m, matrix_k, matrix_n,
-                    mem_layout::row_major, mem_layout::row_major));
+                    queue, context, mem_layout::row_major,
+                    mem_layout::row_major));
 
     // performance
     prof.print_profiling_result(profiling_selector::GPU);
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
 }
 
 int main() {

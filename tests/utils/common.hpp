@@ -32,6 +32,8 @@ using namespace gpu::xetla;
 #define get_str_tmp(x) #x
 #define get_str(x) get_str_tmp(x)
 
+#define DEVICE_MEM_ALIGNMENT (64)
+
 #define random_float() (generate_random<double>())
 
 template <typename data_type>
@@ -93,10 +95,41 @@ inline result_type generate_random(result_type a = 0.0, result_type b = 1.0) {
     return distribution(engine);
 }
 
+template <typename data_type>
+inline data_type *alloc_device_and_init(size_t size,
+        std::function<void(data_type *data, size_t elements)> init_func,
+        sycl::queue &queue, sycl::device &device, sycl::context &context) {
+    auto host_ptr = static_cast<data_type *>(malloc(size * sizeof(data_type)));
+
+    for (uint32_t i = 0; i < size; ++i) {
+        init_func(host_ptr, i);
+    }
+
+    auto device_ptr = static_cast<data_type *>(aligned_alloc_device(
+            DEVICE_MEM_ALIGNMENT, size * sizeof(data_type), device, context));
+
+    queue.memcpy((void *)device_ptr, (void *)host_ptr, size * sizeof(data_type))
+            .wait();
+
+    free(host_ptr);
+
+    return device_ptr;
+}
+
+template <typename data_type>
+inline data_type *alloc_host_and_copy(
+        data_type *device_ptr, size_t size, sycl::queue &queue) {
+    auto host_ptr = static_cast<data_type *>(malloc(size * sizeof(data_type)));
+
+    queue.memcpy(host_ptr, device_ptr, size * sizeof(data_type)).wait();
+    return host_ptr;
+}
+
 template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_acc = float>
-int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
-        uint32_t batch_size, uint32_t m, uint32_t k, uint32_t n,
+int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
+        data_type_c *C_device, uint32_t batch_size, uint32_t m, uint32_t k,
+        uint32_t n, sycl::queue queue, sycl::context context,
         mem_layout mem_layout_a_ = mem_layout::row_major,
         mem_layout mem_layout_b_ = mem_layout::row_major) {
     bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;
@@ -105,6 +138,14 @@ int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
     uint32_t size_a_slice = m * k;
     uint32_t size_b_slice = k * n;
     uint32_t size_c_slice = m * n;
+
+    auto A = alloc_host_and_copy<data_type_a>(
+            A_device, batch_size * size_a_slice, queue);
+    auto B = alloc_host_and_copy<data_type_b>(
+            B_device, batch_size * size_b_slice, queue);
+    auto C = alloc_host_and_copy<data_type_c>(
+            C_device, batch_size * size_c_slice, queue);
+
     buff_cmp::buff_vals<data_type_c> data(C, batch_size * m, n, n);
     std::vector<data_type_acc> gold_C(batch_size * m * n, 0);
     for (uint32_t batch = 0; batch < batch_size; batch++) {
@@ -116,6 +157,10 @@ int gemm_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
             gold_C.data(), batch_size * m, n, n);
 
     bool result = buff_cmp::xetla_buff_cmp(data, other, "gemm validation");
+
+    free(A);
+    free(B);
+    free(C);
 
     std::cout << (!result ? "FAILED\n" : "PASSED\n");
     return result ? 0 : 1;

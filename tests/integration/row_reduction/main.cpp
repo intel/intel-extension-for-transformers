@@ -53,45 +53,47 @@ static void row_reduction_run() {
     float drop_out_prob = 0.2f;
     float drop_out_scale = (1.f - drop_out_prob);
 
-    queue Queue {};
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    queue queue {};
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    data_type_in *buffer_in = static_cast<data_type_in *>(
-            malloc_shared(size_in * sizeof(data_type_in), Device, Context));
-    data_type_w *buffer_w = static_cast<data_type_w *>(
-            malloc_shared(size_w * sizeof(data_type_w), Device, Context));
-    data_type_x *buffer_x = static_cast<data_type_x *>(
-            malloc_shared(size_x * sizeof(data_type_x), Device, Context));
-    data_type_d *buffer_d = static_cast<data_type_d *>(
-            malloc_shared(size_d * sizeof(data_type_d), Device, Context));
-    data_type_out *buffer_out = static_cast<data_type_out *>(
-            malloc_shared(size_out * sizeof(data_type_out), Device, Context));
-    uint8_t *buffer_mask = static_cast<uint8_t *>(
-            malloc_shared(size_mask * sizeof(uint8_t), Device, Context));
+    auto buffer_in = alloc_device_and_init<data_type_in>(
+            size_in,
+            [](data_type_in *data, size_t idx) {
+                data[idx] = static_cast<data_type_in>(random_float());
+            },
+            queue, device, context);
 
-    for (unsigned i = 0; i < size_in; ++i) {
-        buffer_in[i] = random_float();
-    }
-    for (unsigned i = 0; i < size_w; ++i) {
-        buffer_w[i] = random_float();
-    }
-    for (unsigned i = 0; i < size_out; ++i) {
-        buffer_out[i] = data_type_out(0);
-    }
-    for (unsigned i = 0; i < size_x; ++i) {
-        buffer_x[i] = 0;
-    }
-    for (unsigned i = 0; i < size_d; ++i) {
-        buffer_d[i] = 0;
-    }
+    auto buffer_w = alloc_device_and_init<data_type_w>(
+            size_w,
+            [](data_type_w *data, size_t idx) {
+                data[idx] = static_cast<data_type_w>(random_float());
+            },
+            queue, device, context);
+
+    auto buffer_x = alloc_device_and_init<data_type_x>(
+            size_x, [](data_type_x *data, size_t idx) { data[idx] = 0; }, queue,
+            device, context);
+
+    auto buffer_d = alloc_device_and_init<data_type_d>(
+            size_d, [](data_type_d *data, size_t idx) { data[idx] = 0; }, queue,
+            device, context);
+
+    auto buffer_out = alloc_device_and_init<data_type_out>(
+            size_out, [](data_type_out *data, size_t idx) { data[idx] = 0; },
+            queue, device, context);
+
     uint32_t drop_threshold = drop_out_prob * double(RAND_MAX);
-    for (unsigned i = 0; i < size_mask; ++i) {
-        buffer_mask[i]
-                = (random_float() * double(RAND_MAX) > drop_threshold) ? 0 : 1;
-    }
+    auto buffer_mask = alloc_device_and_init<uint8_t>(
+            size_mask,
+            [drop_threshold](uint8_t *data, size_t idx) {
+                data[idx] = (random_float() * double(RAND_MAX) > drop_threshold)
+                        ? 0
+                        : 1;
+            },
+            queue, device, context);
 
     cl::sycl::range<3> GroupRange {1, 1, (matrix_n + wg_n - 1) / wg_n};
     cl::sycl::range<3> LocalRange {
@@ -99,7 +101,7 @@ static void row_reduction_run() {
     cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
 
     try {
-        auto e_esimd = Queue.submit([&](handler &cgh) {
+        auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test>(
                     Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         using row_reduction_func = row_reduction_func_t<
@@ -136,12 +138,14 @@ static void row_reduction_run() {
             (reduction_result_validate<data_type_in, data_type_out, data_type_w,
                     data_type_x, data_type_d, data_type_acc>(buffer_in,
                     buffer_out, buffer_w, buffer_x, buffer_d, buffer_mask,
-                    matrix_m, matrix_n, drop_out_scale, fused_op_kind)));
+                    matrix_m, matrix_n, drop_out_scale, fused_op_kind, queue)));
 
-    free(buffer_in, Context);
-    free(buffer_out, Context);
-    free(buffer_w, Context);
-    free(buffer_x, Context);
+    free(buffer_in, context);
+    free(buffer_w, context);
+    free(buffer_x, context);
+    free(buffer_d, context);
+    free(buffer_out, context);
+    free(buffer_mask, context);
 }
 
 TEST(test_bf16_0, esimd) {

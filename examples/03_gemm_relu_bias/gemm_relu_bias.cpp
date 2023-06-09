@@ -23,10 +23,16 @@ using namespace gpu;
 
 template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_d, typename data_type_acc = float>
-int gemm_relu_bias_result_validate(data_type_a *A, data_type_b *B,
-        data_type_c *C, data_type_d *D, uint32_t m, uint32_t k, uint32_t n,
+int gemm_relu_bias_result_validate(data_type_a *A_device, data_type_b *B_device,
+        data_type_c *C_device, data_type_d *D_device, uint32_t m, uint32_t k,
+        uint32_t n, sycl::queue queue,
         mem_layout mem_layout_a_ = mem_layout::row_major,
         mem_layout mem_layout_b_ = mem_layout::row_major) {
+    auto A = alloc_host_and_copy<data_type_a>(A_device, m * k, queue);
+    auto B = alloc_host_and_copy<data_type_b>(B_device, k * n, queue);
+    auto C = alloc_host_and_copy<data_type_c>(C_device, m * n, queue);
+    auto D = alloc_host_and_copy<data_type_d>(D_device, n, queue);
+
     bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;
     bool is_col_major_b = mem_layout_b_ == mem_layout::col_major;
     buff_cmp::buff_vals<data_type_c> data(C, m, n, n);
@@ -46,6 +52,11 @@ int gemm_relu_bias_result_validate(data_type_a *A, data_type_b *B,
 
     bool result = buff_cmp::xetla_buff_cmp(
             data, other, "gemm_relu_bias validation");
+
+    free(A);
+    free(B);
+    free(C);
+    free(D);
 
     std::cout << (!result ? "FAILED\n" : "PASSED\n");
     return result ? 0 : 1;
@@ -76,39 +87,36 @@ void gemm_relu_bias_run(uint32_t iter) {
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
 
     //Define SYCL queue, context and device
-    auto Queue = queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    //Define and initialize the data required for the calculation
-    //Use shared data which will be migrated automatically between  both CPU and GPU
-    data_type_a *A = static_cast<data_type_a *>(
-            malloc_shared(size_a * sizeof(data_type_a), Device, Context));
-    data_type_b *B = static_cast<data_type_b *>(
-            malloc_shared(size_b * sizeof(data_type_b), Device, Context));
-    data_type_c *C = static_cast<data_type_c *>(
-            malloc_shared(size_c * sizeof(data_type_c), Device, Context));
-    //[ReLuBias] The pouint32_ter D is used for BiasAdd that is passed to epilogue_t
-    //The datatype is chosen to be identical to accumulator data type
-    data_type_d *D = static_cast<data_type_d *>(
-            malloc_shared(size_d * sizeof(data_type_d), Device, Context));
-
-    //Init data in GEMM A, B and C
-    for (uint32_t i = 0; i < size_a; ++i) {
-        A[i] = static_cast<data_type_a>(random_float());
-    }
-    for (uint32_t i = 0; i < size_b; ++i) {
-        B[i] = static_cast<data_type_b>(random_float());
-    }
-    for (uint32_t i = 0; i < size_c; ++i) {
-        C[i] = static_cast<data_type_c>(0.0f);
-    }
-    //[ReLuBias] Init data D for BiasAdd
-    for (uint32_t i = 0; i < size_d; ++i) {
-        D[i] = static_cast<data_type_d>(random_float());
-    }
+    auto A = alloc_device_and_init<data_type_a>(
+            size_a,
+            [](data_type_a *data, size_t idx) {
+                data[idx] = static_cast<data_type_a>(random_float());
+            },
+            queue, device, context);
+    auto B = alloc_device_and_init<data_type_b>(
+            size_b,
+            [](data_type_b *data, size_t idx) {
+                data[idx] = static_cast<data_type_b>(random_float());
+            },
+            queue, device, context);
+    auto C = alloc_device_and_init<data_type_c>(
+            size_c,
+            [](data_type_c *data, size_t idx) {
+                data[idx] = static_cast<data_type_c>(0.0f);
+            },
+            queue, device, context);
+    auto D = alloc_device_and_init<data_type_d>(
+            size_d,
+            [](data_type_d *data, size_t idx) {
+                data[idx] = static_cast<data_type_d>(random_float());
+            },
+            queue, device, context);
 
     //Define the shape of workgroup and subgroup
     //It's tunable parameters based on different input shape and hardware for better performance
@@ -194,7 +202,7 @@ void gemm_relu_bias_run(uint32_t iter) {
     profiling_helper prof("gemm_relu_bias_run", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
-        auto gpu_event = Queue.submit([&](handler &cgh) {
+        auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 xetla_exec_item<3> ei(item);
@@ -214,15 +222,16 @@ void gemm_relu_bias_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             gemm_relu_bias_result_validate(A, B, C, D, matrix_m, matrix_k,
-                    matrix_n, mem_layout::row_major, mem_layout::row_major));
+                    matrix_n, queue, mem_layout::row_major,
+                    mem_layout::row_major));
 
     //performance
     prof.print_profiling_result(profiling_selector::GPU);
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
-    free(D, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
+    free(D, context);
 }
 
 int main() {

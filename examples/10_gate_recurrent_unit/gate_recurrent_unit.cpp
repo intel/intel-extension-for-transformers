@@ -20,23 +20,48 @@ using namespace cl::sycl;
 using namespace gpu::xetla;
 
 template <typename data_type>
-int validation(data_type *layer_inputs, data_type *h0_inputs,
+int validation(data_type *layer_inputs_device, data_type *h0_inputs_device,
         std::vector<data_type *> i_weights, std::vector<data_type *> h_weights,
-        data_type *hidden_outputs, data_type *layer_outputs,
+        data_type *hidden_outputs_device, data_type *layer_outputs_device,
         uint32_t batch_size, uint32_t input_size, uint32_t hidden_size,
-        uint32_t sequence_length, uint32_t layer_size = 1) {
+        uint32_t sequence_length, sycl::queue queue, uint32_t layer_size = 1) {
     uint32_t layer_input_size = batch_size * input_size;
     uint32_t hidden_io_size = batch_size * hidden_size;
     uint32_t i_weight_size = input_size * hidden_size;
     uint32_t h_weight_size = hidden_size * hidden_size;
     uint32_t one_layer_size = hidden_io_size * sequence_length;
-    data_type *ir_weights = i_weights[0];
-    data_type *iz_weights = i_weights[1];
-    data_type *in_weights = i_weights[2];
+    uint32_t input_weight_size = input_size * hidden_size
+            + (layer_size - 1) * hidden_size * hidden_size;
 
-    data_type *hr_weights = h_weights[0];
-    data_type *hz_weights = h_weights[1];
-    data_type *hn_weights = h_weights[2];
+    data_type *ir_weights_device = i_weights[0];
+    data_type *iz_weights_device = i_weights[1];
+    data_type *in_weights_device = i_weights[2];
+
+    data_type *hr_weights_device = h_weights[0];
+    data_type *hz_weights_device = h_weights[1];
+    data_type *hn_weights_device = h_weights[2];
+
+    auto layer_inputs = alloc_host_and_copy<data_type>(
+            layer_inputs_device, layer_input_size, queue);
+    auto h0_inputs = alloc_host_and_copy<data_type>(
+            h0_inputs_device, layer_size * batch_size * hidden_size, queue);
+    auto hidden_outputs = alloc_host_and_copy<data_type>(hidden_outputs_device,
+            sequence_length * batch_size * hidden_size, queue);
+    auto layer_outputs = alloc_host_and_copy<data_type>(
+            layer_outputs_device, layer_size * batch_size * hidden_size, queue);
+    auto ir_weights = alloc_host_and_copy<data_type>(
+            ir_weights_device, input_weight_size, queue);
+    auto iz_weights = alloc_host_and_copy<data_type>(
+            iz_weights_device, input_weight_size, queue);
+    auto in_weights = alloc_host_and_copy<data_type>(
+            in_weights_device, input_weight_size, queue);
+    auto hr_weights = alloc_host_and_copy<data_type>(
+            hr_weights_device, layer_size * hidden_size * hidden_size, queue);
+    auto hz_weights = alloc_host_and_copy<data_type>(
+            hz_weights_device, layer_size * hidden_size * hidden_size, queue);
+    auto hn_weights = alloc_host_and_copy<data_type>(
+            hn_weights_device, layer_size * hidden_size * hidden_size, queue);
+
     data_type *ping_pong_result
             = (data_type *)malloc(2 * one_layer_size * sizeof(data_type));
     data_type *ping_pong_cell
@@ -155,6 +180,18 @@ int validation(data_type *layer_inputs, data_type *h0_inputs,
     }
     free(ping_pong_cell);
     free(ping_pong_result);
+
+    free(layer_inputs);
+    free(h0_inputs);
+    free(hidden_outputs);
+    free(layer_outputs);
+    free(ir_weights);
+    free(iz_weights);
+    free(in_weights);
+    free(hr_weights);
+    free(hz_weights);
+    free(hn_weights);
+
     if (err_cnt > 0) {
         std::cout << "pass rate: "
                   << ((float)(layer_size * batch_size * hidden_size
@@ -205,67 +242,92 @@ void gru_run(uint32_t iter) {
     //***********dpcpp runtime setup && buffer allocation start ************//
     // Turn on the enable_profiling property to facilitate subsequent profiling
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
-    auto Queue = queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
     std::vector<data_type *> i_weights, h_weights;
     /// malloc for inputs
-    data_type *layer_inputs = static_cast<data_type *>(malloc_shared(
-            layer_input_size * sizeof(data_type), Device, Context));
-    data_type *h0_inputs = static_cast<data_type *>(
-            malloc_shared(S * N * H * sizeof(data_type), Device, Context));
-    /// malloc for weights
-    data_type *ir_weights = static_cast<data_type *>(malloc_shared(
-            input_weight_size * sizeof(data_type), Device, Context));
-    i_weights.push_back(ir_weights);
-    data_type *iz_weights = static_cast<data_type *>(malloc_shared(
-            input_weight_size * sizeof(data_type), Device, Context));
+
+    auto layer_inputs = alloc_device_and_init<data_type>(
+            layer_input_size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(random_float());
+            },
+            queue, device, context);
+    auto h0_inputs = alloc_device_and_init<data_type>(
+            S * N * H,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(random_float());
+            },
+            queue, device, context);
+    auto ir_weights = alloc_device_and_init<data_type>(
+            input_weight_size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(0.001 * random_float());
+            },
+            queue, device, context);
+    auto iz_weights = alloc_device_and_init<data_type>(
+            input_weight_size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(0.001 * random_float());
+            },
+            queue, device, context);
+
     i_weights.push_back(iz_weights);
-    data_type *in_weights = static_cast<data_type *>(malloc_shared(
-            input_weight_size * sizeof(data_type), Device, Context));
+
+    auto in_weights = alloc_device_and_init<data_type>(
+            input_weight_size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(0.001 * random_float());
+            },
+            queue, device, context);
+
     i_weights.push_back(in_weights);
 
-    data_type *hr_weights = static_cast<data_type *>(malloc_shared(
-            hidden_weight_size * sizeof(data_type), Device, Context));
+    auto hr_weights = alloc_device_and_init<data_type>(
+            hidden_weight_size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(0.001 * random_float());
+            },
+            queue, device, context);
+
     h_weights.push_back(hr_weights);
-    data_type *hz_weights = static_cast<data_type *>(malloc_shared(
-            hidden_weight_size * sizeof(data_type), Device, Context));
+
+    auto hz_weights = alloc_device_and_init<data_type>(
+            hidden_weight_size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(0.001 * random_float());
+            },
+            queue, device, context);
+
     h_weights.push_back(hz_weights);
-    data_type *hn_weights = static_cast<data_type *>(malloc_shared(
-            hidden_weight_size * sizeof(data_type), Device, Context));
+
+    auto hn_weights = alloc_device_and_init<data_type>(
+            hidden_weight_size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(0.001 * random_float());
+            },
+            queue, device, context);
+
     h_weights.push_back(hn_weights);
-    /// malloc for outputs
-    data_type *hidden_outputs = static_cast<data_type *>(
-            malloc_shared(L * N * H * sizeof(data_type), Device, Context));
-    data_type *layer_outputs = static_cast<data_type *>(
-            malloc_shared(S * N * H * sizeof(data_type), Device, Context));
 
-    /// malloc for ping pong buffer
-    data_type *ping_pong_buffer = static_cast<data_type *>(
-            malloc_shared(2 * L * N * H * sizeof(data_type), Device, Context));
+    auto hidden_outputs = alloc_device_and_init<data_type>(
+            L * N * H, [](data_type *data, size_t idx) {}, queue, device,
+            context);
 
-    data_type *ping_pong_cell = static_cast<data_type *>(
-            malloc_shared(2 * N * H * sizeof(data_type), Device, Context));
-    // initialize values
-    for (uint32_t i = 0; i < layer_input_size; ++i) {
-        layer_inputs[i] = random_float();
-    }
+    auto layer_outputs = alloc_device_and_init<data_type>(
+            S * N * H, [](data_type *data, size_t idx) {}, queue, device,
+            context);
 
-    for (uint32_t i = 0; i < S * N * H; ++i) {
-        h0_inputs[i] = random_float();
-    }
-    for (uint32_t i = 0; i < input_weight_size; ++i) {
-        ir_weights[i] = 0.001 * random_float();
-        iz_weights[i] = 0.001 * random_float();
-        in_weights[i] = 0.001 * random_float();
-    }
-    for (uint32_t i = 0; i < hidden_weight_size; ++i) {
-        hr_weights[i] = 0.001 * random_float();
-        hz_weights[i] = 0.001 * random_float();
-        hn_weights[i] = 0.001 * random_float();
-    }
+    auto ping_pong_buffer = alloc_device_and_init<data_type>(
+            2 * L * N * H, [](data_type *data, size_t idx) {}, queue, device,
+            context);
+
+    auto ping_pong_cell = alloc_device_and_init<data_type>(
+            2 * N * H, [](data_type *data, size_t idx) {}, queue, device,
+            context);
 
     //***********dpcpp runtime setup && buffer allocation start ************//
 
@@ -287,7 +349,7 @@ void gru_run(uint32_t iter) {
     // esimd kernel prepratation and execution
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
-        auto gpu_event = Queue.submit([&](handler &cgh) {
+        auto gpu_event = queue.submit([&](handler &cgh) {
             cgh.parallel_for<gru_config>(
                     NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         xetla_exec_item ei(item);
@@ -317,26 +379,26 @@ void gru_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             validation<data_type>(layer_inputs, h0_inputs, i_weights, h_weights,
-                    hidden_outputs, layer_outputs, N, F, H, L, S));
+                    hidden_outputs, layer_outputs, N, F, H, L, queue, S));
 
     // performance
     prof.print_profiling_result(profiling_selector::GPU);
 
-    free(layer_inputs, Context);
-    free(h0_inputs, Context);
+    free(layer_inputs, context);
+    free(h0_inputs, context);
 
-    free(ir_weights, Context);
-    free(iz_weights, Context);
-    free(in_weights, Context);
+    free(ir_weights, context);
+    free(iz_weights, context);
+    free(in_weights, context);
 
-    free(hr_weights, Context);
-    free(hz_weights, Context);
-    free(hn_weights, Context);
+    free(hr_weights, context);
+    free(hz_weights, context);
+    free(hn_weights, context);
 
-    free(hidden_outputs, Context);
-    free(layer_outputs, Context);
-    free(ping_pong_buffer, Context);
-    free(ping_pong_cell, Context);
+    free(hidden_outputs, context);
+    free(layer_outputs, context);
+    free(ping_pong_buffer, context);
+    free(ping_pong_cell, context);
 }
 
 int main() {

@@ -42,21 +42,30 @@ void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
     int size_b = matrix_k * matrix_n;
     int size_c = matrix_m * matrix_n;
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
-    auto Queue = queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    data_type_a *A = static_cast<data_type_a *>(
-            malloc_shared(size_a * sizeof(data_type_a), Device, Context));
-    data_type_b *B = static_cast<data_type_b *>(
-            malloc_shared(size_b * sizeof(data_type_b), Device, Context));
-    data_type_c *C = static_cast<data_type_c *>(
-            malloc_shared(size_c * sizeof(data_type_c), Device, Context));
-
-    initialize_func<data_type_a, data_type_b, data_type_c> ifunc;
-    ifunc(A, B, C, size_a, size_b, size_c);
+    auto A = alloc_device_and_init<data_type_a>(
+            size_a,
+            [](data_type_a *data, size_t idx) {
+                data[idx] = static_cast<data_type_a>(random_float());
+            },
+            queue, device, context);
+    auto B = alloc_device_and_init<data_type_b>(
+            size_b,
+            [](data_type_b *data, size_t idx) {
+                data[idx] = static_cast<data_type_b>(random_float());
+            },
+            queue, device, context);
+    auto C = alloc_device_and_init<data_type_c>(
+            size_c,
+            [](data_type_c *data, size_t idx) {
+                data[idx] = static_cast<data_type_c>(0.0f);
+            },
+            queue, device, context);
 
     size_t group_range_m = (matrix_m % wg_tile_m == 0)
             ? matrix_m / wg_tile_m
@@ -79,11 +88,11 @@ void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
     try {
         std::vector<kernel_id> kernelId = {get_kernel_id<Test>()};
         auto inputBundle
-                = get_kernel_bundle<bundle_state::input>(Context, kernelId);
+                = get_kernel_bundle<bundle_state::input>(context, kernelId);
         setenv("SYCL_PROGRAM_COMPILE_OPTIONS", compile_str.c_str(), 1);
         kernel_bundle<bundle_state::executable> exeBundle = build(inputBundle);
         unsetenv("SYCL_PROGRAM_COMPILE_OPTIONS");
-        auto e_esimd = Queue.submit([&](handler &cgh) {
+        auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.use_kernel_bundle(exeBundle);
             cgh.parallel_for<Test>(
                     Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
@@ -105,11 +114,11 @@ void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
     // validation
     validate_func<Test, data_type_a, data_type_b, data_type_c, data_type_acc>
             vfunc;
-    ASSERT_EQ(0, vfunc(A, B, C));
+    ASSERT_EQ(0, vfunc(A, B, C, queue, context));
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
 }
 
 /// @brief The template function to execute kernel in esimd way for unit test framework
@@ -123,21 +132,28 @@ template <typename data_type, class KERNEL, int SLMSIZE = 128 * 1024,
         int BARNUM = 32, int Size = 4096>
 void kernel_run(auto Range, auto validate_result) {
 
-    queue Queue {};
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
-    data_type *A = static_cast<data_type *>(
-            malloc_shared(Size * sizeof(data_type), Device, Context));
-    data_type *B = static_cast<data_type *>(
-            malloc_shared(Size * sizeof(data_type), Device, Context));
-    data_type *C = static_cast<data_type *>(
-            malloc_shared(Size * sizeof(data_type), Device, Context));
-    for (unsigned i = 0; i < Size; ++i) {
-        A[i] = B[i] = i;
-    }
+    queue queue {};
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
+
+    auto A = alloc_device_and_init<data_type>(
+            Size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(idx);
+            },
+            queue, device, context);
+    auto B = alloc_device_and_init<data_type>(
+            Size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(idx);
+            },
+            queue, device, context);
+    auto C = alloc_device_and_init<data_type>(
+            Size, [](data_type *data, size_t idx) {}, queue, device, context);
+
     try {
-        auto e_esimd = Queue.submit([&](handler &cgh) {
+        auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<>(Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
                 gpu::xetla::xetla_exec_item ei(ndi);
                 gpu::xetla::xetla_local_init<SLMSIZE>();
@@ -151,9 +167,17 @@ void kernel_run(auto Range, auto validate_result) {
         FAIL();
     }
 
-    ASSERT_EQ(0, validate_result(A, B, C));
+    auto A_host = alloc_host_and_copy<data_type>(A, Size, queue);
+    auto B_host = alloc_host_and_copy<data_type>(B, Size, queue);
+    auto C_host = alloc_host_and_copy<data_type>(C, Size, queue);
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
+    ASSERT_EQ(0, validate_result(A_host, B_host, C_host));
+
+    free(A, context);
+    free(B, context);
+    free(C, context);
+
+    free(A_host);
+    free(B_host);
+    free(C_host);
 }

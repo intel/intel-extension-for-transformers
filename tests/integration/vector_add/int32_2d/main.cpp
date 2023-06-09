@@ -23,22 +23,26 @@ static void vadd_run() {
     constexpr unsigned BL = 16;
     constexpr unsigned Size = BL * BL * 8;
     constexpr unsigned GroupSize = 1;
-    queue Queue {};
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    queue queue {};
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    DataType *A = static_cast<DataType *>(
-            malloc_shared(Size * sizeof(DataType), Device, Context));
-    DataType *B = static_cast<DataType *>(
-            malloc_shared(Size * sizeof(DataType), Device, Context));
-    DataType *C = static_cast<DataType *>(
-            malloc_shared(Size * sizeof(DataType), Device, Context));
-
-    for (unsigned i = 0; i < Size; ++i) {
-        A[i] = B[i] = i;
-    }
+    auto A = alloc_device_and_init<data_type>(
+            Size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(idx);
+            },
+            queue, device, context);
+    auto B = alloc_device_and_init<data_type>(
+            Size,
+            [](data_type *data, size_t idx) {
+                data[idx] = static_cast<data_type>(idx);
+            },
+            queue, device, context);
+    auto C = alloc_device_and_init<data_type>(
+            Size, [](data_type *data, size_t idx) {}, queue, device, context);
 
     // each thread process 16x16 block
     cl::sycl::range<1> GlobalRange {Size / BL / BL};
@@ -46,11 +50,11 @@ static void vadd_run() {
     cl::sycl::nd_range<1> Range(GlobalRange, LocalRange);
 
     try {
-        auto e_esimd = Queue.submit([&](handler &cgh) {
+        auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test1>(
                     Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
                         xetla_exec_item ei(ndi);
-                        vector_add_func<DataType, VL, BL>(&ei, A, B, C);
+                        vector_add_func<data_type, VL, BL>(&ei, A, B, C);
                     });
         });
         e_esimd.wait();
@@ -60,11 +64,11 @@ static void vadd_run() {
     }
 
     // validation
-    ASSERT_EQ(0, vadd_result_validate(A, B, C, Size));
+    ASSERT_EQ(0, vadd_result_validate(A, B, C, Size, queue));
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
 }
 
 TEST(vadd_v2, esimd) {

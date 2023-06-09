@@ -27,10 +27,11 @@ using namespace gpu::xetla;
 
 template <typename data_type_in, typename data_type_out, typename data_type_w,
         typename data_type_x, typename data_type_d, typename data_type_acc>
-int reduction_result_validate(data_type_in *In, data_type_out *Out,
-        data_type_w *w_in, data_type_x *x_out, data_type_d *d_out,
-        uint8_t *mask_in, int m, int n, float scale,
-        reduction_fused_kind fused_op) {
+int reduction_result_validate(data_type_in *device_in,
+        data_type_out *device_out, data_type_w *device_w_in,
+        data_type_x *device_x_out, data_type_d *device_d_out,
+        uint8_t *device_mask_in, int m, int n, float scale,
+        reduction_fused_kind fused_op, sycl::queue queue) {
     int err_cnt = 0;
     bool is_bias_gelu_bwd = fused_op == reduction_fused_kind::bias_gelu_w_bwd;
     bool is_bias_dropout_bwd
@@ -40,10 +41,25 @@ int reduction_result_validate(data_type_in *In, data_type_out *Out,
     std::vector<data_type_x> dgelu_x(m * n, 0);
     std::vector<data_type_x> dropout_out(m * n, 0);
 
+    int size_in = m * n;
+    int size_out = n;
+    int size_mask = m * n;
+    int size_w = m * n;
+    int size_x = m * n;
+    int size_d = m * n;
+
+    auto in = alloc_host_and_copy<data_type_in>(device_in, size_in, queue);
+    auto out = alloc_host_and_copy<data_type_out>(device_out, size_out, queue);
+    auto w_in = alloc_host_and_copy<data_type_w>(device_w_in, size_w, queue);
+    auto x_out = alloc_host_and_copy<data_type_x>(device_x_out, size_x, queue);
+    auto d_out = alloc_host_and_copy<data_type_d>(device_d_out, size_d, queue);
+    auto mask_in
+            = alloc_host_and_copy<uint8_t>(device_mask_in, size_mask, queue);
+
     if (is_bias_gelu_bwd) {
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
-                dgelu_x[j + i * n] = data_type_acc(In[j + i * n])
+                dgelu_x[j + i * n] = data_type_acc(in[j + i * n])
                         * data_type_acc(w_in[j + i * n]);
                 acc[j] += dgelu_x[j + i * n];
             }
@@ -53,7 +69,7 @@ int reduction_result_validate(data_type_in *In, data_type_out *Out,
             for (int j = 0; j < n; j++) {
                 bool set_zero = mask_in[i * n + j] != 0;
                 dropout_out[i * n + j]
-                        = set_zero ? 0 : data_type_acc(In[j + i * n]) * scale;
+                        = set_zero ? 0 : data_type_acc(in[j + i * n]) * scale;
                 acc[j] += dropout_out[i * n + j];
             }
         }
@@ -61,12 +77,12 @@ int reduction_result_validate(data_type_in *In, data_type_out *Out,
     } else {
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
-                acc[j] += data_type_acc(In[j + i * n]);
+                acc[j] += data_type_acc(in[j + i * n]);
             }
         }
     }
 
-    buff_cmp::buff_vals<data_type_out> GPU_output(Out, 1, n, n);
+    buff_cmp::buff_vals<data_type_out> GPU_output(out, 1, n, n);
     buff_cmp::buff_vals<data_type_out, data_type_acc> CPU_output(
             acc.data(), 1, n, n);
     bool result = buff_cmp::xetla_buff_cmp(GPU_output, CPU_output, "dbias");
@@ -83,6 +99,13 @@ int reduction_result_validate(data_type_in *In, data_type_out *Out,
         result &= buff_cmp::xetla_buff_cmp(
                 dropout_GPU, dropout_CPU, "bias_dropout_bwd");
     }
+
+    free(in);
+    free(out);
+    free(w_in);
+    free(x_out);
+    free(d_out);
+    free(mask_in);
 
     std::cout << (!result ? "FAILED\n" : "PASSED\n");
     return result ? 0 : 1;

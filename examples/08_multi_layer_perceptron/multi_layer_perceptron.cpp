@@ -20,14 +20,33 @@
 using namespace cl::sycl;
 using namespace gpu::xetla;
 
+//GEMM input size
+static constexpr uint32_t matrix_m = 1024;
+static constexpr uint32_t matrix_n = 512;
+static constexpr uint32_t matrix_k = 128;
+static constexpr uint32_t matrix_l = 64;
+
+static constexpr uint32_t size_a = matrix_m * matrix_k;
+static constexpr uint32_t size_b = matrix_m * matrix_n;
+static constexpr uint32_t size_c = matrix_m * matrix_l;
+static constexpr uint32_t size_w = matrix_k * matrix_n;
+static constexpr uint32_t size_v = matrix_n * matrix_l;
+
 template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_w, typename data_type_v,
         typename data_type_acc = float>
-int mlp_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
-        data_type_w *W, data_type_v *V, uint32_t m, uint32_t k, uint32_t n,
-        uint32_t l, mem_layout mem_layout_a_ = mem_layout::row_major,
+int mlp_result_validate(data_type_a *A_device, data_type_b *B_device,
+        data_type_c *C_device, data_type_w *W_device, data_type_v *V_device,
+        uint32_t m, uint32_t k, uint32_t n, uint32_t l, sycl::queue queue,
+        mem_layout mem_layout_a_ = mem_layout::row_major,
         mem_layout mem_layout_w_ = mem_layout::row_major,
         mem_layout mem_layout_v_ = mem_layout::row_major) {
+    auto A = alloc_host_and_copy<data_type_a>(A_device, size_a, queue);
+    auto B = alloc_host_and_copy<data_type_b>(B_device, size_b, queue);
+    auto C = alloc_host_and_copy<data_type_c>(C_device, size_c, queue);
+    auto W = alloc_host_and_copy<data_type_w>(W_device, size_w, queue);
+    auto V = alloc_host_and_copy<data_type_v>(V_device, size_v, queue);
+
     bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;
     bool is_col_major_w = mem_layout_w_ == mem_layout::col_major;
     bool is_col_major_v = mem_layout_v_ == mem_layout::col_major;
@@ -62,6 +81,12 @@ int mlp_result_validate(data_type_a *A, data_type_b *B, data_type_c *C,
         std::cout << "Layer2 validation skipped due to failure in Layer1\n";
     }
 
+    free(A);
+    free(B);
+    free(C);
+    free(W);
+    free(V);
+
     return result ? 0 : 1;
 }
 
@@ -69,18 +94,6 @@ void mlp_run(uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
     // Please contact us for support.
-
-    //GEMM input size
-    constexpr uint32_t matrix_m = 1024;
-    constexpr uint32_t matrix_n = 512;
-    constexpr uint32_t matrix_k = 128;
-    constexpr uint32_t matrix_l = 64;
-
-    constexpr uint32_t size_a = matrix_m * matrix_k;
-    constexpr uint32_t size_b = matrix_m * matrix_n;
-    constexpr uint32_t size_c = matrix_m * matrix_l;
-    constexpr uint32_t size_w = matrix_k * matrix_n;
-    constexpr uint32_t size_v = matrix_n * matrix_l;
 
     using data_type_a = bf16;
     using data_type_b = bf16;
@@ -93,43 +106,42 @@ void mlp_run(uint32_t iter) {
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
 
     //Define SYCL queue, context and device
-    auto Queue = queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    //Define and initialize the data required for the calculation
-    //Use shared data which will be migrated automatically between  both CPU and GPU
-    data_type_a *A = static_cast<data_type_a *>(
-            malloc_shared(size_a * sizeof(data_type_a), Device, Context));
-    data_type_b *B = static_cast<data_type_b *>(
-            malloc_shared(size_b * sizeof(data_type_b), Device, Context));
-    data_type_c *C = static_cast<data_type_c *>(
-            malloc_shared(size_c * sizeof(data_type_c), Device, Context));
-    // [MLP] MLP weight tensor W, V
-    data_type_w *W = static_cast<data_type_w *>(
-            malloc_shared(size_w * sizeof(data_type_w), Device, Context));
-    data_type_v *V = static_cast<data_type_v *>(
-            malloc_shared(size_v * sizeof(data_type_v), Device, Context));
-
-    // [MLP] Init data in data tensor A, weight tensors, W, V
-    // Tensor B, C stores results of Layer1, Layer2
-    for (unsigned i = 0; i < size_a; ++i) {
-        A[i] = static_cast<data_type_a>(random_float());
-    }
-    for (unsigned i = 0; i < size_b; ++i) {
-        B[i] = static_cast<data_type_b>(0.0f);
-    }
-    for (unsigned i = 0; i < size_c; ++i) {
-        C[i] = static_cast<data_type_c>(0.0f);
-    }
-    for (unsigned i = 0; i < size_w; ++i) {
-        W[i] = static_cast<data_type_w>(random_float());
-    }
-    for (unsigned i = 0; i < size_v; ++i) {
-        V[i] = static_cast<data_type_v>(random_float());
-    }
+    auto A = alloc_device_and_init<data_type_a>(
+            size_a,
+            [](data_type_a *data, size_t idx) {
+                data[idx] = static_cast<data_type_a>(random_float());
+            },
+            queue, device, context);
+    auto B = alloc_device_and_init<data_type_b>(
+            size_b,
+            [](data_type_b *data, size_t idx) {
+                data[idx] = static_cast<data_type_b>(0.0f);
+            },
+            queue, device, context);
+    auto C = alloc_device_and_init<data_type_c>(
+            size_c,
+            [](data_type_c *data, size_t idx) {
+                data[idx] = static_cast<data_type_c>(0.0f);
+            },
+            queue, device, context);
+    auto W = alloc_device_and_init<data_type_w>(
+            size_w,
+            [](data_type_w *data, size_t idx) {
+                data[idx] = static_cast<data_type_w>(random_float());
+            },
+            queue, device, context);
+    auto V = alloc_device_and_init<data_type_v>(
+            size_v,
+            [](data_type_v *data, size_t idx) {
+                data[idx] = static_cast<data_type_v>(random_float());
+            },
+            queue, device, context);
 
     //Define the shape of workgroup and subgroup
     //It's tunable parameters based on different input shape and hardware for better performance
@@ -169,7 +181,7 @@ void mlp_run(uint32_t iter) {
     profiling_helper prof("mlp", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
-        auto gpu_event = Queue.submit([&](handler &cgh) {
+        auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 using namespace gpu::xetla;
@@ -372,17 +384,17 @@ void mlp_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             mlp_result_validate(A, B, C, W, V, matrix_m, matrix_k, matrix_n,
-                    matrix_l, mem_layout::row_major, mem_layout::row_major,
-                    mem_layout::row_major));
+                    matrix_l, queue, mem_layout::row_major,
+                    mem_layout::row_major, mem_layout::row_major));
 
     //performance
     prof.print_profiling_result(profiling_selector::GPU);
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
-    free(W, Context);
-    free(V, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
+    free(W, context);
+    free(V, context);
 }
 
 int main() {

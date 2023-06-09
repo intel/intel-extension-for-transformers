@@ -37,39 +37,46 @@ static void dropout_op_run() {
     using data_type_y = typename test::data_type_y;
     using data_type_acc = typename test::data_type_acc;
 
-    queue Queue {};
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    queue queue {};
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    data_type_x *buffer_x = static_cast<data_type_x *>(
-            malloc_shared(size_in * sizeof(data_type_x), Device, Context));
-    data_type_y *buffer_y = static_cast<data_type_y *>(
-            malloc_shared(size_out * sizeof(data_type_y), Device, Context));
-    uint8_t *buffer_mask = static_cast<uint8_t *>(
-            malloc_shared(size_mask * sizeof(uint8_t), Device, Context));
-    uint64_t *buffer_rand_offset = static_cast<uint64_t *>(
-            malloc_shared(sizeof(uint64_t), Device, Context));
-    buffer_rand_offset[0] = 0;
-    for (unsigned i = 0; i < size_in; ++i) {
-        buffer_x[i] = (random_float() - 0.5) * 10;
-    }
-    for (unsigned i = 0; i < size_out; ++i) {
-        buffer_y[i] = data_type_y(0);
-    }
-    if (is_mask_gen) {
-        for (unsigned i = 0; i < size_mask; ++i) {
-            buffer_mask[i] = 0;
-        }
-    } else {
-        uint32_t drop_threshold = drop_out_ratio * double(RAND_MAX);
-        for (unsigned i = 0; i < size_mask; ++i) {
-            buffer_mask[i]
-                    = (random_float() * double(RAND_MAX) > drop_threshold) ? 0
-                                                                           : 1;
-        }
-    }
+    auto buffer_x = alloc_device_and_init<data_type_x>(
+            size_in,
+            [](data_type_x *data, size_t idx) {
+                data[idx]
+                        = static_cast<data_type_x>((random_float() - 0.5) * 10);
+            },
+            queue, device, context);
+    auto buffer_y = alloc_device_and_init<data_type_y>(
+            size_out,
+            [](data_type_y *data, size_t idx) {
+                data[idx] = static_cast<data_type_y>(0);
+            },
+            queue, device, context);
+
+    uint32_t drop_threshold = drop_out_ratio * double(RAND_MAX);
+    auto buffer_mask = alloc_device_and_init<uint8_t>(
+            size_mask,
+            [&is_mask_gen, &drop_threshold](uint8_t *data, size_t idx) {
+                if (is_mask_gen) {
+                    data[idx] = static_cast<uint8_t>(0);
+                } else {
+                    data[idx] = (random_float() * double(RAND_MAX)
+                                        > drop_threshold)
+                            ? 0
+                            : 1;
+                }
+            },
+            queue, device, context);
+    auto buffer_rand_offset = alloc_device_and_init<uint64_t>(
+            1,
+            [](uint64_t *data, size_t idx) {
+                data[idx] = static_cast<uint64_t>(0);
+            },
+            queue, device, context);
 
     cl::sycl::range<3> GroupRange {1,
             (test::mat_m + test::wg_m - 1) / test::wg_m,
@@ -80,7 +87,7 @@ static void dropout_op_run() {
     cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
 
     try {
-        auto e_esimd = Queue.submit([&](handler &cgh) {
+        auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<test>(
                     Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         xetla_exec_item<3> ei(item);
@@ -104,12 +111,12 @@ static void dropout_op_run() {
     ASSERT_EQ(0,
             (dropout_result_validate<data_type_x, data_type_y, data_type_acc>(
                     buffer_x, buffer_y, matrix_m, matrix_n, buffer_mask,
-                    drop_out_scale)));
+                    drop_out_scale, queue)));
 
-    free(buffer_x, Context);
-    free(buffer_y, Context);
-    free(buffer_mask, Context);
-    free(buffer_rand_offset, Context);
+    free(buffer_x, context);
+    free(buffer_y, context);
+    free(buffer_mask, context);
+    free(buffer_rand_offset, context);
 }
 
 TEST(dropout_normal, esimd) {

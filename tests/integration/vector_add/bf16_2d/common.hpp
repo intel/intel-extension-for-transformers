@@ -15,6 +15,7 @@
 *******************************************************************************/
 #pragma once
 
+#include "utils/utils.hpp"
 #include "xetla.hpp"
 
 using namespace cl::sycl;
@@ -24,8 +25,12 @@ using namespace gpu::xetla;
 class Test1;
 #define data_type bf16
 
-int vadd_result_validate(data_type *A, data_type *B, data_type *C,
-        unsigned Size, unsigned pitch) {
+int vadd_result_validate(data_type *A_device, data_type *B_device,
+        data_type *C_device, unsigned Size, unsigned pitch, sycl::queue queue) {
+    auto A = alloc_host_and_copy<data_type>(A_device, pitch * pitch, queue);
+    auto B = alloc_host_and_copy<data_type>(B_device, pitch * pitch, queue);
+    auto C = alloc_host_and_copy<data_type>(C_device, pitch * pitch, queue);
+
     int err_cnt = 0;
     for (unsigned i = 0; i < Size; ++i) {
         for (unsigned j = 0; j < Size; ++j) {
@@ -38,6 +43,11 @@ int vadd_result_validate(data_type *A, data_type *B, data_type *C,
             }
         }
     }
+
+    free(A);
+    free(B);
+    free(C);
+
     if (err_cnt > 0) {
         std::cout << "pass rate: "
                   << ((float)((Size * Size) - err_cnt) / (float)(Size * Size))

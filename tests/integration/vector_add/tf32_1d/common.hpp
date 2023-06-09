@@ -16,6 +16,7 @@
 #pragma once
 
 #include <iomanip>
+#include "utils/utils.hpp"
 #include "xetla.hpp"
 
 using namespace gpu;
@@ -26,8 +27,12 @@ class Test1;
 #define data_type tf32
 using namespace cl::sycl;
 
-int vadd_result_validate(
-        data_type *A, data_type *B, data_type *C, unsigned Size) {
+int vadd_result_validate(data_type *A_device, data_type *B_device,
+        data_type *C_device, unsigned Size, sycl::queue queue) {
+    auto A = alloc_host_and_copy<data_type>(A_device, Size, queue);
+    auto B = alloc_host_and_copy<data_type>(B_device, Size, queue);
+    auto C = alloc_host_and_copy<data_type>(C_device, Size, queue);
+
     int err_cnt = 0;
     for (unsigned i = 0; i < Size; ++i) {
         if (A[i] + B[i] != C[i]) {
@@ -39,6 +44,11 @@ int vadd_result_validate(
             }
         }
     }
+
+    free(A);
+    free(B);
+    free(C);
+
     if (err_cnt > 0) {
         std::cout << "pass rate: "
                   << ((float)(Size - err_cnt) / (float)Size) * 100.0f << "% ("

@@ -24,9 +24,10 @@ using namespace cl::sycl;
 
 template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_acc = float>
-int gemm_softmax_result_validate(data_type_a *A_ptr, data_type_b *B_ptr,
-        data_type_c *C_ptr, uint32_t m, uint32_t k, uint32_t n,
-        uint32_t batch_num, mem_layout mem_layout_a_ = mem_layout::row_major,
+int gemm_softmax_result_validate(data_type_a *A_device, data_type_b *B_device,
+        data_type_c *C_device, uint32_t m, uint32_t k, uint32_t n,
+        uint32_t batch_num, sycl::queue queue,
+        mem_layout mem_layout_a_ = mem_layout::row_major,
         mem_layout mem_layout_b_ = mem_layout::row_major) {
     uint32_t err_cnt = 0;
     bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;
@@ -34,6 +35,14 @@ int gemm_softmax_result_validate(data_type_a *A_ptr, data_type_b *B_ptr,
     uint32_t size_a = m * k;
     uint32_t size_b = k * n;
     uint32_t size_c = m * n;
+
+    auto A_ptr = alloc_host_and_copy<data_type_a>(
+            A_device, batch_num * size_a, queue);
+    auto B_ptr = alloc_host_and_copy<data_type_b>(
+            B_device, batch_num * size_b, queue);
+    auto C_ptr = alloc_host_and_copy<data_type_c>(
+            C_device, batch_num * size_c, queue);
+
     std::vector<data_type_acc> tmp_A(A_ptr, A_ptr + batch_num * size_a);
     std::vector<data_type_acc> tmp_B(B_ptr, B_ptr + batch_num * size_b);
     std::vector<data_type_acc> gold_C(batch_num * size_c, 0);
@@ -68,6 +77,10 @@ int gemm_softmax_result_validate(data_type_a *A_ptr, data_type_b *B_ptr,
     bool result
             = buff_cmp::xetla_buff_cmp(data, other, "gemm_softmax validation");
 
+    free(A_ptr);
+    free(B_ptr);
+    free(C_ptr);
+
     std::cout << ((!result) ? "FAILED\n" : "PASSED\n");
     return result ? 0 : 1;
 }
@@ -93,28 +106,30 @@ void gemm_softmax_run(uint32_t iter) {
 
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
 
-    auto Queue = queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
-    data_type_a *A = static_cast<data_type_a *>(malloc_shared(
-            batch_num * size_a * sizeof(data_type_a), Device, Context));
-    data_type_b *B = static_cast<data_type_b *>(malloc_shared(
-            batch_num * size_b * sizeof(data_type_b), Device, Context));
-    data_type_c *C = static_cast<data_type_c *>(malloc_shared(
-            batch_num * size_c * sizeof(data_type_c), Device, Context));
-
-    for (unsigned i = 0; i < batch_num * size_a; ++i) {
-        A[i] = static_cast<data_type_a>(random_float());
-    }
-    for (unsigned i = 0; i < batch_num * size_b; ++i) {
-        B[i] = static_cast<data_type_b>(random_float());
-    }
-    for (unsigned i = 0; i < batch_num * size_c; ++i) {
-        C[i] = static_cast<data_type_c>(0.f);
-    }
+    auto A = alloc_device_and_init<data_type_a>(
+            batch_num * size_a,
+            [](data_type_a *data, size_t idx) {
+                data[idx] = static_cast<data_type_a>(random_float());
+            },
+            queue, device, context);
+    auto B = alloc_device_and_init<data_type_b>(
+            batch_num * size_b,
+            [](data_type_b *data, size_t idx) {
+                data[idx] = static_cast<data_type_b>(random_float());
+            },
+            queue, device, context);
+    auto C = alloc_device_and_init<data_type_c>(
+            batch_num * size_c,
+            [](data_type_c *data, size_t idx) {
+                data[idx] = static_cast<data_type_c>(0.0f);
+            },
+            queue, device, context);
 
     constexpr uint32_t wg_tile_m = 128;
     constexpr uint32_t wg_tile_n = 512;
@@ -151,7 +166,7 @@ void gemm_softmax_run(uint32_t iter) {
     try {
         for (uint32_t i = 0; i < iter + warmup; i++) {
             if (i >= warmup) { prof.cpu_start(); }
-            auto gpu_event = Queue.submit([&](handler &cgh) {
+            auto gpu_event = queue.submit([&](handler &cgh) {
                 cgh.parallel_for<class Test>(
                         Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                             using namespace gpu::xetla;
@@ -288,14 +303,15 @@ void gemm_softmax_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             gemm_softmax_result_validate(A, B, C, matrix_m, matrix_k, matrix_n,
-                    batch_num, mem_layout::row_major, mem_layout::col_major));
+                    batch_num, queue, mem_layout::row_major,
+                    mem_layout::col_major));
 
     // performance
     prof.print_profiling_result(profiling_selector::GPU);
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
 }
 
 int main() {

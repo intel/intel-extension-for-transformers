@@ -28,10 +28,11 @@ using namespace cl::sycl;
 #define head_size 64
 
 template <typename dtype_in, typename dtype_out, typename data_type_acc = float>
-int sdp_fwd_result_validate(dtype_in *Q_ptr, dtype_in *K_ptr, dtype_in *V_ptr,
-        dtype_in *mask_ptr, dtype_out *C_ptr, uint32_t qk_m, uint32_t qk_k,
-        uint32_t qk_n, uint32_t sv_m, uint32_t sv_k, uint32_t sv_n,
-        uint32_t batch_cnt, mem_layout mem_layout_qk_a_ = mem_layout::row_major,
+int sdp_fwd_result_validate(dtype_in *q_device, dtype_in *k_device,
+        dtype_in *v_device, dtype_in *mask_device, dtype_out *c_device,
+        uint32_t qk_m, uint32_t qk_k, uint32_t qk_n, uint32_t sv_m,
+        uint32_t sv_k, uint32_t sv_n, uint32_t batch_cnt, sycl::queue queue,
+        mem_layout mem_layout_qk_a_ = mem_layout::row_major,
         mem_layout mem_layout_qk_b_ = mem_layout::row_major,
         mem_layout mem_layout_sv_a_ = mem_layout::row_major,
         mem_layout mem_layout_sv_b_ = mem_layout::row_major) {
@@ -40,6 +41,18 @@ int sdp_fwd_result_validate(dtype_in *Q_ptr, dtype_in *K_ptr, dtype_in *V_ptr,
     uint32_t matrix_size_a = qk_m * qk_k;
     uint32_t matrix_size_b = qk_k * qk_n;
     uint32_t matrix_size_c = qk_m * qk_n;
+
+    auto Q_ptr = alloc_host_and_copy<dtype_in>(
+            q_device, batch_cnt * matrix_size_a, queue);
+    auto K_ptr = alloc_host_and_copy<dtype_in>(
+            k_device, batch_cnt * matrix_size_a, queue);
+    auto V_ptr = alloc_host_and_copy<dtype_in>(
+            v_device, batch_cnt * matrix_size_a, queue);
+    auto mask_ptr = alloc_host_and_copy<dtype_in>(
+            mask_device, batch_num * matrix_size_c, queue);
+    auto C_ptr = alloc_host_and_copy<dtype_out>(
+            c_device, batch_cnt * sv_m * sv_n, queue);
+
     std::vector<data_type_acc> tmp_Q(Q_ptr, Q_ptr + batch_cnt * matrix_size_a);
     std::vector<data_type_acc> tmp_K(K_ptr, K_ptr + batch_cnt * matrix_size_b);
     std::vector<data_type_acc> tmp_mask(
@@ -111,6 +124,13 @@ int sdp_fwd_result_validate(dtype_in *Q_ptr, dtype_in *K_ptr, dtype_in *V_ptr,
     buff_cmp::buff_vals<dtype_out, data_type_acc> other(
             gold_C2.data(), sv_m * batch_cnt, sv_n, sv_n);
     bool result = buff_cmp::xetla_buff_cmp(data, other, "sdp validation");
+
+    free(Q_ptr);
+    free(K_ptr);
+    free(V_ptr);
+    free(mask_ptr);
+    free(C_ptr);
+
     std::cout << ((!result) ? "FAILED\n" : "PASSED\n");
     return result ? 0 : 1;
 }
@@ -154,42 +174,46 @@ void sdp_fwd_run(uint32_t iter) {
 
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
 
-    auto Queue = queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
     constexpr uint32_t size_qkv = matrix_m_qk * matrix_k_qk;
     constexpr uint32_t size_mask = matrix_m_qk * matrix_n_qk;
     constexpr uint32_t size_out = matrix_m_sv * matrix_n_sv;
 
-    dtype_in *q = (dtype_in *)static_cast<dtype_in *>(malloc_shared(
-            batch_cnt * size_qkv * sizeof(dtype_in), Device, Context));
-    dtype_in *k = (dtype_in *)static_cast<dtype_in *>(malloc_shared(
-            batch_cnt * size_qkv * sizeof(dtype_in), Device, Context));
-    dtype_in *v = (dtype_in *)static_cast<dtype_in *>(malloc_shared(
-            batch_cnt * size_qkv * sizeof(dtype_in), Device, Context));
-    dtype_in *attn_mask = (dtype_in *)static_cast<dtype_in *>(malloc_shared(
-            batch_num * size_mask * sizeof(dtype_in), Device, Context));
-    dtype_out *out = (dtype_out *)static_cast<dtype_out *>(malloc_shared(
-            batch_cnt * size_out * sizeof(dtype_out), Device, Context));
-
-    for (uint32_t i = 0; i < batch_cnt * size_qkv; ++i) {
-        q[i] = dtype_in(random_float());
-    }
-    for (uint32_t i = 0; i < batch_cnt * size_qkv; ++i) {
-        k[i] = dtype_in(random_float());
-    }
-    for (uint32_t i = 0; i < batch_cnt * size_qkv; ++i) {
-        v[i] = dtype_in(random_float());
-    }
-    for (uint32_t i = 0; i < batch_num * size_mask; ++i) {
-        attn_mask[i] = dtype_in(random_float());
-    }
-    for (uint32_t i = 0; i < batch_cnt * size_out; ++i) {
-        out[i] = dtype_out(0.f);
-    }
+    auto q = alloc_device_and_init<dtype_in>(
+            batch_cnt * size_qkv,
+            [](dtype_in *data, size_t idx) {
+                data[idx] = static_cast<dtype_in>(random_float());
+            },
+            queue, device, context);
+    auto k = alloc_device_and_init<dtype_in>(
+            batch_cnt * size_qkv,
+            [](dtype_in *data, size_t idx) {
+                data[idx] = static_cast<dtype_in>(random_float());
+            },
+            queue, device, context);
+    auto v = alloc_device_and_init<dtype_in>(
+            batch_cnt * size_qkv,
+            [](dtype_in *data, size_t idx) {
+                data[idx] = static_cast<dtype_in>(random_float());
+            },
+            queue, device, context);
+    auto attn_mask = alloc_device_and_init<dtype_in>(
+            batch_num * size_mask,
+            [](dtype_in *data, size_t idx) {
+                data[idx] = static_cast<dtype_in>(random_float());
+            },
+            queue, device, context);
+    auto out = alloc_device_and_init<dtype_out>(
+            batch_cnt * size_out,
+            [](dtype_out *data, size_t idx) {
+                data[idx] = static_cast<dtype_out>(0.0f);
+            },
+            queue, device, context);
 
     constexpr uint32_t group_range_m = matrix_m_qk / wg_tile_m_qk;
     constexpr uint32_t group_range_n = matrix_n_qk / wg_tile_n_qk;
@@ -214,7 +238,7 @@ void sdp_fwd_run(uint32_t iter) {
     try {
         for (uint32_t i = 0; i < iter + warmup; i++) {
             if (i >= warmup) { prof.cpu_start(); }
-            auto gpu_event = Queue.submit([&](handler &cgh) {
+            auto gpu_event = queue.submit([&](handler &cgh) {
                 cgh.parallel_for<class
                         Test>(Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                     using namespace gpu::xetla;
@@ -413,18 +437,18 @@ void sdp_fwd_run(uint32_t iter) {
     ASSERT_EQ(0,
             sdp_fwd_result_validate(q, k, v, attn_mask, out, matrix_m_qk,
                     matrix_k_qk, matrix_n_qk, matrix_m_sv, matrix_k_sv,
-                    matrix_n_sv, batch_cnt, mem_layout::row_major,
+                    matrix_n_sv, batch_cnt, queue, mem_layout::row_major,
                     mem_layout::col_major, mem_layout::row_major,
                     mem_layout::row_major));
 
     //performance
     prof.print_profiling_result(profiling_selector::GPU);
 
-    free(q, Context);
-    free(k, Context);
-    free(v, Context);
-    free(attn_mask, Context);
-    free(out, Context);
+    free(q, context);
+    free(k, context);
+    free(v, context);
+    free(attn_mask, context);
+    free(out, context);
 }
 
 int main() {

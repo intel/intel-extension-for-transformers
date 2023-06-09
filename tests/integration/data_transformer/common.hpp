@@ -15,15 +15,25 @@
 *******************************************************************************/
 #pragma once
 
+#include "utils/common.hpp"
 #include "xetla.hpp"
 
 using namespace gpu::xetla;
 using namespace cl::sycl;
 
 template <typename data_type_in, typename data_type_out, typename data_type_acc>
-int data_transformer_result_validate(data_type_in *in, data_type_out *out,
-        size_t mat_m, size_t mat_n, bool is_transposed, int need_fp8_op,
-        data_type_acc *amax_ptr, data_type_acc *scale) {
+int data_transformer_result_validate(data_type_in *in_device,
+        data_type_out *out_device, size_t mat_m, size_t mat_n,
+        bool is_transposed, int need_fp8_op, data_type_acc *amax_ptr_device,
+        data_type_acc *scale_device, sycl::queue queue) {
+    auto in = alloc_host_and_copy<data_type_in>(
+            in_device, mat_m * mat_n, queue);
+    auto out = alloc_host_and_copy<data_type_out>(
+            out_device, mat_m * mat_n, queue);
+    auto amax_ptr
+            = alloc_host_and_copy<data_type_acc>(amax_ptr_device, 1, queue);
+    auto scale = alloc_host_and_copy<data_type_acc>(scale_device, 1, queue);
+
     int err_num = 0;
     data_type_acc cpu_max = (data_type_acc)0;
     data_type_out res = data_type_out(0);
@@ -65,6 +75,11 @@ int data_transformer_result_validate(data_type_in *in, data_type_out *out,
             return 1;
         }
     }
+
+    free(in);
+    free(out);
+    free(amax_ptr);
+    free(scale);
 
     if (err_num == 0) { std::cout << "Test Passed!!!" << std::endl; }
     return err_num;
