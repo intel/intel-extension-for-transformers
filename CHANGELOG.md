@@ -1,4 +1,17 @@
-# Intel® XeTLA Changelogs
+[README](/README.md) > **Changelog**
+# Changelog
+
+## [v0.3.2](https://github.com/intel/xetla/releases/tag/v0.3.2) (2023-06-16)
+- New Features
+  * Added some kernel-level APIs' parameters check functions, users need to explicit call them before launch the kernel; will return fail and print error messages when detect unsupported scenarios, continue launching the kernel for unspported scenarios may lead to unpredictable result.
+  * Added some unit test cases.
+  * Refined some examples code.
+  * Updated documents, added some diagrams and details.
+  * Fixed some customer reported issues.
+  * Improved the project's quality.
+
+- Known Issues
+    - Refer to [Limitations](/media/docs/limitations.md).
 
 ## [v0.3.1](https://github.com/intel/xetla/releases/tag/v0.3.1) (2023-05-22)
 - New Features
@@ -9,7 +22,7 @@
   * Added some unit test cases.
 
 - Known Issues
-    - Refer to [Limitations](./media/docs/limitations.md).
+    - Refer to [Limitations](/media/docs/limitations.md).
 
 ## v0.3.0 (2023-04-23)
 - New Features
@@ -21,7 +34,7 @@
   * Unit tests.
   
 - Known Issues
-    - Refer to [Limitations](./media/docs/limitations.md).
+    - Refer to [Limitations](/media/docs/limitations.md).
 
 ## Copyright
 

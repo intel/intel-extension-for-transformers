@@ -1,3 +1,4 @@
+[README](/README.md#documentation) > **Programming Guidelines**
 # Programming Guidelines
 
 The fundamental concept of Intel® XeTLA revolves around micro-kernels, which are used to compute submatrices (also known as tiles) of output, using advanced GPU instructions like 2D block load/store and DPAS. This approach allows developers to solely focus on their algorithm design, including task division, fusion, and memory heirarchial usage, while offloading the complexity of GEMM computation into template-based building blocks.
@@ -14,21 +15,21 @@ There are two groups of API to imeplement GEMM, brgemm (mirco-kernels) in group 
 
 To create a customized GEMM kernel, the following steps should be considered:
 
-1. Define a mirco-kernel, `brgemm`, including the workgroup and subgroup division, which is the core of your GEMM
+1. Define a mirco-kernel, `brgemm`, including the work-group and sub-group division, which is the core of your GEMM
 2. Define `epilogue` that specifies what you want to fuse in register level after GEMM computation, such as relu,  and how to write out GEMM results
 2. Combine micro-kernel with epilogue together to create a functinal `gemm` implementation
 
-For a runnable code example, you can refer to the code in the [01_basic_gemm](../../examples/01_basic_gemm), which also includes explanations of the idea behind the implementation.
+For a runnable code example, you can refer to the code in the [01_basic_gemm](/examples/01_basic_gemm), which also includes explanations of the idea behind the implementation.
 
 ### Task Mapping 
-Before launching the GPU kernel, it should be decided how to map entire GEMM computation into GPU by workgroup and subgroup. To efficient utilize the GPU resource, it's improtant to consider factors such as the shape of the operation, data type, and hardware specifications of the GPU. 
+Before launching the GPU kernel, it should be decided how to map entire GEMM computation into GPU by work-group and sub-group. To efficient utilize the GPU resource, it's improtant to consider factors such as the shape of the operation, data type, and hardware specifications of the GPU.
 ```c++
   constexpr uint32_t wg_tile_m = 256;
   constexpr uint32_t wg_tile_n = 256;
   constexpr uint32_t sg_tile_m = 32;
   constexpr uint32_t sg_tile_n = 64;
 ```
-In this example, the input for GEMM is a matrix with dimensions (4096, 4096), and the output matrix has the same dimensions. With the specified workgroup and subgroup sizes, we can map the GEMM operation into (16, 16) workgroups, where each workgroup has (8, 4) subgroups respectively. Each subgroup will be executed by a hardware thread. And this logic is defined as below code example, these number is used for `NDRange`.
+In this example, the input for GEMM is a matrix with dimensions (4096, 4096), and the output matrix has the same dimensions. With the specified work-group and sub-group sizes, we can map the GEMM operation into (16, 16) work-groups, where each work-group has (8, 4) sub-groups respectively. Each sub-group will be executed by a hardware thread. And this logic is defined as below code example, these number is used for `NDRange`.
 
 ```c++
 //Workload mapping, linear mapping will be used in the code
@@ -36,11 +37,11 @@ uint32_t group_range_m = (matrix_m + wg_tile_m - 1) / wg_tile_m;
 uint32_t group_range_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;
 
 //Each subgroup will be executed in one hardware thread
-//Calculate how many threads in a workgroup
+//Calculate how many threads in a work-group
 uint32_t local_range_m = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
 uint32_t local_range_n = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
 
-//Ndrange and workgroup shape
+//Ndrange and work-group shape
 cl::sycl::range<3> GroupRange {1, group_range_m, group_range_n};
 cl::sycl::range<3> LocalRange {1, local_range_m, local_range_n};
 
@@ -49,7 +50,7 @@ cl::sycl::nd_range<3> NDRange(GroupRange * LocalRange, LocalRange);
 //Recommended that you use the helper function to caculate NDRange, it is convenient.
 cl::sycl::nd_range<3> get_nd_range(uint32_t matrix_m, uint32_t matrix_n);
 ```
-Now, the GPU kernel is starting from `parallel_for` with specific workgroups and subgroups.
+Now, the GPU kernel is starting from `parallel_for` with specific work-groups and sub-groups.
 
 ```c++
 cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(matrix_m, matrix_n);
@@ -61,7 +62,7 @@ cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
 ### Construct Micro-kernel
 The micro-kernel is a crucial component of GEMM, and correctly setting it is essential to its implementation. 
 To help developers customize their micro-kernels, the `brgemm_select_t` class provides a simple interface as below.
-In this template, the memory layout, computation engine and workgroup/subgourp shape will be provided and the developer can 
+In this template, the memory layout, computation engine and work-group/sub-gourp shape will be provided and the developer can
 decide the location of input and output matrix which is either from global or shared local memory.
 
 ```c++
@@ -109,7 +110,7 @@ class epilogue_t {};
 - `mem_desc_c` is the description of buffer `c`, which includes `memory data type`, `memory space` and `memory layout`...
 
 
-In example [03_gemm_fusion](../../examples/03_gemm_fusion), a chain of operations is effectively fused into the GEMM computation. 
+In example [03_gemm_fusion](/examples/03_gemm_fusion), a chain of operations is effectively fused into the GEMM computation. 
 First, using pre-defined post-operations `bias_add` and `relu`, and then pass it to `epilogue_policy::tile_op_t`.
 
 ```c++
@@ -156,3 +157,9 @@ Finally, the actual data will be passed using gemm_op_t::arguments_t, and all of
  xetla_exec_item<3> ei(item);
  gemm_op(ei, arg);
 ```
+## Copyright
+Copyright (c) 2022-2023 Intel Corporation Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.

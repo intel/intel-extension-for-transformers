@@ -1,6 +1,7 @@
+[README](/README.md#Contributing) > **Contributing Guidelines**
 # Contributing Guidelines
 
-## Code Contribution Guidelines
+## Code Contribution
 
 When submitting your contribution, please make sure that it is:
 
@@ -46,9 +47,9 @@ The coding style consistency in Intel® XeTLA is maintained using `clang-format`
 ```sh
 clang-format-14 -style=file:tools/clang-format/_clang-format -i foo.cpp
 ```
-This will format the code using file [_clang-format](./tools/clang-format/_clang-format).
+This will format the code using file [_clang-format](/tools/clang-format/_clang-format).
 
-A pre-commit hook is also provided to ensure you do the clang-format when doing git commit, please refer to [enable clang-format in git](./tools/scripts/clang_format.sh).
+A pre-commit hook is also provided to ensure you do the clang-format when doing git commit, please refer to [enable clang-format in git](/tools/scripts/clang_format.sh).
 
 ### General
 
