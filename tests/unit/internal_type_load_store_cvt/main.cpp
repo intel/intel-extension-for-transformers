@@ -21,25 +21,25 @@
 using namespace std::placeholders;
 
 TEST(bf16_block_load_store_cvt, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(
             block_load_store_result_validate<bf16>, _1, _2, _3, 32, 16, 16);
     kernel_run<bf16, load_store_cvt_func<bf16, 32, 32, 32, 16, 16>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }
 
 TEST(tf32_block_load_store_cvt, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(
             block_load_store_result_validate<tf32>, _1, _2, _3, 32, 16, 16);
     kernel_run<tf32, load_store_cvt_func<tf32, 32, 32, 32, 16, 16>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }
 
 TEST(fp16_block_load_store_cvt, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(
             block_load_store_result_validate<fp16>, _1, _2, _3, 32, 16, 16);
     kernel_run<fp16, load_store_cvt_func<fp16, 32, 32, 32, 16, 16>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }

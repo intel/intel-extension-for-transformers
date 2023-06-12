@@ -21,10 +21,10 @@
 using namespace std::placeholders;
 
 TEST(tile_mma, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(tile_mma_result_validate<bf16>, _1, _2, _3,
             16, 32, 32, gpu::xetla::mem_layout::row_major,
             gpu::xetla::mem_layout::row_major);
     kernel_run<bf16, tile_mma_func<bf16, bf16, bf16, float, 16, 32, 32>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }

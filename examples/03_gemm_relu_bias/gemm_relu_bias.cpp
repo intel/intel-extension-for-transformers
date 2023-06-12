@@ -189,7 +189,7 @@ void gemm_relu_bias_run(uint32_t iter) {
     // [ReLuBias] assign epilogue_args to gemm_op_t::arguments_t
     typename gemm_op_t::arguments_t arg(matrix_m, matrix_k, matrix_n, A,
             matrix_k, B, matrix_n, C, matrix_n, epilogue_args);
-    cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(arg);
+    cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(arg);
     if (!gemm_op_t::can_implement(arg)) {
         std::cout << "The arguments cannot be supported, aborting ... "
                   << std::endl;
@@ -204,7 +204,7 @@ void gemm_relu_bias_run(uint32_t iter) {
         if (i >= warmup) { prof.cpu_start(); }
         auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
-            cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+            cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 xetla_exec_item<3> ei(item);
                 // allocate slm and nbarrier resource
                 slm_barrier_init<gemm_op_t>();

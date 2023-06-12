@@ -155,9 +155,9 @@ void gemm_softmax_run(uint32_t iter) {
               << ", group_num_z: " << batch_num << "\n";
     std::cout << "group_size_x: " << subgroup_range_n
               << ", group_size_y: " << subgroup_range_m << std::endl;
-    cl::sycl::range<3> GroupRange {batch_num, group_range_m, group_range_n};
-    cl::sycl::range<3> LocalRange {1, subgroup_range_m, subgroup_range_n};
-    cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
+    cl::sycl::range<3> group_range {batch_num, group_range_m, group_range_n};
+    cl::sycl::range<3> local_range {1, subgroup_range_m, subgroup_range_n};
+    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
     uint32_t warmup = 10;
     long ops
@@ -168,7 +168,7 @@ void gemm_softmax_run(uint32_t iter) {
             if (i >= warmup) { prof.cpu_start(); }
             auto gpu_event = queue.submit([&](handler &cgh) {
                 cgh.parallel_for<class Test>(
-                        Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                        nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                             using namespace gpu::xetla;
                             using namespace gpu::xetla::group;
                             using namespace gpu::xetla::kernel;

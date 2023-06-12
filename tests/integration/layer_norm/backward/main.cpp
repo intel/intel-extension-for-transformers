@@ -164,25 +164,25 @@ void ln_bwd_run() {
             },
             queue, device, context);
 
-    cl::sycl::range<3> GroupRange {1, test::wg_num_m, test::wg_num_n};
-    cl::sycl::range<3> LocalRange {1,
+    cl::sycl::range<3> group_range {1, test::wg_num_m, test::wg_num_n};
+    cl::sycl::range<3> local_range {1,
             (test::wg_m + test::sg_m - 1) / test::sg_m,
             (test::wg_n + test::sg_n - 1) / test::sg_n};
-    cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
+    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
     // 3 buffers.
-    cl::sycl::range<3> final_GroupRange {
+    cl::sycl::range<3> final_group_range {
             3, 1, (final_mat_n + final_wg_n - 1) / final_wg_n};
-    cl::sycl::range<3> final_LocalRange {1,
+    cl::sycl::range<3> final_local_range {1,
             (final_wg_m + final_sg_m - 1) / final_sg_m,
             (final_wg_n + final_sg_n - 1) / final_sg_n};
-    cl::sycl::nd_range<3> final_Range(
-            final_GroupRange * final_LocalRange, final_LocalRange);
+    cl::sycl::nd_range<3> final_range(
+            final_group_range * final_local_range, final_local_range);
 
     try {
         auto e_esimd_bwd0 = queue.submit([&](handler &cgh) {
             cgh.parallel_for<
-                    test>(Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    test>(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 using ln_bwd_func = ln_bwd_func_t<data_type_y, data_type_x,
                         data_type_weight, data_type_acc, test::wg_n, test::wg_m,
                         test::sg_n, test::sg_m, test::wg_num_m, test::wg_num_n,
@@ -206,7 +206,7 @@ void ln_bwd_run() {
 
         auto e_esimd_bwd1 = queue.submit([&](handler &cgh) {
             cgh.parallel_for(
-                    final_Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    final_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         using ln_bwd_final_func = ln_bwd_final_func_t<
                                 data_type_x, data_type_weight, data_type_acc,
                                 final_wg_n, final_wg_m, final_sg_n, final_sg_m>;

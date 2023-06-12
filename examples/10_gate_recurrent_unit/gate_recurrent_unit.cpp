@@ -331,10 +331,10 @@ void gru_run(uint32_t iter) {
 
     //***********dpcpp runtime setup && buffer allocation start ************//
 
-    cl::sycl::range<3> GroupRange {1, (N + wg_tile_m - 1) / wg_tile_m, 1};
-    cl::sycl::range<3> LocalRange {1, (wg_tile_m + sg_tile_m - 1) / sg_tile_m,
+    cl::sycl::range<3> group_range {1, (N + wg_tile_m - 1) / wg_tile_m, 1};
+    cl::sycl::range<3> local_range {1, (wg_tile_m + sg_tile_m - 1) / sg_tile_m,
             (wg_tile_n + sg_tile_n - 1) / sg_tile_n};
-    cl::sycl::nd_range<3> NDRange(GroupRange * LocalRange, LocalRange);
+    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
     std::cout << "Launch kernel:\n";
     std::cout << "group_num_x: " << 1
@@ -351,7 +351,7 @@ void gru_run(uint32_t iter) {
         if (i >= warmup) { prof.cpu_start(); }
         auto gpu_event = queue.submit([&](handler &cgh) {
             cgh.parallel_for<gru_config>(
-                    NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         xetla_exec_item ei(item);
                         using xcoder_gru_op = kernel_xcoder_gru_fusion<
                                 typename gru_config::dtype_in,

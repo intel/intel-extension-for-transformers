@@ -119,15 +119,15 @@ void batch_gemm_run(uint32_t iter) {
             epilogue_t>;
 
     //Ndrange and workgroup shape
-    cl::sycl::range<3> GroupRange
+    cl::sycl::range<3> group_range
             = gemm_op_t::get_group_range(matrix_m, matrix_n);
-    cl::sycl::range<3> LocalRange = gemm_op_t::get_local_range();
+    cl::sycl::range<3> local_range = gemm_op_t::get_local_range();
 
     // [Batch] Extend index space, the z dimension corresponds to batch
     // dimension
     try {
         if constexpr (batch_impl == batch_impl_t::nd_range) {
-            GroupRange[0] = batch_size;
+            group_range[0] = batch_size;
         }
     } catch (sycl::exception const &e) {
         sycl::free(A, context);
@@ -137,7 +137,7 @@ void batch_gemm_run(uint32_t iter) {
         return;
     }
 
-    cl::sycl::nd_range<3> NDRange(GroupRange * LocalRange, LocalRange);
+    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
     uint32_t warmup = 10;
     long ops = batch_size * 2 * static_cast<long>(matrix_m) * matrix_n
@@ -147,7 +147,7 @@ void batch_gemm_run(uint32_t iter) {
         if (i >= warmup) { prof.cpu_start(); }
         auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
-            cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+            cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 xetla_exec_item<3> ei(item);
                 slm_barrier_init<gemm_op_t>();
                 gemm_op_t gemm_op;
@@ -162,7 +162,7 @@ void batch_gemm_run(uint32_t iter) {
                         gemm_op(ei, arg);
                     }
                 } else {
-                    // [Batch] Get batch index from GroupRange
+                    // [Batch] Get batch index from group_range
                     // One work-item is responsible for one slice only
                     uint32_t batch = ei.get_group(0);
                     typename gemm_op_t::arguments_t arg(matrix_m, matrix_k,

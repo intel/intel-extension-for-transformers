@@ -78,18 +78,18 @@ static void dropout_op_run() {
             },
             queue, device, context);
 
-    cl::sycl::range<3> GroupRange {1,
+    cl::sycl::range<3> group_range {1,
             (test::mat_m + test::wg_m - 1) / test::wg_m,
             (test::mat_n + test::wg_n - 1) / test::wg_n};
-    cl::sycl::range<3> LocalRange {1,
+    cl::sycl::range<3> local_range {1,
             (test::wg_m + test::sg_m - 1) / test::sg_m,
             (test::wg_n + test::sg_n - 1) / test::sg_n};
-    cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
+    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<test>(
-                    Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         xetla_exec_item<3> ei(item);
                         using dropout_func = dropout_func_t<data_type_x,
                                 data_type_y, data_type_acc, test::wg_n,

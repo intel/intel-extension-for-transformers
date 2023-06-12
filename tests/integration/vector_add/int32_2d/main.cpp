@@ -45,14 +45,14 @@ static void vadd_run() {
             Size, [](data_type *data, size_t idx) {}, queue, device, context);
 
     // each thread process 16x16 block
-    cl::sycl::range<1> GlobalRange {Size / BL / BL};
-    cl::sycl::range<1> LocalRange {GroupSize};
-    cl::sycl::nd_range<1> Range(GlobalRange, LocalRange);
+    cl::sycl::range<1> Globalrange {Size / BL / BL};
+    cl::sycl::range<1> local_range {GroupSize};
+    cl::sycl::nd_range<1> nd_range(Globalrange, local_range);
 
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test1>(
-                    Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
                         xetla_exec_item ei(ndi);
                         vector_add_func<data_type, VL, BL>(&ei, A, B, C);
                     });

@@ -21,46 +21,46 @@
 using namespace std::placeholders;
 
 TEST(tile_load_store_local, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(
             tile_load_store_result_validate<int>, _1, _2, _3, 128, 32, 32);
     kernel_run<int,
             tile_load_store_local_func<int, 128, 64, 128, 32, 32, 16, 16>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }
 
 TEST(tile_transpose_store_local, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(
             tile_load_store_result_validate<int>, _1, _2, _3, 64, 32, 32);
     kernel_run<int,
             tile_transpose_store_local_func<int, 64, 64, 64, 32, 32, 16, 8>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }
 
 TEST(tile_transpose_store_local_bf16, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(
             tile_load_store_result_validate<bf16>, _1, _2, _3, 64, 32, 32);
     kernel_run<bf16,
             tile_transpose_store_local_func<bf16, 64, 64, 64, 32, 32, 16, 16>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }
 
 TEST(tile_load_store_1d_local, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(
             tile_load_store_result_validate<int>, _1, _2, _3, 128, 32, 32);
     kernel_run<int,
             tile_load_store_1d_local_func<int, 128, 64, 128, 32, 32, 16, 16>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }
 
 TEST(tile_load_store_1row_local, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(
             tile_load_store_result_validate<int>, _1, _2, _3, 128, 32, 1);
     kernel_run<int,
             tile_load_store_1d_local_func<int, 128, 64, 128, 32, 1, 16, 1>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }

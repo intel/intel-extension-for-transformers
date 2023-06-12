@@ -79,11 +79,11 @@ void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
     size_t subgroup_range_n = (wg_tile_n % sg_tile_n == 0)
             ? wg_tile_n / sg_tile_n
             : (wg_tile_n / sg_tile_n) + 1;
-    cl::sycl::range<3> GroupRange {
+    cl::sycl::range<3> group_range {
             Test::l3_kslicing, group_range_m, group_range_n};
-    cl::sycl::range<3> LocalRange {
+    cl::sycl::range<3> local_range {
             Test::slm_kslicing, subgroup_range_m, subgroup_range_n};
-    cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
+    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
     try {
         std::vector<kernel_id> kernelId = {get_kernel_id<Test>()};
@@ -95,7 +95,7 @@ void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.use_kernel_bundle(exeBundle);
             cgh.parallel_for<Test>(
-                    Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         gpu::xetla::xetla_exec_item<3> ei(item);
                         gpu::xetla::xetla_local_init<SLMSIZE>();
                         gpu::xetla::xetla_nbarrier_init<BARNUM>();
@@ -125,12 +125,12 @@ void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
 ///
 /// @tparam data_type data_type The data type of buffer used in kernel and buffer allocation
 /// @tparam KERNEL the kernel function struct
-/// @param Range the range of workitems
+/// @param nd_range the range of workitems
 /// @param validate_result validation function, taking 3 parameters buffer A, B as input C as output
 ///
 template <typename data_type, class KERNEL, int SLMSIZE = 128 * 1024,
         int BARNUM = 32, int Size = 4096>
-void kernel_run(auto Range, auto validate_result) {
+void kernel_run(auto nd_range, auto validate_result) {
 
     queue queue {};
     auto context = queue.get_info<info::queue::context>();
@@ -154,7 +154,7 @@ void kernel_run(auto Range, auto validate_result) {
 
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
-            cgh.parallel_for<>(Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
+            cgh.parallel_for<>(nd_range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
                 gpu::xetla::xetla_exec_item ei(ndi);
                 gpu::xetla::xetla_local_init<SLMSIZE>();
                 gpu::xetla::xetla_nbarrier_init<BARNUM>();

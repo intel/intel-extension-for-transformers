@@ -88,16 +88,16 @@ static void igemm_quantize_run() {
             queue, device, context);
 
     // here keep the same dim in CM and esimd, diff the index in kernel code
-    cl::sycl::range<3> GroupRange {1, (matrix_m + wg_tile_m - 1) / wg_tile_m,
+    cl::sycl::range<3> group_range {1, (matrix_m + wg_tile_m - 1) / wg_tile_m,
             (matrix_n + wg_tile_n - 1) / wg_tile_n};
-    cl::sycl::range<3> LocalRange {1, (wg_tile_m + sg_tile_m - 1) / sg_tile_m,
+    cl::sycl::range<3> local_range {1, (wg_tile_m + sg_tile_m - 1) / sg_tile_m,
             (wg_tile_n + sg_tile_n - 1) / sg_tile_n};
-    cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
+    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test1>(
-                    Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         xetla_exec_item<3> ei(item);
                         using igemm_quantize_functor
                                 = igemm_quantize_func<data_type_a, data_type_b,

@@ -21,8 +21,8 @@
 using namespace std::placeholders;
 
 TEST(test_raw_send_with_2_source_and_no_return, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(raw_send_result_validate, _1, _2, _3, 16);
     kernel_run<int, raw_send_with_2_source_and_1_destination_func<int, 16>>(
-            Range, result_validate);
+            nd_range, result_validate);
 }

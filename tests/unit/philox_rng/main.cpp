@@ -21,7 +21,7 @@
 using namespace std::placeholders;
 
 TEST(test_rand, esimd) {
-    cl::sycl::nd_range<1> Range({1}, {1});
+    cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(rand_result_validate, _1, _2, _3, 16);
-    kernel_run<uint32_t, rand_func<uint32_t, 16>>(Range, result_validate);
+    kernel_run<uint32_t, rand_func<uint32_t, 16>>(nd_range, result_validate);
 }

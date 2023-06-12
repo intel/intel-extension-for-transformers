@@ -29,7 +29,7 @@ Before launching the GPU kernel, it should be decided how to map entire GEMM com
   constexpr uint32_t sg_tile_m = 32;
   constexpr uint32_t sg_tile_n = 64;
 ```
-In this example, the input for GEMM is a matrix with dimensions (4096, 4096), and the output matrix has the same dimensions. With the specified work-group and sub-group sizes, we can map the GEMM operation into (16, 16) work-groups, where each work-group has (8, 4) sub-groups respectively. Each sub-group will be executed by a hardware thread. And this logic is defined as below code example, these number is used for `NDRange`.
+In this example, the input for GEMM is a matrix with dimensions (4096, 4096), and the output matrix has the same dimensions. With the specified work-group and sub-group sizes, we can map the GEMM operation into (16, 16) work-groups, where each work-group has (8, 4) sub-groups respectively. Each sub-group will be executed by a hardware thread. And this logic is defined as below code example, these number is used for `nd_range`.
 
 ```c++
 //Workload mapping, linear mapping will be used in the code
@@ -41,20 +41,20 @@ uint32_t group_range_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;
 uint32_t local_range_m = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
 uint32_t local_range_n = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
 
-//Ndrange and work-group shape
-cl::sycl::range<3> GroupRange {1, group_range_m, group_range_n};
-cl::sycl::range<3> LocalRange {1, local_range_m, local_range_n};
+//nd_range and work-group shape
+cl::sycl::range<3> group_range {1, group_range_m, group_range_n};
+cl::sycl::range<3> local_range {1, local_range_m, local_range_n};
 
-cl::sycl::nd_range<3> NDRange(GroupRange * LocalRange, LocalRange);
+cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
-//Recommended that you use the helper function to caculate NDRange, it is convenient.
+//Recommended that you use the helper function to caculate nd_range, it is convenient.
 cl::sycl::nd_range<3> get_nd_range(uint32_t matrix_m, uint32_t matrix_n);
 ```
 Now, the GPU kernel is starting from `parallel_for` with specific work-groups and sub-groups.
 
 ```c++
-cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(matrix_m, matrix_n);
-cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(matrix_m, matrix_n);
+cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
     .....
 }
 ```

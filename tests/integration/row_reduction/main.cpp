@@ -95,15 +95,15 @@ static void row_reduction_run() {
             },
             queue, device, context);
 
-    cl::sycl::range<3> GroupRange {1, 1, (matrix_n + wg_n - 1) / wg_n};
-    cl::sycl::range<3> LocalRange {
+    cl::sycl::range<3> group_range {1, 1, (matrix_n + wg_n - 1) / wg_n};
+    cl::sycl::range<3> local_range {
             1, (wg_m + sg_m - 1) / sg_m, (wg_n + sg_n - 1) / sg_n};
-    cl::sycl::nd_range<3> Range(GroupRange * LocalRange, LocalRange);
+    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test>(
-                    Range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                         using row_reduction_func = row_reduction_func_t<
                                 data_type_in, data_type_out, data_type_acc,
                                 data_type_x, data_type_w, data_type_d, wg_n,
