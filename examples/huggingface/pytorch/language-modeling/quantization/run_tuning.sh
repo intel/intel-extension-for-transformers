@@ -105,6 +105,16 @@ function run_tuning {
                 approach="PostTrainingStatic"
 		extra_cmd=$extra_cmd" --int8_bf16_mixed"
         fi
+    elif [ "${topology}" = "opt_1.3b" ]; then
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="facebook/opt-1.3b"
+        approach="PostTrainingStatic"
+        extra_cmd=$extra_cmd" --int8_bf16_mixed"
+	alpha=0.8
     elif [ "${topology}" = "opt_2.7b" ]; then
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
