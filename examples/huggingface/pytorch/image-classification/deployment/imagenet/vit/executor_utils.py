@@ -155,7 +155,7 @@ class Neural_Engine(Neural_Engine_base):
         Width = 224
         shape = [batch_size, Channel, Height, Width]
         dataset = DummyDataLoader(shapes=[shape, shape, shape, shape],
-                                  lows=[0, 0, 0, 0],
+                                  lows=[1, 1, 1, 1],
                                   highs=[1, 3, 255, 255],
                                   dtypes=['float32', 'float32', 'float32', 'float32'],
                                   iteration=iteration)

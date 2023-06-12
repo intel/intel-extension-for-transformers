@@ -24,7 +24,8 @@ import numpy as np
 @pattern_registry(pattern_type='MultiHeadAttention')
 class MultiHeadAttention(Pattern):
     def __call__(self, model):
-        if model.framework_modeling_config['framework'] != 'torch':
+        from cpuinfo import get_cpu_info
+        if 'amx_tile' not in get_cpu_info()['flags']:
             return model
         quant_info = util.get_quant_info()
         if not (quant_info or util.get_autocast_info()['cast_type'] == "bf16"):
@@ -136,6 +137,31 @@ class MultiHeadAttention(Pattern):
                     },
                     'returns': [0, 1, 2, 3, 4, 6]
                 },
+                # Bert based models bf16
+                {
+                    'patterns': {
+                        'in': [[(0, 'TransposeBatchMatMul'), (1, 'Softmax'),
+                                (2, 'TransposeBatchMatMul')]],
+                        'out': [[(0, 'MultiHeadAttention')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 2,
+                    },
+                    'input_tensors': {
+                        0: [[
+                            {0: [0]},  # Q
+                            {0: [1]},  # K
+                            {2: [1]},  # V
+                            {0: [2]},  # mask
+                            ],
+                            [[0, 1, 2, 3], 4]]
+                    },
+                    'output_tensors': {
+                        0 : [[{2: [0]}], [[0], 1]]
+                    },
+                    'returns': [0, 1, 2]
+                },
             ]
         }
 
@@ -158,6 +184,10 @@ class MultiHeadAttention(Pattern):
                         attr['reshape'] = ret_old_nodes[i][2].attr['reshape']
                     if 'output_dtype' in ret_old_nodes[i][2].attr.keys():
                         attr['output_dtype'] = ret_old_nodes[i][2].attr['output_dtype']
+                    if util.get_autocast_info()['cast_type'] == "int8":
+                        attr['output_dtype'] = 'int8'
+                    elif util.get_autocast_info()['cast_type'] == "bf16":
+                        attr['output_dtype'] = 'bf16'
                 elif len(ret_old_nodes[i]) == 6:
                     if 'src0_perm' in ret_old_nodes[i][0].attr.keys():
                         attr['Q_perm'] = ret_old_nodes[i][0].attr['src0_perm']
@@ -182,7 +212,7 @@ class MultiHeadAttention(Pattern):
                             new_node.input_tensors[4], new_node.input_tensors[3]
 
         for i in range(len(pattern_mapping_config['MultiHeadAttention'])):
-            if util.get_autocast_info()['cast_type'] == "bf16" and i == 1:
+            if util.get_autocast_info()['cast_type'] == "bf16" and i in [0,1]:
                 continue
             pattern_dict = pattern_mapping_config['MultiHeadAttention'][i]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("MultiHeadAttention",

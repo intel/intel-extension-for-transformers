@@ -12,7 +12,7 @@ if __name__ == '__main__':
                         type=str, default='./sparse_int8_ir')
     args = parser.parse_args()
 
-    graph = compile(args.input_model)
+    graph = compile(args.input_model,'./distilbert_sparse_pattern.conf')
     graph.save()
     model = Graph()
     model.graph_init('./ir/conf.yaml', './ir/model.bin', load_weight=True)

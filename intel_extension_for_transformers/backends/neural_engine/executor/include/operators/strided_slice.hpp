@@ -16,7 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_STRIDED_SLICE_HPP_
 #include <vector>
 #include <memory>
-
+#include <string>
 #include "../operator.hpp"
 
 namespace executor {
@@ -31,6 +31,7 @@ class StridedSliceOperator : public Operator {
   explicit StridedSliceOperator(const shared_ptr<OperatorConfig>& conf);
   virtual ~StridedSliceOperator() {}
 
+  void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
@@ -53,6 +54,7 @@ class StridedSliceOperator : public Operator {
   vector<int64_t> dst_stride_;
   vector<int64_t> slice_begin_;
   vector<int64_t> slice_stride_;
+  std::string output_dtype_ = "fp32";
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_STRIDED_SLICE_HPP_

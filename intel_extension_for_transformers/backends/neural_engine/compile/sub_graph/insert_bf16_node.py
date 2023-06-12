@@ -46,6 +46,7 @@ class InsertBF16Node(Pattern):
             if node.op_type in EXECUTOR_TYPE and \
               EXECUTOR_TYPE[node.op_type] == "InnerProduct" and \
               node.input_tensors[1].dtype == "fp16":
+                util.set_autocast("cast_type", "bf16")
                 node.input_tensors[1].dtype = 'bf16'
                 if len(node.input_tensors) > 2:
                     bias_fp32 = node.input_tensors[2].data

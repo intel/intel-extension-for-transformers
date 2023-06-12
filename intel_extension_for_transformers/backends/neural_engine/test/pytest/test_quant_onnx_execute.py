@@ -35,9 +35,9 @@ class TestQuantOnnxExecute(unittest.TestCase):
 
     def test_onnx_qlinear_compile(self):
         # set input data
-        input_0 = np.random.uniform(low=0, high=128, size=[1, 128]).astype('int32')
-        input_1 = np.random.uniform(low=0, high=1, size=[1, 128]).astype('int32')
-        input_2 = np.random.uniform(low=0, high=1, size=[1, 128]).astype('int32')
+        input_0 = np.random.uniform(low=1, high=128, size=[1, 128]).astype('int32')
+        input_1 = np.random.uniform(low=1, high=1, size=[1, 128]).astype('int32')
+        input_2 = np.random.uniform(low=1, high=1, size=[1, 128]).astype('int32')
         # compile and execute qlinear model
         qlinear_model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/qlinear/bert_mini_sst2_qlinear.onnx"
         if is_win():

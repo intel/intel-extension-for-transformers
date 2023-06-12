@@ -92,6 +92,13 @@ void MultiHeadAttentionOperator::MapTensors(const vector<Tensor*>& input, const 
       V_ = input[2];
       break;
     }
+    case 4: {
+      Q_ = input[0];
+      K_ = input[1];
+      V_ = input[2];
+      att_mask_ = input[3];
+      break;
+    }
     case 5: {
       Q_ = input[0];
       K_ = input[1];

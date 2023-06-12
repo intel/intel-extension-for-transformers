@@ -28,6 +28,10 @@ StridedSliceOperator::StridedSliceOperator(const shared_ptr<OperatorConfig>& con
   StringSplit<int64_t>(&begin_data_, attrs_map["begin"], ",");
   StringSplit<int64_t>(&end_data_, attrs_map["end"], ",");
   StringSplit<int64_t>(&strides_data_, attrs_map["strides"], ",");
+  auto iter = attrs_map.find("output_dtype");
+  if (iter != attrs_map.end()) {
+    output_dtype_ = attrs_map["output_dtype"];
+  }
 }
 
 int StridedSliceOperator::Clamp(const int v, const int lo, const int hi) {
@@ -131,6 +135,10 @@ int StridedSliceOperator::StopForAxis(const vector<int64_t>& input_shape, int ax
   return stop;
 }
 
+void StridedSliceOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  output[0]->set_dtype(output_dtype_);
+}
+
 void StridedSliceOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   //// Part1: Derive operator's user proper shape and strides
   // 1.1: Prepare Tensor origin shape
@@ -171,26 +179,37 @@ void StridedSliceOperator::Reshape(const vector<Tensor*>& input, const vector<Te
   dst_tensor_ptr->set_shape(dst_shape_);
 }
 
-void StridedSliceOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+template <typename T>
+void ForwardInternal(const vector<Tensor*>& input, const vector<Tensor*>& output, const vector<int64_t>& slice_begin_,
+                  const vector<int64_t>& slice_stride_, const vector<int64_t>& dst_shape_,
+                  const vector<int64_t>& dst_stride_) {
   // 0. Alias variables part
-  const auto& src_data = static_cast<const float*>(input[0]->data());
-  // when change data value please use mutable_data
-  auto dst_data = static_cast<float*>(output[0]->mutable_data());
-  LOG_IF(ERROR, reinterpret_cast<void*>(dst_data) == reinterpret_cast<void*>(const_cast<float*>(src_data)))
-      << "DST ptr should not be equal to SRC ptr.";
-
+  int dst_idx = 0;
+  int src_idx = 0;
+  const auto& src_data = static_cast<const T*>(input[0]->data());
+  auto dst_data = static_cast<T*>(output[0]->mutable_data());
   // 1. Execute the dst
   for (int i = 0; i < dst_shape_[0]; ++i) {
-#pragma omp parallel for
+  #pragma omp parallel for
     for (int j = 0; j < dst_shape_[1]; ++j) {
-#pragma omp simd
+  #pragma omp simd
       for (int k = 0; k < dst_shape_[2]; ++k) {
-        int dst_idx = i * dst_stride_[0] + j * dst_stride_[1] + k;
-        int src_idx = slice_begin_[0] + i * slice_stride_[0] + slice_begin_[1] + j * slice_stride_[1] +
+        dst_idx = i * dst_stride_[0] + j * dst_stride_[1] + k;
+        src_idx = slice_begin_[0] + i * slice_stride_[0] + slice_begin_[1] + j * slice_stride_[1] +
                       slice_begin_[2] + k * slice_stride_[2];
         dst_data[dst_idx] = src_data[src_idx];
       }
     }
+  }
+}
+
+void StridedSliceOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  // 1. Execute the dst
+
+  if (output_dtype_ == "bf16") {
+    ForwardInternal<uint16_t>(input, output, slice_begin_, slice_stride_, dst_shape_, dst_stride_);
+  } else {
+    ForwardInternal<float>(input, output, slice_begin_, slice_stride_, dst_shape_, dst_stride_);
   }
 
   // 2. unref tensors
@@ -198,4 +217,5 @@ void StridedSliceOperator::Forward(const vector<Tensor*>& input, const vector<Te
 }
 
 REGISTER_OPERATOR_CLASS(StridedSlice);
+
 }  // namespace executor

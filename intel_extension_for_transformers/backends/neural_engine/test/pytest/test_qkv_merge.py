@@ -19,22 +19,27 @@ import unittest
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 import sys
+import os
 
 def is_win():
     return sys.platform.startswith('win')
 
 class TestQKVMerge(unittest.TestCase):
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         pass
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
+        os.remove('qkv_merge_pattern_config')
         pass
 
     def test_qkv_merge_1(self):
         model_path = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/onnx_best_acc_distilbert.onnx"
-        pattern_config = "/tf_dataset2/inc-ut/nlptoolkit_ut_model/qkv_merge_pattern_config"
+        content = "pattern_switch:\n  'QKVMerge': True\n  'MultiHeadAttention': False"
+        pattern_config = "qkv_merge_pattern_config" 
+        with open("qkv_merge_pattern_config", "w") as file:
+            file.write(content)
         if is_win():
             model_path = "D:\\dataset\\nlptoolkit_ut_model\\onnx_best_acc_distilbert.onnx"
             pattern_config = "D:\\dataset\\nlptoolkit_ut_model\\qkv_merge_pattern_config"

@@ -105,7 +105,7 @@ class IPEX(object):
         log.info("Generate dummy dataset ......")
         shape = [batch_size, seq_len]
         dataset = DummyDataLoader(shapes=[shape, shape, shape],
-                                  lows=[0, 0, 0],
+                                  lows=[1, 1, 1],
                                   highs=[128, 1, 1],
                                   dtypes=['int32', 'int32', 'int32'],
                                   iteration=iteration)
