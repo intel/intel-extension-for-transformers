@@ -196,6 +196,7 @@ class RequestBaseModel(BaseModel):
 class QueryRequest(RequestBaseModel):
     query: str
     domain: str
+    articles: Optional[List[str]] = []
     params: Optional[dict] = None
     debug: Optional[bool] = False
 
@@ -218,6 +219,20 @@ def query(request: QueryRequest):
         result = _process_request(inc_pipeline, request)
     elif domain == "WIKI":
         result = _process_request(wiki_pipeline, request)
+    elif domain == "Customized":
+        customized_document_store = InMemoryDocumentStore(use_gpu=False, use_bm25=True)
+        customized_documents = []
+        for i, d in enumerate(request.articles):
+            customized_documents.append(Document(d, id=i))
+
+        customized_document_store.write_documents(customized_documents)
+        customized_pipeline = Pipeline()
+        customized_retriever = BM25Retriever(document_store=customized_document_store, top_k = 10)
+        customized_pipeline.add_node(component=customized_retriever, name="Retriever", inputs=["Query"])
+        customized_pipeline.add_node(component=reranker, name="Reranker", inputs=["Retriever"])
+        customized_pipeline.add_node(component=shaper, name="Shaper", inputs=["Reranker"])
+        customized_pipeline.add_node(component=prompt, name="Prompter", inputs=["Shaper"])
+        result = _process_request(customized_pipeline, request)
 
     return result
 
