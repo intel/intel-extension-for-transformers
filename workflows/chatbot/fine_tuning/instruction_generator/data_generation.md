@@ -1,7 +1,7 @@
 Instruction Data Generation
 ======
 1. [Introduction](#introduction)
-2. [Get Started](#get-started-with-benchmark-api)
+2. [Get Started](#get-started)
 3. [Examples](#examples)
 
 ## Introduction

@@ -61,6 +61,6 @@ RUN conda init bash && \
     source ~/.bashrc
 
 SHELL ["conda", "run", "-n", "document_indexing", "/bin/bash", "--login", "-c"]
-RUN pip install langchain chromadb PyPDF2 farm-haystack docx pandas
+RUN pip install langchain chromadb PyPDF2 farm-haystack python-docx pandas InstructorEmbedding
 
 WORKDIR /itrex/workflows/chatbot/inference/document_indexing/

@@ -1,0 +1,7 @@
+langchain
+chromadb
+PyPDF2
+farm-haystack
+python-docx
+pandas
+InstructorEmbedding
