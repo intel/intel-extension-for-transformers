@@ -1,4 +1,7 @@
 [README](/README.md#documentation) > **Programming Guidelines**
+
+![ALT](/media/docs/workflow.png "Step by step GEMM decomposition")
+
 # Programming Guidelines
 
 The fundamental concept of Intel® XeTLA revolves around micro-kernels, which are used to compute submatrices (also known as tiles) of output, using advanced GPU instructions like 2D block load/store and DPAS. This approach allows developers to solely focus on their algorithm design, including task division, fusion, and memory heirarchial usage, while offloading the complexity of GEMM computation into template-based building blocks.
@@ -10,6 +13,17 @@ There are two groups of API to imeplement GEMM, brgemm (mirco-kernels) in group 
 | kernel    | `gpu::xetla::kernel::gemm_t`   |
 | group     | `gpu::xetla::group::brgemm_t`  |
 
+## The Key Things for Better Performance
+Intel® XeTLA provides the basic building block of GEMM unit; however, it still needs to implement the kernel carefully for the better perforamnce in both algorithm and hardware level.
+1. Hardware Compute Unit
+In Intel's GPU, the compute unit is organized by sub-slices, and there are many Execution Unit (EU) and shared local memory inside.
+The Intel® XeTLA's micro-kernel is designed to fully utilize the whole sub-slices to archieve the best performance. Thus, the software developers response to allocate at least the number of work-group equal with the number of sub-slices.
+
+3. Number of work-group / sub-group
+4. K slicing algorithm
+5. Reuse register for post operations
+6. Data sharing through shared local memory
+7. Reduction
 
 ## How To Implement A GEMM With Building Block 
 
@@ -22,12 +36,12 @@ To create a customized GEMM kernel, the following steps should be considered:
 For a runnable code example, you can refer to the code in the [01_basic_gemm](/examples/01_basic_gemm), which also includes explanations of the idea behind the implementation.
 
 ### Task Mapping 
-Before launching the GPU kernel, it should be decided how to map entire GEMM computation into GPU by work-group and sub-group. To efficient utilize the GPU resource, it's improtant to consider factors such as the shape of the operation, data type, and hardware specifications of the GPU.
+Before launching the GPU kernel, it should be decided how to map entire GEMM computation into GPU by work-group and sub-group. To efficient utilize the GPU resource, it's improtant to consider factors such as the shape of the operation, data type, and hardware specifications of the GPU. 
 ```c++
-  constexpr uint32_t wg_tile_m = 256;
-  constexpr uint32_t wg_tile_n = 256;
-  constexpr uint32_t sg_tile_m = 32;
-  constexpr uint32_t sg_tile_n = 64;
+constexpr uint32_t wg_tile_m = 256;
+constexpr uint32_t wg_tile_n = 256;
+constexpr uint32_t sg_tile_m = 32;
+constexpr uint32_t sg_tile_n = 64;
 ```
 In this example, the input for GEMM is a matrix with dimensions (4096, 4096), and the output matrix has the same dimensions. With the specified work-group and sub-group sizes, we can map the GEMM operation into (16, 16) work-groups, where each work-group has (8, 4) sub-groups respectively. Each sub-group will be executed by a hardware thread. And this logic is defined as below code example, these number is used for `nd_range`.
 
@@ -94,7 +108,7 @@ class brgemm_selector_t {};
 
 ### Define Epilogue
 
-The fusion of post-operations, such as `bias add`, `relu`, `gelu`,  after GEMM computation can significantly reduce unnecessary memory transitions and greatly improve performance. In Intel® XeTLA, the `epilogue` is specifically designed to seamlessly integrate post-operations into the GEMM computation at the register level.Beside the fusion, the `epilogue` is also used to update the buffer `c` or data conversion and fusing with some post-processing ops, such as `bias add`, `relu`, `gelu`,.etc.
+The fusion of post-operations, such as `bias add`, `relu`, `gelu`,  after GEMM computation can significantly reduce unnecessary memory transitions and greatly improve performance. In Intel® XeTLA, the `epilogue` is specifically designed to seamlessly integrate post-operations into the GEMM computation at the register level. Beside the fusion, the `epilogue` is also used to update the buffer `c` or data conversion and fusing with some post-processing ops, such as `bias add`, `relu`, `gelu`,.etc.
 
 ```c++
 template <typename epilogue_policy,
@@ -109,23 +123,21 @@ class epilogue_t {};
 - `tile_shape` is the problem size of each group and subgroup.
 - `mem_desc_c` is the description of buffer `c`, which includes `memory data type`, `memory space` and `memory layout`...
 
-
 In example [03_gemm_fusion](/examples/03_gemm_fusion), a chain of operations is effectively fused into the GEMM computation. 
 First, using pre-defined post-operations `bias_add` and `relu`, and then pass it to `epilogue_policy::tile_op_t`.
 
 ```c++
-     using tile_op_t = chained_tile_op_t<
-                       relu_op_t, // apply elementwise ReLU
-                       bias_op_t // apply elementwise BiasAdd
-                       >;
-
+using tile_op_t = chained_tile_op_t<
+                  relu_op_t, // apply elementwise ReLU
+                  bias_op_t // apply elementwise BiasAdd
+                  >;
 ```
 
 ### Construct GEMM 
 
 After configuration of BRGEMM and epilogue, it's simple to build entire GEMM with:
 - assigning tasks to each group, setting working boundaries and starting position accordingly.
-- ordering the execution of workgroup within the kernel
+- ordering the execution of work-group within the kernel
 - performing any synchronization in between that may be necessary
 - performing any necessary group remapping logic to maximize data locality
 
@@ -138,8 +150,8 @@ template <typename dispatch_policy,
 class gemm_t {};
 
 using gemm_op_t = gpu::xetla::kernel::gemm_t<
-            gpu::xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, brgemm_t,
-            epilogue_t>;
+                  gpu::xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, brgemm_t,
+                  epilogue_t>;
 ```
 
 - `dispatch_policy` is the kernel launch attribute, which includes the hardware architecture tag, group remapping information, and special parameters for task splitting, e.g., `l3_kslicing` can be used to split the group-level problem along the `K` dimension in order to get higher occupancy.
@@ -149,13 +161,13 @@ using gemm_op_t = gpu::xetla::kernel::gemm_t<
 Finally, the actual data will be passed using gemm_op_t::arguments_t, and all of these configurations will be instantiated during the compilation stage for the actual kernel.
 
 ```c++
- typename gemm_op_t::arguments_t arg(matrix_n, matrix_k,
-                        matrix_m, A, matrix_k, B, matrix_n, C, matrix_n);
+typename gemm_op_t::arguments_t arg(matrix_n, matrix_k,
+                     matrix_m, A, matrix_k, B, matrix_n, C, matrix_n);
 ```
 ```c++ 
- gemm_op_t gemm_op;
- xetla_exec_item<3> ei(item);
- gemm_op(ei, arg);
+gemm_op_t gemm_op;
+xetla_exec_item<3> ei(item);
+gemm_op(ei, arg);
 ```
 ## Copyright
 Copyright (c) 2022-2023 Intel Corporation Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
