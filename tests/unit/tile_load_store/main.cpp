@@ -165,13 +165,23 @@ TEST(tile_load_store, esimd) {
             nd_range, result_validate);
 }
 
-TEST(tile_load_transpose_store, esimd) {
+TEST(tile_load_transpose_store_1, esimd) {
     cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate
             = std::bind(tile_load_store_result_validate<int, false, true>, _1,
                     _2, _3, 128, 64, 32, 32);
     kernel_run<int,
             tile_load_store_func<int, 128, 64, 128, 32, 32, 8, 8, false, true,
+                    64>>(nd_range, result_validate);
+}
+
+TEST(tile_load_transpose_store_2, esimd) {
+    cl::sycl::nd_range<1> nd_range({1}, {1});
+    auto result_validate
+            = std::bind(tile_load_store_result_validate<int, false, true>, _1,
+                    _2, _3, 128, 64, 32, 32);
+    kernel_run<int,
+            tile_load_store_func<int, 128, 64, 128, 32, 32, 8, 16, false, true,
                     64>>(nd_range, result_validate);
 }
 
