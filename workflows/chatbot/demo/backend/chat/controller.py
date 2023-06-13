@@ -210,7 +210,7 @@ class Controller:
                 if chunk:
                     print("chunk=======", chunk)
                     # yield chunk + b"\0"
-                    a = str(chunk)
+                    a = chunk.decode("utf-8")
                     a = re.sub(r'\\u2019', "'", a)
                     a = re.sub(r'\\\\ufffd', '', a)
                     yield f"data: {a}\n\n"
