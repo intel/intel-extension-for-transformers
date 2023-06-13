@@ -30,8 +30,6 @@ export const chatServer: ChatAdapter = {
             method: "POST",
         })
 
-        console.log('imgSrc', imgSrc);
-
         return imgSrc;
     }
 
@@ -82,8 +80,6 @@ async function img_request({
         ...(body ? (body_stringify ? { body: JSON.stringify(body) } : body) : {}),
     };
     const request = fetch(url, init).then((r) => r.json());
-
-    console.log('request', request)
 
     return request
 }

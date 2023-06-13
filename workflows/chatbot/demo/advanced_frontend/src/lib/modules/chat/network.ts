@@ -1,10 +1,24 @@
-import { chatServer } from "$lib/chat/chatServer";
+import { chatServer } from "$lib/modules/chat/chat-server";
 import { SSE } from "sse.js";
 import { env } from '$env/dynamic/public';
 
 const LLMA_URL = env.LLMA_URL;
 const GPT_J_6B_URL = env.GPT_J_6B_URL;
 const KNOWLEDGE_URL = env.KNOWLEDGE_URL;
+
+function regFunc(currentMsg) {
+	let text = currentMsg.slice(2, -1);
+	const regex = /.*Assistant:((?:(?!",).)*)",/;
+	const match = text.match(regex);
+	let content = match ? match[1].trim() : "";
+	content = content
+		.replace(/\\\\n/g, "")
+		.replace(/\\n/g, "")
+		.replace(/\n/g, "")
+		.replace(/\\'/g, "'");
+
+	return content;
+}
 
 function chatMessage(chatMessages: ChatMessage[], type: ChatMessageType, articles = []): SSE {
 	// chatMessage
@@ -65,4 +79,4 @@ function chatGPT(msgs: ChatMessage[], api_key: string): SSE {
 }
 
 
-export default { modelList: chatServer.modelList, chatMessage, chatGPT };
+export default { modelList: chatServer.modelList, chatMessage, chatGPT, regFunc };

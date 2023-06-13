@@ -1,9 +1,9 @@
 <script lang="ts">
-	import MessageAvatar from "./MessageAvatar.svelte";
-	import MessageTimer from "./MessageTimer.svelte";
-	import LikeButtonIcon from "$lib/assets/likeButtonIcon.svelte";
-	import DislikeButtonIcon from "$lib/assets/dislikeButtonIcon.svelte";
-	import TextToImgButtonIcon from "$lib/assets/text2imgButtonIcon.svelte";
+	import MessageAvatar from "../../assets/icons/message-avatar.svelte";
+	import MessageTimer from "./message-timer.svelte";
+	import LikeButtonIcon from "$lib/assets/icons/likeButtonIcon.svelte";
+	import DislikeButtonIcon from "$lib/assets/icons/dislikeButtonIcon.svelte";
+	import TextToImgButtonIcon from "$lib/assets/icons/text2imgButtonIcon.svelte";
 	import { env } from '$env/dynamic/public';
 
 	let clickLike = false;
@@ -81,9 +81,7 @@
 				? "bg-blue-600 text-white p-3 rounded-l-lg rounded-br-lg wrap-style"
 				: "bg-gray-300 p-3 rounded-r-lg rounded-bl-lg wrap-style"}
 		>
-			{#if (type === "Assistant" || type === "assistant") && message == "Loading.."}
-				<button class="btn loading btn-ghost text-blue-500 " />
-			{:else if type === "assistant" || type === "Assistant"}
+			{#if type === "assistant" || type === "Assistant"}
 				<p
 					in:typewriter
 					class="text-sm message max-w-md line"
@@ -95,7 +93,7 @@
 			{/if}
 		</div>
 		<!-- && message !== msg  -->
-		{#if (type === "Assistant" || type === "assistant") && message !== "Loading.."}
+		{#if (type === "Assistant" || type === "assistant")}
 			<div class="absolute h-5 -top-5 right-0 hidden group-hover:flex ">
 				<!-- svelte-ignore a11y-click-events-have-key-events -->
 				<figure

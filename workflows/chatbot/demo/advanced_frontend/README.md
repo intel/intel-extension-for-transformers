@@ -23,6 +23,8 @@ Here're some of the project's features:
 - New Topic: Clear the current context and restart the chat.
 - Txt2Img: Generate an image based on the current answer, and you can hover to zoom in the image.
 - ChatGPT: Integrated with ChatGPT, you can directly access the relevant functionalities of OpenAI chat by entering your OpenAI API key.
+- Chat History: View chat history.
+- Regenerate: Regenerates the current conversation.
 
 <h2>🛠️ Get it Running:</h2>
 

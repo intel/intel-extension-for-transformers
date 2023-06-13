@@ -1,5 +1,4 @@
 <script lang="ts">
-	// import Favicon from "$lib/assets/favicon.svelte";
 	import Favicon from "$lib/assets/favicon.png";
 
 	export let mode: string;

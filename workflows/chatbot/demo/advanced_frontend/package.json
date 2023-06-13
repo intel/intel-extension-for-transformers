@@ -45,6 +45,9 @@
   },
   "type": "module",
   "dependencies": {
+    "fuse": "^0.4.0",
+    "fuse.js": "^6.6.2",
+    "ramda": "^0.29.0",
     "sse.js": "^0.6.1"
   }
 }
