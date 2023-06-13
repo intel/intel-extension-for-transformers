@@ -25,7 +25,7 @@ template <typename data_type_in, typename data_type_out, typename data_type_acc>
 int data_transformer_result_validate(data_type_in *in_device,
         data_type_out *out_device, size_t mat_m, size_t mat_n,
         bool is_transposed, int need_fp8_op, data_type_acc *amax_ptr_device,
-        data_type_acc *scale_device, sycl::queue queue) {
+        data_type_acc *scale_device, sycl::queue &queue) {
     auto in = alloc_host_and_copy<data_type_in>(
             in_device, mat_m * mat_n, queue);
     auto out = alloc_host_and_copy<data_type_out>(

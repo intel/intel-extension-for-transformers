@@ -30,9 +30,9 @@ TYPED_TEST_SUITE_P(bgemm_test);
 TYPED_TEST_P(bgemm_test, esimd) {
     gemm_exec<TypeParam, typename TypeParam::data_type_a,
             typename TypeParam::data_type_b, typename TypeParam::data_type_c,
-            typename TypeParam::data_type_acc, input_buffer_init,
-            result_validate, bgemm_func>(TypeParam::mat_m, TypeParam::mat_n,
-            TypeParam::mat_k, esimd_compile_string);
+            typename TypeParam::data_type_acc, result_validate, bgemm_func>(
+            TypeParam::mat_m, TypeParam::mat_n, TypeParam::mat_k,
+            esimd_compile_string);
 }
 REGISTER_TYPED_TEST_SUITE_P(bgemm_test, esimd);
 using tests = ::testing::Types<Test0, Test1, Test2, Test3, Test4, Test5, Test6,

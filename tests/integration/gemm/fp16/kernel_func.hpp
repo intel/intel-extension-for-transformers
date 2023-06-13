@@ -44,7 +44,7 @@ struct fp16_gemm_test_func {
         using update_method = typename std::conditional<(l3_kslicing > 1),
                 result_reduce_sum, result_overwrite>::type;
         using epilogue_t = epilogue_t<
-                epilogue_policy_tile_op<none_op_t, update_method, gpu_arch::Xe>,
+                epilogue_policy_default<update_method, gpu_arch::Xe>,
                 tile_shape,
                 mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>>;
 

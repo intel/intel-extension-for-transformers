@@ -15,15 +15,11 @@ There are two groups of API to imeplement GEMM, brgemm (mirco-kernels) in group 
 
 ## The Key Things for Better Performance
 Intel® XeTLA provides the basic building block of GEMM unit; however, it still needs to implement the kernel carefully for the better perforamnce in both algorithm and hardware level.
-1. Hardware Compute Unit
-In Intel's GPU, the compute unit is organized by sub-slices, and there are many Execution Unit (EU) and shared local memory inside.
-The Intel® XeTLA's micro-kernel is designed to fully utilize the whole sub-slices to archieve the best performance. Thus, the software developers response to allocate at least the number of work-group equal with the number of sub-slices.
-
-3. Number of work-group / sub-group
-4. K slicing algorithm
-5. Reuse register for post operations
-6. Data sharing through shared local memory
-7. Reduction
+1. Number of work-group / sub-group
+2. K slicing algorithm
+3. Reuse register for post operations
+4. Data sharing through shared local memory
+5. Reduction
 
 ## How To Implement A GEMM With Building Block 
 

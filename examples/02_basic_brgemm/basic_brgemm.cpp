@@ -145,9 +145,9 @@ void basic_brgemm_run(uint32_t iter) {
                 brgemm_t brgemm;
 
                 // Step 4: epilogue function to overwrite the result
-                using epilogue_t
-                        = epilogue_t<epilogue_policy_default<gpu_arch::Xe>,
-                                tile_shape, mem_desc_output_c>;
+                using epilogue_t = epilogue_t<
+                        epilogue_policy_default<result_overwrite, gpu_arch::Xe>,
+                        tile_shape, mem_desc_output_c>;
 
                 // Step 5: define the shared local memory usages
                 // developers have the responsibility to set

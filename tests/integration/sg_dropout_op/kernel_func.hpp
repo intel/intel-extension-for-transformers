@@ -56,10 +56,9 @@ struct dropout_func_t {
                     subgroup::dropout_op_t<uint8_t, gpu_arch::Xe>,
                     subgroup::rng_dropout_op_t<uint8_t, gpu_arch::Xe>>::type;
 
-    using epilogue_t
-            = group::epilogue_t<group::epilogue_policy_tile_op<tile_op_t,
-                                        result_overwrite, gpu_arch::Xe>,
-                    tile_shape, mem_desc_out_t>;
+    using epilogue_t = group::epilogue_t<
+            group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>, tile_shape,
+            mem_desc_out_t>;
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
     static inline void run(xetla_exec_item<3> &ei, dtype_in *mat_in_ptr,

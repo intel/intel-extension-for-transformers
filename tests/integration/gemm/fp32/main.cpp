@@ -31,12 +31,14 @@ std::string esimd_compile_string
 template <typename T>
 class sgemm_test : public ::testing::Test {};
 TYPED_TEST_SUITE_P(sgemm_test);
+
 TYPED_TEST_P(sgemm_test, esimd) {
     gemm_exec<TypeParam, data_type_a, data_type_b, data_type_c, data_type_acc,
-            input_buffer_init, result_validate, sgemm_func>(TypeParam::mat_m,
-            TypeParam::mat_n, TypeParam::mat_k, esimd_compile_string);
+            result_validate, sgemm_func>(TypeParam::mat_m, TypeParam::mat_n,
+            TypeParam::mat_k, esimd_compile_string, TypeParam::batch_size);
 }
+
 REGISTER_TYPED_TEST_SUITE_P(sgemm_test, esimd);
 using tests = ::testing::Types<Test1, Test2, Test3, Test4, Test5, Test6, Test7,
-        Test8>;
+        Test8, Test9, Test10, Test11>;
 INSTANTIATE_TYPED_TEST_SUITE_P(sgemm_test_suite, sgemm_test, tests);

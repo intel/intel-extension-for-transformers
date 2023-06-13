@@ -34,7 +34,7 @@ namespace buff_cmp {
 /// @{
 
 // convenient datatype to represent ulp-converted fp buffers
-using ulp_vec = std::vector<uint64_t>;
+using ulp_vec = std::vector<size_t>;
 
 ///
 ///@brief Structure used to describe tensors / buffers as stdlib vectors, idx_mapping vector is used to ignore "unwanted" elements from a tensor array.
@@ -44,8 +44,8 @@ template <typename dtype, typename dtype_src = dtype>
 struct buff_vals {
     using type = dtype;
     std::vector<dtype> buff;
-    std::vector<uint32_t> idx_mapping;
-    unsigned size;
+    std::vector<size_t> idx_mapping;
+    size_t size;
 
     /// @brief Initializes and empty buff_vals<dtype> structure.
     /// @tparam dtype Datatype of the output structure and input buffer.
@@ -55,10 +55,10 @@ struct buff_vals {
     /// @tparam dtype Datatype of the output structure and input buffer.
     /// @param data Pointer to buffer of input data.
     /// @param n Size of input buffer data
-    buff_vals(dtype_src *data, uint32_t n) {
+    buff_vals(dtype_src *data, size_t n) {
         this->size = n;
         this->buff.resize(this->size, 0);
-        for (uint32_t i = 0; i < this->size; ++i) {
+        for (size_t i = 0; i < this->size; ++i) {
             this->buff[i] = data[i];
             this->idx_mapping.push_back(i);
         }
@@ -70,14 +70,13 @@ struct buff_vals {
     /// @param Blocky By default used to define size of input buffer. If input is organized as tensor (meaning, by blocks) then defines block height.
     /// @param Blockx Default value is 1 for non-tensor buffers, otherwise describes tensor block width.
     /// @param Sizex Default value is 1 for non-tensor buffers, otherwise describes tensor pitch.
-    buff_vals(
-            dtype_src *data, uint32_t Blocky, uint32_t Blockx, uint32_t Sizex) {
+    buff_vals(dtype_src *data, size_t Blocky, size_t Blockx, size_t Sizex) {
         this->size = Blockx * Blocky;
         this->buff.resize(this->size, 0);
         this->idx_mapping.resize(this->size, 0);
-        unsigned idx = 0;
-        for (int i = 0; i < Blocky; ++i) {
-            for (int j = 0; j < Blockx; ++j) {
+        size_t idx = 0;
+        for (size_t i = 0; i < Blocky; ++i) {
+            for (size_t j = 0; j < Blockx; ++j) {
                 this->buff[idx] = data[i * Sizex + j];
                 this->idx_mapping[idx] = i * Sizex + j;
                 ++idx;
@@ -89,7 +88,7 @@ struct buff_vals {
     /// @tparam dtype Datatype of the given structure and new element.
     /// @param val Element to be added to structure.
     /// @param idx Index mapping for element being added.
-    void push(dtype val, uint32_t idx) {
+    void push(dtype val, size_t idx) {
         ++this->size;
         this->buff.push_back(val);
         this->idx_mapping.push_back(idx);
@@ -121,15 +120,15 @@ struct buff_vals {
 ///
 template <typename dtype>
 buff_vals<dtype> xetla_get_buff_vals(
-        dtype *data, unsigned Blocky, unsigned Blockx = 1, unsigned Sizex = 1) {
+        dtype *data, size_t Blocky, size_t Blockx = 1, size_t Sizex = 1) {
     buff_vals<dtype> res;
     res.size = Blockx * Blocky;
     res.buff.resize(res.size, 0);
     res.idx_mapping.resize(res.size, 0);
 
-    unsigned idx = 0;
-    for (int i = 0; i < Blocky; ++i) {
-        for (int j = 0; j < Blockx; ++j) {
+    size_t idx = 0;
+    for (size_t i = 0; i < Blocky; ++i) {
+        for (size_t j = 0; j < Blockx; ++j) {
             res.buff[idx] = data[i * Sizex + j];
             res.idx_mapping[idx] = i * Sizex + j;
             ++idx;
@@ -142,7 +141,7 @@ buff_vals<dtype> xetla_get_buff_vals(
 struct rel_abs_vals {
     std::vector<double> ate;
     std::vector<double> rte;
-    unsigned size;
+    size_t size;
 };
 
 ///
@@ -171,7 +170,7 @@ rel_abs_vals xetla_get_rte_and_ate(T1 &v1, T2 &v2) {
     res.rte.resize(res.size, 0.0);
     res.ate.resize(res.size, 0.0);
 
-    for (unsigned i = 0; i < res.size; ++i) {
+    for (size_t i = 0; i < res.size; ++i) {
         res.ate[i] = get_ate(v1.buff[i], v2.buff[i]);
         res.rte[i] = get_rte(v1.buff[i], v2.buff[i]);
     }
@@ -190,7 +189,7 @@ ulp_vec xetla_get_ulp_buffer(T &v1) {
     using dtype = typename T::type;
     using uint_dtype = gpu::xetla::uint_type_t<dtype>;
     ulp_vec ulp_buff(v1.size, 0);
-    for (unsigned i = 0; i < ulp_buff.size(); ++i) {
+    for (size_t i = 0; i < ulp_buff.size(); ++i) {
         uint_dtype val = (*reinterpret_cast<uint_dtype *>(&v1.buff[i]));
         ulp_buff[i] = val;
     }
@@ -211,7 +210,7 @@ ulp_vec xetla_get_ulp_buffer(T &v1) {
 ///
 template <typename dtype>
 bool _handle_fp_types(buff_vals<dtype> &data, buff_vals<dtype> &other,
-        std::string name, uint64_t ulp_tol, double abs_tol) {
+        std::string name, size_t ulp_tol, double abs_tol) {
     if (std::is_same<remove_const_t<dtype>, gpu::xetla::bf16>::value) {
         if (ulp_tol == 0) ulp_tol = 8;
         if (abs_tol == 0) abs_tol = 0.25;
@@ -233,7 +232,7 @@ bool _handle_fp_types(buff_vals<dtype> &data, buff_vals<dtype> &other,
     ulp_vec ulp_data = xetla_get_ulp_buffer(data);
     ulp_vec ulp_other = xetla_get_ulp_buffer(other);
 
-    auto get_ulp_ate = [=](uint64_t a, uint64_t b) {
+    auto get_ulp_ate = [=](size_t a, size_t b) {
         if (a > b)
             return a - b;
         else
@@ -242,10 +241,10 @@ bool _handle_fp_types(buff_vals<dtype> &data, buff_vals<dtype> &other,
 
     ulp_vec aulpte;
     aulpte.resize(ulp_data.size(), 0);
-    for (unsigned i = 0; i < ulp_data.size(); ++i)
+    for (size_t i = 0; i < ulp_data.size(); ++i)
         aulpte[i] = get_ulp_ate(ulp_data[i], ulp_other[i]);
 
-    unsigned aulpidx
+    size_t aulpidx
             = std::max_element(aulpte.begin(), aulpte.end()) - aulpte.begin();
 
     std::cout << "\t"
@@ -258,16 +257,16 @@ bool _handle_fp_types(buff_vals<dtype> &data, buff_vals<dtype> &other,
               << "data_val: " << ulp_data[aulpidx]
               << " gold_val: " << ulp_other[aulpidx] << std::endl;
 
-    uint64_t ulp_threshold = ulp_tol;
+    size_t ulp_threshold = ulp_tol;
     double small_num_threshold = abs_tol;
-    uint32_t diff_elems_count = 0;
+    size_t diff_elems_count = 0;
     bool flag = true;
-    for (unsigned i = 0; i < ulp_data.size(); ++i) {
+    for (size_t i = 0; i < ulp_data.size(); ++i) {
         float des = other.buff[i];
         float act = data.buff[i];
-        uint64_t ulp_des = ulp_other[i];
-        uint64_t ulp_act = ulp_data[i];
-        uint64_t sub_ulp = ulp_act - ulp_des;
+        size_t ulp_des = ulp_other[i];
+        size_t ulp_act = ulp_data[i];
+        size_t sub_ulp = ulp_act - ulp_des;
         if (ulp_des > ulp_act) sub_ulp = ulp_des - ulp_act;
         if (!((fabs(act - des) <= small_num_threshold)
                     || (sub_ulp <= ulp_threshold))) {
@@ -292,7 +291,7 @@ bool _handle_fp_types(buff_vals<dtype> &data, buff_vals<dtype> &other,
 
 template <typename cast_dtype, typename T1, typename T2>
 bool _cast_and_handle_fp_types(T1 &data, T2 &other, std::string name,
-        double diff_elems_tol, uint64_t ulp_tol, double abs_tol) {
+        double diff_elems_tol, size_t ulp_tol, double abs_tol) {
     buff_vals<cast_dtype> casted_data, casted_other;
     casted_data.size = data.size;
     casted_data.buff
@@ -323,8 +322,7 @@ bool _cast_and_handle_fp_types(T1 &data, T2 &other, std::string name,
 ///
 template <typename T1, typename T2>
 bool xetla_buff_cmp(T1 &data, T2 &other, std::string name,
-        double diff_elems_tol = 0.02, uint64_t ulp_tol = 0,
-        double abs_tol = 0) {
+        double diff_elems_tol = 0.02, size_t ulp_tol = 0, double abs_tol = 0) {
     if (data.size != other.size) {
         std::cout << "ERROR: buffer size or shape mismatch!\n";
         return false;
@@ -383,8 +381,8 @@ bool xetla_buff_cmp(T1 &data, T2 &other, std::string name,
                     data, other, name, diff_elems_tol, ulp_tol, abs_tol);
         }
     } else {
-        uint32_t diff_elems_count = 0;
-        for (unsigned i = 0; i < data.size; ++i)
+        size_t diff_elems_count = 0;
+        for (size_t i = 0; i < data.size; ++i)
             if (data.buff[i] != other.buff[i]) ++diff_elems_count;
         float fail_rate = diff_elems_count / ((float)data.size) * 100;
         float pass_rate = 100 - fail_rate;

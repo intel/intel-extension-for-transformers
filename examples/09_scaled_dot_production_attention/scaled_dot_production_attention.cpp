@@ -31,7 +31,7 @@ template <typename dtype_in, typename dtype_out, typename data_type_acc = float>
 int sdp_fwd_result_validate(dtype_in *q_device, dtype_in *k_device,
         dtype_in *v_device, dtype_in *mask_device, dtype_out *c_device,
         uint32_t qk_m, uint32_t qk_k, uint32_t qk_n, uint32_t sv_m,
-        uint32_t sv_k, uint32_t sv_n, uint32_t batch_cnt, sycl::queue queue,
+        uint32_t sv_k, uint32_t sv_n, uint32_t batch_cnt, sycl::queue &queue,
         mem_layout mem_layout_qk_a_ = mem_layout::row_major,
         mem_layout mem_layout_qk_b_ = mem_layout::row_major,
         mem_layout mem_layout_sv_a_ = mem_layout::row_major,
@@ -267,8 +267,7 @@ void sdp_fwd_run(uint32_t iter) {
                             sg_tile_k_qk, mma_engine::xmx, gpu_arch::Xe,
                             prefetch_distance, periodic_sync_interval>::brgemm;
                     using epilogue0_t = epilogue_t<
-                            epilogue_policy_tile_op<post_op_t, result_overwrite,
-                                    gpu_arch::Xe>,
+                            epilogue_policy_tile_op<post_op_t, gpu_arch::Xe>,
                             tile_shape0,
                             mem_desc_t<dtype_sfx, mem_layout::row_major,
                                     mem_space::local>>;

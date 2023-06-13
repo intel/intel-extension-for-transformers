@@ -2,7 +2,7 @@
 # Quick Start
 
 - [Preparations](/media/docs/quick_start.md#preparations)
-- [Setup Environment](/media/docs/quick_start.md#setup-build-environment)
+- [Setup Environment](/media/docs/quick_start.md#setup-environment)
 - [Build](/media/docs/quick_start.md#build)
 - [Run Tests](/media/docs/quick_start.md#run-tests)
 - [Run Examples](/media/docs/quick_start.md#run-examples)

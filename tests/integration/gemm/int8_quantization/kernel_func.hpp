@@ -37,7 +37,7 @@ struct igemm_quantize_func {
     using quant_op_t = subgroup::quant_op_t<dtype_param>;
     using epilogue_t = gpu::xetla::group::epilogue_t<
             gpu::xetla::group::epilogue_policy_quant_op<none_op_t, quant_op_t,
-                    result_overwrite, gpu_arch::Xe>,
+                    gpu_arch::Xe>,
             tile_shape,
             mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>>;
 

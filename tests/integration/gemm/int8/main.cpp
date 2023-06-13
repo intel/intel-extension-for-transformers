@@ -35,9 +35,9 @@ TYPED_TEST_SUITE_P(int8_gemm_test);
 TYPED_TEST_P(int8_gemm_test, esimd) {
     gemm_exec<TypeParam, typename TypeParam::data_type_a,
             typename TypeParam::data_type_b, typename TypeParam::data_type_c,
-            typename TypeParam::data_type_acc, input_buffer_init,
-            result_validate, int8_gemm_func>(TypeParam::mat_m, TypeParam::mat_n,
-            TypeParam::mat_k, esimd_compile_string);
+            typename TypeParam::data_type_acc, result_validate, int8_gemm_func>(
+            TypeParam::mat_m, TypeParam::mat_n, TypeParam::mat_k,
+            esimd_compile_string);
 }
 REGISTER_TYPED_TEST_SUITE_P(int8_gemm_test, esimd);
 

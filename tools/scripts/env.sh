@@ -10,4 +10,5 @@ source ${ONEAPI_INSTALL_PATH}/setvars.sh
 
 # Export environment variables
 export CC=icx
+export CXX=icpx
 export ONEAPI_DEVICE_SELECTOR=level_zero1:*

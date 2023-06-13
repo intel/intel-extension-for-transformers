@@ -25,7 +25,7 @@ int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
         data_type_c *C_device, data_type_param *scale_device,
         data_type_param *offset_device, int m, int k, int n,
         gpu::xetla::mem_layout mem_layout_a,
-        gpu::xetla::mem_layout mem_layout_b, sycl::queue queue) {
+        gpu::xetla::mem_layout mem_layout_b, sycl::queue &queue) {
 
     auto A = alloc_host_and_copy<data_type_a>(A_device, m * k, queue);
     auto B = alloc_host_and_copy<data_type_b>(B_device, k * n, queue);

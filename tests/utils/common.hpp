@@ -101,7 +101,7 @@ inline data_type *alloc_device_and_init(size_t size,
         sycl::queue &queue, sycl::device &device, sycl::context &context) {
     auto host_ptr = static_cast<data_type *>(malloc(size * sizeof(data_type)));
 
-    for (uint32_t i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
         init_func(host_ptr, i);
     }
 
@@ -129,15 +129,15 @@ template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_acc = float>
 int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
         data_type_c *C_device, uint32_t batch_size, uint32_t m, uint32_t k,
-        uint32_t n, sycl::queue queue, sycl::context context,
+        uint32_t n, sycl::queue &queue, sycl::context &context,
         mem_layout mem_layout_a_ = mem_layout::row_major,
         mem_layout mem_layout_b_ = mem_layout::row_major) {
     bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;
     bool is_col_major_b = mem_layout_b_ == mem_layout::col_major;
     // define slice of each matrices
-    uint32_t size_a_slice = m * k;
-    uint32_t size_b_slice = k * n;
-    uint32_t size_c_slice = m * n;
+    size_t size_a_slice = m * k;
+    size_t size_b_slice = k * n;
+    size_t size_c_slice = m * n;
 
     auto A = alloc_host_and_copy<data_type_a>(
             A_device, batch_size * size_a_slice, queue);

@@ -29,17 +29,17 @@ namespace gpu::xetla::group {
 /// @{
 
 /// @brief Is the epilogue functor specialized for epilogue_policy_quant_op and Xe architecture.
-template <typename tile_op_t_, typename quant_op_t_, typename update_method_,
-        typename tile_shape_, typename mem_desc_c_t_>
-class epilogue_t<epilogue_policy_quant_op<tile_op_t_, quant_op_t_,
-                         update_method_, gpu_arch::Xe>,
+template <typename tile_op_t_, typename quant_op_t_, typename tile_shape_,
+        typename mem_desc_c_t_>
+class epilogue_t<
+        epilogue_policy_quant_op<tile_op_t_, quant_op_t_, gpu_arch::Xe>,
         tile_shape_, mem_desc_c_t_> {
 public:
-    using epilogue_policy = epilogue_policy_quant_op<tile_op_t_, quant_op_t_,
-            update_method_, gpu_arch::Xe>;
+    using epilogue_policy
+            = epilogue_policy_quant_op<tile_op_t_, quant_op_t_, gpu_arch::Xe>;
     using quant_op_t = quant_op_t_;
     using tile_op_t = tile_op_t_;
-    using update_method = update_method_;
+    using update_method = typename epilogue_policy::update_method;
     using tile_shape = tile_shape_;
     using mem_desc_c_t = mem_desc_c_t_;
     static constexpr gpu_arch arch_tag = gpu_arch::Xe;
@@ -100,14 +100,8 @@ private:
     static constexpr mem_layout mem_layout_c = mem_desc_c_t::layout;
     static constexpr mem_space mem_space_c = mem_desc_c_t::space;
     static constexpr msg_type msg_type_c
-            = std::is_same<update_method, result_overwrite>::value
-            ? (mem_space_c == mem_space::global ? msg_type::block_2d
-                                                : msg_type::scatter)
-            : msg_type::atomic_add;
-
-    static_assert(!(std::is_same<update_method, result_reduce_sum>::value
-                          && mem_space_c == mem_space::local),
-            "Local memory not support result_reduce_sum");
+            = (mem_space_c == mem_space::global ? msg_type::block_2d
+                                                : msg_type::scatter);
 
     /// @brief Updates tile base descriptor based on the tid.
     __XETLA_API static void update_sg_tile_tdesc(

@@ -182,38 +182,62 @@ public:
     using data_type_acc = int;
 };
 
-template <typename dtype_a, typename dtype_b, typename dtype_c>
-class input_buffer_init {
-public:
-    void operator()(dtype_a *A, dtype_b *B, dtype_c *C, size_t size_a,
-            size_t size_b, size_t size_c) {
-        for (unsigned i = 0; i < size_a; ++i) {
-            A[i] = (i * 3) % 17;
-        }
-        for (unsigned i = 0; i < size_b; ++i) {
-            B[i] = (i * 5) % 19;
-        }
-        for (unsigned i = 0; i < size_c; ++i) {
-            C[i] = 0;
-        }
-    }
-};
+template <class Test, typename data_type_a, typename data_type_b,
+        typename data_type_c, typename data_type_acc>
+using int8_gemm_func = int8gemm_test_func<data_type_a, data_type_b, data_type_c,
+        data_type_acc, Test::wg_m, Test::wg_n, Test::sg_m, Test::sg_n,
+        Test::sg_k, Test::layout_a, Test::layout_b, Test::l3_kslicing,
+        Test::slm_kslicing>;
 
-template <class Test, typename dtype_a, typename dtype_b, typename dtype_c,
-        typename dtype_acc>
-using int8_gemm_func = int8gemm_test_func<dtype_a, dtype_b, dtype_c, dtype_acc,
-        Test::wg_m, Test::wg_n, Test::sg_m, Test::sg_n, Test::sg_k,
-        Test::layout_a, Test::layout_b, Test::l3_kslicing, Test::slm_kslicing>;
-
-template <class Test, typename dtype_a, typename dtype_b, typename dtype_c,
-        typename dtype_acc>
+template <class Test, typename data_type_a, typename data_type_b,
+        typename data_type_c, typename data_type_acc>
 class result_validate {
 
 public:
-    int operator()(dtype_a *A, dtype_b *B, dtype_c *C, sycl::queue queue,
-            sycl::context context) {
-        return gemm_result_validate<dtype_a, dtype_b, dtype_c, dtype_acc>(A, B,
-                C, 1, Test::mat_m, Test::mat_k, Test::mat_n, queue, context,
-                Test::layout_a, Test::layout_b);
+    int operator()(data_type_a *A_device, data_type_b *B_device,
+            data_type_c *C_device, sycl::queue &queue, sycl::context &context) {
+        auto A = alloc_host_and_copy<data_type_a>(
+                A_device, Test::mat_m * Test::mat_k, queue);
+        auto B = alloc_host_and_copy<data_type_b>(
+                B_device, Test::mat_k * Test::mat_n, queue);
+        auto C = alloc_host_and_copy<data_type_c>(
+                C_device, Test::mat_m * Test::mat_n, queue);
+
+        buff_cmp::buff_vals<data_type_c> data(
+                C, Test::mat_m, Test::mat_n, Test::mat_n);
+        std::vector<data_type_acc> acc_buffer(Test::mat_m * Test::mat_n, 0);
+
+        {
+            bool is_col_major_a = Test::layout_a == mem_layout::col_major;
+            bool is_col_major_b = Test::layout_b == mem_layout::col_major;
+            for (int i = 0; i < Test::mat_m; i++) {
+                for (int j = 0; j < Test::mat_n; j++) {
+                    for (int k = 0; k < Test::mat_k; k++) {
+                        data_type_acc a_temp = is_col_major_a
+                                ? A[i + k * Test::mat_m]
+                                : A[i * Test::mat_k + k];
+                        data_type_acc b_temp = is_col_major_b
+                                ? B[k + j * Test::mat_k]
+                                : B[k * Test::mat_n + j];
+                        acc_buffer[i * Test::mat_n + j]
+                                = acc_buffer[i * Test::mat_n + j]
+                                + a_temp * b_temp;
+                    }
+                }
+            }
+        }
+
+        buff_cmp::buff_vals<data_type_c, data_type_acc> other(
+                acc_buffer.data(), Test::mat_m, Test::mat_n, Test::mat_n);
+        bool result = buff_cmp::xetla_buff_cmp(data, other,
+                Test::name(Test::mat_m, Test::mat_n, Test::mat_k, Test::wg_m,
+                        Test::wg_n, Test::sg_m, Test::sg_n, Test::sg_k,
+                        Test::layout_a, Test::layout_b));
+
+        free(A);
+        free(B);
+        free(C);
+
+        return result ? 0 : 1;
     }
 };

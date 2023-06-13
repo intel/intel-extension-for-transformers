@@ -25,7 +25,7 @@ using namespace gpu::xetla;
 using namespace cl::sycl;
 
 int vadd_result_validate(data_type *A_device, data_type *B_device,
-        data_type *C_device, unsigned Size, sycl::queue queue) {
+        data_type *C_device, unsigned Size, sycl::queue &queue) {
     auto A = alloc_host_and_copy<data_type>(A_device, Size, queue);
     auto B = alloc_host_and_copy<data_type>(B_device, Size, queue);
     auto C = alloc_host_and_copy<data_type>(C_device, Size, queue);

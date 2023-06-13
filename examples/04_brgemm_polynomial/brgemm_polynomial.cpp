@@ -26,7 +26,7 @@ template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_acc = float>
 int gemm_polynomial_result_validate(data_type_a *A_device,
         data_type_b *B_device, data_type_c *C_device, int m, int k, int n,
-        sycl::queue queue, mem_layout mem_layout_a_ = mem_layout::row_major,
+        sycl::queue &queue, mem_layout mem_layout_a_ = mem_layout::row_major,
         mem_layout mem_layout_b_ = mem_layout::row_major) {
     auto A = alloc_host_and_copy<data_type_a>(A_device, m * k, queue);
     auto B = alloc_host_and_copy<data_type_b>(B_device, k * n, queue);
@@ -203,10 +203,9 @@ void brgemm_polynomial_run(int iter) {
                 // is already calculated.
                 // Mathematically epilogue_t is a map that applies to each element:
                 //   epilogue_t: [m, n] -> [m, n], C_acc |-> tile_op_t(C_acc)
-                using epilogue_t
-                        = epilogue_t<epilogue_policy_tile_op<tile_op_t,
-                                             result_overwrite, gpu_arch::Xe>,
-                                tile_shape, mem_desc_output_c>;
+                using epilogue_t = epilogue_t<
+                        epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>,
+                        tile_shape, mem_desc_output_c>;
 
                 // [Polynomial] define arguments for each epilogue_tile_op in chained_tile_op_t<>
                 using epilogue_tile_op_args_t

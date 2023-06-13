@@ -30,7 +30,7 @@ template <typename data_type_x, typename data_type_y,
         typename data_type_acc = float>
 int dropout_result_validate(data_type_x *in_device, data_type_y *out_device,
         int m, int n, uint8_t *buffer_mask_device, float drop_out_scale,
-        sycl::queue queue) {
+        sycl::queue &queue) {
     auto in = alloc_host_and_copy<data_type_x>(in_device, m * n, queue);
     auto out = alloc_host_and_copy<data_type_y>(out_device, m * n, queue);
     auto buffer_mask

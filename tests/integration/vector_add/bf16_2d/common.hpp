@@ -26,7 +26,8 @@ class Test1;
 #define data_type bf16
 
 int vadd_result_validate(data_type *A_device, data_type *B_device,
-        data_type *C_device, unsigned Size, unsigned pitch, sycl::queue queue) {
+        data_type *C_device, unsigned Size, unsigned pitch,
+        sycl::queue &queue) {
     auto A = alloc_host_and_copy<data_type>(A_device, pitch * pitch, queue);
     auto B = alloc_host_and_copy<data_type>(B_device, pitch * pitch, queue);
     auto C = alloc_host_and_copy<data_type>(C_device, pitch * pitch, queue);

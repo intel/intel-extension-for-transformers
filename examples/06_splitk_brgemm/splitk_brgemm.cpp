@@ -157,10 +157,10 @@ void splitk_brgemm_run(uint32_t iter) {
                 // [Split-K] When Split-K is used, update_method should be set to
                 // result_reduce_sum in order to aggregate partial sum from each sub-task
                 // to the final output matrix C
-                using epilogue_t = epilogue_t<
-                        epilogue_policy_tile_op<chained_tile_op_t<>,
-                                result_reduce_sum, gpu_arch::Xe>,
-                        tile_shape, mem_desc_output_c>;
+                using epilogue_t
+                        = epilogue_t<epilogue_policy_default<result_reduce_sum,
+                                             gpu_arch::Xe>,
+                                tile_shape, mem_desc_output_c>;
 
                 // Step 5: define the shared local memory usages
                 // developers have the responsibility to set

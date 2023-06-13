@@ -111,7 +111,9 @@ void batch_gemm_run(uint32_t iter) {
             ::brgemm;
 
     using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
+            xetla::group::epilogue_policy_default<result_overwrite,
+                    gpu_arch::Xe>,
+            tile_shape,
             mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
     using gemm_op_t = xetla::kernel::gemm_t<

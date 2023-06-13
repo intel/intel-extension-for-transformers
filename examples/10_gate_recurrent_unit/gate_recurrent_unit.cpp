@@ -24,7 +24,7 @@ int validation(data_type *layer_inputs_device, data_type *h0_inputs_device,
         std::vector<data_type *> i_weights, std::vector<data_type *> h_weights,
         data_type *hidden_outputs_device, data_type *layer_outputs_device,
         uint32_t batch_size, uint32_t input_size, uint32_t hidden_size,
-        uint32_t sequence_length, sycl::queue queue, uint32_t layer_size = 1) {
+        uint32_t sequence_length, sycl::queue &queue, uint32_t layer_size = 1) {
     uint32_t layer_input_size = batch_size * input_size;
     uint32_t hidden_io_size = batch_size * hidden_size;
     uint32_t i_weight_size = input_size * hidden_size;
@@ -268,6 +268,9 @@ void gru_run(uint32_t iter) {
                 data[idx] = static_cast<data_type>(0.001 * random_float());
             },
             queue, device, context);
+
+    i_weights.push_back(ir_weights);
+
     auto iz_weights = alloc_device_and_init<data_type>(
             input_weight_size,
             [](data_type *data, size_t idx) {
@@ -280,7 +283,7 @@ void gru_run(uint32_t iter) {
     auto in_weights = alloc_device_and_init<data_type>(
             input_weight_size,
             [](data_type *data, size_t idx) {
-                data[idx] = static_cast<data_type>(0.001 * random_float());
+                data[idx] = static_cast<data_type>(0.0001 * random_float());
             },
             queue, device, context);
 
