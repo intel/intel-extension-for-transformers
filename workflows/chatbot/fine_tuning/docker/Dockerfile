@@ -63,8 +63,7 @@ RUN conda init bash && \
     pip install datasets torch accelerate SentencePiece peft evaluate nltk rouge_score protobuf==3.20.1 tokenizers==0.13.2
 
 # Build ITREX
-RUN cd /itrex && git submodule sync && git submodule update --init --recursive && \
-    python setup.py install
+RUN cd /itrex && pip install -v .
 
 RUN git clone https://github.com/zphang/transformers.git && cd transformers && git checkout llama_push && pip install -e . && cd ..
 # Copy the model files to the Docker image

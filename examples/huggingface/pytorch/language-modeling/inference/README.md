@@ -2,23 +2,19 @@ Step-by-Step
 ============
 This document describes the step-by-step instructions to run large language models(LLMs) `float32` and `bfloat16` inference on 4th Gen Intel® Xeon® Scalable Processor (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). Last word prediction accuracy is provide by [lm_eval](https://github.com/EleutherAI/lm-evaluation-harness.git).
 
- 
 
 ## Prerequisite
 ### Create Environment
-```
-WORK_DIR=$PWD
+```bash
 # Create Environment (conda)
 conda create -n llm python=3.9 -y
 conda install mkl mkl-include -y
 conda install gperftools jemalloc==5.2.1 -c conda-forge -y
 
 # Installation
-git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel_extension_for_transformers
-pip install -r requirements.txt
-git submodule update --init --recursive
-python setup.py install
+git clone https://github.com/intel/intel-extension-for-transformers.git itrex
+cd itrex
+pip install -v .
 cd examples/huggingface/pytorch/language-modeling/inference
 pip install -r requirements.txt
 

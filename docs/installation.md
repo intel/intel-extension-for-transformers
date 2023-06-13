@@ -43,8 +43,8 @@ The following prerequisites and requirements must be satisfied for a successful 
 
 ### Install Intel Extension for Transformers
 ```Bash
-git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel_extension_for_transformers
+git clone https://github.com/intel/intel-extension-for-transformers.git itrex
+cd itrex
 # Install intel_extension_for_transformers
 pip install -v .
 ```

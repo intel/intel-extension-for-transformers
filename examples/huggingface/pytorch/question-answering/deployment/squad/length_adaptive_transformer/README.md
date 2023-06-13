@@ -8,31 +8,28 @@ Currently, it supports BERT based transformers.
 
 # Prerequisite
 ## Prepare Python Environment
-Create a python environment
+Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8
+conda create -n <env name> python=3.8 [autoconf]
 conda activate <env name>
 ```
-Make sure you have the autoconf installed. 
-Also, `gcc` higher than 9.0, `cmake` higher than 3 is required.
 
+Check that `gcc` version is higher than 9.0.
 ```shell
 gcc -v
-cmake --version
-conda install cmake
-sudo apt install autoconf
 ```
-Install Intel® Extension for Transformers, please refer to [installation](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/installation.md)
+
+Install Intel® Extension for Transformers, please refer to [installation](/docs/installation.md).
 ```shell
 # Install from pypi
 pip install intel-extension-for-transformers
 
-# Install from source code
+# Or, install from source code
 cd <intel_extension_for_transformers_folder>
-git submodule update --init --recursive
-python setup.py install
+pip install -v .
 ```
-Install required dependencies for examples
+
+Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/question-answering/deployment/squad/length_adaptive_transformer
 pip install -r requirements.txt
@@ -40,7 +37,7 @@ pip install -r requirements.txt
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 ## Environment Variables (Optional)
-```
+```shell
 # Preload libjemalloc.so may improve the performance when inference under multi instance.
 conda install jemalloc==5.2.1 -c conda-forge -y
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
@@ -53,7 +50,7 @@ export INST_NUM=<inst num>
 
 # Inference Pipeline
 Neural Engine can parse ONNX model and Neural Engine IR. 
-We provide with three `mode`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+We provide with three `mode`s: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 
 ```shell
@@ -71,17 +68,20 @@ For FP32:
 ```shell
 python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" --dataset_name squad --do_train --do_eval --output_dir model_and_tokenizer --overwrite_output_dir --length_config "(269, 253, 252, 202, 104, 34)" --overwrite_cache --to_onnx
 ```
+
 For INT8:
 ```shell
 python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" --dataset_name squad --do_train --do_eval --output_dir model_and_tokenizer --overwrite_output_dir --length_config "(269, 253, 252, 202, 104, 34)" --overwrite_cache --to_onnx --tune --quantization_approach PostTrainingStatic
 ```
+
 For BF16:
+```shell
 python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" --dataset_name squad --do_train --do_eval --output_dir model_and_tokenizer --overwrite_output_dir --length_config "(269, 253, 252, 202, 104, 34)" --overwrite_cache --to_onnx --enable_bf16
 ```
 
 
 You could also compile the model to IR using python API as follows:
-```shell
+```python
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 graph = compile('./model_and_tokenizer/int8-model.onnx')
 graph.save('./ir')

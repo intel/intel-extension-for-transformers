@@ -6,39 +6,37 @@ This document describes the end-to-end workflow for Huggingface model [VIT](http
 
 ## Installation
 ### Install python environment
-Create a new python environment
+Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8
+conda create -n <env name> python=3.8 [autoconf]
 conda activate <env name>
 ```
-Make sure you have the autoconf installed. 
-Also, `gcc` higher than 9.0, `cmake` higher than 3 is required.
+
+Check that `gcc` version is higher than 9.0.
 ```shell
 gcc -v
-cmake --version
-conda install cmake
-sudo apt install autoconf
 ```
-Install Intel® Extension for Transformers, please refer to [installation](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/installation.md)
+
+Install Intel® Extension for Transformers, please refer to [installation](/docs/installation.md).
 ```shell
 # Install from pypi
 pip install intel-extension-for-transformers
 
-# Install from source code
+# Or, install from source code
 cd <intel_extension_for_transformers_folder>
-git submodule update --init --recursive
-python setup.py install
+pip install -v .
 ```
+
 Install required dependencies for examples
 ```shell
-cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/image-classification/deployment/imagenet
+cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/image-classification/deployment/imagenet/vit
 pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
 
 
 ### Environment Variables (Optional)
-```
+```shell
 # Preload libjemalloc.so may improve the performance when inference under multi instance.
 conda install jemalloc==5.2.1 -c conda-forge -y
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
@@ -51,7 +49,7 @@ export INST_NUM=<inst num>
 
 ## Inference Pipeline
 Neural Engine can parse ONNX model and Neural Engine IR.
-We provide with three `mode`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+We provide with three `mode`s: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
 bash run_vit.sh --model=google/vit-base-patch16-224  --dataset=imagenet-1k --precision=fp32 --mode=throughput

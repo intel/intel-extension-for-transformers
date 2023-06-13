@@ -11,31 +11,29 @@ The inference and accuracy of the above pretrained models are verified in the de
 
 # Prerequisite
 
-## Create Environment
-Create a new python environment
+## Prepare Python Environment
+Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8
+conda create -n <env name> python=3.8 [autoconf]
 conda activate <env name>
 ```
-Make sure you have the autoconf installed. 
-Also, `gcc` higher than 9.0, `cmake` higher than 3 is required.
+
+Check that `gcc` version is higher than 9.0.
 ```shell
 gcc -v
-cmake --version
-conda install cmake
-sudo apt install autoconf
 ```
-Install Intel® Extension for Transformers, please refer to [installation](https://github.com/intel/intel-extension-for-transformers/blob/main/docs/installation.md)
+
+Install Intel® Extension for Transformers, please refer to [installation](/docs/installation.md).
 ```shell
 # Install from pypi
 pip install intel-extension-for-transformers
 
-# Install from source code
+# Or, install from source code
 cd <intel_extension_for_transformers_folder>
-git submodule update --init --recursive
-python setup.py install
+pip install -v .
 ```
-Install required dependencies for examples
+
+Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion
 pip install -r requirements.txt
@@ -44,7 +42,7 @@ pip install -r requirements.txt
 
 
 ## Environment Variables (Optional)
-```
+```shell
 # Preload libjemalloc.so may improve the performance when inference under multi instance.
 conda install jemalloc==5.2.1 -c conda-forge -y
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so

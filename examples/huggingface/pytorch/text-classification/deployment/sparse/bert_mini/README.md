@@ -5,36 +5,29 @@ This sparse solution is a software-based solution and utilizes the Intel instruc
 # Prerequisite
 
 ## Installation
-
-1.1 Install python environment
-Create a new python environment
-
+## Prepare Python Environment
+Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8
+conda create -n <env name> python=3.8 [autoconf]
 conda activate <env name>
 ```
 
-Check the gcc version using $gcc-v, make sure the gcc version is higher than 7.0.
-If not, you need to update gcc by yourself.
-Make sure the cmake version is 3 rather than 2.
-If not, you need to install cmake.
-Make sure you have the autoconf installed.
-If not, you need to install autoconf by yourself.
-
+Check that `gcc` version is higher than 9.0.
 ```shell
-cmake --version
-conda install cmake
-sudo apt install autoconf
+gcc -v
 ```
 
-Install Intel Extension for Transformers from Source Code
-
+Install Intel® Extension for Transformers, please refer to [installation](/docs/installation.md).
 ```shell
+# Install from pypi
+pip install intel-extension-for-transformers
+
+# Or, install from source code
 cd <intel_extension_for_transformers_folder>
-git submodule update --init --recursive
-python setup.py install
+pip install -v .
 ```
-Install package for example
+
+Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/sparse/bert_mini
 pip install -r requirements.txt
@@ -43,7 +36,7 @@ pip install -r requirements.txt
 
 
 ## Environment Variables (Optional)
-```
+```shell
 # Preload libjemalloc.so may improve the performance when inference under multi instance.
 conda install jemalloc==5.2.1 -c conda-forge -y
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
@@ -56,7 +49,7 @@ export INST_NUM=<inst num>
 
 # Inference Pipeline
 Neural Engine can parse ONNX model and Neural Engine IR. 
-We provide with three `mode`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+We provide with three `mode`s: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 
 ```shell
@@ -73,7 +66,7 @@ bash run_bert_mini.sh --model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block
 ```
 
 ### Benchmark
-Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](https://github.com/intel/intel-extension-for-transformers/tree/develop/intel_extension_for_transformers/backends/neural_engine/kernels) and high performance layernorm op with transpose mode to improve inference performance.
+Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normally get performance gain when sparse ratio beyond 70%). Neural Engine will call [Transformers-accelerated Libraries](/intel_extension_for_transformers/backends/neural_engine/kernels) and high performance layernorm op with transpose mode to improve inference performance.
 Before using Python API to benchmark, need to transpose onnx model to IR, command as follows:
 ```shell
 python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onnx --output_dir=./sparse_int8_ir
@@ -95,12 +88,12 @@ python export_transpose_ir.py --input_model=./model_and_tokenizer/int8-model.onn
   or run C++
   The warmup below is recommended to be 1/10 of iterations and no less than 3.
   
-  ```
+  ```shell
   export GLOG_minloglevel=2
   export OMP_NUM_THREADS=<cpu_cores>
   export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
   export UNIFIED_BUFFER=1
-  numactl -C 0-<cpu_cores-1> <intel_extension_for_transformers_folder>/intel_extension_for_transformers/backends/neural_engine/bin/neural_engine
-  --batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
-  --seq_len=128 --config=./sparse_int8_ir/conf.yaml --weight=./sparse_int8_ir/model.bin
+  numactl -C 0-<cpu_cores-1> neural_engine \
+    --batch_size=<batch_size> --iterations=<iterations> --w=<warmup> \
+    --seq_len=128 --config=./sparse_int8_ir/conf.yaml --weight=./sparse_int8_ir/model.bin
   ```

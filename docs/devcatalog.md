@@ -66,13 +66,10 @@ conda install -c intel intel_extension_for_transformers
 
 #### 2.3 Install from Source
 ```Bash
-git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
-cd intel_extension_for_transformers
-# Install Dependency
-pip install -r requirements.txt
-git submodule update --init --recursive
+git clone https://github.com/intel/intel-extension-for-transformers.git itrex
+cd itrex
 # Install intel_extension_for_transformers
-python setup.py install
+pip install -v .
 ```
 You can check if installation succeeded by running `pip list | grep intel_extension_for_transformers`
 
@@ -134,7 +131,6 @@ trainer.save_model("saved_results")
 # if use Neural Engine for model inference, need to export to onnx model. The default path is "./tmp_trainer/int8-model.onnx"
 trainer.enable_executor = True
 trainer.export_to_onnx(scale_mapping=True)
-
 ```
 
 #### 3.4 Model Inference

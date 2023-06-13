@@ -7,7 +7,7 @@ Data Augmentation
 
     2.1. [Install Dependency](#install-dependency)
 
-    2.2. [Install Intel_Extension_for_Transformers](#install-intel_extension_for_transformers)
+    2.2. [Install Intel Extension for Transformers](#install-intel_extension_for_transformers)
 
 3. [Data Augmentation](#data-augmentation)
 
@@ -31,12 +31,11 @@ pip install nlpaug
 pip install transformers<=4.29.1
 ```
 
-### Install Intel_Extension_for_Transformers
+### Install Intel Extension for Transformers
 ```bash
-git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
-cd intel_extension_for_transformers
-git submodule update --init --recursive
-python setup.py install
+git clone https://github.com/intel/intel-extension-for-transformers.git itrex
+cd itrex
+pip install -v .
 ```
 
 ## Data Augmentation

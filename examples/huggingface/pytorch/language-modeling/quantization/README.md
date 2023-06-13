@@ -9,16 +9,12 @@ The script `run_clm_no_trainer.py` supports `GPTJ`, `OPT`, `LLaMA`, `BLOOM` quan
 # Prerequisite
 ## 1. Create Environment
 ```
-
 # Installation
-git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel_extension_for_transformers
-pip install -r requirements.txt
-git submodule update --init --recursive
-python setup.py install
+git clone https://github.com/intel/intel-extension-for-transformers.git itrex
+cd itrex
+pip install -v .
 cd examples/huggingface/pytorch/language-modeling/quantization
 pip install -r requirements.txt
-
 ```
 
 # Run
@@ -118,7 +114,7 @@ python run_clm_no_trainer.py \
 # to validate FP32 model, please remove "--int8" and "--output_dir".
 ```
 To do quantization based transformers language-modeling example [`run_clm.py`](https://github.com/huggingface/transformers/blob/main/examples/pytorch/language-modeling/run_clm.py), please use the following command.
-```
+```bash
 python run_clm.py \
     --model_name_or_path EleutherAI/gpt-neo-125M \
     --dataset_name wikitext \
@@ -129,12 +125,11 @@ python run_clm.py \
     --do_eval \
     --output_dir ./tmp/clm_output \
     --overwrite_output_dir
-
 ```
 
 **Masked Language Modeling (MLM)**
 
-```
+```bash
 python run_mlm.py \
     --model_name_or_path bert-base-uncased \
     --dataset_name wikitext \
@@ -149,7 +144,7 @@ python run_mlm.py \
 
 **Permutation Language Modeling (PLM)**
 
-```
+```bash
     python run_plm.py \
     --model_name_or_path xlnet-base-cased \
     --dataset_name wikitext \
@@ -160,6 +155,5 @@ python run_mlm.py \
     --do_eval \
     --output_dir ./tmp/plm_output \
     --overwrite_output_dir
-
 ```
 

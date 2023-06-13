@@ -3,30 +3,28 @@
 # Prerequisite
 
 ## 1. Installation
-1.1 Install python environment
-Create a new python environment
+Create a python environment, optionally with autoconf for jemalloc support.
 ```shell
-conda create -n <env name> python=3.8
+conda create -n <env name> python=3.8 [autoconf]
 conda activate <env name>
 ```
-Check the gcc version using $gcc-v, make sure the gcc version is higher than 9.0.
-If not, you need to update gcc by yourself.
-Make sure you have the autoconf installed.
-If not, you need to install autoconf by yourself.
-Make sure the cmake version is 3 rather than 2.
-If not, you need to install cmake.
+
+Check that `gcc` version is higher than 9.0.
 ```shell
-cmake --version
-conda install cmake
-sudo apt install autoconf
+gcc -v
 ```
-Install Intel Extension for Transformers from Source Code
+
+Install Intel® Extension for Transformers, please refer to [installation](/docs/installation.md).
 ```shell
+# Install from pypi
+pip install intel-extension-for-transformers
+
+# Or, install from source code
 cd <intel_extension_for_transformers_folder>
-git submodule update --init --recursive
-python setup.py install
+pip install -v .
 ```
-Install package for examples
+
+Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-classification/deployment/emotion/distilbert_base_uncased
 pip install -r requirements.txt
@@ -35,7 +33,7 @@ pip install -r requirements.txt
 
 
 ## 2. Environment Variables (Optional)
-```
+```shell
 # Preload libjemalloc.so may improve the performance when inference under multi instance.
 conda install jemalloc==5.2.1 -c conda-forge -y
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libjemalloc.so
@@ -49,7 +47,7 @@ export INST_NUM=<inst num>
 # Inference Pipeline
 
 Neural Engine can parse ONNX model and Neural Engine IR. 
-We provide with three `mode`: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
+We provide with three `mode`s: `accuracy`, `throughput` or `latency`. For throughput mode, we will use multi-instance with 4cores/instance occupying one socket.
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 ```shell
 GLOG_minloglevel=2 bash run_emotion.sh --model=bhadresh-savani/distilbert-base-uncased-emotion --dataset=emotion --precision=fp32 --mode=throughput 
@@ -66,33 +64,33 @@ GLOG_minloglevel=2 bash run_emotion.sh -m bhadresh-savani/distilbert-base-uncase
 # Benchmark
 If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
 ## 1. Accuracy 
-By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
+By setting `--dynamic_quanzite` for FP32 model, you could benchmark dynamic quantize int8 model.
 
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx  --tokenizer_dir=bhadresh-savani/distilbert-base-uncased-emotion --mode=accuracy --dataset_name=emotion --batch_size=1 
 ```
 
 ## 2. Performance 
-By setting --dynamic_quanzite for FP32 model, you could benchmark dynamic quantize int8 model.
+By setting `--dynamic_quanzite` for FP32 model, you could benchmark dynamic quantize int8 model.
 
 ```shell
 GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint8-model.onnx --mode=performance --batch_size=1 --seq_len=128 --tokenizer_dir=bhadresh-savani/distilbert-base-uncased-emotion --dataset_name=emotion
 ```
 
 or compile framwork model to IR using python API
-```
+```python
 from intel_extension_for_transformers.backends.neural_engine.compile importcompile
 graph = compile('./model_and_tokenizer/int8-model.onnx')
 graph.save('./ir')
 ```
 and run C++  
 The warmup below is recommended to be 1/10 of iterations and no less than 3.
-```
+```shell
 export GLOG_minloglevel=2
 export OMP_NUM_THREADS=<cpu_cores>
 export DNNL_MAX_CPU_ISA=AVX512_CORE_AMX
 export UNIFIED_BUFFER=1
-numactl -C 0-<cpu_cores-1> <intel_extension_for_transformers_folder>intel_extension_for_transformers/backends/neural_engine/bin/neural_engine
---batch_size=<batch_size> --iterations=<iterations> --w=<warmup>
---seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
+numactl -C 0-<cpu_cores-1> neural_engine \
+  --batch_size=<batch_size> --iterations=<iterations> --w=<warmup> \
+  --seq_len=128 --config=./ir/conf.yaml --weight=./ir/model.bin
 ```

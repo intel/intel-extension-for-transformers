@@ -23,7 +23,7 @@ Neural Engine support model optimizer, model executor and high performance kerne
 
 Only support TensorFlow and ONNX models for now.
 
-```
+```python
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 model = compile('/path/to/your/model')
 model.save('/ir/path')   # Engine graph could be saved to path
@@ -33,7 +33,7 @@ Engine graph could be saved as yaml and weight bin.
 
 ### Run the inference by Engine
 
-```
+```python
 model.inference([input_ids, segment_ids, input_mask])  # input should be numpy array data
 ```
 
@@ -45,7 +45,7 @@ The `input_ids`, `segment_ids` and `input_mask` are the input numpy array data o
 
 Engine could parse yaml structure network and load the weight from binary to do inference, yaml should like below
 
-```
+```yaml
 model:
   name: bert_model
   operator:
@@ -88,7 +88,6 @@ model:
       type: Output
       input:
         logits:0: {}
-
 ```
 All input tensors are in an operator typed Input. But slightly difference is some tensors have location while others not. A tensor with location means that is a frozen tensor or weight, it's read from the bin file. A tensor without location means it's activation, that should feed to the model during inference.
 
@@ -96,7 +95,7 @@ All input tensors are in an operator typed Input. But slightly difference is som
 
 Parse the yaml and weight bin to Engine Graph throught Python API
 
-```
+```python
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 model = Graph()
 model.graph_init('./ir/conf.yaml', './ir/model.bin')
@@ -105,16 +104,16 @@ out = model.inference(input_data)
 ```
 
 You can also use C++ API
+```shell
+neural_engine --config=<path to yaml file> --weight=<path to bin file> --batch_size=32 --iterations=20
 ```
-./neural_engine --config=<path to yaml file> --weight=<path to bin file> --batch_size=32 --iterations=20
-```
-By using the numactl command to bind cpu cores and open multi-instances:
-```
-OMP_NUM_THREADS=4 numactl -C '0-3' ./neural_engine ...
+Using the `numactl` command to bind cpu cores and open multi-instances:
+```shell
+OMP_NUM_THREADS=4 numactl -C '0-3' neural_engine ...
 ```
 Same as the previous session, the ***input_data*** should be numpy array data as a list, and ***out*** is a dict which pair the output tensor name and value(numpy array).
 
-If you want to close log information during inference, use the command `export GLOG_minloglevel=2` before run the inference to set log level to ERROR.  `export GLOG_minloglevel=1` set log level to info again.
+>**Note**: Extensive log information is available if build with Debug. We use [glog](https://github.com/google/glog) for logging and respect [its environment variables](https://github.com/google/glog#setting-flags) such as `GLOG_minloglevel`.
 
 ## 4. Integrate Neural Engine as Backend
 Nerual Engine can also be integrated as a backend into other frameworks. There is a simple example to show the process how to build Neural Engine from source as submodule.  
@@ -128,12 +127,12 @@ cp itrex/intel_extension_for_transformers/backends/neural_engine/CMakeLists.txt 
 cp itrex/intel_extension_for_transformers/backends/neural_engine/executor/src/nlp_executor.cc neural_engine_example.cc
 ```
 Modify the NE_ROOT in the CmakeLists.txt.
-```text
+```cmake
 set(NE_ROOT "${PROJECT_SOURCE_DIR}/itrex/intel_extension_for_transformers/backends/neural_engine")
 ```
 
 Compile neural_engine_example.cc as binary named neural_engine_example and link Nerual Engine include/lib into neural_engine_example.
-```text
+```cmake
 # build neural_engine_example
 set(RUNTIME_OUTPUT_DIRECTORY, ${PROJECT_SOURCE_DIR})
 add_executable(neural_engine_example

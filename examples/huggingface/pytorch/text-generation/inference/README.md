@@ -4,7 +4,6 @@ Support most of large language models, such as GPT-J, LLaMa, OPT, BLOOM and etc.
 
 ## Setup
 ```bash
-WORK_DIR=$PWD
 # Create Environment (conda recommended)
 conda create -n llm python=3.9 -y
 conda install ninja mkl mkl-include -y
@@ -30,8 +29,8 @@ cd ../
 pip install cpuid transformers accelerate onnx sentencepiece
 pip install --no-deps optimum
 pip install --no-deps git+https://github.com/huggingface/optimum-intel.git@main
-
 ```
+
 ## Performance
 ```bash
 # Setup Environment Variables for best performance on Xeon
