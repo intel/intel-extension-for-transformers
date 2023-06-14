@@ -28,7 +28,7 @@ from neural_compressor.config import BenchmarkConfig as INCBenchmarkConfig
 from packaging import version
 from intel_extension_for_transformers.optimization.model import OptimizedModel
 
-if version.parse(nc_version).release < version.parse("2.2.0").release:
+if version.parse(nc_version).release < version.parse("2.2").release:
     from neural_compressor.benchmark import _Benchmark as INCBenchmark
 else:
     from neural_compressor.benchmark import benchmark_with_raw_cmd  # pylint: disable=E0611
@@ -236,7 +236,7 @@ def benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=N
         cores_per_instance=config.cores_per_instance,
         num_of_instance=config.num_of_instance
     )
-    if version.parse(nc_version).release < version.parse("2.2.0").release:
+    if version.parse(nc_version).release < version.parse("2.2").release:
         inc_bench = INCBenchmark(inc_conf)
         inc_bench(raw_cmd=raw_cmd)
     else:
