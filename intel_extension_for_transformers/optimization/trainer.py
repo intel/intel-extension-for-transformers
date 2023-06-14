@@ -107,6 +107,11 @@ torchprofile = LazyImport("torchprofile")
 xm = LazyImport('torch_xla.core.xla_model')
 timeit = LazyImport('timeit')
 
+if version.parse(__version__) < version.parse("4.30"):
+    NEW_DEEPSPEED_FLAG = False
+else:
+    NEW_DEEPSPEED_FLAG = True
+
 
 class BaseTrainer():
     """The base class of trainer."""
@@ -1149,9 +1154,10 @@ class BaseTrainer():
         if self.args.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
 
-        if self.args.gradient_accumulation_steps > 1 and not self.deepspeed:
-            # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
-            loss = loss / self.args.gradient_accumulation_steps
+        if not NEW_DEEPSPEED_FLAG:
+            if self.args.gradient_accumulation_steps > 1 and not self.deepspeed:
+                # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
+                loss = loss / self.args.gradient_accumulation_steps
 
         if self.compression_ctrl is not None:
             compression_loss = self.compression_ctrl.loss()
@@ -1175,6 +1181,9 @@ class BaseTrainer():
             elif self.use_apex:
                 with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                     scaled_loss.backward()
+            elif NEW_DEEPSPEED_FLAG:
+                self.accelerator.backward(loss)
+                loss / self.args.gradient_accumulation_steps
             elif self.deepspeed:
                 # loss gets scaled under gradient_accumulation_steps in deepspeed
                 loss = self.deepspeed.backward(loss)
@@ -1229,9 +1238,10 @@ class BaseTrainer():
         if self.args.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
 
-        if self.args.gradient_accumulation_steps > 1 and not self.deepspeed:
-            # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
-            loss = loss / self.args.gradient_accumulation_steps
+        if not NEW_DEEPSPEED_FLAG:
+            if self.args.gradient_accumulation_steps > 1 and not self.deepspeed:
+                # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
+                loss = loss / self.args.gradient_accumulation_steps
 
         if self.compression_ctrl is not None:  # TODO- should be added here?
             compression_loss = self.compression_ctrl.loss()
@@ -1260,6 +1270,9 @@ class BaseTrainer():
             elif self.use_apex:
                 with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                     scaled_loss.backward()
+            elif NEW_DEEPSPEED_FLAG:
+                self.accelerator.backward(loss)
+                loss / self.args.gradient_accumulation_steps
             elif self.deepspeed:
                 # loss gets scaled under gradient_accumulation_steps in deepspeed
                 loss = self.deepspeed.backward(loss)
@@ -1318,9 +1331,10 @@ class BaseTrainer():
             if self.args.n_gpu > 1:
                 loss = loss.mean()  # mean() to average on multi-gpu parallel training
 
-            if self.args.gradient_accumulation_steps > 1 and not self.deepspeed:
-                # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
-                loss = loss / self.args.gradient_accumulation_steps
+            if not NEW_DEEPSPEED_FLAG:
+                if self.args.gradient_accumulation_steps > 1 and not self.deepspeed:
+                    # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
+                    loss = loss / self.args.gradient_accumulation_steps
 
             if self.compression_ctrl is not None: # TODO- should be added here?
                 compression_loss = self.compression_ctrl.loss()
@@ -1351,6 +1365,9 @@ class BaseTrainer():
                 elif self.use_apex:
                     with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                         scaled_loss.backward()
+                elif NEW_DEEPSPEED_FLAG:
+                    self.accelerator.backward(loss)
+                    loss / self.args.gradient_accumulation_steps
                 elif self.deepspeed:
                     # loss gets scaled under gradient_accumulation_steps in deepspeed
                     loss = self.deepspeed.backward(loss)
