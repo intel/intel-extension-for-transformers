@@ -190,7 +190,6 @@ if args.quantize:
     )
 
     q_model.save(args.output_dir)
-    exit(0)
 
 if args.int8 or args.int8_bf16_mixed:
     print("load int8 model")

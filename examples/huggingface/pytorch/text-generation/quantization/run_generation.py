@@ -251,7 +251,6 @@ if args.quantize:
         calib_func=calib_func,
     )
     q_model.save(args.output_dir)
-    exit(0)
 
 # Generation
 generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
