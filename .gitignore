@@ -26,6 +26,9 @@ dist/
 
 /.vs
 
+# CMakeUserPresets.json should be ignored. See: https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html
+CMakeUserPresets.json
+
 /intel_extension_for_transformers/backends/neural_engine/.vs
 /intel_extension_for_transformers/backends/neural_engine/out
 /examples/**/*.npy

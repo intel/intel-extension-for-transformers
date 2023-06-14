@@ -41,6 +41,9 @@ bool matmul_vnni_noperm_p2031_p1302_bench::check_result() {
 std::pair<const void*, const void*> make_data_obj_matmul_vnni_noperm_p2031_p1302(  //
     const std::vector<int64_t>& a_shape, const jd::data_type& a_dt, bool is_clear = false,
     const std::vector<float>& ranges = {-10, 10}) {
+  if (a_shape.empty()) {
+    return std::pair<const void*, const void*>{nullptr, nullptr};
+  }
   int elem_num = std::accumulate(a_shape.begin(), a_shape.end(), 1, std::multiplies<dim_t>());
   int bytes_size = elem_num * jd::type_size[a_dt];
   void* data_ptr = nullptr;
@@ -86,23 +89,22 @@ void matmul_vnni_noperm_p2031_p1302_bench::gen_case() {
   std::vector<const void*> rt_data2;
   int tensor_num = ts_descs.size();
   for (int index = 0; index < tensor_num; ++index) {
-    if (index >= io::SRC2) {
-      // insert nullptr as placeholder
-      rt_data1.emplace_back(nullptr);
-      rt_data2.emplace_back(nullptr);
-      continue;
-    }
     auto& tsd = ts_descs[index];
     bool is_clear = (index == io::DST0);
-    auto ranges = std::vector<float>{-10, 10};
+    std::vector<float> ranges;
+    if (index < io::SRC2) {
+      ranges = {-10, 10};
+    } else if (index == io::SCALE0) {
+      ranges = {.003f, .003f};
+    } else if (index == io::ZP0) {
+      ranges = {113, 113};
+    }
+
     auto data_pair = make_data_obj_matmul_vnni_noperm_p2031_p1302(tsd.shape(), tsd.dtype(), is_clear, ranges);
     rt_data1.emplace_back(data_pair.first);
     rt_data2.emplace_back(data_pair.second);
   }
-  rt_data1[io::ZP0] = new float(113);
-  rt_data1[io::SCALE0] = new float(.003f);
-  rt_data2[io::ZP0] = new float(113);
-  rt_data2[io::SCALE0] = new float(.003f);
+
   jd::operator_desc op_desc(jd::kernel_kind::transpose_matmul, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
                             ts_descs, op_attrs);
   // Step 3: op_args_t testcase pair

@@ -85,7 +85,8 @@ void matmul_avx512f_8bit_bench::gen_case() {
   jd::tensor_desc src1_desc = {{N, K}, src1_dtype, jd::format_type::ab};
   jd::tensor_desc dst_desc = {{M, N}, jd::data_type::bf16, jd::format_type::ab};
   jd::tensor_desc bias_desc = {{N}, jd::data_type::bf16, jd::format_type::ab};
-  ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc};
+  jd::tensor_desc scale_desc = {{N}, jd::data_type::fp32, jd::format_type::a};
+  ts_descs = {src0_desc, src1_desc, dst_desc, bias_desc, scale_desc};
   // Step 2: Construct runtime data
   std::vector<const void*> rt_data1;
   std::vector<const void*> rt_data2;

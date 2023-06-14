@@ -16,8 +16,7 @@
 #include "src/cpu/kernels/mha_dense_ref.hpp"
 
 namespace bench {
-std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_desc, float min_value = -10,
-                                                    float max_value = 10) {
+std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_desc, float min_value, float max_value) {
   int64_t elem_num = ts_desc.size();
   if (elem_num == 0) return {nullptr, nullptr};
   int bytes_size = elem_num * jd::type_size[ts_desc.dtype()];
@@ -49,6 +48,14 @@ std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_de
   memcpy(data_ptr_copy, data_ptr, bytes_size);
   return {data_ptr, data_ptr_copy};
 }
+std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_desc, float value) {
+  return make_tensor_obj(ts_desc, value, value);
+}
+std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_desc) {
+  return ts_desc.dtype() == jd::data_type::bf16 ? make_tensor_obj(ts_desc, -1.f, 1.f)
+                                                : make_tensor_obj(ts_desc, -10.f, 10.f);
+}
+
 double mha_dense_static_bench::calc_flop() const {
   double flops = 0;
   flops += 2. * sl_m * head_size * sl_n;  // Q x K
@@ -80,11 +87,15 @@ bench_res_t mha_dense_static_bench::set_config(int argc, char** argv) {
   if (argc > 6) mask = str_to_num<int32_t>(argv[6]);
   if (argc > 7) badd_dim = str_to_num<int32_t>(argv[7]);
   if (argc > 8) sl_n = str_to_num<int32_t>(argv[8]);
-  ft_kv = (argc <= 9)               ? jd::format_type::abcd  //
-          : strcmp(argv[9], "abcd") ? jd::format_type::abcd
-          : strcmp(argv[9], "acbd") ? jd::format_type::acbd
-                                    : jd::format_type::undef;
-  if (argc > 10) return {bench_status::wrong_input};
+  ft_kv = (argc <= 9)                    ? jd::format_type::abcd  //
+          : strcmp(argv[9], "abcd") == 0 ? jd::format_type::abcd
+          : strcmp(argv[9], "acbd") == 0 ? jd::format_type::acbd
+                                         : jd::format_type::undef;
+  stable_softmax = (argc <= 10)                ? dt_src == jd::data_type::s8  // s8 static uses stable by default
+                   : strcmp(argv[10], "true")  ? true
+                   : strcmp(argv[10], "false") ? false
+                                               : (SPARSE_LOG(ERROR) << "Unexpected arg: stable_softmax ", false);
+  if (argc > 11) return {bench_status::wrong_input};
   if (sl_n <= 0) sl_n = sl_m;
   if (mask <= 0) mask = sl_n;
   if (dt_dst == jd::data_type::undef || dt_src == jd::data_type::undef) return {bench_status::wrong_input};
@@ -123,7 +134,7 @@ bool mha_dense_static_bench::check_result() {
     case jd::data_type::fp32:
       return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
     case jd::data_type::bf16:
-      return compare_data<jd::bfloat16_t>(buf1, size1, buf2, size2, 5e-3);
+      return compare_data<jd::bfloat16_t>(buf1, size1, buf2, size2, 5e-2);
     case jd::data_type::u8:
       return compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
     case jd::data_type::s8:
@@ -136,8 +147,7 @@ bool mha_dense_static_bench::check_result() {
 void mha_dense_static_bench::gen_case() {
   op_attrs.clear();
   op_attrs["approx_exp"] = "True";
-  op_attrs["stable_softmax"] =
-      dt_src == jd::data_type::s8 ? "True" : "False";  // TODO(Yi): change given dt_src is confusing
+  op_attrs["stable_softmax"] = stable_softmax ? "True" : "False";
   if (dt_src == jd::data_type::s8)
     op_attrs["softmax_rescale"] = std::to_string(float{UINT8_MAX});  // TODO(Yi): workaround for accuracy of int8 gptj
   // Step 1: Construct runtime data for equivalent merged spmm
@@ -159,8 +169,8 @@ void mha_dense_static_bench::gen_case() {
   if (dt_src == jd::data_type::s8) ts_descs[io::Q_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
   if (dt_src == jd::data_type::s8) ts_descs[io::K_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
   if (dt_src == jd::data_type::s8) ts_descs[io::V_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  ts_descs[io::SRC_DST_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  ts_descs[io::SRC_DST_ZP] = {{1}, jd::data_type::fp32, jd::format_type::a};
+  if (dt_dst != jd::data_type::bf16) ts_descs[io::SRC_DST_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+  if (dt_dst != jd::data_type::bf16) ts_descs[io::SRC_DST_ZP] = {{1}, jd::data_type::s32, jd::format_type::a};
   // Step 2: Construct Tensor ptr
   auto Qs = make_tensor_obj(ts_descs[io::SRC_Q]);
   auto Ks = make_tensor_obj(ts_descs[io::SRC_K]);

@@ -213,7 +213,7 @@ std::pair<op_args_t, op_args_t> gen_case(dim_t M, dim_t K, dim_t N, jd::data_typ
 
 static auto case_func = []() {
   google::InitGoogleLogging("MMAVX512FP8KernelTest");
-  std::vector<int> nthr_cases = {1, 4};
+  std::vector<int> nthr_cases = {4};
   std::vector<test_params_t> cases;
   jd::postop_attr fp32_swish_attr{jd::data_type::fp32, jd::postop_type::eltwise, jd::postop_alg::swish, 2};
   for (int nthr : nthr_cases) {

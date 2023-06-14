@@ -43,8 +43,8 @@ bool matmul_avx512f_8bit_kd_t::params_init() {
   jit_param_.K = K;
   jit_param_.N = N;
 
-  jit_param_.has_scale0 = !shapes[io::SCALE0].empty();
-  bool has_bias = !shapes[io::SRC2].empty();
+  jit_param_.has_scale0 = shapes.size() > io::SCALE0 && !shapes[io::SCALE0].empty();
+  bool has_bias = shapes.size() > io::SRC2 && !shapes[io::SRC2].empty();
   if (attrs["alpha"] != "") jit_param_.alpha = str_to_num<float>(attrs["alpha"]);
   SPARSE_LOG_IF(WARNING, jit_param_.alpha == 0.f)
       << "Alpha for matmul is set to 0 meaning that the base result will be discarded";

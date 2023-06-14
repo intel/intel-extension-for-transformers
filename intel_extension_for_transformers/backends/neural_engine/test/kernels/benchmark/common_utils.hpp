@@ -84,13 +84,14 @@ class aligned_allocator_t {
 
  public:
   static inline pointer allocate(size_type n, bool zero = false) {
+    n = pad_to(n * sizeof(value_type), N);
 #ifdef _WIN32
-    auto ptr = static_cast<pointer>(_aligned_malloc(n * sizeof(value_type), N));
+    auto ptr = static_cast<pointer>(_aligned_malloc(n, N));
 #else
-    auto ptr = static_cast<pointer>(::aligned_alloc(N, n * sizeof(value_type)));
+    auto ptr = static_cast<pointer>(::aligned_alloc(N, n));
 #endif
 
-    if (zero) memset(reinterpret_cast<void*>(ptr), 0, n * sizeof(value_type));
+    if (zero) memset(reinterpret_cast<void*>(ptr), 0, n);
     return ptr;
   }
   static inline void deallocate(void* p, size_type = 0) {

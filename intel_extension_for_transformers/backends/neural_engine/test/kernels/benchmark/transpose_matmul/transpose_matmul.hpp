@@ -33,16 +33,13 @@ class transpose_matmul_bench : public kernel_bench {
       for (auto rt_data : {args.first.rt_data, args.second.rt_data}) {
         for (size_t idx = 0; idx < rt_data.size(); idx++) {
           if (rt_data[idx] != nullptr) {
-            if (idx <= io::SRC2) {
-              aligned_allocator_t<uint8_t, 64>::deallocate(const_cast<void*>(rt_data[idx]));
-            } else {
-              delete reinterpret_cast<const float*>(rt_data[idx]);
-            }
+            aligned_allocator_t<uint8_t, 64>::deallocate(const_cast<void*>(rt_data[idx]));
           }
         }
       }
     }
   }
+
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return smb->calc_flop(); };
   std::vector<int> get_refresh_data_idx() const override { return smb->get_refresh_data_idx(); }

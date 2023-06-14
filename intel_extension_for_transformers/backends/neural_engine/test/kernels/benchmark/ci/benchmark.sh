@@ -15,8 +15,11 @@
 # limitations under the License.
 #===============================================================================
 
+# Note: This script can only be run with bash. See: https://stackoverflow.com/a/1221870/21847662
+
 ncores_per_socket=$(lscpu | grep "Core(s) per socket:" | sed -r 's/.+?:\s+(.+)/\1/')
 no_numa_support=$(numactl -s | grep "No NUMA support available")
+TIMEOUT_DURATION=30 # timeout duration in seconds (for each instance for each run)
 
 function run_multi_inst {
     local ncores_per_inst=$1
@@ -32,7 +35,7 @@ function run_multi_inst {
             export OMP_NUM_THREADS=$ncores_per_inst
         fi
         echo "${numa_prefix}${cmd}" >>$unified_log
-        ${numa_prefix}${cmd} 2>&1 |
+        ${numa_prefix}timeout -v $TIMEOUT_DURATION ${cmd} 2>&1 |
             tee -a $unified_log |
             grep "kernel execution time" |
             sed -r "s/^.*?kernel execution time:\s*(.+?)ms,\s*GFLOPS:\s*(.+?)$/\1 \2/" &
@@ -154,7 +157,7 @@ while read -r config || [[ -n "${config}" ]]; do
     # set env
     if [[ -n $(echo $config | grep -E '^\$') ]]; then
         env_chnage=$(echo $config | sed -e "s/^\$\s*//")
-        echo "export $env_chnage" >> $raw_log
+        echo "export $env_chnage" >>$raw_log
         export $env_chnage
         continue
     fi
@@ -175,9 +178,13 @@ while read -r config || [[ -n "${config}" ]]; do
 
         if [[ $mode == "acc" ]]; then
             echo ">>> run $cmd" >>$raw_log
-            acc_result=$($cmd 2>&1 | tee -a $raw_log)
+            acc_result=$(
+                $cmd 2>&1 | tee -a $raw_log
+                exit ${PIPESTATUS[0]}
+            )
+            cmd_exit_code=$?
             echo "<<< end $cmd" >>$raw_log
-            if [[ -n $(echo $acc_result | grep "result correct") ]]; then
+            if (test $cmd_exit_code -eq 0) && (test -n "$(echo $acc_result | grep "result correct")"); then
                 echo "result correct"
             else
                 echo "benchmark failed"

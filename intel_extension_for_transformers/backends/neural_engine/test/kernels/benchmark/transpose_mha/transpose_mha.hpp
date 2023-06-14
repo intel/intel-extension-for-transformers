@@ -53,7 +53,7 @@ class transpose_mha_bench : public kernel_bench {
     aligned_allocator_t<uint8_t>::deallocate(const_cast<void*>(rt_data[io::DST]));
     aligned_allocator_t<uint8_t>::deallocate(const_cast<void*>(rt_data[io::TMP2M]));
     for (std::underlying_type<io>::type i = io::SL_PAD; i <= io::transpose_mha_io_MAX; i++) {
-      delete reinterpret_cast<const char*>(rt_data[i]);
+      delete reinterpret_cast<const int*>(rt_data[i]);
     }
   }
   bench_res_t set_config(int argc, char** argv) override;

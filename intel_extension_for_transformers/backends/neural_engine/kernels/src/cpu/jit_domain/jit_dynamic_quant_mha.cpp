@@ -373,7 +373,7 @@ void jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::mm_exp_sum(  //
       vpbroadcastd(vreg_c[1], dword[rip + l_poly_c[1]]);
       vpbroadcastd(vreg_c[2], dword[rip + l_poly_c[2]]);
       for (int ii = 0; ii < 16; ++ii) {
-        for (int j = 0; j < tw; ++j) {  // TODO: ?
+        for (int j = 0; j < tw; ++j) {
           if (ii == 0) tilestored(ptr[reg_dst + reg_64ULL + j * BYTES_TMM], tmm_dst[j]);
           if (j == 0) vmulps(vreg_src0scale, zmm_scale, zword_b[reg_src0scale + ii * sizeof(float)]);
           if (ii == 0) vmovups(vreg_src1scale[j], zword[reg_src1scale + j * BYTES_ZMM]);

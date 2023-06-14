@@ -33,18 +33,13 @@ class matmul_avx512f_8bit_bench : public transpose_matmul_bench {
  public:
   matmul_avx512f_8bit_bench() {}
   virtual ~matmul_avx512f_8bit_bench() {
-    //   for (auto op_args : {t.args.first, t.args.second}) {
-    //   for (auto rt_data : op_args.rt_data) {
-    //     char* data = reinterpret_cast<char*>(const_cast<void*>(rt_data));
-    //     delete[] data;
-    //   }
-    //   // auto tensor = op_args.op_desc.tensor_descs()[io::SRC1];
-    //   auto attr = op_args.op_desc.attrs();
-    //   if (attr["weight_8bit"] != "") {
-    //     int8_t* weight = reinterpret_cast<int8_t*>(str_to_num<intptr_t>(attr["weight_8bit"]));
-    //     delete[] weight;
-    //   }
-    // }
+    for (auto op_args : {args.first, args.second}) {
+      auto attr = op_args.op_desc.attrs();
+      if (attr["weight_8bit"] != "") {
+        const auto weight = reinterpret_cast<int8_t*>(str_to_num<intptr_t>(attr["weight_8bit"]));
+        aligned_allocator_t<int8_t>::deallocate(weight);
+      }
+    }
   }
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const override { return static_cast<double>(M) * N * K * 2; };
