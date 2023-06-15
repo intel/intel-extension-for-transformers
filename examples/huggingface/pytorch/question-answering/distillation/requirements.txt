@@ -2,3 +2,4 @@ datasets >= 1.8.0
 torch >= 1.10.0
 transformers<=4.29.1
 wandb
+accelerate

@@ -169,3 +169,94 @@ python run_executor.py --ir_path=./bf16_ir --input_model=CompVis/stable-diffusio
 > 2. The default prompt is "a photo of an astronaut riding a horse on mars" and the default output name is "astronaut_rides_horse.png".
 > 3. The ir directory should include three IRs for text_encoder, unet and vae_decoder.
 
+## 5. Validated Result
+
+
+### 5.1 Latency (s)
+
+
+Input: a photo of an astronaut riding a horse on mars
+
+Batch Size: 1
+
+
+| Model | FP32 | BF16 | 
+|---------------------|:----------------------:|-----------------------|
+| [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) | 10.33 (s) | 3.02 (s) |
+
+> Note: Performance results test on ​​06/09/2023 with Intel(R) Xeon(R) Platinum 8480+.
+Performance varies by use, configuration and other factors. See platform configuration for configuration details. For more complete information about performance and benchmark results, visit www.intel.com/benchmarks
+
+
+
+### 5.2 Platform Configuration
+
+
+<table>
+<tbody>
+  <tr>
+    <td>Manufacturer</td>
+    <td>Quanta Cloud Technology Inc</td>
+  </tr>
+  <tr>
+    <td>Product Name</td>
+    <td>QuantaGrid D54Q-2U</td>
+  </tr>
+  <tr>
+    <td>OS</td>
+    <td>CentOS Stream 8</td>
+  </tr>
+  <tr>
+    <td>Kernel</td>
+    <td>5.16.0-rc1-intel-next-00543-g5867b0a2a125</td>
+  </tr>
+  <tr>
+    <td>Microcode</td>
+    <td>0x2b000111</td>
+  </tr>
+  <tr>
+    <td>IRQ Balance</td>
+    <td>Eabled</td>
+  </tr>
+  <tr>
+    <td>CPU Model</td>
+    <td>Intel(R) Xeon(R) Platinum 8480+</td>
+  </tr>
+  <tr>
+    <td>Base Frequency</td>
+    <td>2.0GHz</td>
+  </tr>
+  <tr>
+    <td>Maximum Frequency</td>
+    <td>3.8GHz</td>
+  </tr>
+  <tr>
+    <td>CPU(s)</td>
+    <td>224</td>
+  </tr>
+  <tr>
+    <td>Thread(s) per Core</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>Core(s) per Socket</td>
+    <td>56</td>
+  </tr>
+  <tr>
+    <td>Socket(s)</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>NUMA Node(s)</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>Turbo</td>
+    <td>Enabled</td>
+  </tr>
+  <tr>
+    <td>FrequencyGoverner</td>
+    <td>Performance</td>
+  </tr>
+</tbody>
+</table>

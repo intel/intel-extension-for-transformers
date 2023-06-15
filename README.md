@@ -67,6 +67,27 @@ output = model(**input).logits.argmax().item()
 
 > For more quick samples, please refer to [Get Started Page](docs/get_started.md). For more validated examples, please refer to [Support Model Matrix](docs/examples.md)
 
+## Validated Performance
+
+
+| Model |  FP32 | BF16 | INT8 |
+|---------------------|:----------------------:|-----------------------|-----------------------------------|
+| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 4163.67 (ms) | 1879.61 (ms) | 1612.24 (ms) |
+| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 4356.79 (ms) | 1941.63 (ms) | 1773.22 (ms) |
+| [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) | 10.33 (s) | 3.02 (s) | N/A |
+
+> Note*: 
+>
+> (1) Settings for [EleutherAI/gpt-j-6B and decapoda-research/llama-7b-hf](./examples/huggingface/pytorch/text-generation/deployment/) : 
+>
+> Input_Length = 32, Output_Length = 32, Batch_Size = 1
+>
+>
+> (2) Settings for [CompVis/stable-diffusion-v1-4](./examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion/): 
+>
+> Input = "a photo of an astronaut riding a horse on mars", Batch_Size = 1
+>
+
 ## Documentation
 <table>
 <thead>

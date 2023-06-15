@@ -3,3 +3,4 @@ datasets
 torchprofile
 torch
 intel_extension_for_pytorch
+accelerate
