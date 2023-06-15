@@ -321,8 +321,8 @@ void SoftmaxOperator::Reshape_dnnl(const vector<Tensor*>& input, const vector<Te
   softmax_p_ = dnnl::softmax_forward(softmax_pd);
 
   // 2.5 Prepare memory objects (cached)
-  src_m_ = memory(src_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
 }
 
 void SoftmaxOperator::Reshape_u8(const vector<Tensor*>& input, const vector<Tensor*>& output) {

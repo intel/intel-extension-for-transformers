@@ -1225,7 +1225,7 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
       attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
       vector<int64_t> scale_shape;
       scale_shape.push_back(src1_min_->size());
-      scale_f32_mem_ = memory({scale_shape, memory::data_type::f32, GetStrides(scale_shape)}, eng_);
+      scale_f32_mem_ = memory({scale_shape, memory::data_type::f32, GetStrides(scale_shape)}, eng_, DNNL_MEMORY_NONE);
       // need zero point when src0 is u8
       if (src0_->dtype() == "u8") {
         vector<int64_t> zero_point_shape(src1_shape);
@@ -1362,7 +1362,7 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
         dnnl::eltwise_forward::desc(prop_kind::forward_inference, algorithm::eltwise_gelu_erf, gelu_md, 0.f, 0.f);
     gelu_pd_ = dnnl::eltwise_forward::primitive_desc(gelu_d, gelu_eng_);
     gelu_p_ = dnnl::eltwise_forward(gelu_pd_);
-    gelu_m_ = memory(gelu_md, gelu_eng_);
+    gelu_m_ = memory(gelu_md, gelu_eng_, DNNL_MEMORY_NONE);
   }
   if (gelu_tanh_ && gelu_split_) {
     memory::desc gelu_md = memory::desc(dst_shape_origin, type2mem[dst_->dtype()], dst_stride);
@@ -1370,14 +1370,14 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
         dnnl::eltwise_forward::desc(prop_kind::forward_inference, algorithm::eltwise_gelu_tanh, gelu_md, 0.f, 0.f);
     gelu_pd_ = dnnl::eltwise_forward::primitive_desc(gelu_d, gelu_eng_);
     gelu_p_ = dnnl::eltwise_forward(gelu_pd_);
-    gelu_m_ = memory(gelu_md, gelu_eng_);
+    gelu_m_ = memory(gelu_md, gelu_eng_, DNNL_MEMORY_NONE);
   }
   if (binary_add_) {
     vector<int64_t> post_shape = post_->shape();
     vector<int64_t> post_stride = GetStrides(post_shape);
     memory::desc binary_md = memory::desc(post_shape, type2mem[post_->dtype()], post_stride);
     po.append_binary(algorithm::binary_add, binary_md);
-    binary_m_ = memory(binary_md, eng_);
+    binary_m_ = memory(binary_md, eng_, DNNL_MEMORY_NONE);
   }
   if (append_eltwise_ || append_sum_ || binary_add_ || is_dynamic_) attr_.set_post_ops(po);
 
@@ -1398,13 +1398,13 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
 
   // 2.4 Prepare memory objects (cached)
-  src0_m_ = memory(src0_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src0_m_ = memory(src0_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
   if (!weight_cached_) {
     memory any_src1_m = any_src1_m_last_;
     if (inner_product_pd_.weights_desc() != any_src1_m_last_.get_desc()) {
       void* cached_w_ptr;
-      any_src1_m = memory(inner_product_pd_.weights_desc(), eng_);
+      any_src1_m = memory(inner_product_pd_.weights_desc(), eng_, DNNL_MEMORY_NONE);
       if (src1_->is_shared()) {
         int64_t weight_size = any_src1_m.get_desc().get_size();
         void* weight_shm_ptr =
@@ -1437,7 +1437,7 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
       memory any_bias_m = any_bias_m_last_;
       if (inner_product_pd_.bias_desc() != any_bias_m_last_.get_desc()) {
         void* cached_b_ptr;
-        any_bias_m = memory(inner_product_pd_.bias_desc(), eng_);
+        any_bias_m = memory(inner_product_pd_.bias_desc(), eng_, DNNL_MEMORY_NONE);
         if (bias_->is_shared()) {
           int64_t bias_size = bias_m_.get_desc().get_size();
           void* bias_shm_ptr =

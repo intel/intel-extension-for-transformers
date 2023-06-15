@@ -383,7 +383,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
       // scale_shape.push_back(1);
       scale_shape.push_back(weight_min_->size());
       memory::desc scale_md_ = memory::desc(scale_shape, memory::data_type::f32, GetStrides(scale_shape));
-      scale_f32_mem_ = memory(scale_md_, eng_);
+      scale_f32_mem_ = memory(scale_md_, eng_, DNNL_MEMORY_NONE);
       // if (!(dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
       //   dnnl::post_ops po;
       //   po.append_binary(algorithm::binary_mul, scale_md_);
@@ -393,7 +393,8 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
       if (src_->dtype() == "u8") {
         mask = src_min_->size() > 1 ? 2 : 0;
         zp_src0_mem_ = memory(
-            {{static_cast<dnnl_dim_t>(src_min_->size())}, memory::data_type::s32, GetStrides(scale_shape)}, eng_);
+            {{static_cast<dnnl_dim_t>(src_min_->size())}, memory::data_type::s32, GetStrides(scale_shape)}, eng_,
+            DNNL_MEMORY_NONE);
         attr_.set_zero_points(DNNL_ARG_SRC, mask, {DNNL_RUNTIME_S32_VAL});
       }
     }
@@ -516,7 +517,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
         dnnl::eltwise_forward::desc(prop_kind::forward_inference, algorithm::eltwise_gelu_erf, gelu_md, 0.f, 0.f);
     gelu_pd_ = dnnl::eltwise_forward::primitive_desc(gelu_d, gelu_eng_);
     gelu_p_ = dnnl::eltwise_forward(gelu_pd_);
-    gelu_m_ = memory(gelu_md, gelu_eng_);
+    gelu_m_ = memory(gelu_md, gelu_eng_, DNNL_MEMORY_NONE);
   }
   if (gelu_tanh_ && gelu_split_) {
     memory::desc gelu_md = memory::desc(dst_shape_origin, type2mem[dst_->dtype()], dst_stride);
@@ -524,7 +525,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
         dnnl::eltwise_forward::desc(prop_kind::forward_inference, algorithm::eltwise_gelu_tanh, gelu_md, 0.f, 0.f);
     gelu_pd_ = dnnl::eltwise_forward::primitive_desc(gelu_d, gelu_eng_);
     gelu_p_ = dnnl::eltwise_forward(gelu_pd_);
-    gelu_m_ = memory(gelu_md, gelu_eng_);
+    gelu_m_ = memory(gelu_md, gelu_eng_, DNNL_MEMORY_NONE);
   }
   if (binary_add_) {
     // The binary primitive requires all source and destination tensors to have the same number of dimensions.
@@ -541,7 +542,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
     memory::desc binary_md = memory::desc(post_shape, type2mem[post_->dtype()], post_stride);
     po.append_binary(algorithm::binary_add, binary_md);
     attr.set_post_ops(po);
-    binary_m_ = memory(binary_md, eng_);
+    binary_m_ = memory(binary_md, eng_, DNNL_MEMORY_NONE);
     attr_ = attr;
   }
 
@@ -558,8 +559,8 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
 
   // 2.4 Prepare memory objects (cached)
-  src_m_ = memory(src_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
   if (!weight_cached_) {
     memory any_weight_m = weight_m_;
     if (convolution_pd_.weights_desc() != weight_m_.get_desc()) {

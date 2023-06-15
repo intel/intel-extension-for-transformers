@@ -138,8 +138,8 @@ void ReorderOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
   dnnl::reorder::primitive_desc reorder_pd(eng_, src_md, eng_, dst_md, attr_);
   reorder_prim_ = dnnl::reorder(reorder_pd);
 
-  src_m_ = memory(src_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
 }
 
 // 2. inference kernel(for int8 and f32)

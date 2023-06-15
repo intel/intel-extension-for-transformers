@@ -58,8 +58,8 @@ void GeluOperator::ReshapeWithOnednn(const vector<Tensor*>& input, const vector<
   memory::desc dst_md(dst_shape, type2mem[output[0]->dtype()], dst_stride);
 
   // 1.5 Prepare memory objects (cached)
-  src_m_ = memory(src_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
 
   //// Part2: Prepare primitive
   // 2.1 Prepare op descriptors

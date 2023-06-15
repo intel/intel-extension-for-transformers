@@ -76,8 +76,8 @@ void LogSoftmaxOperator::Reshape(const vector<Tensor*>& input, const vector<Tens
   logsoftmax_p_ = dnnl::logsoftmax_forward(logsoftmax_pd);
 
   // 2.5 Prepare memory objects (cached)
-  src_m_ = memory(src_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
 }
 
 void LogSoftmaxOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {

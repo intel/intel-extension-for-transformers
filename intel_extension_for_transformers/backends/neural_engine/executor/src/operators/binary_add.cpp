@@ -200,9 +200,9 @@ dnnl::binary::desc BinaryAddOperator::PrepareBroadcastBinaryDesc(const memory::d
   memory::desc user_dst_md(jit_pass_src0_shape, type2mem[output[0]->dtype()], dt_tag);
 
   //  Prepare memory objects (cached)
-  user_src0_m_ = memory(user_src0_md, eng_);
-  user_src1_m_ = memory(user_src1_md, eng_);
-  user_dst_m_ = memory(user_dst_md, eng_);
+  user_src0_m_ = memory(user_src0_md, eng_, DNNL_MEMORY_NONE);
+  user_src1_m_ = memory(user_src1_md, eng_, DNNL_MEMORY_NONE);
+  user_dst_m_ = memory(user_dst_md, eng_, DNNL_MEMORY_NONE);
 
   dnnl::binary::desc binary_d(algo_, user_src0_md, user_src1_md, user_dst_md);
   return binary_d;
@@ -238,9 +238,9 @@ dnnl::binary::desc BinaryAddOperator::PrepareStrideBinaryDesc(const memory::dims
   memory::desc any_dst_md(user_dst_md.dims(), user_dst_md.data_type(), memory::format_tag::any);
 
   // 5. Prepare memory objects (cached)
-  user_src0_m_ = memory(user_src0_md, eng_);
-  user_src1_m_ = memory(user_src1_md, eng_);
-  user_dst_m_ = memory(user_dst_md, eng_);
+  user_src0_m_ = memory(user_src0_md, eng_, DNNL_MEMORY_NONE);
+  user_src1_m_ = memory(user_src1_md, eng_, DNNL_MEMORY_NONE);
+  user_dst_m_ = memory(user_dst_md, eng_, DNNL_MEMORY_NONE);
 
   // 6. Prepare op descriptors
   dnnl::binary::desc binary_d(algorithm::binary_add, user_src0_md, user_src1_md, any_dst_md);

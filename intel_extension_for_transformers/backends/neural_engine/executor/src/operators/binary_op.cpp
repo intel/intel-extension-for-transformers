@@ -96,9 +96,9 @@ void BinaryOpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor
   auto binary_pd = dnnl::binary::primitive_desc(binary_d, binary_attr, eng_);
 
   // Create src memory objects.
-  src_0_mem_ = memory(src_0_md, eng_);
-  src_1_mem_ = memory(src_1_md, eng_);
-  dst_mem_ = memory(dst_md, eng_);
+  src_0_mem_ = memory(src_0_md, eng_, DNNL_MEMORY_NONE);
+  src_1_mem_ = memory(src_1_md, eng_, DNNL_MEMORY_NONE);
+  dst_mem_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
 
   // Create the primitive.
   binary_prim_ = dnnl::binary(binary_pd);

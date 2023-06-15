@@ -60,6 +60,10 @@
 #define NEURALENGINE_API_
 #endif  // GTEST_API_
 
+// Special pointer value that indicates that a oneDNN memory object should not have
+// an underlying buffer.
+#define DNNL_MEMORY_NONE (NULL)
+
 namespace executor {
 
 using std::max;

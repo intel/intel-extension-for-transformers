@@ -434,8 +434,8 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   if (is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
       attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
-      scale_f32_mem_ = memory({{1}, memory::data_type::f32, {1}}, eng_);
-      zp_src0_mem_ = memory({{1}, memory::data_type::s32, {1}}, eng_);
+      scale_f32_mem_ = memory({{1}, memory::data_type::f32, {1}}, eng_, DNNL_MEMORY_NONE);
+      zp_src0_mem_ = memory({{1}, memory::data_type::s32, {1}}, eng_, DNNL_MEMORY_NONE);
       // need zero point when src0 is u8
       if (src0_->dtype() == "u8") {
         attr_.set_zero_points(DNNL_ARG_SRC, ic_dim, {DNNL_RUNTIME_S32_VAL});
@@ -479,7 +479,7 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
     vector<int64_t> post_stride = GetStrides(post_shape);
     memory::desc binary_md = memory::desc(post_shape, type2mem[post_->dtype()], post_stride);
     po.append_binary(algorithm::binary_add, binary_md);
-    binary_m_ = memory(binary_md, eng_);
+    binary_m_ = memory(binary_md, eng_, DNNL_MEMORY_NONE);
   }
   attr_.set_post_ops(po);
 
@@ -501,8 +501,8 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
 
   // 2.4 Prepare memory objects (cached)
-  src0_m_ = memory(src0_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src0_m_ = memory(src0_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
   if (has_bias_) {
     bias_m_ = memory(bias_md, eng_, const_cast<void*>(bias_->data()));
     memory any_bias_m = bias_m_;
@@ -533,7 +533,7 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
     }
     memory_args_[DNNL_ARG_WEIGHTS] = any_src1_m_;
   } else {
-    src1_m_ = memory(src1_md, eng_);
+    src1_m_ = memory(src1_md, eng_, DNNL_MEMORY_NONE);
   }
 
   // If the matmul forward class in the cache pool, just get it from pool.

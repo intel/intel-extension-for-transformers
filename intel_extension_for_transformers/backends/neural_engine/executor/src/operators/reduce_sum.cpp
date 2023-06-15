@@ -84,8 +84,8 @@ void ReduceSumOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   reduce_sum_p_ = dnnl::reduction(reduce_sum_pd);
 
   // 2.5 Prepare memory objects (cached)
-  src_m_ = memory(src_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
 }
 
 void ReduceSumOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {

@@ -215,8 +215,8 @@ void LayerNormOperator::ReshapewithOnednn(const vector<Tensor*>& input, const ve
   lnorm_p_ = dnnl::layer_normalization_forward(lnorm_pd);
 
   // 2.5 Prepare memory objects (cached)
-  src_m_ = memory(src_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
   memory mean_m(lnorm_pd.mean_desc(), eng_);
   memory variance_m(lnorm_pd.variance_desc(), eng_);
 

@@ -58,8 +58,8 @@ void SigmoidOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
   exp_p_ = dnnl::eltwise_forward(exp_pd);
 
   // 2.5 Prepare memory objects (cached)
-  src_m_ = memory(src_md, eng_);
-  dst_m_ = memory(dst_md, eng_);
+  src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
+  dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
 }
 
 
