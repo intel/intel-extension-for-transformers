@@ -90,10 +90,6 @@ else()
     message(STATUS "Cannot find Threads")
 endif()
 
-option(EIGEN_BUILD_DOC "Enable creation of Eigen documentation" OFF)
-add_subdirectory(${NE_THIRD_PARTY_DIR}/eigen)
-find_package(Eigen3 REQUIRED)
-
 # -fopenmp
 find_package(OpenMP)
 if(OpenMP_FOUND)

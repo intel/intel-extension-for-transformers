@@ -92,7 +92,6 @@ target_link_libraries(host_operators
         yaml-cpp
         glog
         xbyak::xbyak
-        Eigen3::Eigen
 )
 if(NE_WITH_SPARSELIB)
 target_link_libraries(host_operators

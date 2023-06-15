@@ -1,4 +1,4 @@
-//  Copyright (c) 2021 Intel Corporation
+//  Copyright (c) 2023 Intel Corporation
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -69,16 +69,14 @@ void ConstantOfShapeOperator::Reshape(const vector<Tensor*>& input,
 // 2. inference kernel(for int8 and f32)
 void ConstantOfShapeOperator::Forward(const vector<Tensor*>& input,
                                       const vector<Tensor*>& output) {
-  auto dst_data = output[0]->mutable_data();
+  float* dst_data = static_cast<float*>(output[0]->mutable_data());
   if (output_dtype_ == "fp32") {
-    Eigen::Map<Eigen::ArrayXf> output_array(reinterpret_cast<float*>(dst_data),
-                                            array_size_);
     if (mode_ == "llama" && (dst_shape_[3] - dst_shape_[2] != 1)) {
-        output_array = Eigen::ArrayXf::Constant(
-            array_size_, static_cast<float>(0));
+        memset(dst_data, 0, output[0]->size() * sizeof(float));
     } else {
-        output_array = Eigen::ArrayXf::Constant(
-            array_size_, static_cast<float>(constant_value_));
+        for (int i = 0; i < output[0]->size(); ++i) {
+          dst_data[i] = static_cast<float>(constant_value_);
+        }
     }
   }
 
@@ -88,8 +86,7 @@ void ConstantOfShapeOperator::Forward(const vector<Tensor*>& input,
         int range =
             j + trilu_k_ >= dst_shape_[2] ? dst_shape_[2] : j + trilu_k_;
         for (int k = 0; k < range; ++k) {
-          reinterpret_cast<float*>(
-              dst_data)[dst_shape_[1] * i + dst_shape_[2] * j + k] = 0;
+          reinterpret_cast<float*>(dst_data)[dst_shape_[1] * i + dst_shape_[2] * j + k] = 0;
         }
       }
     }
@@ -100,8 +97,7 @@ void ConstantOfShapeOperator::Forward(const vector<Tensor*>& input,
     int row = dst_shape_[3];
     for (int j = 0; j < col; ++j) {
       for (int k = 0; k < j + trilu_k_; ++k) {
-        reinterpret_cast<float*>(
-            dst_data)[row * j  + k ] = 0;
+        reinterpret_cast<float*>(dst_data)[row * j  + k ] = 0;
       }
     }
   }

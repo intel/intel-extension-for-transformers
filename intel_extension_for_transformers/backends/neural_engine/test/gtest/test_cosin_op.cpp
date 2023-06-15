@@ -130,14 +130,18 @@ static auto CasesFp32 = []() {
   std::string memory_strategy = getenv("DIRECT_BUFFER") == NULL ? "cycle_buffer" : "direct_buffer";
   MemoryAllocator::SetStrategy(memory_strategy);
   std::vector<TestParams> cases;
-
   std::vector<int64_t> src_shape;
-  // case: 1D
-  src_shape = {10};
+
+  src_shape = {512, 768};
   cases.push_back({GenerateFp32Case({src_shape})});
 
-  // case: 2D
   src_shape = {365, 1024};
+  cases.push_back({GenerateFp32Case({src_shape})});
+
+  src_shape = {1024, 1024};
+  cases.push_back({GenerateFp32Case({src_shape})});
+
+  src_shape = {1024, 1024, 1024};
   cases.push_back({GenerateFp32Case({src_shape})});
 
   return ::testing::ValuesIn(cases);

@@ -15,7 +15,6 @@
 #ifndef ENGINE_EXECUTOR_INCLUDE_OPERATORS_COSSIN_HPP_
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_COSSIN_HPP_
 
-#include<Eigen/Dense>
 #include <string>
 #include <vector>
 #include <memory>
