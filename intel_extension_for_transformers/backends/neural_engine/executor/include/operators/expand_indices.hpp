@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <vector>
 #include <memory>
+#include <string>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -35,6 +36,7 @@ class ExpandIndicesOperator : public Operator {
 
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  vector<vector<string>> InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
   vector<int64_t> position_;
   vector<int64_t> src_shape_;

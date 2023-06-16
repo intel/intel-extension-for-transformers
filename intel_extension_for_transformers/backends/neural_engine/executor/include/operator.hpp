@@ -83,12 +83,37 @@ class Operator {
   // shape infer process does not contain jit codegen
   virtual void ShapeInfer(const vector<Tensor*>& input, const vector<Tensor*>& output) {}
 
+  // return inplace tensor names pairs
+  // keep these pairs in order
+  // <<tensor_a0 -> tensor_b0>, <tensor_a1 -> tensor_b1>, ...>
+  virtual vector<vector<string>> InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+    vector<vector<string>> pairs;
+    return pairs;
+  }
+
   inline void unref_tensors(const vector<Tensor*>& input) {
     static std::mutex unref_lock;
     std::lock_guard<std::mutex> lock(unref_lock);
     for (size_t i = 0; i < input.size(); ++i) {
       auto status = input[i]->unref_data();
       // (TODO) maybe check the tensors
+    }
+  }
+
+  inline void decrease_consumers(const vector<Tensor*>& input) {
+    static std::mutex decrease_consumers_lock;
+    std::lock_guard<std::mutex> dec_lock(decrease_consumers_lock);
+    for (size_t i = 0; i < input.size(); ++i) {
+      input[i]->decrease_left_life();
+    }
+  }
+
+  inline const ExecutionMode get_execution_mode() const {
+    if (execution_options_ptr_ == nullptr) {
+      ExecutionOptions options = ExecutionOptions();
+      return options.execution_mode;
+    } else {
+      return execution_options_ptr_->execution_mode;
     }
   }
 
@@ -124,6 +149,8 @@ class Operator {
   inline void append_ot_shape(const vector<int64_t> output_shape) { output_tensor_shape_.emplace_back(output_shape); }
   inline const vector<vector<int64_t>>& get_it_shape() const { return input_tensor_shape_; }
   inline const vector<vector<int64_t>>& get_ot_shape() const { return output_tensor_shape_; }
+  inline void clear_it_shape() { input_tensor_shape_.clear(); }
+  inline void clear_ot_shape() { output_tensor_shape_.clear(); }
   // get executor kernel time add reshape time
   inline void set_reshape_time(const float reshape_time) { reshape_time_.emplace_back(reshape_time); }
   inline const vector<float>& get_reshape_time() const { return reshape_time_; }

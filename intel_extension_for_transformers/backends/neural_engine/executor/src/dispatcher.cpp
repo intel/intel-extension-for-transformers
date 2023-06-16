@@ -39,6 +39,9 @@ Dispatcher::Dispatcher(const shared_ptr<OperatorConfig>& conf, const ExecutionOp
   }
   execute_kernel_ = type_;
   do_tuning_ = (execution_options_ptr_->execution_mode == ExecutionMode::TUNING);
+  adapt_action_ = (model_->has_dispatch_table_file() && execution_options_ptr_->execution_mode != ExecutionMode::DEBUG)
+                      ? true
+                      : false;
 }
 
 Dispatcher::Dispatcher(const shared_ptr<Operator>& op, const ExecutionOptions* e_ptr, const Model* m_ptr)
@@ -51,6 +54,9 @@ Dispatcher::Dispatcher(const shared_ptr<Operator>& op, const ExecutionOptions* e
   kernel_handler_[name_] = op;
   execute_kernel_ = type_;
   do_tuning_ = (execution_options_ptr_->execution_mode == ExecutionMode::TUNING);
+  adapt_action_ = (model_->has_dispatch_table_file() && execution_options_ptr_->execution_mode != ExecutionMode::DEBUG)
+                      ? true
+                      : false;
 }
 
 // prepare all kernel when model init

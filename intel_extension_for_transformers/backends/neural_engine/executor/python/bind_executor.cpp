@@ -30,7 +30,9 @@ PYBIND11_MODULE(neural_engine_py, m) {
       .def(py::init<std::string, std::string>())
       .def(py::init<executor::ModelConfig, std::string>())
       .def(py::init<executor::ModelConfig, std::string, executor::ExecutionOptions>())
-      .def("forward", &executor::Model::Forward, py::arg("input"), py::return_value_policy::take_ownership);
+      .def(py::init<std::string, std::string, executor::ExecutionOptions>())
+      .def("forward", &executor::Model::Forward, py::arg("input"), py::return_value_policy::take_ownership)
+      .def("activation_mem_compression", &executor::Model::ActivationMemCompression, py::arg("input_shapes"));
 
   py::class_<executor::TensorConfig, std::shared_ptr<executor::TensorConfig>>(m, "tensor_config")
       .def(py::init<std::string, const std::vector<int64_t>&, std::string, const std::vector<int64_t>&,
@@ -41,21 +43,24 @@ PYBIND11_MODULE(neural_engine_py, m) {
 
   py::class_<executor::OperatorConfig, std::shared_ptr<executor::OperatorConfig>>(m, "op_config")
       .def(py::init<std::string, std::string, const std::vector<std::shared_ptr<executor::TensorConfig>>&,
-        const std::vector<std::shared_ptr<executor::TensorConfig>>&, const std::shared_ptr<executor::AttrConfig>&>());
+                    const std::vector<std::shared_ptr<executor::TensorConfig>>&,
+                    const std::shared_ptr<executor::AttrConfig>&>());
 
   py::class_<executor::ModelConfig>(m, "model_config")
       .def(py::init<std::string, const std::vector<std::shared_ptr<executor::OperatorConfig>>&>())
       .def(py::init<YAML::Node>());
 
   py::enum_<executor::ExecutionMode>(m, "ExecutionMode")
-    .value("INFERENCE", executor::ExecutionMode::INFERENCE)
-    .value("DEBUG", executor::ExecutionMode::DEBUG)
-    .value("TUNING", executor::ExecutionMode::TUNING);
+      .value("INFERENCE", executor::ExecutionMode::INFERENCE)
+      .value("DEBUG", executor::ExecutionMode::DEBUG)
+      .value("TUNING", executor::ExecutionMode::TUNING);
 
   py::class_<executor::ExecutionOptions>(m, "ExecutionOptions")
       .def(py::init<>())
       .def_readwrite("warmup_iter", &executor::ExecutionOptions::warmup_iter)
       .def_readwrite("dispatch_table_file_root", &executor::ExecutionOptions::dispatch_table_file_root)
       .def_readwrite("enable_op_tuning", &executor::ExecutionOptions::enable_op_tuning)
-      .def_readwrite("execution_mode", &executor::ExecutionOptions::execution_mode);
+      .def_readwrite("execution_mode", &executor::ExecutionOptions::execution_mode)
+      .def_readwrite("activation_mem_compression", &executor::ExecutionOptions::activation_mem_compression)
+      .def_readwrite("dump_activation_dag", &executor::ExecutionOptions::dump_activation_dag);
 }

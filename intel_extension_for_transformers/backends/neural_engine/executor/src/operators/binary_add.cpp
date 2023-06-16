@@ -95,6 +95,26 @@ void BinaryAddOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
   binary_p_ = dnnl::binary(binary_pd_);
 }
 
+vector<vector<string>> BinaryAddOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // inplace input[0] -> output[0]
+  if (!append_sum_ && input.size() == 2 && input[0] != nullptr && input[0]->left_life() == 1 &&
+      input[0]->size() >= output[0]->size() && input[0]->dtype() == output[0]->dtype()) {
+    inplace_pairs.emplace_back(vector<string>({input[0]->name(), output[0]->name()}));
+  } else {
+    // append_sum inplace input[2] -> output[0]
+    if (append_sum_ && input.size() >= 3 && input[2] != nullptr && input[2]->size() >= output[0]->size() &&
+        input[2]->dtype() == output[0]->dtype() && input[2]->left_life() == 1) {
+      inplace_pairs.emplace_back(vector<string>({input[2]->name(), output[0]->name()}));
+    }
+  }
+  return inplace_pairs;
+}
+
 void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
   const auto& src0_data = input[0]->data();
@@ -104,14 +124,15 @@ void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   Tensor* dst_ptr = output[0];
   vector<Tensor*> inputs(input);
   if (!append_sum_ && input.size() == 2 && input[0] != nullptr && input[0]->left_life() == 1 &&
-      input[0]->size() >= dst_ptr->size() && input[0]->dtype() == output[0]->dtype()) {
+      input[0]->size() >= dst_ptr->size() && input[0]->dtype() == output[0]->dtype() &&
+      this->get_execution_mode() != ExecutionMode::DEBUG) {
     void* input_ptr = input[0]->mutable_data();
     input[0]->unref_data(true);
     dst_ptr->set_data(input_ptr);
     inputs = {input[1]};
   } else if (append_sum_ && input.size() >= 3 && input[2] != nullptr && input[2]->size() >= dst_ptr->size() &&
              input[2]->dtype() == output[0]->dtype()) {
-    if (input[2]->left_life() == 1) {
+    if (input[2]->left_life() == 1 && this->get_execution_mode() != ExecutionMode::DEBUG) {
       void* input_ptr = input[2]->mutable_data();
       input[2]->unref_data(true);
       dst_ptr->set_data(input_ptr);

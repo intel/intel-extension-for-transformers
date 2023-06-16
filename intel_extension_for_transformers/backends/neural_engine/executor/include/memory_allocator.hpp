@@ -23,10 +23,13 @@
 #include <string>
 #include <thread>  // NOLINT
 #include <vector>
+#include <utility>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 
 #include "i_malloc.hpp"
+#include "execution_options.hpp"
+#include "static_compressed_buffer.hpp"
 
 #ifdef _WIN32
 #include <malloc.h>
@@ -48,7 +51,7 @@ class MemoryAllocator {
   typedef std::map<void*, vector<size_t>> MemoryBuffer;
   typedef std::map<void*, string> BufferName;
   typedef std::map<string, bool> StrategyList;
-  typedef std::map<std::thread::id, MemoryBuffer*> TreadMemory;
+  typedef std::map<std::thread::id, std::unique_ptr<MemoryBuffer>> TreadMemory;
   typedef std::map<std::thread::id, BufferName*> TreadName;
 
   static char* SharedEnv(char* env_name = "WEIGHT_SHARING") {
@@ -68,9 +71,25 @@ class MemoryAllocator {
     std::thread::id id = std::this_thread::get_id();
     auto count = t_memory.count(id);
     if (count == 0) {
-      t_memory[id] = new MemoryBuffer();
+      std::unique_ptr<MemoryBuffer> mu_ptr(new MemoryBuffer());
+      t_memory[id] = std::move(mu_ptr);
     }
     return *(t_memory[id]);
+  }
+
+  static void InitCompressedBufferManager(const ActivationDAG& dag, const bool& debug_mode = false);
+
+  // use another memory buffer which not be freed by memory_allocator
+  static MemoryBuffer& CompressedBuffer() {
+    static TreadMemory scpb_memory;
+    // (TODO) it's not good for each thread to obtain a MemoryBuffer
+    std::thread::id id = std::this_thread::get_id();
+    auto count = scpb_memory.count(id);
+    if (count == 0) {
+      std::unique_ptr<MemoryBuffer> mu_ptr(new MemoryBuffer());
+      scpb_memory[id] = std::move(mu_ptr);
+    }
+    return *(scpb_memory[id]);
   }
 
   static BufferName& Name() {
@@ -121,8 +140,10 @@ class MemoryAllocator {
   }
 
   static StrategyList& Strategy() {
-    static StrategyList* m_strategy_ =
-        new StrategyList({{"cycle_buffer", false}, {"direct_buffer", false}, {"unified_buffer", false}});
+    static StrategyList* m_strategy_ = new StrategyList({{"cycle_buffer", false},
+                                                         {"direct_buffer", false},
+                                                         {"unified_buffer", false},
+                                                         {"static_compressed_buffer", false}});
     return *m_strategy_;
   }
 
@@ -131,16 +152,22 @@ class MemoryAllocator {
     return shm_ptr;
   }
 
-  static void InitStrategy() {
-    string memory_strategy = getenv("UNIFIED_BUFFER") != NULL
-                                 ? "unified_buffer"
-                                 : (getenv("DIRECT_BUFFER") == NULL ? "cycle_buffer" : "direct_buffer");
+  static void InitStrategy(const ExecutionOptions& execution_options = ExecutionOptions()) {
+    string memory_strategy;
+    if (execution_options.activation_mem_compression) {
+      memory_strategy = "static_compressed_buffer";
+    } else {
+      memory_strategy = getenv("UNIFIED_BUFFER") != NULL
+                            ? "unified_buffer"
+                            : (getenv("DIRECT_BUFFER") == NULL ? "cycle_buffer" : "direct_buffer");
+    }
     SetStrategy(memory_strategy);
   }
 
   static void SetStrategy(const string strategy) {
-    CHECK(strategy == "cycle_buffer" || strategy == "direct_buffer" || strategy == "unified_buffer")
-        << "only support memory strategy cycle buffer, direct buffer and unified buffer";
+    CHECK(strategy == "cycle_buffer" || strategy == "direct_buffer" || strategy == "unified_buffer" ||
+          strategy == "static_compressed_buffer")
+        << "only support memory strategy cycle buffer, direct buffer, unified buffer and static compressed buffer";
     StrategyList& strategy_list = Strategy();
     strategy_list[strategy] = true;
     DLOG(INFO) << "strategy list set success " << strategy;
@@ -148,8 +175,12 @@ class MemoryAllocator {
 
   static int CheckMemory(void* data) {
     MemoryBuffer& memory_buffer = Buffer();
-    auto iter = memory_buffer.find(data);
-    if (iter != memory_buffer.end()) {
+    MemoryBuffer& scpb_mem_buffer = CompressedBuffer();
+    if (memory_buffer.count(data) != 0) {
+      auto iter = memory_buffer.find(data);
+      return iter->second[0];
+    } else if (scpb_mem_buffer.count(data) != 0) {
+      auto iter = scpb_mem_buffer.find(data);
       return iter->second[0];
     } else {
       DLOG(WARNING) << "get life from a not existing memory pointer...";
@@ -160,9 +191,13 @@ class MemoryAllocator {
   // set the data buffer a new life count
   static void ResetMemory(void* data, const int life_count) {
     MemoryBuffer& memory_buffer = Buffer();
+    MemoryBuffer& scpb_mem_buffer = CompressedBuffer();
     StrategyList& strategy_list = Strategy();
-    auto iter = memory_buffer.find(data);
-    if (iter != memory_buffer.end()) {
+    if (memory_buffer.count(data) != 0) {
+      auto iter = memory_buffer.find(data);
+      iter->second[0] = life_count;
+    } else if (scpb_mem_buffer.count(data) != 0) {
+      auto iter = scpb_mem_buffer.find(data);
       iter->second[0] = life_count;
     } else {
       DLOG(WARNING) << "reset a not existing memory pointer...";
@@ -172,10 +207,23 @@ class MemoryAllocator {
   // will return the left count of one tensor
   static int UnrefMemory(void* data, bool inplace = false) {
     MemoryBuffer& memory_buffer = Buffer();
+    MemoryBuffer& scpb_mem_buffer = CompressedBuffer();
     StrategyList& strategy_list = Strategy();
-    auto iter = memory_buffer.find(data);
+    std::map<void*, vector<size_t>>::iterator iter;
+    bool in_scpb_mem_buffer = false;
+    bool in_mem_buffer = false;
+    if (scpb_mem_buffer.count(data) != 0) {
+      iter = scpb_mem_buffer.find(data);
+      in_scpb_mem_buffer = true;
+    }
+    if (memory_buffer.count(data) != 0) {
+      iter = memory_buffer.find(data);
+      in_mem_buffer = true;
+    }
+    LOG_IF(FATAL, (in_scpb_mem_buffer && in_mem_buffer))
+        << "Find data ptr " << data << "in static compressed buffer and cycle buffer.";
     int status = 0;
-    if (iter != memory_buffer.end()) {
+    if (in_scpb_mem_buffer || in_mem_buffer) {
       if (iter->second[0] <= 0) {
         DLOG(WARNING) << "free a no-used memory...";
         iter->second[0] = 0;
@@ -184,7 +232,7 @@ class MemoryAllocator {
         (iter->second[0])--;
         status = iter->second[0];
       }
-      if (status == 0 && inplace == false) {
+      if (in_mem_buffer && status == 0 && inplace == false) {
         if (strategy_list["direct_buffer"]) {
           auto free_ptr = iter->first;
           aligned_free(free_ptr);
@@ -202,7 +250,7 @@ class MemoryAllocator {
     return status;
   }
 
-  static void* GetMemory(size_t size, const int life_count) {
+  static void* GetMemory(size_t size, const int life_count, const string& tensor_name = "") {
     static std::mutex getmem_lock;
     std::lock_guard<std::mutex> lock(getmem_lock);
     if (size == 0) {
@@ -214,7 +262,16 @@ class MemoryAllocator {
       return nullptr;
     }
     StrategyList& strategy_list = Strategy();
-    if (strategy_list["direct_buffer"]) {
+    if (strategy_list["static_compressed_buffer"]) {
+      if (tensor_name != "") {
+        // activation memory allocation
+        return StaticCompressedBufferGetMemory(size, life_count, tensor_name);
+      } else {
+        // workspace and other memory allocation
+        // (TODO) it's not good to use one more memory management tools in one instance
+        return CycleBufferGetMemory(size, life_count);
+      }
+    } else if (strategy_list["direct_buffer"]) {
       return DirectBufferGetMemory(size, life_count);
     } else if (strategy_list["cycle_buffer"]) {
       return CycleBufferGetMemory(size, life_count);
@@ -225,6 +282,9 @@ class MemoryAllocator {
       return nullptr;
     }
   }
+
+  // Get memory from static compressed buffer manager
+  static void* StaticCompressedBufferGetMemory(size_t size, const int life_count, const string& tensor_name = "");
 
   static void* CycleBufferGetMemory(size_t size, const int life_count) {
     MemoryBuffer& memory_buffer = Buffer();
@@ -280,6 +340,9 @@ class MemoryAllocator {
  private:
   // Private constructor to prevent instancing.
   MemoryAllocator() {}
+  // static compressed buffer manager
+  // init by activation dag
+  static std::unique_ptr<StaticCompressedBuffer> scpb_manager_;
 };
 
 }  // namespace executor

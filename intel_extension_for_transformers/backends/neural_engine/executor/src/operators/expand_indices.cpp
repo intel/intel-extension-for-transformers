@@ -63,13 +63,27 @@ void ExpandIndicesOperator::Reshape(const vector<Tensor*>& input, const vector<T
   output[0]->set_dtype("int32");  // only support int32 now
 }
 
+vector<vector<string>> ExpandIndicesOperator::InplacePairs(const vector<Tensor*>& input,
+                                                           const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // input[0] -> output[0]
+  if (input[0]->size() == output[0]->size() && input[0]->left_life() == 1) {
+    inplace_pairs.emplace_back(vector<string>({input[0]->name(), output[0]->name()}));
+  }
+  return inplace_pairs;
+}
+
 void ExpandIndicesOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   int32_t* src_data = static_cast<int32_t*>(input[0]->mutable_data());
   int32_t* dst_data = static_cast<int32_t*>(output[0]->mutable_data());
   int old_size = input[0]->size();
   vector<Tensor*> inputs(input);
   if (output[0]->size() == old_size) {
-    if (input[0]->left_life() == 1) {
+    if (input[0]->left_life() == 1 && this->get_execution_mode() != ExecutionMode::DEBUG) {
       input[0]->unref_data(true);
       output[0]->set_data(src_data);
       inputs = {input[1]};

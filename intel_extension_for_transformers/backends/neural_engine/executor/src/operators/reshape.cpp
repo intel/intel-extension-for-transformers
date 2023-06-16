@@ -137,6 +137,19 @@ void ReshapeOperator::Reshape(const vector<Tensor*>& input,
   dst_ptr->set_shape(dst_shape);
 }
 
+vector<vector<string>> ReshapeOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // input[0] -> output[0]
+  if (input[0] != nullptr && input[0]->left_life() == 1) {
+    inplace_pairs.emplace_back(vector<string>({input[0]->name(), output[0]->name()}));
+  }
+  return inplace_pairs;
+}
+
 // 2. inference kernel(for int8 and f32)
 void ReshapeOperator::Forward(const vector<Tensor*>& input,
                               const vector<Tensor*>& output) {
@@ -146,7 +159,7 @@ void ReshapeOperator::Forward(const vector<Tensor*>& input,
   auto life_count = MemoryAllocator::get().CheckMemory(data);
 
   // set data is inplace mamupulation, will reset so no need
-  if (life_count == 1) {
+  if (life_count == 1 && this->get_execution_mode() != ExecutionMode::DEBUG) {
     src_ptr->unref_data(true);
     dst_ptr->set_data(data);
     if (input.size() == 2) input[1]->unref_data();

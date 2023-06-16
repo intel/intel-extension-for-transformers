@@ -104,6 +104,26 @@ void BinaryOpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor
   binary_prim_ = dnnl::binary(binary_pd);
 }
 
+vector<vector<string>> BinaryOpOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // inplace input[0] -> output[0]
+  if (input[0] != nullptr && input[0]->left_life() == 1 && input[0]->size() >= output[0]->size() &&
+      input[0]->dtype() != "s32" && output[0]->dtype() == input[0]->dtype()) {
+    inplace_pairs.emplace_back(vector<string>({input[0]->name(), output[0]->name()}));
+  } else {
+    // inplace input[1] -> output[0]
+    if (input[1] != nullptr && input[1]->left_life() == 1 && input[1]->size() >= output[0]->size() &&
+        input[1]->dtype() != "s32" && output[0]->dtype() == input[1]->dtype()) {
+      inplace_pairs.emplace_back(vector<string>({input[1]->name(), output[0]->name()}));
+    }
+  }
+  return inplace_pairs;
+}
+
 void BinaryOpOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   vector<Tensor*> inputs;
   void* src0_fp32 = nullptr;
@@ -129,12 +149,14 @@ void BinaryOpOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
   src_1_mem_.set_data_handle(src1_data, stream_);
 
   if (input[0] != nullptr && input[0]->left_life() == 1 && input[0]->size() >= output[0]->size() &&
-      input[0]->dtype() != "s32" && output[0]->dtype() == input[0]->dtype()) {
+      input[0]->dtype() != "s32" && output[0]->dtype() == input[0]->dtype() &&
+      this->get_execution_mode() != ExecutionMode::DEBUG) {
     input[0]->unref_data(true);
     output[0]->set_data(src0_data);
     inputs.push_back(input[1]);
   } else if (input[1] != nullptr && input[1]->left_life() == 1 && input[1]->size() >= output[0]->size() &&
-             input[1]->dtype() != "s32" && output[0]->dtype() == input[1]->dtype()) {
+             input[1]->dtype() != "s32" && output[0]->dtype() == input[1]->dtype() &&
+             this->get_execution_mode() != ExecutionMode::DEBUG) {
     input[1]->unref_data(true);
     output[0]->set_data(src1_data);
     inputs.push_back(input[0]);

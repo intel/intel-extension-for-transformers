@@ -145,7 +145,7 @@ void GatherOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>
   if (binary_add_) {
     LOG_IF(FATAL, append_->dtype() != "fp32") << "Gather only supports fp32 binary_add operation";
     attr_map["binaryop_list"] = "binary_add";
-    binaryops.push_back({append_->mutable_data(), jd::binaryop_alg::add, dt});
+    binaryops.push_back({jd::binaryop_alg::add, dt});
     ts_descs[io::BINARY0] = {append_->shape(), dt, jd::plain_format(append_->shape().size())};
   }
 

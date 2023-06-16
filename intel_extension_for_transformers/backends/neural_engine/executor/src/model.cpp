@@ -16,30 +16,35 @@
 namespace executor {
 
 Model::Model(const ModelConfig& conf, const string& weight_root)
-    : model_conf_(std::make_shared<ModelConfig>(conf)),
-      weight_root_(weight_root) {
+    : model_conf_(std::make_shared<ModelConfig>(conf)), weight_root_(weight_root) {
   Init(conf);
 }
 
-Model::Model(const string& conf_file, const string& weight_root)
-    : weight_root_(weight_root) {
+Model::Model(const string& conf_file, const string& weight_root) : weight_root_(weight_root) {
   model_conf_ = std::make_shared<ModelConfig>(conf_file);
   CHECK_EQ(model_conf_->CheckConfig(), true) << "model config not right....";
   Init(*model_conf_);
 }
 
-Model::Model(const ModelConfig& conf, const string& weight_root,
-             const ExecutionOptions& execution_options)
+Model::Model(const ModelConfig& conf, const string& weight_root, const ExecutionOptions& execution_options)
     : weight_root_(weight_root), execution_options_(execution_options) {
-  if (execution_options_.enable_op_tuning)
-    execution_options_.execution_mode = ExecutionMode::TUNING;
-  if (execution_options_.execution_mode == ExecutionMode::TUNING)
-    execution_options_.enable_op_tuning = true;
+  if (execution_options_.enable_op_tuning) execution_options_.execution_mode = ExecutionMode::TUNING;
+  if (execution_options_.execution_mode == ExecutionMode::TUNING) execution_options_.enable_op_tuning = true;
   Init(conf);
 }
 
+Model::Model(const string& conf_file, const string& weight_root, const ExecutionOptions& execution_options)
+    : weight_root_(weight_root), execution_options_(execution_options) {
+  model_conf_ = std::make_shared<ModelConfig>(conf_file);
+  CHECK_EQ(model_conf_->CheckConfig(), true) << "model config not right....";
+  if (execution_options_.enable_op_tuning) execution_options_.execution_mode = ExecutionMode::TUNING;
+  if (execution_options_.execution_mode == ExecutionMode::TUNING) execution_options_.enable_op_tuning = true;
+  Init(*model_conf_);
+}
+
 Model::~Model() {
-  if (engine_profiling_) {
+  // profiling must after forward
+  if (engine_profiling_ && !operators_[1]->latency().empty()) {
     DLOG(INFO) << "Neural engine profiling ...";
     Profiling_ ProfilingWriter = Profiling_();
     ProfilingWriter.WriteProfiling(operators_, input_vecs_, output_vecs_);
@@ -61,11 +66,9 @@ string Model::Serialize() {
   size_t weight_len = 0;
   std::shared_ptr<char> weight_c;
   if (weight_file) {
-    weight_len =
-        static_cast<size_t>(weight_file.seekg(0, std::ios::end).tellg());
+    weight_len = static_cast<size_t>(weight_file.seekg(0, std::ios::end).tellg());
     weight_file.seekg(0, std::ios::beg);
-    weight_c = std::shared_ptr<char>(new char[weight_len],
-                                     std::default_delete<char[]>());
+    weight_c = std::shared_ptr<char>(new char[weight_len], std::default_delete<char[]>());
     weight_file.read(weight_c.get(), weight_len);
     weight_file.close();
   } else {
@@ -73,48 +76,41 @@ string Model::Serialize() {
     weight_len = weight_root_.length();
   }
   // combine model_conf_len, weight_len, model_config, weight into one string
-  std::shared_ptr<char> model_conf_len_c = std::shared_ptr<char>(
-      new char[sizeof(size_t) + 1], std::default_delete<char[]>());
+  std::shared_ptr<char> model_conf_len_c =
+      std::shared_ptr<char>(new char[sizeof(size_t) + 1], std::default_delete<char[]>());
 #if _WIN32
-  _snprintf(model_conf_len_c.get(), sizeof(size_t) + 1, "%ul64",
-            static_cast<unsigned int>(model_conf_len));
+  _snprintf(model_conf_len_c.get(), sizeof(size_t) + 1, "%ul64", static_cast<unsigned int>(model_conf_len));
 #else
   snprintf(model_conf_len_c.get(), sizeof(size_t) + 1, "%ul64", model_conf_len);
 #endif
-  std::shared_ptr<char> weight_len_c = std::shared_ptr<char>(
-      new char[sizeof(size_t) + 1], std::default_delete<char[]>());
+  std::shared_ptr<char> weight_len_c =
+      std::shared_ptr<char>(new char[sizeof(size_t) + 1], std::default_delete<char[]>());
 #if _WIN32
-  _snprintf(weight_len_c.get(), sizeof(size_t) + 1, "%ul64",
-            static_cast<unsigned int>(weight_len));
+  _snprintf(weight_len_c.get(), sizeof(size_t) + 1, "%ul64", static_cast<unsigned int>(weight_len));
 #else
   snprintf(weight_len_c.get(), sizeof(size_t) + 1, "%ul64", weight_len);
 #endif
-  string serialization = string(model_conf_len_c.get(), sizeof(size_t)) +
-                         string(weight_len_c.get(), sizeof(size_t)) +
+  string serialization = string(model_conf_len_c.get(), sizeof(size_t)) + string(weight_len_c.get(), sizeof(size_t)) +
                          model_conf_str + string(weight_c.get(), weight_len);
   return serialization;
 }
 
 void Model::Deserialize(const string& serialization) {
   // get model conf len
-  size_t model_conf_len =
-      StringToNum<size_t>(serialization.substr(0, sizeof(size_t)));
+  size_t model_conf_len = StringToNum<size_t>(serialization.substr(0, sizeof(size_t)));
   // get weight len
-  size_t weight_len =
-      StringToNum<size_t>(serialization.substr(sizeof(size_t), sizeof(size_t)));
+  size_t weight_len = StringToNum<size_t>(serialization.substr(sizeof(size_t), sizeof(size_t)));
   // deserialize model conf:
   // weight_len and model_conf_len are size_t, so the location of model_conf
   // starts 2 * sizeof(size_t)
-  string model_conf_str =
-      serialization.substr(2 * sizeof(size_t), model_conf_len);
+  string model_conf_str = serialization.substr(2 * sizeof(size_t), model_conf_len);
   std::stringstream model_conf_stream;
   model_conf_stream << model_conf_str;
   cereal::PortableBinaryInputArchive model_conf_ia(model_conf_stream);
   model_conf_ = std::make_shared<ModelConfig>();
   model_conf_ia(*model_conf_);
   // get weight
-  weight_root_ =
-      serialization.substr(2 * sizeof(size_t) + model_conf_len, weight_len);
+  weight_root_ = serialization.substr(2 * sizeof(size_t) + model_conf_len, weight_len);
   // init model
   Init(*model_conf_);
 }
@@ -134,11 +130,9 @@ void Model::SerializeToFile(const string& file_name) {
 void Model::DeserializeFromFile(const string& file_name) {
   std::ifstream model_file(file_name, std::ios::in | std::ios::binary);
   if (model_file) {
-    size_t model_len =
-        static_cast<size_t>(model_file.seekg(0, std::ios::end).tellg());
+    size_t model_len = static_cast<size_t>(model_file.seekg(0, std::ios::end).tellg());
     model_file.seekg(0, std::ios::beg);
-    std::shared_ptr<char> model_c = std::shared_ptr<char>(
-        new char[model_len], std::default_delete<char[]>());
+    std::shared_ptr<char> model_c = std::shared_ptr<char>(new char[model_len], std::default_delete<char[]>());
     model_file.read(model_c.get(), model_len);
     Deserialize(string(model_c.get(), model_len));  // deserialize
     model_file.close();
@@ -156,7 +150,28 @@ void Model::Init(const ModelConfig& conf) {
   ConvolutionPrimitiveFwdFactory::ClearFactory();
   InitSharedWeight();
   name_ = conf.name();
-  MemoryAllocator::InitStrategy();
+  MemoryAllocator::InitStrategy(execution_options_);
+#ifdef WIN32
+  {
+    FILE* fp = fopen(execution_options_.dispatch_table_file_root.c_str(), "r");
+    has_dispatch_table_file_ = fp != NULL;
+    if (fp) {
+      fclose(fp);
+    }
+  }
+#else
+  has_dispatch_table_file_ = (access(execution_options_.dispatch_table_file_root.c_str(), F_OK) != -1);
+#endif
+  if (!has_dispatch_table_file_) {
+    DLOG(INFO) << "Missing dispatch table file, "
+                  "all operators will use their own default kernels."
+                  "Recommend to turn on the tuning mode for better performance."
+                  "Ignore above info if you are doing tuning...";
+  } else {
+    if (execution_options_.execution_mode == ExecutionMode::DEBUG) {
+      DLOG(INFO) << "In DEBUG MODE, ignore dispatch table file even if there is it...";
+    }
+  }
   // For each operator, set up its input and output
   auto op_configs = conf.operators();
   input_vecs_.resize(op_configs.size());
@@ -191,35 +206,10 @@ void Model::Init(const ModelConfig& conf) {
 
   // for debug tensor life
   for (size_t i = 0; i < tensors_.size(); ++i) {
-    DLOG(INFO) << "tensor name is " << tensors_[i]->name() << " tensor life is  "
-              << tensors_[i]->life();
+    DLOG(INFO) << "tensor name is " << tensors_[i]->name() << " tensor life is  " << tensors_[i]->life();
   }
-  DLOG(INFO) << "Model Execution Mode is "
-            << int(execution_options_.execution_mode)
-            << ", (0: INFERENCE, 1: DEBUG, 2: TUNING)...";
-#ifdef WIN32
-  {
-    FILE* fp = fopen(execution_options_.dispatch_table_file_root.c_str(), "r");
-    has_dispatch_table_file_ = fp != NULL;
-    if (fp) {
-      fclose(fp);
-    }
-  }
-#else
-  has_dispatch_table_file_ =
-      (access(execution_options_.dispatch_table_file_root.c_str(), F_OK) != -1);
-#endif
-  if (!has_dispatch_table_file_) {
-    DLOG(INFO) << "Missing dispatch table file, "
-                 "all operators will use their own default kernels."
-                 "Recommend to turn on the tuning mode for better performance."
-                 "Ignore above info if you are doing tuning...";
-  } else {
-    if (execution_options_.execution_mode == ExecutionMode::DEBUG) {
-      DLOG(INFO)
-          << "In DEBUG MODE, ignore dispatch table file even if there is it...";
-    }
-  }
+  DLOG(INFO) << "Model Execution Mode is " << int(execution_options_.execution_mode)
+             << ", (0: INFERENCE, 1: DEBUG, 2: TUNING)...";
   // prepare the operator like cache weight
   for (int i = 0; i < operators_.size(); ++i) {
     operators_[i]->Prepare(input_vecs_[i], output_vecs_[i]);
@@ -241,36 +231,26 @@ void Model::Init(const ModelConfig& conf) {
         multi_stream_tasks_.insert({i, StringToNum<int64_t>(it->second)});
       }
     }
-    auto max_tasks =
-        std::max_element(multi_stream_tasks_.begin(), multi_stream_tasks_.end(),
-                         [](const std::pair<int, int64_t>& a,
-                            const std::pair<int, int64_t>& b) -> bool {
-                           return a.second < b.second;
-                         });
+    auto max_tasks = std::max_element(
+        multi_stream_tasks_.begin(), multi_stream_tasks_.end(),
+        [](const std::pair<int, int64_t>& a, const std::pair<int, int64_t>& b) -> bool { return a.second < b.second; });
     int tp_max_threads = max_tasks->second + (max_tasks->second & 1);
     int total_available_threads = omp_get_num_procs();
-    tp_max_threads = tp_max_threads > total_available_threads
-                         ? total_available_threads
-                         : tp_max_threads;
+    tp_max_threads = tp_max_threads > total_available_threads ? total_available_threads : tp_max_threads;
     tp.begin(tp_max_threads);
-    DLOG(INFO) << "Thread pool is initialized with " << tp_max_threads
-              << " threads. ("
-              << "Total avaiable threads: " << total_available_threads << ")";
+    DLOG(INFO) << "Thread pool is initialized with " << tp_max_threads << " threads. ("
+               << "Total avaiable threads: " << total_available_threads << ")";
   }
 
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
 }
 
-void Model::RemoveSharedWeight(bool is_begin, char* count_space_name,
-                               char* count_name, char* count_mtx_name,
+void Model::RemoveSharedWeight(bool is_begin, char* count_space_name, char* count_name, char* count_mtx_name,
                                char* space_name) {
   DLOG(INFO) << "Shared instance number: " << MemoryAllocator::InstNum();
-  ipc::managed_shared_memory count_shm(ipc::open_or_create, count_space_name,
-                                       512);
-  int* removed_count =
-      count_shm.find_or_construct<int>(count_name)[sizeof(int)](0);
-  ipc::interprocess_mutex* mtx =
-      count_shm.find_or_construct<ipc::interprocess_mutex>(count_mtx_name)();
+  ipc::managed_shared_memory count_shm(ipc::open_or_create, count_space_name, 512);
+  int* removed_count = count_shm.find_or_construct<int>(count_name)[sizeof(int)](0);
+  ipc::interprocess_mutex* mtx = count_shm.find_or_construct<ipc::interprocess_mutex>(count_mtx_name)();
   mtx->lock();
   (*removed_count)++;
   mtx->unlock();
@@ -294,28 +274,24 @@ void Model::InitSharedWeight(char* space_name) {
     RemoveSharedWeight(true);
     std::ifstream inFile(weight_root_, std::ios::in | std::ios::binary);
     size_t weight_size =
-        inFile ? static_cast<size_t>(inFile.seekg(0, std::ios::end).tellg())
-               : static_cast<size_t>(weight_root_.size());
+        inFile ? static_cast<size_t>(inFile.seekg(0, std::ios::end).tellg()) : static_cast<size_t>(weight_root_.size());
     if (inFile) {
       inFile.close();
     }
     // 2 * weight_size: an empirical value to check weight buffers could be
     // allocated enough in shared memory
-    static ipc::managed_shared_memory managed_shm(ipc::open_or_create,
-                                                  space_name, 2 * weight_size);
+    static ipc::managed_shared_memory managed_shm(ipc::open_or_create, space_name, 2 * weight_size);
   }
 }
 
-ipc::managed_shared_memory::handle_t Model::LoadSharedWeight(
-    const string& root, const string& type, const vector<int64_t>& shape,
-    const vector<int64_t>& location) {
+ipc::managed_shared_memory::handle_t Model::LoadSharedWeight(const string& root, const string& type,
+                                                             const vector<int64_t>& shape,
+                                                             const vector<int64_t>& location) {
   int64_t size = Product(shape);
   int64_t bytes = size * type2bytes[type];
-  string weight_name =
-      std::to_string(location[0]) + std::to_string(location[1]);
+  string weight_name = std::to_string(location[0]) + std::to_string(location[1]);
   std::ifstream inFile(root, std::ios::in | std::ios::binary);
-  void* shm_ptr = MemoryAllocator::ManagedShm().find_or_construct<char>(
-      weight_name.c_str())[bytes](0);
+  void* shm_ptr = MemoryAllocator::ManagedShm().find_or_construct<char>(weight_name.c_str())[bytes](0);
   if (inFile) {
     inFile.seekg(location[0], std::ios::beg);
     inFile.read(reinterpret_cast<char*>(shm_ptr), location[1]);
@@ -323,19 +299,17 @@ ipc::managed_shared_memory::handle_t Model::LoadSharedWeight(
   } else {
     std::memcpy(shm_ptr, &root[location[0]], location[1]);
   }
-  const auto& handle =
-      MemoryAllocator::ManagedShm().get_handle_from_address(shm_ptr);
+  const auto& handle = MemoryAllocator::ManagedShm().get_handle_from_address(shm_ptr);
   return handle;
 }
 
-void Model::SetInput(const shared_ptr<OperatorConfig>& op_conf,
-                     const int operator_id, const int tensor_id,
+void Model::SetInput(const shared_ptr<OperatorConfig>& op_conf, const int operator_id, const int tensor_id,
                      map<string, int>* tensor_name_index_) {
   // model input tensor not in output tensors
   const string& tensor_name = op_conf->input_tensors(tensor_id)->name();
   if (!tensor_name_index_->count(tensor_name)) {
-    LOG(FATAL) << "Unknown input tensor " << tensor_name << ", operator "
-               << op_conf->name() << ", input index " << tensor_id;
+    LOG(FATAL) << "Unknown input tensor " << tensor_name << ", operator " << op_conf->name() << ", input index "
+               << tensor_id;
   }
   const int id = (*tensor_name_index_)[tensor_name];
   // add tensor life count for memory handling
@@ -358,8 +332,7 @@ void Model::SetInput(const shared_ptr<OperatorConfig>& op_conf,
   }
 }
 
-void Model::SetOutput(const shared_ptr<OperatorConfig>& op_conf,
-                      const int operator_id, const int tensor_id,
+void Model::SetOutput(const shared_ptr<OperatorConfig>& op_conf, const int operator_id, const int tensor_id,
                       map<string, int>* tensor_name_index_) {
   const string& tensor_name = op_conf->output_tensors(tensor_id)->name();
   if (tensor_name_index_->count(tensor_name)) {
@@ -381,13 +354,11 @@ void Model::SetOutput(const shared_ptr<OperatorConfig>& op_conf,
     if (tensor_config->location().size() != 0) {
       if (MemoryAllocator::SharedEnv()) {
         auto handle =
-            LoadSharedWeight(weight_root_, tensor_config->dtype(),
-                             tensor_config->shape(), tensor_config->location());
+            LoadSharedWeight(weight_root_, tensor_config->dtype(), tensor_config->shape(), tensor_config->location());
         tensor_ptr->set_shm_handle(handle);
       } else {
-        void* weight_ptr = read_file_to_type(
-            weight_root_, tensor_config->dtype(), tensor_config->shape(),
-            tensor_config->location());
+        void* weight_ptr =
+            read_file_to_type(weight_root_, tensor_config->dtype(), tensor_config->shape(), tensor_config->location());
         tensor_ptr->set_data(weight_ptr);
       }
       return;
@@ -398,25 +369,70 @@ void Model::SetOutput(const shared_ptr<OperatorConfig>& op_conf,
   }
 }
 
+// collect operator's dtype and shape
+// ignore dispatching kernel process
+void Model::ShapeInference(const vector<vector<int64_t>>& input_shapes) {
+  DLOG(INFO) << "Start to implement model shape inference...";
+  for (int i = 0; i < input_shapes.size(); ++i) {
+    model_input_tensors_[i]->set_shape(input_shapes[i]);
+  }
+  // reshape all operators for getting tensor shape info
+  for (int i = 0; i < operators_.size(); ++i) {
+    operators_[i]->clear_it_shape();
+    operators_[i]->clear_ot_shape();
+    operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
+  }
+  // reset model input tensors shape
+  for (int i = 0; i < input_shapes.size(); ++i) {
+    model_input_tensors_[i]->set_shape(model_input_configs_[i]->shape());
+  }
+  DLOG(INFO) << "Finish model shape inference...";
+}
+
+void Model::ActivationMemCompression(const vector<vector<vector<int64_t>>>& input_shapes_list) {
+  DLOG(INFO) << "Start to implement activation memory compression...";
+  if (!execution_options_.activation_mem_compression) {
+    DLOG(INFO) << "Skip activation memory compression due to the related flag is off...";
+    return;
+  }
+  if (!act_dag_handler_.update()) {
+    act_dag_handler_ = ActivationDAGHandler(this);
+  }
+  ActivationDAG dag;
+  for (const auto& input_shapes : input_shapes_list) {
+    CHECK_EQ(input_shapes.size(), model_input_tensors_.size())
+        << "input shapes size not equal with model input tensors size....";
+    for (int i = 0; i < input_shapes.size(); ++i) {
+      CHECK_EQ(input_shapes[i].size(), model_input_tensors_[i]->shape().size())
+          << model_input_tensors_[i]->name() << " has wrong input shape size...";
+    }
+    ShapeInference(input_shapes);
+    dag = act_dag_handler_.GetDAG(operators_, input_vecs_, output_vecs_);
+  }
+  if (execution_options_.dump_activation_dag) {
+    dag.Dump("activation_dag.yaml");
+  }
+  // init static compressed buffer
+  bool debug_mode = execution_options_.execution_mode == ExecutionMode::DEBUG ? true : false;
+  MemoryAllocator::InitCompressedBufferManager(dag, debug_mode);
+  DLOG(INFO) << "Finish activation memory compression...";
+}
+
 void Model::SetDispatchKernel(const bool& reshape_model) {
   if (execution_options_.execution_mode == ExecutionMode::TUNING) {
     for (int i = 0; i < operators_.size(); ++i) {
-      operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i],
-                                      reshape_model, has_dispatch_table_file_);
+      operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model, has_dispatch_table_file_);
     }
   } else {
     if (reshape_model) {
       for (int i = 0; i < operators_.size(); ++i) {
-        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i],
-                                        reshape_model,
-                                        has_dispatch_table_file_);
+        operators_[i]->GetExecuteKernel(input_vecs_[i], output_vecs_[i], reshape_model, has_dispatch_table_file_);
       }
     }
   }
 
   // save dispatch table file after tuniung
-  if (execution_options_.execution_mode == ExecutionMode::TUNING &&
-      DispatchTable::Size() > 0) {
+  if (execution_options_.execution_mode == ExecutionMode::TUNING && DispatchTable::Size() > 0) {
     DispatchTable::Save(execution_options_.dispatch_table_file_root);
   }
 }
@@ -435,9 +451,8 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
     // here we use model input configs to get the configured shape
     vector<int64_t> model_input_shape = model_input_configs_[i]->shape();
     vector<int64_t> origin_model_input = model_input_tensors_[i]->shape();
-    DLOG(INFO) << "data shape is " << data_shape[0] << " model config is "
-              << model_input_shape[0] << " origin shape is "
-              << origin_model_input[0];
+    DLOG(INFO) << "data shape is " << data_shape[0] << " model config is " << model_input_shape[0]
+               << " origin shape is " << origin_model_input[0];
     // CHECK_EQ(data_shape.size(), model_input_shape.size()) << "input data
     // should have same "
     // << "dimensions with configured model shape....";
@@ -465,8 +480,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
   if (execution_options_.execution_mode != ExecutionMode::TUNING) {
     if (reshape_model && engine_profiling_) {
       for (int i = 0; i < operators_.size(); ++i) {
-        DLOG(INFO) << "operator " << operators_[i]->name()
-                  << " gonna reshape with type " << operators_[i]->type();
+        DLOG(INFO) << "operator " << operators_[i]->name() << " gonna reshape with type " << operators_[i]->type();
         // get reshape time for profiling
         int64_t start = Time();
         if (operators_[i]->get_it_shape().size() == 0) {
@@ -476,8 +490,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
           }
         } else {
           for (int j = 0; j < input_vecs_[i].size(); ++j) {
-            if (operators_[i]->get_it_shape()[j] !=
-                input_vecs_[i][j]->shape()) {
+            if (operators_[i]->get_it_shape()[j] != input_vecs_[i][j]->shape()) {
               operators_[i]->set_it_shape(input_vecs_[i][j]->shape(), j);
               operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
               break;
@@ -494,8 +507,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
       }
     } else if (reshape_model) {
       for (int i = 0; i < operators_.size(); ++i) {
-        DLOG(INFO) << "operator " << operators_[i]->name()
-                  << " gonna reshape with type " << operators_[i]->type();
+        DLOG(INFO) << "operator " << operators_[i]->name() << " gonna reshape with type " << operators_[i]->type();
         if (operators_[i]->get_it_shape().size() == 0) {
           operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
           for (int j = 0; j < input_vecs_[i].size(); ++j) {
@@ -503,8 +515,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
           }
         } else {
           for (int j = 0; j < input_vecs_[i].size(); ++j) {
-            if (operators_[i]->get_it_shape()[j] !=
-                input_vecs_[i][j]->shape()) {
+            if (operators_[i]->get_it_shape()[j] != input_vecs_[i][j]->shape()) {
               operators_[i]->set_it_shape(input_vecs_[i][j]->shape(), j);
               operators_[i]->Reshape(input_vecs_[i], output_vecs_[i]);
               break;
@@ -516,13 +527,10 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
     int thread_count = 1;
     if (engine_profiling_) {
       for (int i = 0; i < operators_.size(); ++i) {
-        DLOG(INFO) << "operator " << operators_[i]->name()
-                  << " gonna forward with type " << operators_[i]->type();
-        if (multi_stream_flag &&
-            multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
+        DLOG(INFO) << "operator " << operators_[i]->name() << " gonna forward with type " << operators_[i]->type();
+        if (multi_stream_flag && multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
           int64_t start = Time();
-          tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i],
-                                  input_vecs_[i], output_vecs_[i]));
+          tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i], input_vecs_[i], output_vecs_[i]));
           int64_t end = Time();
           float forward_time = Duration(start, end);
           operators_[i]->set_latency(forward_time);
@@ -530,11 +538,9 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
             operators_[i]->append_it_shape(input_vecs_[i][j]->shape());
           }
           if (i != operators_.size() - 1) {
-            operators_[i]->append_ot_shape(
-                output_vecs_[i][0]->shape());  // the last output is not exsit
+            operators_[i]->append_ot_shape(output_vecs_[i][0]->shape());  // the last output is not exsit
           }
-          DLOG(INFO) << "operator: " << operators_[i]->name()
-                    << ", latency: " << forward_time << " ms";
+          DLOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << forward_time << " ms";
           if (thread_count >= multi_stream_tasks_[i]) {
             tp.waitAllTaskRunOver();
             thread_count = 0;
@@ -553,18 +559,14 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
           if (i != operators_.size() - 1) {
             operators_[i]->append_ot_shape(output_vecs_[i][0]->shape());
           }
-          DLOG(INFO) << "operator: " << operators_[i]->name()
-                    << ", latency: " << forward_time << " ms";
+          DLOG(INFO) << "operator: " << operators_[i]->name() << ", latency: " << forward_time << " ms";
         }
       }
     } else {
       for (int i = 0; i < operators_.size(); ++i) {
-        DLOG(INFO) << "operator " << operators_[i]->name()
-                  << " gonna forward with type " << operators_[i]->type();
-        if (multi_stream_flag &&
-            multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
-          tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i],
-                                  input_vecs_[i], output_vecs_[i]));
+        DLOG(INFO) << "operator " << operators_[i]->name() << " gonna forward with type " << operators_[i]->type();
+        if (multi_stream_flag && multi_stream_tasks_.find(i) != multi_stream_tasks_.end()) {
+          tp.commitTask(std::bind(&executor::Dispatcher::Forward, operators_[i], input_vecs_[i], output_vecs_[i]));
           if (thread_count >= multi_stream_tasks_[i]) {
             tp.waitAllTaskRunOver();
             thread_count = 0;
@@ -575,8 +577,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
         }
       }
     }
-    if (execution_options_.execution_mode == ExecutionMode::INFERENCE &&
-        has_dispatch_table_file_) {
+    if (execution_options_.execution_mode == ExecutionMode::INFERENCE && has_dispatch_table_file_) {
       for (int i = 0; i < operators_.size(); ++i) {
         operators_[i]->ResetOpStatus(input_vecs_[i], output_vecs_[i]);
       }
@@ -585,8 +586,7 @@ vector<Tensor>& Model::Forward(vector<Tensor>& input_data) {
   return this->output_tensors();
 }
 
-shared_ptr<TensorConfig> findTensorConfig(
-    const vector<shared_ptr<OperatorConfig>>& op_configs, string tensor_name) {
+shared_ptr<TensorConfig> findTensorConfig(const vector<shared_ptr<OperatorConfig>>& op_configs, string tensor_name) {
   // travel op_configs to find tensorconfig with specificed tensor name
   for (int i = 0; i < op_configs.size() - 1; ++i) {
     auto op_conf = op_configs[i];
@@ -609,9 +609,8 @@ shared_ptr<TensorConfig> findTensorConfig(
   return nullptr;
 }
 
-shared_ptr<Operator> Model::CreateLLGAKernel(
-    const vector<shared_ptr<OperatorConfig>>& op_configs,
-    const dnnl::graph::partition& partition) {
+shared_ptr<Operator> Model::CreateLLGAKernel(const vector<shared_ptr<OperatorConfig>>& op_configs,
+                                             const dnnl::graph::partition& partition) {
   vector<shared_ptr<TensorConfig>> partition_inputs, partition_outputs;
   auto lt_inputs = partition.get_in_ports();
   auto lt_outputs = partition.get_out_ports();
@@ -622,8 +621,7 @@ shared_ptr<Operator> Model::CreateLLGAKernel(
     if (tensor_config) {
       partition_inputs.push_back(tensor_config);
     } else {
-      partition_inputs.push_back(
-          std::make_shared<TensorConfig>("hardcode_" + std::to_string(id)));
+      partition_inputs.push_back(std::make_shared<TensorConfig>("hardcode_" + std::to_string(id)));
     }
   }
   for (auto lt : lt_outputs) {
@@ -633,26 +631,22 @@ shared_ptr<Operator> Model::CreateLLGAKernel(
     if (tensor_config) {
       partition_outputs.push_back(tensor_config);
     } else {
-      partition_outputs.push_back(
-          std::make_shared<TensorConfig>("hardcode_" + std::to_string(id)));
+      partition_outputs.push_back(std::make_shared<TensorConfig>("hardcode_" + std::to_string(id)));
     }
   }
   // create dummy config mainly for delivering tensor names of inputs/outputs.
-  shared_ptr<OperatorConfig> dummy_op_conf = std::make_shared<OperatorConfig>(
-      "LLGAKernel", "LLGAKernel", partition_inputs, partition_outputs, nullptr);
-  return shared_ptr<Operator>(
-      new LLGAKernel(dummy_op_conf, &llga_info_, partition));
+  shared_ptr<OperatorConfig> dummy_op_conf =
+      std::make_shared<OperatorConfig>("LLGAKernel", "LLGAKernel", partition_inputs, partition_outputs, nullptr);
+  return shared_ptr<Operator>(new LLGAKernel(dummy_op_conf, &llga_info_, partition));
 }
 
-void Model::ConstructLLGA(
-    const vector<shared_ptr<OperatorConfig>>& op_configs) {
+void Model::ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs) {
   bool llga_disable = (getenv("LLGA_DISABLE") != NULL);
   DLOG(INFO) << "LLGA_DISABLE: " << llga_disable;
   if (llga_disable) {
     DLOG(INFO) << "Constructing original graph...";
     for (int i = 0; i < op_configs.size(); i++) {
-      operators_.push_back(std::make_shared<Dispatcher>(
-          op_configs[i], &execution_options_, this));
+      operators_.push_back(std::make_shared<Dispatcher>(op_configs[i], &execution_options_, this));
     }
     return;
   }
@@ -677,8 +671,7 @@ void Model::ConstructLLGA(
     }
     // create llga op according to operator config, which will be added into
     // llga graph g_.
-    LLGAOPCreator::GetInstance().CreateOP(&llga_info_, op_configs[i], i,
-                                          fallback);
+    LLGAOPCreator::GetInstance().CreateOP(&llga_info_, op_configs[i], i, fallback);
   }
   vector<dnnl::graph::partition> partitions;
   try {
@@ -688,16 +681,14 @@ void Model::ConstructLLGA(
   }
 
   // add Input layer into operators_
-  operators_.push_back(
-      std::make_shared<Dispatcher>(op_configs[0], &execution_options_, this));
+  operators_.push_back(std::make_shared<Dispatcher>(op_configs[0], &execution_options_, this));
   std::set<int> unique_index;
   for (int i = 0; i < partitions.size(); i++) {
     auto partition = partitions[i];
     if (partition.is_supported()) {
       // create llga kernel and add it into operators_
       auto llgakernel = CreateLLGAKernel(op_configs, partition);
-      operators_.push_back(
-          std::make_shared<Dispatcher>(llgakernel, &execution_options_, this));
+      operators_.push_back(std::make_shared<Dispatcher>(llgakernel, &execution_options_, this));
     } else {
       // create original kernel and add it into operators_
       for (auto id : partition.get_ops()) {
@@ -706,16 +697,14 @@ void Model::ConstructLLGA(
           continue;
         } else {
           unique_index.insert(idx);
-          operators_.push_back(std::make_shared<Dispatcher>(
-              op_configs[idx], &execution_options_, this));
+          operators_.push_back(std::make_shared<Dispatcher>(op_configs[idx], &execution_options_, this));
         }
       }
     }
   }
 
   // add Output layer into operators_
-  operators_.push_back(std::make_shared<Dispatcher>(
-      op_configs[op_configs.size() - 1], &execution_options_, this));
+  operators_.push_back(std::make_shared<Dispatcher>(op_configs[op_configs.size() - 1], &execution_options_, this));
 }
 
 }  // namespace executor

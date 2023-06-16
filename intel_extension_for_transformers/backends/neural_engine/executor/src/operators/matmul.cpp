@@ -551,6 +551,19 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
   DstReshapeFusion(input, output);
 }
 
+vector<vector<string>> MatmulOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // append_sum sum_tensor -> output[0]
+  if (!transpose_mode_ && post_ != nullptr && !binary_add_ && post_->left_life() == 1) {
+    inplace_pairs.emplace_back(vector<string>({post_->name(), output[0]->name()}));
+  }
+  return inplace_pairs;
+}
+
 // 2. inference kernel(for int8 and f32)
 void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
@@ -572,7 +585,7 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
-    if (life_count == 1) {
+    if (life_count == 1 && this->get_execution_mode() != ExecutionMode::DEBUG) {
       post_->unref_data(true);
       if (is_dynamic_)
         matmul_fp32_res.set_data(post_data_ptr);

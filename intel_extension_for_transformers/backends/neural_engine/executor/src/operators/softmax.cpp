@@ -362,6 +362,21 @@ void SoftmaxOperator::Reshape_Sparselib(const vector<Tensor*>& input, const vect
   }
 }
 
+vector<vector<string>> SoftmaxOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // input[0] -> output[0]
+  bool forward_dnnl = (output_dtype_ == "fp32" || output_dtype_ == "bf16" || is_dynamic_) ? true : false;
+  if (forward_dnnl && input.size() == 1 && input[0] != nullptr && input[0]->left_life() == 1 &&
+      input[0]->size() >= output[0]->size()) {
+    inplace_pairs.emplace_back(vector<string>({input[0]->name(), output[0]->name()}));
+  }
+  return inplace_pairs;
+}
+
 void SoftmaxOperator::Forward_dnnl(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
   const auto& src_data = input[0]->data();
@@ -376,7 +391,8 @@ void SoftmaxOperator::Forward_dnnl(const vector<Tensor*>& input, const vector<Te
     dst_ptr = &fp32_res;
   }
   vector<Tensor*> inputs(input);
-  if (input.size() == 1 && input[0] != nullptr && input[0]->left_life() == 1 && input[0]->size() >= dst_ptr->size()) {
+  if (input.size() == 1 && input[0] != nullptr && input[0]->left_life() == 1 && input[0]->size() >= dst_ptr->size() &&
+      this->get_execution_mode() != ExecutionMode::DEBUG) {
     void* input_ptr = input[0]->mutable_data();
     input[0]->unref_data(true);
     dst_ptr->set_data(input_ptr);

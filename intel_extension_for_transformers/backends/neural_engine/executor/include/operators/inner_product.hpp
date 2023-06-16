@@ -51,6 +51,7 @@ class InnerProductOperator : public Operator {
   void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
   void ShapeInfer(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void ResetOpStatus(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  vector<vector<string>> InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
