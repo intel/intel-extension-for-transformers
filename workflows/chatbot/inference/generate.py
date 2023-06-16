@@ -2,6 +2,7 @@ import argparse
 import torch
 from peft import PeftModel
 from transformers import GenerationConfig, AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer
+import re
 
 PROMPT_DICT = {
     "prompt_with_input": (
@@ -19,7 +20,7 @@ PROMPT_DICT = {
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-bm", "--base_model_path", type=str, default="")
-    parser.add_argument("-lm", "--lora_model_path", type=str, default="")
+    parser.add_argument("-pm", "--peft_model_path", type=str, default="")
     parser.add_argument(
         "-ins",
         "--instructions",
@@ -32,6 +33,7 @@ def parse_args():
     parser.add_argument("--top_p", type=float, default=0.75, help="The cumulative probability of tokens to keep for sampling.")
     parser.add_argument("--top_k", type=int, default=40, help="The number of highest probability tokens to keep for sampling.")
     parser.add_argument("--repetition_penalty", type=float, default=1.1, help="The penalty applied to repeated tokens.")
+    parser.add_argument("--use_slow_tokenizer", action="store_true", help="Whether to use one of the fast tokenizer (backed by the tokenizers library) or not.")
     args = parser.parse_args()
     return args
 
@@ -47,7 +49,7 @@ def create_prompts(examples):
 def main():
     args = parse_args()
     base_model_path = args.base_model_path
-    lora_model_path = args.lora_model_path
+    peft_model_path = args.peft_model_path
     prompts = create_prompts(
         [{'instruction':instruction, 'input':''} for instruction in args.instructions]
     )
@@ -62,25 +64,33 @@ def main():
     if not 1.0 <= args.repetition_penalty <= 2.0:
         raise ValueError("Repetition penalty must be between 1 and 2.")
 
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(lora_model_path)
-    except:
-        tokenizer = AutoTokenizer.from_pretrained(base_model_path)
-    if "flan-t5" in base_model_path:
-        model = AutoModelForSeq2SeqLM.from_pretrained(base_model_path)
-    else:
-        raise ValueError(f"Unsupported model {base_model_path}, only supports FLAN-T5 now.")
+    tokenizer = AutoTokenizer.from_pretrained(base_model_path, use_fast=not args.use_slow_tokenizer)
 
-    if lora_model_path:
-        model = PeftModel.from_pretrained(model, lora_model_path)
+    if re.search("flan-t5", base_model_path, re.IGNORECASE):
+        model = AutoModelForSeq2SeqLM.from_pretrained(base_model_path)
+    elif re.search("llama", base_model_path, re.IGNORECASE):
+        model = AutoModelForCausalLM.from_pretrained(base_model_path)
+    else:
+        raise ValueError(f"Unsupported model {base_model_path}, only supports FLAN-T5 and LLAMA now.")
+
+    if re.search("llama", model.config.architectures[0], re.IGNORECASE):
+        # unwind broken decapoda-research config
+        model.generation_config.pad_token_id = 0
+        model.generation_config.bos_token_id = 1
+        model.generation_config.eos_token_id = 2
+
+    if hasattr(model.generation_config, "pad_token_id"):
+        tokenizer.pad_token_id = model.generation_config.pad_token_id
+    if hasattr(model.generation_config, "eos_token_id"):
+        tokenizer.eos_token_id = model.generation_config.eos_token_id
+    if hasattr(model.generation_config, "bos_token_id"):
+        tokenizer.bos_token_id = model.generation_config.bos_token_id
+
+    if peft_model_path:
+        model = PeftModel.from_pretrained(model, peft_model_path)
 
     if torch.cuda.is_available():
         model.to(torch.device('cuda'))
-
-    # unwind broken decapoda-research config
-    model.config.pad_token_id = tokenizer.pad_token_id = 0  # unk
-    model.config.bos_token_id = 1
-    model.config.eos_token_id = 2
 
     model.eval()
     def evaluate(
@@ -112,7 +122,7 @@ def main():
                 max_new_tokens=max_new_tokens,
             )
         sequence = generation_output.sequences[0]
-        output = tokenizer.decode(sequence)
+        output = tokenizer.decode(sequence, skip_special_tokens=True)
         if "### Response:" in output:
             return output.split("### Response:")[1].strip()
         elif "<pad> " in output:

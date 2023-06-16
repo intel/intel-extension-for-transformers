@@ -47,7 +47,10 @@ from transformers import (
 )
 from transformers.trainer_utils import is_main_process
 from typing import Optional, List
+import copy
+import re
 
+IGNORE_INDEX = -100
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -241,22 +244,25 @@ PROMPT_DICT = {
     "prompt_with_input": (
         "Below is an instruction that describes a task, paired with an input that provides further context. "
         "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:\n{output}"
+        "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
     ),
     "prompt_without_input": (
         "Below is an instruction that describes a task. "
         "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{instruction}\n\n### Response:\n{output}"
+        "### Instruction:\n{instruction}\n\n### Response:"
     ),
 }
 
 def create_prompts(examples):
-    prompts = []
+    prompts = {}
+    prompts["source"] = []
+    prompts["target"] = []
     for example in examples:
         prompt_template = PROMPT_DICT["prompt_with_input"] \
             if example["input"] != "" else PROMPT_DICT["prompt_without_input"]
-        prompt = prompt_template.format_map(example)
-        prompts.append(prompt)
+        source = prompt_template.format_map(example)
+        prompts["source"].append(source)
+        prompts["target"].append(example["output"])
     return prompts
 
 def main():
@@ -413,12 +419,36 @@ def main():
     for key in raw_datasets:
         prompts = create_prompts(raw_datasets[key])
         columns_to_be_removed = list(raw_datasets[key].features.keys())
-        raw_datasets[key] = raw_datasets[key].add_column("prompts", prompts)
+        raw_datasets[key] = raw_datasets[key].add_column("prompt_sources", prompts["source"])
+        raw_datasets[key] = raw_datasets[key].add_column("prompt_targets", prompts["target"])
         raw_datasets[key] = raw_datasets[key].remove_columns(columns_to_be_removed)
 
-    tokenizer.pad_token_id = (
-        0  # unk. we want this to be different from the eos token
-    )
+    # Load model
+    if model_args.model_name_or_path:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+        )
+        model.resize_token_embeddings(len(tokenizer))
+    else:
+        raise ValueError("Must provide model_name_or_path to load a pretrained CausalLM model.")
+
+    if re.search("llama", model.config.architectures[0], re.IGNORECASE):
+        # unwind broken decapoda-research config
+        model.generation_config.pad_token_id = 0
+        model.generation_config.bos_token_id = 1
+        model.generation_config.eos_token_id = 2
+
+    if hasattr(model.generation_config, "pad_token_id"):
+        tokenizer.pad_token_id = model.generation_config.pad_token_id
+    if hasattr(model.generation_config, "eos_token_id"):
+        tokenizer.eos_token_id = model.generation_config.eos_token_id
+    if hasattr(model.generation_config, "bos_token_id"):
+        tokenizer.bos_token_id = model.generation_config.bos_token_id
     tokenizer.padding_side = "left"  # Allow batched inference
 
     def tokenize(prompt, add_eos_token=True):
@@ -438,12 +468,20 @@ def main():
                 results["input_ids"][i].append(tokenizer.eos_token_id)
                 results["attention_mask"][i].append(1)
 
-        results["labels"] = results["input_ids"].copy()
-
+        results["labels"] = copy.deepcopy(results["input_ids"])
+        results["input_id_len"] = [len(result) for result in results["input_ids"]]
         return results
 
+
     def preprocess_function(examples):
-        return tokenize(examples["prompts"])
+        st = [s + t for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])]
+        examples_tokenized = tokenize(st)
+        sources_tokenized = tokenize(examples["prompt_sources"],add_eos_token=False)
+        input_ids = examples_tokenized["input_ids"]
+        labels = examples_tokenized["labels"]
+        for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
+            label[:source_len] = [IGNORE_INDEX] * source_len
+        return dict(input_ids=input_ids, labels=labels, attention_mask=examples_tokenized["attention_mask"])
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
         tokenized_datasets = raw_datasets.map(
@@ -459,7 +497,7 @@ def main():
                     for i in range(len(concatenated_data) // max_seq_length)]
                 concatenated_dataset[column] = reshaped_data
             return datasets.Dataset.from_dict(concatenated_dataset)
-        tokenized_datasets_ = tokenized_datasets["train"].remove_columns("prompts")
+        tokenized_datasets_ = tokenized_datasets["train"].remove_columns(["prompt_sources","prompt_targets"])
         tokenized_datasets["train"] = concatenate_data(tokenized_datasets_, data_args.max_seq_length)
 
     if training_args.do_train:
@@ -483,19 +521,6 @@ def main():
     )
     logger.info("Using data collator of type {}".format(data_collator.__class__.__name__))
 
-    # Load model
-    if model_args.model_name_or_path:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
-        )
-        model.resize_token_embeddings(len(tokenizer))
-    else:
-        raise ValueError("Must provide model_name_or_path to load a pretrained CausalLM model.")
 
 
     if training_args.do_train:
@@ -545,7 +570,6 @@ def main():
             if is_main_process(training_args.local_rank):
                 unwrapped_model = unwrap_model(model)
                 unwrapped_model.save_pretrained(training_args.output_dir, state_dict=unwrapped_model.state_dict())
-                tokenizer.save_pretrained(training_args.output_dir)
 
 if __name__ == "__main__":
     main()

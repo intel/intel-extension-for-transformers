@@ -77,8 +77,9 @@ python finetune_clm.py \
         --overwrite_output_dir \
         --log_level info \
         --save_strategy epoch \
-        --output_dir ./llama_finetuned_model \
+        --output_dir ./llama_peft_finetuned_model \
         --peft lora \
+        --use_fast_tokenizer false \
 ```
 
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
@@ -87,7 +88,8 @@ For finetuning on SPR, add `--bf16` argument will speedup the finetuning process
 you could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LORA,
 see https://github.com/huggingface/peft
 
-add option "--use_fast_tokenizer False" when using latest transformers if you meet failure in llama fast tokenizer
+add option "--use_fast_tokenizer False" when using latest transformers if you meet failure in llama fast tokenizer  
+for llama, The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`
 
 ## 2. Multi-node Fine-tuning
 
@@ -124,16 +126,85 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
         --overwrite_output_dir \
         --output_dir ./flan-t5-xl_peft_finetuned_model
 ```
+
+If you have enabled passwordless SSH in cpu clusters, you could also use mpirun in master node to start the DDP finetune. Take llama alpaca finetune for example. follow the [hugginface guide](https://huggingface.co/docs/transformers/perf_train_cpu_many) to install Intel® oneCCL Bindings for PyTorch, IPEX
+
+oneccl_bindings_for_pytorch is installed along with the MPI tool set. Need to source the environment before using it.
+
+for Intel® oneCCL >= 1.12.0
+``` bash
+oneccl_bindings_for_pytorch_path=$(python -c "from oneccl_bindings_for_pytorch import cwd; print(cwd)")
+source $oneccl_bindings_for_pytorch_path/env/setvars.sh
+```
+
+for Intel® oneCCL whose version < 1.12.0
+``` bash
+torch_ccl_path=$(python -c "import torch; import torch_ccl; import os;  print(os.path.abspath(os.path.dirname(torch_ccl.__file__)))")
+source $torch_ccl_path/env/setvars.sh
+```
+
+The following command enables training with a total of 16 processes on 4 Xeons (node0/1/2/3, 2 sockets each node. taking node0 as the master node), ppn (processes per node) is set to 4, with two processes running per one socket. The variables OMP_NUM_THREADS/CCL_WORKER_COUNT can be tuned for optimal performance.
+
+In node0, you need to create a configuration file which contains the IP addresses of each node (for example hostfile) and pass that configuration file path as an argument.
+``` bash
+ cat hostfile
+ xxx.xxx.xxx.xxx #node0 ip
+ xxx.xxx.xxx.xxx #node1 ip
+ xxx.xxx.xxx.xxx #node2 ip
+ xxx.xxx.xxx.xxx #node3 ip
+```
+Now, run the following command in node0 and **4DDP** will be enabled in node0 and node1 with BF16 auto mixed precision:
+``` bash
+export CCL_WORKER_COUNT=1
+export MASTER_ADDR=xxx.xxx.xxx.xxx #node0 ip
+mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
+    --model_name_or_path decapoda-research/llama-7b-hf \
+    --train_file ./alpaca_data.json \
+    --bf16 True \
+    --output_dir ./llama_peft_finetuned_model \
+    --num_train_epochs 3 \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 4 \
+    --gradient_accumulation_steps 1 \
+    --evaluation_strategy "no" \
+    --save_strategy "steps" \
+    --save_steps 2000 \
+    --save_total_limit 1 \
+    --learning_rate 2e-5 \
+    --weight_decay 0. \
+    --warmup_ratio 0.03 \
+    --lr_scheduler_type "cosine" \
+    --logging_steps 1 \
+    --peft ptun \
+    --group_by_length True \
+    --dataset_concatenation \
+    --use_fast_tokenizer false \
+    --do_train \
+
+```
+you could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LORA,
+see https://github.com/huggingface/peft
+
 # Chat with the Finetuned Model
 
-Once the model is finetuned, use the below command line to chat with it.
+Once the model is finetuned, use the below command line to chat with it. Take t5 as example, and you could extend it to other models.
 ```bash
 python generate.py \
         --base_model_path "google/flan-t5-xl" \
-        --lora_model_path "./flan-t5-xl_peft_finetuned_model" \
+        --peft_model_path "./flan-t5-xl_peft_finetuned_model" \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
+add option "--use_slow_tokenizer" when using latest transformers if you meet failure in llama fast tokenizer  
+for llama, The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`
+
+```bash
+python generate.py \
+        --base_model_path "decapoda-research/llama-7b-hf" \
+        --peft_model_path "./llama_peft_finetuned_model" \
+        --use_slow_tokenizer \
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
+```
 
 # Purpose of the NeuralChat for Intel Architecture
 
