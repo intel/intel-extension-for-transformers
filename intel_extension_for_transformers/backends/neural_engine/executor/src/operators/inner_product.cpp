@@ -927,7 +927,7 @@ void InnerProductOperator::ReshapeSparseLib(const vector<Tensor*>& input, const 
     vector<int64_t> dst_2d_shape = {src0_->shape()[0], src1_3d_shape[0] * src1_3d_shape[2]};
     // pass SparseLib gemm 3D shape in INFERENCE mode
     // the ops after it will do attrs and tensor adaptation
-    if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE) {
+    if (this->get_execution_mode() == ExecutionMode::INFERENCE) {
       src1_->set_shape(src1_3d_shape);
       dst_->set_shape(dst_3d_shape);
     } else {
@@ -998,7 +998,7 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
-    if (life_count == 1) {
+    if (life_count == 1 && this->get_execution_mode() != ExecutionMode::DEBUG) {
       post_->unref_data(true);
       dst_->set_data(post_data_ptr);
       dst_data = post_data_ptr;
@@ -1071,7 +1071,7 @@ void InnerProductOperator::AdaptTensors(const vector<Tensor*>& input, const vect
     if (kernel_type_ == SparseLib) {
       // INFERENCE mode will try to reduce order operations times as few as
       // possible
-      if (execution_options_ptr_->execution_mode != ExecutionMode::INFERENCE) {
+      if (this->get_execution_mode() != ExecutionMode::INFERENCE) {
         // reorder dst, src and post activation back (optional)
         // DEBUG and TUNING mode require all the tensors' format to keep same
         // before and after the op
@@ -1416,12 +1416,12 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
         any_src1_m.set_data_handle(cached_w_ptr);
       }
       dnnl::reorder(any_src1_m_last_, any_src1_m).execute(eng_stream_, any_src1_m_last_, any_src1_m);
-      if (src1_->is_shared() && execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE &&
+      if (src1_->is_shared() && this->get_execution_mode() == ExecutionMode::INFERENCE &&
           src1_->life() <= 1) {
         MemoryAllocator::ManagedShm().destroy_ptr(src1_->mutable_data());
         src1_->set_shm_handle(MemoryAllocator::ManagedShm().get_handle_from_address(cached_w_ptr));
       } else {
-        if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE && src1_->life() <= 1) {
+        if (this->get_execution_mode() == ExecutionMode::INFERENCE && src1_->life() <= 1) {
           if (MemoryAllocator::CheckMemory(src1_->mutable_data()) == -1) {
             aligned_free(src1_->mutable_data());
           } else {
@@ -1449,12 +1449,12 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
           any_bias_m.set_data_handle(cached_b_ptr);
         }
         dnnl::reorder(any_bias_m_last_, any_bias_m).execute(eng_stream_, any_bias_m_last_, any_bias_m);
-        if (bias_->is_shared() && execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE &&
+        if (bias_->is_shared() && this->get_execution_mode() == ExecutionMode::INFERENCE &&
             bias_->life() <= 1) {
           MemoryAllocator::ManagedShm().destroy_ptr(bias_->mutable_data());
           bias_->set_shm_handle(MemoryAllocator::ManagedShm().get_handle_from_address(cached_b_ptr));
         } else {
-          if (execution_options_ptr_->execution_mode == ExecutionMode::INFERENCE && bias_->life() <= 1) {
+          if (this->get_execution_mode() == ExecutionMode::INFERENCE && bias_->life() <= 1) {
             if (MemoryAllocator::CheckMemory(bias_->mutable_data()) == -1) {
               aligned_free(bias_->mutable_data());
             } else {
@@ -1485,6 +1485,20 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   }
   DstReshapeFusion(input, output);
 }
+
+vector<vector<string>> InnerProductOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // append_sum sum_tensor -> output[0]
+  if (post_ != nullptr && !binary_add_ && post_->left_life() == 1) {
+    inplace_pairs.emplace_back(vector<string>({post_->name(), output[0]->name()}));
+  }
+  return inplace_pairs;
+}
+
 //  2. inference kernel(for int8 and f32)
 void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
@@ -1501,7 +1515,7 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
     void* post_data_ptr = const_cast<void*>(post_->data());
     auto life_count = MemoryAllocator::get().CheckMemory(post_data_ptr);
     // MemoryAllocate::check_tensor_life
-    if (life_count == 1) {
+    if (life_count == 1 && this->get_execution_mode() != ExecutionMode::DEBUG) {
       post_->unref_data(true);
       if (is_dynamic_)
         inner_product_dynamic_res_->set_data(post_data_ptr);

@@ -35,6 +35,7 @@ class ErfOperator : public Operator {
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  vector<vector<string>> InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 };
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_ERF_HPP_

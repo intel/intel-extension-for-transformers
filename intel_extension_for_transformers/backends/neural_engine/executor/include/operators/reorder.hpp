@@ -43,6 +43,7 @@ class ReorderOperator : public Operator {
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
   void AdaptTensors(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) override;
+  vector<vector<string>> InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);

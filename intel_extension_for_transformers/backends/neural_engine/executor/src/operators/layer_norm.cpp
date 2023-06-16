@@ -243,6 +243,20 @@ void LayerNormOperator::ReshapewithOnednn(const vector<Tensor*>& input, const ve
   memory_args_[DNNL_ARG_SCALE_SHIFT] = scale_shift_m;
 }
 
+vector<vector<string>> LayerNormOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // input[0] -> output[0]
+  if (!transpose_mode_ && input.size() == 3 && input[0] != nullptr && input[0]->left_life() == 1 &&
+      input[0]->size() >= output[0]->size() && input[0]->dtype() == output[0]->dtype()) {
+    inplace_pairs.emplace_back(vector<string>({input[0]->name(), output[0]->name()}));
+  }
+  return inplace_pairs;
+}
+
 void LayerNormOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // 0. Alias variables part
   const auto& src_data = input[0]->data();
@@ -251,7 +265,8 @@ void LayerNormOperator::ForwardwithOnednn(const vector<Tensor*>& input, const ve
   Tensor* dst_ptr = output[0];
   vector<Tensor*> inputs(input);
   if (input.size() == 3 && input[0] != nullptr && input[0]->left_life() == 1 &&
-      input[0]->size() >= dst_ptr->size() && input[0]->dtype() == output[0]->dtype()) {
+      input[0]->size() >= dst_ptr->size() && input[0]->dtype() == output[0]->dtype() &&
+      this->get_execution_mode() != ExecutionMode::DEBUG) {
     void* input_ptr = input[0]->mutable_data();
     input[0]->unref_data(true);
     dst_ptr->set_data(input_ptr);

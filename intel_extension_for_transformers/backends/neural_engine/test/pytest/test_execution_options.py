@@ -17,7 +17,6 @@
 
 import unittest
 import numpy as np
-import intel_extension_for_transformers.neural_engine_py as dp
 import os
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS
 from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
@@ -48,7 +47,8 @@ class TestExecutionOptions(unittest.TestCase):
                         data=np.random.randn(256, 256).astype(np.float32)),
                         Tensor(name="bias", shape=[256], dtype="fp32",
                         data=np.random.randn(256).astype(np.float32))]
-        output_tensors = [Tensor(name='ip:0', source_op=['ip'], dest_op=['output_data'])]
+        output_tensors = [Tensor(name='ip:0', source_op=['ip'], dest_op=['output_data']),
+                          Tensor(name='ip:1', source_op=['ip'], dest_op=['output_data'])]
         ip_node.construct('ip', 'InnerProduct', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
         output_node = OPERATORS['Output']()
@@ -57,16 +57,23 @@ class TestExecutionOptions(unittest.TestCase):
         output_node.construct('output_data', 'Output', input_tensors=input_tensors,
                                 output_tensors=output_tensors)
         graph.insert_nodes(len(graph.nodes), [input_data_node, ip_node, output_node])
-        options = dp.ExecutionOptions()
+        graph.change_node_output_tensors('ip', -1, mode='remove')
+        options = {'enable_op_tuning': True,
+                   'dispatch_table_file_root': 'dispatch_table.txt',
+                   'execution_mode': 'tuning',
+                   'warmup_iter': 2
+                  }
         data = np.random.randn(128, 256).astype(np.float32)
-        options.enable_op_tuning = True
         graph.execution_options = options
         output_tuning = []
         for i in range(10):
             out = graph.inference([data])
             output_tuning.append(copy.deepcopy(out['ip:0']))
         output_inference = []
-        options.enable_op_tuning = False
+        options = {'enable_op_tuning': False,
+                   'dispatch_table_file_root': 'dispatch_table.txt',
+                   'execution_mode': 'inference'
+                   }
         graph.execution_options = options
         for i in range(10):
             out = graph.inference([data])

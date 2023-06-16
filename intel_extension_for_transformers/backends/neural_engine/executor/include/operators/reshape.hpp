@@ -16,6 +16,7 @@
 #define ENGINE_EXECUTOR_INCLUDE_OPERATORS_RESHAPE_HPP_
 #include <vector>
 #include <memory>
+#include <string>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -36,6 +37,7 @@ class ReshapeOperator : public Operator {
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+  vector<vector<string>> InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
   vector<int64_t> shape_;
   vector<int64_t> dims_;

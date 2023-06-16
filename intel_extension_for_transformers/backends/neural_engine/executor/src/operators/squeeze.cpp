@@ -46,11 +46,24 @@ void SqueezeOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
   output[0]->set_shape(out_shape);
 }
 
+vector<vector<string>> SqueezeOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // input[0] -> output[0]
+  if (input[0] != nullptr && input[0]->left_life() == 1) {
+    inplace_pairs.emplace_back(vector<string>({input[0]->name(), output[0]->name()}));
+  }
+  return inplace_pairs;
+}
+
 void SqueezeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   Tensor* src_ptr = input[0];
   Tensor* dst_ptr = output[0];
   auto src_data = src_ptr->mutable_data();
-  if (input[0]->left_life() == 1) {
+  if (input[0]->left_life() == 1 && this->get_execution_mode() != ExecutionMode::DEBUG) {
     src_ptr->unref_data(true);
     dst_ptr->set_data(src_data);
   } else {

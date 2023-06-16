@@ -53,6 +53,7 @@ class LayerNormOperator : public Operator {
   void ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
 
   void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
+  vector<vector<string>> InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
 
  private:
   std::string output_dtype_;

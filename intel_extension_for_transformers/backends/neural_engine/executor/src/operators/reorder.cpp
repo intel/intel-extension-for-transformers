@@ -142,12 +142,25 @@ void ReorderOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
   dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
 }
 
+vector<vector<string>> ReorderOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  vector<vector<string>> inplace_pairs;
+  // skip inplace in debug mode
+  if (this->get_execution_mode() == ExecutionMode::DEBUG) {
+    return inplace_pairs;
+  }
+  // append_sum sum_tensor -> output[0]
+  if (post_ != nullptr && post_->left_life() == 1) {
+    inplace_pairs.emplace_back(vector<string>({post_->name(), output[0]->name()}));
+  }
+  return inplace_pairs;
+}
+
 // 2. inference kernel(for int8 and f32)
 void ReorderOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   if (post_ != nullptr) {
     DLOG(INFO) << "reorder has post op " << post_->name();
     void* post_ptr = post_->mutable_data();
-    if (post_->left_life() == 1) {
+    if (post_->left_life() == 1 && this->get_execution_mode() != ExecutionMode::DEBUG) {
       post_->unref_data(true);
       dst_->set_data(post_ptr);
     } else {

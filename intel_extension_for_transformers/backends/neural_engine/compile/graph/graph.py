@@ -41,6 +41,14 @@ class Graph(object):
         self._framework_modeling_config = {'framework': None}
         self._input_tensors_name = []
         self._output_tensors_name = []
+        self._max_input_shapes_list = None
+        self._do_activation_mem_compression = True if "ENGINE_ACTIVATION_MEM_COMPRESSION" in \
+                                              os.environ else False
+        self._refresh_max_input_shapes_list = False
+        # For engine_init.
+        # Only init them when load_weight = False
+        self._config_root = None
+        self._weight_root = None
 
     @property
     def nodes(self):
@@ -61,8 +69,8 @@ class Graph(object):
             "options when inference, like 'graph.execution_options = your_new_options'. "
             "Do not use 'graph.execution_options.some_option = value' directly!")
         # pylint: disable=E0611
-        import intel_extension_for_transformers.neural_engine_py as dp
-        options = dp.ExecutionOptions()
+        import intel_extension_for_transformers.neural_engine_py as ne
+        options = ne.ExecutionOptions()
         options_list = [
             option for option in dir(options)
             if not option.startswith("__") and not option.startswith("__")
@@ -76,8 +84,60 @@ class Graph(object):
     @execution_options.setter
     def execution_options(self, options):
         """Set execution_options"""
-        self._execution_options = options
+        # pylint: disable=E0611
+        import intel_extension_for_transformers.neural_engine_py as ne
+        if isinstance(options, ne.ExecutionOptions):
+            self._execution_options = options
+        else:
+            assert isinstance(options, dict), "options should a dictionary!"
+            ne_options = ne.ExecutionOptions()
+            # convert user's dict
+            def set_execution_mode(v):
+                assert isinstance(v, str), "execution_mode should be string."
+                if v == "inference":
+                    ne_options.execution_mode = ne.ExecutionMode.INFERENCE
+                elif v == "debug":
+                    ne_options.execution_mode = ne.ExecutionMode.DEBUG
+                elif v == "tuning":
+                    ne_options.execution_mode = ne.ExecutionMode.TUNING
+                else:
+                    logger.error('execution_mode value should be inference, debug or tuning.')
+
+            def set_enable_op_tuning(v):
+                assert isinstance(v, bool), "enable_op_tuning shoule be True or False."
+                ne_options.enable_op_tuning = v
+
+            def set_warmup_iter(v):
+                assert isinstance(v, int), "warmup_iter should be int."
+                ne_options.warmup_iter = v
+
+            def set_dispatch_table_file_root(v):
+                assert isinstance(v, str), "dispatch_table_file_root should be string."
+                ne_options.dispatch_table_file_root = os.path.join(os.getcwd(), v)
+
+            def set_activation_mem_compression(v):
+                assert isinstance(v, bool), "activation_mem_compression shoule be True or False."
+                ne_options.activation_mem_compression = v
+
+            def set_dump_activation_dag(v):
+                assert isinstance(v, bool), "dump_activation_dag shoule be True or False."
+                ne_options.dump_activation_dag = v
+
+            convert_options = {'execution_mode': set_execution_mode,
+                               'enable_op_tuning': set_enable_op_tuning,
+                               'warmup_iter': set_warmup_iter,
+                               'dispatch_table_file_root': set_dispatch_table_file_root,
+                               'activation_mem_compression': set_activation_mem_compression,
+                               'dump_activation_dag': set_dump_activation_dag}
+            for k, v in options.items():
+                if k in convert_options:
+                    convert_options[k](v)
+                else:
+                    logger.error("{} is invalid execution options.".format(k))
+            self._execution_options = ne_options
+
         self._refresh_execution_options = True
+        self._do_activation_mem_compression = self._execution_options.activation_mem_compression
 
     @property
     def framework_modeling_config(self):
@@ -119,6 +179,20 @@ class Graph(object):
     def output_tensors_name(self, name_list):
         """Set output_tensors_name"""
         self._output_tensors_name = name_list
+
+    @property
+    def max_input_shapes_list(self):
+        """Get max_input_shapes"""
+        return self._max_input_shapes_list
+
+    @max_input_shapes_list.setter
+    def max_input_shapes_list(self, input_shapes_list):
+        """Set max_input_shapes"""
+        assert (isinstance(input_shapes_list, list) and isinstance(input_shapes_list[0], list) \
+               and isinstance(input_shapes_list[0][0], list)) or input_shapes_list == None, \
+               "max_input_shape should be None or List[List[List]]!"
+        self._max_input_shapes_list = input_shapes_list
+        self._refresh_max_input_shapes_list = True
 
     def insert_nodes(self, index, nodes):
         """Insert nodes to neural engine IR."""
@@ -225,7 +299,7 @@ class Graph(object):
         """Modify the output tensors of the node."""
         assert mode in ['insert', 'remove', 'modify'], 'Wrong mode'
         node = self.get_node_by_name(node_name)
-        index = index if index >= 0 else len(node.input_tensors) + index
+        index = index if index >= 0 else len(node.output_tensors) + index
         node_index = self.get_node_id(node_name)
         if mode == 'remove':
             tensor = node.output_tensors[index]
@@ -407,75 +481,99 @@ class Graph(object):
 
         return net_info
 
-    def engine_init(self, net_info={}, weight_data=b""):
+    def engine_init(self, net_info={}, weight_data=b"", refresh_model=True):
         """Pybind engine executor."""
-        # pylint: disable=E0611
-        import intel_extension_for_transformers.neural_engine_py as dp
-        if not weight_data:
-            weight_data = self.weight_data
-        if not net_info:
-            net_info = self.net_config
-        op_configs = []
-        tensor_output = []
-        tensor_input = []
-        attr_map_list = []
-        for node in net_info['model']['operator']:
-            tensor_input.append([])
-            tensor_output.append([])
-            opeartor = net_info['model']['operator'][node]
-            if 'input' in opeartor.keys():
-                for input_name in opeartor['input']:
-                    input_tensor = dp.tensor_config(input_name, [], "fp32", [], [])
-                    tensor_input[-1].append(input_tensor)
+        if refresh_model:
+            # pylint: disable=E0611
+            import intel_extension_for_transformers.neural_engine_py as ne
+            if not weight_data:
+                weight_data = self._weight_root if self._weight_root else self.weight_data
+            if not net_info:
+                net_info = self._config_root if self._config_root else self.net_config
+            op_configs = []
+            tensor_output = []
+            tensor_input = []
+            attr_map_list = []
+            output_list = []
+            if isinstance(net_info, dict) and not self._config_root:
+                for node in net_info['model']['operator']:
+                    tensor_input.append([])
+                    tensor_output.append([])
+                    opeartor = net_info['model']['operator'][node]
+                    if 'input' in opeartor.keys():
+                        for input_name in opeartor['input']:
+                            input_tensor = ne.tensor_config(input_name, [], "fp32", [], [])
+                            tensor_input[-1].append(input_tensor)
 
-            if 'output' in opeartor.keys():
-                for (output_name, attrs) in opeartor['output'].items():
-                    tensor_location = []
-                    if 'location' in attrs.keys():
-                        tensor_location = attrs['location']
-                    tensor_strides = []
-                    if "strides" in attrs.keys():
-                        tensor_strides = attrs["strides"]
-                    tensor_shape = []
-                    if "shape" in attrs.keys():
-                        tensor_shape = attrs["shape"]
-                    tensor_dtype = 'fp32'
-                    if "dtype" in attrs.keys():
-                        tensor_dtype = attrs["dtype"]
-                    output_tensor = dp.tensor_config(output_name, tensor_shape, tensor_dtype,
-                                                     tensor_strides, tensor_location)
-                    tensor_output[-1].append(output_tensor)
+                    if 'output' in opeartor.keys():
+                        for (output_name, attrs) in opeartor['output'].items():
+                            tensor_location = []
+                            if 'location' in attrs.keys():
+                                tensor_location = attrs['location']
+                            tensor_strides = []
+                            if "strides" in attrs.keys():
+                                tensor_strides = attrs["strides"]
+                            tensor_shape = []
+                            if "shape" in attrs.keys():
+                                tensor_shape = attrs["shape"]
+                            tensor_dtype = 'fp32'
+                            if "dtype" in attrs.keys():
+                                tensor_dtype = attrs["dtype"]
+                            output_tensor = ne.tensor_config(output_name, tensor_shape,
+                                                             tensor_dtype, tensor_strides,
+                                                             tensor_location)
+                            tensor_output[-1].append(output_tensor)
 
-            if 'attr' in opeartor.keys():
-                op_attr = opeartor['attr']
-                attr_maps = {}
-                for (k, v) in op_attr.items():
-                    attr_maps[str(k)] = str(v)
-                attr_map_item = dp.attrs_config(attr_maps)
-                attr_map_list.append(attr_map_item)
+                    if 'attr' in opeartor.keys():
+                        op_attr = opeartor['attr']
+                        attr_maps = {}
+                        for (k, v) in op_attr.items():
+                            attr_maps[str(k)] = str(v)
+                        attr_map_item = ne.attrs_config(attr_maps)
+                        attr_map_list.append(attr_map_item)
+                    else:
+                        attr_map = ne.attrs_config({})
+                        attr_map_list.append(attr_map)
+                    op_type = net_info['model']['operator'][node]['type']
+                    op_config = ne.op_config(str(node), str(op_type), tensor_input[-1],
+                                            tensor_output[-1], attr_map_list[-1])
+                    op_configs.append(op_config)
+
+                model_config = ne.model_config(net_info['model']['name'], op_configs)
+                for node in net_info['model']['operator']['output_data']['input']:
+                    output_list.append(node)
             else:
-                attr_map = dp.attrs_config({})
-                attr_map_list.append(attr_map)
-            op_type = net_info['model']['operator'][node]['type']
-            op_config = dp.op_config(str(node), str(op_type), tensor_input[-1], tensor_output[-1],
-                                     attr_map_list[-1])
-            op_configs.append(op_config)
+                model_config = net_info
+                with open(model_config, 'r', encoding='utf-8') as f:
+                    cfg = f.read()
+                d = yaml.load(cfg, Loader=yaml.FullLoader)
+                for node in d['model']['operator']:
+                    if d['model']['operator'][node]['type'] == 'Output':
+                        for tensor_name in d['model']['operator'][node]['input']:
+                            output_list.append(tensor_name)
+                    else:
+                        continue
+            if self._execution_options:
+                model = ne.Model(model_config, weight_data, self._execution_options)
+            else:
+                model = ne.Model(model_config, weight_data)
+            self._engine = [model, output_list, op_configs, tensor_output, tensor_input,
+                            attr_map_list]
 
-        model_config = dp.model_config(net_info['model']['name'], op_configs)
-        output_list = []
-        for node in net_info['model']['operator']['output_data']['input']:
-            output_list.append(node)
-        if self._execution_options:
-            model = dp.Model(model_config, weight_data, self._execution_options)
-        else:
-            model = dp.Model(model_config, weight_data)
-        self._engine = [model, output_list, op_configs, tensor_output, tensor_input, attr_map_list]
+        if self._do_activation_mem_compression and self._max_input_shapes_list and \
+           len(self._max_input_shapes_list) > 0:
+            self._activation_mem_compression(self._max_input_shapes_list)
+            self._refresh_max_input_shapes_list = False
 
     def inference(self, input_data):
         """The inference API of the neural engine."""
+        # executor model init
         if self._refresh_execution_options or self._engine is None:
             self.engine_init()
             self._refresh_execution_options = False
+        # update activation memory compresion when give different model input shapes
+        if self._refresh_max_input_shapes_list and self._do_activation_mem_compression and self._engine:
+            self.engine_init(refresh_model=False)
         output = self._engine[0].forward(input_data)
         index = 0
         output_dict = OrderedDict()
@@ -586,10 +684,8 @@ class Graph(object):
                                          copy.deepcopy(output_tensors), attr)
             self.insert_nodes(len(self.nodes), [op])
         if not load_weight and weight_data:
-            # pylint: disable=E0611
-            import intel_extension_for_transformers.neural_engine_py as dp
-            model = dp.Model(config, weight_data)
-            self._engine = [model, output_list]
+            self._config_root = config
+            self._weight_root = weight_data
         if bin_file:
             bin_file.close()
 
@@ -1502,3 +1598,10 @@ class Graph(object):
         _merged_matmul_fusion()
 
         logger.info("Transpose_mode_int8 done")
+
+    def _activation_mem_compression(self, input_shapes_list):
+        if self._engine and input_shapes_list and len(input_shapes_list) > 0:
+            self._engine[0].activation_mem_compression(input_shapes_list)
+        else:
+            logger.warning("Skip activation_mem_compression due to empty engine model or " \
+                               "empty input_shapes.")

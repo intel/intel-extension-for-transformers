@@ -60,9 +60,7 @@ model.graph_init(conf.yaml, model.bin)
 # or get model from compile
 from intel_extension_for_transformers.backends.neural_engine.compile import compile
 model = compile(model.onnx)
-import intel_extension_for_transformers.neural_engine_py as dp
-options = dp.ExecutionOptions()
-options.enable_op_tuning = True
+options = {'enable_op_tuning': True}
 model.execution_options = options
 # inference with fixed shape data
 model.inference([data])
@@ -90,13 +88,12 @@ InnerProduct 14124194128933833351 SparseLib 4,1024,384 0 2
 You can set the table file path and tuning warmup iterations if you want to simulate real deployment conditions.
 
 ```python
-import intel_extension_for_transformers.neural_engine_py as dp
-options = dp.ExecutionOptions()
-options.enable_op_tuning = True
-# set tuning warmup iterations
-options.warmup_iter = num_iterations
-# set table file path
-options.dispatch_table_file_root = file_root
+options = {'enable_op_tuning': True,
+           # set tuning warmup iterations
+           'warmup_iter': num_iterations,
+           # set table file path
+           'dispatch_table_file_root': file_root,
+}
 model.execution_options = options
 # inference with multi-iterations
 for i in range(iterations):
@@ -116,18 +113,19 @@ for i in range(iterations):
 # get performance here
 
 # 2. tuning
-import intel_extension_for_transformers.neural_engine_py as dp
-options = dp.ExecutionOptions()
-options.enable_op_tuning = True
-options.warmup_iter = num_iterations
-options.dispatch_table_file_root = file_root
+options = {'enable_op_tuning': True,
+           # set tuning warmup iterations
+           'warmup_iter': num_iterations,
+           # set table file path
+           'dispatch_table_file_root': file_root,
+}
 model.execution_options = options
 for i in range(iterations):
     model.inference([data])
 # get performance here
 
 # 3. after tuning
-options.enable_op_tuning = False
+options = {'enable_op_tuning': False}
 model.execution_options = options
 for i in range(iterations):
     model.inference([data])

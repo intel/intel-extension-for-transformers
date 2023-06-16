@@ -53,6 +53,8 @@ class MatmulOperator : public Operator {
   void ForwardwithTransMode(const vector<Tensor*>& input, const vector<Tensor*>& output);
 #endif
 
+  vector<vector<string>> InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
+
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,

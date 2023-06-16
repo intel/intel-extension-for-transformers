@@ -138,7 +138,7 @@ class Tensor {
       data_ = MemoryAllocator::ManagedShm().get_address_from_handle(shm_handle_);
     }
     if (data_ == nullptr) {
-      data_ = MemoryAllocator::get().GetMemory(this->size() * type2bytes[this->dtype()], this->life());
+      data_ = MemoryAllocator::get().GetMemory(this->size() * type2bytes[this->dtype()], this->life(), this->name());
       // MemoryAllocator::get().SetName(data_, this->name());
     }
     return data_;
@@ -148,7 +148,7 @@ class Tensor {
       data_ = MemoryAllocator::ManagedShm().get_address_from_handle(shm_handle_);
     }
     if (data_ == nullptr) {
-      data_ = MemoryAllocator::get().GetMemory(this->size() * type2bytes[this->dtype()], this->life());
+      data_ = MemoryAllocator::get().GetMemory(this->size() * type2bytes[this->dtype()], this->life(), this->name());
       // MemoryAllocator::get().SetName(data_, this->name());
     }
     return data_;
@@ -204,7 +204,10 @@ class Tensor {
 
   void set_transpose(const bool& transpose = true) { is_transposed_ = transpose; }
 
-  void add_tensor_life(const int count) { life_count_ += count; }
+  void add_tensor_life(const int count) {
+    life_count_ += count;
+    left_life_ += count;
+  }
 
   // add extra tensor life for op tuning
   // need to reset to real life_count after tuning
@@ -259,7 +262,10 @@ class Tensor {
     this->set_shape(dst_shape);
   }
 
-  inline size_t size() { return std::accumulate(shape_.begin(), shape_.end(), size_t(1), std::multiplies<size_t>()); }
+  inline size_t size() const {
+    return std::accumulate(shape_.begin(), shape_.end(), size_t(1), std::multiplies<size_t>());
+  }
+  inline size_t alloc_bytes() const { return this->size() * type2bytes[dtype_]; }
 
   void set_shm_handle(const ipc::managed_shared_memory::handle_t& h) { shm_handle_ = h; }
   bool is_shared() { return shm_handle_ != 0; }
@@ -267,7 +273,11 @@ class Tensor {
   inline const string& name() const { return name_; }
   inline const int life() const { return life_count_; }
   inline const int left_life() const {
-    return MemoryAllocator::get().CheckMemory(data_);
+    if (data_ == nullptr && left_life_ > 0) {
+      return left_life_;
+    } else {
+      return MemoryAllocator::get().CheckMemory(data_);
+    }
   }  // return -1 represent the data should always be hold.
   inline const void* raw_data() const { return data_; }
   inline const vector<int64_t>& shape() const { return shape_; }
@@ -277,6 +287,7 @@ class Tensor {
   inline const bool& is_transposed() const { return is_transposed_; }
   inline const TensorFormat& tensor_format() const { return tensor_format_; }
   inline void set_tensor_format(const TensorFormat& format) { tensor_format_ = format; }
+  inline void decrease_left_life(const int& l = 1) { left_life_ -= l; }
 
  protected:
   string name_;
@@ -294,6 +305,8 @@ class Tensor {
   int life_count_ = 0;
   // for op tuning memory handling
   int disposable_life_count_ = 0;
+  // for activation dag inplace analysis
+  int left_life_ = 0;
   TensorFormat tensor_format_ = TensorFormat::undef;
 
   // If shm_handle_ not equal to 0, which means it is on shared memory

@@ -79,6 +79,58 @@ extern unordered_map<string, int> type2bytes;
 // write the specific config into dispatch table
 extern unordered_map<string, vector<string>> dispatch_kernel_config;
 
+// Status values returned by the executor functions.
+typedef enum {
+  // The operation was successful
+  executor_success = 0,
+  // The operation was failed
+  executor_failure = 1,
+  // Not enough information for implementation operation
+  executor_unknown = 2,
+  /// The operation failed due to an out-of-memory condition
+  executor_out_of_memory = 3,
+  // The operation failed due to an memory-overlap (inplace) condition
+  executor_memory_overlap = 4,
+  /// The operation failed because requested functionality (kernel) is not implemented
+  executor_unimplemented = 5,
+  /// The execution graph is not legitimate (connections, attr)
+  executor_invalid_graph = 6,
+  /// The operator is not legitimate (type, dtype, post op)
+  executor_invalid_operator = 7,
+  // The post op is not legitimate (inplace, dtype, broadcast)
+  executor_invalid_post_op = 8,
+  /// The input shape can not be executed (wrong dimension, dynamic shape)
+  executor_invalid_shape = 9,
+  /// The input / output data dtype cannot be executed
+  executor_invalid_dtype = 10,
+} executor_status_t;
+
+// Status values returned by the executor functions.
+enum class Status {
+  // The operation was successful
+  Success = executor_success,
+  // The operation was failed
+  Failure = executor_failure,
+  // Not enough information for implementation operation
+  Unknown = executor_unknown,
+  /// The operation failed due to an out-of-memory condition
+  OutOfMemory = executor_out_of_memory,
+  // The operation failed due to an memory-overlap (inplace) condition
+  MemoryOverlap = executor_memory_overlap,
+  /// The operation failed because requested functionality (kernel) is not implemented
+  Unimplemented = executor_unimplemented,
+  /// The execution graph is not legitimate (connections, attr)
+  InvalidGraph = executor_invalid_graph,
+  /// The operator is not legitimate (type, dtype, post op)
+  InvalidOperator = executor_invalid_operator,
+  // The post op is not legitimate (inplace, dtype, broadcast)
+  InvalidPostOp = executor_invalid_post_op,
+  /// The input shape can not be executed (wrong dimension, dynamic shape)
+  InvalidShape = executor_invalid_shape,
+  // The input / output data dtype cannot be executed
+  InvalidDtype = executor_invalid_dtype,
+};
+
 // read weight file to data
 void* read_file_to_type(const string& root, const string& type, const vector<int64_t>& shape,
                         const vector<int64_t>& location);

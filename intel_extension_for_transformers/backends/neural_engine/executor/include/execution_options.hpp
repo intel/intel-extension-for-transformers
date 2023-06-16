@@ -22,15 +22,11 @@
 namespace executor {
 
 /**
-* @brief  Configuration information for executor
-*
-*/
+ * @brief  Configuration information for executor
+ *
+ */
 
-enum class ExecutionMode {
-  INFERENCE = 0,
-  DEBUG = 1,
-  TUNING = 2
-};
+enum class ExecutionMode { INFERENCE = 0, DEBUG = 1, TUNING = 2 };
 
 // executor options set, include some optimizations like op tuning mechanism.
 // this struct is pybinded to python api.
@@ -60,6 +56,13 @@ struct ExecutionOptions {
   // set the absolute txt file path of dispatch table.
   // dispatch table will be saved in this path if enable op tuning.
   std::string dispatch_table_file_root = "./engine_dispatch_table.txt";
+
+  // if use activation memory compression engine or not.
+  bool activation_mem_compression = getenv("ENGINE_ACTIVATION_MEM_COMPRESSION") != NULL ? true : false;
+
+  // save the activation DAG to disk or not.
+  // worked only when activation_mem_compression == true.
+  bool dump_activation_dag = false;
 };
 
 }  // namespace executor

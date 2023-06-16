@@ -38,6 +38,8 @@
 #include "profiling.hpp"
 #include "tensor.hpp"
 #include "thread_pool.hpp"
+#include "activation_dag_handler.hpp"
+
 namespace executor {
 
 /**
@@ -50,8 +52,8 @@ class NEURALENGINE_API_ Model {
   Model() = default;
   explicit Model(const ModelConfig& conf, const string& weight_root);
   explicit Model(const string& conf_file, const string& weight_root);
-  explicit Model(const ModelConfig& conf, const string& weight_root,
-                 const ExecutionOptions& execution_options);
+  explicit Model(const ModelConfig& conf, const string& weight_root, const ExecutionOptions& execution_options);
+  explicit Model(const string& conf_file, const string& weight_root, const ExecutionOptions& execution_options);
   virtual ~Model();
 
   string Serialize();
@@ -61,41 +63,37 @@ class NEURALENGINE_API_ Model {
   void DeserializeFromFile(const string& file_name);
 
   void Init(const ModelConfig& conf);
-  void RemoveSharedWeight(bool is_begin = false,
-                          char* count_space_name = "RemovedCount",
-                          char* count_name = "removed_count",
-                          char* count_mtx_name = "removed_count_mtx",
+  void RemoveSharedWeight(bool is_begin = false, char* count_space_name = "RemovedCount",
+                          char* count_name = "removed_count", char* count_mtx_name = "removed_count_mtx",
                           char* space_name = "SharedWeight");
   void InitSharedWeight(char* space_name = "SharedWeight");
-  ipc::managed_shared_memory::handle_t LoadSharedWeight(
-      const string& root, const string& type, const vector<int64_t>& shape,
-      const vector<int64_t>& location);
+  ipc::managed_shared_memory::handle_t LoadSharedWeight(const string& root, const string& type,
+                                                        const vector<int64_t>& shape, const vector<int64_t>& location);
   vector<Tensor>& Forward(vector<Tensor>& input_data);  // NOLINT
 
-  void SetInput(const shared_ptr<OperatorConfig>& conf, const int operator_id,
-                const int tensor_id, map<string, int>* tensor_name_to_idx);
+  void SetInput(const shared_ptr<OperatorConfig>& conf, const int operator_id, const int tensor_id,
+                map<string, int>* tensor_name_to_idx);
 
-  void SetOutput(const shared_ptr<OperatorConfig>& conf, const int operator_id,
-                 const int tensor_id, map<string, int>* tensor_name_to_idx);
+  void SetOutput(const shared_ptr<OperatorConfig>& conf, const int operator_id, const int tensor_id,
+                 map<string, int>* tensor_name_to_idx);
+
+  // create the activation DAG and perform the memory analysis
+  void ActivationMemCompression(const vector<vector<vector<int64_t>>>& input_shapes_list);
 
   void SetDispatchKernel(const bool& reshape_model);
 
+  void ShapeInference(const vector<vector<int64_t>>& input_shapes);
+
   inline const string& name() const { return name_; }
-  inline const vector<string>& operator_names() const {
-    return operator_names_;
-  }
+  inline const vector<string>& operator_names() const { return operator_names_; }
   inline const vector<string>& tensor_names() const { return tensor_names_; }
-  inline const vector<shared_ptr<Dispatcher>>& operators() const {
-    return operators_;
-  }
+  inline const vector<shared_ptr<Dispatcher>>& operators() const { return operators_; }
   inline const vector<Tensor*>& tensors() const { return tensors_; }
 
   inline int num_inputs() const { return model_input_tensors_.size(); }
   inline int num_outputs() const { return model_output_tensors_.size(); }
 
-  inline const vector<shared_ptr<TensorConfig>>& input_configs() const {
-    return model_input_configs_;
-  }
+  inline const vector<shared_ptr<TensorConfig>>& input_configs() const { return model_input_configs_; }
 
   inline vector<Tensor>& output_tensors() {
     DLOG(INFO) << "Output tensor size is " << model_output_tensors_.size();
@@ -113,9 +111,9 @@ class NEURALENGINE_API_ Model {
   }
 
   inline const vector<int64_t>& input_shape() const { return input_shape_; }
-  inline const bool& has_dispatch_table_file() const {
-    return has_dispatch_table_file_;
-  }
+  inline const bool& has_dispatch_table_file() const { return has_dispatch_table_file_; }
+
+  friend class ActivationDAGHandler;
 
  protected:
   string name_;
@@ -146,13 +144,13 @@ class NEURALENGINE_API_ Model {
   bool engine_profiling_ = false;
   // for onednn graph
   LLGAINFO llga_info_;
-  shared_ptr<Operator> CreateLLGAKernel(
-      const vector<shared_ptr<OperatorConfig>>& op_configs,
-      const dnnl::graph::partition& partition);
+  shared_ptr<Operator> CreateLLGAKernel(const vector<shared_ptr<OperatorConfig>>& op_configs,
+                                        const dnnl::graph::partition& partition);
   void ConstructLLGA(const vector<shared_ptr<OperatorConfig>>& op_configs);
   // just record one input
   // assume shapes of all input data should be same
   vector<int64_t> input_shape_;
+  ActivationDAGHandler act_dag_handler_;
 };
 
 }  // namespace executor
