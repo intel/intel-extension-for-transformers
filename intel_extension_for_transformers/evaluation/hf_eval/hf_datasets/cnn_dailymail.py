@@ -145,6 +145,10 @@ class CNNDAILYMAIL(object):
         self.data_collator = DataCollatorForSupervisedDataset(tokenizer=self.tokenizer)
         self.calib = calib
 
+    def wrap(self, example):
+        example['instruction'] = 'Summarize the following news article:'
+        return example
+
     def load_dataset(self):
         """Loads dataset"""
         list_data_dict = load_dataset("cnn_dailymail", "3.0.0")["validation"]
@@ -155,9 +159,7 @@ class CNNDAILYMAIL(object):
             PROMPT_DICT["prompt_input"],
             PROMPT_DICT["prompt_no_input"],
         )
-        for example in list_data_dict:
-            example['instruction']='Summarize the following news article:'
-        sources = [prompt_input.format_map(example) for example in list_data_dict]
+        sources = [prompt_input.format_map(self.wrap(example)) for example in list_data_dict]
         targets = [f"{example['highlights']}" for example in list_data_dict]
         data_dict = preprocess(sources, targets, self.tokenizer)
 
