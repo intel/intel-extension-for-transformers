@@ -93,6 +93,7 @@ test_data_t gen_data(const test_params_t& p) {
   std::unordered_map<std::string, std::string> op_attrs{};
   op_attrs["approx_exp"] = "True";
   op_attrs["stable_softmax"] = "False";
+  op_attrs["softmax_rescale"] = "dynamic";
 
   // Step 2: Configure tensor shape
   std::vector<jd::tensor_desc> ts_descs(io::SIZE, jd::tensor_desc{});

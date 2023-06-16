@@ -285,7 +285,7 @@ void jit_mmsoftmax_batch_amx_s8_ab_BA16b4a_u8_16x::generate() {
 /* jit_mmexp_amx_s8_ab_BA16b4a_u8_16x */
 #define PARAM_OFF(field) offsetof(rt_data_t, field)
 void jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::mm_exp_sum(  //
-    regs_pool* const rp, const std::array<Zmm, 16UL> zmm_expsum) {
+    regs_pool* const rp, const std::array<Zmm, 16UL>& zmm_expsum, const Xbyak::RegExp& addr_expmax) {
   const std::array<Tmm, 2> tmm_dst{tmm0, tmm1};
   const auto reg_nbsize = rp->reg<Reg64>();  // number of blocks of size 16
   const auto reg_nbiter = rp->reg<Reg64>();
@@ -362,6 +362,7 @@ void jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::mm_exp_sum(  //
       const auto vreg_bias = rp->regs<Zmm, 2>();
       const auto vreg_c = rp->regs<Zmm, 3>();
       const auto zmm_x = rp->reg<Zmm>();
+      const auto zmm_max = rp->reg<Zmm>();
       const auto zmm_scale = rp->reg<Zmm>();
       vpbroadcastd(zmm_scale, dword[rp->p[0] + PARAM_OFF(scale)]);
       mov(reg_src0scale, qword[rp->p[0] + PARAM_OFF(scale_src0)]);
@@ -387,6 +388,8 @@ void jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::mm_exp_sum(  //
               : vmulps(zmm_x, zmm_x, vreg_src1scale[j]);
           exp_approx_f32(zmm_x, zmm_x, zword_b[rip + l_log2ef], zword_b[rip + l_ln2], vreg_c, rp->regs<Zmm, 2>());
           vmovaps(curr_dst_addr, zmm_x);
+          vmaxps(zmm_max, zmm_x, zword[addr_expmax + ii * BYTES_ZMM]);
+          vmovaps(zword[addr_expmax + ii * BYTES_ZMM], zmm_max);
           vaddps(zmm_expsum[ii], zmm_expsum[ii], zmm_x);
         }
       }
@@ -425,7 +428,7 @@ void jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::generate() {
 
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
   {
-    constexpr auto tmp_mem_size = BYTES_ZMM;
+    constexpr auto tmp_mem_size = 16 * BYTES_ZMM;  // for addr_max
     regs_pool rp(this, 1, {10, 32, 0}, (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size, true, 64);
     std::shared_ptr<void> local_cfg;
     if (need_cfg_amx) {  // create a local amx config environment
@@ -435,18 +438,31 @@ void jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::generate() {
       local_cfg = {nullptr, [&](...) { (lea(rsp, ptr[rsp - sizeof(tileconfig_t)]), ldtilecfg(ptr[rsp])); }};
     }
 
+    const Xbyak::RegExp addr_max = rsp;
+    {  // init max exp; 0 should be small enough as the range of exp greater than 0
+      const auto vreg_zero = rp.reg<Zmm>();
+      vxorps(vreg_zero, vreg_zero, vreg_zero);
+      for (int i = 0; i < 16; ++i) vmovaps(zword[addr_max + i * BYTES_ZMM], vreg_zero);
+    }
+
     {
       const auto zmm_expsum = rp.regs<Zmm, 16>();
-      mm_exp_sum(&rp, zmm_expsum);
+      mm_exp_sum(&rp, zmm_expsum, addr_max);
       transpose_16x16_ps(zmm_expsum, rp.regs<Zmm, 16>());  // 4 inst per zmm
       reduce_vmms(zmm_expsum, &CodeGenerator::vaddps);
 
-      const auto zmm_tmp = rp.reg<Zmm>();
-      vpbroadcastd(zmm_tmp, dword[rip + l_255]);
-      vdivps(zmm_tmp, zmm_tmp, zmm_expsum[0]);  // 255 / sum
       const auto reg_tmp = rp.reg<Reg64>();
-      mov(reg_tmp, qword[rp.p[0] + PARAM_OFF(dst_scale)]);
-      vmovdqa32(zword[reg_tmp], zmm_tmp);
+      mov(reg_tmp, qword[rp.p[0] + PARAM_OFF(dst_sum)]);
+      vmovdqa32(zword[reg_tmp], zmm_expsum[0]);
+    }
+    {
+      const auto zmm_expmax = rp.regs<Zmm, 16>();
+      for (int i = 0; i < 16; ++i) vmovaps(zmm_expmax[i], zword[addr_max + i * BYTES_ZMM]);
+      transpose_16x16_ps(zmm_expmax, rp.regs<Zmm, 16>());
+      reduce_vmms(zmm_expmax, &CodeGenerator::vmaxps);
+      const auto reg_tmp = rp.reg<Reg64>();
+      mov(reg_tmp, qword[rp.p[0] + PARAM_OFF(dst_max)]);
+      vmovdqa32(zword[reg_tmp], zmm_expmax[0]);
     }
   }  // end of call stack
 
@@ -539,10 +555,11 @@ void jit_mm_batch_amx_u8s8_ab_AB16a4b_dynamic_quant_16x::mm_absmax(regs_pool* co
       add(reg_src1scale, qword[rp->p[0] + PARAM_OFF(scale_src1)]);
       for (int ii = 0; ii < 16; ++ii) {
         for (int j = 0; j < tw; ++j) {
-          if (ii == 0) tilestored(ptr[reg_tmpf32 + reg_64ULL + j * BYTES_TMM], tmm_dst[j]);
-          if (ii == 0) vmovups(vreg_scale[j], zword[reg_src1scale + j * BYTES_ZMM]);
-          if (ii == 0) vmulps(vreg_scale[j], vreg_scale[j], zword_b[rip + l_rcp255]);
-
+          if (ii == 0) {
+            tilestored(ptr[reg_tmpf32 + reg_64ULL + j * BYTES_TMM], tmm_dst[j]);
+            vmovups(vreg_scale[j], zword[reg_src1scale + j * BYTES_ZMM]);
+            vmulps(vreg_scale[j], vreg_scale[j], zword_b[rip + l_rcp255]);
+          }
           const auto tmp_dst_addr = ptr[reg_tmpf32 + j * BYTES_TMM + ii * BYTES_ZMM];
           vcvtdq2ps(zmm_x, tmp_dst_addr);
           vmulps(zmm_x, zmm_x, vreg_scale[j]);
@@ -784,8 +801,8 @@ void jit_scale_mm_amx_u8s8_ab_BA16b_16x::mm_absmax(regs_pool* const rp, std::arr
   mov(reg_dst, qword[rp->p[0] + PARAM_OFF(dst)]);
 
   const auto mm_absmax_16xkxtw = [&](int tw) {
-    const auto reg_scale0 = rp->reg<Reg64>();
-    mov(reg_scale0, qword[rp->p[0] + PARAM_OFF(scale_src0)]);
+    const auto reg_prescale0 = rp->reg<Reg64>();
+    mov(reg_prescale0, qword[rp->p[0] + PARAM_OFF(prescale_src0)]);
 
     const std::array<Tmm, 3> tmm_dst{tmm0, tmm1, tmm2};
     const auto reg_64ULL = rp->reg<Reg64>();
@@ -815,7 +832,7 @@ void jit_scale_mm_amx_u8s8_ab_BA16b_16x::mm_absmax(regs_pool* const rp, std::arr
               for (int ii = 0; ii < 16; ++ii) {
                 const auto xs = rp->reg<Zmm>();
                 vmovaps(xs, zword[reg_src0 + ii * BYTES_ZMM + tj * BYTES_TMM]);
-                vmulps(xs, xs, zword_b[reg_scale0 + ii * sizeof(float)]);
+                vmulps(xs, xs, zword_b[reg_prescale0 + ii * sizeof(float)]);
                 vcvtps2udq(xs | T_rn_sae, xs);
                 vpmovusdb(xword[rsp + ii * BYTES_ZMM + tj * BYTES_XMM], xs);
               }
@@ -846,17 +863,22 @@ void jit_scale_mm_amx_u8s8_ab_BA16b_16x::mm_absmax(regs_pool* const rp, std::arr
       const auto reg_src1scale = rp->reg<Reg64>();
       const auto vreg_scale = rp->regs<Zmm, 3>();
       const auto zmm_x = rp->reg<Zmm>();
+      const auto reg_src0scale = rp->reg<Reg64>();
+      mov(reg_src0scale, qword[rp->p[0] + PARAM_OFF(scale_src0)]);
+
       imul(reg_src1scale, reg_nbiter, BYTES_ZMM);
       add(reg_src1scale, qword[rp->p[0] + PARAM_OFF(scale_src1)]);
       for (int ii = 0; ii < 16; ++ii) {
         for (int j = 0; j < tw; ++j) {
-          if (ii == 0) tilestored(ptr[reg_dst + reg_64ULL + j * BYTES_TMM], tmm_dst[j]);
-          if (ii == 0) vmovups(vreg_scale[j], zword[reg_src1scale + j * BYTES_ZMM]);
-          if (ii == 0) vmulps(vreg_scale[j], vreg_scale[j], zword_b[rip + l_rcp255]);
+          if (ii == 0) {
+            tilestored(ptr[reg_dst + reg_64ULL + j * BYTES_TMM], tmm_dst[j]);
+            vmovups(vreg_scale[j], zword[reg_src1scale + j * BYTES_ZMM]);
+          }
 
           const auto tmp_dst_addr = ptr[reg_dst + j * BYTES_TMM + ii * BYTES_ZMM];
           vcvtdq2ps(zmm_x, tmp_dst_addr);
           vmulps(zmm_x, zmm_x, vreg_scale[j]);
+          vmulps(zmm_x, zmm_x, zword_b[reg_src0scale + ii * sizeof(float)]);
           vmovaps(tmp_dst_addr, zmm_x);
           vrangeps(zmm_absmax[ii], zmm_absmax[ii], zmm_x, 0b1011);  // 1011 for absmax
         }
@@ -951,8 +973,6 @@ void jit_scale_mm_amx_u8s8_ab_BA16b_16x::generate() {
   align(sizeof(int32_t));
   L(l_127f);
   db(bit_cast<uint32_t>(127.f), sizeof(float));
-  L(l_rcp255);
-  db(bit_cast<uint32_t>(1.f / 255.f), sizeof(float));
   L(l_float_epsilon);
   db(bit_cast<uint32_t>(1e-9f), sizeof(float));
 }

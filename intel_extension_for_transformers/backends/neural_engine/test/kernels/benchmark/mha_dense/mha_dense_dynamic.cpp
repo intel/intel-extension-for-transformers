@@ -107,6 +107,7 @@ void mha_dense_dynamic_bench::gen_case() {
   op_attrs.clear();
   op_attrs["approx_exp"] = "True";
   op_attrs["stable_softmax"] = "False";
+  op_attrs["softmax_rescale"] = "dynamic";
   // Step 2: Set tensor shapes
   ts_descs = std::vector<jd::tensor_desc>(io::SIZE, {{}, jd::data_type::undef, jd::format_type::undef});
   ts_descs[io::SRC_Q] = {{batch_size, sl_M, head_num, head_size}, jd::data_type::s8, jd::format_type::abcd};

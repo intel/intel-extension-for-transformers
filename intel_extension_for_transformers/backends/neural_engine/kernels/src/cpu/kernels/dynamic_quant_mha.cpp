@@ -255,7 +255,8 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
         const auto curr_tmp_k = tmp_k + (ibs * head_num + ihn) * head_tmp_k_size;
         const auto curr_k_scale = k_scale + ibs * N;
         const auto curr_mask = tmp_mask + ibs * N_pad16;
-        alignas(64) float scale_exp[16];
+        alignas(64) float exp_sum[16];
+        alignas(64) float exp_max[16];
         {  //  MMQK + softmax + 0-255quant
           jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::rt_data_t mm_qk_data{
               /*.src0 = */ curr_q,
@@ -264,7 +265,8 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
               /*.scale_src1 = */ curr_k_scale,
               /*.src_bias = */ curr_mask,  // May not used if !has_badd && N %16 == 0
               /*.dst = */ curr_tmp_exp,
-              /*.dst_scale = */ scale_exp,  // i.e. 255 / expsum
+              /*.dst_sum = */ exp_sum,
+              /*.dst_max = */ exp_max,
               /*.scale = */ att_scale,
               /*.K = */ head_size,
               /*.N = */ N,
@@ -274,12 +276,20 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
           (*ker_qxk_)(&mm_qk_data);
         }
 
+        alignas(64) float act_prescale[16];
+#pragma omp simd
+        for (int ii = 0; ii < 16; ++ii) act_prescale[ii] = 255.f / exp_max[ii];
+// use exp_sum as dst scale
+#pragma omp simd
+        for (int ii = 0; ii < 16; ++ii) exp_sum[ii] = 1.f / 255.f * exp_max[ii] / exp_sum[ii];
+
         const auto curr_tmp_v = tmp_v + (ibs * head_num + ihn) * head_tmp_v_size;
         const auto curr_tmp_v_scale = tmp_v_scale + (ibs * head_num + ihn) * head_tmp_v_scale_size;
         {  // MMAV + perchannel-q10n
           jit_scale_mm_amx_u8s8_ab_BA16b_16x::rt_data_t mm_av_data{
               /*.src0 = */ curr_tmp_exp,
-              /*.scale_src0 = */ scale_exp,
+              /*.prescale_src0 = */ act_prescale,
+              /*.scale_src0 = */ exp_sum,
               /*.src1 = */ curr_tmp_v,
               /*.scale_src1 = */ curr_tmp_v_scale,
               /*.dst = */ curr_tmp_dst + 16 * head_size_pad16 * ihn,

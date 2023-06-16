@@ -136,7 +136,8 @@ class jit_mmexp_amx_s8_ab_BA16b4a_u8_16x : public jit_generator {
     const float* scale_src1;  // src1_f32(k,j)=src1_s8(k,j)*scale_src1(j); of size N
     const float* src_bias;    // aka att_mask in MHA; of size `pad_to(N, 16)`; ignored when !has_bias
     float* dst;               // of size M(16) x N
-    float* dst_scale;         // of size 16; i.e. 255/sumexp, one for each line
+    float* dst_sum;           // of size 16; i.e. sumexp, one for each line
+    float* dst_max;           // of size 16; i.e. maxexp, one for each line
     float scale;              // a scale applied to the output of matmul
     int K;                    // will be used as pad_to(K, 64)
     int N;                    // will be used as pad_to(N, 16)
@@ -162,9 +163,10 @@ class jit_mmexp_amx_s8_ab_BA16b4a_u8_16x : public jit_generator {
    * @brief perform matmul & exp & sum, store as 16x16 blocks of fp32
    *
    * @param rp register pool pointer
-   * @param zmm_expsum std::array<Xbyak::Zmm, 16UL> registers to hold sum of exp to be reduced
+   * @param zmm_expsum std::array<Xbyak::Zmm, 16UL>& registers to hold sum of exp to be reduced
+   * @param addr_expmax Xbyak::RegExp& pointer to memory to hold max of exp to be reduced
    */
-  void mm_exp_sum(regs_pool* const rp, const std::array<Zmm, 16UL> zmm_expsum);
+  void mm_exp_sum(regs_pool* const rp, const std::array<Zmm, 16UL>& zmm_expsum, const Xbyak::RegExp& addr_expmax);
 
   const bool has_bias;
   const int K;
@@ -266,7 +268,8 @@ class jit_scale_mm_amx_u8s8_ab_BA16b_16x : public jit_generator {
 
   struct rt_data_t {
     const float* src0;
-    const float* scale_src0;  // of size 16; u8 = static_cast<u8>(src0 * scale_src0)
+    const float* prescale_src0;  // of size 16; u8 = static_cast<u8>(src0 * prescale_src0)
+    const float* scale_src0;     // of size 16; f32 = scale_src0 * u8
     const int8_t* src1;
     const float* scale_src1;  // src1_f32(k,j)=src1_s8(k,j)*scale_src1(j); of size N
     float* dst;               // of size M(16) x pad(N, 16*TW)
@@ -300,7 +303,7 @@ class jit_scale_mm_amx_u8s8_ab_BA16b_16x : public jit_generator {
   tileconfig_t reqired_tile_cfg_;
 
   Xbyak::Label L_amx_cfg;
-  Xbyak::Label l_127f, l_rcp255, l_float_epsilon;
+  Xbyak::Label l_127f, l_float_epsilon;
 };
 }  // namespace jd
 #endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_DYNAMIC_QUANT_MHA_HPP_

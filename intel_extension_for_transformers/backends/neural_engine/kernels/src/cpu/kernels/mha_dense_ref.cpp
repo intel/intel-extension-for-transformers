@@ -174,8 +174,10 @@ template <float (*func_exp)(float)>
 bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const {
   // configure alias
   const auto& attrs = derived_kd()->get_operator_desc().attrs();
-  const float softmax_rescale_ =
-      attrs.find("softmax_rescale") != attrs.end() ? str_to_num<float>(attrs.at("softmax_rescale")) : UINT8_MAX;
+  const float softmax_rescale_ =  //
+      attrs.find("softmax_rescale") == attrs.end() ? UINT8_MAX
+      : attrs.at("softmax_rescale") == "dynamic"   ? 0.f
+                                                   : str_to_num<float>(attrs.at("softmax_rescale"));
 
   const auto has_badd = ts_descs_[io::BINARY_ADD].dtype() != data_type::undef;
   // default scale and zp
@@ -259,14 +261,17 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
 
         // softmax
         float exp_row_sum = 0;
+        float exp_row_max = 0;
         for (int j = 0; j < curr_sl_n; ++j) {
           exp_row[j] = func_exp(exp_row[j] - (stable_softmax ? tmp_max : 0));
           exp_row_sum += exp_row[j];
+          exp_row_max = std::max(exp_row_max, exp_row[j]);
         }
+        const auto softmax_rescale = softmax_rescale_ > 0 ? softmax_rescale_ : 255.f / exp_row_max * exp_row_sum;
 #pragma omp simd
         for (int j = 0; j < curr_sl_n; ++j) {
           // round to nearest when not accurate
-          auto&& a_val = exp_row[j] / exp_row_sum * softmax_rescale_;
+          auto&& a_val = exp_row[j] / exp_row_sum * softmax_rescale;
           exp_row[j] = ts_descs_[io::SRC_V].dtype() == data_type::s8 ? post_softmax<func_exp>(a_val) : a_val;
         }
 
@@ -295,7 +300,7 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
                                                                   : (SPARSE_LOG(FATAL) << "Unexpected V type", NAN);
             value += exp_row[k] * v_val;
           }
-          value *= curr_v_scale / softmax_rescale_;
+          value *= curr_v_scale / softmax_rescale;
           if (ts_descs_[io::SRC_DST_SCALE].ftype() != format_type::undef) value /= dst_scale[dst_scale_num > 1 ? i : 0];
           if (ts_descs_[io::SRC_DST_ZP].ftype() != format_type::undef) value += dst_zp[dst_zp_num > 1 ? i : 0];
 
