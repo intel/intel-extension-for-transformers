@@ -3,7 +3,8 @@ import shutil
 import unittest
 
 import torch
-from intel_extension_for_transformers.evaluation import evaluate
+from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+from intel_extension_for_transformers.evaluation.hf_eval import summarization_evaluate
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM
 
 
@@ -63,9 +64,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
 
     def test_cnn_daily(self):
-        from intel_extension_for_transformers.evaluation import \
-            summarization_evaluate
-
         results = summarization_evaluate(
            model=self.clm_model,
            tokenizer_name="facebook/opt-125m",

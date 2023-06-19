@@ -199,7 +199,7 @@ if args.int8 or args.int8_bf16_mixed:
 
 if args.accuracy:
     user_model.eval()
-    from intel_extension_for_transformers.evaluation import evaluate
+    from intel_extension_for_transformers.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
