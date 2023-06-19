@@ -153,6 +153,9 @@ pattern_default_setting = {
     'LlamaRoraryPosEmb': False,
     'LlamaPostprocess': False,
     'RemoveUnusedOperator': True,
+    #GPT-NEOX
+    'NeoxReorderChange': False,
+    'NeoxRoraryPosEmb': False,
 }
 
 class SubGraphMatcher(object):

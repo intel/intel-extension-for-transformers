@@ -92,6 +92,8 @@ from transformers.generation.stopping_criteria import (
 # Load past kv caches from files
 import numpy as np
 import pickle
+from optimum.utils import NormalizedConfigManager
+
 
 logger = logging.get_logger(__name__)
 
@@ -551,7 +553,7 @@ class GenerationMixin:
             )
         elif inputs_kwarg is not None:
             inputs = inputs_kwarg
-        if not model_kwargs["llama"]:
+        if model_kwargs['model_type'] != 'llama':
             # 3. models with `input_ids` can also make use of `inputs_embeds`
             if self._can_retrieve_inputs_from_name(inputs, "inputs_embeds", model_kwargs):
                 inputs, input_name = model_kwargs["inputs_embeds"], "inputs_embeds"
@@ -2854,6 +2856,7 @@ class GenerationMixin:
         beam_scores = beam_scores.view((batch_size * num_beams,))
 
         this_peer_finished = False  # used by synced_gpus only
+
         while True:
             if synced_gpus:
                 # Under synced_gpus the `forward` call must continue until all gpus complete their sequence.
@@ -2866,7 +2869,8 @@ class GenerationMixin:
                     break
 
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
-            if not model_kwargs["llama"]:
+
+            if model_kwargs['model_type'] != "llama":
                 if model_inputs["past_key_values"] is None:
                     first_token = model_inputs["input_ids"].size()[1] != 1
                     if first_token:
@@ -2876,10 +2880,8 @@ class GenerationMixin:
                         model_inputs["input_ids"] = model_inputs["input_ids"][:1,:]
                         input_ids_1 = model_inputs['input_ids'].cpu().numpy().astype(np.int32)
                         attention_mask_1 = model_inputs['attention_mask'].cpu().numpy().astype(np.int32)
-
-                        past_k_v =  np.ones([1,0,16,256]).astype(np.float32)
-                        predictions = engine_model.inference([input_ids_1] + [past_k_v for _ in range(2 * model_kwargs["past_kv_nums"])] + [attention_mask_1])
-
+                        past_k_v =  np.zeros([1,0,model_kwargs['num_attention_heads'],model_kwargs['d_k']]).astype(np.float32)
+                        predictions = engine_model.inference([input_ids_1] + [past_k_v for _ in range(2 * model_kwargs['past_kv_nums'])] + [attention_mask_1])
                         for key in predictions:
                             predictions[key] = torch.from_numpy(predictions[key])
 
@@ -2901,28 +2903,22 @@ class GenerationMixin:
                                 value = value.view(value.size(1) * value.size(0), value.size(2), value.size(3))
                             past_key_values.append(tuple([key, value]))
                         outputs.past_key_values = tuple(past_key_values)
+        
                     if synced_gpus and this_peer_finished:
                         cur_len = cur_len + 1
                         continue  # don't waste resources running the code we don't need
                     next_token_logits = outputs.logits[:, -1, :]
 
                 else:
-                    example_inputs = []
-                    for k, v in model_inputs.items():
-                        if v is not None and not isinstance(v, bool):
-                            example_inputs.append(v)
-                    example_inputs = tuple(example_inputs)
-
-                    input_ids_1 = example_inputs[0].cpu().numpy().astype(np.int32)
-                    attention_mask_1 = example_inputs[-1].cpu().numpy().astype(np.int32)
-                    past_key_values = [example_inputs[1][i][j] for i in range(model_kwargs["past_kv_nums"]) for j in range(2)]
+                    input_ids_1 = model_inputs['input_ids'].cpu().numpy().astype(np.int32)
+                    attention_mask_1 = model_inputs['attention_mask'].cpu().numpy().astype(np.int32)
+                    past_key_values = [model_inputs['past_key_values'][i][j] for i in range(model_kwargs["past_kv_nums"]) for j in range(2)]
                     predictions = engine_model.inference([input_ids_1] + past_key_values + [attention_mask_1])
-
                     # ts=time.time()
                     for key in predictions:
                         predictions[key] = torch.from_numpy(predictions[key])
                     outputs = CausalLMOutputWithPast()
-                    outputs.logits = list(predictions.values())[0].reshape(-1,1,50400)
+                    outputs.logits = list(predictions.values())[0].reshape(-1,1,model_kwargs['vocab_size'])
                     outputs.past_key_values = [(list(predictions.values())[2*i+1], list(predictions.values())[2*i+2]) for i in range(model_kwargs["past_kv_nums"])]
 
                     # print(2,time.time()-ts)

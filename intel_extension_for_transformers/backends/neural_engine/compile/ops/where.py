@@ -19,18 +19,20 @@
 
 from .op import Operator, operator_registry
 from .tensor import Tensor
-import copy
+from ..graph_utils import list2str
 
-# tf.shape(input, out_type=tf.dtypes.int32, name=None)
-# Returns a tensor containing the shape of the input tensor.
-@operator_registry(operator_type='Shape')
-class Shape(Operator):
-    """Register the Shape operator."""
+
+@operator_registry(operator_type='Where')
+class Where(Operator):
+    """Parse the Cos operator to the neural engine."""
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
     def set_attr(self, framework, node):
-        """Extract the node attr."""
-        if framework == 'torch':
-            self._attr['start'] = node.inputsAt(1).toIValue()
-            self._attr['end'] = node.inputsAt(1).toIValue() + 1
+        """Extract the node attr from torch."""
+        if framework == "torch":
+            if type(node.inputsAt(2).toIValue()) == float:
+                self._attr['mask_value'] = node.inputsAt(2).toIValue()
+            else:
+                self._attr['mask_value'] = node.inputsAt(2).toIValue().item()

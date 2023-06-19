@@ -9,6 +9,7 @@ import argparse
 from torch.profiler import profile, record_function, ProfilerActivity
 from accelerate import init_empty_weights
 import generation_utils as itrex_generation_utils
+from optimum.utils import NormalizedConfigManager
 
 # args
 parser = argparse.ArgumentParser('GPT-J generation script', add_help=False)
@@ -17,39 +18,42 @@ parser.add_argument("--model_path",
         help="path to bfloat16 or int8 IR files",
         default="bfloat16",
     )
+parser.add_argument("--model",
+        type=str,
+        help="path to original config and weight files",
+        default="EleutherAI/gpt-j-6B",
+    )
 parser.add_argument('--max-new-tokens', default=32, type=int, help="output max new tokens")
 parser.add_argument('--input-tokens', default='32', type=str)
 parser.add_argument('--prompt', default=None, type=str)
 parser.add_argument('--batch-size', default=1, type=int)
 parser.add_argument('--weight_type', default=None, type=str)
-parser.add_argument('--model_type', default='gpt-j', type=str)
 args = parser.parse_args()
 print(args)
 
 generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
-if args.model_type == 'llama_7b':
-    generate_kwargs["past_kv_nums"] = 32
-    generate_kwargs["llama"] = True
-    model_id = "decapoda-research/llama-7b-hf"
-    from transformers import LlamaForCausalLM, LlamaTokenizer
+
+model_id = args.model
+config = AutoConfig.from_pretrained(model_id)
+model_type = config.model_type
+normalized_config = NormalizedConfigManager.get_normalized_config_class(model_type)(config)
+num_attention_heads = normalized_config.num_attention_heads
+hidden_size = normalized_config.hidden_size
+generate_kwargs["past_kv_nums"] = normalized_config.num_layers
+generate_kwargs["model_type"] = model_type
+generate_kwargs["num_attention_heads"] = num_attention_heads
+generate_kwargs["d_k"] = hidden_size // num_attention_heads
+generate_kwargs["vocab_size"] = normalized_config.vocab_size
+
+if 'llama' in model_type:
+    from transformers import LlamaTokenizer
     tokenizer = LlamaTokenizer.from_pretrained(model_id)
     prompt_json = '/llamaprompt.json'
-elif args.model_type == 'llama_13b':
-    generate_kwargs["past_kv_nums"] = 40
-    generate_kwargs["llama"] = True
-    model_id = "decapoda-research/llama-13b-hf"
-    from transformers import LlamaForCausalLM, LlamaTokenizer
-    tokenizer = LlamaTokenizer.from_pretrained(model_id)
-    prompt_json = '/llamaprompt.json'
-elif args.model_type == 'gpt-j':
-    generate_kwargs["past_kv_nums"] = 28
-    generate_kwargs["llama"] = False
-    model_id = "EleutherAI/gpt-j-6B"
+else:
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     prompt_json = '/prompt.json'
 
 # load model
-config = AutoConfig.from_pretrained(model_id)
 with init_empty_weights():
     model = AutoModelForCausalLM.from_config(config)
 setattr(model, "generate",  types.MethodType(itrex_generation_utils.GenerationMixin.generate, model))

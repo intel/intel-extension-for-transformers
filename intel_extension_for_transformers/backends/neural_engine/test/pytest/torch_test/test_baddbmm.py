@@ -26,22 +26,15 @@ from intel_extension_for_transformers.backends.neural_engine.compile import comp
 from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
+torch.manual_seed(2)
 
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self, alpha=1):
         super(Net, self).__init__()
-        self.gelu = nn.GELU()
+        self.alpha = alpha
 
-    def forward(self, x):
-        x = self.gelu(x)
-        return x
-
-class Net2(nn.Module):
-    def __init__(self):
-        super(Net2, self).__init__()
-
-    def forward(self, input):
-        return 0.5 * input * (1.0 + torch.tanh(input * 0.7978845608 * (1.0 + 0.044715 * input * input)))
+    def forward(self, M, batch1, batch2):
+        return torch.baddbmm(M, batch1, batch2, alpha=self.alpha)
 
 class TestTorchOP(unittest.TestCase):
     @classmethod
@@ -54,39 +47,44 @@ class TestTorchOP(unittest.TestCase):
 
     def test_1(self):
         n = Net()
-        example_in = torch.rand(3, 256)
-        traced_model = torch.jit.trace(n, example_in)
+        M = torch.randn(10, 3, 5)
+        batch1 = torch.randn(10, 3, 4)
+        batch2 = torch.randn(10, 4, 5)
+        traced_model = torch.jit.trace(n, (M, batch1, batch2))
         
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
-        ref_out = traced_model(example_in).detach().numpy()
+        ref_out = traced_model(M, batch1, batch2).detach().numpy()
         
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
-        out = newgraph.inference([example_in.numpy()])
+        out = newgraph.inference([item.numpy() for item in [M, batch1, batch2]])
 
         np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
         os.remove('{}.pt'.format(file_name))
-        # shutil.rmtree(file_name)
+        shutil.rmtree(file_name)
 
     def test_2(self):
-        n = Net2()
-        example_in = torch.rand(3, 256)
-        traced_model = torch.jit.trace(n, example_in)
+        n = Net(2)
+        M = torch.randn(10, 3, 5)
+        batch1 = torch.randn(10, 3, 4)
+        batch2 = torch.randn(10, 4, 5)
+        traced_model = torch.jit.trace(n, (M, batch1, batch2))
         
         torch.jit.save(traced_model, '{}.pt'.format(file_name))
-        ref_out = traced_model(example_in).detach().numpy()
+        ref_out = traced_model(M, batch1, batch2).detach().numpy()
         
         graph = compile('{}.pt'.format(file_name))
         graph.save(file_name)
         newgraph = Graph()
         newgraph.graph_init(file_name + '/conf.yaml', file_name + '/model.bin')
-        out = newgraph.inference([example_in.numpy()])
+        out = newgraph.inference([item.numpy() for item in [M, batch1, batch2]])
 
-        np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5) 
+        np.testing.assert_almost_equal(ref_out, [*out.values()][0], decimal=5)
         os.remove('{}.pt'.format(file_name))
         shutil.rmtree(file_name)
+
 
 if __name__ == "__main__":
     unittest.main()

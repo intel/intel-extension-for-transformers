@@ -79,6 +79,32 @@ class Gelu(Pattern):
                     },
                     'returns': []
                 },
+
+                # gpt_neox
+                {
+                    'patterns': {
+                        'in': [[(0,'Mul'), (1, 'Mul'), (2, 'Add'), (3, 'Mul'), (4, 'Tanh'),
+                                (5, 'Add'), (6, 'Mul')],
+                                [(), (7, 'Mul'), (3, 'Mul')],
+                                 [(),(8, 'Mul'),(6, 'Mul')]],
+                        'out': [[(0, 'Gelu')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 6
+                    },
+                    'input_tensors': {
+                        0: [[{
+                            0: [0]
+                        }], [[0], 1]]
+                    },
+                    'output_tensors': {
+                        0: [[{
+                            6: [0]
+                        }], [[0], 1]]
+                    },
+                    'returns': []
+                },
             ]
         }
 

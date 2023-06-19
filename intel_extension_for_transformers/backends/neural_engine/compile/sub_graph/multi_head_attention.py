@@ -61,7 +61,7 @@ class MultiHeadAttention(Pattern):
                             {2: [3]},  # QK_max
                             {2: [6]},  # dst_min
                             {2: [7]},  # dst_max
-                            ], 
+                            ],
                             [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 14]]
                     },
                     'output_tensors': {
@@ -109,7 +109,7 @@ class MultiHeadAttention(Pattern):
                     },
                     'returns': [0, 1, 2, 3, 4, 5]
                 },
-                
+
                 # GPT-J bf16 torch model
                 {
                     'patterns': {
@@ -137,13 +137,14 @@ class MultiHeadAttention(Pattern):
                     },
                     'returns': [0, 1, 2, 3, 4, 6]
                 },
+
                 # Bert based models bf16
                 {
                     'patterns': {
                         'in': [[(0, 'TransposeBatchMatMul'), (1, 'Softmax'),
                                 (2, 'TransposeBatchMatMul')]],
                         'out': [[(0, 'MultiHeadAttention')]]
-                    },
+                        },
                     'search_mode': 'op_type',
                     'node_names': {
                         0: 2,
@@ -161,6 +162,35 @@ class MultiHeadAttention(Pattern):
                         0 : [[{2: [0]}], [[0], 1]]
                     },
                     'returns': [0, 1, 2]
+                },
+
+                # GPT-NEOX torch model
+                {
+                    'patterns': {
+                        'in': [[(0, ['Matmul', 'MatmulwithTranspose', 'BatchMatMul', 'TransposeBatchMatMul']),
+                                (1, ['Div', 'BinaryOp']), (2, ['Add', 'AddV2', 'BinaryAdd']),
+                                (3, ['Add', 'AddV2', 'BinaryAdd']),(4, 'Softmax'), (5, 'Quantize'),
+                                (6, ['Matmul', 'MatmulwithTranspose', 'BatchMatMul','TransposeBatchMatMul'])]],
+                        'out': [[(0, 'MultiHeadAttention')]]
+                    },
+                    'search_mode': 'op_type',
+                    'node_names': {
+                        0: 6,
+                    },
+                    'input_tensors': {
+                        0: [[
+                            {0: [0]},  # Q
+                            {0: [1]},  # K
+                            {6: [1]},  # V
+                            {3: [1]},  # mask_0
+                            {2: [1]},  # mask_1
+                            ],
+                            [[0, 1, 2, 3, 4], 5]]
+                    },
+                    'output_tensors': {
+                        0 : [[{6: [0]}], [[0], 1]]
+                    },
+                    'returns': [0, 2, 1, 3, 4, 5, 6]
                 },
             ]
         }
@@ -204,6 +234,24 @@ class MultiHeadAttention(Pattern):
                         attr['reshape'] = ret_old_nodes[i][5].attr['reshape']
                     if 'output_dtype' in ret_old_nodes[i][5].attr.keys():
                         attr['output_dtype'] = ret_old_nodes[i][5].attr['output_dtype']
+                elif len(ret_old_nodes[i]) == 7:
+                    if 'src0_perm' in ret_old_nodes[i][0].attr.keys():
+                        attr['Q_perm'] = ret_old_nodes[i][0].attr['src0_perm']
+                    if 'src1_perm' in ret_old_nodes[i][0].attr.keys():
+                        attr['K_perm'] = ret_old_nodes[i][0].attr['src1_perm']
+                    if ret_old_nodes[i][2].attr.get('algorithm', None) == 'div':
+                        assert isinstance(ret_old_nodes[i][2].input_tensors[1].data, np.ndarray)
+                        attr['output_scale'] = 1 / ret_old_nodes[i][2].input_tensors[1].data.item()
+                    if 'src1_perm' in ret_old_nodes[i][6].attr.keys():
+                        attr['V_perm'] = ret_old_nodes[i][6].attr['src1_perm']
+                    if 'dst_perm' in ret_old_nodes[i][6].attr.keys():
+                        attr['dst_perm'] = ret_old_nodes[i][6].attr['dst_perm']
+                    if 'reshape' in ret_old_nodes[i][6].attr.keys():
+                        attr['reshape'] = ret_old_nodes[i][6].attr['reshape']
+                    if 'output_dtype' in ret_old_nodes[i][6].attr.keys():
+                        attr['output_dtype'] = ret_old_nodes[i][6].attr['output_dtype']
+                    attr['stable_softmax'] = True
+
                 new_node.attr = attr
                 if len(new_node.input_tensors) == 15:
                     mask_1 = new_node.input_tensors[4]

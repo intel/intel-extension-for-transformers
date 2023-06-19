@@ -89,7 +89,7 @@ bool check_result(const int nthr, const bool expect_to_fail, const test_data_t& 
     EXPECT_NE(buf1, buf2);
     switch (d.op_desc.tensor_descs()[io::DST].dtype()) {
       case jd::data_type::bf16:
-        return compare_data<jd::bfloat16_t>(buf1, dst_size, buf2, dst_size, 5e-2);
+        return compare_data<jd::bfloat16_t>(buf1, dst_size, buf2, dst_size, 1e-2);
       default:
         SPARSE_LOG(ERROR) << "Unexpected dst type";
     }
@@ -177,6 +177,10 @@ static auto case_func = []() {
   cases.push_back(test_params_t{2, 256, 77, 1, 160, false, false, true, 0, false});
 
   cases.push_back(test_params_t{1, 256, 9216, 1, 64, false, false, true, 0, false});
+
+  // gpt neox cases
+  cases.push_back(test_params_t{4, 1, 32, 64, 96, false, false, true, 0, false});
+  cases.push_back(test_params_t{4, 1, 33, 64, 96, false, false, true, 0, false});
 
   return ::testing::ValuesIn(cases);
 };

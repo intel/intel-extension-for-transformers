@@ -53,7 +53,7 @@ supported_patterns = [
 
     # Text Encoder
     'TextEncoder_WordEmbedding',
-    'TextEncoder_QReshape',            
+    'TextEncoder_QReshape',
     'TextEncoder_KVReshape',
     'TextEncoder_AttentionMaskAddReshape',
     'TextEncoder_SoftmaxReshape',
@@ -106,7 +106,8 @@ supported_patterns = [
     'StartEndLogits',
     'CastTo',
 
-    # GPT-J
+    'TorchUnpackBaddbmm',
+    'RemoveZeros',
     'LowerAllTuples',
     'TorchEmbedding',
     'RmsNorm',
@@ -126,7 +127,10 @@ supported_patterns = [
     'RemoveLastView',
 
     'MatMulWithTransposeScaleAdd',
-    #'InsertQuantNode',
+    'NeoxReorderChange',
+    'NeoxRoraryPosEmb',
+
+    # 'InsertQuantNode',
     'StableDiffusion_InsertQuantNode',
     'InsertBF16Node',
     'TorchInsertBF16Node',

@@ -19,18 +19,16 @@
 
 from .op import Operator, operator_registry
 from .tensor import Tensor
-import copy
+from ..graph_utils import list2str
 
-# tf.shape(input, out_type=tf.dtypes.int32, name=None)
-# Returns a tensor containing the shape of the input tensor.
-@operator_registry(operator_type='Shape')
-class Shape(Operator):
-    """Register the Shape operator."""
+
+@operator_registry(operator_type='Baddbmm')
+class Baddbmm(Operator):
+    """Register the Tile operator."""
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
     def set_attr(self, framework, node):
-        """Extract the node attr."""
-        if framework == 'torch':
-            self._attr['start'] = node.inputsAt(1).toIValue()
-            self._attr['end'] = node.inputsAt(1).toIValue() + 1
+        self._attr['beta'] = node.inputsAt(3).toIValue()
+        self._attr['alpha'] = node.inputsAt(4).toIValue()

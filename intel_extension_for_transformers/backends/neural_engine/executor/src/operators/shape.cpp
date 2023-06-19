@@ -42,7 +42,8 @@ void ShapeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>&
   auto src_shape = input[0]->shape();
   int index = 0;
   for (int i = start_; i < end_; i++) {
-    dst_data[index++] = src_shape[i];
+    dst_data[index] = src_shape[i];
+    index++;
   }
 
   this->unref_tensors(input);

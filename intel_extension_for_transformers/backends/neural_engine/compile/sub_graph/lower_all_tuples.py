@@ -58,6 +58,9 @@ class LowerAllTuples(Pattern):
                                 idx += 1
                 remove_list.append(node.name)
         node_idx = len(model.nodes) - 1
+        dtype = "fp32"
+        if util.get_autocast_info()['cast_type'] == "bf16":
+            dtype = "bf16"
         while node_idx >= 0:
             node = model.nodes[node_idx]
             if node.op_type in ['ListUnpack', 'TupleUnpack']:
@@ -73,7 +76,7 @@ class LowerAllTuples(Pattern):
                                 tensor.source_op.append(source_op.name)
                                 if source_op.op_type == 'Input':
                                     tensor.source_op = []
-                                    tensor.dtype = "fp32"
+                                    tensor.dtype = dtype
                                     tensor.shape = [-1, -1, -1, -1]
                                 source_op.output_tensors.insert(idx, copy.deepcopy(tensor))
                                 idx += 1

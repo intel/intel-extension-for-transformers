@@ -213,7 +213,7 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
           } else {
             memset(curr_tmp_mask, 0, curr_pmask * sizeof(float));
           }
-          std::fill(curr_tmp_mask + curr_pmask, curr_tmp_mask + sl_n_pad_, -1000.f);
+          std::fill(curr_tmp_mask + curr_pmask, curr_tmp_mask + sl_n_pad_, -INFINITY);
         }
       }
     }

@@ -23,7 +23,7 @@ from .. import graph_utils as util
 from ..ops import Tensor
 from .subgraph_matcher import EXECUTOR_TYPE
 import numpy as np
-
+import copy
 
 @pattern_registry(pattern_type='InsertQuantNode')
 class InsertQuantNode(Pattern):
@@ -287,9 +287,16 @@ class InsertQuantNode(Pattern):
                                                         'remove')
 
         # Bias compensation for inner product fp32 bias to int32
+        unique_bias = []
         for node in model.nodes:
             if node.op_type in EXECUTOR_TYPE and EXECUTOR_TYPE[
                     node.op_type] == "InnerProduct" and len(node.input_tensors) > 4:
+                bias_name = node.input_tensors[2].name
+                if bias_name in unique_bias:
+                    node.input_tensors[2] = copy.deepcopy(node.input_tensors[2])
+                    bias_name = node.name + bias_name
+                    node.input_tensors[2].name = bias_name
+                unique_bias.append(bias_name)
                 bias_fp32 = node.input_tensors[2].data
                 weight_s8 = node.input_tensors[1].data
                 offset = 0

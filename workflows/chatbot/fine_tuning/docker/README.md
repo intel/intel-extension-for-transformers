@@ -27,7 +27,7 @@ Please clone a ITREX repo to this path.
 ```bash
 git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git
 ```
-Use the code at line 73 in Dockerfile and annotate the code at line 72, if you are going to run FLAN-T5:
+Use the code at line 71 in Dockerfile and annotate the code at line 70, if you are going to run FLAN-T5:
 ```bash
 vim /path/to/workspace/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/chatbot/fine_tuning/docker/Dockerfile
 ```
@@ -68,7 +68,8 @@ timeout 10800 python ./fine_tuning/finetune_seq2seq.py \
         --save_steps 2000 \
         --save_total_limit 2 \
         --overwrite_output_dir \
-        --output_dir ./flan-t5-xl_peft_finetuned_model"
+        --output_dir ./flan-t5-xl_peft_finetuned_model \
+        --peft lora"
 ```
 
 For LLaMA, use the below command line for finetuning on the Alpaca dataset.
@@ -90,7 +91,9 @@ python ./fine_tuning/finetune_clm.py \
         --overwrite_output_dir \
         --log_level info \
         --save_strategy epoch \
-        --output_dir ./llama_finetuned_model"
+        --output_dir ./llama_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer false"
 ```
 
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.

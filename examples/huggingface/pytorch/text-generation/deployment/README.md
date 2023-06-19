@@ -38,7 +38,7 @@ python optimize_llm.py --model=EleutherAI/gpt-j-6B --dtype=(fp32|bf16) --output_
 
 # int8
 wget https://huggingface.co/Intel/gpt-j-6B-pytorch-int8-static/resolve/main/pytorch_model.bin -O <path to int8_model.pt>
-python gen_ir.py --model=EleutherAI/gpt-j-6B --dtype=int8 --output_model=<path to ir> --pt_file=<path to int8_model.pt>
+python optimize_llm.py --model=EleutherAI/gpt-j-6B --dtype=int8 --output_model=<path to ir> --pt_file=<path to int8_model.pt>
 ```
 - When the input dtype is fp32 or bf16, the model will be downloaded if it does not exist.
 - When the input dtype is int8, the int8 trace model should exist.

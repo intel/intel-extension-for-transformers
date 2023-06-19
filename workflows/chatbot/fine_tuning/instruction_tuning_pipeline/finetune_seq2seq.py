@@ -201,7 +201,7 @@ class DataTrainingArguments:
                 assert extension in ["csv", "json", "txt"], "`validation_file` should be a csv, a json or a txt file."
 
 @dataclass
-class LoraArguments:
+class FinetuneArguments:
     """
     Arguments finetuning with lora config.
     """
@@ -229,6 +229,15 @@ class LoraArguments:
             "help": "Target modules for the LoRA method."
         },
     )
+    peft: Optional[str] = field(
+        default="lora",
+        metadata={
+            "help": (
+                "apply peft. default set to lora"
+            ),
+            "choices": ["lora"],
+        },
+    )
 
 
 def main():
@@ -236,13 +245,13 @@ def main():
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
 
-    parser = HfArgumentParser((DataTrainingArguments, ModelArguments, Seq2SeqTrainingArguments, LoraArguments))
+    parser = HfArgumentParser((DataTrainingArguments, ModelArguments, Seq2SeqTrainingArguments, FinetuneArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        data_args, model_args, training_args, lora_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        data_args, model_args, training_args, finetune_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
-        data_args, model_args, training_args, lora_args = parser.parse_args_into_dataclasses()
+        data_args, model_args, training_args, finetune_args = parser.parse_args_into_dataclasses()
 
     # Setup logging
     logging.basicConfig(
@@ -533,14 +542,15 @@ def main():
             raise ValueError("Must provide model_name_or_path to load a pretrained Seq2SeqLM model.")
 
         # PEFT settings
-        peft_config = LoraConfig(
-            r=lora_args.lora_rank,
-            lora_alpha=lora_args.lora_alpha,
-            lora_dropout=lora_args.lora_dropout,
-            target_modules=lora_args.lora_target_modules,
-            bias="none",
-            task_type=TaskType.SEQ_2_SEQ_LM,
-        )
+        if finetune_args.peft == "lora":
+            peft_config = LoraConfig(
+                r=finetune_args.lora_rank,
+                lora_alpha=finetune_args.lora_alpha,
+                lora_dropout=finetune_args.lora_dropout,
+                target_modules=finetune_args.lora_target_modules,
+                bias="none",
+                task_type=TaskType.SEQ_2_SEQ_LM,
+            )
 
         # model = prepare_model_for_int8_training(model)
         model = get_peft_model(model, peft_config)
