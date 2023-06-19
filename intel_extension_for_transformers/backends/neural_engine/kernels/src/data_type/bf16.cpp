@@ -37,6 +37,9 @@ bfloat16_t::bfloat16_t(float val) { (*this) = val; }
 bfloat16_t& bfloat16_t::operator=(float val) {
   union_b tmp;
   tmp.f = val;
+  // See document of VCVTNEPS2BF16 in Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume 2
+  const auto lsb = tmp.b[1] & 1;
+  tmp.u += 0x7fff + lsb;
   data = tmp.b[1];
   return *this;
 }

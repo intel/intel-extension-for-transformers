@@ -35,7 +35,7 @@ def get_node_name(node):
 op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant', 'prim::ListConstruct': 'ListConstruct',
            'aten::linear': 'InnerProduct', 'aten::slice': 'Slice', 'aten::unsqueeze': 'Unsqueeze',
            'aten::rsqrt': 'Rsqrt', 'aten::masked_fill' : 'ConstantOfShape', 'aten::mean' : 'ReduceMean',
-           'aten::embedding': 'Gather', 'aten::where': 'Where', 'aten::matmul': 'Matmul',
+           'aten::embedding': 'Gather', 'aten::gather': 'Gather', 'aten::where': 'Where', 'aten::matmul': 'Matmul',
            'aten::reshape': 'Reshape', 'aten::gelu': 'Gelu', 'aten::max' : 'Max', 'aten::cos': 'Cos',
            'aten::layer_norm': 'LayerNorm', 'aten::size': 'Shape', 'aten::view': 'View',
            'aten::permute': 'Reorder', 'aten::transpose': 'Reorder', 'aten::expand' : 'Expand',
@@ -46,12 +46,12 @@ op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant', 'prim::List
            'aten::sub': 'Sub', 'aten::gt': 'Greater', 'aten::lt': 'Less', 'aten::eq': 'Equal',
            'aten::quantize_per_tensor': 'Quantize', 'aten::dequantize': 'Dequantize',
            'prim::TupleUnpack': 'TupleUnpack','prim::TupleConstruct': 'TupleConstruct',
-           'aten::rsqrt': 'Rsqrt', 'aten::floor_divide': 'Div', 'aten::pow': 'Pow',
+           'aten::floor_divide': 'Div', 'aten::pow': 'Pow',
            'aten::full': 'Full', 'aten::zeros': 'Zeros', 'aten::repeat': 'Repeat',
            'aten::silu': 'Swish', 'prim::ListUnpack': 'ListUnpack', 'aten::ne': 'NotEqual',
-           'aten::div': 'Div', 'aten::padding_sequence' : 'PaddingSequence',
-           'aten::slice_position_ids': 'SlicePositionIds', 'aten::squeeze': 'Squeeze'}
-
+           'aten::div': 'Div', 'prim::padding_sequence' : 'PaddingSequence',
+           'prim::slice_position_ids': 'SlicePositionIds', 'aten::squeeze': 'Squeeze',
+           'aten::baddbmm': 'Baddbmm', 'prim::mybaddbmm': 'Baddbmm'}
 
 
 def torch_extract_operator(node, model, nodes_dict, engine_graph=None):

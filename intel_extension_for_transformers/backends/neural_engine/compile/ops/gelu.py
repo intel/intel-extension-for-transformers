@@ -37,4 +37,8 @@ class Gelu(Operator):
         if framework == 'tensorflow':
             self._attr['approximate'] = node.attr['approximate'].b
         if framework == 'torch':
-            self._attr['approximate'] = node.inputsAt(1).toIValue()
+            approximate = node.inputsAt(1).toIValue()
+            if approximate == 'none':
+                self._attr['algorithm'] = 'gelu_erf'
+            elif approximate == 'tanh':
+                self._attr['algorithm'] = 'gelu_tanh'

@@ -80,7 +80,7 @@ class QuantizedGraphDtypeCheck(Pattern):
 
         def _scan_nodes_graph_dtype(model, checker, graph_dtype):
             for node in model.nodes:
-                if node.attr and node.attr.get('output_dtype', 'fp32') == graph_dtype:
+                if node.attr and node.attr.get('output_dtype', 'fp32') == graph_dtype and node.name != 'input_data':
                     dst_ops = _get_dst_ops(node, model)
                     for op in dst_ops:
                         if EXECUTOR_TYPE.get(op.op_type, op.op_type) in checker[graph_dtype] and \

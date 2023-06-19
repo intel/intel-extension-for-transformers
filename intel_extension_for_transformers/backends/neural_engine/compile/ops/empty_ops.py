@@ -333,15 +333,6 @@ class TransposeBatchMatMul(Operator):
         super().__init__()
 
 
-@operator_registry(operator_type='Where')
-class Where(Operator):
-    """Register the Where operator."""
-
-    def __init__(self):
-        """The init function of this operator."""
-        super().__init__()
-
-
 @operator_registry(operator_type='Range')
 class Range(Operator):
     """Register the Range operator."""
@@ -597,3 +588,11 @@ class Silu(Operator):
     def __init__(self):
         """The init function of this operator."""
         super().__init__()
+
+@operator_registry(operator_type='Zeros')
+class Zeros(Operator):
+    """Register the Tile operator."""
+    def __init__(self):
+        """The init function of this operator."""
+        super().__init__()
+

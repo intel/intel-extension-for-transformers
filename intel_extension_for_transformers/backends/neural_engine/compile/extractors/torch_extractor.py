@@ -57,7 +57,7 @@ def fuse_padding_seq(graph):
             """
     new_g_0 = """
             graph(%input_ids.1, %attention_mask.1, %3, %4, %5, %6, %7, %8, %9, %10):
-                %19 = aten::padding_sequence(%attention_mask.1, %10)
+                %19 = prim::padding_sequence(%attention_mask.1, %10)
                 return (%19)
             """
     old_g_1 = """
@@ -72,7 +72,7 @@ def fuse_padding_seq(graph):
             """
     new_g_1 = """
             graph(%attention_mask.1, %11, %12, %13, %14, %15, %17, %8):
-                %attention_mask0.1 = aten::padding_sequence(%attention_mask.1, %8)
+                %attention_mask0.1 = prim::padding_sequence(%attention_mask.1, %8)
                 return (%attention_mask0.1)
             """
     graph_pairs = [(old_g_0, new_g_0), (old_g_1, new_g_1)]
@@ -89,12 +89,59 @@ def fuse_position_ids(graph):
             """
     new_g_0 = """
             graph(%input_ids.1, %13, %21, %7, %11):
-                %input.13 : Tensor = aten::slice_position_ids(%7, %13, %11, %input_ids.1, %13)
+                %input.13 : Tensor = prim::slice_position_ids(%7, %13, %11, %input_ids.1, %13)
                 return (%input.13)
             """
     graph_pairs = [(old_g_0, new_g_0)]
     for g_pair in graph_pairs:
         torch._C._jit_pass_custom_pattern_based_rewrite_graph(g_pair[0], g_pair[1], graph)
+
+
+
+def fuse_view(graph):
+    old_g = """
+            graph(%attn_scores.1, %query1.1, %key2.1, %176, %178, %184, %27, %5, %30, %31):
+                %query2.1 : Tensor = aten::view(%query1.1, %176)
+                %key3.1 : Tensor = aten::view(%key2.1, %178)
+                %182 : Tensor = aten::transpose(%key3.1, %31, %30)
+                %attn_scores0.1 : Tensor = aten::baddbmm(%attn_scores.1, %query2.1, %182, %27, %5)
+                %attn_scores1.1 : Tensor = aten::view(%attn_scores0.1, %184)
+                return (%attn_scores1.1)
+            """
+    new_g = """
+            graph(%attn_scores.1, %query1.1, %key2.1, %176, %178, %184, %27, %5, %30, %31):
+                %new30 : int = prim::Constant[value=3]()
+                %new31 : int = prim::Constant[value=2]()
+                %182 : Tensor = aten::transpose(%key2.1, %new31, %new30)
+                %attn_scores0.1 : Tensor = prim::mybaddbmm(%attn_scores.1, %query1.1, %182, %27, %5)
+                return (%attn_scores0.1)
+            """
+    torch._C._jit_pass_custom_pattern_based_rewrite_graph(old_g, new_g, graph)
+    torch._C._jit_pass_dce(graph)
+
+def fuse_gather_indices(graph):
+    old_g = """
+            graph(%input_ids.1, %past_key.1, %30, %31, %32, %26, %27, %33, %28, %29, %34, %35, %36):
+                %57 : int = aten::size(%input_ids.1, %32)
+                %59 : int = aten::size(%past_key.1, %31)
+                %61 : Tensor = aten::add(%57, %59, %32)
+                %position_ids.1 : Tensor = aten::arange(%59, %61, %30, %34, %35, %36)
+                %64 : Tensor = aten::unsqueeze(%position_ids.1, %33)
+                %65 : int[] = prim::ListConstruct(%29, %57)
+                %position_ids0.1 : Tensor = aten::view(%64, %65)
+                %104 : Tensor = aten::slice(%position_ids0.1, %33, %33, %28, %32)
+                %105 : Tensor = aten::unsqueeze(%104, %32)
+                %106 : Tensor = aten::slice(%105, %27, %33, %28, %32)
+                %gather_indices.1 : Tensor = aten::unsqueeze(%106, %26)
+                return (%gather_indices.1)
+            """
+    new_g = """
+            graph(%input_ids.1, %past_key.1, %30, %31, %32, %26, %27, %33, %28, %29, %34, %35, %36):
+                %gather_indices0.1 : Tensor = prim::gather_indices(%input_ids.1)
+                return (%gather_indices0.1)
+            """
+    torch._C._jit_pass_custom_pattern_based_rewrite_graph(old_g, new_g, graph)
+    torch._C._jit_pass_dce(graph)
 
 class TorchExtractor(object):
     """The TorchExtractor class.
@@ -115,13 +162,15 @@ class TorchExtractor(object):
         graph, _ = torch._C._jit_pass_lower_graph(model.graph, model._c)
         torch._C._jit_pass_dce(graph)
         torch._C._jit_pass_remove_inplace_ops(graph)
-        # torch._C._jit_pass_lower_all_tuples(graph)
         torch._C._jit_pass_constant_propagation(graph)
         removeUnusedNode(graph, ['aten::dropout', 'prim::NumToTensor', 'aten::to', 'aten::contiguous',
                                  'aten::alias', 'aten::Int', 'aten::ScalarImplicit'])
         logger.info('Start to extarct torch model ops...')
         fuse_padding_seq(graph)
         fuse_position_ids(graph)
+        fuse_view(graph)
+        fuse_gather_indices(graph)
+        
         new_graph = Graph()
         new_graph.framework_modeling_config['framework'] = 'torch'
         graph_nodes_dict = {}
@@ -209,10 +258,10 @@ class TorchExtractor(object):
                     dtype=get_data_dtype(weight)
                     )
                 graph_nodes_dict[tensor_name] = weight_tensor
-        
+
 
         for in_tensor in model_input_tensors:
-            if in_tensor.name.split('.')[0] in ['attention_mask', 'position_ids', 'input_ids',
+            if in_tensor.name.split('.')[0] in ['attention_mask', 'position_ids', 'input_ids', 'mask',
                                                 'token_type_ids']:
                 in_tensor.dtype = 'int32'  # TODO: refine this
         input_data_node = construct_node('input_data',
