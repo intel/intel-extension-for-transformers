@@ -114,22 +114,22 @@ Performance varies by use, configuration and other factors. See platform configu
 
 
 
-### Last Token Accuracy with Smoothquant
+### Last Word Accuracy with Smoothquant
 
 
 Neural Compressor: 2.1
 
-IPEX (Intel Extension for PyTorch): 2.0
+IPEX (Intel Extension for PyTorch): 2.1
 
 Dataset: lambada-openai
 
 
-| Model |  smoothquant config  | FP32  | BF16 | INT8 (mixed precision) |
+| Model |  Smoothquant Config  | FP32  | BF16 | INT8 (mixed precision) |
 |---------------------|:------:|:----------------------:|-----------------------|-----------------------------------|
 | EleutherAI/gpt-j-6B | alpha 1.0 | 68.31% | 67.86% | 68.21% (w/o BF16) |
-| decapoda-research/llama-7b-hf | alpha 0.8 | 73.61% | 73.26% | 73.57% (w/ FP32) |
-| decapoda-research/llama-13b-hf | alpha 0.7 | 76.27% | 76.01% | 75.90% (w/ FP32) |
-| decapoda-research/llama-30b-hf | alpha 0.7 | 77.57% | 77.53% | 78.40% (w/ FP32) |
+| decapoda-research/llama-7b-hf | alpha 0.8 | 73.61% | 73.26% | 73.57% (w/o BF16) |
+| decapoda-research/llama-13b-hf | alpha 0.7 | 76.27% | 76.01% | 75.90% (w/o BF16) |
+| decapoda-research/llama-30b-hf | alpha 0.7 | 77.57% | 77.53% | 78.40% (w/o BF16) |
 | facebook/opt-125m   | alpha 0.5 | 37.9% | 37.63% | 37.57% (w/o BF16) |
 | facebook/opt-350m   | alpha 0.8 | 45.16% | 45.06% | 45.53% (w/o BF16) |
 | facebook/opt-2.7b   | alpha 0.5 | 63.65% | 63.23% | 64.04% (w/ BF16) |
