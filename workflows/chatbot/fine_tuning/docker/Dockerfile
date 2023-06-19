@@ -65,7 +65,6 @@ RUN conda init bash && \
 # Build ITREX
 RUN cd /itrex && pip install -v .
 
-RUN git clone https://github.com/zphang/transformers.git && cd transformers && git checkout llama_push && pip install -e . && cd ..
 # Copy the model files to the Docker image
 # Please update the local model path here with the actual path
 COPY llama-7b-hf /llama_7b/ 
