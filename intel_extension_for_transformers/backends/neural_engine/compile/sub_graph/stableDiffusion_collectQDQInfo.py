@@ -221,7 +221,8 @@ class StableDiffusion_CollectQuantInfo(Pattern):
                 break
         if not is_qlinear_graph:
             CollectQDQInfo(model)
-            UpdateQuantInfo(model)
+            if util.get_quant_info():
+                UpdateQuantInfo(model)
         else:
             logger.error("QLinearMatMul is unimplemented.")
 
