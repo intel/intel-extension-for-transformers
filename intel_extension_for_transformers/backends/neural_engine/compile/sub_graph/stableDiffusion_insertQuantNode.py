@@ -36,19 +36,6 @@ class StableDiffusion_InsertQuantNode(Pattern):
 
     def __call__(self, model):
         """The __call__ function of this pattern class."""
-        def get_scale_zp(tensor_min_data, tensor_max_data, dtype):
-            # for asym quant
-            if (dtype == 'u8'):
-                max_sub_min = tensor_max_data - tensor_min_data
-                scale = np.where(max_sub_min == 0., 0., 255. / max_sub_min)
-                zero_point = -tensor_min_data * scale
-            # for sym quant
-            elif (dtype == 's8'):
-                max_abs = np.maximum(np.fabs(tensor_min_data), np.fabs(tensor_max_data))
-                scale = np.where(max_abs == 0., 0., 127. / max_abs)
-                zero_point = 0.
-            return scale, zero_point
-
         quant_info = util.get_quant_info()
         if not quant_info:
             return model
@@ -141,7 +128,7 @@ class StableDiffusion_InsertQuantNode(Pattern):
                             node.input_tensors[0] = \
                             model.get_node_by_name(src0_source_op[0]).input_tensors[0]
                             node.input_tensors[0].dest_op = [node.name]
-                        else: 
+                        else:
                             remove_list.append(src1_source_op[0])
                             node.input_tensors[1] = \
                             model.get_node_by_name(src1_source_op[0]).input_tensors[0]
@@ -186,41 +173,5 @@ class StableDiffusion_InsertQuantNode(Pattern):
                     for remove_idx in remove_tensors_list:
                         model.change_node_input_tensors(node.name, remove_tensors_list[0], None,
                                                         'remove')
-
-        # Bias compensation for inner product fp32 bias to int32
-        for node in model.nodes:
-            if node.op_type in EXECUTOR_TYPE and EXECUTOR_TYPE[node.op_type] in \
-               ['InnerProduct', 'Convolution'] and len(node.input_tensors) > 4:
-                bias_fp32 = node.input_tensors[2].data
-                if bias_fp32.dtype == "int32":
-                    node.input_tensors[2].dtype = 's32'
-                    continue
-                weight_s8 = node.input_tensors[1].data
-                offset = 0
-                if 'append_op' in node.attr and node.attr['append_op'] in ['binary_add', 'sum']:
-                    offset = 1
-                input_data_min = node.input_tensors[offset + 3].data
-                dtype = node.input_tensors[0].dtype
-                input_scale, input_zero_point = get_scale_zp(node.input_tensors[offset + 3].data,
-                                                            node.input_tensors[offset + 4].data,
-                                                            dtype)
-                weight_scale, weight_zero_point = get_scale_zp(node.input_tensors[offset + 5].data,
-                                                            node.input_tensors[offset + 6].data,
-                                                            's8')
-                if dtype == "u8":
-                    if "src1_perm" in node.attr and node.attr["src1_perm"] == '1,0':
-                        bias_zero_point = input_scale * input_data_min * \
-                            np.sum(weight_s8.astype(float), axis=0)
-                    else:
-                        bias_zero_point = input_scale * input_data_min * \
-                            np.sum(weight_s8.astype(float), axis=-1)
-                    bias_s32 = bias_fp32 * input_scale * weight_scale
-                    bias_s32 = np.round(bias_s32 + bias_zero_point).astype(np.int32)
-                    node.input_tensors[2].data = bias_s32
-                    node.input_tensors[2].dtype = 's32'
-                else:
-                    bias_s32 = np.round(bias_fp32 * input_scale * weight_scale).astype(np.int32)
-                    node.input_tensors[2].data = bias_s32
-                    node.input_tensors[2].dtype = 's32'
 
         return model
