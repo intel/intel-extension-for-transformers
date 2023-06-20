@@ -83,6 +83,30 @@ python finetune_clm.py \
         --use_fast_tokenizer false \
 ```
 
+For [MPT](https://huggingface.co/mosaicml/mpt-7b-instruct), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+
+```bash
+python finetune_clm.py \
+        --model_name_or_path "mosaicml/mpt-7b-instruct" \
+        --train_file "/path/to/alpaca_data.json" \
+        --dataset_concatenation \
+        --per_device_train_batch_size 8 \
+        --per_device_eval_batch_size 8 \
+        --gradient_accumulation_steps 1 \
+        --do_train \
+        --learning_rate 2e-5 \
+        --num_train_epochs 3 \
+        --logging_steps 100 \
+        --save_total_limit 2 \
+        --overwrite_output_dir \
+        --log_level info \
+        --save_strategy epoch \
+        --output_dir ./mpt_peft_finetuned_model \
+        --peft lora \
+        --trust_remote_code True \
+        --tokenizer_name "EleutherAI/gpt-neox-20b" \
+```
+
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
 
 For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
@@ -157,6 +181,7 @@ Now, run the following command in node0 and **4DDP** will be enabled in node0 an
 ``` bash
 export CCL_WORKER_COUNT=1
 export MASTER_ADDR=xxx.xxx.xxx.xxx #node0 ip
+## for DDP ptun for LLama
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
     --model_name_or_path decapoda-research/llama-7b-hf \
     --train_file ./alpaca_data.json \
@@ -180,6 +205,32 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --dataset_concatenation \
     --use_fast_tokenizer false \
     --do_train \
+
+## for DDP LORA for MPT
+mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
+    --model_name_or_path mosaicml/mpt-7b-instruct \
+    --train_file ./alpaca_data.json \
+    --bf16 True \
+    --output_dir ./mpt_peft_finetuned_model \
+    --num_train_epochs 3 \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 4 \
+    --gradient_accumulation_steps 1 \
+    --evaluation_strategy "no" \
+    --save_strategy "steps" \
+    --save_steps 2000 \
+    --save_total_limit 1 \
+    --learning_rate 2e-5 \
+    --weight_decay 0. \
+    --warmup_ratio 0.03 \
+    --lr_scheduler_type "cosine" \
+    --logging_steps 1 \
+    --peft lora \
+    --group_by_length True \
+    --dataset_concatenation \
+    --do_train \
+    --trust_remote_code True \
+    --tokenizer_name "EleutherAI/gpt-neox-20b" \
 ```
 you could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LORA,
 see https://github.com/huggingface/peft

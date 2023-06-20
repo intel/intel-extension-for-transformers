@@ -6,3 +6,4 @@ peft
 evaluate
 nltk
 rouge_score
+einops

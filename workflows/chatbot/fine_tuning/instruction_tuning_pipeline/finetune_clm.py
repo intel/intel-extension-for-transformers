@@ -32,7 +32,7 @@ from peft import (
     PromptTuningConfig,
     TaskType,
     get_peft_model,
-    get_peft_model_state_dict
+    get_peft_model_state_dict,
 )
 from peft.tuners.adaption_prompt import AdaptionPromptConfig
 from transformers import (
@@ -56,6 +56,7 @@ os.environ["WANDB_DISABLED"] = "true"
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class ModelArguments:
     """
@@ -70,28 +71,46 @@ class ModelArguments:
         },
     )
     config_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained config name or path if not the same as model_name"
+        },
     )
     tokenizer_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained tokenizer name or path if not the same as model_name"
+        },
     )
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
+        metadata={
+            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
+        },
     )
     use_fast_tokenizer: bool = field(
         default=True,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+        metadata={
+            "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
+        },
     )
     model_revision: str = field(
         default="main",
-        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+        metadata={
+            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
+        },
     )
     use_auth_token: bool = field(
         default=False,
         metadata={
             "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
             "with private models)."
+        },
+    )
+    trust_remote_code: bool = field(
+        default=False,
+        metadata={
+            "help": "should enable when using custom model architecture that is not yet part of the Hugging Face transformers package like MPT)."
         },
     )
 
@@ -103,15 +122,23 @@ class DataArguments:
     """
 
     dataset_name: Optional[str] = field(
-        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
-        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
     )
-    train_file: Optional[str] = field(default=None, metadata={"help": "The input training data file (a text file)."})
+    train_file: Optional[str] = field(
+        default=None, metadata={"help": "The input training data file (a text file)."}
+    )
     validation_file: Optional[str] = field(
         default=None,
-        metadata={"help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."},
+        metadata={
+            "help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."
+        },
     )
     max_seq_length: Optional[int] = field(
         default=512,
@@ -127,7 +154,8 @@ class DataArguments:
         },
     )
     overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached preprocessed datasets or not."}
+        default=False,
+        metadata={"help": "Overwrite the cached preprocessed datasets or not."},
     )
     pad_to_max_length: bool = field(
         default=False,
@@ -166,13 +194,13 @@ class DataArguments:
         default=None,
         metadata={
             "help": "Path to directory where the processed dataset will be saved. If path exists, try to load processed dataset from this path."
-        }
+        },
     )
     dataset_concatenation: Optional[bool] = field(
         default=False,
         metadata={
             "help": "Whether to concatenate the sentence for more efficient training."
-        }
+        },
     )
 
 
@@ -184,33 +212,23 @@ class FinetuneArguments:
 
     lora_rank: int = field(
         default=8,
-        metadata={
-            "help": "Rank parameter in the LoRA method."
-        },
+        metadata={"help": "Rank parameter in the LoRA method."},
     )
     lora_alpha: int = field(
         default=32,
-        metadata={
-            "help": "Alpha parameter in the LoRA method."
-        },
+        metadata={"help": "Alpha parameter in the LoRA method."},
     )
     lora_dropout: float = field(
         default=0.1,
-        metadata={
-            "help": "Dropout parameter in the LoRA method."
-        },
+        metadata={"help": "Dropout parameter in the LoRA method."},
     )
     lora_target_modules: List[str] = field(
-        default_factory=lambda: ["q_proj", "v_proj"],
-        metadata={
-            "help": "Target modules for the LoRA method."
-        },
+        default_factory=lambda: None,
+        metadata={"help": "Target modules for the LoRA method."},
     )
     adapter_layers: int = field(
         default=30,
-        metadata={
-            "help": "adapter layer number in the LLaMA-adapter."
-        },
+        metadata={"help": "adapter layer number in the LLaMA-adapter."},
     )
     adapter_len: int = field(
         default=10,
@@ -226,19 +244,16 @@ class FinetuneArguments:
     )
     ptun_hidden_size: int = field(
         default=1024,
-        metadata={
-            "help": "The encoder hidden size in P-tuning"
-        },
+        metadata={"help": "The encoder hidden size in P-tuning"},
     )
     peft: Optional[str] = field(
         default="lora",
         metadata={
-            "help": (
-                "apply peft. default set to lora"
-            ),
+            "help": ("apply peft. default set to lora"),
             "choices": ["llama_adapter", "lora", "ptun", "prefix", "prompt"],
         },
     )
+
 
 PROMPT_DICT = {
     "prompt_with_input": (
@@ -253,30 +268,44 @@ PROMPT_DICT = {
     ),
 }
 
+
 def create_prompts(examples):
     prompts = {}
     prompts["source"] = []
     prompts["target"] = []
     for example in examples:
-        prompt_template = PROMPT_DICT["prompt_with_input"] \
-            if example["input"] != "" else PROMPT_DICT["prompt_without_input"]
+        prompt_template = (
+            PROMPT_DICT["prompt_with_input"]
+            if example["input"] != ""
+            else PROMPT_DICT["prompt_without_input"]
+        )
         source = prompt_template.format_map(example)
         prompts["source"].append(source)
         prompts["target"].append(example["output"])
     return prompts
+
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
 
-    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments, FinetuneArguments))
+    parser = HfArgumentParser(
+        (ModelArguments, DataArguments, TrainingArguments, FinetuneArguments)
+    )
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args, finetune_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        model_args, data_args, training_args, finetune_args = parser.parse_json_file(
+            json_file=os.path.abspath(sys.argv[1])
+        )
     else:
-        model_args, data_args, training_args, finetune_args = parser.parse_args_into_dataclasses()
+        (
+            model_args,
+            data_args,
+            training_args,
+            finetune_args,
+        ) = parser.parse_args_into_dataclasses()
 
     # Setup logging
     logging.basicConfig(
@@ -284,7 +313,9 @@ def main():
         datefmt="%m/%d/%Y %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
-    logger.setLevel(logging.INFO if is_main_process(training_args.local_rank) else logging.WARN)
+    logger.setLevel(
+        logging.INFO if is_main_process(training_args.local_rank) else logging.WARN
+    )
 
     # Log on each process the small summary
     b16 = training_args.fp16 or training_args.bf16
@@ -311,15 +342,16 @@ def main():
         "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
         "use_auth_token": True if model_args.use_auth_token else None,
+        "trust_remote_code": True if model_args.trust_remote_code else None,
     }
     if model_args.config_name:
         config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
     elif model_args.model_name_or_path:
-        config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
-    else:
-        raise ValueError(
-            "Please provide value for model_name_or_path or config_name."
+        config = AutoConfig.from_pretrained(
+            model_args.model_name_or_path, **config_kwargs
         )
+    else:
+        raise ValueError("Please provide value for model_name_or_path or config_name.")
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -328,9 +360,13 @@ def main():
         "use_auth_token": True if model_args.use_auth_token else None,
     }
     if model_args.tokenizer_name:
-        tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.tokenizer_name, **tokenizer_kwargs
+        )
     elif model_args.model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.model_name_or_path, **tokenizer_kwargs
+        )
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
@@ -419,8 +455,12 @@ def main():
     for key in raw_datasets:
         prompts = create_prompts(raw_datasets[key])
         columns_to_be_removed = list(raw_datasets[key].features.keys())
-        raw_datasets[key] = raw_datasets[key].add_column("prompt_sources", prompts["source"])
-        raw_datasets[key] = raw_datasets[key].add_column("prompt_targets", prompts["target"])
+        raw_datasets[key] = raw_datasets[key].add_column(
+            "prompt_sources", prompts["source"]
+        )
+        raw_datasets[key] = raw_datasets[key].add_column(
+            "prompt_targets", prompts["target"]
+        )
         raw_datasets[key] = raw_datasets[key].remove_columns(columns_to_be_removed)
 
     # Load model
@@ -432,10 +472,12 @@ def main():
             cache_dir=model_args.cache_dir,
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
+            trust_remote_code=True if model_args.trust_remote_code else None,
         )
-        model.resize_token_embeddings(len(tokenizer))
     else:
-        raise ValueError("Must provide model_name_or_path to load a pretrained CausalLM model.")
+        raise ValueError(
+            "Must provide model_name_or_path to load a pretrained CausalLM model."
+        )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
@@ -443,12 +485,24 @@ def main():
         model.generation_config.bos_token_id = 1
         model.generation_config.eos_token_id = 2
 
-    if hasattr(model.generation_config, "pad_token_id"):
+    if (
+        hasattr(model.generation_config, "pad_token_id")
+        and model.generation_config.pad_token_id is not None
+    ):
         tokenizer.pad_token_id = model.generation_config.pad_token_id
-    if hasattr(model.generation_config, "eos_token_id"):
+    if (
+        hasattr(model.generation_config, "eos_token_id")
+        and model.generation_config.eos_token_id is not None
+    ):
         tokenizer.eos_token_id = model.generation_config.eos_token_id
-    if hasattr(model.generation_config, "bos_token_id"):
+    if (
+        hasattr(model.generation_config, "bos_token_id")
+        and model.generation_config.bos_token_id is not None
+    ):
         tokenizer.bos_token_id = model.generation_config.bos_token_id
+
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "left"  # Allow batched inference
 
     def tokenize(prompt, add_eos_token=True):
@@ -472,33 +526,51 @@ def main():
         results["input_id_len"] = [len(result) for result in results["input_ids"]]
         return results
 
-
     def preprocess_function(examples):
-        st = [s + t for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])]
+        st = [
+            s + t
+            for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])
+        ]
         examples_tokenized = tokenize(st)
-        sources_tokenized = tokenize(examples["prompt_sources"],add_eos_token=False)
+        sources_tokenized = tokenize(examples["prompt_sources"], add_eos_token=False)
         input_ids = examples_tokenized["input_ids"]
         labels = examples_tokenized["labels"]
         for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
             label[:source_len] = [IGNORE_INDEX] * source_len
-        return dict(input_ids=input_ids, labels=labels, attention_mask=examples_tokenized["attention_mask"])
+        return dict(
+            input_ids=input_ids,
+            labels=labels,
+            attention_mask=examples_tokenized["attention_mask"],
+        )
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
         tokenized_datasets = raw_datasets.map(
-            preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache
+            preprocess_function,
+            batched=True,
+            load_from_cache_file=not data_args.overwrite_cache,
         )
 
     if data_args.dataset_concatenation:
+
         def concatenate_data(dataset, max_seq_length):
             concatenated_dataset = {}
             for column in dataset.features:
-                concatenated_data = [item for sample in dataset[column] for item in sample]
-                reshaped_data = [concatenated_data[i*max_seq_length:(i+1)*max_seq_length] \
-                    for i in range(len(concatenated_data) // max_seq_length)]
+                concatenated_data = [
+                    item for sample in dataset[column] for item in sample
+                ]
+                reshaped_data = [
+                    concatenated_data[i * max_seq_length : (i + 1) * max_seq_length]
+                    for i in range(len(concatenated_data) // max_seq_length)
+                ]
                 concatenated_dataset[column] = reshaped_data
             return datasets.Dataset.from_dict(concatenated_dataset)
-        tokenized_datasets_ = tokenized_datasets["train"].remove_columns(["prompt_sources","prompt_targets"])
-        tokenized_datasets["train"] = concatenate_data(tokenized_datasets_, data_args.max_seq_length)
+
+        tokenized_datasets_ = tokenized_datasets["train"].remove_columns(
+            ["prompt_sources", "prompt_targets"]
+        )
+        tokenized_datasets["train"] = concatenate_data(
+            tokenized_datasets_, data_args.max_seq_length
+        )
 
     if training_args.do_train:
         if "train" not in tokenized_datasets:
@@ -519,9 +591,9 @@ def main():
     data_collator = DataCollatorForSeq2Seq(
         tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
     )
-    logger.info("Using data collator of type {}".format(data_collator.__class__.__name__))
-
-
+    logger.info(
+        "Using data collator of type {}".format(data_collator.__class__.__name__)
+    )
 
     if training_args.do_train:
         # PEFT settings
@@ -538,20 +610,24 @@ def main():
             peft_config = AdaptionPromptConfig(
                 adapter_layers=finetune_args.adapter_layers,
                 adapter_len=finetune_args.adapter_len,
-                task_type="CAUSAL_LM")
+                task_type="CAUSAL_LM",
+            )
         elif finetune_args.peft == "ptun":
             peft_config = PromptEncoderConfig(
                 num_virtual_tokens=finetune_args.num_virtual_tokens,
                 encoder_hidden_size=finetune_args.ptun_hidden_size,
-                task_type="CAUSAL_LM")
+                task_type="CAUSAL_LM",
+            )
         elif finetune_args.peft == "prefix":
             peft_config = PrefixTuningConfig(
                 num_virtual_tokens=finetune_args.num_virtual_tokens,
-                task_type="CAUSAL_LM")
+                task_type="CAUSAL_LM",
+            )
         elif finetune_args.peft == "prompt":
             peft_config = PromptTuningConfig(
                 num_virtual_tokens=finetune_args.num_virtual_tokens,
-                task_type="CAUSAL_LM")
+                task_type="CAUSAL_LM",
+            )
 
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
@@ -569,7 +645,10 @@ def main():
         with training_args.main_process_first(desc="save model"):
             if is_main_process(training_args.local_rank):
                 unwrapped_model = unwrap_model(model)
-                unwrapped_model.save_pretrained(training_args.output_dir, state_dict=unwrapped_model.state_dict())
+                unwrapped_model.save_pretrained(
+                    training_args.output_dir, state_dict=unwrapped_model.state_dict()
+                )
+
 
 if __name__ == "__main__":
     main()
