@@ -265,5 +265,4 @@ class StableDiffusion_CollectQuantInfo(Pattern):
         else:
             logger.error("QLinearMatMul is unimplemented.")
 
-        model.save('test_ir')
         return model
