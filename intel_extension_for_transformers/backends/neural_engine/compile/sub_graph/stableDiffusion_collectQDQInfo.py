@@ -39,7 +39,13 @@ class StableDiffusion_CollectQuantInfo(Pattern):
             'CollectQDQInfo': [
                 {
                     'patterns': {
-                        'in': [[(0, ['QuantizeLinear', 'Quantize']), (1, ['DequantizeLinear'])]],
+                        'in': [[(0, ['QuantizeLinear', 'Quantize']), (1, 'Cast'),
+                                (2, ['DequantizeLinear'])]],
+                    },
+                },
+                {
+                    'patterns': {
+                        'in': [[(0, 'ConstantOfShape'), (1, 'Cast'), (2, 'DequantizeLinear')]],
                     },
                 },
                 {
@@ -65,7 +71,7 @@ class StableDiffusion_CollectQuantInfo(Pattern):
             rm_node_list = []
             for pattern_nodes_name in patterns_nodes_name:
                 quant_node = model.get_node_by_name(pattern_nodes_name[0])
-                dquant_node = model.get_node_by_name(pattern_nodes_name[1])
+                dquant_node = model.get_node_by_name(pattern_nodes_name[2])
                 dquant_output = dquant_node.output_tensors[0]
                 dtype = "s8" if dquant_node.input_tensors[2].data.dtype == 'int8' else "u8"
                 quant_min, quant_max = get_min_max_from_onnx(dquant_node.input_tensors[1].data,
@@ -125,16 +131,34 @@ class StableDiffusion_CollectQuantInfo(Pattern):
                                 pre_quant_node.output_tensors[0].dest_op.append(dst_node.name)
                                 dst_node.input_tensors[idx] = copy.deepcopy(
                                                               pre_quant_node.output_tensors[0])
-                rm_node_list.extend([pattern_nodes_name[0], pattern_nodes_name[1]])
+                rm_node_list.extend(pattern_nodes_name[:-1])
             model.remove_nodes(rm_node_list)
 
             # Collect the weight quant info
-            pattern = pattern_mapping_config['CollectQDQInfo'][1]['patterns']['in']
-            patterns_nodes_name = util.search_pattern(pattern, model)
+            patterns_nodes_name = []
+            for i in [1, 2]:
+                pattern = pattern_mapping_config['CollectQDQInfo'][i]['patterns']['in']
+                patterns_nodes_name.extend(util.search_pattern(pattern, model))
             rm_node_list = []
             for pattern_nodes_name in patterns_nodes_name:
-                dquant_node = model.get_node_by_name(pattern_nodes_name[0])
-                dquant_output = dquant_node.output_tensors[0]
+                if len(pattern_nodes_name[:-1]) == 3:
+                    dquant_node = model.get_node_by_name(pattern_nodes_name[2])
+                    dquant_output = dquant_node.output_tensors[0]
+                    dquant_node.input_tensors[2].data = copy.deepcopy(
+                        model.get_node_by_name(pattern_nodes_name[0]).input_tensors[0].data)
+                    cast_dtype = model.get_node_by_name(pattern_nodes_name[1]).attr['DstT']
+                    try:
+                        dquant_node.input_tensors[2].data = \
+                            dquant_node.input_tensors[2].data.astype(cast_dtype)
+                    except:
+                        logger.error('Can not cast dtype {}'.format(cast_dtype))
+                        return model
+                elif len(pattern_nodes_name[:-1]) == 1:
+                    dquant_node = model.get_node_by_name(pattern_nodes_name[0])
+                    dquant_output = dquant_node.output_tensors[0]
+                else:
+                    logger.error('Invalid pattern')
+                    return model
                 is_bias = False
                 const_dtype = dquant_node.input_tensors[2].data.dtype
                 if const_dtype == "int32":
@@ -168,7 +192,7 @@ class StableDiffusion_CollectQuantInfo(Pattern):
                         if input_tensor.name == dquant_output.name:
                             matmul_node.input_tensors[idx] = copy.deepcopy(
                                                              dquant_node.input_tensors[0])
-                rm_node_list.append(pattern_nodes_name[0])
+                rm_node_list.extend(pattern_nodes_name[:-1])
             model.remove_nodes(rm_node_list)
 
         def UpdateQuantInfo(model):
