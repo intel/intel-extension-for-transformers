@@ -5,19 +5,18 @@
 GEMM kernel provides a function `can_implement` to filter the limitations, call it to check the parameters before run GEMM kernel.
 
 - Matrix Mutilple Accumulation (tile_mma)
-    - `tile_shape::sg_tile_size_x` should be a multiple of 16.
-    - `tile_shape::sg_tile_size_y` should be a multiple of 8 in matrix-engine-based GEMM.
-    - `k_stride * sizeof(dtype)` only can be 32B in vector-engine-based GEMM, 32B or 64B in matrix-engine-based GEMM.
+    - Sub-group tile size on column, `tile_shape::sg_tile_size_x` must be a multiple of 16.
+    - Sub-group tile size on row, `tile_shape::sg_tile_size_y` must be a multiple of 8 in matrix-engine-based GEMM.
+    - The tile size consumed by each step on the reduction dimension, `k_stride * sizeof(dtype)` must be 32B in vector-engine-based GEMM, 32B or 64B in matrix-engine-based GEMM.
 - Global Memory Access
-    - Base-address should be 64B aligned.
-    - Leading-dimension size of the matrix should be 8B aligned and should be equal or greater than 64B.
-    - Width size of the matrix should be 4B aligned and should be equal or greater than 64B.
+    - Base-address of the matrix must be 64B aligned.
+    - Leading-dimension size of the matrix must be multiple of 8B aligned and should be equal or greater than 64B.
+    - Width size of the matrix must be 4B aligned and should be equal or greater than 64B.
 - Local Memory Access
-    - Intel® XeTLA always assumes the matrix layout in local memory is row-major.
-    - MatA and MatB can not load from local memory if the mma_engine is `mma_engine::fpu`.
-    - No out of boundary check supported. Can not handle group size and local surface size not align.
-    - The data access should be 4B aligned (this will be automatically met when following the GEMM MMA limitation).
-
+    - Base-address of the matrix must be 4B aligned.
+    - The matrix layout in local memory must be row-major.
+    - Loading Matrix A and B works only when the mma_engine is mma_engine::fpu.
+    - GEMM size must be divisible by the sub-group tile size on both row and column dimension.
 
 ## Copyright
 Copyright (c) 2022-2023 Intel Corporation Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
