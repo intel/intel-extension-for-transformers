@@ -149,7 +149,7 @@ supported_patterns = [
     'MultiHeadAttention',
     'OutputData',
     'QuantizedGraphDtypeRefactor',
-    'ExplicitNHWCTransposeForConv',
+    # 'ExplicitNHWCTransposeForConv',
 
     'Int8BF16MixedPrecisionChecker',
     'LlamaPostprocess',

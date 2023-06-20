@@ -177,6 +177,21 @@ class StableDiffusion_CollectQuantInfo(Pattern):
                                            [quant_min, quant_max, dtype])
                     util.insert_quant_info(dquant_node.output_tensors[0].name,
                                            [quant_min, quant_max, dtype])
+                    # transpose weight
+                    for dst_op in dquant_output.dest_op:
+                        down_node = model.get_node_by_name(dst_op)
+                        if EXECUTOR_TYPE.get(down_node.op_type, down_node.op_type) == "Reorder":
+                            assert len(down_node.output_tensors[0].dest_op) == 1
+                            assert down_node.attr.get('dst_perm', None) == '1,0'
+                            dquant_node.input_tensors[0].data = np.transpose(
+                                dquant_node.input_tensors[0].data, (1,0))
+                            rm_node_list.append(down_node.name)
+                            dquant_node.output_tensors[0] = copy.deepcopy(
+                                down_node.output_tensors[0])
+                            dquant_node.output_tensors[0].source_op = [dquant_node.name]
+                            util.insert_quant_info(down_node.output_tensors[0].name,
+                                                    [quant_min, quant_max, dtype])
+                dquant_output = dquant_node.output_tensors[0]
                 if dquant_output.name in new_dict:
                     old_quant_min = new_dict[dquant_output.name][0]
                     old_quant_max = new_dict[dquant_output.name][1]
@@ -196,7 +211,7 @@ class StableDiffusion_CollectQuantInfo(Pattern):
             model.remove_nodes(rm_node_list)
 
         def UpdateQuantInfo(model):
-            update_op_type = ['Reorder', 'Reshape']
+            update_op_type = ['Reorder', 'Reshape', 'Cast']
             def _update_stream(start_tensor, mode = 'upstream'):
                 for name in start_tensor.source_op:
                     n = None
