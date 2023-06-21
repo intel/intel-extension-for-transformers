@@ -112,20 +112,20 @@ if args.quantize:
         d_k = hidden_size // num_attention_heads
 
         if user_model.config.model_type != "bloom":
-            new_shape = [input_bs, num_attention_heads, 0, d_k]
-            empty_tensor = torch.empty(size=new_shape)
+            new_shape = [input_bs, num_attention_heads, 1, d_k]
+            dummy_tensor = torch.ones(size=new_shape)
             past_key_values = tuple(
-                tuple(empty_tensor for _ in range(nb_pkv)) for _ in range(num_layers)
+                tuple(dummy_tensor for _ in range(nb_pkv)) for _ in range(num_layers)
             )
-            pkv = tuple(empty_tensor for _ in range(nb_pkv))
+            pkv = tuple(dummy_tensor for _ in range(nb_pkv))
         else:
             pkv = ()
             for nb_pkv in range(nb_pkv):
                 if nb_pkv % 2 == 0:
-                    new_shape = [input_bs * num_attention_heads, d_k, 0]
+                    new_shape = [input_bs * num_attention_heads, d_k, 1]
                 else:
-                    new_shape = [input_bs * num_attention_heads, 0, d_k]
-                pkv = pkv + (torch.empty(size=new_shape),)
+                    new_shape = [input_bs * num_attention_heads, 1, d_k]
+                pkv = pkv + (torch.ones(size=new_shape),)
         past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
         return past_key_values
 
@@ -195,7 +195,8 @@ if args.quantize:
     input_ids = user_model.dummy_inputs["input_ids"]
     input_bs, input_len = input_ids.shape
     past_key_values = generate_dummy_past_key_values(input_bs, user_model)
-    attention_mask = torch.ones(input_bs, input_len)
+    attention_mask = torch.ones(input_bs, input_len + 1)
+    attention_mask[:,0] = 0
     example_inputs = (
         input_ids,
         tuple(past_key_values),
@@ -206,7 +207,8 @@ if args.quantize:
         for i, (input_ids, last_ind) in enumerate(calib_dataloader):
             input_bs, input_len = input_ids.shape
             past_key_values = generate_dummy_past_key_values(input_bs, user_model)
-            attention_mask = torch.ones(input_bs, input_len)
+            attention_mask = torch.ones(input_bs, input_len + 1)
+            attention_mask[:,0] = 0
             if i >= args.calib_iters:
                 break
             prepared_model(
