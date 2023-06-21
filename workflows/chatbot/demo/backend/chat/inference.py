@@ -96,36 +96,29 @@ def load_model(model_name, device, num_gpus, load_8bit=False, itrex=False, ipex=
     else:
         raise ValueError(f"Invalid device: {device}")
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
-    config = AutoConfig.from_pretrained(model_name) 
-    # model_id = "/home/ubuntu/mengfeil/llama-7b-hf-conv"
-    # model_id = "EleutherAI/gpt-j-6B"
-    # tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=False)
-    # config = AutoConfig.from_pretrained(model_id)
-   #  print(config)
+    if 'mpt' in model_name:
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        from mpt.modeling_mpt import MPTForCausalLM
+        from mpt.configuration_mpt import MPTConfig
+        config = MPTConfig.from_pretrained(model_name)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+        config = AutoConfig.from_pretrained(model_name) 
 
     if ipex:
         print('=='*10, "ipex")
         import intel_extension_for_pytorch as intel_ipex
-        model = AutoModelForCausalLM.from_pretrained(model_name,
-            low_cpu_mem_usage=True, return_dict=False)
+        if "mpt" in model_name:
+            model = MPTForCausalLM.from_pretrained(model_name,
+                                                    low_cpu_mem_usage=True,
+                                                    return_dict=True,
+                                                    torch_dtype=torch.bfloat16,
+                                                    max_seq_len=8192)
+        else:
+            model = AutoModelForCausalLM.from_pretrained(model_name,
+                                                         low_cpu_mem_usage=True,
+                                                         return_dict=False)
         model = intel_ipex.optimize(model.eval(), dtype=torch.bfloat16, inplace=True)
-        """
-        example_inputs = []
-        input_ids = torch.tensor([[0]*32])
-        attention_mask = torch.ones(1, input_ids.shape[1]+1)
-        # only for gpt-j-6b
-        shape = [1,config.n_head,1,config.n_embd // config.n_head]
-        layers = config.n_layer
-        past_key_value_torch = tuple([(torch.zeros(shape), torch.zeros(shape)) for i in range(layers)])
-        example_inputs.append(input_ids)
-        example_inputs.append(past_key_value_torch)
-        example_inputs.append(attention_mask)
-        # example_inputs.append(past_key_value_torch)
-        self_jit = torch.jit.trace(model, tuple(example_inputs), strict=False)
-        self_jit = torch.jit.freeze(self_jit.eval())
-        setattr(model, "trace_graph", self_jit)
-        """
         model = IpexWrapper(model)
         setattr(model, "config", model.model.config)
     elif itrex:
@@ -135,14 +128,22 @@ def load_model(model_name, device, num_gpus, load_8bit=False, itrex=False, ipex=
         setattr(model, "config", config)
     else:
         print('=='*10, "normal fp32")
-        model = AutoModelForCausalLM.from_pretrained(model_name,
-                low_cpu_mem_usage=True)
+        if "mpt" in model_name:
+            model = AutoModelForCausalLM.from_pretrained(model_name,
+                                                        low_cpu_mem_usage=True,
+                                                        torch_dtype=torch.bfloat16,
+                                                        trust_remote_code=True,
+                                                        max_seq_len=8192)
+        else:
+            model = AutoModelForCausalLM.from_pretrained(model_name,
+                                                        low_cpu_mem_usage=True)
 
-    special_tokens_dict = {}
-    special_tokens_dict["eos_token"] = "</s>"
-    special_tokens_dict["pad_token"] = "</s>"
-    # </s>
-    tokenizer.eos_token = "</s>"
+    if not "mpt" in model_name:
+        special_tokens_dict = {}
+        special_tokens_dict["eos_token"] = "</s>"
+        special_tokens_dict["pad_token"] = "</s>"
+        # </s>
+        tokenizer.eos_token = "</s>"
 
     if load_8bit:
         compress_module(model, device)

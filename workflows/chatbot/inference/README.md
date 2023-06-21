@@ -36,11 +36,11 @@ python generate.py \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b-instruct). it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b ). it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
 
 ```bash
 python generate.py \
-        --base_model_path "mosaicml/mpt-7b-instruct" \
+        --base_model_path "mosaicml/mpt-7b" \
         --peft_model_path "./mpt_peft_finetuned_model" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --trust_remote_code \

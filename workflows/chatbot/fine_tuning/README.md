@@ -83,11 +83,11 @@ python finetune_clm.py \
         --use_fast_tokenizer false \
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b-instruct), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "mosaicml/mpt-7b-instruct" \
+        --model_name_or_path "mosaicml/mpt-7b" \
         --train_file "/path/to/alpaca_data.json" \
         --dataset_concatenation \
         --per_device_train_batch_size 8 \
@@ -208,7 +208,7 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
 
 ## for DDP LORA for MPT
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
-    --model_name_or_path mosaicml/mpt-7b-instruct \
+    --model_name_or_path mosaicml/mpt-7b \
     --train_file ./alpaca_data.json \
     --bf16 True \
     --output_dir ./mpt_peft_finetuned_model \

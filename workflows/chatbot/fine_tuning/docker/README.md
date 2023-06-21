@@ -27,13 +27,12 @@ Please clone a ITREX repo to this path.
 ```bash
 git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git
 ```
-Use the code at line 71 in Dockerfile and annotate the code at line 70, if you are going to run FLAN-T5:
+You can modify the model path at line 70 if you are going to run other models:
 ```bash
 vim /path/to/workspace/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/chatbot/fine_tuning/docker/Dockerfile
 ```
 ```
-#COPY llama-7b-hf /llama_7b/ 
-COPY flan-t5-xl /flan/protobuf
+COPY flan-t5-xl /flan/
 ```
 
 ## 4. Build Docker Image
