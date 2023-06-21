@@ -138,6 +138,7 @@ size_t dynamic_quant_mha_k_t::get_workspace_size() const {
              (pad_to(N_, 64) + head_num_ * pad_to(head_size_, 16));  // exp &  dst
 }
 
+#ifdef __AVX512F__
 bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
   const auto max_threads = omp_get_max_threads();
   const auto src_q = reinterpret_cast<const int8_t*>(rt_data[io::SRC_Q]);
@@ -343,6 +344,12 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
 
   return true;
 }
+#else
+bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>&) const {
+  SPARSE_LOG(ERROR) << "dynamic_quant_mha execute for AVX2 not implemented!";
+  return false;
+}
+#endif
 
 #ifdef WITH_GCC_FLAGS
 #pragma GCC diagnostic pop

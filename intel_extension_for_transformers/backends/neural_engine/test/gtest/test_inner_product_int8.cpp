@@ -178,57 +178,56 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
     tensors[i] = new Tensor(*tensor_configs[i]);
     tensors[i]->add_tensor_life(1);
   }
-  float* min_data = reinterpret_cast<float*>(tensors[1]->mutable_data());
-  float* max_data = reinterpret_cast<float*>(tensors[2]->mutable_data());
-  void* dst_data = tensors[0]->mutable_data();
+  const auto min_data = reinterpret_cast<float*>(tensors[1]->mutable_data());
+  const auto max_data = reinterpret_cast<float*>(tensors[2]->mutable_data());
+  const auto dst_data = tensors[0]->mutable_data();
+  const auto src_dt = tensors[0]->dtype();
+  const auto src_shape = tensors[0]->shape();
   if (quant_type == "per_channel") {
-    for (int y = 0; y < tensors[0]->shape()[1]; y++) {
+    for (int y = 0; y < src_shape[1]; y++) {
       min_data[y] = origin_fp32_data[y];
       max_data[y] = origin_fp32_data[y];
-      for (int x = 1; x < tensors[0]->shape()[0]; x++) {
-        min_data[y] = std::min(min_data[y], origin_fp32_data[x * tensors[0]->shape()[1] + y]);
-        max_data[y] = std::max(max_data[y], origin_fp32_data[x * tensors[0]->shape()[1] + y]);
+      for (int x = 1; x < src_shape[0]; x++) {
+        min_data[y] = std::min(min_data[y], origin_fp32_data[x * src_shape[1] + y]);
+        max_data[y] = std::max(max_data[y], origin_fp32_data[x * src_shape[1] + y]);
       }
-      vector<float> scales = executor::GetScales(min_data + y, max_data + y, 1, tensors[0]->dtype());
-      for (int x = 0; x < tensors[0]->shape()[0]; x++)
-        if (tensors[0]->dtype() == "u8") {
-          uint8_t* dst_data_ = reinterpret_cast<uint8_t*>(dst_data) + x * tensors[0]->shape()[1] + y;
-          int32_t data = nearbyint((origin_fp32_data[x * tensors[0]->shape()[1] + y] - min_data[y]) * scales[0]);
+      vector<float> scales = executor::GetScales(min_data + y, max_data + y, 1, src_dt);
+      for (int x = 0; x < src_shape[0]; x++)
+        if (src_dt == "u8") {
+          int32_t data = nearbyint((origin_fp32_data[x * src_shape[1] + y] - min_data[y]) * scales[0]);
           data = data < 0 ? 0 : data;
           data = data > 255 ? 255 : data;
-          *dst_data_ = static_cast<uint8_t>(data);
-        } else if (tensors[0]->dtype() == "s8") {
-          int8_t* dst_data_ = reinterpret_cast<int8_t*>(dst_data) + x * tensors[0]->shape()[1] + y;
-          int32_t data = nearbyint(origin_fp32_data[x * tensors[0]->shape()[1] + y] * scales[0]);
+          reinterpret_cast<uint8_t*>(dst_data)[x * src_shape[1] + y] = static_cast<uint8_t>(data);
+        } else if (src_dt == "s8") {
+          int32_t data = nearbyint(origin_fp32_data[x * src_shape[1] + y] * scales[0]);
           data = data < -128 ? -128 : data;
           data = data > 127 ? 127 : data;
-          *dst_data_ = static_cast<int8_t>(data);
+          reinterpret_cast<int8_t*>(dst_data)[x * src_shape[1] + y] = static_cast<int8_t>(data);
         }
       max_data[y] = 1.0 / scales[0];
       // memcpy(max_data + y, scales.data(), 1 * sizeof(float));
     }
   } else if (quant_type == "per_tensor") {
-    executor::runtime_minmax(origin_fp32_data, tensors[0]->size(), min_data, max_data);
-    vector<float> scales = executor::GetScales(min_data, max_data, 1, tensors[0]->dtype());
+    const auto src_size = tensors[0]->size();
+    executor::runtime_minmax(origin_fp32_data, src_size, min_data, max_data);
+    vector<float> scales = executor::GetScales(min_data, max_data, 1, src_dt);
 #if __AVX512F__
-    executor::Quantize_avx512(tensors[0]->size(), tensors[0]->dtype(), origin_fp32_data, min_data, scales, dst_data);
+    executor::Quantize_avx512(src_size, src_dt, origin_fp32_data, min_data, scales, dst_data);
 #else
-    executor::Quantize(tensors[0]->size(), tensors[0]->dtype(), origin_fp32_data, min_data, scales, dst_data);
+    executor::Quantize(src_size, src_dt, origin_fp32_data, min_data, scales, dst_data);
 #endif
     *max_data = 1.0 / scales[0];
     // memcpy(max_data, scales.data(), 1 * sizeof(float));
   } else if (quant_type == "per_token") {
-    for (int x = 0; x < tensors[0]->shape()[0]; x++) {
-      executor::runtime_minmax(origin_fp32_data + x * tensors[0]->shape()[1], tensors[0]->shape()[1], min_data + x,
-                               max_data + x);
-      vector<float> scales = executor::GetScales(min_data + x, max_data + x, 1, tensors[0]->dtype());
+    for (int x = 0; x < src_shape[0]; x++) {
+      executor::runtime_minmax(origin_fp32_data + x * src_shape[1], src_shape[1], min_data + x, max_data + x);
+      const auto scales = executor::GetScales(min_data + x, max_data + x, 1, src_dt);
 #if __AVX512F__
-      executor::Quantize_avx512(tensors[0]->shape()[1], tensors[0]->dtype(),
-                                origin_fp32_data + x * tensors[0]->shape()[1], min_data, scales,
-                                dst_data + x * tensors[0]->shape()[1]);
+      executor::Quantize_avx512(src_shape[1], src_dt, origin_fp32_data + x * src_shape[1], min_data, scales,
+                                reinterpret_cast<char*>(dst_data) + x * src_shape[1]);
 #else
-      executor::Quantize(tensors[0]->shape()[1], tensors[0]->dtype(), origin_fp32_data + x * tensors[0]->shape()[1],
-                         min_data, scales, dst_data + x * tensors[0]->shape()[1]);
+      executor::Quantize(src_shape[1], src_dt, origin_fp32_data + x * src_shape[1], min_data, scales,
+                         reinterpret_cast<char*>(dst_data) + x * src_shape[1]);
 #endif
       max_data[x] = 1.0 / scales[0];
       // memcpy(max_data + x, scales.data(), 1 * sizeof(float));

@@ -20,24 +20,13 @@
 #include <vector>
 #include <memory>
 
-#include "include/common.hpp"
-#include "include/operator.hpp"
-#include "include/operators/dense_weight.hpp"
+#include "../common.hpp"
+#include "../operator.hpp"
 #ifdef WITH_SPARSELIB
 #include "kernels/include/interface.hpp"
 #endif
 
 namespace executor {
-
-template<typename T1, typename T2 = T1>
-struct AttentionWeight {
-    DenseWeight<T1, T2> query_weight;
-    DenseWeight<T1, T2> key_weight;
-    DenseWeight<T1, T2> value_weight;
-    DenseWeight<T1, T2> attention_output_weight;
-    DenseWeight<T1, T2> ia3_key_weight;
-    DenseWeight<T1, T2> ia3_value_weight;
-};
 
 // \brief MULTI_HEAD_ATTENTION operators
 class MultiHeadAttentionOperator : public Operator {

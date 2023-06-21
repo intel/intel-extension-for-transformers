@@ -77,16 +77,5 @@ class LayerNormOperator : public Operator {
   vector<int64_t> reshape_dims_;
   vector<int64_t> mul_;
 };
-
-/**
- * @brief: LayerNorm weights (New API only)
- *
- */
-template<typename T>
-struct LayerNormWeight {
-    const T* gamma = nullptr;
-    const T* beta  = nullptr;
-};
-
 }  // namespace executor
 #endif  // ENGINE_EXECUTOR_INCLUDE_OPERATORS_LAYER_NORM_HPP_

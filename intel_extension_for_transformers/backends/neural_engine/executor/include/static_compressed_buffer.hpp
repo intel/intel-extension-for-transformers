@@ -25,6 +25,14 @@
 
 #include "activation_dag.hpp"
 
+#ifdef _WIN32
+#include <malloc.h>
+#define aligned_alloc(alignment, size) _aligned_malloc(size, alignment)
+#define aligned_free(ptr) _aligned_free(ptr)
+#else
+#define aligned_free free
+#endif
+
 namespace executor {
 using std::map;
 using std::pair;
