@@ -66,7 +66,8 @@ class Orchestrate_optimizer:
             raise RuntimeError("`NLPOptimizer` requires at least one `Quantization`, "
                                "`Pruning` or `Distillation` object")
         self.output_dir = output_dir
-        self.model_config = model.config
+        if hasattr(model, 'config') and isinstance(model.config, PretrainedConfig):
+            self.model_config = model.config
         self.enable_inc_quant = False
         self.enable_inc_pruning = False
         self.scheduler = Scheduler()
@@ -107,9 +108,10 @@ class Orchestrate_optimizer:
         """
         os.makedirs(shlex.quote(output_dir), exist_ok=True)
         torch.save(self.opt_model.quantized_state_dict(), os.path.join(shlex.quote(output_dir), WEIGHTS_NAME))
-        if self.enable_inc_quant == True:
-            self.model_config.torch_dtype = "int8"
-        self.model_config.save_pretrained(output_dir)
+        if hasattr(self, 'model_config') and isinstance(self.model_config, PretrainedConfig):
+            if self.enable_inc_quant == True:
+                self.model_config.torch_dtype = "int8"
+            self.model_config.save_pretrained(output_dir)
         if tokenizer:   # pragma: no cover
             tokenizer.save_pretrained(output_dir)
         logger.info("orchestrate_optimizations model and configure file have saved to {}".format(
