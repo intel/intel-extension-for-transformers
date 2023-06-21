@@ -39,6 +39,6 @@ CMakeUserPresets.json
 /examples/**/model_and_tokenizer/
 /examples/**/*ir*/
 build_tmp
-
 /workflows/chatbot/demo/front_end/node_modules
 /workflows/chatbot/demo/front_end/front_end/.svelte-kit
+/intel_extension_for_transformers/backends/neural_engine/graph/.vs

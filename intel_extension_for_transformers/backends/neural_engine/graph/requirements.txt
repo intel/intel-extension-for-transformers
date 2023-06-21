@@ -1,0 +1,5 @@
+torch
+transformers
+numpy
+sentencepiece
+protobuf<3.20
