@@ -217,6 +217,7 @@ def main():
                 top_p=args.top_p,
                 top_k=args.top_k,
                 repetition_penalty=args.repetition_penalty,
+                no_repeat_ngram_size=2,
             ),
         )
         print("=" * (60 + len(idxs)) + "\n")

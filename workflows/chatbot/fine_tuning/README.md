@@ -71,7 +71,7 @@ python finetune_clm.py \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
         --do_train \
-        --learning_rate 2e-5 \
+        --learning_rate 1e-4 \
         --num_train_epochs 3 \
         --logging_steps 100 \
         --save_total_limit 2 \
@@ -94,7 +94,7 @@ python finetune_clm.py \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
         --do_train \
-        --learning_rate 2e-5 \
+        --learning_rate 1e-4 \
         --num_train_epochs 3 \
         --logging_steps 100 \
         --save_total_limit 2 \
@@ -195,10 +195,7 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --save_strategy "steps" \
     --save_steps 2000 \
     --save_total_limit 1 \
-    --learning_rate 2e-5 \
-    --weight_decay 0. \
-    --warmup_ratio 0.03 \
-    --lr_scheduler_type "cosine" \
+    --learning_rate 1e-4 \
     --logging_steps 1 \
     --peft ptun \
     --group_by_length True \
@@ -220,10 +217,7 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --save_strategy "steps" \
     --save_steps 2000 \
     --save_total_limit 1 \
-    --learning_rate 2e-5 \
-    --weight_decay 0. \
-    --warmup_ratio 0.03 \
-    --lr_scheduler_type "cosine" \
+    --learning_rate 1e-4  \
     --logging_steps 1 \
     --peft lora \
     --group_by_length True \

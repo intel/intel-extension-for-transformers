@@ -215,11 +215,11 @@ class FinetuneArguments:
         metadata={"help": "Rank parameter in the LoRA method."},
     )
     lora_alpha: int = field(
-        default=32,
+        default=16,
         metadata={"help": "Alpha parameter in the LoRA method."},
     )
     lora_dropout: float = field(
-        default=0.1,
+        default=0.05,
         metadata={"help": "Dropout parameter in the LoRA method."},
     )
     lora_target_modules: List[str] = field(
@@ -252,6 +252,10 @@ class FinetuneArguments:
             "help": ("apply peft. default set to lora"),
             "choices": ["llama_adapter", "lora", "ptun", "prefix", "prompt"],
         },
+    )
+    train_on_inputs: bool = field(
+        default=True,
+        metadata={"help": "if False, masks out inputs in loss"},
     )
 
 
@@ -532,11 +536,14 @@ def main():
             for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])
         ]
         examples_tokenized = tokenize(st)
-        sources_tokenized = tokenize(examples["prompt_sources"], add_eos_token=False)
         input_ids = examples_tokenized["input_ids"]
         labels = examples_tokenized["labels"]
-        for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
-            label[:source_len] = [IGNORE_INDEX] * source_len
+        if not finetune_args.train_on_inputs:
+            sources_tokenized = tokenize(
+                examples["prompt_sources"], add_eos_token=False
+            )
+            for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
+                label[:source_len] = [IGNORE_INDEX] * source_len
         return dict(
             input_ids=input_ids,
             labels=labels,
