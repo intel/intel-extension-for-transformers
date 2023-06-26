@@ -58,8 +58,8 @@ class StableDiffusion_CollectQuantInfo(Pattern):
 
         def get_min_max_from_onnx(scale, zp, dtype='s8'):
             max_range = 127 if 's8' in dtype else 255
-            quant_max = ((max_range - zp) * scale).astype("float32")
-            quant_min = quant_max - 255 * scale.astype("float32")
+            quant_max = (max_range - zp) * scale
+            quant_min = quant_max - 255 * scale
             return quant_min, quant_max
 
         def CollectQDQInfo(model):
@@ -128,12 +128,16 @@ class StableDiffusion_CollectQuantInfo(Pattern):
                                 if pre_quant_node.op_type == "Transpose":
                                     util.insert_quant_info(pre_quant_node.input_tensors[0].name,
                                                            [quant_min, quant_max, dtype])
-                                for idx, it in enumerate(pre_quant_node.output_tensors):
-                                    if it.name == quant_node.input_tensors[0].name:
-                                        pre_quant_node.output_tensors[idx].dest_op.append(
-                                            dst_node.name)
-                                        dst_node.input_tensors[0] = copy.deepcopy(
-                                                              pre_quant_node.output_tensors[idx])
+
+                                pre_quant_node.output_tensors[0].dest_op.append(dst_node.name)
+                                if len(pre_quant_node.output_tensors) == 1:
+                                    dst_node.input_tensors[idx] = copy.deepcopy(pre_quant_node.output_tensors[0])
+                                else:
+                                    for idx, it in enumerate(pre_quant_node.output_tensors):
+                                        if it.name == quant_node.input_tensors[0].name:
+                                            pre_quant_node.output_tensors[idx].dest_op.append(dst_node.name)
+                                            dst_node.input_tensors[0] = copy.deepcopy(pre_quant_node.output_tensors[idx])
+
                 rm_node_list.extend(pattern_nodes_name[:-1])
             model.remove_nodes(rm_node_list)
 
@@ -188,8 +192,6 @@ class StableDiffusion_CollectQuantInfo(Pattern):
                             assert down_node.attr.get('dst_perm', None) == '1,0'
                             dquant_node.input_tensors[0].data = np.transpose(
                                 dquant_node.input_tensors[0].data, (1,0))
-                            dquant_node.input_tensors[0].shape = \
-                                list(dquant_node.input_tensors[0].data.shape)
                             rm_node_list.append(down_node.name)
                             dquant_node.output_tensors[0] = copy.deepcopy(
                                 down_node.output_tensors[0])

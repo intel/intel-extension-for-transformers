@@ -36,17 +36,28 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
             'Transformer2Dmodel_EncoderHiddenStatesReshape': [
                 {
                     'patterns': {
-                        'in': [[(0, 'Input'), (1, 'MatMul')]],
+                        'in': [[(0, 'Input'), (1, ['MatMul', 'MatMulWithBias'])]],
                     },
                 },
+                # {
+                #     'patterns': {
+                #         'in': [[(0, 'Input'), (1, 'MatMul')]],
+                #     },
+                # },
             ]
         }
 
+        # pattern = pattern_mapping_config['Transformer2Dmodel_EncoderHiddenStatesReshape'][1]['patterns']['in']
+        # patterns_nodes_name = util.search_pattern(pattern, model)
+        # import pdb;pdb.set_trace()
+
         pattern = pattern_mapping_config['Transformer2Dmodel_EncoderHiddenStatesReshape'][0]['patterns']['in']
         patterns_nodes_name = util.search_pattern(pattern, model)
-        logger.info('Transformer2Dmodel_EncoderHiddenStatesReshape mathched...')
-        logger.debug('Transformer2Dmodel_EncoderHiddenStatesReshape = {}'.format(patterns_nodes_name))
+
+        #import pdb;pdb.set_trace()
         if len(patterns_nodes_name) != 0:
+            logger.info('Transformer2Dmodel_EncoderHiddenStatesReshape mathched...')
+            logger.debug('Transformer2Dmodel_EncoderHiddenStatesReshape = {}'.format(patterns_nodes_name))
             first_matmul_node_idx = -1
             all_dest_op = []
             for i in range(len(patterns_nodes_name)):
@@ -87,5 +98,9 @@ class Transformer2Dmodel_EncoderHiddenStatesReshape(Pattern):
             new_node.output_tensors[0].dest_op = all_dest_op
             assert first_matmul_node_idx != -1
             model.insert_nodes(first_matmul_node_idx, [new_node])
+
+            quant_info = util.get_quant_info()
+            util.insert_quant_info(new_node.output_tensors[0].name, quant_info[input_tensors[0].name])
+            #import pdb;pdb.set_trace()
 
         return model

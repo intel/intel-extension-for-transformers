@@ -48,6 +48,9 @@ class StableDiffusion_InsertQuantNode(Pattern):
                 if node.op_type in EXECUTOR_TYPE and \
                 (EXECUTOR_TYPE[node.op_type] in ['InnerProduct', 'Matmul', 'Convolution']):
                     for idx, input_tensor in enumerate(node.input_tensors):
+                        # if node.name == "/0/0/0/attn2/to_k/Add":
+                        #     print(node.name, node.op_type, node.input_tensors[0].name, len(node.input_tensors))
+                        #     import pdb;pdb.set_trace()
                         input_name = input_tensor.name
                         insert_offset = 1 if len(node.input_tensors) % 2 == 0 else 0
                         insert_offset = insert_offset - 2 if "append_op" not in node.attr and \
@@ -111,36 +114,36 @@ class StableDiffusion_InsertQuantNode(Pattern):
                                                                 quant_max, 'insert')
                                 util.insert_quant_info(node.name, [])
 
-            # remove fall back quant nodes
-            remove_list=[]
-            for node in model.nodes:
-                if node.op_type in EXECUTOR_TYPE and \
-                (EXECUTOR_TYPE[node.op_type] in ['InnerProduct', 'Matmul', 'Convolution']):
-                    src0_dtype = node.input_tensors[0].dtype == "u8" or \
-                                node.input_tensors[0].dtype == "s8"
-                    src1_dtype = node.input_tensors[1].dtype == "u8" or \
-                                node.input_tensors[1].dtype == "s8"
-                    if src0_dtype ^ src1_dtype:
-                        src0_source_op = node.input_tensors[0].source_op
-                        src1_source_op = node.input_tensors[1].source_op
-                        if src0_dtype:
-                            remove_list.append(src0_source_op[0])
-                            node.input_tensors[0] = \
-                            model.get_node_by_name(src0_source_op[0]).input_tensors[0]
-                            node.input_tensors[0].dest_op = [node.name]
-                        else:
-                            remove_list.append(src1_source_op[0])
-                            node.input_tensors[1] = \
-                            model.get_node_by_name(src1_source_op[0]).input_tensors[0]
-                            node.input_tensors[1].dest_op = [node.name]
-                        remove_tensors_list = []
-                        for idx, input_name in enumerate(node.input_tensors):
-                            if "_min" in input_name.name or "_max" in input_name.name:
-                                remove_tensors_list.append(idx)
-                        for remove_idx in remove_tensors_list:
-                            model.change_node_input_tensors(node.name, remove_tensors_list[0], None,
-                                                        'remove')
-            model.remove_nodes(remove_list)
+            # # remove fall back quant nodes
+            # remove_list=[]
+            # for node in model.nodes:
+            #     if node.op_type in EXECUTOR_TYPE and \
+            #     (EXECUTOR_TYPE[node.op_type] in ['InnerProduct', 'Matmul', 'Convolution']):
+            #         src0_dtype = node.input_tensors[0].dtype == "u8" or \
+            #                     node.input_tensors[0].dtype == "s8"
+            #         src1_dtype = node.input_tensors[1].dtype == "u8" or \
+            #                     node.input_tensors[1].dtype == "s8"
+            #         if src0_dtype ^ src1_dtype:
+            #             src0_source_op = node.input_tensors[0].source_op
+            #             src1_source_op = node.input_tensors[1].source_op
+            #             if src0_dtype:
+            #                 remove_list.append(src0_source_op[0])
+            #                 node.input_tensors[0] = \
+            #                 model.get_node_by_name(src0_source_op[0]).input_tensors[0]
+            #                 node.input_tensors[0].dest_op = [node.name]
+            #             else:
+            #                 remove_list.append(src1_source_op[0])
+            #                 node.input_tensors[1] = \
+            #                 model.get_node_by_name(src1_source_op[0]).input_tensors[0]
+            #                 node.input_tensors[1].dest_op = [node.name]
+            #             remove_tensors_list = []
+            #             for idx, input_name in enumerate(node.input_tensors):
+            #                 if "_min" in input_name.name or "_max" in input_name.name:
+            #                     remove_tensors_list.append(idx)
+            #             for remove_idx in remove_tensors_list:
+            #                 model.change_node_input_tensors(node.name, remove_tensors_list[0], None,
+            #                                             'remove')
+            # model.remove_nodes(remove_list)
 
             # remove duplicate quant nodes and duplicate tensors
             remove_duplicate_set = set()
