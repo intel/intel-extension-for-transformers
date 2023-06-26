@@ -35,7 +35,7 @@ $ source tools/scripts/env.sh
 ```bash
 $ cd ${XETLA_REPO}
 $ mkdir build && cd build
-$ cmake ..
+$ cmake ..    # release version default, and 'cmake .. -DDEBUG=on' for debug version
 $ make -j
 ```
 
