@@ -226,5 +226,6 @@ if __name__ == '__main__':
             graph = compile(args.onnx_model, args.pattern_config)
             graph.save(args.output_path)
     else:
+        args.pattern_config['pattern_switch']['StableDiffusion_MHA'] = True
         graph = compile(args.onnx_model, args.pattern_config)
         graph.save(args.output_path)
