@@ -192,6 +192,8 @@ class StableDiffusion_CollectQuantInfo(Pattern):
                             assert down_node.attr.get('dst_perm', None) == '1,0'
                             dquant_node.input_tensors[0].data = np.transpose(
                                 dquant_node.input_tensors[0].data, (1,0))
+                            dquant_node.input_tensors[0].shape = \
+                                list(dquant_node.input_tensors[0].data.shape)
                             rm_node_list.append(down_node.name)
                             dquant_node.output_tensors[0] = copy.deepcopy(
                                 down_node.output_tensors[0])
