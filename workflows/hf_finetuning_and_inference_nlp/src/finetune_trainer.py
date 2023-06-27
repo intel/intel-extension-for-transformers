@@ -56,4 +56,4 @@ class FinetuneTrainer(DlsaFinetune):
             with self.track('Inference'):
                 preds, _, metrics = self.trainer.predict(self.test_data)
                 test_metrics = save_test_metrics(metrics, len(self.test_data), self.training_args.output_dir)
-        print(test_metrics)
+                print(test_metrics)

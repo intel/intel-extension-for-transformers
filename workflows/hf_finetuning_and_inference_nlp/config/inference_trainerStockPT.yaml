@@ -15,10 +15,10 @@ args:
   
   # Add the Inference configurations below
   pipeline: "inference"   
-  infer_impl: "itrex"
-  dtype_inf: "bf16"
-  use_ipex: true 
-  use_onednn: true 
+  infer_impl: "trainer" # Use trainer for default stock PT Huggingface NLP Trainer
+  dtype_inf: "fp32" # bf16 is ineffective for stockPTtrainer: Use infer_impl=itrex & use_ipex=true. 
+  use_ipex: false # No effect / Not valid when using trainer 
+  use_onednn: false # No effect / not valid when using trainer
   max_seq_len: 64
   smoke_test: false
   max_train_samples: null

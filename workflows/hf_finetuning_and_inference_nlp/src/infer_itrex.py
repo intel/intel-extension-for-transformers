@@ -101,10 +101,11 @@ class ItrexInfer(DlsaInference):
 
             if self.training_args.do_predict:
                 with self.track("Inference"):
-                    preds, _, metrics = self.trainer.predict(self.test_data)
-            print(
-                f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
-            )
-
-        save_performance_metrics(self.trainer, self.test_data, 
-                                path.join(self.training_args.output_dir, self.args.inference_output) )
+                    if not self.args.save_detailed_performance_metrics:
+                        preds, _, metrics = self.trainer.predict(self.test_data)
+                        print(
+                            f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
+                        )
+                    else:
+                        save_performance_metrics(self.trainer, self.test_data, 
+                                            path.join(self.training_args.output_dir, self.args.inference_output) )

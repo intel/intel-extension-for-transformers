@@ -163,6 +163,10 @@ class Arguments:
     dist_backend: Optional[str] = field(
         default="ccl", metadata={"help": "Distributed backend to use for fine-tuning"}
     )
+    save_detailed_performance_metrics: bool = field(
+        default=True,
+        metadata={"help": "Whether to save performance metrics or not"}
+    )
 
 
 class PredsLabels:
