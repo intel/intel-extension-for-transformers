@@ -51,6 +51,12 @@ class QunatizeFusion(Pattern):
                or (pre_node.op_type == "Softmax") \
                or (EXECUTOR_TYPE.get(pre_node.op_type, pre_node.op_type) in \
                    ["InnerProduct", "Matmul", "Convolution"] and (not quant_info or is_from_quant)):
+                # GroupNorm does not support u8 data as the input.
+                for dest_op in pre_node.output_tensors[0].dest_op:
+                    dest_node = model.get_node_by_name(dest_op)
+                    if dest_node.op_type == 'GroupNorm':
+                        return (None, False)
+
                 return (pre_node, True)
             elif pre_node.op_type == "Reshape":
                 return search_quant_fusion(pre_node)
