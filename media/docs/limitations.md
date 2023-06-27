@@ -7,15 +7,15 @@ GEMM kernel provides a function `can_implement` to filter the limitations, call 
 - Matrix Mutilple Accumulation (tile_mma)
     - Sub-group tile size on column, `tile_shape::sg_tile_size_x` must be a multiple of 16.
     - Sub-group tile size on row, `tile_shape::sg_tile_size_y` must be a multiple of 8 in matrix-engine-based GEMM.
-    - The tile size consumed by each step on the reduction dimension, `k_stride * sizeof(dtype)` must be 32B in vector-engine-based GEMM, 32B or 64B in matrix-engine-based GEMM.
+    - The tile size consumed by each step on the reduction dimension, `k_stride * sizeof(dtype)` must be 32B in vector-engine-based GEMM, multiply of 32B in matrix-engine-based GEMM.
 - Global Memory Access
     - Base-address of the matrix must be 64B aligned.
-    - Leading-dimension size of the matrix must be multiple of 8B aligned and should be equal or greater than 64B.
-    - Width size of the matrix must be 4B aligned and should be equal or greater than 64B.
+    - Leading-dimension size of the matrix must be multiple of 8B aligned and must be equal or greater than 64B.
+    - Width size of the matrix must be 4B aligned and must be equal or greater than 64B.
 - Local Memory Access
     - Base-address of the matrix must be 4B aligned.
     - The matrix layout in local memory must be row-major.
-    - Loading Matrix A and B works only when the mma_engine is mma_engine::fpu.
+    - Loading Matrix A and B works only when the  `mma_engine` is `mma_engine::fpu`.
     - GEMM size must be divisible by the sub-group tile size on both row and column dimension.
 
 ## Copyright
