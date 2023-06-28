@@ -9,26 +9,32 @@ from datasets import load_dataset
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer
-import intel_extension_for_pytorch as ipex
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model", nargs="?", default="EleutherAI/gpt-j-6b"
 )
+parser.add_argument(
+    "--trust_remote_code", default=True,
+    help="Transformers parameter: use the external repo")
+parser.add_argument(
+    "--revision", default=None,
+    help="Transformers parameter: set the model hub commit number")
 parser.add_argument("--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k")
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 parser.add_argument("--quantize", action="store_true")
 parser.add_argument(
     "--int8_bf16_mixed",
     action="store_true",
-    help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
+    help="By default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto",
                     help="Smooth quant parameter.")
+parser.add_argument("--folding", default=False, type=bool,
+                    help="Fuse setting.")
 parser.add_argument("--int8", action="store_true")
-parser.add_argument("--ipex", action="store_true", help="use intel extension for pytorch.")
+parser.add_argument("--ipex", action="store_true", help="Use intel extension for pytorch.")
 parser.add_argument("--accuracy", action="store_true")
 parser.add_argument("--batch_size", default=1, type=int,
                     help="For accuracy measurement only.")
@@ -119,21 +125,43 @@ class Evaluator:
         print("Latency: ", latency)
         return acc
 
-if re.search("llama", args.model):
+if re.search("llama", args.model.lower()):
     import transformers
     from transformers import LlamaForCausalLM, LlamaTokenizer
     user_model = LlamaForCausalLM.from_pretrained(
         args.model,
-        torchscript=True if args.ipex else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        revision=args.revision,
     )
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
+elif re.search("mpt-7b-chat", args.model.lower()):
+    from mpt_7b_chat.modeling_mpt import MPTForCausalLM
+    user_model = MPTForCausalLM.from_pretrained(
+            args.model,
+            torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            trust_remote_code=args.trust_remote_code,
+            revision=args.revision,
+            )
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    user_model.config.use_cache = True
+elif re.search("falcon-7b-instruct", args.model.lower()):
+    from falcon_7b_instruct.modelling_RW import RWForCausalLM
+    user_model = RWForCausalLM.from_pretrained(
+            args.model,
+            torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            trust_remote_code=args.trust_remote_code,
+            revision=args.revision,
+            )
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    user_model.config.use_cache = True
 else:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torchscript=True if args.ipex else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        trust_remote_code=args.trust_remote_code,
+        revision=args.revision,
     )
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-
 
 # to channels last
 user_model = user_model.to(memory_format=torch.channels_last)
@@ -163,12 +191,17 @@ if args.quantize:
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
+    elif re.search("mpt", user_model.config.model_type):
+        op_type_dict = {
+            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+            "<built-in function linear>":{"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+        }
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     if args.sq:
         args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
-        recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha}}
+        recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha, "folding": args.folding}}
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
             excluded_precisions=excluded_precisions,
@@ -194,7 +227,10 @@ if args.quantize:
 if args.int8 or args.int8_bf16_mixed:
     print("load int8 model")
     from neural_compressor.utils.pytorch import load
-    user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)))
+    if args.ipex:
+        user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)))
+    else:
+        user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)), user_model)
     user_model.eval()
 
 if args.accuracy:
