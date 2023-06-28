@@ -227,10 +227,10 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
       src_scales = GetScales(src_min_->data(), src_max_->data(), src_min_->size(), src_->dtype());
       weight_scales = GetScales(weight_min_->data(), weight_max_->data(), weight_min_->size(), weight_->dtype());
       if (dst_min_ != nullptr) {
-        std::cout << "dst_->dtype() = " << dst_->dtype() << std::endl;
-        std::cout << "dst_min_->data() = " << dst_min_->data() << std::endl;
-        std::cout << "dst_max_->data() = " << dst_max_->data() << std::endl;
-        std::cout << "dst_min_->size() = " << dst_min_->size() << std::endl;
+        // std::cout << "dst_->dtype() = " << dst_->dtype() << std::endl;
+        // std::cout << "dst_min_->data() = " << dst_min_->data() << std::endl;
+        // std::cout << "dst_max_->data() = " << dst_max_->data() << std::endl;
+        // std::cout << "dst_min_->size() = " << dst_min_->size() << std::endl;
         dst_scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
       }
       //dst_scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
