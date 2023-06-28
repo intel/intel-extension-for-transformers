@@ -215,7 +215,6 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   dst_->set_dtype(output_dtype_);
 
   dnnl::primitive_attr attr;
-
   vector<float> src_scales;
   vector<float> weight_scales;
   vector<float> dst_scales;
@@ -227,8 +226,15 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
       const int ic_dim = weight_min_->size() > 1 ? 0 | (1 << 1) : 0;
       src_scales = GetScales(src_min_->data(), src_max_->data(), src_min_->size(), src_->dtype());
       weight_scales = GetScales(weight_min_->data(), weight_max_->data(), weight_min_->size(), weight_->dtype());
+      if (dst_min_ != nullptr) {
+        std::cout << "dst_->dtype() = " << dst_->dtype() << std::endl;
+        std::cout << "dst_min_->data() = " << dst_min_->data() << std::endl;
+        std::cout << "dst_max_->data() = " << dst_max_->data() << std::endl;
+        std::cout << "dst_min_->size() = " << dst_min_->size() << std::endl;
+        dst_scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      }
       //dst_scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
-      dst_scales.push_back(0.0);
+      //dst_scales.push_back(1.0);
       rescales = GetRescales(src_scales, weight_scales, dst_scales, dst_->dtype(), append_eltwise_);
       attr.set_output_scales(ic_dim, rescales);
     }

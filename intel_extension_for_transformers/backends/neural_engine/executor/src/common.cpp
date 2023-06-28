@@ -214,6 +214,10 @@ vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, 
     for (int i = 0; i < size; i++) {
       scales.emplace_back(1.f);
     }
+  } else if (dtype == "bf16") {
+    for (int i = 0; i < size; i++) {
+      scales.emplace_back(1.f);
+    }
   } else {
     LOG(ERROR) << "Can't suppport dst_dtype: " << dtype << " now!";
   }
