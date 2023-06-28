@@ -32,7 +32,6 @@ The changes for `llama` series models in `modeling_llama.py`, `dolly_v2_3b` seri
 # Run
 
 ## 1. Quantization
-
 ``` bash
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
