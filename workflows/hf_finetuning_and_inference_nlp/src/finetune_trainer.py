@@ -18,9 +18,9 @@ from transformers import (
     AutoModelForSequenceClassification,
     Trainer
 )
-
+from os import path
 from finetune import DlsaFinetune
-from utils import compute_metrics, save_test_metrics, save_train_metrics
+from utils import compute_metrics, save_performance_metrics, save_train_metrics
 
 
 
@@ -51,9 +51,13 @@ class FinetuneTrainer(DlsaFinetune):
                 save_train_metrics(train_result, self.trainer, len(self.train_data))
 
     def _do_infer(self):
-        test_metrics = ""
         if self.training_args.do_predict:
             with self.track('Inference'):
-                preds, _, metrics = self.trainer.predict(self.test_data)
-                test_metrics = save_test_metrics(metrics, len(self.test_data), self.training_args.output_dir)
-                print(test_metrics)
+                if not self.args.save_detailed_performance_metrics:
+                    preds, _, metrics = self.trainer.predict(self.test_data)
+                    print(
+                            f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
+                        )
+                else:
+                    save_performance_metrics(self.trainer, self.train_data, 
+                                path.join(self.training_args.output_dir, self.args.finetune_output) )

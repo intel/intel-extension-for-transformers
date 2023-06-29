@@ -27,6 +27,7 @@ args:
   overwrite_cache: true
   inference_output: inference_predictions_report.yaml
   multi_instance: false
+  save_detailed_performance_metrics: True
 
 training_args:
   do_predict: true

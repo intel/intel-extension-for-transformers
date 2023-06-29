@@ -79,12 +79,11 @@ class FinetuneItrex(DlsaFinetune):
         with torch.backends.mkldnn.flags(enabled = self.training_args.use_ipex or vars(self.args).get("use_onednn", True)):
             if self.training_args.do_predict:
                 with self.track("Inference"):
-
                     if not self.args.save_detailed_performance_metrics:
                         preds, _, metrics = self.trainer.predict(self.test_data)
                         print(
                             f"\n*********** TEST_METRICS ***********\nAccuracy: {metrics['test_acc']}\n"
                         )
                     else:
-                        save_performance_metrics(self.trainer, self.train_data, 
+                        save_performance_metrics(self.trainer, self.train_data,
                                 path.join(self.training_args.output_dir, self.args.finetune_output) )
