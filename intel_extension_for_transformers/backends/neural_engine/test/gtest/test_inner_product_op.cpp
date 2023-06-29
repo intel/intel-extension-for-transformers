@@ -17,6 +17,7 @@
 
 #include "common.hpp"
 #include "conf.hpp"
+#include "memory_allocator.hpp"
 #include "llga_operators/llga_kernel.hpp"
 #include "operators/inner_product.hpp"
 #include "gtest/gtest.h"
@@ -168,7 +169,7 @@ TEST_P(InnerProductTest, TestPostfixLLGA) {
   EXPECT_TRUE(CheckLLGAResult(t));
 }
 
-std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t> >& input_shape, std::string src1_perm,
+std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t>>& input_shape, std::string src1_perm,
                                            std::string append_op = "", bool is_sparse = false) {
   // Step 1: Construct Tensor config ptr
   const auto& src0_shape = input_shape[0];
@@ -190,8 +191,8 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   attr_map = {{"src0_perm", ""}, {"src1_perm", src1_perm}, {"output_dtype", "fp32"}, {"append_op", append_op}};
 
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
-  shared_ptr<OperatorConfig> op_config = std::make_shared<OperatorConfig>("inner_product_fp32",
-                                         "InnerProduct", inputs_config, output_config, op_attr);
+  shared_ptr<OperatorConfig> op_config =
+      std::make_shared<OperatorConfig>("inner_product_fp32", "InnerProduct", inputs_config, output_config, op_attr);
 
   // Step 2: Construct Tensor ptr
   auto make_tensor_obj = [&](const shared_ptr<TensorConfig>& a_tensor_config) {
@@ -200,11 +201,17 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     // step2: set tensor life
     a_tensor->add_tensor_life(1);
     // step3: library buffer can only be obtained afterwards
+    void* ta_ptr = reinterpret_cast<void*>(aligned_alloc(
+        ALIGNMENT, (a_tensor->size() * executor::type2bytes[a_tensor->dtype()] / ALIGNMENT + 1) * ALIGNMENT));
+    a_tensor->set_data(ta_ptr);
     auto tensor_data = a_tensor->mutable_data();
     executor::InitVector<float>(static_cast<float*>(tensor_data), a_tensor->size());
 
     Tensor* a_tensor_copy = new Tensor(*a_tensor_config);
     a_tensor_copy->add_tensor_life(1);
+    void* tc_ptr = reinterpret_cast<void*>(aligned_alloc(
+        ALIGNMENT, (a_tensor_copy->size() * executor::type2bytes[a_tensor_copy->dtype()] / ALIGNMENT + 1) * ALIGNMENT));
+    a_tensor_copy->set_data(tc_ptr);
     auto tensor_data_copy = a_tensor_copy->mutable_data();
     memcpy(tensor_data_copy, tensor_data, a_tensor_copy->size() * sizeof(float));
     return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
@@ -215,6 +222,9 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
     // step2: set tensor life
     a_tensor->add_tensor_life(1);
     // step3: library buffer can only be obtained afterwards
+    void* ta_ptr = reinterpret_cast<void*>(aligned_alloc(
+        ALIGNMENT, (a_tensor->size() * executor::type2bytes[a_tensor->dtype()] / ALIGNMENT + 1) * ALIGNMENT));
+    a_tensor->set_data(ta_ptr);
     auto tensor_data = a_tensor->mutable_data();
     int N_BLKSIZE = 16;
     int K_BLKSIZE = 1;
@@ -224,6 +234,9 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
 
     Tensor* a_tensor_copy = new Tensor(*a_tensor_config);
     a_tensor_copy->add_tensor_life(1);
+    void* tc_ptr = reinterpret_cast<void*>(aligned_alloc(
+        ALIGNMENT, (a_tensor_copy->size() * executor::type2bytes[a_tensor_copy->dtype()] / ALIGNMENT + 1) * ALIGNMENT));
+    a_tensor_copy->set_data(tc_ptr);
     auto tensor_data_copy = a_tensor_copy->mutable_data();
     memcpy(tensor_data_copy, tensor_data, a_tensor_copy->size() * sizeof(float));
     return std::pair<Tensor*, Tensor*>{a_tensor, a_tensor_copy};
@@ -237,8 +250,7 @@ std::pair<OpArgs, OpArgs> GenerateFp32Case(const std::vector<std::vector<int64_t
   dst_tensor_copy->add_tensor_life(1);
 
   OpArgs op_args = {{src0_tensors.first, src1_tensors.first, bias_tensors.first}, {dst_tensor}, op_config};
-  OpArgs op_args_copy = {{src0_tensors.second, src1_tensors.second, bias_tensors.second},
-                         {dst_tensor_copy}, op_config};
+  OpArgs op_args_copy = {{src0_tensors.second, src1_tensors.second, bias_tensors.second}, {dst_tensor_copy}, op_config};
 
   if (append_op == "sum") {
     auto src2_tensors = make_tensor_obj(inputs_config[3]);

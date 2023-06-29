@@ -105,6 +105,7 @@ class InnerProductOperator : public Operator {
   bool tanh_;
   bool sigmoid_;
   bool relu_;
+  bool weight_reorded_ = false;
 
   bool append_eltwise_;
   bool is_dynamic_ = false;

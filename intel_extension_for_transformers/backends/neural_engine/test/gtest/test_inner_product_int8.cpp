@@ -121,7 +121,7 @@ Tensor* make_int32_bias_obj(const shared_ptr<TensorConfig>& bias_tensor_config, 
       }
     }
     bias_data[y] = (origin_data[y] + compensation * src_zp - dst_zp) / src_scales[0] /
-                  weight_scales[weight_scale->size() > 1 ? y : 0];
+                   weight_scales[weight_scale->size() > 1 ? y : 0];
   }
   return bias_tensor;
 }
@@ -182,11 +182,18 @@ Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, fl
 }
 
 vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>& tensor_configs,
-                                         const float* origin_fp32_data, std::string quant_type) {
+                                         const float* origin_fp32_data, std::string quant_type,
+                                         bool is_weight = false) {
   vector<Tensor*> tensors(4);
   for (int i = 0; i < 4; i++) {
     tensors[i] = new Tensor(*tensor_configs[i]);
     tensors[i]->add_tensor_life(1);
+    // weight is static memory, do not use memory allocator to assign buffer for it
+    if (is_weight && i == 0) {
+      void* t_ptr = reinterpret_cast<void*>(aligned_alloc(
+          ALIGNMENT, (tensors[i]->size() * executor::type2bytes[tensors[i]->dtype()] / ALIGNMENT + 1) * ALIGNMENT));
+      tensors[i]->set_data(t_ptr);
+    }
   }
   const auto min_data = reinterpret_cast<float*>(tensors[1]->mutable_data());
   const auto max_data = reinterpret_cast<float*>(tensors[2]->mutable_data());
@@ -277,7 +284,7 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
   auto weight_tensors =
       quantize2int8_tensor_obj({weight_s8_config, weight_min_config, weight_max_config, weight_scale_config},
                                reinterpret_cast<const float*>(weight_fp32->data()),
-                               (quant_type == "per_tensor" && !is_dynamic) ? "per_tensor" : "per_channel");
+                               (quant_type == "per_tensor" && !is_dynamic) ? "per_tensor" : "per_channel", true);
 
   auto bias_fp32_config = std::make_shared<TensorConfig>("bias", bias_shape, "fp32");
   Tensor* bias_fp32 = make_fp32_tensor_obj(bias_fp32_config, -0.5, 0.5);

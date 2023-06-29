@@ -1340,7 +1340,7 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
           : dnnl::inner_product_forward::desc(prop_kind::forward_inference, src0_md, src1_md_, dst_md);
 
   if (format_any_) {
-    if (MemoryAllocator::CheckMemory(src1_->mutable_data()) == -1) {
+    if (!weight_reorded_) {
       inner_product_d =
           has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")
               ? dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md, any_src1_md_, any_bias_md_,
@@ -1412,7 +1412,8 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
         any_src1_m.set_data_handle(weight_shm_ptr);
         cached_w_ptr = weight_shm_ptr;
       } else {
-        cached_w_ptr = MemoryAllocator::get().GetMemory(any_src1_m.get_desc().get_size(), 1);
+        cached_w_ptr = reinterpret_cast<void*>(
+          aligned_alloc(ALIGNMENT, (any_src1_m.get_desc().get_size() / ALIGNMENT + 1) * ALIGNMENT));
         any_src1_m.set_data_handle(cached_w_ptr);
       }
       dnnl::reorder(any_src1_m_last_, any_src1_m).execute(eng_stream_, any_src1_m_last_, any_src1_m);
@@ -1422,12 +1423,9 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
         src1_->set_shm_handle(MemoryAllocator::ManagedShm().get_handle_from_address(cached_w_ptr));
       } else {
         if (this->get_execution_mode() == ExecutionMode::INFERENCE && src1_->life() <= 1) {
-          if (MemoryAllocator::CheckMemory(src1_->mutable_data()) == -1) {
-            aligned_free(src1_->mutable_data());
-          } else {
-            MemoryAllocator::UnrefMemory(src1_->mutable_data());
-          }
+          aligned_free(src1_->mutable_data());
           src1_->set_data(cached_w_ptr);
+          weight_reorded_ = true;
         }
         any_src1_m_last_ = memory(inner_product_pd_.weights_desc(), eng_, cached_w_ptr);
       }
@@ -1445,7 +1443,8 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
           any_bias_m.set_data_handle(bias_shm_ptr);
           cached_b_ptr = bias_shm_ptr;
          } else {
-          cached_b_ptr = MemoryAllocator::get().GetMemory(bias_m_.get_desc().get_size(), 1);
+          cached_b_ptr = reinterpret_cast<void*>(
+            aligned_alloc(ALIGNMENT, (bias_m_.get_desc().get_size() / ALIGNMENT + 1) * ALIGNMENT));
           any_bias_m.set_data_handle(cached_b_ptr);
         }
         dnnl::reorder(any_bias_m_last_, any_bias_m).execute(eng_stream_, any_bias_m_last_, any_bias_m);
@@ -1455,11 +1454,7 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
           bias_->set_shm_handle(MemoryAllocator::ManagedShm().get_handle_from_address(cached_b_ptr));
         } else {
           if (this->get_execution_mode() == ExecutionMode::INFERENCE && bias_->life() <= 1) {
-            if (MemoryAllocator::CheckMemory(bias_->mutable_data()) == -1) {
               aligned_free(bias_->mutable_data());
-            } else {
-              MemoryAllocator::UnrefMemory(bias_->mutable_data());
-            }
             bias_->set_data(cached_b_ptr);
           }
           any_bias_m_last_ = memory(inner_product_pd_.bias_desc(), eng_, cached_b_ptr);
@@ -1567,18 +1562,18 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
 
   memory any_src0_m = src0_m_;
   memory any_dst_m = dst_m_;
-  memory any_bias_m = bias_m_;
-
+  memory any_bias_m;
+  if (is_dynamic_) {
+    any_bias_m = bias_m_;
+  }
   // 2. Reorder the data when the primitive memory and user memory are different
   if (inner_product_pd_.src_desc() != src0_m_.get_desc()) {
     any_src0_m = memory(inner_product_pd_.src_desc(), eng_);
     dnnl::reorder(src0_m_, any_src0_m).execute(eng_stream_, src0_m_, any_src0_m);
   }
-
   if (inner_product_pd_.dst_desc() != dst_m_.get_desc()) {
     any_dst_m = memory(inner_product_pd_.dst_desc(), eng_);
   }
-
   // the runtime calculation of dynamic quantization
   vector<float> dynamic_bias;
   if (is_dynamic_) RuntimeMemoryArgs(&dynamic_bias, &any_bias_m);
@@ -1598,7 +1593,6 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   if (inner_product_pd_.dst_desc() != dst_m_.get_desc()) {
     dnnl::reorder(any_dst_m, dst_m_).execute(eng_stream_, any_dst_m, dst_m_);
   }
-
   // gelu seperate
   if ((gelu_split_ && gelu_tanh_) || (gelu_split_ && gelu_erf_)) {
     dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), gelu_eng_stream_);
