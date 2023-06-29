@@ -262,14 +262,32 @@ class MultiHeadAttention(Pattern):
         for i in range(len(pattern_mapping_config['MultiHeadAttention'])):
             if util.get_autocast_info()['cast_type'] == "bf16" and i in [0,1]:
                 continue
-            pattern_dict = pattern_mapping_config['MultiHeadAttention'][i]
-            model, new_node_names, ret_old_nodes = util.pattern_mapping("MultiHeadAttention",
+            if i == 0 or i == 3:
+                pattern = pattern_mapping_config['MultiHeadAttention'][0]['patterns']['in']
+                patterns_nodes_name = util.search_pattern(pattern, model)
+                for pattern_nodes_name in patterns_nodes_name:
+                        first_matmul_node = model.get_node_by_name(pattern_nodes_name[0])
+                        last_matmul_node = model.get_node_by_name(pattern_nodes_name[2])
+                        if len(first_matmul_node.input_tensors) > 5 and \
+                            len(last_matmul_node.input_tensors) > 5:
+                            pattern_dict = pattern_mapping_config['MultiHeadAttention'][i]
+                            model, new_node_names, ret_old_nodes = util.pattern_mapping("MultiHeadAttention",
                                                                         pattern_dict, model)
-            if len(new_node_names) != 0:
-                _set_attr(new_node_names, ret_old_nodes, model)
-                for node in model.nodes:
-                    if node.op_type == 'PaddingSequence':
-                        node.op_type = 'SequenceLength'
-                return model
+                            if len(new_node_names) != 0:
+                                _set_attr(new_node_names, ret_old_nodes, model)
+                                for node in model.nodes:
+                                    if node.op_type == 'PaddingSequence':
+                                        node.op_type = 'SequenceLength'
+                                return model
+            else:                 
+                pattern_dict = pattern_mapping_config['MultiHeadAttention'][i]
+                model, new_node_names, ret_old_nodes = util.pattern_mapping("MultiHeadAttention",
+                                                                            pattern_dict, model)
+                if len(new_node_names) != 0:
+                    _set_attr(new_node_names, ret_old_nodes, model)
+                    for node in model.nodes:
+                        if node.op_type == 'PaddingSequence':
+                            node.op_type = 'SequenceLength'
+                    return model
 
         return model
