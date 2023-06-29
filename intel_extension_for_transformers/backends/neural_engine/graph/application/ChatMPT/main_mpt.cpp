@@ -68,7 +68,7 @@ struct mpt_model {
 };
 
 struct mpt_params {
-    int32_t n_threads = std::min(4, (int32_t) std::thread::hardware_concurrency());
+    int32_t n_threads = get_num_physical_cores();
 
     int32_t seed           = -1; // RNG seed
     int32_t n_predict      = 200; // new tokens to predict
@@ -1031,7 +1031,7 @@ int main(int argc, char ** argv) {
         printf("%s:  mem per token = %8zu bytes\n", __func__, mem_per_token);
         printf("%s:      load time = %8.2f ms\n", __func__, t_load_us / 1000.0f);
         printf("%s:    sample time = %8.2f ms / %.2f ms per token\n", __func__, t_sample_us / 1000.0f, t_sample_us / 1000.0f / n_sampled);
-        printf("%s:      eval time = %8.2f ms / %.2f ms per token\n", __func__, t_predict_us / 1000.0f, t_predict_us / 1000.0f / n_past);
+        printf("%s:      eval time = %8.2f ms / %d, %.2f ms per token\n", __func__, t_predict_us / 1000.0f, n_sampled, t_predict_us / 1000.0f / n_sampled);
         printf("%s:     total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
     }
 
