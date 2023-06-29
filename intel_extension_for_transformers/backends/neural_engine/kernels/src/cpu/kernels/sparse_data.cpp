@@ -115,7 +115,7 @@ bsr_data_t<T> reorder_to_bsr_group(dim_t rows, dim_t cols, dim_t blk_row, dim_t 
     }
   }
   padded_indptr[num_row] = padded_indices.size() / group;
-  return std::move(bsr_data_t<T>({blk_row, blk_col}, {rows, cols}, padded_indptr, padded_indices, padded_data, group));
+  return bsr_data_t<T>({blk_row, blk_col}, {rows, cols}, padded_indptr, padded_indices, padded_data, group);
 }
 template bsr_data_t<int8_t> reorder_to_bsr_group<int8_t, 4>(dim_t rows, dim_t cols, dim_t blk_row, dim_t blk_col,
                                                             const int8_t* uncoded_data);

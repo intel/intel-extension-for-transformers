@@ -30,7 +30,7 @@ static const std::vector<std::vector<std::vector<dim_t>>> perm_list = {
 bool matmul_ref_kd_t::init() {
   auto shapes = op_desc_.tensor_shapes();
   std::transform(shapes.begin(), shapes.end(), shapes.begin(),
-                 [](auto&& x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
+                 [](auto x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
 
   for (auto mat : {io::SRC0, io::SRC1, io::SRC2, io::DST0}) {
     if (shapes[mat].size() != 4 && shapes[mat].size() != 0) {
@@ -123,7 +123,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto& attrs = op_desc.attrs();
   auto shapes = op_desc.tensor_shapes();
   std::transform(shapes.begin(), shapes.end(), shapes.begin(),
-                 [](auto&& x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
+                 [](auto x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
   std::vector<data_type> dtypes(descs.size());
   std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
   bool has_binary_add = shapes.size() > io::SRC2 && !shapes[io::SRC2].empty();
@@ -290,7 +290,7 @@ bool matmul_ref_k_t::execute(const exec_context_t& context) {
   auto& attrs = op_desc.attrs();
   auto shapes = op_desc.tensor_shapes();
   std::transform(shapes.begin(), shapes.end(), shapes.begin(),
-                 [](auto&& x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
+                 [](auto x) { return (x.size() != 1 || x[0] != 1) ? pre_pad1<dim_t>(4, x) : x; });
   std::vector<data_type> dtypes(descs.size());
   std::transform(descs.begin(), descs.end(), dtypes.begin(), [&](tensor_desc d) { return d.dtype(); });
   bool has_binary_add = shapes.size() > io::SRC2 && !shapes[io::SRC2].empty();
