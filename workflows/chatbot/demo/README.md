@@ -29,4 +29,4 @@ Our system offers three distinct backends, each designed for specific use cases:
 - 'fastrag' backend: knowledge-based chatbot backend.
 - 'sd' backend: powers our text-to-image application.
 
-For detailed information, please refer to the [CHAT_README](./backend/chat/README.md), [FASTRAG_README](./backend/fastrag/README.md), and [SD_README](./backend/sd/README.md).
+For detailed information, please refer to the [CHAT_README](../inference/backend/chat/README.md), [FASTRAG_README](../inference/backend/fastrag/README.md), and [SD_README](../inference/backend/sd/README.md).

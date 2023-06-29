@@ -13,4 +13,5 @@ export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 # tc malloc
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 
-python -m fastrag_service --model-path ./llama-alpaca-fastrag 2>&1 | tee run.log
+#python -m fastrag_service --model-path ./llama-alpaca-fastrag 2>&1 | tee run.log
+numactl -l -C 0-31 python -m fastrag_service --model-path ./mpt-7b-chat/ 2>&1 | tee run.log
