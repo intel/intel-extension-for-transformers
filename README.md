@@ -1,6 +1,6 @@
 # Intel® Xe Templates for Linear Algebra
 
-_Intel® XeTLA [v0.3.2](/CHANGELOG.md) - June 2023_
+_Intel® XeTLA [v0.3.3](/CHANGELOG.md) - June 2023_
 
 Intel® Xe Templates for Linear Algebra (Intel® XeTLA) is a collection of SYCL/ESIMD templates that enable high-performance General Matrix Multiply (GEMM), Convolution (CONV), and related computations on Intel Xe GPU architecture. Intel® XeTLA offers reusable C++ templates for kernel, work-group and sub-group levels, allowing developers to optimize and specialize kernels based on data types, tiling policies, algorithms, fusion policies, and more. 
 

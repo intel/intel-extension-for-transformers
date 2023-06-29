@@ -1,6 +1,16 @@
 [README](/README.md) > **Changelog**
 # Changelog
 
+ ## [v0.3.3](https://github.com/intel/xetla/releases/tag/v0.3.3) (2023-06-30)
+- New Features
+  * Enabled debug build support.
+  * Updated documents, added some diagrams and details.
+  * Fixed some customer reported issues.
+  * Improved the project's quality.
+
+- Known Issues
+    - Refer to [Limitations](/media/docs/limitations.md).
+
 ## [v0.3.2](https://github.com/intel/xetla/releases/tag/v0.3.2) (2023-06-16)
 - New Features
   * Added some kernel-level APIs' parameters check functions, users need to explicit call them before launch the kernel; will return fail and print error messages when detect unsupported scenarios, continue launching the kernel for unspported scenarios may lead to unpredictable result.
