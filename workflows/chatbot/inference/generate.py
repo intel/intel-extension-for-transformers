@@ -165,7 +165,17 @@ def main():
     if torch.cuda.is_available():
         model.to(torch.device("cuda"))
 
-    model.eval()
+    # original_model = model
+    import intel_extension_for_pytorch as intel_ipex
+    model = intel_ipex.optimize(model.eval(), dtype=torch.bfloat16, inplace=True, level="O1",
+                                auto_kernel_selection=True)
+    # TODO. optimum-intel has not supported jit_trace for MPT model, will enable jit_trace soon.
+    # from optimum.intel.generation.modeling import TSModelForCausalLM, jit_trace
+    # model = jit_trace(model=model, task="text-generation", use_cache=True)
+    # model = TSModelForCausalLM(model=model,
+    #                             config=original_model.config,
+    #                             use_cache=True,
+    #                             model_dtype=torch.bfloat16)
 
     def evaluate(
         prompt,
@@ -188,13 +198,14 @@ def main():
             **kwargs,
         )
         with torch.no_grad():
-            generation_output = model.generate(
-                input_ids=input_ids,
-                generation_config=generation_config,
-                return_dict_in_generate=True,
-                output_scores=True,
-                max_new_tokens=max_new_tokens,
-            )
+            with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16, cache_enabled=True):
+                generation_output = model.generate(
+                    input_ids=input_ids,
+                    generation_config=generation_config,
+                    return_dict_in_generate=True,
+                    output_scores=True,
+                    max_new_tokens=max_new_tokens,
+                )
         sequence = generation_output.sequences[0]
         output = tokenizer.decode(sequence, skip_special_tokens=True)
         if "### Response:" in output:

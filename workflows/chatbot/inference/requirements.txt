@@ -1,0 +1,10 @@
+datasets
+torch
+intel_extension_for_pytorch
+git+https://github.com/huggingface/transformers.git
+sentencepiece
+peft
+evaluate
+nltk
+rouge_score
+einops
