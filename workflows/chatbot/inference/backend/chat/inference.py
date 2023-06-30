@@ -98,21 +98,20 @@ def load_model(model_name, device, num_gpus, load_8bit=False, itrex=False, ipex=
 
     if 'mpt' in model_name:
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-        from mpt.modeling_mpt import MPTForCausalLM
-        from mpt.configuration_mpt import MPTConfig
-        config = MPTConfig.from_pretrained(model_name)
+        config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
-        config = AutoConfig.from_pretrained(model_name) 
+        config = AutoConfig.from_pretrained(model_name)
 
     if ipex:
         print('=='*10, "ipex")
         import intel_extension_for_pytorch as intel_ipex
         if "mpt" in model_name:
-            model = MPTForCausalLM.from_pretrained(model_name,
+            model = AutoModelForCausalLM.from_pretrained(model_name,
                                                     low_cpu_mem_usage=True,
                                                     return_dict=True,
                                                     torch_dtype=torch.bfloat16,
+                                                    trust_remote_code=True,
                                                     max_seq_len=8192)
         else:
             model = AutoModelForCausalLM.from_pretrained(model_name,
