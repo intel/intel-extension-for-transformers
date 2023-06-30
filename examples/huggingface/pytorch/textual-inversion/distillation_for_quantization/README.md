@@ -14,7 +14,7 @@ pip install -r requirements.txt
 
 ## Get a FP32 Textual Inversion model
 
-Please refer to this [Textual Inversion example](../README.md) in Intel® Neural Compressor for more details.
+Please refer to this [Textual Inversion example](https://github.com/intel/neural-compressor/blob/master/examples/pytorch/diffusion_model/diffusers/textual_inversion/README.md) in Intel® Neural Compressor for more details.
 
 ## Do distillation for quantization
 

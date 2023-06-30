@@ -1,5 +1,5 @@
 diffusers==0.4.1
-accelerate
+accelerate<=0.19.0
 torchvision
 transformers~=4.21.0
 ftfy
