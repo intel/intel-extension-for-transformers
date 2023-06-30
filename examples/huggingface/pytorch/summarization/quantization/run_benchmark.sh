@@ -79,12 +79,12 @@ function run_benchmark {
         DATASET_NAME="samsum"
         model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
         approach="PostTrainingDynamic"
-        pip install transformers==4.25.1
+        pip install transformers
     elif [ "${topology}" == "flan_t5_large_samsum_static" ]; then
         DATASET_NAME="samsum"
         model_name_or_path="stacked-summaries/flan-t5-large-stacked-samsum-1024"
         approach="PostTrainingStatic"
-        pip install transformers==4.25.1
+        pip install transformers
     else
         echo "unsupport topology: ${topology}"
         exit 1

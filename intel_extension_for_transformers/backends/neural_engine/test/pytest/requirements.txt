@@ -1,7 +1,7 @@
 onnx
 onnxruntime
 datasets
-transformers<=4.29.1
+transformers
 onnxruntime_extensions
 torch==1.13.1
 intel-tensorflow==2.10.0
