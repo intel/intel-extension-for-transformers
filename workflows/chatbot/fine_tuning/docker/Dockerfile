@@ -60,7 +60,7 @@ RUN conda init bash && \
     echo "conda activate chatbot-finetuning" >> ~/.bashrc && \
     source ~/.bashrc && \
     python -m pip install oneccl_bind_pt==1.13 -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    pip install datasets torch accelerate SentencePiece peft evaluate nltk rouge_score protobuf==3.20.1 tokenizers==0.13.2
+    pip install datasets torch accelerate SentencePiece git+https://github.com/huggingface/peft.git evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops
 
 # Build ITREX
 RUN cd /itrex && pip install -v .
