@@ -1,0 +1,4 @@
+langchain
+chromadb
+PyPDF2
+haystack
