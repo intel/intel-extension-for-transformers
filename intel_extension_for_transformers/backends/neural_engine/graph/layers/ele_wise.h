@@ -2,7 +2,7 @@
 
 #include <math.h>
 #include "core/data_types.h"
-#include "vectors/cpu/simd.h"
+#include "vectors/ele_wise.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,41 +11,29 @@ extern "C" {
 // fundamental operations
 //
 
-inline static void ne_vec_set_i8(const int n, int8_t* x, const int8_t v) {
-  for (int i = 0; i < n; ++i) x[i] = v;
-}
+inline static void ne_vec_set_i8(const int n, int8_t* x, const int8_t v) { ne_vec_set_i8_(n, x, v); }
 
-inline static void ne_vec_set_i16(const int n, int16_t* x, const int16_t v) {
-  for (int i = 0; i < n; ++i) x[i] = v;
-}
+inline static void ne_vec_set_i16(const int n, int16_t* x, const int16_t v) { ne_vec_set_i16_(n, x, v); }
 
-inline static void ne_vec_set_i32(const int n, int32_t* x, const int32_t v) {
-  for (int i = 0; i < n; ++i) x[i] = v;
-}
+inline static void ne_vec_set_i32(const int n, int32_t* x, const int32_t v) { ne_vec_set_i32_(n, x, v); }
 
-inline static void ne_vec_set_f16(const int n, ne_fp16_t* x, const int32_t v) {
-  for (int i = 0; i < n; ++i) x[i] = v;
-}
+inline static void ne_vec_set_f16(const int n, ne_fp16_t* x, const int32_t v) { ne_vec_set_f16_(n, x, v); }
 
 inline static void ne_vec_add_f32(const int n, float* z, const float* x, const float* y) {
-  for (int i = 0; i < n; ++i) z[i] = x[i] + y[i];
+  ne_vec_add_f32_(n, z, x, y);
 }
 inline static void ne_vec_add1_f32(const int n, float* z, const float* x, const float v) {
   for (int i = 0; i < n; ++i) z[i] = x[i] + v;
 }
-inline static void ne_vec_acc_f32(const int n, float* y, const float* x) {
-  for (int i = 0; i < n; ++i) y[i] += x[i];
-}
+inline static void ne_vec_acc_f32(const int n, float* y, const float* x) { ne_vec_acc_f32_(n, y, x); }
 inline static void ne_vec_acc1_f32(const int n, float* y, const float v) {
   for (int i = 0; i < n; ++i) y[i] += v;
 }
 inline static void ne_vec_sub_f32(const int n, float* z, const float* x, const float* y) {
-  for (int i = 0; i < n; ++i) z[i] = x[i] - y[i];
+  ne_vec_sub_f32_(n, z, x, y);
 }
 
-inline static void ne_vec_set_f32(const int n, float* x, const float v) {
-  for (int i = 0; i < n; ++i) x[i] = v;
-}
+inline static void ne_vec_set_f32(const int n, float* x, const float v) { ne_vec_set_f32_(n, x, v); }
 
 inline static void ne_vec_cpy_f32(const int n, float* y, const float* x) {
   for (int i = 0; i < n; ++i) y[i] = x[i];
@@ -54,10 +42,10 @@ inline static void ne_vec_neg_f32(const int n, float* y, const float* x) {
   for (int i = 0; i < n; ++i) y[i] = -x[i];
 }
 inline static void ne_vec_mul_f32(const int n, float* z, const float* x, const float* y) {
-  for (int i = 0; i < n; ++i) z[i] = x[i] * y[i];
+  ne_vec_mul_f32_(n, z, x, y);
 }
 inline static void ne_vec_div_f32(const int n, float* z, const float* x, const float* y) {
-  for (int i = 0; i < n; ++i) z[i] = x[i] / y[i];
+  ne_vec_div_f32_(n, z, x, y);
 }
 
 inline static void ne_vec_mad_f32(const int n, float* __restrict y, const float* __restrict x, const float v) {
