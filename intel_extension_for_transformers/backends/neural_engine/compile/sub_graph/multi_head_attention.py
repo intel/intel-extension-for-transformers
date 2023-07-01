@@ -262,7 +262,7 @@ class MultiHeadAttention(Pattern):
         for i in range(len(pattern_mapping_config['MultiHeadAttention'])):
             if util.get_autocast_info()['cast_type'] == "bf16" and i in [0,1]:
                 continue
-            if i == 0 or i == 3:
+            if i == 0 or (i == 3 and util.get_autocast_info()['cast_type'] != "bf16"):
                 pattern = pattern_mapping_config['MultiHeadAttention'][0]['patterns']['in']
                 patterns_nodes_name = util.search_pattern(pattern, model)
                 for pattern_nodes_name in patterns_nodes_name:
