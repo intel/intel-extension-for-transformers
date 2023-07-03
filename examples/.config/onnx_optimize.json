@@ -1,0 +1,52 @@
+{
+  "whisper_large_static": {
+    "working_dir": "huggingface/onnxruntime/speech-recognition/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "config": "/tf_dataset2/models/onnx/whisper_large",
+        "approach": "static",
+        "output_model": "whisper-large-with-past-static",
+        "input_model": "/tf_dataset2/models/onnx/whisper_large",
+        "dataset_location": "/tf_dataset2/datasets/datasets_cache"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "config": "/tf_dataset2/models/onnx/whisper_large",
+        "mode": "accuracy",
+        "batch_size": "1",
+        "iters": "100",
+        "input_model": "whisper-large-with-past-static",
+        "dataset_location": "/tf_dataset2/datasets/datasets_cache",
+        "int8": "false"
+      }
+    }
+  },
+  "whisper_large_dynamic": {
+    "working_dir": "huggingface/onnxruntime/speech-recognition/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "config": "/tf_dataset2/models/onnx/whisper_large",
+        "approach": "dynamic",
+        "output_model": "whisper-large-with-past-dynamic",
+        "input_model": "/tf_dataset2/models/onnx/whisper_large",
+        "dataset_location": "/tf_dataset2/datasets/datasets_cache"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "config": "/tf_dataset2/models/onnx/whisper_large",
+        "mode": "accuracy",
+        "batch_size": "1",
+        "iters": "100",
+        "input_model": "whisper-large-with-past-dynamic",
+        "dataset_location": "/tf_dataset2/datasets/datasets_cache",
+        "int8": "false"
+      }
+    }
+  },
+}
