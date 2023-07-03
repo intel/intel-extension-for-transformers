@@ -140,6 +140,14 @@ function run_benchmark {
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi
+    elif [ "${topology}" = "mpt_7b_chat" ]; then
+        script="run_generation.py"
+        model_name_or_path="mosaicml/mpt-7b-chat"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+	    extra_cmd=$extra_cmd" --revision c8d4750ac8421303665d6ecc253950c69b56d324"
+        fi
+
     fi
 
     

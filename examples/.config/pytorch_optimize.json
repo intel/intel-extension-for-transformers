@@ -161,6 +161,33 @@
       }
     }
   },
+  "mpt_7b_chat_gen_ipex": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mpt_7b_chat",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mpt_7b_chat",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "accuracy",
+        "batch_size": "1",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "gpt_neo_clm_dynamic": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
