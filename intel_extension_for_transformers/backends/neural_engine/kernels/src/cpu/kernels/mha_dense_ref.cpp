@@ -115,7 +115,7 @@ inline float exp_2nd(float x) {
   const float f = x - z * ln2;
   constexpr std::array<float, 3> exp_approx_f32_coeff{0.35815147f, 0.96963238f, 1.f};
   auto&& coeff = exp_approx_f32_coeff;
-  return ldexpf(coeff[0] * f * f + coeff[1] * f + coeff[2], z); // same as a * std::pow(2, z) but more precise
+  return ldexpf(coeff[0] * f * f + coeff[1] * f + coeff[2], z);  // same as a * std::pow(2, z) but more precise
 }
 
 // Part2: class mha_dense_ref_k_t
@@ -267,7 +267,7 @@ bool mha_dense_ref_k_t::execute_(const std::vector<const void*>& rt_data) const 
           exp_row_sum += exp_row[j];
           exp_row_max = std::max(exp_row_max, exp_row[j]);
         }
-	const auto exp_sum_rcp = 1.f / exp_row_sum;
+        const auto exp_sum_rcp = 1.f / exp_row_sum;
         const auto softmax_rescale = softmax_rescale_ > 0 ? softmax_rescale_ : 255.f / exp_row_max * exp_row_sum;
 #pragma omp simd
         for (int j = 0; j < curr_sl_n; ++j) {

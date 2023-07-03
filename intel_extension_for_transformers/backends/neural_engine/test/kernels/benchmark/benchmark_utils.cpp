@@ -79,19 +79,21 @@ bench_res_t bench_op::benchmarkOrExecute(bench_mode mode) {
     return res;
   }
   read_benchmark_env();
-  // Use op_desc to get kernel kind and tensor shape
-  const auto& op_desc = kb->kp->get_sp()->kd()->get_operator_desc();
-  const auto& ts_descs = op_desc.tensor_descs();
+  const auto& ts_descs = kb->ts_descs;
   // We may need to refresh some parts of runtime data, allocate new memory for them first
   std::vector<const void*> tmp_data(p.rt_data);
   std::vector<void*> new_data;
-  std::vector<int> idx = kb->get_refresh_data_idx();
+  std::vector<int> idx, raw_idx = kb->get_refresh_data_idx();
+  for (auto i : raw_idx)
+    if (i < static_cast<int>(ts_descs.size()) && ts_descs[i].size() != 0) idx.push_back(i);
+
   SPARSE_LOG_IF(FATAL, std::any_of(idx.begin(), idx.end(), [workspace_idx](int i) { return i == workspace_idx; }))
       << "workspace must not be refreshed!";
   if (!alloc_new_mem(ts_descs, &tmp_data, &new_data, idx)) {
     res.stat = bench_status::fail;
     return res;
   }
+  refresh_data(&new_data, idx);
   double ns = 0.0;
   for (int i = 0; i < benchmark_iter; ++i) {
     // refresh data

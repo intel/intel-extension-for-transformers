@@ -166,11 +166,15 @@ void mha_dense_static_bench::gen_case() {
                                 jd::plain_format(badd_dim)};
   }
   ts_descs[io::ATT_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_src == jd::data_type::s8) ts_descs[io::Q_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_src == jd::data_type::s8) ts_descs[io::K_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_src == jd::data_type::s8) ts_descs[io::V_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_dst != jd::data_type::bf16) ts_descs[io::SRC_DST_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_dst != jd::data_type::bf16) ts_descs[io::SRC_DST_ZP] = {{1}, jd::data_type::s32, jd::format_type::a};
+  if (dt_src == jd::data_type::s8) {
+    ts_descs[io::Q_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+    ts_descs[io::K_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+    ts_descs[io::V_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+  }
+  if (dt_src != jd::data_type::bf16) {  // TODO(Yi): support dst sc/zp for bf16 MHA
+    ts_descs[io::SRC_DST_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+    ts_descs[io::SRC_DST_ZP] = {{1}, jd::data_type::s32, jd::format_type::a};
+  }
   // Step 2: Construct Tensor ptr
   auto Qs = make_tensor_obj(ts_descs[io::SRC_Q]);
   auto Ks = make_tensor_obj(ts_descs[io::SRC_K]);
