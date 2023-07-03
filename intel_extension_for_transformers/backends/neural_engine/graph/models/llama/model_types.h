@@ -135,6 +135,9 @@ enum model_ftype {
   MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128 = 11,      // except 1d tensors
   MODEL_FTYPE_MOSTLY_Q4_JBLAS_B1024 = 12,     // except 1d tensors
   MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32 = 13,  // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32 = 14,       // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32 = 15,       // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128 = 16,       // except 1d tensors
 };
 
 enum model_file_version {

@@ -1458,6 +1458,9 @@ static void model_model_quantize_internal(const std::string& fname_inp, const st
     case MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128:
     case MODEL_FTYPE_MOSTLY_Q4_JBLAS_B1024:
     case MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32:
+    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32:
+    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32:
+    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128:
       quantized_type = NE_TYPE_Q4_JBLAS;
       break;
     default:
@@ -1535,30 +1538,59 @@ static void model_model_quantize_internal(const std::string& fname_inp, const st
       printf("quantizing .. ");
       fflush(stdout);
       if (quantized_type == NE_TYPE_Q4_JBLAS) {
-        if (!embedd) {//emedding of Q4 is not supported now
+        if (!embedd) {  // emedding of Q4 is not supported now
+          using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
           using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
-          using PrologueB = GemmKernel::WeightType;
+          using GemmVnniKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
           GemmKernel kernel;
+          GemmVnniKernel vnnikernel;
           int k_ = tensor.ne.at(0);
           int n_ = tensor.ne.at(1);
-          jblas::prologue::weight_comp::PackedWeight* packedw = NULL;
+          jblas::prologue::PackedWeight* packedw = NULL;
           int blocksize = 32;
-          auto type = PrologueB::S4Type::S4_F32;
+          auto type = CompType::S4_F32;
           if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_B32) {
             blocksize = 32;
-            type = PrologueB::S4Type::S4_F32;
+            type = CompType::S4_F32;
           } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128) {
             blocksize = 128;
-            type = PrologueB::S4Type::S4_F32;
+            type = CompType::S4_F32;
           } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_B1024) {
             blocksize = 1024;
-            type = PrologueB::S4Type::S4_F32;
+            type = CompType::S4_F32;
           } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32) {
             blocksize = 32;
-            type = PrologueB::S4Type::S4_Bf16;
+            type = CompType::S4_Bf16;
+          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32) {
+            blocksize = 32;
+            type = CompType::S4_F32;
+          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128) {
+            blocksize = 128;
+            type = CompType::S4_F32;
+          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32) {
+            blocksize = 32;
+            type = CompType::S4_Bf16;
           }
-          packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n_, k_, (float*)tensor.data, k_,
-                                                                                 blocksize, type);
+          auto cd = jblas::utils::parallel::CpuDevice::getInstance();
+          if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32 || ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128 ||
+              ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32) {
+            if (cd->AVX512F()) {
+              packedw = vnnikernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n_, k_, (float*)tensor.data,
+                                                                                         k_, blocksize, type);
+            } else {
+              packedw = vnnikernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n_, k_, (float*)tensor.data, k_,
+                                                                                        blocksize, type);
+            }
+          } else {
+            if (cd->AVX512F()) {
+              packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n_, k_, (float*)tensor.data, k_,
+                                                                                     blocksize, type);
+            } else {
+              packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n_, k_, (float*)tensor.data, k_,
+                                                                                    blocksize, type);
+            }
+          }
+
           auto tsize = packedw->getSerializedSize();
           work.resize(tsize);  // upper bound on size
           packedw->serializeToBuffer((int8_t*)work.addr);

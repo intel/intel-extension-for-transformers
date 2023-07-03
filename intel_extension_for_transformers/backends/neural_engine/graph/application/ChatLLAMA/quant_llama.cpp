@@ -22,6 +22,9 @@ static const std::map<std::string, model_ftype> NE_FTYPE_MAP = {
     {"q4_j_b128", MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128},
     {"q4_j_b1024", MODEL_FTYPE_MOSTLY_Q4_JBLAS_B1024},
     {"q4_j_bf16_b32", MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32},
+    {"q4_j_vnni_b32", MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32},
+    {"q4_j_vnni_b128", MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128},
+    {"q4_j_vnni_bf16_b32", MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32},
 
 };
 

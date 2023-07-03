@@ -161,6 +161,24 @@ class JitAvx512f : protected JitAvx2 {
     vpsrld(_fp32, _fp32, 16);
     vpmovdw(_bf16, _fp32);
   }
+
+  void loadbf16_f32(const Xbyak::Zmm &dst, const Xbyak::Address &addr) {
+    vpmovzxwd(dst, addr);
+    vpslld(dst, dst, 16);
+  }
+
+  void broadcastbf16_f32(const Xbyak::Zmm &dst, const Xbyak::Reg64 &tmp,
+                         const Xbyak::Address &addr) {
+    mov(tmp.cvt16(), addr);
+    shl(tmp.cvt32(), 16);
+    vpbroadcastd(dst, tmp.cvt32());
+  }
+
+  void store_fp32_bf16(const Xbyak::Zmm &_fp32, const Xbyak::Address &_add) {
+    auto bf16 = Xbyak::Ymm(_fp32.getIdx());
+    cvt_fp32_bf16(bf16, _fp32);
+    vmovups(_add, bf16);
+  }
 };
 
 class JitAvx512vnni : protected JitAvx512f {
@@ -203,20 +221,8 @@ class JitAmxtile : protected JitAvx512f {
 
 class JitAmxbf16 : protected JitAmxtile {
  protected:
-  void cvt_bf16_fp32(const Xbyak::Zmm &dst, const Xbyak::Zmm &src) {
-    vpslld(dst, src, 16);
-  }
-  void load_bf16_fp32(const Xbyak::Zmm &dst, const Xbyak::Address &addr) {
-    vpmovzxwd(dst, addr);
-    cvt_bf16_fp32(dst, dst);
-  }
   void cvt_fp32_bf16(const Xbyak::Ymm &_bf16, const Xbyak::Zmm &_fp32) {
     vcvtneps2bf16(_bf16, _fp32);
-  }
-  void store_fp32_bf16(const Xbyak::Zmm &_fp32, const Xbyak::Address &_add) {
-    auto bf16 = Xbyak::Ymm(_fp32.getIdx());
-    cvt_fp32_bf16(bf16, _fp32);
-    vmovups(_add, bf16);
   }
 };
 

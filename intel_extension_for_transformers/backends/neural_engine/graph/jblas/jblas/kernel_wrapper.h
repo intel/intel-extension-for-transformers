@@ -56,7 +56,7 @@ class Transpose2D {
   }
 };
 
-class QuantizeS8KBlock {
+class QuantizeS8RowBlock {
  public:
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(const float *srcptr, int8_t *dstptr, int row,
@@ -67,30 +67,123 @@ class QuantizeS8KBlock {
     }
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return avx512f::quantize_f32_s8_kblock(srcptr, dstptr, row, col, ld_src,
-                                             ld_dst, scales, blocksize);
+      return avx512f::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src,
+                                               ld_dst, scales, blocksize);
     }
 #endif
-    return ref::quantize_f32_s8_kblock(srcptr, dstptr, row, col, ld_src, ld_dst,
-                                       scales, blocksize);
+    return ref::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src,
+                                         ld_dst, scales, blocksize);
+  }
+};
+
+class QuantizeU8ColBlock {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(int row, int col, const float *srcptr,
+                                   int ld_src, uint8_t *dstptr, int ld_dst,
+                                   float *scales, int ld_scale, uint8_t *zps,
+                                   int blocksize) {
+#if CompileAVX512F()
+    if (utils::isa_base<ISA_T>::avx512f) {
+      return avx512f::quantize_f32_u8_colblock(row, col, srcptr, ld_src, dstptr,
+                                               ld_dst, scales, ld_scale, zps,
+                                               blocksize);
+    }
+#endif
+    return ref::quantize_f32_u8_colblock(row, col, srcptr, ld_src, dstptr,
+                                         ld_dst, scales, ld_scale, zps,
+                                         blocksize);
+  }
+};
+class Broadcast {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(int num, const uint8_t &srcval,
+                                   uint8_t *dstptr) {
+#if CompileAVX512F()
+    if (utils::isa_base<ISA_T>::avx512f) {
+      return avx512f::broadcast_u8(num, srcval, dstptr);
+    }
+#endif
+    return ref::broadcast_u8(num, srcval, dstptr);
+  }
+};
+
+class AccumulateDequantizeS32F32 {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(const int32_t *srcptr, float *dstptr,
+                                   float alpha, float beta, int row, int col,
+                                   int ld_src, int ld_dst, float *ascales,
+                                   int ldas, float *wscales) {
+#if CompileAVX512F()
+    if (utils::isa_base<ISA_T>::avx512f) {
+      return avx512f::accumulate_dequantize_s32_f32(srcptr, dstptr, alpha, beta,
+                                                    row, col, ld_src, ld_dst,
+                                                    ascales, ldas, wscales);
+    }
+#endif
+    return ref::accumulate_dequantize_s32_f32(srcptr, dstptr, alpha, beta, row,
+                                              col, ld_src, ld_dst, ascales,
+                                              ldas, wscales);
   }
 };
 
 class DecompressKBlockS4F32 {
  public:
-  template <JBLAS_ISA ISA_T,typename _T>
+  template <JBLAS_ISA ISA_T, typename _T>
   static inline JBLAS_CODE forward(utils::int4x2 *srcptr, float *dstptr,
                                    int row, int col, int ld_src, int ld_dst,
                                    _T *scales, int k_offset, int kblock,
                                    int NPad) {
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
+      // if (std::is_same<_T, float>::value) {
+      //   return jit::jit_decompress_kblock_s4_f32<float>(
+      //       srcptr, dstptr, row, col, ld_src, ld_dst, (float *)scales,
+      //       k_offset, kblock, NPad);
+      // }
+
       return avx512f::decompress_kblock_s4_f32(srcptr, dstptr, row, col, ld_src,
                                                ld_dst, scales, k_offset, kblock,
                                                NPad);
     }
 #endif
     return ref::decompress_kblock_s4_f32(srcptr, dstptr, row, col, ld_src,
+                                         ld_dst, scales, k_offset, kblock,
+                                         NPad);
+  }
+};
+
+class DecompressKBlockS4S8 {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(utils::int4x2 *srcptr, int8_t *dstptr,
+                                   int row, int col, int ld_src, int ld_dst) {
+#if CompileAVX512F()
+    if (utils::isa_base<ISA_T>::avx512f) {
+      return avx512f::decompress_s4_s8(srcptr, dstptr, row, col, ld_src,
+                                       ld_dst);
+    }
+#endif
+    return ref::decompress_s4_s8(srcptr, dstptr, row, col, ld_src, ld_dst);
+  }
+};
+
+class DecompressKBlockS8F32 {
+ public:
+  template <JBLAS_ISA ISA_T, typename _T>
+  static inline JBLAS_CODE forward(int8_t *srcptr, float *dstptr, int row,
+                                   int col, int ld_src, int ld_dst, _T *scales,
+                                   int k_offset, int kblock, int NPad) {
+#if CompileAVX512F()
+    if (utils::isa_base<ISA_T>::avx512f) {
+      return jit::DequanKBlockS8F32::forward_avx512f(srcptr, dstptr, row, col,
+                                                     ld_src, ld_dst, scales,
+                                                     k_offset, kblock, NPad);
+    }
+#endif
+    return ref::decompress_kblock_s8_f32(srcptr, dstptr, row, col, ld_src,
                                          ld_dst, scales, k_offset, kblock,
                                          NPad);
   }
@@ -120,6 +213,36 @@ class AlphaBetaF32F32 {
                                   src1step, dstptr, dststep, M, N);
   }
 };
+
+class QuanOutS32U32 {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static JBLAS_CODE forward(const float alpha, const int32_t *srcptr,
+                            const int srcstep, uint8_t *dstptr,
+                            const int dststep, const int M, const int N,
+                            float scaleSrc, float scaleDst, int zpDst) {
+#if CompileAVX512F()
+    if (utils::isa_base<ISA_T>::avx512f) {
+      return avx512f::quanout_s32_u32(alpha, srcptr, srcstep, dstptr, dststep,
+                                      M, N, scaleSrc, scaleDst, zpDst);
+    }
+#endif
+    return ref::quanout_s32_u32(alpha, srcptr, srcstep, dstptr, dststep, M, N,
+                                scaleSrc, scaleDst, zpDst);
+  }
+};
+
+class MinMaxKBlock {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(const float *srcptr, int row, int col,
+                                   int ld_src, float *minmaxptr, int ld_minmax,
+                                   int fsize_minmax, int blocksize) {
+    return ref::minmax_f32_kblock(srcptr, row, col, ld_src, minmaxptr,
+                                  ld_minmax, fsize_minmax, blocksize);
+  }
+};
+
 }  // namespace wrapper
 }  // namespace kernel
 }  // namespace jblas

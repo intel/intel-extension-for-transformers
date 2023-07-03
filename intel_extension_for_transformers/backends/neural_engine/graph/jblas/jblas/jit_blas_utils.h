@@ -167,7 +167,7 @@ template <typename _T, int _Alignment = 64>
 class aligned_vector {
  public:
   aligned_vector() : mRawsize(0), mPtr(nullptr), mAlignedsize(0) {}
-  aligned_vector(size_t _size, _T _val = _T(0)) {
+  aligned_vector(size_t _size, _T _val = {0}) {
     resize(_size);
     std::fill_n(mVec.begin(), mVec.size(), _val);
   }
@@ -213,6 +213,95 @@ class timer {
   }
 
   stime_point_t startT;
+};
+
+template <typename T>
+class minmax_statistics {
+ public:
+  minmax_statistics() { clear(); }
+
+  void clear() {
+    min_val = std::numeric_limits<T>::max();
+    max_val = std::numeric_limits<T>::min();
+    avg_val = 0;
+    count = 0;
+  }
+
+  void add(T _val) {
+    min_val = min_val > _val ? _val : min_val;
+    max_val = max_val < _val ? _val : max_val;
+    count += 1;
+    avg_val = (avg_val * (count - 1) + _val) / count;
+  }
+
+  T min_val, max_val, avg_val;
+  size_t count;
+};
+
+
+template <int _PRINT_CYCLE_MS = 100, typename _PRECISION = microseconds,
+          typename _LOG_PRECISION = milliseconds>
+class timer_statistics_logger {
+ public:
+  typedef timer<milliseconds> log_timer_t;
+  timer_statistics_logger() {
+    clear();
+    log_ratio = (float)std::chrono::duration_cast<_PRECISION>(_LOG_PRECISION(1))
+                    .count();
+  }
+
+  void clear() {
+    statis.clear();
+    logtm.clear();
+  }
+
+  void start() {
+    if (logtm.null_state()) {
+      logtm.start();
+    }
+    tm.start();
+  }
+
+  bool stop() {
+    auto elapsed = tm.stop();
+    statis.add(elapsed);
+    if (logtm.stop() >= _PRINT_CYCLE_MS) {
+      record();
+      clear();
+      logtm.start();
+      return true;
+    }
+    return false;
+  }
+
+  bool add(float time) {
+    statis.add(time);
+    if (logtm.stop() >= _PRINT_CYCLE_MS) {
+      record();
+      clear();
+      logtm.start();
+      return true;
+    }
+    return false;
+  }
+
+  const char *get_log_str() {
+    sprintf(str, "Min:%.4f, Max:%.4f, Average:%.4f", min_val, max_val, avg_val);
+    return str;
+  }
+  float min_val, max_val, avg_val;
+
+ private:
+  void record() {
+    min_val = statis.min_val / log_ratio;
+    max_val = statis.max_val / log_ratio;
+    avg_val = statis.avg_val / log_ratio;
+  }
+  float log_ratio;
+  char str[256];
+  timer<_PRECISION> tm;
+  minmax_statistics<float> statis;
+  timer<milliseconds> logtm;
 };
 
 namespace parallel {
@@ -342,34 +431,34 @@ struct Parallel2DRowMajor : Parallel2D {
     calc_valid_threads();
   }
 };
-
+template <class _GemmCore_T>
 struct Parallel2DGemm : Parallel2D {
  public:
-  Parallel2DGemm(int _bsize, int _csize) : BSize(_bsize), CSize(_csize) {}
-
-  void update(int M, int N, int K, int threads, size_t L2size, int MTile,
-              int NTile, int KTile, int PreferedN) {
+  Parallel2DGemm() {
+    mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f;
+  }
+  static int constexpr BSize = sizeof(typename _GemmCore_T::BType);
+  static int constexpr CSize = sizeof(typename _GemmCore_T::CType);
+  bool update(int M, int N, int K, int threads) {
     mM = M;
     mN = N;
     mK = K;
     if (M == 0 || N == 0 || K == 0) {
-      return;
+      return false;
     }
-    mMPadded = padto(M, MTile);
-    mNPadded = padto(N, NTile);
-    mKPadded = padto(K, KTile);
-    mKTile = KTile;
-    mMTile = MTile;
-    mNTile = NTile;
-    mPadCol = mNTile;
-    mPadRow = mMTile;
-    mNRef = PreferedN;
-    mL2Size = L2size;
+    if (sameProblem(M, N, K, threads)) {
+      return false;
+    }
+    mMPadded = padto(M, _GemmCore_T::MTILE);
+    mNPadded = padto(N, _GemmCore_T::NTILE);
+    mKPadded = padto(K, _GemmCore_T::KTILE);
+    mPadCol = _GemmCore_T::NTILE;
+    mPadRow = _GemmCore_T::MTILE;
     mRows = M;
     mCols = N;
     mThreadsCount = threads;
-    int rownum = updiv(mRows, mMTile);
-    int colnum = updiv(mCols, mNTile);
+    int rownum = updiv(mRows, _GemmCore_T::MTILE);
+    int colnum = updiv(mCols, _GemmCore_T::NTILE);
     mDensity = float(mRows) * mCols / (mRows + mCols);
     int maxN = 0;
     float maxScore = std::numeric_limits<float>::min();
@@ -395,11 +484,12 @@ struct Parallel2DGemm : Parallel2D {
     if (BA_ratio >= 10) {
       // B matrix is too big, need split K to reduce latency
       int const NStage = 10;
-      int const K_Split = padto(updiv(K, 10), mKTile);
+      int const K_Split = padto(updiv(K, 10), _GemmCore_T::KTILE);
       if (mKStep > K_Split) {
         mKStep = K_Split;
       }
     }
+    return true;
   }
   inline int getN() { return mN; }
   inline int getM() { return mM; }
@@ -410,18 +500,20 @@ struct Parallel2DGemm : Parallel2D {
   inline int getNStep() { return mNStep; }
   inline int getMStep() { return mMStep; }
   inline int getKStep() { return mKStep; }
-  inline bool sameProblem(int m, int n, int k) {
-    return m == mM && n == mN && k == mK;
+  inline bool sameProblem(int m, int n, int k, int numthd) {
+    return m == mM && n == mN && k == mK && numthd == mThreadsCount;
   }
   void print() {
     Parallel2D::print();
     printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(),
            getKStep());
+    printf("Cache Size:%llu\n", mL2Size);
   }
 
  protected:
   float calculate_score() {
-    int tmpnstep = mThdCol < mNRef ? mThdCol : mNRef;
+    int tmpnstep =
+        mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
     float threadratio = float(mValidThreads) / mThreadsCount;
     float density = float(tmpnstep) * mThdRow / (tmpnstep + mThdRow);
     const float Thres = 64;
@@ -432,8 +524,8 @@ struct Parallel2DGemm : Parallel2D {
   }
 
   void generate_by_cores(int ny, int nx, int rownum, int colnum) {
-    mThdRow = updiv(rownum, ny) * mMTile;
-    mThdCol = updiv(colnum, nx) * mNTile;
+    mThdRow = updiv(rownum, ny) * _GemmCore_T::MTILE;
+    mThdCol = updiv(colnum, nx) * _GemmCore_T::NTILE;
     mColThreads = updiv(mCols, mThdCol);
     mValidThreads = updiv(mRows, mThdRow) * mColThreads;
   }
@@ -445,22 +537,22 @@ struct Parallel2DGemm : Parallel2D {
   // A Access = N/mNStep
   void update_cache_blocking() {
     int constexpr MRef = 256, KRef = 256;
-    size_t csize_total = mL2Size - mNRef * KRef * BSize;
-    int maxM = csize_total / mNRef / CSize;
-    maxM = downdiv(maxM, mMTile);
-    int nthdm = mThdRow / mMTile;
+    size_t csize_total = mL2Size - _GemmCore_T::PREFERED_N * KRef * BSize;
+    int maxM = csize_total / _GemmCore_T::PREFERED_N / CSize;
+    maxM = downdiv(maxM, _GemmCore_T::MTILE);
+    int nthdm = mThdRow / _GemmCore_T::MTILE;
     if (maxM < nthdm) {
       int niter = updiv(nthdm, maxM);
-      mMStep = updiv(nthdm, niter) * mMTile;
+      mMStep = updiv(nthdm, niter) * _GemmCore_T::MTILE;
     } else {
       mMStep = mThdRow;
     }
     int maxN = mL2Size / (mMStep * CSize + KRef * BSize);
-    maxN = downdiv(maxN, mNTile);
-    int nthdn = mThdCol / mNTile;
+    maxN = downdiv(maxN, _GemmCore_T::NTILE);
+    int nthdn = mThdCol / _GemmCore_T::NTILE;
     if (maxN < nthdn) {
       int niter = updiv(nthdn, maxN);
-      mNStep = updiv(nthdn, niter) * mNTile;
+      mNStep = updiv(nthdn, niter) * _GemmCore_T::NTILE;
     } else {
       mNStep = mThdCol;
     }
@@ -468,16 +560,365 @@ struct Parallel2DGemm : Parallel2D {
   }
   void update_kstep() {
     auto rawk = (mL2Size / mNStep - mMStep * CSize) / BSize;
-    mKStep = padto_le(rawk, mKTile);
+    mKStep = padto_le(rawk, _GemmCore_T::KTILE);
   }
 
-  const int BSize, CSize;
   size_t mL2Size = 0;
   int mNStep = 0;
   int mMStep = 0;
   int mKStep = 0;
-  int mKTile = 0, mNTile = 0, mMTile = 0;
-  int mNRef = 0;
+  float mDensity = 0.f;
+  int mM = 0, mN = 0, mK = 0;
+  int mMPadded = 0, mNPadded = 0, mKPadded = 0;
+};
+
+struct Parallel2DRowMajorColBlock : Parallel2D {
+  int mThdsPerBlock;
+  int mBlockPerThread;
+  int mBlocksPerCol;
+  int mColBlock;
+  int mTmpStride;
+  int mTmpSize;
+  void update(int row, int col, int minrow, int mincol, int colblock,
+              int ncores) {
+    mCols = col;
+    mRows = row;
+    mPadCol = mincol;
+    mPadRow = minrow;
+    mColBlock = colblock;
+    mThreadsCount = ncores;
+    int colnum = updiv(col, mColBlock);
+    int blockcount = colnum * row;
+    float blockperthd = float(blockcount) / mThreadsCount;
+    float colratio = blockperthd > colnum ? colnum : ceil(blockperthd);
+    if (blockperthd <= 1) {
+      int tilecount = updiv(col, mincol);
+      float tileperthd = float(tilecount) / mThreadsCount;
+      colratio = tileperthd > tilecount ? tilecount : ceil(tileperthd);
+      mThdCol = colratio * mincol;
+      goto __COL_EPI;
+    }
+    mThdCol = padto(colratio * mColBlock, mPadCol);
+  __COL_EPI:
+    mBlocksPerCol = utils::updiv(mCols, mColBlock);
+    if (mThdCol > mColBlock) {
+      mThdsPerBlock = 1;
+      mBlockPerThread = downdiv(mThdCol, mColBlock);
+      mColThreads = updiv(mBlocksPerCol, mBlockPerThread);
+    } else {
+      mThdCol = mColBlock;
+      mThdsPerBlock = 1;
+      mBlockPerThread = 1;
+      mColThreads = mThdsPerBlock * mBlocksPerCol;
+    }
+
+    mThdRow = ceil(mRows / (float(mThreadsCount) / mColThreads)) * mPadRow;
+    calc_valid_threads();
+  }
+
+  virtual void getIndex(int threadIdx, int *row, int *col, int *rowsize,
+                        int *colsize, int *block, int *idxinblk) {
+    if (threadIdx >= mValidThreads) {
+      *rowsize = 0;
+      *colsize = 0;
+      return;
+    }
+    int tx = threadIdx % mColThreads;
+    int tb = tx / mThdsPerBlock;
+    int ty = threadIdx / mColThreads;
+    if (mThdsPerBlock > 1) {
+      *block = tb;
+      *idxinblk = tx % mThdsPerBlock;
+      *col = tb * mColBlock + *idxinblk * mThdCol;
+      *colsize = padto(remainsize(*col, *col + mColBlock, mThdCol), mPadCol);
+    } else {
+      *idxinblk = 0;
+      *block = tb * mBlockPerThread;
+      *col = tx * mThdCol;
+      *colsize = padto(remainsize(*col, mCols, mThdCol), mPadCol);
+    }
+    *row = ty * mThdRow;
+    *rowsize = padto(remainsize(*row, mRows, mThdRow), mPadRow);
+  }
+
+  size_t getTmpSize(size_t elesize, int sizepadding = 64) {
+    mTmpSize = padto(elesize, sizepadding);
+    mTmpStride = mBlocksPerCol * mTmpSize * mThdsPerBlock;
+    return mRows * mTmpStride;
+  }
+  void print() {
+    Parallel2D::print();
+    printf("Blocks per col:%d\n", mBlocksPerCol);
+    printf("Blocks per Thread:%d\n", mBlockPerThread);
+    printf("Threads per Block:%d\n", mThdsPerBlock);
+  }
+};
+
+template <class _GemmCore_T>
+struct Parallel2DGemmKBlock : Parallel2D {
+ public:
+  Parallel2DGemmKBlock() {
+    mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f;
+  }
+  static int constexpr BSize = sizeof(typename _GemmCore_T::BType);
+  static int constexpr CSize = sizeof(typename _GemmCore_T::CType);
+  bool update(int M, int N, int K, int KBlock, int threads) {
+    mM = M;
+    mN = N;
+    mK = K;
+    if (M == 0 || N == 0 || K == 0) {
+      return false;
+    }
+    if (sameProblem(M, N, K, threads)) {
+      return false;
+    }
+    if (_GemmCore_T::KTILE > KBlock || KBlock % _GemmCore_T::KTILE != 0) {
+      assert(0);  // invalid parameter
+      return false;
+    }
+    mMPadded = padto(M, _GemmCore_T::MTILE);
+    mNPadded = padto(N, _GemmCore_T::NTILE);
+    mKPadded = padto(K, _GemmCore_T::KTILE);
+    mPadCol = _GemmCore_T::NTILE;
+    mPadRow = _GemmCore_T::MTILE;
+    mRows = M;
+    mCols = N;
+    mThreadsCount = threads;
+    int rownum = updiv(mRows, _GemmCore_T::MTILE);
+    int colnum = updiv(mCols, _GemmCore_T::NTILE);
+    mDensity = float(mRows) * mCols / (mRows + mCols);
+    int maxN = 0;
+    float maxScore = std::numeric_limits<float>::min();
+    int core_enum = sqrt(mThreadsCount);
+    for (int i = 1; i <= core_enum; i += 1) {
+      generate_by_cores(i, mThreadsCount / i, rownum, colnum);
+      auto thdscore = calculate_score();
+      if (maxScore < thdscore) {
+        maxScore = thdscore;
+        maxN = i;
+      }
+      generate_by_cores(mThreadsCount / i, i, rownum, colnum);
+      thdscore = calculate_score();
+      if (maxScore < thdscore) {
+        maxScore = thdscore;
+        maxN = mThreadsCount / i;
+      }
+    }
+    generate_by_cores(maxN, mThreadsCount / maxN, rownum, colnum);
+    update_cache_blocking(KBlock);
+    return true;
+  }
+  inline int getN() { return mN; }
+  inline int getM() { return mM; }
+  inline int getK() { return mK; }
+  inline int getPaddedN() { return mNPadded; }
+  inline int getPaddedM() { return mMPadded; }
+  inline int getPaddedK() { return mKPadded; }
+  inline int getNStep() { return mNStep; }
+  inline int getMStep() { return mMStep; }
+  inline int getKStep() { return mKStep; }
+  inline bool sameProblem(int m, int n, int k, int numthd) {
+    return m == mM && n == mN && k == mK && numthd == mThreadsCount;
+  }
+  void print() {
+    Parallel2D::print();
+    printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(),
+           getKStep());
+    printf("Cache Size:%llu\n", mL2Size);
+  }
+
+ protected:
+  float calculate_score() {
+    int tmpnstep =
+        mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
+    float threadratio = float(mValidThreads) / mThreadsCount;
+    float density = float(tmpnstep) * mThdRow / (tmpnstep + mThdRow);
+    const float Thres = 64;
+    if (mDensity < Thres) {
+      return (threadratio * 1.f + density * 0.0016f) * density / mDensity;
+    }
+    return (threadratio * 1.f + density * 0.0016f);
+  }
+
+  void generate_by_cores(int ny, int nx, int rownum, int colnum) {
+    mThdRow = updiv(rownum, ny) * _GemmCore_T::MTILE;
+    mThdCol = updiv(colnum, nx) * _GemmCore_T::NTILE;
+    mColThreads = updiv(mCols, mThdCol);
+    mValidThreads = updiv(mRows, mThdRow) * mColThreads;
+  }
+
+  void update_cache_blocking(int kblock) {
+    int constexpr MRef = 256;
+    int kRef = kblock > 256 ? 256 : kblock;
+    size_t csize_total = mL2Size - _GemmCore_T::PREFERED_N * kRef * BSize;
+    int maxM = csize_total / _GemmCore_T::PREFERED_N / CSize;
+    maxM = downdiv(maxM, _GemmCore_T::MTILE);
+    int nthdm = mThdRow / _GemmCore_T::MTILE;
+    if (maxM < nthdm) {
+      int niter = updiv(nthdm, maxM);
+      mMStep = updiv(nthdm, niter) * _GemmCore_T::MTILE;
+    } else {
+      mMStep = mThdRow;
+    }
+    int maxN = mL2Size / (mMStep * CSize + kRef * BSize);
+    maxN = downdiv(maxN, _GemmCore_T::NTILE);
+    int nthdn = mThdCol / _GemmCore_T::NTILE;
+    if (maxN < nthdn) {
+      int niter = updiv(nthdn, maxN);
+      mNStep = updiv(nthdn, niter) * _GemmCore_T::NTILE;
+    } else {
+      mNStep = mThdCol;
+    }
+    mKStep = kRef;
+  }
+
+  void update_kstep() {
+    auto rawk = (mL2Size / mNStep - mMStep * CSize) / BSize;
+    mKStep = padto_le(rawk, _GemmCore_T::KTILE);
+  }
+
+  size_t mL2Size = 0;
+  int mNStep = 0;
+  int mMStep = 0;
+  int mKStep = 0;
+  float mDensity = 0.f;
+  int mM = 0, mN = 0, mK = 0;
+  int mMPadded = 0, mNPadded = 0, mKPadded = 0;
+};
+
+template <class _GemmCore_T>
+struct Parallel2DGemmKBlockFixed : Parallel2D {
+ public:
+  Parallel2DGemmKBlockFixed() {
+    mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f;
+  }
+  static int constexpr BSize = sizeof(typename _GemmCore_T::BType);
+  static int constexpr CSize = sizeof(typename _GemmCore_T::CType);
+  bool update(int M, int N, int K, int KBlock, int threads) {
+    mM = M;
+    mN = N;
+    mK = K;
+    if (M == 0 || N == 0 || K == 0) {
+      return false;
+    }
+    if (sameProblem(M, N, K, threads)) {
+      return false;
+    }
+    if (_GemmCore_T::KTILE > KBlock || KBlock % _GemmCore_T::KTILE != 0) {
+      assert(0);  // invalid parameter
+      return false;
+    }
+    mMPadded = padto(M, _GemmCore_T::MTILE);
+    mNPadded = padto(N, _GemmCore_T::NTILE);
+    mKPadded = padto(K, _GemmCore_T::KTILE);
+    mPadCol = _GemmCore_T::NTILE;
+    mPadRow = _GemmCore_T::MTILE;
+    mRows = M;
+    mCols = N;
+    mThreadsCount = threads;
+    int rownum = updiv(mRows, _GemmCore_T::MTILE);
+    int colnum = updiv(mCols, _GemmCore_T::NTILE);
+    mDensity = float(mRows) * mCols / (mRows + mCols);
+    int maxN = 0;
+    float maxScore = std::numeric_limits<float>::min();
+    int core_enum = sqrt(mThreadsCount);
+    for (int i = 1; i <= core_enum; i += 1) {
+      generate_by_cores(i, mThreadsCount / i, rownum, colnum);
+      auto thdscore = calculate_score();
+      if (maxScore < thdscore) {
+        maxScore = thdscore;
+        maxN = i;
+      }
+      generate_by_cores(mThreadsCount / i, i, rownum, colnum);
+      thdscore = calculate_score();
+      if (maxScore < thdscore) {
+        maxScore = thdscore;
+        maxN = mThreadsCount / i;
+      }
+    }
+    generate_by_cores(maxN, mThreadsCount / maxN, rownum, colnum);
+    update_cache_blocking(KBlock);
+    return true;
+  }
+  inline int getN() { return mN; }
+  inline int getM() { return mM; }
+  inline int getK() { return mK; }
+  inline int getPaddedN() { return mNPadded; }
+  inline int getPaddedM() { return mMPadded; }
+  inline int getPaddedK() { return mKPadded; }
+  inline int getNStep() { return mNStep; }
+  inline int getMStep() { return mMStep; }
+  inline int getKStep() { return mKStep; }
+  inline bool sameProblem(int m, int n, int k, int numthd) {
+    return m == mM && n == mN && k == mK && numthd == mThreadsCount;
+  }
+  void print() {
+    Parallel2D::print();
+    printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(),
+           getKStep());
+    printf("Cache Size:%llu\n", mL2Size);
+  }
+
+ protected:
+  float calculate_score() {
+    int tmpnstep =
+        mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
+    float threadratio = float(mValidThreads) / mThreadsCount;
+    float density = float(tmpnstep) * mThdRow / (tmpnstep + mThdRow);
+    const float Thres = 64;
+    if (mDensity < Thres) {
+      return (threadratio * 1.f + density * 0.0016f) * density / mDensity;
+    }
+    return (threadratio * 1.f + density * 0.0016f);
+  }
+
+  void generate_by_cores(int ny, int nx, int rownum, int colnum) {
+    mThdRow = updiv(rownum, ny) * _GemmCore_T::MTILE;
+    mThdCol = updiv(colnum, nx) * _GemmCore_T::NTILE;
+    mColThreads = updiv(mCols, mThdCol);
+    mValidThreads = updiv(mRows, mThdRow) * mColThreads;
+  }
+
+  void update_cache_blocking(int kblock) {
+    int constexpr MRef = 256;
+    int kRef = 256;
+    if (kblock > 256) {
+      kRef = kblock / 2;
+    }
+    if (kRef % kblock != 0) {
+      kRef = padto(kRef, kblock);
+    }
+    size_t csize_total = mL2Size - _GemmCore_T::PREFERED_N * kRef * BSize;
+    int maxM = csize_total / _GemmCore_T::PREFERED_N / CSize;
+    maxM = downdiv(maxM, _GemmCore_T::MTILE);
+    int nthdm = mThdRow / _GemmCore_T::MTILE;
+    if (maxM < nthdm) {
+      int niter = updiv(nthdm, maxM);
+      mMStep = updiv(nthdm, niter) * _GemmCore_T::MTILE;
+    } else {
+      mMStep = mThdRow;
+    }
+    int maxN = mL2Size / (mMStep * CSize + kRef * BSize);
+    maxN = downdiv(maxN, _GemmCore_T::NTILE);
+    int nthdn = mThdCol / _GemmCore_T::NTILE;
+    if (maxN < nthdn) {
+      int niter = updiv(nthdn, maxN);
+      mNStep = updiv(nthdn, niter) * _GemmCore_T::NTILE;
+    } else {
+      mNStep = mThdCol;
+    }
+    mKStep = kRef;
+  }
+
+  void update_kstep() {
+    auto rawk = (mL2Size / mNStep - mMStep * CSize) / BSize;
+    mKStep = padto_le(rawk, _GemmCore_T::KTILE);
+  }
+
+  size_t mL2Size = 0;
+  int mNStep = 0;
+  int mMStep = 0;
+  int mKStep = 0;
   float mDensity = 0.f;
   int mM = 0, mN = 0, mK = 0;
   int mMPadded = 0, mNPadded = 0, mKPadded = 0;

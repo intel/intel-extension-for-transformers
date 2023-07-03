@@ -9387,7 +9387,7 @@ static thread_ret_t ne_graph_compute_thread(void* data) {
 #include <omp.h>
 #endif
 void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
-  const int n_threads = cgraph->n_threads;
+  int n_threads = cgraph->n_threads;
 
   struct ne_compute_state_shared state_shared = {
       /*.spin      =*/NE_LOCK_INITIALIZER,
@@ -9425,6 +9425,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
     }
   }
 #else
+  n_threads = jblas_set_threads(n_threads);
   omp_set_num_threads(n_threads);
 #endif
 
@@ -9437,7 +9438,15 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
       struct ne_tensor* node = cgraph->nodes[i];
 
       switch (node->op) {
-        case NE_OP_CPY:
+        case NE_OP_CPY: {
+          node->n_tasks = node->ne[0] == 1 ? n_threads : 1;
+
+          size_t cur = 0;
+          if (ne_is_quantized(node->type)) {
+            cur = NE_TYPE_SIZE[NE_TYPE_F32] * node->ne[0] * n_threads;
+          }
+          work_size = MAX(work_size, cur);
+        } break;
         case NE_OP_DUP: {
           node->n_tasks = n_threads;
 
@@ -9450,7 +9459,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         } break;
         case NE_OP_ADD:
         case NE_OP_ADD1: {
-          node->n_tasks = n_threads;
+          node->n_tasks = 1;
 
           size_t cur = 0;
 
@@ -9484,15 +9493,15 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_SGN:
         case NE_OP_NEG:
         case NE_OP_STEP:
+        case NE_OP_MUL:
+        case NE_OP_RMS_NORM:
         case NE_OP_RELU: {
           node->n_tasks = 1;
         } break;
-        case NE_OP_MUL:
         case NE_OP_GELU:
         case NE_OP_SILU:
         case NE_OP_SILU_BACK:
         case NE_OP_NORM:
-        case NE_OP_RMS_NORM:
         case NE_OP_RMS_NORM_BACK: {
           node->n_tasks = n_threads;
         } break;
@@ -9527,7 +9536,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
           work_size = MAX(work_size, cur);
         } break;
         case NE_OP_SCALE: {
-          node->n_tasks = n_threads;
+          node->n_tasks = 1;
         } break;
         case NE_OP_SET:
         case NE_OP_CONT:
@@ -9544,6 +9553,8 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_DIAG_MASK_INF:
         case NE_OP_SOFT_MAX:
         case NE_OP_ROPE:
+          node->n_tasks = 1;
+          break;
         case NE_OP_ROPE_BACK: {
           node->n_tasks = n_threads;
         } break;

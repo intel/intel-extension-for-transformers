@@ -2,10 +2,19 @@
 #include <array>
 
 #include "jit_base.hpp"
-#include "jit_blas.h"
+#include "jit_blas_utils.h"
 
 namespace jblas {
 namespace gemm {
+enum class GemmCoreType : int {
+  Undef = 0,
+  AVX2_4X24,
+  AVX512F_8X48,
+  AVX512_VNNI_8X48,
+  AMX_BF16,
+  AMX_INT8,
+  AVX512_VNNI_3X48_KBLOCK,
+};
 class GemmCore_Row_NN_4x24_AVX2 {
  public:
   struct params {
@@ -19,6 +28,7 @@ class GemmCore_Row_NN_4x24_AVX2 {
   typedef float BType;
   typedef float CType;
   static JBLAS_ISA constexpr ISA = JblasAVX2;
+  static GemmCoreType constexpr TYPE = GemmCoreType::AVX2_4X24;
   static int constexpr NTILE = 24, MTILE = 4, KTILE = 4 / sizeof(BType);
   static int constexpr KUNROLL = 2;
   static int constexpr PACK_ROW = 1;
@@ -261,6 +271,7 @@ class GemmCore_Row_NN_8x48_AVX512F {
   typedef float BType;
   typedef float CType;
   static JBLAS_ISA constexpr ISA = JblasAVX512F;
+  static GemmCoreType constexpr TYPE = GemmCoreType::AVX512F_8X48;
   static int constexpr NTILE = 48, MTILE = 8, KTILE = 4 / sizeof(BType);
   static int constexpr KUNROLL = 2;
   static int constexpr PACK_ROW = 1;
@@ -504,6 +515,7 @@ class GemmCore_Row_NN_8x48_AVX512_VNNI {
   typedef int8_t BType;
   typedef int32_t CType;
   static JBLAS_ISA constexpr ISA = JblasAVX512_VNNI;
+  static GemmCoreType constexpr TYPE = GemmCoreType::AVX512_VNNI_8X48;
   static int constexpr NTILE = 48, MTILE = 8, KTILE = 4 / sizeof(BType);
   static int constexpr PACK_ROW = KTILE;
   static int constexpr KUNROLL = 2;
@@ -771,6 +783,7 @@ class GemmCore_Row_NN_16x64_AMX_BF16 {
   typedef long long (*func_t)(params *);
 
   static JBLAS_ISA constexpr ISA = JblasAMX_BF16;
+  static GemmCoreType constexpr TYPE = GemmCoreType::AMX_BF16;
   static int constexpr NTILE = 64, MTILE = 16, KTILE = 64 / sizeof(BType);
   static int constexpr PACK_ROW = 2;
   static int constexpr KUNROLL = 2;
@@ -1073,6 +1086,7 @@ class GemmCore_Row_NN_16x64_AMX_INT8 {
   typedef long long (*func_t)(params *);
 
   static JBLAS_ISA constexpr ISA = JblasAMX_INT8;
+  static GemmCoreType constexpr TYPE = GemmCoreType::AMX_INT8;
   static int constexpr NTILE = 64, MTILE = 16, KTILE = 64 / sizeof(BType);
   static int constexpr PACK_ROW = 4;
   static int constexpr KUNROLL = 2;
@@ -1359,5 +1373,396 @@ class GemmCore_Row_NN_16x64_AMX_INT8 {
   MicroKernel::tileconfig_t mCfg;
   MicroKernel mCodes;
 };
+
+// KBLKs= K/BlkSize
+// Weight scale=KBLKs*N
+// Activation zp=M*KBLKs scale=M*KBLKs
+template <typename _OT, typename _ST>
+class GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK {
+ public:
+  typedef uint8_t AType;
+  typedef int8_t BType;
+  typedef _OT CType;
+  typedef _ST SType;
+  struct params {
+    uint8_t *matA;
+    int8_t *matB;
+    CType *matC;
+    uint8_t *zpA;
+    float *scaleA;
+    SType *scaleB;
+    int ldsa, ldsb;
+    int kblock;
+    int k, nsize;
+    int astep, cstep;
+    int kpos;
+  };
+  typedef long long (*func_t)(params *);
+
+  static JBLAS_ISA constexpr ISA = JblasAVX512_VNNI;
+  static GemmCoreType constexpr TYPE = GemmCoreType::AVX512_VNNI_3X48_KBLOCK;
+  static int constexpr NTILE = 48, MTILE = 3, KTILE = 4 / sizeof(BType);
+  static int constexpr PACK_ROW = KTILE;
+  static int constexpr KUNROLL = 2;
+  static int constexpr PREFERED_N = 192;
+
+  class MicroKernel : protected jblas::xbyak::JitAvx512vnni {
+   public:
+    MicroKernel() {}
+    int CRegCount = 9, BRegCount = 3, ARegCount = 1, ZpARegCount = MTILE;
+    int CReg = 0, CF32Reg = 9, BReg = 18, AReg = 21, ZpAReg = 22, ZpTmp = 25;
+    int const NRegs = 3;
+    static int constexpr BKStepSize = KTILE * NTILE * sizeof(BType);
+    static int constexpr AKStepSize = KTILE * sizeof(AType);
+    static int constexpr VecBytes = 64;
+
+    void generate_code(int _mtile) {
+      reset();
+      generate_mtile(_mtile);
+      ready();
+      mKernel = getCode<func_t>();
+    }
+    func_t mKernel = nullptr;
+
+   protected:
+    void generate_mtile(int _mtile) {
+      CRegCount = _mtile * NRegs;
+      ZpARegCount = _mtile;
+      BRegCount = NRegs;
+      CF32Reg = CReg + CRegCount;
+      BReg = CF32Reg + CRegCount;
+      AReg = BReg + BRegCount;
+      ZpAReg = AReg + ARegCount;
+      ZpTmp = ZpAReg + ZpARegCount;
+      inLocalLabel();  // use local label for multiple instance
+      Xbyak::util::StackFrame st(this, 1, 13, 16 * 10);
+      parambase = st.p[0];
+      reg_matAptr = st.t[0];
+      reg_matBptr = st.t[1];
+      reg_matCptr = st.t[0];
+      reg_ksize = st.t[2];
+      reg_cstep = st.t[3];
+      reg_iterk = st.t[4];
+      reg_astep = st.t[5];
+      reg_kblock = st.t[6];
+      reg_tmp = st.t[7];
+      reg_tmp1 = st.t[8];
+      reg_tmp2 = st.t[9];
+      reg_zpAptr = st.t[10];
+      reg_scaleAptr = st.t[11];
+      reg_scaleBptr = st.t[12];
+      reg_ret = rax;
+
+      vreg_push(rsp);
+
+      load32(reg_ksize, ptr[parambase + OFFSET(k)]);
+      load32(reg_kblock, ptr[parambase + OFFSET(kblock)]);
+      load32(reg_astep, ptr[parambase + OFFSET(astep)]);
+
+      for (int i = 0; i < _mtile; i++) {
+        for (int j = 0; j < NRegs; j++) {
+          vpxorq(Xbyak::Zmm(CF32Reg + i * NRegs + j),
+                 Xbyak::Zmm(CF32Reg + i * NRegs + j),
+                 Xbyak::Zmm(CF32Reg + i * NRegs + j));
+        }
+      }
+      mov(reg_matAptr, ptr[parambase + OFFSET(matA)]);
+      mov(reg_matBptr, ptr[parambase + OFFSET(matB)]);
+      mov(reg_zpAptr, ptr[parambase + OFFSET(zpA)]);
+      mov(reg_scaleAptr, ptr[parambase + OFFSET(scaleA)]);
+      mov(reg_scaleBptr, ptr[parambase + OFFSET(scaleB)]);
+      xor_(reg_iterk, reg_iterk);
+
+      load32(reg_tmp, ptr[parambase + OFFSET(nsize)]);
+      cmp(reg_tmp, NTILE);
+      jl(".n32", T_NEAR);
+      generate_kloop(_mtile, NRegs);
+      write_back(_mtile, NRegs, reg_matCptr, reg_cstep);
+      jmp(".nend", T_NEAR);
+
+      L(".n32");
+      cmp(reg_tmp, 32);
+      jl(".n16", T_NEAR);
+      generate_kloop(_mtile, 2);
+      write_back(_mtile, 2, reg_matCptr, reg_cstep);
+      jmp(".nend", T_NEAR);
+
+      L(".n16");
+      generate_kloop(_mtile, 1);
+      write_back(_mtile, 1, reg_matCptr, reg_cstep);
+
+      L(".nend");
+      mov(reg_ret, 0);
+      vreg_pop(rsp);
+
+      outLocalLabel();  // end of local label
+    }
+
+    void generate_kloop(int _mtile, int _nregs) {
+      inLocalLabel();
+      L(".kloop");
+      for (int i = 0; i < _mtile; i++) {
+        for (int j = 0; j < _nregs; j++) {
+          vpxorq(Xbyak::Zmm(CReg + i * NRegs + j),
+                 Xbyak::Zmm(CReg + i * NRegs + j),
+                 Xbyak::Zmm(CReg + i * NRegs + j));
+        }
+      }
+      mov(reg_tmp, reg_zpAptr);
+      load32(reg_tmp1, ptr[parambase + OFFSET(ldsa)]);
+      for (size_t i = 0; i < _mtile; i++) {
+        vpbroadcastb(Xbyak::Zmm(ZpAReg + i), ptr[reg_tmp]);
+        add(reg_tmp, reg_tmp1);
+      }
+      xor_(reg_tmp2, reg_tmp2);
+      L(".kbloop");
+      generate_fma(_mtile, _nregs, KUNROLL, reg_tmp, reg_matAptr, reg_matBptr,
+                   reg_astep);
+      generate_zp_fma(_mtile, _nregs, KUNROLL, reg_tmp, reg_matBptr);
+      add(reg_matAptr, AKStepSize * KUNROLL);
+      add(reg_matBptr, BKStepSize * KUNROLL);
+      add(reg_iterk, KTILE * KUNROLL);
+      cmp(reg_iterk, reg_ksize);  // k iteration variable
+      jge(".kbend");
+      add(reg_tmp2, KTILE * KUNROLL);
+      cmp(reg_tmp2.cvt32(), ptr[parambase + OFFSET(kblock)]);
+      jb(".kbloop");
+      L(".kbend");
+      mov(reg_tmp, reg_scaleAptr);
+      load32(reg_tmp1, ptr[parambase + OFFSET(ldsa)]);
+      for (size_t i = 0; i < _mtile; i++) {
+        vbroadcastss(Xbyak::Zmm(ZpAReg + i), ptr[reg_tmp]);
+        lea(reg_tmp, ptr[reg_tmp + reg_tmp1 * sizeof(float)]);
+      }
+      for (size_t i = 0; i < _nregs; i++) {
+        if (std::is_same<SType, float>::value) {
+          vmovups(Xbyak::Zmm(BReg + i), ptr[reg_scaleBptr + i * VecBytes]);
+        } else if (std::is_same<SType, utils::bf16>::value) {
+          loadbf16_f32(Xbyak::Zmm(BReg + i),
+                       ptr[reg_scaleBptr +
+                           i * VecBytes / (sizeof(float) / sizeof(SType))]);
+        }
+      }
+      generate_f32_accumulate(_mtile, _nregs);
+      add(reg_zpAptr, sizeof(AType));
+      add(reg_scaleAptr, sizeof(float));
+      load32(reg_tmp, ptr[parambase + OFFSET(ldsb)]);
+      lea(reg_scaleBptr, ptr[reg_scaleBptr + reg_tmp * sizeof(SType)]);
+      cmp(reg_iterk, reg_ksize);  // k iteration variable
+      jb(".kloop");
+      outLocalLabel();
+    }
+
+    void generate_fma(int _mtile, int _NRegs, int _kunroll,
+                      const Xbyak::Reg64 &reg_tmp,
+                      const Xbyak::Reg64 &reg_matAptr,
+                      const Xbyak::Reg64 &reg_matBptr,
+                      const Xbyak::Reg64 &reg_astep) {
+      for (int kk = 0; kk < _kunroll; kk++) {
+        lea(reg_tmp, ptr[reg_matAptr + kk * AKStepSize]);
+        for (int i = 0; i < _NRegs; i++) {
+          vmovups(Xbyak::Zmm(BReg + i),
+                  ptr[reg_matBptr + kk * BKStepSize + i * VecBytes]);
+        }
+        for (int mm = 0; mm < _mtile; mm++) {
+          vpbroadcastd(Xbyak::Zmm(AReg), ptr[reg_tmp]);
+          add(reg_tmp, reg_astep);
+          for (int i = 0; i < _NRegs; i++) {
+            vpdpbusds(Xbyak::Zmm(CReg + mm * NRegs + i), Xbyak::Zmm(AReg),
+                      Xbyak::Zmm(BReg + i));
+          }
+        }
+      }
+    }
+
+    void generate_zp_fma(int _mtile, int _NRegs, int _kunroll,
+                         const Xbyak::Reg64 &reg_tmp,
+                         const Xbyak::Reg64 &reg_matBptr) {
+      for (int kk = 0; kk < _kunroll; kk++) {
+        for (int i = 0; i < _NRegs; i++) {
+          vmovups(Xbyak::Zmm(BReg + i),
+                  ptr[reg_matBptr + kk * BKStepSize + i * VecBytes]);
+        }
+        for (int mm = 0; mm < _mtile; mm++) {
+          for (int i = 0; i < _NRegs; i++) {
+            vpxorq(Xbyak::Zmm(ZpTmp), Xbyak::Zmm(ZpTmp), Xbyak::Zmm(ZpTmp));
+            vpdpbusds(Xbyak::Zmm(ZpTmp), Xbyak::Zmm(ZpAReg + mm),
+                      Xbyak::Zmm(BReg + i));
+            vpsubd(Xbyak::Zmm(CReg + mm * NRegs + i),
+                   Xbyak::Zmm(CReg + mm * NRegs + i), Xbyak::Zmm(ZpTmp));
+          }
+        }
+      }
+    }
+
+    void generate_f32_accumulate(int _mtile, int _NRegs) {
+      for (int mm = 0; mm < _mtile; mm++) {
+        for (int i = 0; i < _NRegs; i++) {
+          vcvtdq2ps(Xbyak::Zmm(CReg + mm * NRegs + i),
+                    Xbyak::Zmm(CReg + mm * NRegs + i));
+          vmulps(Xbyak::Zmm(AReg), Xbyak::Zmm(ZpAReg + mm),
+                 Xbyak::Zmm(BReg + i));
+          vmulps(Xbyak::Zmm(CReg + mm * NRegs + i), Xbyak::Zmm(AReg));
+          vaddps(Xbyak::Zmm(CF32Reg + mm * NRegs + i),
+                 Xbyak::Zmm(CReg + mm * NRegs + i));
+        }
+      }
+    }
+
+    void write_back(int _mtile, int _NRegs, const Xbyak::Reg64 &reg_matCptr,
+                    const Xbyak::Reg64 &reg_cstep) {
+      inLocalLabel();
+      load32(reg_matCptr, ptr[parambase + OFFSET(kpos)]);
+      cmp(reg_matCptr, 0);
+      jg(".LACC", T_NEAR);
+      mov(reg_matCptr, ptr[parambase + OFFSET(matC)]);
+      lea(reg_matCptr, ptr[reg_matCptr]);
+      load32(reg_cstep, ptr[parambase + OFFSET(cstep)]);
+      for (int i = 0; i < _mtile; i++) {
+        for (int j = 0; j < _NRegs; j++) {
+          vmovups(ptr[reg_matCptr + j * VecBytes],
+                  Xbyak::Zmm(CF32Reg + i * NRegs + j));
+        }
+        add(reg_matCptr, reg_cstep);
+      }
+      jmp(".LEND", T_NEAR);
+      L(".LACC");
+      mov(reg_matCptr, ptr[parambase + OFFSET(matC)]);
+      lea(reg_matCptr, ptr[reg_matCptr]);
+      load32(reg_cstep, ptr[parambase + OFFSET(cstep)]);
+      for (int i = 0; i < _mtile; i++) {
+        for (int j = 0; j < _NRegs; j++) {
+          vaddps(Xbyak::Zmm(CF32Reg + i * NRegs + j),
+                 Xbyak::Zmm(CF32Reg + i * NRegs + j),
+                 ptr[reg_matCptr + j * VecBytes]);
+          vmovups(ptr[reg_matCptr + j * VecBytes],
+                  Xbyak::Zmm(CF32Reg + i * NRegs + j));
+        }
+        add(reg_matCptr, reg_cstep);
+      }
+      L(".LEND");
+      nop();
+      outLocalLabel();
+    }
+
+   private:
+    Xbyak::Reg64 parambase;
+    Xbyak::Reg64 reg_matAptr;
+    Xbyak::Reg64 reg_matBptr;
+    Xbyak::Reg64 reg_matCptr;
+    Xbyak::Reg64 reg_zpAptr;
+    Xbyak::Reg64 reg_scaleAptr;
+    Xbyak::Reg64 reg_scaleBptr;
+    Xbyak::Reg64 reg_ksize;
+    Xbyak::Reg64 reg_kblock;
+    Xbyak::Reg64 reg_cstep;
+    Xbyak::Reg64 reg_astep;
+    Xbyak::Reg64 reg_iterk;
+    Xbyak::Reg64 reg_tmp;
+    Xbyak::Reg64 reg_tmp1;
+    Xbyak::Reg64 reg_tmp2;
+    Xbyak::Reg64 reg_ret = rax;
+  };
+
+ public:
+  GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK() {
+    for (int i = 0; i < MTILE; i++) {
+      mCodes[i].generate_code(i + 1);
+    }
+  }
+
+  void forward(AType *matA, BType *matB, CType *matC, AType *zpA, float *scaleA,
+               int _ldsa, SType *scaleB, int _ldsb, int _m, int _n, int _k,
+               int _kblock, int _astride, int _bstride, int _cstride,
+               int kpos) {
+    int ldb = _bstride / sizeof(BType);
+    auto param = params{matA,  matB,    matC, zpA, scaleA,   scaleB,   _ldsa,
+                        _ldsb, _kblock, _k,   _n,  _astride, _cstride, kpos};
+    if (_m <= MTILE) {
+      for (int i = 0; i < _n; i += NTILE) {
+        param.matB = matB + i * ldb;
+        param.matC = matC + i;
+        param.nsize = i + NTILE <= _n ? NTILE : _n - i;
+        param.scaleB = scaleB + i;
+        mCodes[_m - 1].mKernel(&param);
+      }
+    } else {
+      assert(0);
+    }
+  }
+
+  void reference(AType *matA, BType *matB, CType *matC, AType *zpA,
+                 float *scaleA, int _ldsa, float *scaleB, int _ldsb, int _m,
+                 int _n, int _k, int _kblock, int _astride, int _bstride,
+                 int _cstride, int kpos) {
+    int lda = _astride / sizeof(matA[0]);
+    int ldb = _bstride / sizeof(matB[0]);
+    int ldc = _cstride / sizeof(matC[0]);
+    for (int i = 0; i < _m; i++) {
+      for (int j = 0; j < _n; j += NTILE) {
+        for (int ij = 0; ij < NTILE; ij++) {
+          if (j + ij >= _n) {
+            break;
+          }
+          float tmpf = 0.f;
+          for (int k = 0; k < _k; k += _kblock) {
+            int tmp = 0;
+            int zpval = int(zpA[i * _ldsa + k / _kblock]);
+            for (int ik = 0; ik < _kblock; ik += 4) {
+              if (k + ik >= _k) {
+                break;
+              }
+              for (int ikk = 0; ikk < 4; ikk++) {
+                tmp += (int(matA[i * lda + k + ik + ikk]) - zpval) *
+                       int(matB[(k + ik) * NTILE + ij * 4 + ikk + j * ldb]);
+              }
+            }
+            tmpf += tmp * scaleA[i * _ldsa + k / _kblock] *
+                    scaleB[j + ij + k / _kblock * _ldsb];
+          }
+          matC[i * ldc + j + ij] = tmpf;
+        }
+      }
+    }
+  }
+  void reference(AType *matA, BType *matB, CType *matC, AType *zpA,
+                 float *scaleA, int _ldsa, utils::bf16 *scaleB, int _ldsb,
+                 int _m, int _n, int _k, int _kblock, int _astride,
+                 int _bstride, int _cstride, int kpos) {
+    int lda = _astride / sizeof(matA[0]);
+    int ldb = _bstride / sizeof(matB[0]);
+    int ldc = _cstride / sizeof(matC[0]);
+    for (int i = 0; i < _m; i++) {
+      for (int j = 0; j < _n; j += NTILE) {
+        for (int ij = 0; ij < NTILE; ij++) {
+          if (j + ij >= _n) {
+            break;
+          }
+          float tmpf = 0.f;
+          for (int k = 0; k < _k; k += _kblock) {
+            int tmp = 0;
+            int zpval = int(zpA[i * _ldsa + k / _kblock]);
+            for (int ik = 0; ik < _kblock; ik += 4) {
+              if (k + ik >= _k) {
+                break;
+              }
+              for (int ikk = 0; ikk < 4; ikk++) {
+                tmp += (int(matA[i * lda + k + ik + ikk]) - zpval) *
+                       int(matB[(k + ik) * NTILE + ij * 4 + ikk + j * ldb]);
+              }
+            }
+            tmpf += tmp * scaleA[i * _ldsa + k / _kblock] *
+                    scaleB[j + ij + k / _kblock * _ldsb].tofloat();
+          }
+          matC[i * ldc + j + ij] = tmpf;
+        }
+      }
+    }
+  }
+
+ private:
+  std::array<MicroKernel, MTILE> mCodes;
+};
+
 }  // namespace gemm
 }  // namespace jblas

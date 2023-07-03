@@ -122,6 +122,34 @@ inline JBLAS_CODE decompress_kblock_s4_f32(utils::int4x2* srcptr, float* dstptr,
   return JblasSuccess;
 }
 
+inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr,
+                                          int row, int col, int ld_src,
+                                          int ld_dst) {
+  for (int i = 0; i < row; i++) {
+    for (int j = 0; j < col; j += 2) {
+      auto tmp = srcptr[i * ld_src + j / 2];
+      dstptr[i * ld_dst + j + 0] = (int8_t)tmp.x << 4;
+      dstptr[i * ld_dst + j + 1] = (int8_t)tmp.y << 4;
+    }
+  }
+  return JblasSuccess;
+}
+
+inline JBLAS_CODE decompress_kblock_s8_f32(int8_t* srcptr, float* dstptr,
+                                           int row, int col, int ld_src,
+                                           int ld_dst, float* scales,
+                                           int k_offset, int kblock, int NPad) {
+  for (int i = 0; i < row; i++) {
+    int kpos = (k_offset + i) / kblock;
+    auto sptr = scales + kpos * NPad;
+    for (int j = 0; j < col; j += 1) {
+      auto tmp = srcptr[i * ld_src + j];
+      dstptr[i * ld_dst + j] = float(tmp) * sptr[j + 0];
+    }
+  }
+  return JblasSuccess;
+}
+
 inline JBLAS_CODE decompress_kblock_s4_f32(utils::int4x2* srcptr, float* dstptr,
                                            int row, int col, int ld_src,
                                            int ld_dst, utils::bf16* scales,
@@ -150,10 +178,10 @@ static inline JBLAS_CODE memcpy2d(void* srcptr, void* dstptr, int row, int col,
   return JblasSuccess;
 }
 
-inline JBLAS_CODE quantize_f32_s8_kblock(const float* srcptr, int8_t* dstptr,
-                                         int row, int col, int ld_src,
-                                         int ld_dst, float* scales,
-                                         int blocksize) {
+inline JBLAS_CODE quantize_f32_s8_rowblock(const float* srcptr, int8_t* dstptr,
+                                           int row, int col, int ld_src,
+                                           int ld_dst, float* scales,
+                                           int blocksize) {
   for (int i = 0; i < col; i++) {
     for (size_t j = 0; j < row; j += blocksize) {
       float maxval = std::numeric_limits<float>::min();
@@ -171,6 +199,34 @@ inline JBLAS_CODE quantize_f32_s8_kblock(const float* srcptr, int8_t* dstptr,
   }
   return JblasSuccess;
 }
+
+inline JBLAS_CODE quantize_f32_u8_colblock(int row, int col,
+                                           const float* srcptr, int ld_src,
+                                           uint8_t* dstptr, int ld_dst,
+                                           float* scales, int ld_scale,
+                                           uint8_t* zps, int blocksize) {
+  for (int i = 0; i < row; i++) {
+    for (size_t j = 0; j < col; j += blocksize) {
+      float maxval = std::numeric_limits<float>::min();
+      float minval = 0.f;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        maxval = std::max(srcptr[(j + ij) + i * ld_src], maxval);
+        minval = std::min(srcptr[(j + ij) + i * ld_src], minval);
+      }
+      float scale = (maxval - minval) / 255;
+      uint8_t zp = utils::cast<float, uint8_t>((0 - minval) / scale);
+      float rscale = 1.f / scale;
+      scales[j / blocksize + i * ld_scale] = scale;
+      zps[j / blocksize + i * ld_scale] = zp;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        dstptr[(j + ij) + i * ld_dst] = utils::cast<float, uint8_t>(
+            srcptr[(j + ij) + i * ld_src] * rscale + zp);
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
 static inline JBLAS_CODE alphabeta_f32_f32(
     const float alpha, const float* srcptr, const int srcstep, const float beta,
     const float* src1ptr, const int src1step, float* dstptr, const int dststep,
@@ -188,6 +244,76 @@ static inline JBLAS_CODE alphabeta_f32_f32(
     for (int j = 0; j < N; j++) {
       dstptr[i * dststep + j] = alpha * srcptr[i * srcstep + j];
     }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE quanout_s32_u32(const float alpha,
+                                         const int32_t* srcptr,
+                                         const int srcstep, uint8_t* dstptr,
+                                         const int dststep, const int M,
+                                         const int N, float scaleSrc,
+                                         float scaleDst, int zpDst) {
+  float factor = alpha * scaleSrc / scaleDst;
+  for (int i = 0; i < M; i++) {
+    for (int j = 0; j < N; j++) {
+      float fsrc = float(srcptr[i * srcstep + j]) * factor;
+      dstptr[i * dststep + j] =
+          utils::cast<float, uint8_t>(fsrc + float(zpDst));
+    }
+  }
+  return JblasSuccess;
+}
+
+inline JBLAS_CODE minmax_f32_kblock(const float* srcptr, int row, int col,
+                                    int ld_src, float* minmaxptr, int ld_minmax,
+                                    int fsize_minmax, int blocksize) {
+  for (int i = 0; i < row; i++) {
+    if (col >= blocksize) {
+      for (int icol = 0; icol < col; icol += blocksize) {
+        float maxval = std::numeric_limits<float>::min();
+        float minval = std::numeric_limits<float>::max();
+        for (int ii = 0; ii < blocksize; ii++) {
+          maxval = std::max(srcptr[i * ld_src + icol + ii], maxval);
+          minval = std::min(srcptr[i * ld_src + icol + ii], minval);
+        }
+        auto colptr =
+            &minmaxptr[i * ld_minmax + icol / blocksize * fsize_minmax];
+        colptr[0] = minval;
+        colptr[1] = maxval;
+      }
+    } else {
+      float maxval = std::numeric_limits<float>::min();
+      float minval = std::numeric_limits<float>::max();
+      for (int icol = 0; icol < col; icol++) {
+        maxval = std::max(srcptr[i * ld_src + icol], maxval);
+        minval = std::min(srcptr[i * ld_src + icol], minval);
+      }
+      minmaxptr[i * ld_minmax + 0] = minval;
+      minmaxptr[i * ld_minmax + 1] = maxval;
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE accumulate_dequantize_s32_f32(
+    const int32_t* srcptr, float* dstptr, float alpha, float beta, int row,
+    int col, int ld_src, int ld_dst, float* ascales, int ldas, float* wscales) {
+  for (int irow = 0; irow < row; irow++) {
+    for (int icol = 0; icol < col; icol++) {
+      float scale = ascales[irow * ldas] * wscales[icol] * alpha;
+      dstptr[irow * ld_dst + icol] = scale * srcptr[irow * ld_src + icol] +
+                                     beta * dstptr[irow * ld_dst + icol];
+    }
+  }
+  return JblasSuccess;
+}
+
+ static inline JBLAS_CODE broadcast_u8(int num, const uint8_t& srcval,
+                                      uint8_t* dstptr) {
+  int i = 0;
+  for (; i < num; i++) {
+    dstptr[i] = srcval;
   }
   return JblasSuccess;
 }
