@@ -51,7 +51,6 @@ void jit_trans_AB16a4b_16x::transpose_16x16_ps(  //
 
 void jit_trans_AB16a4b_16x::generate() {
   regs_pool rp(this, 1, {7 + (tile_m > 1 ? 2 : 0), 32, 1}, 0, false);
-  std::shared_ptr<void> use_vregs = {(preserve_xmm(), nullptr), [&](...) { recover_xmm(); }};
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
 
   const auto reg_src = rp.reg<Reg64>();
