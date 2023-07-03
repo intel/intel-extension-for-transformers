@@ -41,4 +41,8 @@ CMakeUserPresets.json
 build_tmp
 /workflows/chatbot/demo/front_end/node_modules
 /workflows/chatbot/demo/front_end/front_end/.svelte-kit
+.DS_Store
+examples/huggingface/pytorch/text-classification/early-exit/wandb
+examples/huggingface/pytorch/text-classification/early-exit/.venv
 /intel_extension_for_transformers/backends/neural_engine/graph/.vs
+examples/huggingface/pytorch/text-classification/early-exit/test/output_*/
