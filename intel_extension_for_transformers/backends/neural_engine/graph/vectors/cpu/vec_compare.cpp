@@ -14,33 +14,33 @@
 
 #include "vec_compare.hpp"
 
-  fp32x16 min_fp32x16(fp32x16 a, fp32x16 b) {
+inline fp32x16 min_fp32x16(fp32x16 a, fp32x16 b) {
 #if __AVX512F__
-  return {_mm512_min_ps(a.first, b.first)};
+  return _mm512_min_ps(a, b);
 #else
   return {_mm256_min_ps(a.first, b.first), _mm256_min_ps(a.second, b.second)};
 #endif
 }
 
-  s32x16 max_s32x16(s32x16 a, s32x16 b) {
+inline int32x16 max_int32x16(int32x16 a, int32x16 b) {
 #if __AVX512F__
-  return {_mm512_max_epi32(a.first, b.first)};
+  return _mm512_max_epi32(a, b);
 #else
   return {_mm256_max_epi32(a.first, b.first), _mm256_max_epi32(a.second, b.second)};
 #endif
 }
 
-  fp32x16 max_fp32x16(fp32x16 a, fp32x16 b) {
+inline fp32x16 max_fp32x16(fp32x16 a, fp32x16 b) {
 #if __AVX512F__
-  return {_mm512_max_ps(a.first, b.first)};
+  return _mm512_max_ps(a, b);
 #else
   return {_mm256_max_ps(a.first, b.first), _mm256_max_ps(a.second, b.second)};
 #endif
 }
 
-  float reduce_max_fp32x16(fp32x16 x) {
+inline float reduce_max_fp32x16(fp32x16 x) {
 #if __AVX512F__
-  return {_mm512_reduce_max_ps(x.first)};
+  return _mm512_reduce_max_ps(x);
 #else
   const __m256 x256 = _mm256_max_ps(x.first, x.second);
   const __m128 x128 = _mm_max_ps(_mm256_extractf128_ps(x256, 1), _mm256_castps256_ps128(x256));

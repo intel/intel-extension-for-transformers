@@ -17,5 +17,5 @@ if (NE_GPU)
   add_subdirectory(gpu)
 endif()
 
-add_library_w_warning(ne_vec ele_reduce.cpp ele_wise.cpp)
+add_library_w_warning(ne_vec ele_reduce.cpp)
 target_link_libraries(ne_vec PUBLIC cpu_vec)

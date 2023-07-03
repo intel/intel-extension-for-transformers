@@ -19,6 +19,7 @@
 #include "vec_base.hpp"
 #include "vec_compare.hpp"
 #include "vec_convert.hpp"
+#include "vec_load.hpp"
 #include "vec_set.hpp"
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_VEC_HPP_

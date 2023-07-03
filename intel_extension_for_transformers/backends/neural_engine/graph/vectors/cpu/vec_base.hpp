@@ -19,27 +19,12 @@
 #include <cstdint>
 
 #if __AVX512F__
-struct fp32x16 {
-  __m512 first;
-};
-
-struct s32x16 {
-  __m512i first;
-};
-struct u32x16 {
-  __m512i first;
-};
+typedef __m512 fp32x16;
+typedef __m512i int32x16;
 #else
-struct fp32x16 {
-  __m256 first, second;
-};
+typedef std::pair<__m256, __m256> fp32x16;
+typedef std::pair<__m256i, __m256i> int32x16;
 
-struct s32x16 {
-  __m256i first, second;
-};
-struct u32x16 {
-  __m256i first, second;
-};
 #define MASK_DECORATOR(blend_func, a, b, mask, res) \
   switch ((mask)) {                                 \
     case 1:                                         \
@@ -68,37 +53,16 @@ struct u32x16 {
   }
 
 #endif
-
-struct bf16x16 {
-  __m256i first;
-};
-
-struct fp16x16 {
-  __m256i first;
-};
-
-struct s16x16 {
-  __m256i first;
-};
-struct s8x16 {
-  __m128i first;
-};
-struct u8x16 {
-  __m128i first;
-};
-
+typedef __m256i bf16x16;
+typedef __m256i int16x16;
+typedef __m128i int8x16;
 #define CPU_VEC_STEP 16
 
 template <typename T>
-T load_kernel_t(const void* src) {
-  return *reinterpret_cast<const T*>(src);
-}
+T load_kernel_t(const void*);
 
 template <typename T>
-void store_kernel_t(void* dst, T src) {
-  T* dst_T = reinterpret_cast<T*>(dst);
-  *dst_T = src;
-}
+void store_kernel_t(void*, T);
 
 template <typename dstT, typename src0T = void, typename src1T = void, typename src2T = void>
 struct kernel_t {
