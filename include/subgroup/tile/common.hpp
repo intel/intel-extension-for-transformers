@@ -160,8 +160,18 @@ process_1d_tail(tile_t &tile, payload_t &payload, uint32_t offset) {
 // divisible by 8/16/32, depends on dtype
 template <uint32_t remained_len, uint32_t base_len, cache_hint L1,
         cache_hint L3, typename payload_t>
-        __XETLA_API typename std::enable_if_t
-        < base_len<8> process_1d_tail(payload_t &payload, uint32_t offset) {}
+__XETLA_API typename std::enable_if_t<(base_len < 8)> process_1d_tail(
+        payload_t &payload, uint32_t offset) {
+    using dtype = typename payload_t::dtype;
+    using prefetch_dtype = typename payload_t::prefetch_dtype;
+    uint32_t address_offset = offset * sizeof(dtype);
+    constexpr uint32_t prefetch_min_size = 64 / sizeof(prefetch_dtype);
+    if constexpr (remained_len > 0) {
+        xetla_prefetch_global<prefetch_dtype, prefetch_min_size,
+                data_size::default_size, L1, L3>(
+                payload.base_ptr, payload.base_offset + address_offset);
+    }
+}
 
 template <uint32_t remained_len, uint32_t base_len, cache_hint L1,
         cache_hint L3, typename payload_t>
