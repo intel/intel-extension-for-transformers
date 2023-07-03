@@ -125,37 +125,6 @@ gpt_vocab::id gpt_sample_top_k_top_p_repeat(
         float repeat_penalty,
         std::mt19937 & rng);
 
-//
-// Audio utils
-//
-
-// Read WAV audio file and store the PCM data into pcmf32
-// The sample rate of the audio must be equal to COMMON_SAMPLE_RATE
-// If stereo flag is set and the audio has 2 channels, the pcmf32s will contain 2 channel PCM
-bool read_wav(
-        const std::string & fname,
-        std::vector<float> & pcmf32,
-        std::vector<std::vector<float>> & pcmf32s,
-        bool stereo);
-
-// Apply a high-pass frequency filter to PCM audio
-// Suppresses frequencies below cutoff Hz
-void high_pass_filter(
-        std::vector<float> & data,
-        float cutoff,
-        float sample_rate);
-
-// Basic voice activity detection (VAD) using audio energy adaptive threshold
-bool vad_simple(
-        std::vector<float> & pcmf32,
-        int   sample_rate,
-        int   last_ms,
-        float vad_thold,
-        float freq_thold,
-        bool  verbose);
-
-// compute similarity between two strings using Levenshtein distance
-float similarity(const std::string & s0, const std::string & s1);
 
 enum ne_ftype ne_parse_ftype(const char * str);
 
