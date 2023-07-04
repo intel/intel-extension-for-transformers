@@ -41,15 +41,15 @@ function init_params {
       --config=*)
           tuned_checkpoint=$(echo $var |cut -f2 -d=)
       ;;
-       --task=*)
-           task=$(echo $var |cut -f2 -d=)
-       ;;
-       --approach=*)
-           approach=$(echo $var |cut -f2 -d=)
-       ;;
-       --backend=*)
-           backend=$(echo $var |cut -f2 -d=)
-       ;;
+      --task=*)
+          task=$(echo $var |cut -f2 -d=)
+      ;;
+      --approach=*)
+          approach=$(echo $var |cut -f2 -d=)
+      ;;
+      --backend=*)
+          backend=$(echo $var |cut -f2 -d=)
+      ;;
       *)
           echo "Error: No such parameter: ${var}"
           exit 1

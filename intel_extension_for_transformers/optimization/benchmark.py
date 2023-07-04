@@ -29,7 +29,7 @@ from packaging import version
 from intel_extension_for_transformers.optimization.model import OptimizedModel
 
 if version.parse(nc_version).release < version.parse("2.2").release:
-    from neural_compressor.benchmark import _Benchmark as INCBenchmark
+    from neural_compressor.benchmark import _Benchmark as INCBenchmark  # pylint: disable=E0611
 else:
     from neural_compressor.benchmark import benchmark_with_raw_cmd  # pylint: disable=E0611
 

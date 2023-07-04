@@ -37,6 +37,9 @@ from .distillation import (
 )
 from .mixture.auto_distillation import AutoDistillation
 from .model import OptimizedModel
+from .modeling import (
+    INCModelForSeq2SeqLM,
+)
 from .nas import NAS
 from .optimizer import NoTrainerOptimizer, Orchestrate_optimizer
 from .optimizer_tf import TFOptimization

@@ -342,9 +342,14 @@ class HuggingFaceAutoLM(BaseLM):
         ):
             context = [c[0] for c in chunk]
             request_args = chunk[0][1]
-            stop_sequences = request_args["stop_sequences"]
-            max_generation_length = request_args["max_generation_length"]
-            num_fewshot = request_args["num_fewshot"]
+            if isinstance(request_args, list):
+                stop_sequences = None
+                max_generation_length = None
+                num_fewshot = None
+            else:
+                stop_sequences = request_args["stop_sequences"]
+                max_generation_length = request_args["max_generation_length"]
+                num_fewshot = request_args["num_fewshot"]
 
             assert (
                 isinstance(max_generation_length, int) or max_generation_length is None
