@@ -46,7 +46,7 @@ class regs_pool {
   Xbyak::CodeGenerator* code_;
   const size_t stack_size_;
   const size_t stack_align_;
-  const bool make_epilog_, evex_;
+  const bool make_epilog_, evex_, warn_waste_;
 
   std::array<int, reg_kind_size> ridx_next;       // The index of next register to be allocated
   const std::array<int, reg_kind_size> ridx_max;  // max number of registers  to be allocated
@@ -131,6 +131,11 @@ class regs_pool {
   static const int UseRDX = Xbyak::util::UseRDX;  // RDX|reg_num[0] to enable usage(reserved but not alloc) of RDX
   const decltype(Xbyak::util::StackFrame::p)& p;  // alias of sf.p
 
+  static constexpr int DefaultFlags = 0;        // All flags off by default
+  static constexpr int DisableEpilog = 1 << 0;  // disable epilog generation during deconstruction
+  static constexpr int DisableEvex = 1 << 1;    // disable the use of EVEX encoded instructions (including zmm16-31)
+  static constexpr int IgnoreWaste = 1 << 2;    // surpress warnings raised when not all registers applied are used
+
   /**
    * @brief RAII based register pool "extended" from Xbyak::util::StackFrame
    * @param code this
@@ -138,17 +143,19 @@ class regs_pool {
    * @param reg_num nums of each kind (gpr, xmm, opmask) of temporary registers;
    * UseRCX / UseRDX can apply to reg_kind::gpr to exclude them from allocation
    * @param stack_size local stack size in terms of #bytes
-   * @param make_epilog automatically call close() during deconstruction if true
+   * @param flags controlling flags including DisableEpilog / DisableEvex / IgnoreWaste
+   * @param stack_align alignment of stack space
    */
   regs_pool(  //
       Xbyak::CodeGenerator* const code, const int pNum, const std::array<int, 3UL> reg_num = zero_x3,
-      const size_t stack_size = 0, const bool make_epilog = true, const size_t stack_align = 8, const bool evex = true)
+      const size_t stack_size = 0, const int flags = DefaultFlags, const size_t stack_align = 8)
       : sf_(code, pNum, reg_num[get_reg_kind_i<Reg64>()], 0, false),  // stack memory and epilogue managed here
         code_(code),
         stack_size_(stack_size),
         stack_align_(stack_align),
-        make_epilog_(make_epilog),
-        evex_(evex),
+        make_epilog_(!(flags & DisableEpilog)),
+        evex_(!(flags & DisableEvex)),
+        warn_waste_(!(flags & IgnoreWaste)),
         ridx_next(zero_x3),
         ridx_max({reg_num[0] & (~UseRCX) & (~UseRDX), reg_num[1], reg_num[2]}),
         ridx_touched(zero_x3),
@@ -156,7 +163,7 @@ class regs_pool {
     // availability check
     SPARSE_LOG_IF(FATAL, get_max<Reg64>() + pNum > 15)  // #{pNum + num_gpr [+rcx] + [rdx]} <= 14
         << "No more GPR registers!";
-    SPARSE_LOG_IF(FATAL, get_max<Zmm>() > (evex ? 32 : 16)) << "No more XMM registers!";
+    SPARSE_LOG_IF(FATAL, get_max<Zmm>() > (evex_ ? 32 : 16)) << "No more XMM registers!";
     SPARSE_LOG_IF(FATAL, get_max<Opmask>() > 7) << "No more mask registers!";
     SPARSE_LOG_IF(FATAL, stack_align < 8 || (stack_align & (stack_align - 1)) != 0)
         << "stack alignment must be a power of 2!";
@@ -196,11 +203,11 @@ class regs_pool {
    */
   inline void close(const bool call_ret = true) {
     // Usage check: do we asked more than what we actually used?
-    SPARSE_DLOG_IF(WARNING, get_max<Reg64>() > get_touched<Reg64>())
+    SPARSE_DLOG_IF(WARNING, warn_waste_ && get_max<Reg64>() > get_touched<Reg64>())
         << "Asked too many GPRs! Actually used: " << get_touched<Reg64>() << "/" << get_max<Reg64>();
-    SPARSE_DLOG_IF(WARNING, get_max<Zmm>() > get_touched<Zmm>())
+    SPARSE_DLOG_IF(WARNING, warn_waste_ && get_max<Zmm>() > get_touched<Zmm>())
         << "Asked too many XMMs! Actually used: " << get_touched<Zmm>() << "/" << get_max<Zmm>();
-    SPARSE_DLOG_IF(WARNING, get_max<Opmask>() > get_touched<Opmask>())
+    SPARSE_DLOG_IF(WARNING, warn_waste_ && get_max<Opmask>() > get_touched<Opmask>())
         << "Asked too many masks! Actually used: " << get_touched<Opmask>() << "/" << get_max<Opmask>();
 
     // free stack space

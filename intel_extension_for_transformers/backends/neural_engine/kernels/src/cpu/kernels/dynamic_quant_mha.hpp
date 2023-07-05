@@ -18,15 +18,16 @@
 #include <memory>
 #include <vector>
 
+#include "kernel.hpp"
+#include "kernel_desc.hpp"
 #include "kernels/amx_utils.hpp"
-#include "src/cpu/cpu_isa.hpp"
 #include "kernels/exposed_enum.hpp"
+#include "operator_desc.hpp"
+#include "src/cpu/cpu_isa.hpp"
+#include "src/cpu/jit_domain/jit_dynamic_quant.hpp"
 #include "src/cpu/jit_domain/jit_dynamic_quant_mha.hpp"
 #include "src/cpu/jit_domain/jit_trans_AB16a4b_16x.hpp"
 #include "src/cpu/jit_domain/jit_trans_BA16b4a_trq10n_x16.hpp"
-#include "kernel.hpp"
-#include "kernel_desc.hpp"
-#include "operator_desc.hpp"
 #include "src/utils.hpp"
 
 namespace jd {
@@ -107,6 +108,7 @@ class dynamic_quant_mha_k_t : public kernel_t {
   std::unique_ptr<jit_trans_BA16b4a_trq10n_x16> ker_seq_cpy_v_;
   std::unique_ptr<jit_mmexp_amx_s8_ab_BA16b4a_u8_16x> ker_qxk_;
   std::unique_ptr<jit_scale_mm_amx_u8s8_ab_BA16b_16x> ker_axv_;
+  std::unique_ptr<jit_dynamic_quant_t> ker_quant_;
 
   const tile_param_t amx_full_tile_param_;
   const tileconfig_t amx_full_tile_cfg_;

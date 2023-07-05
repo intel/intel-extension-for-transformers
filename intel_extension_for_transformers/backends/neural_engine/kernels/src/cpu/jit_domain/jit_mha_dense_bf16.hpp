@@ -380,7 +380,7 @@ class jit_mha_bf16_row_amx_32x32_softmax : public jit_generator {
 
     Xbyak::Label l_exp_approx_coeff, l_log2e, l_ln2, l_neginf, l_amx_cfg;
     {
-      regs_pool rp(this, 1, {9, 32, 0}, TmpSpace, true, 64);  // align 64
+      regs_pool rp(this, 1, {9, 32, 0}, TmpSpace, regs_pool::DefaultFlags, 64);  // align 64
 
       std::shared_ptr<void> local_cfg;
       if (need_cfg_amx) {  // create a local amx config environment
@@ -668,7 +668,7 @@ class jit_mha_bf16_row_amx_32x32 : public jit_generator {
     const int TTmmStart = amx_config_size;
     Xbyak::Label tmpfvariable, l_amx_cfg;
     {
-      regs_pool rp(this, 1, {9, ZMM_PerROW, 1}, TmpSpace, true, 64);  // align 64
+      regs_pool rp(this, 1, {9, ZMM_PerROW, 1}, TmpSpace, regs_pool::DefaultFlags, 64);  // align 64
       std::shared_ptr<void> local_cfg;
       if (need_cfg_amx) {  // create a local amx config environment
         local_cfg = {(sttilecfg(ptr[rsp]), ldtilecfg(ptr[rip + l_amx_cfg]), nullptr),

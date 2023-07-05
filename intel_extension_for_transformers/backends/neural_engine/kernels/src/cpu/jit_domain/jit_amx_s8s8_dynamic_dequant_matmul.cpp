@@ -26,7 +26,7 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
   inLocalLabel();
   {
     const int cfg_size = sizeof(tileconfig_t);
-    regs_pool rp(this, 1, {13, 4, 0});
+    regs_pool rp(this, 1, {13, 4, 0}, 0, regs_pool::IgnoreWaste);
 
     const auto reg_m_loop = rp.reg<Reg64>();
     const auto reg_n_loop = rp.reg<Reg64>();

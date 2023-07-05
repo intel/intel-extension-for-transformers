@@ -26,7 +26,7 @@ class cpu_memory_storage_t : public memory_storage_t {
   bool allocate(size_t size) override;
 
   bool get_handle(void** handle) const override {
-    *handle = static_cast<void*>(data_);
+    *handle = data_;
     return true;
   }
   bool set_handle(void* handle) override {
@@ -41,7 +41,7 @@ class cpu_memory_storage_t : public memory_storage_t {
   size_t get_ptr_size() const override { return sizeof(void*); }
 
  private:
-  void* data_;
+  void* data_ = nullptr;
   bool external_ = false;
 };
 }  // namespace jd

@@ -27,6 +27,10 @@
 #include <algorithm>
 #include <cmath>
 
+#include "include/engine.hpp"
+#include "include/engine_factory.hpp"
+#include "mha_dense_ctx.hpp"
+
 #define KERNEL_INIT_CHECK(f)                                         \
   if (!(f)) {                                                        \
     SPARSE_LOG(ERROR) << "MHA dense kernel requires `" << #f << "`"; \
@@ -159,7 +163,6 @@ mha_dense_k_t::mha_dense_k_t(const std::shared_ptr<const kernel_desc_t>& kd)
 }
 
 bool mha_dense_k_t::init() {
-  if (src_sl_m_ == 1) return true;  // TODO(Yi): Better checking for execute_tiny branch
   if (!ker_amx_cfg_.create_kernel()) return false;
   if (!ker_amx_rls_.create_kernel()) return false;
 
@@ -242,31 +245,54 @@ inline void mha_dense_k_t::mha_per_head_16x(const jit_matmul_amx_s8ab_s8Ab4a_s32
 }
 
 bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
-  if (src_sl_m_ == 1) return execute_tiny(rt_data);  // TODO(Yi): Better checking for execute_tiny branch
+  return execute(*get_mha_dense_ctx(rt_data));
+}
+
+bool mha_dense_k_t::execute(const exec_context_t& ctx) const {
+  void *src_data[io_src::SIZE], *dst_data[io_dst::SIZE], *workspace;
+  dim_t shape_data[io_shape::SIZE];
+  for (auto i = 0; i < io_src::SIZE; ++i) ctx.input(i)->get_handle(&src_data[i]);
+  for (auto i = 0; i < io_dst::SIZE; ++i) ctx.output(i)->get_handle(&dst_data[i]);
+  for (auto i = 0; i < io_shape::SIZE; ++i) shape_data[i] = ctx.get_dynamic_shape()[i];
+  ctx.workspace()->get_handle(&workspace);
+
+  const auto src_sl_m = shape_data[io_shape::M] ? shape_data[io_shape::M] : src_sl_m_;
+  const auto src_sl_n = shape_data[io_shape::N] ? shape_data[io_shape::N] : src_sl_n_;
+  assert(src_sl_n <= MAX_SL_N);
+
+  // dynamic BATCH_SIZE / HEAD_SIZE / HEAD_NUM not supported
+  assert(shape_data[io_shape::BATCH_SIZE] <= 0 || shape_data[io_shape::BATCH_SIZE] == src_bs_);
+  assert(shape_data[io_shape::HEAD_SIZE] <= 0 || shape_data[io_shape::HEAD_SIZE] == head_size_);
+  assert(shape_data[io_shape::HEAD_NUM] <= 0 || shape_data[io_shape::HEAD_NUM] == head_num_);
+
+  if (src_sl_m == 1)  // TODO(Yi): Better checking for execute_tiny branch
+    return execute_tiny(src_data, dst_data, workspace, shape_data);
+
   const int32_t bs = src_bs_;
   n_thread_t with_n_thread(bs * head_num_, true);
 
   std::array<int, 4> badd_stride{0, 0, 0, 0};
   if (has_binary_add) {
-    const auto tmp_stride_ = dim2step(pre_pad1(4, ts_descs_[io::BINARY_ADD].shape()));
+    auto badd_shape_prepad = pre_pad1(4, ts_descs_[io::BINARY_ADD].shape());
+    if (badd_shape_prepad[2] > 1) badd_shape_prepad[2] = src_sl_m;
+    if (badd_shape_prepad[3] > 1) badd_shape_prepad[3] = src_sl_n;
+    const auto tmp_stride_ = dim2step(badd_shape_prepad);
     for (int i = 0; i < 4; ++i) badd_stride[i] = tmp_stride_[i];
   }
 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < bs; ibs++) {
     for (int ihn = 0; ihn < head_num_; ihn++) {
-      const int sl_n = src_sl_n_;
-      const int sl_n_pad16 = pad_to(src_sl_n_, 16);
-      const int col_tile = ceil_div(src_sl_n_, 16);
-      const int row_loop = ceil_div(src_sl_m_, 16) / 2;
-      const bool is_even = ceil_div(src_sl_m_, 16) % 2 == 0;
-      const int rollback = (src_sl_m_ % 16 != 0) ? 16 - (src_sl_m_ % 16) : 0;
-      const int sl_n_pad64 = pad_to(src_sl_n_, 64);
+      const int sl_n_pad16 = pad_to(src_sl_n, 16);
+      const int col_tile = ceil_div(src_sl_n, 16);
+      const int row_loop = ceil_div(src_sl_m, 16) / 2;
+      const bool is_even = ceil_div(src_sl_m, 16) % 2 == 0;
+      const int rollback = (src_sl_m % 16 != 0) ? 16 - (src_sl_m % 16) : 0;
+      const int sl_n_pad64 = pad_to(src_sl_n, 64);
       const int att_tile = sl_n_pad64 / 64;
 
       const auto thread_id = omp_get_thread_num();
-      const auto thread_workspace =
-          reinterpret_cast<char*>(const_cast<void*>(rt_data[io::WORKSPACE])) + thread_id * thread_workspace_size_;
+      const auto thread_workspace = reinterpret_cast<char*>(workspace) + thread_id * thread_workspace_size_;
 
       const auto k_scrach = reinterpret_cast<int8_t*>(thread_workspace);
       const auto v_scrach_p64 = reinterpret_cast<int8_t*>(k_scrach + head_size_ * sl_n_pad16);
@@ -274,38 +300,39 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
       const auto softmax_scrach_p64 = reinterpret_cast<uint8_t*>(qk_scrach + 32 * sl_n_pad16);
       // softmax_scrach_p64_size = 32 * sl_n_pad64
 
-      const int src_q_offset = ibs * src_sl_m_ * ld_q_ + ihn * head_size_;
-      const int src_kv_offset = kv_ft_ == format_type::abcd   ? ibs * src_sl_n_ * ld_kv_ + ihn * head_size_
-                                : kv_ft_ == format_type::acbd ? (ibs * head_num_ + ihn) * src_sl_n_ * ld_kv_
+      const int src_q_offset = ibs * src_sl_m * ld_q_ + ihn * head_size_;
+      const int src_kv_offset = kv_ft_ == format_type::abcd   ? ibs * src_sl_n * ld_kv_ + ihn * head_size_
+                                : kv_ft_ == format_type::acbd ? (ibs * head_num_ + ihn) * src_sl_n * ld_kv_
                                                               : 0;
-      const int dst_offset = ibs * src_sl_m_ * ld_dst_ + ihn * head_size_ * get_data_size(dst_dt_);
+      const int dst_offset = ibs * src_sl_m * ld_dst_ + ihn * head_size_ * get_data_size(dst_dt_);
       // init amx for each omp thread
       ker_amx_cfg_(&amx_full_tile_cfg_);
 
-      const auto curr_q = reinterpret_cast<const int8_t*>(rt_data[io::SRC_Q]) + src_q_offset;
-      const auto curr_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::DST])) + dst_offset;
-      const auto curr_k = reinterpret_cast<const int8_t*>(rt_data[io::SRC_K]) + src_kv_offset;
-      const auto curr_v = reinterpret_cast<const int8_t*>(rt_data[io::SRC_V]) + src_kv_offset;
+      const auto curr_q = reinterpret_cast<const int8_t*>(src_data[io_src::SRC_Q]) + src_q_offset;
+      const auto curr_dst = reinterpret_cast<char*>(dst_data[io_dst::DST]) + dst_offset;
+      const auto curr_k = reinterpret_cast<const int8_t*>(src_data[io_src::SRC_K]) + src_kv_offset;
+      const auto curr_v = reinterpret_cast<const int8_t*>(src_data[io_src::SRC_V]) + src_kv_offset;
 
       const int badd_offset = ibs * badd_stride[0] + ihn * badd_stride[1];
       const auto badd_f32 =
-          has_binary_add ? reinterpret_cast<const float*>(rt_data[io::BINARY_ADD]) + badd_offset : nullptr;
+          has_binary_add ? reinterpret_cast<const float*>(src_data[io_src::BINARY_ADD]) + badd_offset : nullptr;
 
-      const auto att_scale = reinterpret_cast<const float*>(rt_data[io::ATT_SCALE])[0];
-      const auto q_scale = reinterpret_cast<const float*>(rt_data[io::Q_SCALE])[0];
-      const auto k_scale = reinterpret_cast<const float*>(rt_data[io::K_SCALE])[0];
-      const auto v_scale = reinterpret_cast<const float*>(rt_data[io::V_SCALE])[0];
-      const auto dst_scale = reinterpret_cast<const float*>(rt_data[io::SRC_DST_SCALE])[0];
-      const auto dst_zp = static_cast<float>(reinterpret_cast<const int32_t*>(rt_data[io::SRC_DST_ZP])[0]);
+      const auto src_mask = reinterpret_cast<const int32_t*>(src_data[io_src::MASK]);
+      const auto att_scale = reinterpret_cast<const float*>(src_data[io_src::ATT_SCALE])[0];
+      const auto q_scale = reinterpret_cast<const float*>(src_data[io_src::Q_SCALE])[0];
+      const auto k_scale = reinterpret_cast<const float*>(src_data[io_src::K_SCALE])[0];
+      const auto v_scale = reinterpret_cast<const float*>(src_data[io_src::V_SCALE])[0];
+      const auto dst_scale = reinterpret_cast<const float*>(src_data[io_src::SRC_DST_SCALE])[0];
+      const auto dst_zp = static_cast<float>(reinterpret_cast<const int32_t*>(src_data[io_src::SRC_DST_ZP])[0]);
 
       // reorder K
-      for (int i = 0; i < sl_n; i += 16)
+      for (int i = 0; i < src_sl_n; i += 16)
         for (int j = 0; j < head_size_; j += 64) {
           jit_trans_AB16a4b::rt_data_t rt_data_tr_k{
               /*.src = */ curr_k + i * ld_kv_ + j,
               /*.dst = */ k_scrach + i * head_size_ + j * 16,
           };
-          (*ker_trans_k_[std::min(16, sl_n - i)])(&rt_data_tr_k);
+          (*ker_trans_k_[std::min(16L, src_sl_n - i)])(&rt_data_tr_k);
         }
 
       // reorder V
@@ -317,10 +344,10 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
               /*.dst = */ v_scrach_p64 + i * 16 + j * sl_n_pad64,
               /*.ld_dst = */ tr_v_dst_stride,
           };
-          (*ker_trans_v_[std::max(0, std::min(4, sl_n - i))])(&rt_data_tr_v);
+          (*ker_trans_v_[std::max(0L, std::min(4L, src_sl_n - i))])(&rt_data_tr_v);
         }
 
-      const auto padding_mask = reinterpret_cast<const int32_t*>(rt_data[io::MASK])[ibs];
+      const auto padding_mask = src_mask[ibs];
       jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::rt_data_t rt_data_qk{
           /*.src0 = */ nullptr,
           /*.src1 = */ k_scrach,
@@ -352,7 +379,7 @@ bool mha_dense_k_t::execute(const std::vector<const void*>& rt_data) const {
           /*.rescale = */ v_scale / softmax_rescale_f32_ / dst_scale,
           /*.zp = */ dst_zp,
       };
-      const int att_tail = reinterpret_cast<const int32_t*>(rt_data[io::MASK])[ibs] % 16;
+      const int att_tail = padding_mask % 16;
       int cur_r_pos = 0;
 
       for (int j = 0; j < row_loop - 1; j++, cur_r_pos += 32) {
@@ -546,48 +573,55 @@ inline __m512i load_interleave_vnni<1>(const int8_t* src, const size_t, const __
 static const decltype(load_interleave_vnni<1>)* load_interleave_vnni_tbl[] = {
     nullptr, load_interleave_vnni<1>, load_interleave_vnni<2>, load_interleave_vnni<3>, load_interleave_vnni<4>,
 };
-bool mha_dense_k_t::execute_tiny(const std::vector<const void*>& rt_data) const {
+bool mha_dense_k_t::execute_tiny(void** src_data, void** dst_data, void* workspace, dim_t* shape_data) const {
+  const auto src_sl_m = shape_data[io_shape::M] ? shape_data[io_shape::M] : src_sl_m_;
+  const auto src_sl_n = shape_data[io_shape::N] ? shape_data[io_shape::N] : src_sl_n_;
+  assert(src_sl_m == 1);  // tiny path only supports sl_m == 1
+  // dynamic BATCH_SIZE / HEAD_SIZE / HEAD_NUM not supported
+  assert(shape_data[io_shape::BATCH_SIZE] <= 0 || shape_data[io_shape::BATCH_SIZE] == src_bs_);
+  assert(shape_data[io_shape::HEAD_SIZE] <= 0 || shape_data[io_shape::HEAD_SIZE] == head_size_);
+  assert(shape_data[io_shape::HEAD_NUM] <= 0 || shape_data[io_shape::HEAD_NUM] == head_num_);
+
   const int32_t bs = src_bs_;
   std::array<int, 4> badd_stride{0, 0, 0, 0};
   if (has_binary_add) {
     const auto tmp_stride_ = dim2step(pre_pad1(4, ts_descs_[io::BINARY_ADD].shape()));
     for (int i = 0; i < 4; ++i) badd_stride[i] = tmp_stride_[i];
   }
-  const int sl_n_pad16 = pad_to(src_sl_n_, 16);
-  const int sl_n_pad64 = pad_to(src_sl_n_, 64);
+  const int sl_n_pad16 = pad_to(src_sl_n, 16);
+  const int sl_n_pad64 = pad_to(src_sl_n, 64);
 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < bs; ibs++) {
     for (int ihn = 0; ihn < head_num_; ihn++) {
-      const auto att_scale = reinterpret_cast<const float*>(rt_data[io::ATT_SCALE])[0];
-      const auto q_scale = reinterpret_cast<const float*>(rt_data[io::Q_SCALE])[0];
-      const auto k_scale = reinterpret_cast<const float*>(rt_data[io::K_SCALE])[0];
-      const auto v_scale = reinterpret_cast<const float*>(rt_data[io::V_SCALE])[0];
-      const auto dst_scale = reinterpret_cast<const float*>(rt_data[io::SRC_DST_SCALE])[0];
-      const auto dst_zp = static_cast<float>(reinterpret_cast<const int32_t*>(rt_data[io::SRC_DST_ZP])[0]);
+      const auto att_scale = reinterpret_cast<const float*>(src_data[io_src::ATT_SCALE])[0];
+      const auto q_scale = reinterpret_cast<const float*>(src_data[io_src::Q_SCALE])[0];
+      const auto k_scale = reinterpret_cast<const float*>(src_data[io_src::K_SCALE])[0];
+      const auto v_scale = reinterpret_cast<const float*>(src_data[io_src::V_SCALE])[0];
+      const auto dst_scale = reinterpret_cast<const float*>(src_data[io_src::SRC_DST_SCALE])[0];
+      const auto dst_zp = static_cast<float>(reinterpret_cast<const int32_t*>(src_data[io_src::SRC_DST_ZP])[0]);
 
-      const int src_q_offset = ibs * src_sl_m_ * ld_q_ + ihn * head_size_;
-      const int src_kv_offset = kv_ft_ == format_type::abcd   ? ibs * src_sl_n_ * ld_kv_ + ihn * head_size_
-                                : kv_ft_ == format_type::acbd ? (ibs * head_num_ + ihn) * src_sl_n_ * ld_kv_
+      const int src_q_offset = ibs * src_sl_m * ld_q_ + ihn * head_size_;
+      const int src_kv_offset = kv_ft_ == format_type::abcd   ? ibs * src_sl_n * ld_kv_ + ihn * head_size_
+                                : kv_ft_ == format_type::acbd ? (ibs * head_num_ + ihn) * src_sl_n * ld_kv_
                                                               : 0;
-      const int dst_offset = ibs * src_sl_m_ * ld_dst_ + ihn * head_size_ * get_data_size(dst_dt_);
+      const int dst_offset = ibs * src_sl_m * ld_dst_ + ihn * head_size_ * get_data_size(dst_dt_);
       const int badd_offset = ibs * badd_stride[0] + ihn * badd_stride[1];
 
-      const auto curr_q = reinterpret_cast<const int8_t*>(rt_data[io::SRC_Q]) + src_q_offset;
-      const auto curr_k = reinterpret_cast<const int8_t*>(rt_data[io::SRC_K]) + src_kv_offset;
-      const auto curr_v = reinterpret_cast<const int8_t*>(rt_data[io::SRC_V]) + src_kv_offset;
-      const auto curr_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::DST])) + dst_offset;
-      const auto padding_mask = reinterpret_cast<const int32_t*>(rt_data[io::MASK])[ibs];
+      const auto curr_q = reinterpret_cast<const int8_t*>(src_data[io_src::SRC_Q]) + src_q_offset;
+      const auto curr_k = reinterpret_cast<const int8_t*>(src_data[io_src::SRC_K]) + src_kv_offset;
+      const auto curr_v = reinterpret_cast<const int8_t*>(src_data[io_src::SRC_V]) + src_kv_offset;
+      const auto curr_dst = reinterpret_cast<char*>(const_cast<void*>(dst_data[io_dst::DST])) + dst_offset;
+      const auto padding_mask = reinterpret_cast<const int32_t*>(src_data[io_src::MASK])[ibs];
       const auto pmask_floor16 = (padding_mask - 1) / 16 * 16;
       const auto pmask_tail16 = padding_mask - pmask_floor16;
       const auto pmask_floor4 = (padding_mask - 1) / 4 * 4;
       const auto pmask_tail4 = padding_mask - pmask_floor4;
       const auto badd_f32 =
-          has_binary_add ? reinterpret_cast<const float*>(rt_data[io::BINARY_ADD]) + badd_offset : nullptr;
+          has_binary_add ? reinterpret_cast<const float*>(src_data[io_src::BINARY_ADD]) + badd_offset : nullptr;
 
       const auto thread_id = omp_get_thread_num();
-      const auto thread_workspace =
-          reinterpret_cast<char*>(const_cast<void*>(rt_data[io::WORKSPACE])) + thread_id * thread_workspace_size_;
+      const auto thread_workspace = reinterpret_cast<char*>(workspace) + thread_id * thread_workspace_size_;
       const auto v_scrach_p64 = reinterpret_cast<int8_t*>(thread_workspace);
       const auto qk_scrach = reinterpret_cast<float*>(v_scrach_p64 + head_size_ * sl_n_pad64);
       const auto softmax_scrach_p64 = reinterpret_cast<uint8_t*>(qk_scrach + 32 * sl_n_pad16);

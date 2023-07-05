@@ -21,7 +21,7 @@ namespace jd {
 
 void jit_trans_BA16b4a_trq10n_x16::generate() {
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
-  regs_pool rp(this, 1, {11, 9, 3}, 0, false);
+  regs_pool rp(this, 1, {11, 9, 3}, 0, regs_pool::DisableEpilog);
 
   const auto reg_stacksize = rp.reg<Xbyak::Reg64>();
   {

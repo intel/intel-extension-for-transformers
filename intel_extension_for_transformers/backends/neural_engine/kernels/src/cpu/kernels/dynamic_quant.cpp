@@ -25,9 +25,8 @@ bool dynamic_quant_kd_t::init() {
   params_.input_dt = src_desc.dtype();
   params_.output_dt = dst_desc.dtype();
   params_.quantized_dim_elt_num = src_desc.shape().back();
-  params_.quantized_dim_tail_elt_num = src_desc.shape().back() % 16;
-  params_.channel_num =
-      std::accumulate(src_desc.shape().begin(), src_desc.shape().end() - 1, size_t(1), std::multiplies<size_t>());
+  params_.ld_src = params_.quantized_dim_elt_num;
+  params_.ld_dst = params_.quantized_dim_elt_num;
   return true;
 }
 
@@ -35,7 +34,9 @@ bool dynamic_quant_k_t::init() {
   auto param = derived_kd()->params();
   int offset = 0;
   enable_thr = omp_get_max_threads();
-  size_t channel_num = param.channel_num;
+  const auto& src_desc = kd_->get_operator_desc().tensor_descs()[io::SRC];
+  size_t channel_num =
+      std::accumulate(src_desc.shape().begin(), src_desc.shape().end() - 1, size_t(1), std::multiplies<size_t>());
   int remain_channel = channel_num % enable_thr;
   int channel_per_thr = channel_num / enable_thr;
   for (int i = 0; i < enable_thr; i++) {
@@ -62,8 +63,8 @@ bool dynamic_quant_k_t::execute(const std::vector<const void*>& rt_data) const {
     auto ker = jit_kers_[i];
     data.src = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::SRC])) + offset * get_data_size(param.input_dt);
     data.mat_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::MAT_DST])) + offset * sizeof(int8_t);
-    data.scale_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::SCALE_DST])) +
-                     offset / param.quantized_dim_elt_num * sizeof(float);
+    data.scale = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::SCALE_DST])) +
+                 offset / param.quantized_dim_elt_num * sizeof(float);
     (*ker)(&data);
   }
 

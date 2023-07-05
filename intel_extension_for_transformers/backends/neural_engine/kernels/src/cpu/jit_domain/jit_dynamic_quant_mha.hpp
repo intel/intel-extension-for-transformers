@@ -278,6 +278,7 @@ class jit_scale_mm_amx_u8s8_ab_BA16b_16x : public jit_generator {
     int K;        // will be used as pad_to(K, 64)
     int N;        // will be used as pad_to(N, 16)
     int ld_src1;  // step of each K * 16 block
+    int ld_dst;   // leading dim of dst (in elements)
   };
 
   explicit jit_scale_mm_amx_u8s8_ab_BA16b_16x(const param_t& param)

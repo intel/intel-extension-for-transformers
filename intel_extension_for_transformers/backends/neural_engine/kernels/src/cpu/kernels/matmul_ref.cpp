@@ -282,7 +282,7 @@ bool matmul_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
         }
   return true;
 }
-bool matmul_ref_k_t::execute(const exec_context_t& context) {
+bool matmul_ref_k_t::execute(const exec_context_t& context) const {
   // configure alias
   const matmul_ref_kd_t& ref_kd = *derived_kd();
   auto& op_desc = ref_kd.get_operator_desc();
@@ -316,11 +316,11 @@ bool matmul_ref_k_t::execute(const exec_context_t& context) {
   if (attrs.find("out_scale") != attrs.end()) alpha *= str_to_num<float>(attrs.at("out_scale"));
 
   // stride for dims index afte perm. e.g. first elements is always for bs0
-  M_ = context.get_dynamic_shape().empty() ? M_ : context.get_dynamic_shape().front();
+  const auto M = context.get_dynamic_shape().empty() ? M_ : context.get_dynamic_shape().front();
 
-  const std::vector<dim_t> left_dim{bs0_, bs1_, M_, K_};
+  const std::vector<dim_t> left_dim{bs0_, bs1_, M, K_};
   const std::vector<dim_t> right_dim{bs0_, bs1_, K_, N_};
-  const std::vector<dim_t> dst_dim{bs0_, bs1_, M_, N_};
+  const std::vector<dim_t> dst_dim{bs0_, bs1_, M, N_};
   const auto perm0 = perm()[0];
   const auto perm0left = apply_perm(left_dim, perm0);
   const std::vector<dim_t> left_perm_stride = dim2stride(perm0left);
@@ -392,7 +392,7 @@ bool matmul_ref_k_t::execute(const exec_context_t& context) {
 #pragma omp parallel for collapse(4)
   for (dim_t ibs0 = 0; ibs0 < bs0_; ++ibs0)
     for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
-      for (dim_t i = 0; i < M_; ++i)
+      for (dim_t i = 0; i < M; ++i)
         for (dim_t j = 0; j < N_; ++j) {
           float value = 0;
           dim_t dst_idx = ibs0 * dst_stride[0] + ibs1 * dst_stride[1] + i * dst_stride[2] + j * dst_stride[3];

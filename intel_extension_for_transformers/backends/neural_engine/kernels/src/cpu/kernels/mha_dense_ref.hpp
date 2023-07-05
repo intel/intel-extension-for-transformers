@@ -50,6 +50,9 @@ class mha_dense_ref_k_t;
 
 class SPARSE_TEST_API_ mha_dense_ref_kd_t : public kernel_desc_t {
   using io = exposed_enum::mha_dense::io;
+  using io_src = exposed_enum::mha_dense_src::src;
+  using io_dst = exposed_enum::mha_dense_dst::dst;
+  using io_shape = exposed_enum::mha_dense_shape::shape;
 
  public:
   explicit mha_dense_ref_kd_t(const operator_desc& op_desc)
@@ -84,6 +87,9 @@ class SPARSE_TEST_API_ mha_dense_ref_kd_t : public kernel_desc_t {
 
 class SPARSE_TEST_API_ mha_dense_ref_k_t : public kernel_t {
   using io = exposed_enum::mha_dense::io;
+  using io_src = exposed_enum::mha_dense_src::src;
+  using io_dst = exposed_enum::mha_dense_dst::dst;
+  using io_shape = exposed_enum::mha_dense_shape::shape;
 
  public:
   using kd_t = mha_dense_ref_kd_t;
@@ -98,21 +104,22 @@ class SPARSE_TEST_API_ mha_dense_ref_k_t : public kernel_t {
 
  public:
   bool init() override;
-  bool execute(const std::vector<const void*>& rt_data) const override;
+  [[deprecated("Please use exec_context_t instead of rt_data")]] bool execute(
+      const std::vector<const void*>& rt_data) const override;
+  bool execute(const exec_context_t& context) const override;
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
   size_t get_workspace_size() const override { return workspace_size_; }
 
  private:
   template <float (*func_exp)(float)>
-  bool execute_(const std::vector<const void*>& rt_data) const;
+  bool execute_(const exec_context_t& ctx) const;
   const std::vector<tensor_desc>& ts_descs_;
   const bool has_badd;
   const bool approx_exp;
   const bool stable_softmax;
   const data_type dst_dt_, dst_v_;
   const format_type kv_ft_;
-  const int bs_, sl_m_, sl_n_, head_num_, head_size_, ld_q_, ld_kv_, ld_dst_;  // in #elements
-  const std::array<dim_t, 4> badd_step;
+  const int bs_, sl_m_, sl_n_, head_num_, head_size_;  // in #elements
   const bool is_dynq10n_dst;
   const size_t workspace_size_;
 };

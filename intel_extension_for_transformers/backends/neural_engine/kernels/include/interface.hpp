@@ -85,7 +85,8 @@ class SPARSE_API_ kernel_proxy : public proxy_base<kernel_t, std::shared_ptr<con
 
  public:
   inline const jd::kernel_kind& kernel_kind() const { return get_sp()->kd()->kernel_kind(); }
-  void execute(const std::vector<const void*>& rt_data) const;
+  void execute(const std::vector<const void*>& rt_data) const;  // TODO(Jiwei): depredate it when most kernels ready
+  void execute(const exec_context_t& ctx) const;
   size_t get_workspace_size() const;
 };
 

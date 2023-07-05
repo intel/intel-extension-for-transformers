@@ -168,7 +168,8 @@ void jit_slice_t::copy_by_step(regs_pool* const rp, const Reg64 dst, const Reg64
 template <bool USE_AVX512>
 void jit_slice_t::generate_() {
   const auto use_by_step = inner_size == 1 && step > 1;
-  regs_pool rp(this, 1, {3, (USE_AVX512 || !use_by_step) ? 1 : 4, 1}, 0, true, 8, USE_AVX512);
+  const auto rp_flags = USE_AVX512 ? regs_pool::DefaultFlags : regs_pool::DisableEvex;
+  regs_pool rp(this, 1, {3, (USE_AVX512 || !use_by_step) ? 1 : 4, 1}, 0, rp_flags);
   const auto src_addr = rp.reg<Reg64>();
   const auto dst_addr = rp.reg<Reg64>();
   mov(src_addr, ptr[rp.p[0] + GET_OFF(src)]);

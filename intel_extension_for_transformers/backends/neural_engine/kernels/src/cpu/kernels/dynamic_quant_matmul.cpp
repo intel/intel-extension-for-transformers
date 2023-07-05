@@ -102,8 +102,8 @@ bool dynamic_quant_matmul_kd_t::split_execute_init() {
   quant_param_.input_dt = data_type::bf16;  // make it configable?
   quant_param_.output_dt = data_type::s8;
   quant_param_.quantized_dim_elt_num = prob_size_[n];
-  quant_param_.quantized_dim_tail_elt_num = prob_size_[n] % 16;
-  quant_param_.channel_num = prob_size_[batch] * prob_size_[m];
+  quant_param_.ld_src = quant_param_.quantized_dim_elt_num;
+  quant_param_.ld_dst = quant_param_.quantized_dim_elt_num;
   return true;
 }
 
@@ -167,8 +167,9 @@ bool dynamic_quant_matmul_k_t::split_execute_init() {
   split_execute_ = true;
 
   auto quant_param = derived_kd()->get_quant_param();
-  auto remain_channel = quant_param.channel_num % enable_thr;
-  auto channel_per_thr = quant_param.channel_num / enable_thr;
+  const size_t channel_num = derived_kd()->shape()[batch] * derived_kd()->shape()[m];
+  auto remain_channel = channel_num % enable_thr;
+  auto channel_per_thr = channel_num / enable_thr;
   auto params = derived_kd()->params();
   auto dst_dt = params[0].dst_dt;
   SPARSE_LOG_IF(FATAL, !(dst_dt == data_type::fp32 || dst_dt == data_type::bf16 || dst_dt == data_type::s8));
@@ -196,12 +197,9 @@ bool dynamic_quant_matmul_k_t::split_execute_init() {
       channel_offset += process_channel * quant_param.quantized_dim_elt_num;
       jit_s8s8_dynamic_dequant_kers_.push_back(
           new jit_amx_s8s8_dynamic_dequant_matmul_t(p, quant_param.quantized_dim_elt_num));
+      if (!jit_s8s8_dynamic_dequant_kers_.back()->create_kernel()) return false;
     }
     m_offset += params[i * weight_cores].m;
-  }
-
-  for (auto&& ker : jit_s8s8_dynamic_dequant_kers_) {
-    if (!ker->create_kernel()) return false;
   }
 
   if (quant_stage_) {
@@ -272,8 +270,8 @@ bool dynamic_quant_matmul_k_t::split_execute(const std::vector<const void*>& rt_
       auto ker = jit_quant_kers_[i];
       data.src = get_data_ptr(rt_data[io::WORKSPACE], bf16_tmp_buf_offset_ + offset * get_data_size(data_type::bf16));
       data.mat_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::DST])) + offset * sizeof(int8_t);
-      data.scale_dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::SCALE_DST])) +
-                       offset / quant_param.quantized_dim_elt_num * sizeof(float);
+      data.scale = reinterpret_cast<char*>(const_cast<void*>(rt_data[io::SCALE_DST])) +
+                   offset / quant_param.quantized_dim_elt_num * sizeof(float);
       (*ker)(&data);
     }
   }
