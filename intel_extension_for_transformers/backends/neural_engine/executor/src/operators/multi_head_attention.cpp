@@ -75,7 +75,7 @@ MultiHeadAttentionOperator::MultiHeadAttentionOperator(const shared_ptr<Operator
 
 MultiHeadAttentionOperator::~MultiHeadAttentionOperator() {
   if (is_sparse_) aligned_free(trans_mha_tmpbuf);
-  if (workspace_) MemoryAllocator::get().UnrefMemory(workspace_);
+  if (workspace_) aligned_free(workspace_);
 }
 
 void MultiHeadAttentionOperator::MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -417,8 +417,9 @@ void MultiHeadAttentionOperator::ReshapeDense(const vector<Tensor*>& input, cons
                             ts_descs, attr_map);
   jd::mha_dense_desc mha_dense_d(op_desc);
   mha_dense_ = jd::mha_dense(mha_dense_d);
-  if (workspace_) MemoryAllocator::get().UnrefMemory(workspace_);
-  workspace_ = MemoryAllocator::get().GetMemory(mha_dense_.get_workspace_size(), 1);
+  if (workspace_) aligned_free(workspace_);
+  workspace_ =
+      reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (mha_dense_.get_workspace_size() / ALIGNMENT + 1) * ALIGNMENT));
   rt_data_[io::WORKSPACE] = workspace_;
   if (!dst_reshape_.empty()) {
     vector<int64_t> dst_shape = GetDstShape(dst_reshape_, dst_->size(), {}, {});
