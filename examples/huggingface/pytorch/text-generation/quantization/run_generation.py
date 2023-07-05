@@ -143,7 +143,7 @@ if args.quantize:
         else:
             new_shape = [input_bs, num_attention_heads, 1, d_k]
             dummy_tensor = torch.ones(size=new_shape)
-            pkv = tuple(empty_tensor for _ in range(nb_pkv))
+            pkv = tuple(dummy_tensor for _ in range(nb_pkv))
         past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
         return past_key_values
 
@@ -314,7 +314,9 @@ if args.benchmark:
             )
             gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
             toc = time.time()
-            output_tokens_num = gen_ids.numel()
+            # please check the gen_ids if include input_ids.
+            input_tokens_num = input_ids.numel()
+            output_tokens_num = gen_ids.numel() - input_tokens_num
             print(gen_text, flush=True)
             if i >= num_warmup:
                 total_time += toc - tic
