@@ -21,7 +21,7 @@ from fastchat.serve.inference import chat_loop, ChatIO
 
 class SimpleChatIO(ChatIO):
     def prompt_for_input(self, role) -> str:
-        return input(f"{role}: ")
+        return input(f"{role}: ").strip()
 
     def prompt_for_output(self, role: str):
         print(f"{role}: ", end="", flush=True)

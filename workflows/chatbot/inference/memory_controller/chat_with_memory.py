@@ -73,7 +73,7 @@ if __name__ == "__main__":
     memory = SpacyEntityMemory()
 
     while True:
-        query = input("Enter input (or 'exit' to quit): ")
+        query = input("Enter input (or 'exit' to quit): ").strip()
         if query == 'exit':
             print('exit')
             break
