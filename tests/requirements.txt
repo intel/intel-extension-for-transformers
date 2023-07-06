@@ -17,4 +17,5 @@ git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e587
 accelerate
 evaluate
 wget
+optimum
 optimum-intel
