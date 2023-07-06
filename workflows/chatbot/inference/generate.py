@@ -215,9 +215,12 @@ def main():
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="hpu"):
             if re.search("flan-t5", base_model_path, re.IGNORECASE):
                 model = AutoModelForSeq2SeqLM.from_pretrained(base_model_path, torch_dtype=torch.bfloat16)
-            elif re.search("llama", base_model_path, re.IGNORECASE) or \
-                 re.search("mpt", base_model_path, re.IGNORECASE):
+            elif re.search("llama", base_model_path, re.IGNORECASE):
                 model = AutoModelForCausalLM.from_pretrained(base_model_path,
+                        trust_remote_code=True if args.trust_remote_code else None, torch_dtype=torch.bfloat16)
+            elif re.search("mpt", base_model_path, re.IGNORECASE):
+                from models.mpt.modeling_mpt import MPTForCausalLM
+                model = MPTForCausalLM.from_pretrained(base_model_path,
                         trust_remote_code=True if args.trust_remote_code else None, torch_dtype=torch.bfloat16)
             else:
                 raise ValueError(f"Unsupported model {base_model_path}, only supports FLAN-T5 and LLAMA now.")
@@ -239,12 +242,14 @@ def main():
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 base_model_path, trust_remote_code=True if args.trust_remote_code else None
             )
-        elif re.search("llama", base_model_path, re.IGNORECASE) or re.search(
-            "mpt", base_model_path, re.IGNORECASE
-        ):
+        elif re.search("llama", base_model_path, re.IGNORECASE):
             model = AutoModelForCausalLM.from_pretrained(
                 base_model_path, trust_remote_code=True if args.trust_remote_code else None
             )
+        elif re.search("mpt", base_model_path, re.IGNORECASE):
+            from models.mpt.modeling_mpt import MPTForCausalLM
+            model = MPTForCausalLM.from_pretrained(base_model_path,
+                    trust_remote_code=True if args.trust_remote_code else None, torch_dtype=torch.bfloat16)
         else:
             raise ValueError(
                 f"Unsupported model {base_model_path}, only supports FLAN-T5/LLAMA/MPT now."
