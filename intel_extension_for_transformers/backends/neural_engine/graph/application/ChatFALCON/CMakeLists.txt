@@ -12,24 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-set(TARGET common)
-
-add_library(${TARGET} OBJECT
-    common.h
-    common.cpp
-    )
-
-if (BUILD_SHARED_LIBS)
-    set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set(TARGET main_falcon)
+add_executable_w_warning(${TARGET} main_falcon.cpp)
+target_link_libraries(${TARGET} PUBLIC ne_layers common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
 endif()
 
-target_include_directories(${TARGET} PUBLIC .)
-target_compile_features(${TARGET} PUBLIC cxx_std_11)
-target_link_libraries(${TARGET} PUBLIC)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-add_subdirectory(ChatLLAMA)
-add_subdirectory(ChatGPTNEOX)
-add_subdirectory(ChatMPT)
-add_subdirectory(ChatFALCON)
+set(TARGET quant_falcon)
+add_executable_w_warning(${TARGET} quant_falcon.cpp)
+target_link_libraries(${TARGET} PUBLIC ne_layers common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()

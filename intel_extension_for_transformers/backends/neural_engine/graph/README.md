@@ -38,6 +38,11 @@ python scripts/convert_gptneox.py  ${input_model_name_or_path} ${output_path} 0
 python scripts/convert_mpt.py ${input_model_name_or_path} ${output_path} 0
 
 ./build/bin/quant_mpt ${output_path}/ne-f32.bin ${output_path}/ne-q8.bin "q8_0"
+
+# convert the pytorch falcon model to llama.cpp format (0 for fp32 model type)
+python scripts/convert_falcon.py ${input_model_name_or_path} ${output_path} 0
+
+./build/bin/quant_falcon ${output_path}/ne-f32.bin ${output_path}/ne-q8.bin q8_0
 ```
 
 ### Run Models
@@ -47,11 +52,11 @@ Running LLAMA model, for details please refer to [LLaMA model documentation](./a
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 ./build/bin/main_llama -m ~/llama.cpp/models/ne-model-q4_j.bin --seed 12 -c 512 -b 1024 -n 256 --keep 48 -t 56 --repeat-penalty 1.0 --color -p "She opened the door and see"
 ```
 
-Running GPT-NEOX/ MPT model, please use main_gptneox/ main_mpt.
+Running GPT-NEOX/ MPT / FALCON model, please use `main_gptneox` / `main_mpt` / `main_falcon`.
 
 ```bash
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 ./build/bin/main_gptneox -m ${output_path}/ne-q8.bin --seed 12 -c 512 -b 1024 -n 256 -t 56 --repeat-penalty 1.0 -p "She opened the door and see"
 ```
 
 ### Supported model
-Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [MPT](https://huggingface.co/mosaicml/mpt-7b).
+Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b)
