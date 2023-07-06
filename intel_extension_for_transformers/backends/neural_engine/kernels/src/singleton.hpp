@@ -19,7 +19,7 @@
 template <typename T>
 class Singleton {
  public:
-  static  T* GetInstance() {
+  static T* GetInstance() {
     if (instance_ == nullptr) {
       std::lock_guard<std::mutex> guard(mutex_);
       if (instance_ == nullptr) {

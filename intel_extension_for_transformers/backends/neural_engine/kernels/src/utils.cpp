@@ -92,8 +92,12 @@ inline bool all_zeros(const T* data, dim_t ld, dim_t nd1, dim_t nd2) {
 template bool all_zeros<float>(const float*, dim_t, dim_t, dim_t);
 
 int get_data_size(data_type dt) {
-  // use at() instead of operator[] to raise an exception for invalid type
-  return type_size.at(dt);
+  if (type_size.find(dt) != type_size.end()) {
+    return type_size.at(dt);
+  } else {
+    SPARSE_LOG(ERROR) << "unsupported data type.";
+    return 1;
+  }
 }
 
 float get_exp(float x) {

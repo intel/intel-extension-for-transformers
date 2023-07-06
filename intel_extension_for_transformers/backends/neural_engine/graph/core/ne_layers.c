@@ -1,3 +1,16 @@
+//  Copyright (c) 2023 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 // Defines CLOCK_MONOTONIC on Linux
 #define _GNU_SOURCE
 
@@ -3108,6 +3121,7 @@ static void ne_compute_forward_dup_f16(const struct ne_compute_params* params, c
             const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
             char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
 
+            NE_ASSERT(dst_ptr != NULL);
             memcpy(dst_ptr, src0_ptr, sizeof(ne_fp16_t));
 
             if (++i10 == ne00) {
@@ -3387,6 +3401,7 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
             const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
             char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
 
+            NE_ASSERT(dst_ptr != NULL);
             memcpy(dst_ptr, src0_ptr, sizeof(float));
 
             if (++i10 == ne0) {
