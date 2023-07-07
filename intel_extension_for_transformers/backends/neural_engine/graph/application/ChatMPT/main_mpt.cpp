@@ -80,116 +80,6 @@ struct mpt_model {
     std::map<std::string, struct ne_tensor *> tensors;
 };
 
-struct mpt_params {
-    int32_t n_threads = get_num_physical_cores();
-
-    int32_t seed           = -1; // RNG seed
-    int32_t n_predict      = 200; // new tokens to predict
-    int32_t n_batch        = 8; // batch size for prompt processing
-    int32_t n_ctx          = 512;
-
-    std::string model      = ""; // model path
-    std::string prompt     = "";
-    std::string token_test = "";
-
-    bool    perplexity     = false;
-
-    // sampling parameters
-    int32_t top_k          = 0;
-    float   top_p          = 1.0f;
-    float   temp           = 0.8f;
-    int32_t repeat_last_n  = 64;
-    float   repeat_penalty = 1.02f;
-
-};
-
-void mpt_print_usage(int /*argc*/, char ** argv, const mpt_params & params) {
-    fprintf(stderr, "usage: %s [options]\n", argv[0]);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "options:\n");
-    fprintf(stderr, "  -h, --help            show this help message and exit\n");
-    fprintf(stderr, "  -s SEED, --seed SEED  RNG seed (default: -1)\n");
-    fprintf(stderr, "  -t N, --threads N     number of threads to use during computation (default: %d)\n", params.n_threads);
-    fprintf(stderr, "  -p PROMPT, --prompt PROMPT\n");
-    fprintf(stderr, "                        prompt to start generation with (default: random)\n");
-    fprintf(stderr, "  -f FNAME, --file FNAME\n");
-    fprintf(stderr, "                        load prompt from a file\n");
-    fprintf(stderr, "  -tt TOKEN_TEST, --token_test TOKEN_TEST\n");
-    fprintf(stderr, "                        test tokenization\n");
-    fprintf(stderr, "  -n N, --n_predict N   number of tokens to predict (default: %d)\n", params.n_predict);
-    fprintf(stderr, "  --top_k N             top-k sampling (default: %d, 0 = n_vocab)\n", params.top_k);
-    fprintf(stderr, "  --top_p N             top-p sampling (default: %.2f)\n", params.top_p);
-    fprintf(stderr, "  --temp N              temperature (default: %.2f)\n", params.temp);
-    fprintf(stderr, "  --repeat-last-n N     last n tokens to consider for penalize (default: %d, 0 = disabled, -1 = ctx_size)\n", params.repeat_last_n);
-    fprintf(stderr, "  --repeat-penalty N    penalize repeat sequence of tokens (default: %.2f, 1.0 = disabled)\n", (double)params.repeat_penalty);
-    fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");
-    fprintf(stderr, "  -c N, --ctx-size N    size of the prompt context (default: %d)\n", params.n_ctx);
-    fprintf(stderr, "  -b N, --batch_size N  batch size for prompt processing (default: %d)\n", params.n_batch);
-    fprintf(stderr, "  -m FNAME, --model FNAME\n");
-    fprintf(stderr, "                        model path (default: %s)\n", params.model.c_str());
-    fprintf(stderr, "\n");
-}
-
-bool mpt_params_parse(int argc, char ** argv, mpt_params & params) {
-    for (int i = 1; i < argc; i++) {
-        std::string arg = argv[i];
-
-        if (arg == "-s" || arg == "--seed") {
-            params.seed = std::stoi(argv[++i]);
-        } else if (arg == "-t" || arg == "--threads") {
-            params.n_threads = std::stoi(argv[++i]);
-        } else if (arg == "-p" || arg == "--prompt") {
-            params.prompt = argv[++i];
-        } else if (arg == "-n" || arg == "--n_predict") {
-            params.n_predict = std::stoi(argv[++i]);
-        } else if (arg == "--top_k") {
-            params.top_k = std::max(1, std::stoi(argv[++i]));
-        } else if (arg == "--top_p") {
-            params.top_p = std::stof(argv[++i]);
-        } else if (arg == "--temp") {
-            params.temp = std::stof(argv[++i]);
-        } else if (arg == "--repeat-last-n") {
-            params.repeat_last_n = std::stof(argv[++i]);
-        } else if (arg == "--repeat-penalty") {
-            params.repeat_penalty = std::stof(argv[++i]);
-        } else if (arg == "--perplexity") {
-            params.perplexity = true;
-        } else if (arg == "-c" || arg == "--ctx-size") {
-            params.n_ctx = std::stoi(argv[++i]);
-        } else if (arg == "-b" || arg == "--batch_size") {
-            params.n_batch = std::stoi(argv[++i]);
-        } else if (arg == "-m" || arg == "--model") {
-            params.model = argv[++i];
-        } else if (arg == "-h" || arg == "--help") {
-            mpt_print_usage(argc, argv, params);
-            exit(0);
-        } else if (arg == "-f" || arg == "--file") {
-            if (++i > argc) {
-                fprintf(stderr, "Invalid file param");
-                break;
-            }
-            std::ifstream file(argv[i]);
-            if (!file) {
-                fprintf(stderr, "error: failed to open file '%s'\n", argv[i]);
-                break;
-            }
-            params.prompt.clear();
-            std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), back_inserter(params.prompt));
-            if (params.prompt.back() == '\n') {
-                params.prompt.pop_back();
-            }
-        } else if (arg == "-tt" || arg == "--token_test") {
-            params.token_test = argv[++i];
-        } else {
-            fprintf(stderr, "error: unknown argument: %s\n", arg.c_str());
-            mpt_print_usage(argc, argv, params);
-            exit(0);
-        }
-    }
-
-    return true;
-}
-
 // load the model's weights from a file
 bool mpt_model_load(const std::string & fname, mpt_model & model, gpt_vocab & vocab) {
     printf("%s: loading model from '%s' - please wait ...\n", __func__, fname.c_str());
@@ -712,7 +602,7 @@ std::vector<float> softmax(const std::vector<float> & logits) {
     return probs;
 }
 
-int perplexity(const mpt_params & params) {
+int perplexity(const common_params & params) {
     ne_time_init();
 
     const int64_t t_main_start_us = ne_time_us();
@@ -869,9 +759,9 @@ int perplexity(const mpt_params & params) {
 }
 
 int main(int argc, char ** argv) {
-    mpt_params params;
+    common_params params;
 
-    if (mpt_params_parse(argc, argv, params) == false) {
+    if (common_params_parse(argc, argv, params) == false) {
         return 1;
     }
 
@@ -965,6 +855,7 @@ int main(int argc, char ** argv) {
     int n_past     = 0;
     int n_consumed = 0;
     int n_sampled  = 0;
+    bool first_token = true;
 
     while (n_sampled < params.n_predict) {
         // predict
@@ -975,8 +866,11 @@ int main(int argc, char ** argv) {
                 printf("%s: failed to predict\n", __func__);
                 return 1;
             }
-
-            t_predict_us += ne_time_us() - t_start_us;
+            if (first_token) {
+                first_token = false;
+            } else {
+                t_predict_us += ne_time_us() - t_start_us;
+            }
 
             n_past += embd.size();
             embd.clear();
@@ -1044,7 +938,7 @@ int main(int argc, char ** argv) {
         printf("%s:  mem per token = %8zu bytes\n", __func__, mem_per_token);
         printf("%s:      load time = %8.2f ms\n", __func__, t_load_us / 1000.0f);
         printf("%s:    sample time = %8.2f ms / %.2f ms per token\n", __func__, t_sample_us / 1000.0f, t_sample_us / 1000.0f / n_sampled);
-        printf("%s:      eval time = %8.2f ms / %d, %.2f ms per token\n", __func__, t_predict_us / 1000.0f, n_sampled, t_predict_us / 1000.0f / n_sampled);
+        printf("%s:      eval time = %8.2f ms / %d, %.2f ms per token\n", __func__, t_predict_us / 1000.0f, params.n_predict - 1, t_predict_us / 1000.0f / (params.n_predict - 1));
         printf("%s:     total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
     }
 

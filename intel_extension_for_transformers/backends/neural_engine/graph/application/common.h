@@ -34,26 +34,31 @@
 
 int32_t get_num_physical_cores();
 
-struct gpt_params {
-    int32_t seed      = -1; // RNG seed
+struct common_params {
     int32_t n_threads = get_num_physical_cores();
-    int32_t n_predict = 200; // new tokens to predict
 
-    // sampling parameters
-    int32_t top_k = 40;
-    float   top_p = 0.9f;
-    float   temp  = 0.9f;
+    int32_t seed           = -1; // RNG seed
+    int32_t n_predict      = 200; // new tokens to predict
+    int32_t n_batch        = 8; // batch size for prompt processing
+    int32_t n_ctx          = 512;
 
-    int32_t n_batch = 8; // batch size for prompt processing
-
-    std::string model      = "models/gpt-2-117M/ggml-model.bin"; // model path
+    std::string model      = ""; // model path
     std::string prompt     = "";
     std::string token_test = "";
+
+    bool    perplexity     = false;
+
+    // sampling parameters
+    int32_t top_k          = 0;
+    float   top_p          = 1.0f;
+    float   temp           = 0.8f;
+    int32_t repeat_last_n  = 64;
+    float   repeat_penalty = 1.02f;
 };
 
-bool gpt_params_parse(int argc, char ** argv, gpt_params & params);
+bool common_params_parse(int argc, char ** argv, common_params & params);
 
-void gpt_print_usage(int argc, char ** argv, const gpt_params & params);
+void gpt_print_usage(int argc, char ** argv, const common_params & params);
 
 std::string gpt_random_prompt(std::mt19937 & rng);
 

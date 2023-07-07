@@ -76,7 +76,34 @@ int32_t get_num_physical_cores() {
     return n_threads > 0 ? (n_threads <= 4 ? n_threads : n_threads / 2) : 4;
 }
 
-bool gpt_params_parse(int argc, char ** argv, gpt_params & params) {
+void gpt_print_usage(int /*argc*/, char ** argv, const common_params & params) {
+    fprintf(stderr, "usage: %s [options]\n", argv[0]);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "options:\n");
+    fprintf(stderr, "  -h, --help            show this help message and exit\n");
+    fprintf(stderr, "  -s SEED, --seed SEED  RNG seed (default: -1)\n");
+    fprintf(stderr, "  -t N, --threads N     number of threads to use during computation (default: %d)\n", params.n_threads);
+    fprintf(stderr, "  -p PROMPT, --prompt PROMPT\n");
+    fprintf(stderr, "                        prompt to start generation with (default: random)\n");
+    fprintf(stderr, "  -f FNAME, --file FNAME\n");
+    fprintf(stderr, "                        load prompt from a file\n");
+    fprintf(stderr, "  -tt TOKEN_TEST, --token_test TOKEN_TEST\n");
+    fprintf(stderr, "                        test tokenization\n");
+    fprintf(stderr, "  -n N, --n_predict N   number of tokens to predict (default: %d)\n", params.n_predict);
+    fprintf(stderr, "  --top_k N             top-k sampling (default: %d, 0 = n_vocab)\n", params.top_k);
+    fprintf(stderr, "  --top_p N             top-p sampling (default: %.2f)\n", params.top_p);
+    fprintf(stderr, "  --temp N              temperature (default: %.2f)\n", params.temp);
+    fprintf(stderr, "  --repeat-last-n N     last n tokens to consider for penalize (default: %d, 0 = disabled, -1 = ctx_size)\n", params.repeat_last_n);
+    fprintf(stderr, "  --repeat-penalty N    penalize repeat sequence of tokens (default: %.2f, 1.0 = disabled)\n", (double)params.repeat_penalty);
+    fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");
+    fprintf(stderr, "  -c N, --ctx-size N    size of the prompt context (default: %d)\n", params.n_ctx);
+    fprintf(stderr, "  -b N, --batch_size N  batch size for prompt processing (default: %d)\n", params.n_batch);
+    fprintf(stderr, "  -m FNAME, --model FNAME\n");
+    fprintf(stderr, "                        model path (default: %s)\n", params.model.c_str());
+    fprintf(stderr, "\n");
+}
+
+bool common_params_parse(int argc, char ** argv, common_params & params) {
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
 
@@ -94,6 +121,14 @@ bool gpt_params_parse(int argc, char ** argv, gpt_params & params) {
             params.top_p = std::stof(argv[++i]);
         } else if (arg == "--temp") {
             params.temp = std::stof(argv[++i]);
+        } else if (arg == "--repeat-last-n") {
+            params.repeat_last_n = std::stof(argv[++i]);
+        } else if (arg == "--repeat-penalty") {
+            params.repeat_penalty = std::stof(argv[++i]);
+        } else if (arg == "--perplexity") {
+            params.perplexity = true;
+        } else if (arg == "-c" || arg == "--ctx-size") {
+            params.n_ctx = std::stoi(argv[++i]);
         } else if (arg == "-b" || arg == "--batch_size") {
             params.n_batch = std::stoi(argv[++i]);
         } else if (arg == "-m" || arg == "--model") {
@@ -111,14 +146,14 @@ bool gpt_params_parse(int argc, char ** argv, gpt_params & params) {
                 fprintf(stderr, "error: failed to open file '%s'\n", argv[i]);
                 break;
             }
+            params.prompt.clear();
             std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), back_inserter(params.prompt));
             if (params.prompt.back() == '\n') {
                 params.prompt.pop_back();
             }
         } else if (arg == "-tt" || arg == "--token_test") {
             params.token_test = argv[++i];
-        }
-        else {
+        } else {
             fprintf(stderr, "error: unknown argument: %s\n", arg.c_str());
             gpt_print_usage(argc, argv, params);
             exit(0);
@@ -126,29 +161,6 @@ bool gpt_params_parse(int argc, char ** argv, gpt_params & params) {
     }
 
     return true;
-}
-
-void gpt_print_usage(int /*argc*/, char ** argv, const gpt_params & params) {
-    fprintf(stderr, "usage: %s [options]\n", argv[0]);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "options:\n");
-    fprintf(stderr, "  -h, --help            show this help message and exit\n");
-    fprintf(stderr, "  -s SEED, --seed SEED  RNG seed (default: -1)\n");
-    fprintf(stderr, "  -t N, --threads N     number of threads to use during computation (default: %d)\n", params.n_threads);
-    fprintf(stderr, "  -p PROMPT, --prompt PROMPT\n");
-    fprintf(stderr, "                        prompt to start generation with (default: random)\n");
-    fprintf(stderr, "  -f FNAME, --file FNAME\n");
-    fprintf(stderr, "                        load prompt from a file\n");
-    fprintf(stderr, "  -tt TOKEN_TEST, --token_test TOKEN_TEST\n");
-    fprintf(stderr, "                        test tokenization\n");
-    fprintf(stderr, "  -n N, --n_predict N   number of tokens to predict (default: %d)\n", params.n_predict);
-    fprintf(stderr, "  --top_k N             top-k sampling (default: %d)\n", params.top_k);
-    fprintf(stderr, "  --top_p N             top-p sampling (default: %.1f)\n", params.top_p);
-    fprintf(stderr, "  --temp N              temperature (default: %.1f)\n", params.temp);
-    fprintf(stderr, "  -b N, --batch_size N  batch size for prompt processing (default: %d)\n", params.n_batch);
-    fprintf(stderr, "  -m FNAME, --model FNAME\n");
-    fprintf(stderr, "                        model path (default: %s)\n", params.model.c_str());
-    fprintf(stderr, "\n");
 }
 
 std::string gpt_random_prompt(std::mt19937 & rng) {

@@ -600,10 +600,10 @@ int main(int argc, char** argv) {
 
   const int64_t t_main_start_us = ne_time_us();
 
-  gpt_params params;
+  common_params params;
   params.model = "models/falcon-7b/ne-falcon-f16.bin";
 
-  if (gpt_params_parse(argc, argv, params) == false) {
+  if (common_params_parse(argc, argv, params) == false) {
     return 1;
   }
 
@@ -645,18 +645,24 @@ int main(int argc, char** argv) {
 
   printf("\n");
   printf("\n");
-  printf("%s: seed      = %d\n", __func__, params.seed);
-  printf("%s: n_threads = %d\n", __func__, params.n_threads);
-  printf("%s: n_batch   = %d\n", __func__, params.n_batch);
-  printf("%s: n_predict = %d\n", __func__, params.n_predict);
-  printf("%s: temp      = %.3f\n", __func__, params.temp);
-  printf("%s: top_k     = %d\n", __func__, params.top_k);
-  printf("%s: top_p     = %.3f\n\n", __func__, params.top_p);
+  printf("%s: seed           = %d\n", __func__, params.seed);
+  printf("%s: n_threads      = %d\n", __func__, params.n_threads);
+  printf("%s: n_batch        = %d\n", __func__, params.n_batch);
+  printf("%s: n_ctx          = %d\n",   __func__, params.n_ctx);
+  printf("%s: n_predict      = %d\n", __func__, params.n_predict);
+  printf("%s: temp           = %.3f\n", __func__, params.temp);
+  printf("%s: top_k          = %d\n", __func__, params.top_k);
+  printf("%s: top_p          = %.3f\n", __func__, params.top_p);
+  printf("%s: repeat_last_n  = %d\n", __func__, params.repeat_last_n);
+  printf("%s: repeat_penalty = %.3f\n\n", __func__, params.repeat_penalty);
 
   int n_past = 0;
 
   int64_t t_sample_us = 0;
   int64_t t_predict_us = 0;
+
+  std::vector<int32_t> last_n_tokens(params.n_ctx);
+  std::fill(last_n_tokens.begin(), last_n_tokens.end(), 0);
 
   std::vector<float> logits;
 
@@ -677,6 +683,7 @@ int main(int argc, char** argv) {
   size_t mem_per_token = 0;
   falcon_eval(model, params.n_threads, 0, {0, 1, 2, 3}, logits, mem_per_token);
 
+  bool first_token = true;
   for (int i = embd.size(); i < embd_inp.size() + params.n_predict; i++) {
     // predict
     if (embd.size() > 0) {
@@ -686,8 +693,12 @@ int main(int argc, char** argv) {
         printf("Failed to predict\n");
         return 1;
       }
-
-      t_predict_us += ne_time_us() - t_start_us;
+      // make first-token as warmup token
+      if (first_token) {
+        first_token = false;
+      } else {
+        t_predict_us += ne_time_us() - t_start_us;
+      }
     }
 
     n_past += embd.size();
@@ -706,8 +717,11 @@ int main(int argc, char** argv) {
       {
         const int64_t t_start_sample_us = ne_time_us();
 
-        id = gpt_sample_top_k_top_p(vocab, logits.data() + (logits.size() - n_vocab), top_k, top_p, temp, rng);
-
+        id = gpt_sample_top_k_top_p_repeat(vocab, logits.data() + (logits.size() - n_vocab), last_n_tokens.data(),
+                                           last_n_tokens.size(), top_k, top_p, temp, params.repeat_last_n,
+                                           params.repeat_penalty, rng);
+        last_n_tokens.erase(last_n_tokens.begin());
+        last_n_tokens.push_back(id);
         t_sample_us += ne_time_us() - t_start_sample_us;
       }
 
@@ -717,6 +731,8 @@ int main(int argc, char** argv) {
       // if here, it means we are still processing the input prompt
       for (int k = i; k < embd_inp.size(); k++) {
         embd.push_back(embd_inp[k]);
+        last_n_tokens.erase(last_n_tokens.begin());
+        last_n_tokens.push_back(embd_inp[k]);
         if (embd.size() > params.n_batch) {
           break;
         }
@@ -744,8 +760,8 @@ int main(int argc, char** argv) {
     printf("%s: mem per token = %8zu bytes\n", __func__, mem_per_token);
     printf("%s: load time     = %8.2f ms\n", __func__, t_load_us / 1000.0f);
     printf("%s: sample time   = %8.2f ms\n", __func__, t_sample_us / 1000.0f);
-    printf("%s: predict time  = %8.2f ms / %.2f ms per token\n", __func__, t_predict_us / 1000.0f,
-           t_predict_us / 1000.0f / n_past);
+    printf("%s: predict time  = %8.2f ms / %d, %.2f ms per token\n", __func__, t_predict_us / 1000.0f,
+           params.n_predict - 1, t_predict_us / 1000.0f / (params.n_predict - 1));
     printf("%s: total time    = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
   }
 
