@@ -191,7 +191,6 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_
 
 static auto case_func = []() {
   std::vector<test_params_t> cases;
-
   std::vector<std::vector<dim_t>> shapes = {{512, 1280, 1280}, {512, 1280, 10240}, {77, 768, 1024}};
 
   std::vector<dim_t> batchs = {1, 2};

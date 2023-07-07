@@ -19,6 +19,8 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <unordered_map>
+#include <string>
 
 #include "jit_generator.hpp"
 #include "src/utils.hpp"
@@ -48,9 +50,10 @@ class regs_pool {
   const size_t stack_align_;
   const bool make_epilog_, evex_, warn_waste_;
 
-  std::array<int, reg_kind_size> ridx_next;       // The index of next register to be allocated
-  const std::array<int, reg_kind_size> ridx_max;  // max number of registers  to be allocated
-  std::array<int, reg_kind_size> ridx_touched;    // (max register indexever allocated) + 1
+  std::array<int, reg_kind_size> ridx_next;               // The index of next register to be allocated
+  const std::array<int, reg_kind_size> ridx_max;          // max number of registers  to be allocated
+  std::array<int, reg_kind_size> ridx_touched;            // (max register indexever allocated) + 1
+  std::unordered_map<std::string, int> reg_name_idx_map;  // The index of specific reg_name
 
   template <typename Base, typename R>
   using enable_if_reg_kind_t = std::enable_if_t<std::is_base_of<Base, R>::value, reg_kind>;
@@ -101,6 +104,12 @@ class regs_pool {
     explicit shared_reg(regs_pool* const s)
         : R(s->get_next_reg<R>()),  //
           std::shared_ptr<void>{nullptr, [s](...) { s->get_next<R>()--; }} {}
+    shared_reg(regs_pool* const s, const std::string& reg_name)
+        : R(s->get_next_reg<R>()),  //
+          std::shared_ptr<void>{nullptr, [s, reg_name](...) {
+                                  s->get_next<R>()--;
+                                  s->reg_name_idx_map.erase(reg_name);
+                                }} {}
   };
   FOREACH_REG class shared_reg_vec : public std::vector<R>, private std::shared_ptr<void> {
     friend regs_pool;
@@ -235,9 +244,16 @@ class regs_pool {
   /** @warning Use `auto` hold the result as the referring count will be stripped otherwise. */
   FOREACH_REG inline shared_reg<R> reg() { return shared_reg<R>{this}; }
   /** @warning Use `auto` hold the result as the referring count will be stripped otherwise. */
+  FOREACH_REG inline shared_reg<R> reg(const std::string& reg_name) {
+    auto reg = shared_reg<R>(this, reg_name);
+    reg_name_idx_map[reg_name] = reg.getIdx();
+    return reg;
+  }
+  /** @warning Use `auto` hold the result as the referring count will be stripped otherwise. */
   FOREACH_REG inline const shared_reg_vec<R> regs(size_t n) { return shared_reg_vec<R>{this, n}; }
   /** @warning Use `auto` hold the result as the referring count will be stripped otherwise. */
   FOREACH_REG_N inline const shared_reg_arr<R, N> regs() { return shared_reg_arr<R, N>{this}; }
+  inline int get_idx_by_name(std::string reg_name) { return reg_name_idx_map[reg_name]; }
 };
 #undef FOREACH_REG
 #undef FOREACH_REG_N

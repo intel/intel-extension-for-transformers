@@ -26,7 +26,7 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
   inLocalLabel();
   {
     const int cfg_size = sizeof(tileconfig_t);
-    regs_pool rp(this, 1, {13, 4, 0}, 0, regs_pool::IgnoreWaste);
+    regs_pool rp(this, 1, {13, 32, 2}, 16, regs_pool::IgnoreWaste);
 
     const auto reg_m_loop = rp.reg<Reg64>();
     const auto reg_n_loop = rp.reg<Reg64>();
@@ -38,11 +38,15 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
     const auto reg_scale_a = rp.reg<Reg64>();
     const auto reg_bias = rp.reg<Reg64>();
     const auto reg_dst = rp.reg<Reg64>();
+    const auto matC_n_mask = rp.reg<Opmask>();
+    const auto scaleC_mask = rp.reg<Opmask>();
 
     auto prepare_mask = [&]() {
       const auto reg_tmp = rp.reg<Xbyak::Reg32>();
       mov(reg_tmp, 0xffff >> param_.write_mask);
-      kmovd(matC_n_mask_, reg_tmp);
+      kmovd(matC_n_mask, reg_tmp);
+      mov(reg_tmp, 0xffff >> (16 - param_.tail_m));
+      kmovd(scaleC_mask, reg_tmp);
     };
 
     auto ip_Mx16 = [&](int M, int block_num, bool need_mask = false, int no_mask_tail_n = 0) {
@@ -103,12 +107,18 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
               eltwise_injector_.escape_rp_all_type(&rp);
               eltwise_injector_.vector_compute(zmms[2], param_.postop_attrs);
             }
+
+            // write back to 3-blocks tmp_buf for abs max calculation.
+            if (calc_abs_max_)
+              vmovups(ptr[reg_tmpbuf + (idx + row_loop * param_.align_build_block_num) * align_build_N * sizeof(float)],
+                      zmms[2]);
+
             if (param_.dst_dt != data_type::fp32) {
               fp32_cvt_bf16(zmms[2]);
               RegExp write_back_addr =
                   reg_dst + reg_dst_offset * sizeof(bfloat16_t) +
                   ((no_mask_tail_n + idx) * align_build_N + row_loop * dst_n_dim_) * sizeof(bfloat16_t);
-              vmovdqu16(need_mask ? ptr[write_back_addr] | matC_n_mask_ : ptr[write_back_addr], Ymm(zmms[2].getIdx()));
+              vmovdqu16(need_mask ? ptr[write_back_addr] | matC_n_mask : ptr[write_back_addr], Ymm(zmms[2].getIdx()));
             } else {
               RegExp write_back_addr = reg_dst + reg_dst_offset * sizeof(float) +
                                        ((no_mask_tail_n + idx) * align_build_N + row_loop * dst_n_dim_) * sizeof(float);
@@ -123,10 +133,31 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
                   vaddps(zmms[2], zmms[2], append_value_zmm);
                 }
               }
-              vmovups(need_mask ? ptr[write_back_addr] | matC_n_mask_ : ptr[write_back_addr], zmms[2]);
+              vmovups(need_mask ? ptr[write_back_addr] | matC_n_mask : ptr[write_back_addr], zmms[2]);
             }
           }
         }
+      }
+      // calculate max abs.
+      if (calc_abs_max_) {
+        // compare with the scale_dst, store the larger one.
+        const auto zmms = rp.regs<Zmm, 16>();
+        for (int i = 0; i < 16; i++) vxorps(zmms[i], zmms[i], zmms[i]);
+        for (int block_idx = 0; block_idx < block_num; block_idx++) {
+          for (int row_idx = 0; row_idx < M; row_idx++) {
+            vrangeps(
+                need_mask ? zmms[row_idx] | matC_n_mask : zmms[row_idx], zmms[row_idx],
+                ptr[reg_tmpbuf + align_build_N * sizeof(float) * (block_idx + row_idx * param_.align_build_block_num)],
+                11U);
+          }
+        }
+        transpose_16x16_ps(zmms, rp.regs<Zmm, 16>());
+        reduce_vmms(zmms, &CodeGenerator::vmaxps);
+        auto reg_scale_dst = rp.reg<Reg64>();
+        mov(reg_scale_dst, ptr[rp.p[0] + GET_OFF(scale_dst)]);
+        mov(reg_tmp, ptr[rsp + 8]);
+        vmaxps(zmms[0], zmms[0], ptr[reg_scale_dst + reg_tmp]);
+        vmovups(M == 16 ? ptr[reg_scale_dst + reg_tmp] : ptr[reg_scale_dst + reg_tmp] | scaleC_mask, zmms[0]);
       }
     };
 
@@ -139,6 +170,19 @@ void jit_amx_s8s8_dynamic_dequant_matmul_t::generate() {
     };
 
     auto build_MxN_tile = [&](int M, std::string label_prefix = ".") {
+      if (calc_abs_max_) {
+        auto clear_zmm = rp.reg<Zmm>();  // init abs max (equal to 0) in scale_dst.
+        vxorps(clear_zmm, clear_zmm, clear_zmm);
+        auto reg_scale_offset = reg_m_loop;  // alias of reg_m_loop
+        mov(ptr[rsp], reg_m_loop);           // store the m_loop value to the stack.
+        imul(reg_scale_offset, reg_m_loop, 16 * sizeof(float));
+        auto reg_scale_dst = reg_n_loop;  // alias of reg_n_loop
+        mov(reg_scale_dst, ptr[rp.p[0] + GET_OFF(scale_dst)]);
+        RegExp scale_wirte_back_offset = reg_scale_dst + reg_scale_offset;
+        vmovups(M == 16 ? ptr[scale_wirte_back_offset] : ptr[scale_wirte_back_offset] | scaleC_mask, clear_zmm);
+        mov(ptr[rsp + 8], reg_scale_offset);  // store the scaleC offset to the stack.
+        mov(reg_m_loop, ptr[rsp]);            // restore m_loop value.
+      }
       xor_(reg_n_loop, reg_n_loop);
       if (param_.write_mask == 0) {
         if (param_.align_n_loop > 0) align_loop_ip_Mx16(M, param_.align_n_loop, label_prefix);

@@ -25,8 +25,9 @@
 namespace jd {
 class jit_amx_s8s8_dynamic_dequant_matmul_t : public jit_generator {
  public:
-  explicit jit_amx_s8s8_dynamic_dequant_matmul_t(const ssd::dynamic_quant_matmul_param_t& param, size_t dst_n_dim)
-      : jit_generator(), param_(param), dst_n_dim_(dst_n_dim) {
+  explicit jit_amx_s8s8_dynamic_dequant_matmul_t(const ssd::dynamic_quant_matmul_param_t& param, size_t dst_n_dim,
+                                                 bool calc_abs_max)
+      : jit_generator(), param_(param), dst_n_dim_(dst_n_dim), calc_abs_max_(calc_abs_max) {
     eltwise_injector_.eltwise_injector_init(this, param_.postop_attrs);
   }
   virtual ~jit_amx_s8s8_dynamic_dequant_matmul_t() {}
@@ -37,8 +38,8 @@ class jit_amx_s8s8_dynamic_dequant_matmul_t : public jit_generator {
 
  private:
   void generate() override;
-  Opmask matC_n_mask_ = Opmask(2);
   size_t dst_n_dim_;
+  bool calc_abs_max_;
   const int align_build_M = 16;
   const int align_build_N = 16;
   const int reorder_block_col_eltnum = 64;
