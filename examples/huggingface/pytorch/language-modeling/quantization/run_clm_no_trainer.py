@@ -31,8 +31,6 @@ parser.add_argument(
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto",
                     help="Smooth quant parameter.")
-parser.add_argument("--folding", default=False, type=bool,
-                    help="Fuse setting.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument("--ipex", action="store_true", help="Use intel extension for pytorch.")
 parser.add_argument("--accuracy", action="store_true")
@@ -201,7 +199,10 @@ if args.quantize:
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     if args.sq:
         args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
-        recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha, "folding": args.folding}}
+        if re.search("falcon", user_model.config.model_type):
+            recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha, 'folding': False}}
+        else:
+            recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha}}
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
             excluded_precisions=excluded_precisions,
