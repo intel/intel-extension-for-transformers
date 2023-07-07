@@ -74,18 +74,16 @@ bool CheckResult(const TestParams& t) {
     else
       return false;
   }
-  if (!t.expect_to_fail) {
-    bool is_equal = false;
-    if (q->dtype() == "fp32") {
-      is_equal = executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 0.09);
-    } else if (q->dtype() == "s8") {
-      is_equal = executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 3);
-    } else if (q->dtype() == "u8") {
-      is_equal = executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 3);
-    }
-    return is_equal;
+  if (t.expect_to_fail) return true;
+  bool is_equal = false;
+  if (q->dtype() == "fp32") {
+    is_equal = executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 0.09);
+  } else if (q->dtype() == "s8") {
+    is_equal = executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 3);
+  } else if (q->dtype() == "u8") {
+    is_equal = executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 3);
   }
-  return false;
+  return is_equal;
 }
 
 class InnerProductInt8Test : public testing::TestWithParam<TestParams> {

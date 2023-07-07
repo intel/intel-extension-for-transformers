@@ -12,10 +12,11 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <unistd.h>
 #include <numeric>
-#include "../../include/static_compressed_buffer.hpp"
+
 #include "../../include/activation_dag.hpp"
+#include "../../include/common.hpp"
+#include "../../include/static_compressed_buffer.hpp"
 #include "gtest/gtest.h"
 
 using executor::ActivationDAG;
@@ -26,11 +27,6 @@ using std::shared_ptr;
 using std::string;
 using std::unordered_map;
 using std::vector;
-
-inline float randn(float _off = 0.f) {
-  unsigned int seed = 123;
-  return (rand_r((&seed)) + 0.5f) / (RAND_MAX + 1.f) + _off;
-}
 
 class DagValidEngine {
  public:
@@ -44,9 +40,7 @@ class DagValidEngine {
             accumulate(output_tensor->shape().begin(), output_tensor->shape().end(), 1, std::multiplies<int64_t>());
     for (auto&& tensor : tensor_size_map_) {
       int8_t* v1 = static_cast<int8_t*>(correct_buffer_->GetDataByName(tensor.first));
-      for (int i = 0; i < tensor.second; i++) {
-        v1[i] = 10 * randn();
-      }
+      executor::InitVector(v1, tensor.second, 0, 10);
     }
   }
 

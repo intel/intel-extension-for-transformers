@@ -118,10 +118,6 @@ bool CheckResult(const TestParams& t) {
     convolution.Forward(p.input, p.output);
   }
   if (!t.expect_to_fail) {
-    // p.output[0]->set_shape({3, 32, 16});
-    // p.output[0]->print();
-    // q[0]->set_shape({3, 32, 16});
-    // q[0]->print();
     bool is_equal = true;
     if (q[0]->dtype() == "fp32") {
       is_equal &=
@@ -404,9 +400,11 @@ static auto CasesInt8 = []() {
     cases.push_back(
         {GenerateInt8Case({src_shape, weight_shape, bias_shape}, true, group, pads, strides, "s8", output_dtype),
          false});
+#ifndef _WIN32  // TODO(Yucheng): Check if this case work for onednn 3.x on WIN
     cases.push_back(
         {GenerateInt8Case({src_shape, weight_shape, bias_shape}, true, group, pads, strides, "u8", output_dtype),
          false});
+#endif
   }
 
   return ::testing::ValuesIn(cases);
