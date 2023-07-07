@@ -1,0 +1,8 @@
+diffusers <= 0.16.1
+accelerate <= 0.16.0
+transformers <= 4.30.2
+datasets
+torch
+torchvision
+Pillow
+git+https://github.com/intel/neural-compressor.git
