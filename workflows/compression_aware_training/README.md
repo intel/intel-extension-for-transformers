@@ -25,11 +25,15 @@ The workflow provides a generic way to do model Compression Aware Training suppo
 ## Get Started
 
 ### Clone this Repository
+
+Start by defining an environment variable that will store the workspace path, this can be an existing directory or one to be created in further steps. This ENVVAR will be used for all the commands executed using absolute paths.
+
 ```
 export WORKSPACE=</workdir/path>
 
 git clone https://github.com/intel/intel-extension-for-transformers.git $WORKSPACE/intel-nlp-toolkit
 cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training
+
 ```
 
 ### Download Miniconda and install it.
@@ -146,12 +150,12 @@ Build or Pull the provided docker image.
 ```bash
 cd $WORKSPACE/intel-nlp-toolkit 
 git submodule update --init --recursive
-cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training/docker
+cd ${WORKSPACE}/docker
 docker compose build
 ```
 OR
 ```bash
-docker pull intel/ai-workflows:beta-compression-aware
+docker pull intel/ai-workflows:pa-compression-aware
 ```
 
 ### 3. Run with Docker Compose
@@ -270,8 +274,9 @@ Evaluation and Training performance parameters are presented as Output in Quanti
   
 ## Summary and Next Steps
 
-You can try other tasks, models and datasets from huggingface repository per your liking by changing the config file.
-  
+* You can try other tasks, models and datasets from huggingface repository per your liking by changing the config file.
+* If you want to enable distributed training on k8s for your use case, please follow steps to apply that configuration mentioned here [Intel® Extension for Tranfomrer Domain toolkit](../../docker/README.md#kubernetes) which provides insights into k8s operators and yml file creation.
+
 ## Learn More
 
 You can see more examples of the workflow [here](../../examples/huggingface/) or a use case [here](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7193019/)

@@ -12,7 +12,7 @@ services:
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}
       - no_proxy=${no_proxy}
-    image: intel/ai-workflows:beta-hf-nlp-disease-prediction
+    image: intel/ai-workflows:pa-hf-nlp-disease-prediction
     privileged: true
     volumes:
       - ../config:/workspace/config
