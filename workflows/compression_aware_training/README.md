@@ -24,6 +24,14 @@ The workflow provides a generic way to do model Compression Aware Training suppo
 
 ## Get Started
 
+### Clone this Repository
+```
+export WORKSPACE=</workdir/path>
+
+git clone https://github.com/intel/intel-extension-for-transformers.git $WORKSPACE/intel-nlp-toolkit
+cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training
+```
+
 ### Download Miniconda and install it.
 Note: If you have already installed conda on your system, just skip this step.
 ```bash
@@ -136,8 +144,9 @@ docker compose version
 Build or Pull the provided docker image.
 
 ```bash
+cd $WORKSPACE/intel-nlp-toolkit 
 git submodule update --init --recursive
-cd docker
+cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training/docker
 docker compose build
 ```
 OR
