@@ -151,12 +151,6 @@ class DecompressKBlockS4F32 {
                                    int NPad) {
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      // if (std::is_same<_T, float>::value) {
-      //   return jit::jit_decompress_kblock_s4_f32<float>(
-      //       srcptr, dstptr, row, col, ld_src, ld_dst, (float *)scales,
-      //       k_offset, kblock, NPad);
-      // }
-
       return avx512f::decompress_kblock_s4_f32(srcptr, dstptr, row, col, ld_src,
                                                ld_dst, scales, k_offset, kblock,
                                                NPad);

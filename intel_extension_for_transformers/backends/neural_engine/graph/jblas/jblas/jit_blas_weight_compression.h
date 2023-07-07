@@ -16,7 +16,6 @@
 #include "kernel_wrapper.h"
 
 namespace jblas {
-namespace utils {}  // namespace utils
 namespace prologue {
 namespace weight_comp {
 class PackedWeightKBlock : public prologue::PackedWeight {

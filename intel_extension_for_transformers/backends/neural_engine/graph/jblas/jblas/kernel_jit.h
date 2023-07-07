@@ -29,15 +29,6 @@ struct decompress_block_s4_f32_codegen_param {
   }
 };
 
-namespace std {
-template <>
-struct hash<decompress_block_s4_f32_codegen_param> {
-  size_t operator()(const decompress_block_s4_f32_codegen_param &s) const {
-    return hash<int>()(s.row) ^ hash<int>()(s.col) ^ hash<int>()(s.kblock) ^
-           hash<int>()(s.ld_src) ^ hash<int>()(s.ld_dst);
-  }
-};
-}  // namespace std
 namespace jblas {
 namespace kernel {
 namespace jit {
@@ -521,83 +512,7 @@ class DequanKBlockS4F32 {
     ker_t ker_;
     int dump_idx = 0;
   };
-
-  class decompress_block_s4_f32_cache {
-   public:
-    decompress_block_s4_f32_cache() {
-      for (size_t i = 1; i < 33; i++) {
-        get(i, 48, 32, 24, 48);
-      }
-    }
-    static decompress_block_s4_f32_cache *getCache() {
-      static decompress_block_s4_f32_cache cache;
-      return &cache;
-    }
-
-    decompress_block_s4_f32 *get(int row, int col, int kblock, int ld_src,
-                                 int ld_dst) {
-      decompress_block_s4_f32_codegen_param key = {row, col, kblock, ld_src,
-                                                   ld_dst};
-      if (cache_.find(key) == cache_.end()) {
-        cache_[key] = new decompress_block_s4_f32(key);
-      }
-      return cache_[key];
-    }
-
-    ~decompress_block_s4_f32_cache() {
-      for (auto &kv : cache_) {
-        delete kv.second;
-      }
-    }
-
-   private:
-    std::unordered_map<decompress_block_s4_f32_codegen_param,
-                       decompress_block_s4_f32 *>
-        cache_;
-  };
-
- private:
-  std::unordered_map<decompress_block_s4_f32_codegen_param,
-                     decompress_block_s4_f32 *>
-      cache_;
 };
-
-template <typename _ST>
-static inline JBLAS_CODE jit_decompress_kblock_s4_f32(
-    utils::int4x2 *srcptr, float *dstptr, int row, int col, int ld_src,
-    int ld_dst, _ST *scales, int k_offset, int kblock, int NPad) {
-  auto cache = DequanKBlockS4F32::decompress_block_s4_f32_cache::getCache();
-  int8_t *tmpbuf = (int8_t *)alloca(64 * kblock);
-
-  int row0 = kblock - k_offset % kblock;
-  row0 = row0 == kblock ? 0 : row0;
-  row0 = row0 > row ? row : row0;
-  int row1 = row - row0;
-  int irow = 0;
-  if (row0) {
-    auto head_ker = cache->get(row0, col, kblock, ld_src, ld_dst);
-    head_ker->fwd(scales + (k_offset + irow) / kblock * NPad,
-                  (int8_t *)(srcptr + irow * ld_src), tmpbuf,
-                  dstptr + irow * ld_dst);
-  }
-  irow = row0;
-  int row1_blk = utils::padto_le(row1, kblock) + row0;
-
-  auto body_ker = cache->get(kblock, col, kblock, ld_src, ld_dst);
-  for (; irow < row1_blk; irow += kblock) {
-    body_ker->fwd(scales + (k_offset + irow) / kblock * NPad,
-                  (int8_t *)(srcptr + irow * ld_src), tmpbuf,
-                  dstptr + irow * ld_dst);
-  }
-
-  if (irow < row) {
-    auto tail_ker = cache->get(row - irow, col, kblock, ld_src, ld_dst);
-    tail_ker->fwd(scales + (k_offset + irow) / kblock * NPad,
-                  (int8_t *)(srcptr + irow * ld_src), tmpbuf,
-                  dstptr + irow * ld_dst);
-  }
-  return JblasSuccess;
-}
 }  // namespace jit
 }  // namespace kernel
 }  // namespace jblas

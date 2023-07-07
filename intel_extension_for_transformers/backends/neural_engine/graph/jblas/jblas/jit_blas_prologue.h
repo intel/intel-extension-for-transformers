@@ -140,6 +140,43 @@ class ActivationF32U8KBlockQuantize {
     utils::aligned_vector<AQType> mZp;
     utils::aligned_vector<SType> mScales;
   };
+  using Parallel = utils::parallel::Parallel2DRowMajorColBlock;
+
+  Parallel createParallel(int m, int k, int kblock) {
+    Parallel _paral;
+    auto cb = utils::CpuBase();
+    _paral.update(m, k, 1, 16, kblock, cb.mNumThreads);
+    return _paral;
+  }
+
+  QuanParam createObj(int m, int k, int kblock) {
+    QuanParam quan;
+    int kpad = utils::padto(k, _GemmCore_T::KTILE);
+    quan.resize(m, kpad, kblock);
+    return quan;
+  }
+
+  template <JBLAS_ISA ISA_T>
+  void quantizeT(const Param& _param, int tidx, QuanParam& quan,
+                 Parallel& para) {
+    int colidx, rowidx, rowsize, colsize;
+    int blkidx, idxinblk;
+    para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize, &blkidx,
+                  &idxinblk);
+
+    if (rowsize > 0 && colsize > 0) {
+      // min max
+      auto srcptr = _param.A + rowidx * _param.lda + colidx;
+      int rowremain = utils::remainsize(rowidx, para.mRows, rowsize);
+      int colremain = utils::remainsize(colidx, para.mCols, colsize);
+      auto thdqptr = quan.A + rowidx * quan.lda + colidx;
+      auto thdsptr = quan.scales + rowidx * quan.lds + blkidx;
+      auto thdzptr = quan.zp + rowidx * quan.lds + blkidx;
+      kernel::wrapper::QuantizeU8ColBlock::template forward<ISA_T>(
+          rowremain, colremain, srcptr, _param.lda, thdqptr, quan.lda, thdsptr,
+          quan.lds, thdzptr, para.mColBlock);
+    }
+  }
 
   template <JBLAS_ISA ISA_T>
   QuanParam quantize(const Param& _param, int m, int k, int kblock) {

@@ -69,6 +69,9 @@ extern "C" {
         NE_OP_CONV_1D_1S,
         NE_OP_CONV_1D_2S,
 
+        // LLM related
+        NE_OP_MUL_QKV,
+        NE_OP_MUL_FFN_SILU,
         NE_OP_FLASH_ATTN,
         NE_OP_FLASH_FF,
 
