@@ -1148,24 +1148,11 @@ def get_model_fwk_name(model):
     def _is_neural_engine(model):
         """Check if the model is neural engine."""
         if model and isinstance(model, str) and os.path.isdir(model):
-            file_list = os.listdir(model)
-            is_engine = True
-            if len(file_list) == 2:
-                for file_name in file_list:
-                    file_ext = os.path.splitext(file_name)
-                    front, ext = file_ext
-                    if ext == ".yaml":
-                        is_engine &= True
-                    elif ext == ".bin":
-                        is_engine &= True
-                    else:
-                        is_engine &= False
-                        logger.error("Please Input yaml and bin for neural engine.")
-                        return 'NA'
-            else:
-                return 'NA'
-            if is_engine == True:
+            if os.path.exists(os.path.join(model, 'conf.yaml')) and os.path.exists(os.path.join(model, 'model.bin')):
                 return 'neural engine'
+            else:
+                logger.error("Please Input yaml and bin for neural engine.")
+                return 'NA'
         else:
             return 'NA'
 
