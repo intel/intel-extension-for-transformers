@@ -763,6 +763,18 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                     if keep_flag:
                         new_in_match_result.append(name_list)
                 in_match_result = new_in_match_result
+            # MHA 1. matmul maybe fallback to fp32; 2. output dtype may not be u8.
+            if num_match > 0 and pattern_name == "MultiHeadAttention":
+                new_in_match_result = []
+                for name_list in in_match_result:
+                    first_matmul_node = graph.get_node_by_name(name_list[0])
+                    last_matmul_node = graph.get_node_by_name(name_list[2])
+                    if len(first_matmul_node.input_tensors) > 5 and \
+                        len(last_matmul_node.input_tensors) > 5 and \
+                            'output_dtype' in last_matmul_node.attr.keys() and \
+                                last_matmul_node.attr['output_dtype'] == 'u8':
+                                    new_in_match_result.append(name_list)
+                in_match_result = new_in_match_result
         else:
             # check whether the nodes exit or not
             nodes_exist = True
