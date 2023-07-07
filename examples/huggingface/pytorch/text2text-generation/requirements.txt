@@ -6,6 +6,6 @@ transformers
 onnx
 rouge-score
 nltk
+neural-compressor
+optimum-intel
 git+https://github.com/intel/intel-extension-for-pytorch.git
-git+https://github.com/intel/neural-compressor.git
-git+https://github.com/huggingface/optimum-intel.git

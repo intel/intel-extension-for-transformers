@@ -54,5 +54,5 @@ python run_seq2seq_generation.py \
     --quantize \
     --ipex # Use intel-extension-for-pytorch backend \
     --sq # Use smoothquant recipe for quantization
-    --alpha 0.6 # smoothquant args.
+    --alpha 0.7 # smoothquant args.
 ```
