@@ -3,3 +3,4 @@ datasets
 transformers
 torch
 tqdm
+optimum
