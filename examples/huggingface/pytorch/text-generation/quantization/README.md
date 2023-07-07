@@ -29,13 +29,13 @@ We use the local GPTJ defination script `modeling_gptj.py` in `run_generation.py
 ```
 The changes for `llama` series models in `modeling_llama.py`, `dolly_v2_3b` series models in `modeling_gpt_neox.py`， `bloom` series models in `modeling_bloom.py` and `opt` series models in `modeling_opt.py` are similar to the above.
 
-`mosaicml/mpt-7b-chat` has been updated frequently, and has not yet been integrated into `transformers`, so we fixed a commit number to enable it.
+`mosaicml/mpt-7b` has been updated frequently, and has not yet been integrated into `transformers`, so we fixed a commit number `68e1a8e0ebb9b30f3c45c1ef6195980f29063ae2` as a local folder to enable it.
 
 # Run
 
 ## 1. Quantization
 ``` bash
-# MPT need args --revision c8d4750ac8421303665d6ecc253950c69b56d324
+
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --quantize \
@@ -46,7 +46,7 @@ python run_generation.py \
 ```
 ## 2. Performance
 ```bash
-# MPT need args --revision c8d4750ac8421303665d6ecc253950c69b56d324
+
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --benchmark \
@@ -55,7 +55,7 @@ python run_generation.py \
 ```
 ## 3. Accuracy
 ```bash
-# MPT need args --revision c8d4750ac8421303665d6ecc253950c69b56d324
+
 python run_generation.py \
    --model EleutherAI/gpt-j-6b \
    --accuracy \

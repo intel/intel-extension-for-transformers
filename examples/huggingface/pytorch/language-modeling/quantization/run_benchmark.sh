@@ -89,11 +89,9 @@ function run_benchmark {
         fi
         script="run_clm_no_trainer.py"
         model_name_or_path="mosaicml/mpt-7b-chat"
-	extra_cmd=$extra_cmd" --revision c8d4750ac8421303665d6ecc253950c69b56d324"
     elif [ "${topology}" = "falcon_7b_instruct" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="tiiuae/falcon-7b-instruct"
-        extra_cmd=$extra_cmd" --revision c7f670a03d987254220f343c6b026ea0c5147185"
     elif [ "${topology}" = "opt_1.3b" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="facebook/opt-1.3b"

@@ -113,13 +113,12 @@ python run_clm_no_trainer.py \
 
 ### MPT-7b-chat
 #### Quantization
-`mosaicml/mpt-7b-chat` has been updated frequently, and has not yet been integrated into `transformers`, so we fixed a commit number to enable it.
+`mosaicml/mpt-7b` has been updated frequently, and has not yet been integrated into `transformers`, so we fixed a commit number `68e1a8e0ebb9b30f3c45c1ef6195980f29063ae2` as local folder to enable it.
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
 python run_clm_no_trainer.py \
     --model mosaicml/mpt-7b-chat \
-    --revision c8d4750ac8421303665d6ecc253950c69b56d324 \
     --quantize \
     --sq \
     --alpha 0.85 \
@@ -141,13 +140,12 @@ python run_clm_no_trainer.py \
 ```
 ### Falcon-7b-instruct
 #### Quantization
-`tiiuae/falcon-7b-instruct` has been updated frequently, and has not yet been integrated into `transformers`, so we fixed a commit number to enable it.
+`tiiuae/falcon-7b-instruct` has been updated frequently, and has not yet been integrated into `transformers`, so we fixed a commit number `c7f670a03d987254220f343c6b026ea0c5147185` as local folder to enable it.
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
 python run_clm_no_trainer.py \
     --model tiiuae/falcon-7b-instruct \
-    --revision  c7f670a03d987254220f343c6b026ea0c5147185 \
     --quantize \
     --sq \
     --alpha 0.7 \

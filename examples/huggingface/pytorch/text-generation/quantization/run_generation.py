@@ -84,7 +84,7 @@ if re.search("llama", args.model.lower()):
     )
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
 elif re.search("mpt", args.model.lower()):
-    from mpt_7b_chat.modeling_mpt import MPTForCausalLM
+    from mpt_7b.modeling_mpt import MPTForCausalLM
     user_model = MPTForCausalLM.from_pretrained(
         args.model,
         torchscript=True

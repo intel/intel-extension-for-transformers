@@ -133,7 +133,7 @@ if re.search("llama", args.model.lower()):
     )
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
 elif re.search("mpt-7b-chat", args.model.lower()):
-    from mpt_7b_chat.modeling_mpt import MPTForCausalLM
+    from mpt_7b.modeling_mpt import MPTForCausalLM
     user_model = MPTForCausalLM.from_pretrained(
             args.model,
             torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors

@@ -128,7 +128,6 @@ function run_tuning {
         model_name_or_path="mosaicml/mpt-7b-chat"
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
-            extra_cmd=$extra_cmd" --revision c8d4750ac8421303665d6ecc253950c69b56d324"
             alpha=0.95
         fi
     fi
