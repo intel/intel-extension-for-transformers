@@ -70,6 +70,11 @@ endif()
 option(NE_BUILD_TESTS            "neural_engine: build tests"    ${NE_STANDALONE})
 option(NE_BUILD_EXAMPLES         "neural_engine: build examples" ${NE_STANDALONE})
 
+option(NE_PROFILING              "neural_engine: use Profiling"                                  OFF)
+if (NE_PROFILING)
+    add_compile_definitions(NE_PERF)
+endif()
+
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 

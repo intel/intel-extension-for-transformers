@@ -558,6 +558,12 @@ bool mpt_eval(const mpt_model & model, const int n_threads, const int n_past,
     ne_build_forward_expand(&gf, inpL);
     ne_graph_compute(ctx0, &gf);
 
+#ifdef NE_PERF
+    bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
+    if (engine_profiling_) {
+        ne_graph_profiling(&gf);
+    }
+#endif
     // std::cout << "Qcur" << std::endl;
     // print_tensor(Qcur);
 

@@ -389,6 +389,9 @@ NE_API void ne_graph_reset(struct ne_cgraph* cgraph);
 // print info and performance information for the graph
 NE_API void ne_graph_print(const struct ne_cgraph* cgraph);
 
+// profiling the performance information for each kernel in graph, enable by set env ENGINE_PROFILING = 1
+NE_API void ne_graph_profiling(const struct ne_cgraph* cgraph);
+
 // dump the graph into a file using the dot format
 NE_API void ne_graph_dump_dot(const struct ne_cgraph* gb, const struct ne_cgraph* gf, const char* filename);
 

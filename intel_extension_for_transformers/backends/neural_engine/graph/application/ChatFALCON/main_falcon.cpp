@@ -571,6 +571,12 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
   ne_build_forward_expand(&gf, inpL);
   ne_graph_compute(ctx0, &gf);
 
+#ifdef NE_PERF
+  bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
+  if (engine_profiling_) {
+      ne_graph_profiling(&gf);
+  }
+#endif
   // if (n_past%100 == 0) {
   //     ne_graph_print   (&gf);
   //     ne_graph_dump_dot(&gf, NULL, "gpt-2.dot");

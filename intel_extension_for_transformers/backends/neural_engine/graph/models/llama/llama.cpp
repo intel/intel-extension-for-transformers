@@ -703,11 +703,11 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   ne_graph_compute(ctx0, &gf);
 
 #ifdef NE_PERF
-  // print timing information per ne operation (for debugging purposes)
-  // requires NE_PERF to be defined
-  ne_graph_print(&gf);
+  bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
+  if (engine_profiling_) {
+    ne_graph_profiling(&gf);
+  }
 #endif
-
   // plot the computation graph in dot format (for debugging purposes)
   // if (n_past%100 == 0) {
   //    ne_graph_dump_dot(&gf, NULL, "model.dot");

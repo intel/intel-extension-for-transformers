@@ -9994,6 +9994,31 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
   }
 }
 
+void ne_graph_profiling(const struct ne_cgraph* cgraph) {
+  int64_t perf_total_per_op_us[NE_OP_COUNT] = {0};
+
+  NE_PRINT("=== GRAPH Profiling ===\n");
+
+  int64_t ip_duration = 0;
+  for (int i = 0; i < cgraph->n_nodes; i++) {
+    struct ne_tensor* node = cgraph->nodes[i];
+    if (node->op == NE_OP_MUL_MAT && node->ne[1] ==node->ne[2]) {
+      ip_duration += node->perf_time_us;
+    } else {
+      perf_total_per_op_us[node->op] += node->perf_time_us;
+    }
+  }
+
+  for (int i = 0; i < NE_OP_COUNT; i++) {
+    if (perf_total_per_op_us[i] == 0) {
+      continue;
+    }
+    NE_PRINT("perf_total_per_op_us[%16s] = %7.3f ms\n", NE_OP_LABEL[i], (double)perf_total_per_op_us[i] / 1000.0);
+  }
+  NE_PRINT("perf_total_per_op_us[%16s] = %7.3f ms\n", "INNER PRODUCT", (double)ip_duration / 1000.0);
+  NE_PRINT("========================================\n");
+}
+
 void ne_graph_reset(struct ne_cgraph* cgraph) {
   for (int i = 0; i < cgraph->n_nodes; i++) {
     struct ne_tensor* grad = cgraph->grads[i];
