@@ -6,7 +6,7 @@ Intel Chatbot Inference Dockerfile installer for Ubuntu22.04
 
 ### Setup Xeon SPR Environment
 ```
-docker build --network=host --tag chatbotinfer:latest  ./ -f Dockerfile  --target cpu  
+docker build --network=host --tag chatbotinfer:latest  ./ -f Dockerfile  --target cpu
 ```
 
 ```
@@ -20,27 +20,28 @@ If you have already cached the original model and the lora model, you may replac
 ```
 DOCKER_BUILDKIT=1 docker build --network=host --tag chatbothabana:latest  ./ -f Dockerfile  --target hpu --build-arg BASE_NAME="base-installer-ubuntu22.04" --build-arg ARTIFACTORY_URL="vault.habana.ai" --build-arg VERSION="1.10.0" --build-arg REVISION="494" --build-arg PT_VERSION="2.0.1" --build-arg OS_NUMBER="2204"
 ```
+
 ```
 docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host chatbothabana:latest 
 ```
+
 ## Run the Inference
 You can use the generate.py script for performing direct inference on Habana Gaudi instance. We have enabled BF16 to speed up the inference. Please use the following command for inference.
+
 ### Run the Inference on Xeon SPR
 ```
-python generation.py \
+python generate.py \
         --base_model_path "./mpt-7b-chat" \
         --use_kv_cache \
-        --bf16 \
-        --use_slow_tokenizer \
+        --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
+
 ### Run the Inference on Habana Gaudi
 ```
-python generation.py \
+python generate.py \
         --base_model_path "./mpt-7b-chat" \
-        --use_kv_cache \
-        --bf16 \
-        --use_slow_tokenizer \
+        --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```

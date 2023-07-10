@@ -104,7 +104,7 @@ class TransformersDecoderInvocationLayer(PromptModelInvocationLayer):
                 max_new_tokens=kwargs.pop("max_new_tokens", self.max_length),
                 temperature=kwargs.pop("temperature", 0.001),
                 top_p=kwargs.pop("top_p", 0.9),
-                top_k=kwargs.pop("top_p", 1),
+                top_k=kwargs.pop("top_k", 1),
                 num_beams=kwargs.pop("beams", 1),
                 early_stopping=kwargs.pop("early_stopping", False),
             )

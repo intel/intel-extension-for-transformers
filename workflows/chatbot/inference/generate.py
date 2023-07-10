@@ -1,4 +1,5 @@
 import argparse
+import copy, time
 import torch
 from peft import PeftModel
 from transformers import (
@@ -214,14 +215,20 @@ def main():
     if use_deepspeed:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="hpu"):
             if re.search("flan-t5", base_model_path, re.IGNORECASE):
-                model = AutoModelForSeq2SeqLM.from_pretrained(base_model_path, torch_dtype=torch.bfloat16)
+                model = AutoModelForSeq2SeqLM.from_pretrained(base_model_path,
+                                                              torch_dtype=torch.bfloat16,
+                                                              low_cpu_mem_usage=True)
             elif re.search("llama", base_model_path, re.IGNORECASE):
                 model = AutoModelForCausalLM.from_pretrained(base_model_path,
-                        trust_remote_code=True if args.trust_remote_code else None, torch_dtype=torch.bfloat16)
+                        trust_remote_code=True if args.trust_remote_code else None,
+                        torch_dtype=torch.bfloat16,
+                        low_cpu_mem_usage=True)
             elif re.search("mpt", base_model_path, re.IGNORECASE):
                 from models.mpt.modeling_mpt import MPTForCausalLM
                 model = MPTForCausalLM.from_pretrained(base_model_path,
-                        trust_remote_code=True if args.trust_remote_code else None, torch_dtype=torch.bfloat16)
+                        trust_remote_code=True if args.trust_remote_code else None,
+                        torch_dtype=torch.bfloat16,
+                        low_cpu_mem_usage=True)
             else:
                 raise ValueError(f"Unsupported model {base_model_path}, only supports FLAN-T5 and LLAMA now.")
 
@@ -240,16 +247,20 @@ def main():
     else:
         if re.search("flan-t5", base_model_path, re.IGNORECASE):
             model = AutoModelForSeq2SeqLM.from_pretrained(
-                base_model_path, trust_remote_code=True if args.trust_remote_code else None
+                base_model_path, trust_remote_code=True if args.trust_remote_code else None,
+                low_cpu_mem_usage=True
             )
         elif re.search("llama", base_model_path, re.IGNORECASE):
             model = AutoModelForCausalLM.from_pretrained(
-                base_model_path, trust_remote_code=True if args.trust_remote_code else None
+                base_model_path, trust_remote_code=True if args.trust_remote_code else None,
+                low_cpu_mem_usage=True
             )
         elif re.search("mpt", base_model_path, re.IGNORECASE):
             from models.mpt.modeling_mpt import MPTForCausalLM
             model = MPTForCausalLM.from_pretrained(base_model_path,
-                    trust_remote_code=True if args.trust_remote_code else None, torch_dtype=torch.bfloat16)
+                    trust_remote_code=True if args.trust_remote_code else None,
+                    torch_dtype=torch.bfloat16,
+                    low_cpu_mem_usage=True)
         else:
             raise ValueError(
                 f"Unsupported model {base_model_path}, only supports FLAN-T5/LLAMA/MPT now."
@@ -315,6 +326,7 @@ def main():
     ):
         input = tokenizer(prompt, return_tensors="pt")
         input_ids = input["input_ids"].to(model.device)
+
         generation_config = GenerationConfig(
             use_cache=args.use_kv_cache,
             temperature=temperature,
@@ -325,6 +337,7 @@ def main():
             do_sample=temperature > 0. and not args.habana,
             **kwargs,
         )
+
         if args.habana:
             with torch.no_grad():
                 generation_output = model.generate(
@@ -357,11 +370,24 @@ def main():
 
     if args.habana:
         torch_hpu.synchronize()
+
+    # warmup, the first time inference take longer because of graph compilation
+    start_time = time.time()
+    response = evaluate(prompt="Tell me about Intel Xeon.",
+                        temperature=args.temperature,
+                        top_p=args.top_p,
+                        top_k=args.top_k,
+                        repetition_penalty=args.repetition_penalty,
+                        num_beams=args.num_beams,
+                        max_new_tokens = args.max_new_tokens)
+    logger.info(f"Warmup, Response: {response}, duration: {time.time() - start_time}")
+
     for idx, tp in enumerate(zip(prompts, args.instructions)):
         prompt, instruction = tp
         idxs = f"{idx+1}"
         logger.info("="*30 + idxs + "="*30)
         logger.info(f"Instruction: {instruction}")
+        start_time = time.time()
         response = evaluate(prompt=prompt,
                             temperature=args.temperature,
                             top_p=args.top_p,
@@ -369,7 +395,7 @@ def main():
                             repetition_penalty=args.repetition_penalty,
                             num_beams=args.num_beams,
                             max_new_tokens = args.max_new_tokens)
-        logger.info(f"Response: {response}")
+        logger.info(f"Response: {response}, duration: {time.time() - start_time}")
         logger.info("="*(60 + len(idxs)))
 
 
