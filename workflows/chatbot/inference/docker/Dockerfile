@@ -22,7 +22,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     /bin/bash ~/miniconda.sh -b -p /opt/conda
 
 # Put conda in path so we can use conda activate
-SHELL ["/bin/bash", "--conda run", "-c"]
+SHELL ["/bin/bash", "--login", "-c"]
 ENV PATH=$CONDA_DIR/bin:$PATH
 RUN conda init bash && \
     unset -f conda && \
@@ -39,6 +39,7 @@ RUN conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi 
     conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
     pip install farm-haystack==1.14.0 && \
     pip install intel_extension_for_pytorch && \
+    pip install optimum-intel && \
     pip install transformers diffusers accelerate SentencePiece peft evaluate nltk datasets && \
     pip install fastapi uvicorn sse_starlette bottle gevent pymysql && \
     pip install schema && \

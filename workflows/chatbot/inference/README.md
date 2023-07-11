@@ -41,6 +41,17 @@ python generate.py \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
+If you want to accelerate the generation, you can use the key/value cache for decoding by adding the flag `--use_kv_cache`, and use jit trace by `pip install optimum-intel` and adding the flag `--jit`.
+
+```bash
+python generate.py \
+        --base_model_path "mosaicml/mpt-7b-chat" \
+        --trust_remote_code \
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten." \
+        --use_kv_cache \
+        --jit
+```
+
 The [generate.py](./generate.py) script accepts different arguments to set the inference behavior of the model.
 
 ```bash

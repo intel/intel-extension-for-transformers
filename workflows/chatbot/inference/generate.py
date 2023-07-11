@@ -1,14 +1,15 @@
 import argparse
 import copy, time
 import torch
+import re, os, logging
 from peft import PeftModel
 from transformers import (
     GenerationConfig,
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
+    AutoConfig,
 )
-import re, os, logging
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -113,6 +114,11 @@ def parse_args():
         help="Whether to use the key/value cache for decoding. It should speed up generation.",
     )
     parser.add_argument(
+        "--jit",
+        action="store_true",
+        help="Whether to use jit trace. It should speed up generation.",
+    )
+    parser.add_argument(
         "--seed",
         default=27,
         type=int,
@@ -134,6 +140,7 @@ def create_prompts(examples):
         prompt = prompt_template.format_map(example)
         prompts.append(prompt)
     return prompts
+
 
 def main():
     args = parse_args()
@@ -212,6 +219,10 @@ def main():
         tokenizer_path, use_fast=not args.use_slow_tokenizer
     )
 
+    mpt_kwarg = {}
+    if not args.habana:
+        mpt_kwarg["torchscript"] = torchscript=args.jit
+
     if use_deepspeed:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="hpu"):
             if re.search("flan-t5", base_model_path, re.IGNORECASE):
@@ -228,7 +239,8 @@ def main():
                 model = MPTForCausalLM.from_pretrained(base_model_path,
                         trust_remote_code=True if args.trust_remote_code else None,
                         torch_dtype=torch.bfloat16,
-                        low_cpu_mem_usage=True)
+                        low_cpu_mem_usage=True,
+                        **mpt_kwarg)
             else:
                 raise ValueError(f"Unsupported model {base_model_path}, only supports FLAN-T5 and LLAMA now.")
 
@@ -260,7 +272,8 @@ def main():
             model = MPTForCausalLM.from_pretrained(base_model_path,
                     trust_remote_code=True if args.trust_remote_code else None,
                     torch_dtype=torch.bfloat16,
-                    low_cpu_mem_usage=True)
+                    low_cpu_mem_usage=True,
+                    **mpt_kwarg)
         else:
             raise ValueError(
                 f"Unsupported model {base_model_path}, only supports FLAN-T5/LLAMA/MPT now."
@@ -315,6 +328,7 @@ def main():
         logger.info(f"device: {args.device}, n_hpu: {world_size}, bf16")
 
     def evaluate(
+        model,
         prompt,
         temperature,
         top_p,
@@ -370,10 +384,19 @@ def main():
 
     if args.habana:
         torch_hpu.synchronize()
+    elif args.jit and re.search("mpt-7b", base_model_path, re.IGNORECASE):
+        from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
+        model = jit_trace_mpt_7b(model)
+        config = AutoConfig.from_pretrained(base_model_path, trust_remote_code=args.trust_remote_code)
+        model = MPTTSModelForCausalLM(model, config, use_cache=args.use_kv_cache,
+                                        model_dtype=torch.bfloat16)
+    else:
+        pass
 
     # warmup, the first time inference take longer because of graph compilation
     start_time = time.time()
-    response = evaluate(prompt="Tell me about Intel Xeon.",
+    response = evaluate(model=model,
+                        prompt="Tell me about Intel Xeon.",
                         temperature=args.temperature,
                         top_p=args.top_p,
                         top_k=args.top_k,
@@ -388,7 +411,8 @@ def main():
         logger.info("="*30 + idxs + "="*30)
         logger.info(f"Instruction: {instruction}")
         start_time = time.time()
-        response = evaluate(prompt=prompt,
+        response = evaluate(model=model,
+                            prompt=prompt,
                             temperature=args.temperature,
                             top_p=args.top_p,
                             top_k=args.top_k,
