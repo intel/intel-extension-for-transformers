@@ -43,6 +43,7 @@ For FLAN-T5, use the below command line for finetuning on the Alpaca dataset.
 ```bash
 python finetune_seq2seq.py \
         --model_name_or_path "google/flan-t5-xl" \
+        --bf16 True \
         --train_file "stanford_alpaca/alpaca_data.json" \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -65,6 +66,7 @@ For LLaMA, use the below command line for finetuning on the Alpaca dataset.
 ```bash
 python finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
+        --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
         --dataset_concatenation \
         --per_device_train_batch_size 8 \
@@ -88,6 +90,7 @@ For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line fo
 ```bash
 python finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
+        --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
         --dataset_concatenation \
         --per_device_train_batch_size 8 \
@@ -135,6 +138,7 @@ For example, to finetune FLAN-T5 through Distributed Data Parallel training, bas
 python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_node=<NUM_PROCESSES_PER_NODE> --nnodes=<NUM_NODES> --node_rank=<NODE_RANK> \
     finetune_seq2seq.py \
         --model_name_or_path "google/flan-t5-xl" \
+        --bf16 True \
         --train_file "stanford_alpaca/alpaca_data.json" \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \

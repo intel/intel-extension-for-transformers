@@ -49,6 +49,7 @@ from transformers.trainer_utils import is_main_process
 from typing import Optional, List
 import copy
 import re
+import torch
 
 IGNORE_INDEX = -100
 
@@ -113,7 +114,6 @@ class ModelArguments:
             "help": "should enable when using custom model architecture that is not yet part of the Hugging Face transformers package like MPT)."
         },
     )
-
 
 @dataclass
 class DataArguments:
@@ -469,6 +469,7 @@ def main():
 
     # Load model
     if model_args.model_name_or_path:
+        model_dtype = torch.bfloat16 if training_args.bf16 else None
         model = AutoModelForCausalLM.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -477,6 +478,8 @@ def main():
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
             trust_remote_code=True if model_args.trust_remote_code else None,
+            torch_dtype=model_dtype,
+            low_cpu_mem_usage=True,
         )
     else:
         raise ValueError(
