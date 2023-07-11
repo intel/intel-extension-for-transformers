@@ -332,7 +332,7 @@ bool mha_dense_k_t::execute(const exec_context_t& ctx) const {
               /*.src = */ curr_k + i * ld_kv_ + j,
               /*.dst = */ k_scrach + i * head_size_ + j * 16,
           };
-          (*ker_trans_k_[std::min(16L, src_sl_n - i)])(&rt_data_tr_k);
+          (*ker_trans_k_[std::min(dim_t(16), src_sl_n - i)])(&rt_data_tr_k);
         }
 
       // reorder V
@@ -344,7 +344,7 @@ bool mha_dense_k_t::execute(const exec_context_t& ctx) const {
               /*.dst = */ v_scrach_p64 + i * 16 + j * sl_n_pad64,
               /*.ld_dst = */ tr_v_dst_stride,
           };
-          (*ker_trans_v_[std::max(0L, std::min(4L, src_sl_n - i))])(&rt_data_tr_v);
+          (*ker_trans_v_[std::max(dim_t(0), std::min(dim_t(4), src_sl_n - i))])(&rt_data_tr_v);
         }
 
       const auto padding_mask = src_mask[ibs];
@@ -753,7 +753,7 @@ bool mha_dense_k_t::execute_tiny(void** src_data, void** dst_data, void* workspa
 #pragma GCC diagnostic pop
 #endif
 #else
-bool mha_dense_k_t::execute_tiny(const std::vector<const void*>&) const {
+bool mha_dense_k_t::execute_tiny(void**, void**, void*, dim_t*) const {
   SPARSE_LOG(ERROR) << "mha_dense execute_tiny for AVX2 not implemented!";
   return false;
 }

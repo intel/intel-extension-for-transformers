@@ -136,7 +136,7 @@ bool compare_data(jd::data_type dt, size_t size, const exec_context_t& ctx1, con
 template <class T>
 std::shared_ptr<memory_storage_t> prepare_workspace(exec_context_t* ctx, const T& kern) {
   const auto workspace_size = kern.get_workspace_size();
-  const auto ws = aligned_allocator_t<char>::allocate(std::max(64UL, workspace_size));
+  const auto ws = aligned_allocator_t<char>::allocate(std::max(static_cast<size_t>(64), workspace_size));
   std::shared_ptr<memory_storage_t> workspace_mem(create_cpu_memory_storage(ws), [ws](memory_storage_t* mem) {
     aligned_allocator_t<char>::deallocate(ws);
     delete mem;

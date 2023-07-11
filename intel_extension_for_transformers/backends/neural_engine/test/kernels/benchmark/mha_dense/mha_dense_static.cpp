@@ -136,8 +136,9 @@ void mha_dense_static_bench::get_true_data() {
   std::shared_ptr<const kernel_t> mha_dense_ref_kernel;
   kernel_t::create<mha_dense_ref_k_t, mha_dense_ref_kd_t>(mha_dense_ref_kernel, mha_dense_ref_desc);
   const auto ref_workspace_size = mha_dense_ref_kernel->get_workspace_size();
-  const auto tmp_ref = std::shared_ptr<char>(aligned_allocator_t<char>::allocate(std::max(64UL, ref_workspace_size)),
-                                             [](char* ptr) { aligned_allocator_t<char>::deallocate(ptr); });
+  const auto tmp_ref =
+      std::shared_ptr<char>(aligned_allocator_t<char>::allocate(std::max(static_cast<size_t>(64), ref_workspace_size)),
+                            [](char* ptr) { aligned_allocator_t<char>::deallocate(ptr); });
   std::unique_ptr<memory_storage_t> tmp_ref_mem(create_cpu_memory_storage(tmp_ref.get()));
   bench_data.ctx_ref.set_workspace(tmp_ref_mem.get());
   mha_dense_ref_kernel->execute(bench_data.ctx_ref);
