@@ -1313,7 +1313,7 @@
     }
   },
   "sd_pokemon_diffusers_static": {
-    "working_dir": "huggingface/pytorch/text-to-image/quantization/",
+    "working_dir": "huggingface/pytorch/text-to-image/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1334,7 +1334,7 @@
     }
   },
   "sd_pokemon_diffusers_dynamic": {
-    "working_dir": "huggingface/pytorch/text-to-image/quantization/",
+    "working_dir": "huggingface/pytorch/text-to-image/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
