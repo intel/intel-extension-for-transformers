@@ -768,7 +768,7 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                 new_in_match_result = []
                 for name_list in in_match_result:
                     first_matmul_node = graph.get_node_by_name(name_list[0])
-                    last_matmul_node = graph.get_node_by_name(name_list[2])
+                    last_matmul_node = graph.get_node_by_name(name_list[-2])
                     if len(first_matmul_node.input_tensors) > 5 and \
                         len(last_matmul_node.input_tensors) > 5 and \
                             'output_dtype' in last_matmul_node.attr.keys() and \

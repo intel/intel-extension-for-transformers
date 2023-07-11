@@ -297,4 +297,4 @@ class MultiHeadAttention(Pattern):
                                     mha_node = model.get_node_by_name(new_node_names[i][0])
                                     mha_node.input_tensors[3] = seq_len_output
                             return model
-            return model
+        return model
