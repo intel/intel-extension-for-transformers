@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(weight_only_jblasop LANGUAGES C CXX)
 
-find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "-Wno-narrowing")
+
+# find_package(Torch REQUIRED)
+
+find_package(Torch REQUIRED
+PATHS /home/zhe/miniconda3/envs/s4fp16gemm/lib/python3.9/site-packages/torch
+NO_DEFAULT_PATH)
+
 
 add_subdirectory(../../jblas jblas.out)
 

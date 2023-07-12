@@ -12,13 +12,11 @@ static torch::Tensor jblas_quantize(torch::Tensor Fp32Wei, int64_t nthread,
                         gemm_isa);
 }
 
-static torch::Tensor jblas_weights4block_f32_linear(torch::Tensor activation,
-                                                    torch::Tensor weight,
-                                                    int64_t m, int64_t n,
-                                                    int64_t k, int64_t lda,
-                                                    int64_t ldo) {
-  return weights4block_f32_linear_launcher(activation, weight, m, n, k, lda,
-                                           ldo);
+static torch::Tensor jblas_weights4block_f32_linear(
+    torch::Tensor activation, torch::Tensor weight, torch::Tensor output,
+    int64_t m, int64_t n, int64_t k, int64_t lda, int64_t ldo) {
+  return weights4block_f32_linear_launcher(activation, weight, output, m, n, k,
+                                           lda, ldo);
 }
 
 TORCH_LIBRARY(weight_only_jblasop, m) {
