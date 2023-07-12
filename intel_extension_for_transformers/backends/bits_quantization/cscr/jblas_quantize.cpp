@@ -35,12 +35,12 @@ static std::unordered_map<
         {{8, "sym", "fp32"}, CompType::S8_F32}};
 
 torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, int64_t nthread,
-                             int64_t bits, torch::string alg,
-                             int64_t block_size, std::string scale_dtype,
-                             std::string gemm_isa) {
+                             int64_t bits, const std::string& alg,
+                             int64_t block_size, const std::string& scale_dtype,
+                             const std::string& gemm_isa) {
   TORCH_CHECK(alg == "sym", "unsupported alg, only support sym currently.");
-  TORCH_CHECK(bits == 4 || bits != 8, "bits must be 4/8");
-  TORCH_CHECK(scale_dtype == "fp32" || scale_dtype != "bf16",
+  TORCH_CHECK(bits == 4 || bits == 8, "bits must be 4/8");
+  TORCH_CHECK(scale_dtype == "fp32" || scale_dtype == "bf16",
               "scale_dtype must be fp32/bf16");
   TORCH_CHECK(Fp32Wei.sizes().size() == 2,
               "dim of weight dosen't meet requirement, must be 2.");
