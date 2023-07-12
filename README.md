@@ -4,7 +4,7 @@ Intel® Extension for Transformers
 ===========================
 <h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
 
-[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Cpp inference](./intel_extension_for_transformers/backends/neural_engine/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
 ---
@@ -22,6 +22,8 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 *  Optimized Transformer-based model packages such as [Stable Diffusion](examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion), [GPT-J-6B](examples/huggingface/pytorch/text-generation/deployment), [GPT-NEOX](examples/huggingface/pytorch/language-modeling/quantization#2-validated-model-list), [BLOOM-176B](examples/huggingface/pytorch/language-modeling/inference#BLOOM-176B), [T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list), [Flan-T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list) and end-to-end workflows such as [SetFit-based text classification](docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](workflows/dlsa) 
 
 *  [NeuralChat](workflows/chatbot), a custom Chatbot trained on Intel CPUs through parameter-efficient fine-tuning [PEFT](https://github.com/huggingface/peft) on domain knowledge
+
+*  [CPP Inference](intel_extension_for_transformers/backends/neural_engine/graph), inference of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatFALCON)
 
 
 ## Installation
@@ -73,20 +75,11 @@ output = model(**input).logits.argmax().item()
 | Model |  FP32 | BF16 | INT8 |
 |---------------------|:----------------------:|-----------------------|-----------------------------------|
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 4163.67 (ms) | 1879.61 (ms) | 1612.24 (ms) |
-| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 4356.79 (ms) | 1941.63 (ms) | 1773.22 (ms) |
 | [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) | 10.33 (s) | 3.02 (s) | N/A |
 
-> Note*: 
->
-> (1) Settings for [EleutherAI/gpt-j-6B and decapoda-research/llama-7b-hf](./examples/huggingface/pytorch/text-generation/deployment/) : 
->
-> Input_Length = 32, Output_Length = 32, Batch_Size = 1
->
->
-> (2) Settings for [CompVis/stable-diffusion-v1-4](./examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion/): 
->
-> Input = "a photo of an astronaut riding a horse on mars", Batch_Size = 1
->
+> Note*: GPT-J-6B software/hardware configuration please refer to [text-generation](./examples/huggingface/pytorch/text-generation/README.md). Stable-diffusion software/hardware configuration please refer to [text-to-image](./examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion/README.md)
+
+
 
 ## Documentation
 <table>
@@ -154,7 +147,7 @@ output = model(**input).logits.argmax().item()
 
 
 ## Selected Publications/Events
-* NeurIPS'2022: [An Efficient Sparse Inference Software Accelerator for Transformer-based Language Models on CPUs](https://arxiv.org/abs/2211.07715) (June 2022)
+* Arxiv: [An Efficient Sparse Inference Software Accelerator for Transformer-based Language Models on CPUs](https://arxiv.org/abs/2211.07715) (June 2023)
 * Blog published on Medium: [Simplify Your Custom Chatbot Deployment](https://medium.com/intel-analytics-software/simplify-your-custom-chatbot-deployment-on-intel-platforms-c8a911d906cf) (June 2023)
 * Blog published on Medium: [Create Your Own Custom Chatbot](https://medium.com/intel-analytics-software/create-your-own-chatbot-on-cpus-b8d186cfefb2) (April 2023)
 * Blog of Tech-Innovation Artificial-Intelligence(AI): [Intel® Xeon® Processors Are Still the Only CPU With MLPerf Results, Raising the Bar By 5x - Intel Communities](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Intel-Xeon-Processors-Are-Still-the-Only-CPU-With-MLPerf-Results/post/1472750) (April 2023)

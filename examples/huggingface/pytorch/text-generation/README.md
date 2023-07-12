@@ -24,7 +24,6 @@ Output Length: 32
 | Model |  Beam  | FP32 | BF16 | INT8 |
 |---------------------|:------:|:----------------------:|-----------------------|-----------------------------------|
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 4 | 4163.67 (ms) | 1879.61 (ms) | 1612.24 (ms) |
-| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 4 | 4356.79 (ms) | 1941.63 (ms) | 1773.22 (ms) |
 
 > Note: Performance results test on ​​06/09/2023 with Intel(R) Xeon(R) Platinum 8480+.
 Performance varies by use, configuration and other factors. See platform configuration for configuration details. For more complete information about performance and benchmark results, visit www.intel.com/benchmarks
