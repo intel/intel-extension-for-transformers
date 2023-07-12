@@ -32,8 +32,6 @@ from transformers import BertConfig, BertTokenizer, AutoTokenizer
 import tokenization 
 from create_squad_data import read_squad_examples, convert_examples_to_features
 
-# To support feature cache.
-import pickle
 
 max_seq_length = 384
 max_query_length = 64
@@ -330,7 +328,6 @@ def main():
     parser.add_argument("--val_data", default="datasets/dev-v1.1.json", help="Path to validation data")
     parser.add_argument("--log_file", default="./mlperf_output/mlperf_log_accuracy.json", help="Path to LoadGen accuracy log")
     parser.add_argument("--out_file", default="predictions.json", help="Path to output predictions file")
-    parser.add_argument("--features_cache_file", default="eval_features.pickle", help="Path to features' cache file")
     parser.add_argument("--output_transposed", action="store_true", help="Transpose the output")
     args = parser.parse_args()
 
@@ -339,35 +336,23 @@ def main():
         is_training=False, version_2_with_negative=False) 
 
     eval_features = []
-    # Load features if cached, convert from examples otherwise.
-    cache_path = args.features_cache_file
-    if os.path.exists(cache_path):
-        print("Loading cached features from '%s'..." % cache_path)
-        with open(cache_path, 'rb') as cache_file:
-            eval_features = pickle.load(cache_file)
-    else:
-        print("No cached features at '%s'... converting from examples..." % cache_path)
+    print("Creating tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 
-        print("Creating tokenizer...")
-        tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
+    print("Converting examples to features...")
+    def append_feature(feature):
+        eval_features.append(feature)
 
-        print("Converting examples to features...")
-        def append_feature(feature):
-            eval_features.append(feature)
+    convert_examples_to_features(
+        examples=eval_examples,
+        tokenizer=tokenizer,
+        max_seq_length=max_seq_length,
+        doc_stride=doc_stride,
+        max_query_length=max_query_length,
+        is_training=False,
+        output_fn=append_feature,
+        verbose_logging=False) 
 
-        convert_examples_to_features(
-            examples=eval_examples,
-            tokenizer=tokenizer,
-            max_seq_length=max_seq_length,
-            doc_stride=doc_stride,
-            max_query_length=max_query_length,
-            is_training=False,
-            output_fn=append_feature,
-            verbose_logging=False)  
-
-        print("Caching features at '%s'..." % cache_path)
-        with open(cache_path, 'wb') as cache_file:
-            pickle.dump(eval_features, cache_file)
 
     print("Loading LoadGen logs...")
     results = load_loadgen_log(args.log_file, eval_features, args.output_transposed)
