@@ -223,8 +223,8 @@ bool mpt_model_load(const std::string & fname, mpt_model & model, gpt_vocab & vo
 
         model.layers.resize(n_layer);
 
-        model.wte_weight    = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab);
-        model.norm_f_weight = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd);
+        model.wte_weight = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
+        model.norm_f_weight = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
         // map by name
         model.tensors["transformer.wte.weight"]    = model.wte_weight;
@@ -233,12 +233,12 @@ bool mpt_model_load(const std::string & fname, mpt_model & model, gpt_vocab & vo
         for (int i = 0; i < (int) n_layer; ++i) {
             auto & layer = model.layers[i];
 
-            layer.norm_1_weight          = ne_new_tensor_1d(ctx, NE_TYPE_F32,     n_embd);
-            layer.c_attn_wqkv_weight     = ne_new_tensor_2d(ctx, wtype,             n_embd, 3 * n_embd);
-            layer.c_attn_out_proj_weight = ne_new_tensor_2d(ctx, wtype,             n_embd,     n_embd);
-            layer.norm_2_weight          = ne_new_tensor_1d(ctx, NE_TYPE_F32,     n_embd);
-            layer.ffn_up_proj            = ne_new_tensor_2d(ctx, wtype,             n_embd, 4 * n_embd);
-            layer.ffn_down_proj          = ne_new_tensor_2d(ctx, wtype,         4 * n_embd,     n_embd);
+            layer.norm_1_weight = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+            layer.c_attn_wqkv_weight = ne_new_tensor_2d(ctx, wtype, n_embd, 3 * n_embd, NE_SIZE_CALC);
+            layer.c_attn_out_proj_weight = ne_new_tensor_2d(ctx, wtype, n_embd, n_embd, NE_SIZE_CALC);
+            layer.norm_2_weight = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+            layer.ffn_up_proj = ne_new_tensor_2d(ctx, wtype, n_embd, 4 * n_embd, NE_SIZE_CALC);
+            layer.ffn_down_proj = ne_new_tensor_2d(ctx, wtype, 4 * n_embd, n_embd, NE_SIZE_CALC);
 
             // map by name
             model.tensors["transformer.blocks." + std::to_string(i) + ".norm_1.weight"]        = layer.norm_1_weight;
@@ -260,8 +260,8 @@ bool mpt_model_load(const std::string & fname, mpt_model & model, gpt_vocab & vo
         const int64_t n_mem      = n_layer * n_ctx;
         const int64_t n_elements = n_embd  * n_mem;
 
-        model.memory_k = ne_new_tensor_1d(ctx, NE_TYPE_F16, n_elements);
-        model.memory_v = ne_new_tensor_1d(ctx, NE_TYPE_F16, n_elements);
+        model.memory_k = ne_new_tensor_1d(ctx, NE_TYPE_F16, n_elements, NE_SIZE_CALC);
+        model.memory_v = ne_new_tensor_1d(ctx, NE_TYPE_F16, n_elements, NE_SIZE_CALC);
 
         const size_t memory_size = ne_nbytes(model.memory_k) + ne_nbytes(model.memory_v);
 
@@ -406,7 +406,7 @@ bool mpt_eval(const mpt_model & model, const int n_threads, const int n_past,
     struct ne_context * ctx0 = ne_init(params);
     struct ne_cgraph gf = {.n_threads = n_threads};
 
-    struct ne_tensor * embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
+    struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
     memcpy(embd->data, embd_inp.data(), N * ne_element_size(embd));
 
     struct ne_tensor * inpL = ne_get_rows(ctx0, model.wte_weight, embd);
@@ -456,7 +456,8 @@ bool mpt_eval(const mpt_model & model, const int n_threads, const int n_past,
             // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0,
             // 2, 1, 3) [64, N, 12]
             struct ne_tensor * Q = ne_permute(
-                ctx0, ne_cpy(ctx0, Qcur, ne_new_tensor_3d(ctx0, NE_TYPE_F32, n_embd / n_head, n_head, N)), 0, 2,
+                ctx0, ne_cpy(ctx0, Qcur, ne_new_tensor_3d(ctx0, NE_TYPE_F32, n_embd / n_head, n_head, N, NE_SIZE_CALC)),
+                0, 2,
                 1, 3);
 
             // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1,
@@ -494,7 +495,7 @@ bool mpt_eval(const mpt_model & model, const int n_threads, const int n_past,
                                                           il * n_ctx * ne_element_size(model.memory_v) * n_embd),
                                              n_embd / n_head, n_head, n_past + N),
                              1, 2, 0, 3),
-                ne_new_tensor_3d(ctx0, model.memory_v->type, n_past + N, n_embd / n_head, n_head));
+                       ne_new_tensor_3d(ctx0, model.memory_v->type, n_past + N, n_embd / n_head, n_head, NE_SIZE_CALC));
 
             // KQV = transpose(V) * KQ_soft_max
             struct ne_tensor * KQV = ne_mul_mat(ctx0, V_trans, KQ_soft_max);
@@ -503,7 +504,7 @@ bool mpt_eval(const mpt_model & model, const int n_threads, const int n_past,
             struct ne_tensor * KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
 
             // cur = KQV_merged.contiguous().view(n_embd, N)
-            cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N));
+            cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
 
             // projection
             { cur = ne_mul_mat(ctx0, model.layers[il].c_attn_out_proj_weight, cur); }

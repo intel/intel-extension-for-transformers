@@ -513,7 +513,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   ne_cgraph gf = {};
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
-  struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
+  struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
   ne_set_name(embd, "embd");
   memcpy(embd->data, tokens, N * ne_element_size(embd));
 
@@ -631,7 +631,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       ne_set_name(KQV_merged, "KQV_merged");
 
       // cur = KQV_merged.contiguous().view(n_embd, N)
-      cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N));
+      cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
       ne_set_name(cur, "KQV_merged_contiguous");
 
       // projection (no bias)

@@ -43,6 +43,7 @@
 #define NE_MAX_OPT           4
 #define NE_DEFAULT_N_THREADS 4
 
+#define NE_SIZE_CALC     -1
 
 #ifdef  __cplusplus
 extern "C" {
@@ -131,10 +132,11 @@ extern "C" {
         int64_t perf_time_us;
 
         void * data;
+        size_t size;
 
         char name[32];
 
-        char padding[16];
+        char padding[8];
     };
 
     // computation graph

@@ -441,10 +441,14 @@ struct model_model_loader {
   struct ne_tensor* get_tensor_for(model_load_tensor& lt, ne_backend backend) {
     struct ne_tensor* tensor;
     if (lt.ne.size() == 2) {
-      tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1));
+      if (lt.type==NE_TYPE_Q4_JBLAS) {
+        tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1), lt.size);
+      } else {
+        tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1), NE_SIZE_CALC);
+      }
     } else {
       MODEL_ASSERT(lt.ne.size() == 1);
-      tensor = ne_new_tensor_1d(ne_ctx, lt.type, lt.ne.at(0));
+      tensor = ne_new_tensor_1d(ne_ctx, lt.type, lt.ne.at(0), NE_SIZE_CALC);
     }
     ne_set_name(tensor, lt.name.c_str());
     MODEL_ASSERT(lt.ne_tensor == NULL);  // if this fails, we called get_tensor twice on the same tensor
@@ -582,8 +586,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
     return false;
   }
 
-  cache.k = ne_new_tensor_1d(cache.ctx, wtype, n_elements);
-  cache.v = ne_new_tensor_1d(cache.ctx, wtype, n_elements);
+  cache.k = ne_new_tensor_1d(cache.ctx, wtype, n_elements, NE_SIZE_CALC);
+  cache.v = ne_new_tensor_1d(cache.ctx, wtype, n_elements, NE_SIZE_CALC);
   ne_set_name(cache.k, "cache_k");
   ne_set_name(cache.v, "cache_v");
 
@@ -1934,7 +1938,7 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
     }
     ne_tensor* lora_tensor;
     if (n_dims == 2) {
-      lora_tensor = ne_new_tensor_2d(lora_ctx, wtype, ne[0], ne[1]);
+      lora_tensor = ne_new_tensor_2d(lora_ctx, wtype, ne[0], ne[1], NE_SIZE_CALC);
     } else {
       fprintf(stderr, "%s: unsupported tensor dimension %d\n", __func__, n_dims);
       return 1;
@@ -2155,11 +2159,11 @@ size_t model_copy_state_data(struct model_context* ctx, uint8_t* dst) {
       ne_cgraph gf{};
       gf.n_threads = 1;
 
-      ne_tensor* kout3d = ne_new_tensor_3d(cpy_ctx, kv_self.k->type, n_embd, kv_ntok, n_layer);
+      ne_tensor* kout3d = ne_new_tensor_3d(cpy_ctx, kv_self.k->type, n_embd, kv_ntok, n_layer, NE_SIZE_CALC);
       kout3d->data = out;
       out += ne_nbytes(kout3d);
 
-      ne_tensor* vout3d = ne_new_tensor_3d(cpy_ctx, kv_self.v->type, kv_ntok, n_embd, n_layer);
+      ne_tensor* vout3d = ne_new_tensor_3d(cpy_ctx, kv_self.v->type, kv_ntok, n_embd, n_layer, NE_SIZE_CALC);
       vout3d->data = out;
       out += ne_nbytes(vout3d);
 
@@ -2268,11 +2272,11 @@ size_t model_set_state_data(struct model_context* ctx, uint8_t* src) {
       ne_cgraph gf{};
       gf.n_threads = 1;
 
-      ne_tensor* kin3d = ne_new_tensor_3d(cpy_ctx, kv_self.k->type, n_embd, kv_ntok, n_layer);
+      ne_tensor* kin3d = ne_new_tensor_3d(cpy_ctx, kv_self.k->type, n_embd, kv_ntok, n_layer, NE_SIZE_CALC);
       kin3d->data = (void*)inp;
       inp += ne_nbytes(kin3d);
 
-      ne_tensor* vin3d = ne_new_tensor_3d(cpy_ctx, kv_self.v->type, kv_ntok, n_embd, n_layer);
+      ne_tensor* vin3d = ne_new_tensor_3d(cpy_ctx, kv_self.v->type, kv_ntok, n_embd, n_layer, NE_SIZE_CALC);
       vin3d->data = (void*)inp;
       inp += ne_nbytes(vin3d);
 

@@ -105,17 +105,25 @@ NE_API size_t ne_used_mem(const struct ne_context* ctx);
 
 NE_API size_t ne_set_scratch(struct ne_context* ctx, struct ne_scratch scratch);
 
-NE_API struct ne_tensor* ne_new_tensor(struct ne_context* ctx, enum ne_type type, int n_dims, const int64_t* ne);
+NE_API struct ne_tensor* ne_new_tensor(struct ne_context* ctx, enum ne_type type, int n_dims, const int64_t* ne,
+                                       size_t size);
 
-NE_API struct ne_tensor* ne_new_tensor_1d(struct ne_context* ctx, enum ne_type type, int64_t ne0);
+NE_API struct ne_tensor* ne_new_tensor_1d(struct ne_context* ctx, enum ne_type type, int64_t ne0, size_t size);
 
-NE_API struct ne_tensor* ne_new_tensor_2d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1);
+NE_API struct ne_tensor* ne_new_tensor_2d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1,
+                                          size_t size);
 
 NE_API struct ne_tensor* ne_new_tensor_3d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1,
-                                          int64_t ne2);
+                                          int64_t ne2, size_t size);
 
 NE_API struct ne_tensor* ne_new_tensor_4d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1,
-                                          int64_t ne2, int64_t ne3);
+                                          int64_t ne2, int64_t ne3, size_t size);
+
+#define d_ne_new_tensor(...) ne_new_tensor(##__VA_ARGS__,NE_SIZE_CALC)
+#define d_ne_new_tensor_1d(...) ne_new_tensor_1d(##__VA_ARGS__, NE_SIZE_CALC)
+#define d_ne_new_tensor_2d(...) ne_new_tensor_2d(##__VA_ARGS__, NE_SIZE_CALC)
+#define d_ne_new_tensor_3d(...) ne_new_tensor_3d(##__VA_ARGS__, NE_SIZE_CALC)
+#define d_ne_new_tensor_4d(...) ne_new_tensor_4d(##__VA_ARGS__, NE_SIZE_CALC)
 
 NE_API struct ne_tensor* ne_new_i32(struct ne_context* ctx, int32_t value);
 NE_API struct ne_tensor* ne_new_f32(struct ne_context* ctx, float value);
@@ -224,7 +232,7 @@ NE_API struct ne_tensor* ne_mul_qkv(struct ne_context* ctx, struct ne_tensor* qw
 
 // merged Q K V  ne_mul_mat
 NE_API struct ne_tensor* ne_ffn_silu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2,
-                                         struct ne_tensor* w3, struct ne_tensor* src);
+                                     struct ne_tensor* w3, struct ne_tensor* src);
 
 //
 // operations on tensors without backpropagation

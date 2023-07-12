@@ -218,10 +218,10 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
 
     model.layers.resize(n_layer);
 
-    model.tok_embeddings = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab);
-    model.output_norm    = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd);
-    model.output_norm_b  = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd);
-    model.lm_head        = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab);
+    model.tok_embeddings = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
+    model.output_norm = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+    model.output_norm_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+    model.lm_head = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
 
     // map by name
     model.tensors["transformer.word_embeddings.weight"] = model.tok_embeddings;
@@ -232,13 +232,13 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
     for (int i = 0; i < n_layer; ++i) {
       auto& layer = model.layers[i];
 
-      layer.attention_norm   = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd);
-      layer.attention_norm_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd);
+      layer.attention_norm = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+      layer.attention_norm_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
       // query_key_value shape for config.multi_query == True:
-      layer.query_key_value  = ne_new_tensor_2d(ctx, wtype, n_embd, n_embd + 2 * (n_embd / n_head));
-      layer.wo               = ne_new_tensor_2d(ctx, wtype, n_embd, n_embd);
-      layer.ffn_up           = ne_new_tensor_2d(ctx, wtype, n_embd, n_ff);
-      layer.ffn_down         = ne_new_tensor_2d(ctx, wtype, n_ff, n_embd);
+      layer.query_key_value = ne_new_tensor_2d(ctx, wtype, n_embd, n_embd + 2 * (n_embd / n_head), NE_SIZE_CALC);
+      layer.wo = ne_new_tensor_2d(ctx, wtype, n_embd, n_embd, NE_SIZE_CALC);
+      layer.ffn_up = ne_new_tensor_2d(ctx, wtype, n_embd, n_ff, NE_SIZE_CALC);
+      layer.ffn_down = ne_new_tensor_2d(ctx, wtype, n_ff, n_embd, NE_SIZE_CALC);
 
       // map by name
       model.tensors["transformer.h." + std::to_string(i) + ".input_layernorm.weight"]                =
@@ -267,8 +267,8 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
     const int64_t n_mem      = n_layer * n_ctx;
     const int64_t n_elements = head_dim * n_mem;
 
-    model.memory_k = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_elements);
-    model.memory_v = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_elements);
+    model.memory_k = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_elements, NE_SIZE_CALC);
+    model.memory_v = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_elements, NE_SIZE_CALC);
 
     const size_t memory_size = ne_nbytes(model.memory_k) + ne_nbytes(model.memory_v);
 
@@ -411,12 +411,12 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
   struct ne_cgraph gf = {};
   gf.n_threads = n_threads;
 
-  struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
+  struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
   memcpy(embd->data, embd_inp.data(), N * ne_element_size(embd));
 
   // wte
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.tok_embeddings, embd);
-  struct ne_tensor* repeat_dummy = ne_new_tensor_3d(ctx0, inpL->type, head_dim, N + n_past, n_head);
+  struct ne_tensor* repeat_dummy = ne_new_tensor_3d(ctx0, inpL->type, head_dim, N + n_past, n_head, NE_SIZE_CALC);
 
   for (int il = 0; il < n_layer; ++il) {
     struct ne_tensor* cur;
@@ -506,7 +506,7 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
       struct ne_tensor* KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
 
       // cur = KQV_merged.contiguous().view(n_embd, N)
-      cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N));
+      cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
 
       // projection
       { cur = ne_mul_mat(ctx0, model.layers[il].wo, cur); }
@@ -519,7 +519,7 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
                            });
 
     struct ne_tensor* inpFF = layernorm_output;
-    struct ne_tensor* attn_out = ne_cpy(ctx0, cur, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N));
+    struct ne_tensor* attn_out = ne_cpy(ctx0, cur, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
 
     // FFN (pre_layer_norm output)
     {

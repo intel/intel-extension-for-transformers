@@ -235,12 +235,12 @@ bool gpt_neox_model_load(const std::string & fname, gpt_neox_model & model, gpt_
 
         model.layers.resize(n_layer);
 
-        model.wte    = ne_new_tensor_2d(ctx, wtype,         n_embd, n_vocab);
+        model.wte = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
 
-        model.ln_f_g = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd);
-        model.ln_f_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd);
+        model.ln_f_g = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+        model.ln_f_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-        model.lmh_g  = ne_new_tensor_2d(ctx, wtype,         n_embd, n_vocab);
+        model.lmh_g = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
         //model.lmh_b  = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_vocab);
 
         // map by name
@@ -255,23 +255,23 @@ bool gpt_neox_model_load(const std::string & fname, gpt_neox_model & model, gpt_
         for (int i = 0; i < n_layer; ++i) {
             auto & layer = model.layers[i];
 
-            layer.ln_1_g          = ne_new_tensor_1d(ctx, NE_TYPE_F32,   n_embd);
-            layer.ln_1_b          = ne_new_tensor_1d(ctx, NE_TYPE_F32,   n_embd);
+            layer.ln_1_g = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+            layer.ln_1_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-            layer.c_attn_attn_w   = ne_new_tensor_2d(ctx, wtype,           n_embd, 3*n_embd);
-            layer.c_attn_attn_b   = ne_new_tensor_1d(ctx, NE_TYPE_F32, 3*n_embd);
+            layer.c_attn_attn_w = ne_new_tensor_2d(ctx, wtype, n_embd, 3 * n_embd, NE_SIZE_CALC);
+            layer.c_attn_attn_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, 3 * n_embd, NE_SIZE_CALC);
 
-            layer.c_attn_proj_w   = ne_new_tensor_2d(ctx, wtype,           n_embd,   n_embd);
-            layer.c_attn_proj_b   = ne_new_tensor_1d(ctx, NE_TYPE_F32,   n_embd);
+            layer.c_attn_proj_w = ne_new_tensor_2d(ctx, wtype, n_embd, n_embd, NE_SIZE_CALC);
+            layer.c_attn_proj_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-            layer.ln_2_g          = ne_new_tensor_1d(ctx, NE_TYPE_F32,   n_embd);
-            layer.ln_2_b          = ne_new_tensor_1d(ctx, NE_TYPE_F32,   n_embd);
+            layer.ln_2_g = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+            layer.ln_2_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-            layer.c_mlp_fc_w      = ne_new_tensor_2d(ctx, wtype,           n_embd, 4*n_embd);
-            layer.c_mlp_fc_b      = ne_new_tensor_1d(ctx, NE_TYPE_F32, 4*n_embd);
+            layer.c_mlp_fc_w = ne_new_tensor_2d(ctx, wtype, n_embd, 4 * n_embd, NE_SIZE_CALC);
+            layer.c_mlp_fc_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, 4 * n_embd, NE_SIZE_CALC);
 
-            layer.c_mlp_proj_w    = ne_new_tensor_2d(ctx, wtype,         4*n_embd,   n_embd);
-            layer.c_mlp_proj_b    = ne_new_tensor_1d(ctx, NE_TYPE_F32,   n_embd);
+            layer.c_mlp_proj_w = ne_new_tensor_2d(ctx, wtype, 4 * n_embd, n_embd, NE_SIZE_CALC);
+            layer.c_mlp_proj_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
             // map by name
             model.tensors["gpt_neox.layers." + std::to_string(i) + ".input_layernorm.weight"] = layer.ln_1_g;
@@ -305,8 +305,8 @@ bool gpt_neox_model_load(const std::string & fname, gpt_neox_model & model, gpt_
         const int64_t n_mem      = n_layer*n_ctx;
         const int64_t n_elements = n_embd*n_mem;
 
-        model.memory_k = ne_new_tensor_1d(ctx, NE_TYPE_F16, n_elements);
-        model.memory_v = ne_new_tensor_1d(ctx, NE_TYPE_F16, n_elements);
+        model.memory_k = ne_new_tensor_1d(ctx, NE_TYPE_F16, n_elements, NE_SIZE_CALC);
+        model.memory_v = ne_new_tensor_1d(ctx, NE_TYPE_F16, n_elements, NE_SIZE_CALC);
 
         const size_t memory_size = ne_nbytes(model.memory_k) + ne_nbytes(model.memory_v);
 
@@ -489,7 +489,7 @@ bool gpt_neox_eval(
     struct ne_cgraph gf = {};
     gf.n_threads = n_threads;
 
-    struct ne_tensor * embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
+    struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
     memcpy(embd->data, embd_inp.data(), N*ne_element_size(embd));
 
     // wte
@@ -590,8 +590,7 @@ bool gpt_neox_eval(
 
             // cur = KQV_merged.contiguous().view(n_embd, N)
             cur = ne_cpy(ctx0,
-                    KQV_merged,
-                    ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N));
+                    KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
 
             // projection
             {
