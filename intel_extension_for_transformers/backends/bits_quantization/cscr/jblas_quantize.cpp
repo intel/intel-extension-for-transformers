@@ -2,7 +2,7 @@
 
 #include <torch/script.h>
 
-#include "../jblas/jit_blas_weight_compression.h"
+#include "jblas/jit_blas_weight_compression.h"
 
 using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
 

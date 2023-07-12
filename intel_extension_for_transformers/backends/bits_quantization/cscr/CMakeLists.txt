@@ -3,14 +3,16 @@ project(weight_only_jblasop LANGUAGES C CXX)
 
 set(CMAKE_CXX_FLAGS "-Wno-narrowing")
 
-# find_package(Torch REQUIRED)
+execute_process(COMMAND python -c "import torch; print(torch.__path__[0])"
+                OUTPUT_VARIABLE torch_path
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 find_package(Torch REQUIRED
-PATHS /home/zhe/miniconda3/envs/s4fp16gemm/lib/python3.9/site-packages/torch
+PATHS ${torch_path}
 NO_DEFAULT_PATH)
 
 
-add_subdirectory(../../jblas jblas.out)
+add_subdirectory(../../neural_engine/graph/jblas jblas.out)
 
 file(GLOB custom_jblasop_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 # Define our library target
