@@ -1,6 +1,7 @@
 import os
 import csv
 import argparse
+import shlex
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -19,7 +20,7 @@ def create_metadata(path):
     metadata_file = os.path.join(path, "metadata.csv")
     if os.path.exists(metadata_file):
         return
-    files = [_.split('.')[0] for _ in os.listdir(path) if _.endswith(".jpg")]
+    files = [_.split('.')[0] for _ in os.listdir(shlex.quote(path)) if _.endswith(".jpg")]
     infos = []
     for name in files:
         with open(os.path.join(path, name+".txt"), mode="r") as f:

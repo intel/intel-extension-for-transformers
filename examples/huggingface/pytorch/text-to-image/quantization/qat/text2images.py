@@ -1,6 +1,7 @@
 import argparse
 import math
 import os
+import shlex
 import torch
 from PIL import Image
 from diffusers import StableDiffusionPipeline, UNet2DConditionModel
@@ -117,6 +118,6 @@ if __name__ == "__main__":
         grid, images = generate_images(pipeline, prompt=caption, num_images_per_prompt=args.images_num, seed=args.seed)
         grid.save(os.path.join(results_path, "results", "{}.png".format("_".join(caption.split()))))
         dirname = os.path.join(results_path, "results", "_".join(caption.split()))
-        os.makedirs(dirname, exist_ok=True)
+        os.makedirs(shlex.quote(dirname), exist_ok=True)
         for idx, image in enumerate(images):
             image.save(os.path.join(dirname, "{}.png".format(idx + 1)))
