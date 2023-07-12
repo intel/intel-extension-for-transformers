@@ -51,11 +51,85 @@ class StableDiffusion_InsertQuantNode(Pattern):
                         # if node.name == "/0/0/0/attn2/to_k/Add":
                         #     print(node.name, node.op_type, node.input_tensors[0].name, len(node.input_tensors))
                         #     import pdb;pdb.set_trace()
+
                         input_name = input_tensor.name
+                        # if node.name == '/0/0/Mul':
+                        #     import pdb;pdb.set_trace()
+                        # if node.name == '/0/0/time_emb_proj/Gemm':
+                        #     import pdb;pdb.set_trace()
+                        #print(len(node.input_tensors))
+                        
                         insert_offset = 1 if len(node.input_tensors) % 2 == 0 else 0
                         insert_offset = insert_offset - 2 if "append_op" not in node.attr and \
                                                         insert_offset == 1 else insert_offset
-                        if input_name in quant_info and idx < 3:
+                        # print(node.name, insert_offset)
+                        # insert_offset = insert_offset - 2 if "reshape" not in node.attr and \
+                        #                                 insert_offset == 1 else insert_offset
+                        #print(node.name, input_name)
+                        # for idx, t in enumerate(node.input_tensors):
+                        #     print(node.name, t.name)
+                        if (EXECUTOR_TYPE[node.op_type] in ['InnerProduct']) and 'reshape' in node.attr and "append_op" not in node.attr:
+                            insert_offset = insert_offset + 1
+                            if input_name in quant_info and idx < 3:
+                                quant_min = Tensor(
+                                    name=input_name + "_min",
+                                    shape=[quant_info[input_name][0].size],
+                                    data=np.array(quant_info[input_name][0].astype("float32")),
+                                    dtype="fp32")
+                                quant_max = Tensor(
+                                    name=input_name + "_max",
+                                    shape=[quant_info[input_name][1].size],
+                                    data=np.array(quant_info[input_name][1].astype("float32")),
+                                    dtype="fp32")
+
+                                if "insert" in quant_info[input_name][2]:
+                                    quant_dtype = "u8" if "u8" in quant_info[input_name][2] else "s8"
+                                    quant_dtype = "s8" if EXECUTOR_TYPE[
+                                        node.op_type] == "Matmul" else quant_dtype
+                                    quant_output = Tensor(name=input_name + "_quant",
+                                                        source_op=[node.name + "_quant_" + str(idx)],
+                                                        dest_op=[node.name],
+                                                        dtype=quant_dtype)
+                                    quantize_op = util.construct_node(
+                                        node_name=node.name + "_quant_" + str(idx),
+                                        op_type='Quantize',
+                                        input_tensors=[input_tensor, quant_min, quant_max],
+                                        output_tensors=[quant_output],
+                                        attr=OrderedDict({'output_dtype': quant_dtype}))
+                                    node.input_tensors[idx] = quant_output
+                                    insert_idx = model.get_node_id(node.name)
+                                    model.insert_nodes(insert_idx, [quantize_op])
+                                    # insert src0/src1 min and max tensor
+                                    model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 3,
+                                                                    quant_min, 'insert')
+                                    model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
+                                                                    quant_max, 'insert')
+                                    print(node.name, input_name, quant_min.name, quant_max.name, insert_offset + 2 * idx + 3,  insert_offset + 2 * idx + 4)
+                                if "weight" in quant_info[input_name][2]:
+                                    # insert weight min and max tensor
+                                    model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 3,
+                                                                    quant_min, 'insert')
+                                    model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
+                                                                    quant_max, 'insert')
+                                if "output" in quant_info[input_name][2]:
+                                    output_name = node.output_tensors[0].name
+                                    quant_min = Tensor(
+                                        name=output_name + "_min",
+                                        shape=[quant_info[input_name][3].size],
+                                        data=np.array(quant_info[input_name][3].astype("float32")),
+                                        dtype="fp32")
+                                    quant_max = Tensor(
+                                        name=output_name + "_max",
+                                        shape=[quant_info[input_name][4].size],
+                                        data=np.array(quant_info[input_name][4].astype("float32")), 
+                                        dtype="fp32")
+                                    # insert output min and max tensor
+                                    model.change_node_input_tensors(node.name, insert_offset + 7,
+                                                                    quant_min, 'insert')
+                                    model.change_node_input_tensors(node.name, insert_offset + 8,
+                                                                    quant_max, 'insert')
+                                    util.insert_quant_info(node.name, [])
+                        elif input_name in quant_info and idx < 3:
                             quant_min = Tensor(
                                 name=input_name + "_min",
                                 shape=[quant_info[input_name][0].size],

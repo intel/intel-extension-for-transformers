@@ -172,7 +172,7 @@ def compile(model, config=None) -> Graph:
                         nodes.attr['output_dtype'] = 'bf16'
                 return model
 
-            _mixed_bf16_precision(model)
+            #_mixed_bf16_precision(model)
 
 
         optimizer = Optimizer(model)

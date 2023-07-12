@@ -150,7 +150,7 @@ supported_patterns = [
     'OutputData',
     'QuantizedGraphDtypeRefactor',
     #'ExplicitNHWCTransposeForConv',
-    'ExplicitNHWCTransposeForConvQAT',
+    #'ExplicitNHWCTransposeForConvQAT',
 
     'Int8BF16MixedPrecisionChecker',
     'LlamaPostprocess',
