@@ -5,13 +5,13 @@
 #include "jblas/jit_blas_transformer.h"
 #include "jblas/jit_blas_weight_compression.h"
 
-torch::Tensor weights4block_f32_linear_launcher(torch::Tensor activation,
-                                                torch::Tensor weight,
-                                                torch::Tensor output, int64_t m,
-                                                int64_t n, int64_t k,
-                                                int64_t lda, int64_t ldo) {
+void weights4block_f32_linear_launcher(const torch::Tensor& activation,
+                                       const torch::Tensor& weight,
+                                       torch::Tensor& output, int64_t m,
+                                       int64_t n, int64_t k, int64_t lda,
+                                       int64_t ldo) {
   auto wtmp = jblas::prologue::weight_comp::gemm::CompressedPackedWeight::
-      deserialBuffer(weight.data_ptr<void>(), 0);
+      deserialBuffer(weight.data_ptr<int8_t>(), 0);
   if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
       wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK) {
     using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::

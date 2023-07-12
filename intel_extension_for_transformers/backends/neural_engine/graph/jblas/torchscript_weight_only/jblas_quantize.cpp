@@ -34,7 +34,7 @@ static std::unordered_map<
         {{4, "sym", "bf16"}, CompType::S4_Bf16},
         {{8, "sym", "fp32"}, CompType::S8_F32}};
 
-torch::Tensor quant_launcher(torch::Tensor Fp32Wei, int64_t nthread,
+torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, int64_t nthread,
                              int64_t bits, torch::string alg,
                              int64_t block_size, std::string scale_dtype,
                              std::string gemm_isa) {
@@ -43,6 +43,9 @@ torch::Tensor quant_launcher(torch::Tensor Fp32Wei, int64_t nthread,
     if (bits != 4 && bits != 8) throw std::runtime_error("bits must be 4/8");
     if (scale_dtype != "fp32" && scale_dtype != "bf16")
       throw std::runtime_error("scale_dtype must be fp32/bf16");
+    if (Fp32Wei.sizes().size() != 2)
+      throw std::runtime_error(
+          "dim of weight dosen't meet requirement, must be 2.");
     int k_ = Fp32Wei.sizes()[0];
     int n_ = Fp32Wei.sizes()[1];
     using GemmKernel =
