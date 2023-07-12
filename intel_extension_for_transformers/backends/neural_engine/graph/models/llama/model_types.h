@@ -281,6 +281,7 @@ struct model_context {
   int64_t t_sample_us = 0;
   int64_t t_eval_us = 0;
   int64_t t_p_eval_us = 0;
+  std::vector<int64_t> eval_times;
 
   int32_t n_sample = 0;  // number of tokens sampled
   int32_t n_eval = 0;    // number of eval calls

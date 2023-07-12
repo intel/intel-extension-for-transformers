@@ -847,11 +847,6 @@ int main(int argc, char ** argv) {
     printf("\n");
     printf("%s: number of tokens in prompt = %zu\n", __func__, embd_inp.size());
 
-    for (size_t i = 0; i < embd_inp.size(); i++) {
-        printf("%s: token[%lu] = %6d\n", __func__, i, embd_inp[i]);
-    }
-    printf("\n");
-
     std::vector<gpt_vocab::id> embd;
     std::vector<float> logits;
 
@@ -863,6 +858,7 @@ int main(int argc, char ** argv) {
     int n_consumed = 0;
     int n_sampled  = 0;
     bool first_token = true;
+    std::vector<int64_t> eval_times;
 
     while (n_sampled < params.n_predict) {
         // predict
@@ -873,10 +869,13 @@ int main(int argc, char ** argv) {
                 printf("%s: failed to predict\n", __func__);
                 return 1;
             }
+            int64_t time_interval = ne_time_us() - t_start_us;
             if (first_token) {
                 first_token = false;
+                eval_times.push_back(time_interval);
             } else {
-                t_predict_us += ne_time_us() - t_start_us;
+                t_predict_us += time_interval;
+                eval_times.push_back(time_interval);
             }
 
             n_past += embd.size();
@@ -947,6 +946,10 @@ int main(int argc, char ** argv) {
         printf("%s:    sample time = %8.2f ms / %.2f ms per token\n", __func__, t_sample_us / 1000.0f, t_sample_us / 1000.0f / n_sampled);
         printf("%s:      eval time = %8.2f ms / %d, %.2f ms per token\n", __func__, t_predict_us / 1000.0f, params.n_predict - 1, t_predict_us / 1000.0f / (params.n_predict - 1));
         printf("%s:     total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
+        printf("========== eval time log of each prediction ==========\n");
+        for (int i = 0; i < eval_times.size(); ++i) {
+            printf("prediction %3d, time: %.2fms\n", i, eval_times[i] / 1000.0f);
+        }
     }
 
     ne_free(model.ctx);

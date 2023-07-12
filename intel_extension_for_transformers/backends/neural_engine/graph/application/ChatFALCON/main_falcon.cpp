@@ -690,6 +690,7 @@ int main(int argc, char** argv) {
   falcon_eval(model, params.n_threads, 0, {0, 1, 2, 3}, logits, mem_per_token);
 
   bool first_token = true;
+  std::vector<int64_t> eval_times;
   for (int i = embd.size(); i < embd_inp.size() + params.n_predict; i++) {
     // predict
     if (embd.size() > 0) {
@@ -700,10 +701,13 @@ int main(int argc, char** argv) {
         return 1;
       }
       // make first-token as warmup token
+      int64_t time_interval = ne_time_us() - t_start_us;
       if (first_token) {
         first_token = false;
+        eval_times.push_back(time_interval);
       } else {
-        t_predict_us += ne_time_us() - t_start_us;
+        t_predict_us += time_interval;
+        eval_times.push_back(time_interval);
       }
     }
 
@@ -769,6 +773,10 @@ int main(int argc, char** argv) {
     printf("%s: predict time  = %8.2f ms / %d, %.2f ms per token\n", __func__, t_predict_us / 1000.0f,
            params.n_predict - 1, t_predict_us / 1000.0f / (params.n_predict - 1));
     printf("%s: total time    = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
+    printf("========== eval time log of each prediction ==========\n");
+    for (int i = 0; i < eval_times.size(); ++i) {
+        printf("prediction %3d, time: %.2fms\n", i, eval_times[i] / 1000.0f);
+    }
   }
 
   ne_free(model.ctx);

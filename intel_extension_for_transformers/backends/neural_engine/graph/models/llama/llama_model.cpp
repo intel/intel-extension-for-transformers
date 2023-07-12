@@ -2442,6 +2442,10 @@ void model_print_timings(struct model_context* ctx) {
   fprintf(stderr, "%s:        eval time = %8.2f ms / %5d runs   (%8.2f ms per token)\n", __func__,
           1e-3 * ctx->t_eval_us, n_eval, 1e-3 * ctx->t_eval_us / n_eval);
   fprintf(stderr, "%s:       total time = %8.2f ms\n", __func__, (t_end_us - ctx->t_start_us) / 1000.0);
+  printf("========== eval time log of each prediction ==========\n");
+  for (int i = 0; i < ctx->eval_times.size(); ++i) {
+    printf("prediction %3d, time: %.2fms\n", i, ctx->eval_times[i] / 1000.0f);
+  }
 }
 
 void model_reset_timings(struct model_context* ctx) {
