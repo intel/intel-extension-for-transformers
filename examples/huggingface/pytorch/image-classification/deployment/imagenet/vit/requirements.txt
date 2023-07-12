@@ -1,5 +1,5 @@
 neural-compressor
-transformers
+transformers>=4.28.0
 accelerate
 datasets >= 1.8.0
 sentencepiece != 0.1.92
@@ -9,3 +9,4 @@ torchvision
 onnx>=1.12
 onnxruntime==1.13.1
 onnxoptimizer
+evaluate

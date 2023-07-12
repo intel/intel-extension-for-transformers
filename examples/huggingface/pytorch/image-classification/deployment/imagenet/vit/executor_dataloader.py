@@ -34,7 +34,7 @@ from torchvision.transforms import (
 from transformers import (
     MODEL_FOR_IMAGE_CLASSIFICATION_MAPPING,
     AutoConfig,
-    AutoFeatureExtractor,
+    AutoImageProcessor,
     AutoModelForImageClassification,
     HfArgumentParser,
     TrainingArguments,
@@ -48,7 +48,7 @@ def collate_fn(examples):
     return {"pixel_values": pixel_values, "labels": labels}
 
 class dataloader_wrapper(object):
-    def __init__(self, batch_size, feature_extractor_name, data_dir = './cached-2k-imagenet-1k-datasets'):
+    def __init__(self, batch_size, image_processor_name, data_dir = './cached-2k-imagenet-1k-datasets'):
         self.batch_size = batch_size       
 
         dataset = datasets.load_from_disk(data_dir)
@@ -68,19 +68,23 @@ class dataloader_wrapper(object):
             label2id[label] = str(i)
             id2label[str(i)] = label
 
-        feature_extractor = AutoFeatureExtractor.from_pretrained(
-            feature_extractor_name,
-            cache_dir = None,
-            revision='main',
+        image_processor = AutoImageProcessor.from_pretrained(
+            image_processor_name,
+            cache_dir=None,
+            revision="main",
             use_auth_token=False,
         )
-
         # Define torchvision transforms to be applied to each image.
-        normalize = Normalize(mean=feature_extractor.image_mean, std=feature_extractor.image_std)
+        if "shortest_edge" in image_processor.size:
+            size = image_processor.size["shortest_edge"]
+        else:
+            size = (image_processor.size["height"], image_processor.size["width"])
+        normalize = Normalize(mean=image_processor.image_mean, std=image_processor.image_std)
+
         _val_transforms = Compose(
             [
-                Resize(feature_extractor.size),
-                CenterCrop(feature_extractor.size),
+                Resize(size),
+                CenterCrop(size),
                 ToTensor(),
                 normalize,
             ]

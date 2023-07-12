@@ -26,7 +26,7 @@ import transformers
 from transformers import (
     MODEL_FOR_IMAGE_CLASSIFICATION_MAPPING,
     AutoConfig,
-    AutoFeatureExtractor,
+    AutoImageProcessor,
     AutoModelForImageClassification,
     HfArgumentParser,
     TrainingArguments,
@@ -44,7 +44,7 @@ os.environ["WANDB_DISABLED"] = "true"
 logger = logging.getLogger(__name__)
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-check_min_version("4.21.0")
+check_min_version("4.28.0")
 
 require_version("datasets>=1.8.0", "To fix: pip install -r requirements.txt")
 
@@ -129,7 +129,7 @@ class ModelArguments:
         default="main",
         metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
     )
-    feature_extractor_name: str = field(default=None, metadata={"help": "Name or path of preprocessor config."})
+    image_processor_name: str = field(default=None, metadata={"help": "Name or path of preprocessor config."})
     use_auth_token: bool = field(
         default=False,
         metadata={
@@ -312,19 +312,23 @@ def main():
         label2id[label] = str(i)
         id2label[str(i)] = label
 
-    feature_extractor = AutoFeatureExtractor.from_pretrained(
-        model_args.feature_extractor_name or model_args.model_name_or_path,
+    image_processor = AutoImageProcessor.from_pretrained(
+        model_args.image_processor_name or model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
 
     # Define torchvision transforms to be applied to each image.
-    normalize = Normalize(mean=feature_extractor.image_mean, std=feature_extractor.image_std)
+    if "shortest_edge" in image_processor.size:
+        size = image_processor.size["shortest_edge"]
+    else:
+        size = (image_processor.size["height"], image_processor.size["width"])
+    normalize = Normalize(mean=image_processor.image_mean, std=image_processor.image_std)
     _val_transforms = Compose(
         [
-            Resize(feature_extractor.size),
-            CenterCrop(feature_extractor.size),
+            Resize(size),
+            CenterCrop(size),
             ToTensor(),
             normalize,
         ]

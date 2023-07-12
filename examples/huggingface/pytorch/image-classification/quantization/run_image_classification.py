@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import datasets
+import evaluate
 import numpy as np
 import torch
 from datasets import load_dataset
@@ -42,6 +43,7 @@ from transformers import (
     AutoModelForImageClassification,
     HfArgumentParser,
     TrainingArguments,
+    set_seed,
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version, send_example_telemetry
@@ -57,7 +59,7 @@ os.environ["WANDB_DISABLED"] = "true"
 logger = logging.getLogger(__name__)
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-check_min_version("4.21.0")
+check_min_version("4.30.2")
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/image-classification/requirements.txt")
 
@@ -148,7 +150,7 @@ class ModelArguments:
         default=False,
         metadata={
             "help": (
-                "Will use the token generated when running `transformers-cli login` (necessary to use this script "
+                "Will use the token generated when running `huggingface-cli login` (necessary to use this script "
                 "with private models)."
             )
         },
@@ -243,6 +245,10 @@ def main():
         handlers=[logging.StreamHandler(sys.stdout)],
     )
 
+    if training_args.should_log:
+        # The default of training_args.log_level is passive, so we set log level at info here to have that default.
+        transformers.utils.logging.set_verbosity_info()
+
     log_level = training_args.get_process_log_level()
     logger.setLevel(log_level)
     transformers.utils.logging.set_verbosity(log_level)
@@ -270,6 +276,9 @@ def main():
                 f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change "
                 "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
             )
+
+    # Set seed before initializing model.
+    set_seed(training_args.seed)
 
     # Initialize our dataset and prepare it for the 'image-classification' task.
     if data_args.dataset_name is not None:
@@ -313,7 +322,7 @@ def main():
         id2label[str(i)] = label
 
     # Load the accuracy metric from the datasets package
-    metric = datasets.load_metric("accuracy")
+    metric = evaluate.load("accuracy")
 
     # Define our compute_metrics function. It takes an `EvalPrediction` object (a namedtuple with a
     # predictions and label_ids field) and has to return a dictionary string to float.
