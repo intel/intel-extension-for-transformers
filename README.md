@@ -157,3 +157,14 @@ output = model(**input).logits.argmax().item()
 * Blog published by Cohere: [Top NLP Papers—November 2022](https://txt.cohere.ai/top-nlp-papers-november-2022/) (Nov 2022)
 * Blog published by Alibaba: [Deep learning inference optimization for Address Purification](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
 * NeurIPS'2021: [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754) (Nov 2021)
+
+## Additional Content
+
+* [Release Information](./docs/release.md)
+* [Contribution Guidelines](./docs/contributions.md)
+* [Legal Information](./docs/legal.md)
+* [Security Policy](SECURITY.md)
+
+## Research Collaborations
+
+Welcome to raise any interesting research ideas on model compression techniques and feel free to reach us ([maintainers](mailto:inc.maintainers@intel.com)). Look forward to our collaborations on Intel Extension for Transformers!

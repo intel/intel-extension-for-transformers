@@ -9,6 +9,7 @@ We have enabled distillation for quantization in `textual_inversion.py` to do qu
 Before running the scripts, make sure to install the library's training dependencies:
 
 ```bash
+pip install transformers~=4.21.0
 pip install -r requirements.txt
 ```
 
