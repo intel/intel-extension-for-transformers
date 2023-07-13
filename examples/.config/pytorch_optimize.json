@@ -1,4 +1,31 @@
 {
+  "starcoder_3b": {
+    "working_dir": "huggingface/pytorch/code-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "starcoder_3b",
+        "task": "",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "starcoder_3b",
+        "task": "",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "gpt_neo_clm_static": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune":{
