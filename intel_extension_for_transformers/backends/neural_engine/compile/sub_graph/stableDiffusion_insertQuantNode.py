@@ -68,6 +68,7 @@ class StableDiffusion_InsertQuantNode(Pattern):
                         #print(node.name, input_name)
                         # for idx, t in enumerate(node.input_tensors):
                         #     print(node.name, t.name)
+
                         if (EXECUTOR_TYPE[node.op_type] in ['InnerProduct']) and 'reshape' in node.attr and "append_op" not in node.attr:
                             insert_offset = insert_offset + 1
                             if input_name in quant_info and idx < 3:
@@ -104,14 +105,16 @@ class StableDiffusion_InsertQuantNode(Pattern):
                                                                     quant_min, 'insert')
                                     model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
                                                                     quant_max, 'insert')
-                                    print(node.name, input_name, quant_min.name, quant_max.name, insert_offset + 2 * idx + 3,  insert_offset + 2 * idx + 4)
+                                    print('1111111', node.name, input_name, quant_min.name, quant_max.name, insert_offset + 2 * idx + 3,  insert_offset + 2 * idx + 4)
                                 if "weight" in quant_info[input_name][2]:
                                     # insert weight min and max tensor
                                     model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 3,
                                                                     quant_min, 'insert')
                                     model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
-                                                                    quant_max, 'insert')
+                                                                    quant_max, 'insert')                                    
                                 if "output" in quant_info[input_name][2]:
+                                    
+                                    #import pdb;pdb.set_trace()
                                     output_name = node.output_tensors[0].name
                                     quant_min = Tensor(
                                         name=output_name + "_min",
@@ -129,6 +132,8 @@ class StableDiffusion_InsertQuantNode(Pattern):
                                     model.change_node_input_tensors(node.name, insert_offset + 8,
                                                                     quant_max, 'insert')
                                     util.insert_quant_info(node.name, [])
+                                    print('3333333333', node.name, input_name, quant_min.name, quant_max.name, insert_offset + 7,  insert_offset + 8)
+
                         elif input_name in quant_info and idx < 3:
                             quant_min = Tensor(
                                 name=input_name + "_min",
@@ -169,6 +174,7 @@ class StableDiffusion_InsertQuantNode(Pattern):
                                                                 quant_min, 'insert')
                                 model.change_node_input_tensors(node.name, insert_offset + 2 * idx + 4,
                                                                 quant_max, 'insert')
+                            # only for conv ?
                             if "output" in quant_info[input_name][2]:
                                 output_name = node.output_tensors[0].name
                                 quant_min = Tensor(
