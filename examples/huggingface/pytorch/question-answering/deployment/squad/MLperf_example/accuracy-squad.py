@@ -297,7 +297,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
         writer.write(json.dumps(all_predictions, indent=4) + "\n")
 
 
-def load_loadgen_log(log_path, eval_features, output_transposed=False):
+def load_loadgen_log(log_path, eval_features, model_name, output_transposed=False):
     with open(log_path,'r+') as f:
         predictions = json.load(f)
 
@@ -315,12 +315,20 @@ def load_loadgen_log(log_path, eval_features, output_transposed=False):
         end_logits = np.ones(max_seq_length) * -10000.0
         start_logits[:seq_length] = logits[:, 0]
         end_logits[:seq_length] = logits[:, 1]
-        results.append(RawResult(
+        if model_name == "Minilm_l12":
+            results.append(RawResult(
                 unique_id=eval_features[qsl_idx].unique_id,
                 #unique_id=qsl_idx,
                 start_logits=start_logits.tolist(),
                 end_logits=end_logits.tolist()
             ))
+        elif model_name == "Minilm_l8":
+            results.append(RawResult(
+                unique_id=qsl_idx,
+                #unique_id=qsl_idx,
+                start_logits=start_logits.tolist(),
+                end_logits=end_logits.tolist()
+                ))
 
     return results
 def evaluate_minilm_l12():
@@ -359,7 +367,7 @@ def evaluate_minilm_l12():
 
 
     print("Loading LoadGen logs...")
-    results = load_loadgen_log(args.log_file, eval_features, args.output_transposed)
+    results = load_loadgen_log(args.log_file, eval_features,args.model_name, args.output_transposed)
 
     print("Post-processing predictions...")
     write_predictions(eval_examples, eval_features, results, 20, 30, True, args.out_file)
@@ -451,7 +459,7 @@ def evaluate_minilm_l8():
             remove_columns=column_names,)
 
     print("Loading LoadGen logs...")
-    results = load_loadgen_log(args.log_file, eval_dataset, args.output_transposed)
+    results = load_loadgen_log(args.log_file, eval_dataset, args.model_name, args.output_transposed)
     all_results = []
     for r in results:
         all_results.append((r.unique_id, r.start_logits, r.end_logits))
@@ -465,7 +473,6 @@ def evaluate_minilm_l8():
     start_logits = np.concatenate(start_logits_list, axis=0)
     end_logits = np.concatenate(end_logits_list, axis=0)
     results = (start_logits, end_logits)
-
     from utils_qa import postprocess_qa_predictions
     predictions = postprocess_qa_predictions(
             examples=eval_examples,
