@@ -88,6 +88,32 @@ class Silu {
     return JblasSuccess;
   }
 };
+
+template <typename _T>
+class Gelu {
+ public:
+  struct Param {
+    _T* C;
+    int ldc;
+  };
+
+  template <JBLAS_ISA ISA_T>
+  JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param) {
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto cptr = _param.C + COffset;
+    // for (int i = 0; i < M; i++) {
+    //   ne_vec_gelu_f32(N, cptr + i * _param.ldc, cacheptr + i * _param.ldc);
+    // }
+    for (int i = 0; i < M; i++) {
+      for (int j = 0; j < N; j++) {
+        cptr[i * _param.ldc + j] = ne_gelu_f32(cacheptr[i * cachestep + j]);
+      }
+    }
+    return JblasSuccess;
+  }
+};
+
 }  // namespace epilogue
 namespace wrapper {
 namespace transformer {
@@ -184,6 +210,84 @@ class FFNFusedInterface {
   _Launcher_T mLauncher;
   _SiluLauncher_T mActLauncher;
 };
+
+template <class _GeluLauncher_T, class _Launcher_T>
+class GeluFusedInterface {
+ public:
+  struct Arguments {
+    const int Seq, Fin, FMid, FOut;
+    const typename _GeluLauncher_T::AParam paramA;
+    const typename _GeluLauncher_T::BParam paramW1;
+    const typename _Launcher_T::BParam paramW2;
+    const typename _GeluLauncher_T::EpiParam param1;
+    const typename _Launcher_T::EpiParam param2;
+  };
+  using Config = typename _Launcher_T::ParallelConfig;
+  using ActConfig = typename _GeluLauncher_T::ParallelConfig;
+  using GemmCore = typename _Launcher_T::GemmCore;
+  using LArguments = typename _Launcher_T::Param;
+  using CParam = typename _Launcher_T::EpiParam;
+  using Parallel = jblas::utils::parallel::Parallel2DGemmKBlockFixed<GemmCore>;
+
+  // forward=packB+compute
+  JBLAS_CODE compute(const Arguments& _param) {
+    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    if (bptr == nullptr) {
+      return JblasInvalidParam;
+    }
+    // dynamic quantization: Seq*Fin
+    auto paraA = mActLauncher.mProA.createParallel(_param.Seq, _param.Fin, bptr->mBlockSize);
+    auto quanA = mActLauncher.mProA.createObj(_param.Seq, _param.Fin, bptr->mBlockSize);
+    auto cb = utils::CpuBase();
+    Parallel _paral = Parallel();   // w1 from Seq* Fin=>FMid
+    Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
+    _paral.update(_param.Seq, _param.FMid, _param.Fin, bptr->mBlockSize, cb.mNumThreads);
+    _paral2.update(_param.Seq, _param.FOut, _param.FMid, bptr->mBlockSize, cb.mNumThreads);
+
+    auto paraA2 = mLauncher.mProA.createParallel(_param.Seq, _param.FMid, bptr->mBlockSize);
+    auto quanA2 = mLauncher.mProA.createObj(_param.Seq, _param.FMid, bptr->mBlockSize);
+    omp_set_num_threads(cb.mNumThreads);
+#pragma omp parallel
+    {
+      int tidx = omp_get_thread_num();
+      mActLauncher.mProA.template quantizeT<_Launcher_T::RT_ISA>(_param.paramA, tidx, quanA, paraA);
+#pragma omp barrier
+      {
+        int colidx, rowidx, rowsize, colsize;
+        _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+        if (rowsize > 0 && colsize > 0) {
+          ActConfig _actconfig{
+              rowidx, colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(), cb.mL2Cache};
+          mActLauncher.launch(_actconfig,
+                              {_param.Seq, _param.FMid, _param.Fin, _param.paramA, _param.paramW1, _param.param1, NULL},
+                              quanA);
+        }
+      }
+#pragma omp barrier
+      mLauncher.mProA.template quantizeT<_Launcher_T::RT_ISA>({_param.param1.C, _param.param1.ldc}, tidx, quanA2,
+                                                              paraA2);
+#pragma omp barrier
+      {
+        int colidx, rowidx, rowsize, colsize;
+        _paral2.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+        if (rowsize > 0 && colsize > 0) {
+          Config _config{
+              rowidx,     colidx, rowsize, colsize, _paral2.getMStep(), _paral2.getNStep(), _paral2.getKStep(),
+              cb.mL2Cache};
+          mLauncher.launch(_config,
+                           {_param.Seq, _param.FOut, _param.FMid, _param.paramA, _param.paramW2, _param.param2, NULL},
+                           quanA2);
+        }
+      }
+    }
+    return JblasSuccess;
+  }
+
+ protected:
+  _Launcher_T mLauncher;
+  _GeluLauncher_T mActLauncher;
+};
+
 }  // namespace transformer
 namespace kblock {
 namespace avx512_vnni {
@@ -195,6 +299,13 @@ using SiluGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLaunche
     JblasAVX512_VNNI, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
     jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
     custom::epilogue::Silu<float>>;
+using GeluGemmSKernelDynamicS4KBlock =
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        JblasAVX512_VNNI,
+        jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+        jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        custom::epilogue::Gelu<float>>;
 }  // namespace avx512_vnni
 namespace amx_int8 {
 using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
@@ -309,6 +420,26 @@ void jblas_weightcomp_FFN_SiLu_f32_forward(float* activation, void* w1ptr, void*
   delete w1tmp;
   delete w2tmp;
   delete w3tmp;
+}
+
+void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1,
+                                           float* output, int seq, int fin, int fmid, int fout) {
+  auto w1tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w1ptr, 0);
+  auto w2tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w2ptr, 0);
+  if (w1tmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
+      w1tmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK) {
+    using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmSKernelDynamicS4KBlock;
+    using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::GeluGemmSKernelDynamicS4KBlock;
+    using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
+    static FusedInter finter;
+    int lda = fin;
+    int ldtmp1 = fmid;
+    int ldo = fout;
+    finter.compute(
+        {seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp,  tmp1, ldtmp1, output, ldo});
+  }
+  delete w1tmp;
+  delete w2tmp;
 }
 
 void jblas_timer(bool _init) {

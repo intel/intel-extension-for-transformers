@@ -442,7 +442,7 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "MAP_BINARY",
 };
 
-static_assert(NE_OP_COUNT == 53, "NE_OP_COUNT != 53");
+static_assert(NE_OP_COUNT == 54, "NE_OP_COUNT != 54");
 
 static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "none",
@@ -2008,6 +2008,29 @@ struct ne_tensor* ne_ffn_silu(struct ne_context* ctx, struct ne_tensor* w1, stru
   result->opt[1] = w3;
   result->opt[2] = tmp;
   result->opt[3] = tmp1;
+  return result;
+}
+
+struct ne_tensor* ne_ffn_gelu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2, struct ne_tensor* src) {
+  NE_ASSERT(w2->ne[0] == w1->ne[1]);
+
+  bool is_node = false;
+
+  if (src->grad || w1->grad || w2->grad ) {
+    is_node = true;
+  }
+
+  const int64_t ne[4] = {w2->ne[1], src->ne[1], src->ne[2], src->ne[3]};
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, ne);//, NE_SIZE_CALC
+  const int64_t tne[4] = {w1->ne[1], src->ne[1], src->ne[2], src->ne[3]};
+  struct ne_tensor* tmp = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, tne);
+
+  result->op = NE_OP_MUL_FFN_GELU;
+  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->src0 = src;
+  result->src1 = w1;
+  result->opt[0] = w2;
+  result->opt[1] = tmp;
   return result;
 }
 
@@ -6057,6 +6080,25 @@ static void ne_compute_forward_ffn_silu(const struct ne_compute_params* params, 
                                         (float*)tmp1->data, (float*)dst->data, seq, fin, fmid, fout);
 }
 
+static void ne_compute_forward_ffn_gelu(const struct ne_compute_params* params, const struct ne_tensor* src,
+                                        const struct ne_tensor* w1, const struct ne_tensor* w2, 
+                                        const struct ne_tensor* tmp, struct ne_tensor* dst) {
+  if (params->type == NE_TASK_INIT) {
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+  printf("%d\n",src->type);
+  const int fin = src->ne[0];
+  const int fout = dst->ne[0];
+  const int fmid = w1->ne[1];
+  const int seq = dst->ne[1];
+  jblas_weightcomp_FFN_GeLu_f32_forward((float*)src->data, w1->data, w2->data, (float*)tmp->data,
+                                        (float*)dst->data, seq, fin, fmid, fout);
+}
+
 // ne_compute_forward_scale
 
 static void ne_compute_forward_scale_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -8662,6 +8704,9 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
       ne_compute_forward_ffn_silu(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor->opt[2],
                                   tensor->opt[3], tensor);
     } break;
+    case NE_OP_MUL_FFN_GELU: {
+      ne_compute_forward_ffn_gelu(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor);
+    } break;
     case NE_OP_SCALE: {
       ne_compute_forward_scale(params, tensor->src0, tensor->src1, tensor);
     } break;
@@ -9651,6 +9696,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
           work_size = MAX(work_size, cur);
         } break;
         case NE_OP_MUL_FFN_SILU:
+        case NE_OP_MUL_FFN_GELU:
         case NE_OP_MUL_QKV: {
           node->n_tasks = 1;
         } break;

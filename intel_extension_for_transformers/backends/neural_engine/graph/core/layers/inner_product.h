@@ -26,6 +26,9 @@ void jblas_weightcomp_QKV_f32_forward(float* activation, void* wqptr, void* wkpt
 void jblas_weightcomp_FFN_SiLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, void* w3ptr, float* tmp1,
                                            float* tmp2, float* output, int seq, int fin, int fmid, int fout);
 
+void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1,
+                                           float* output, int seq, int fin, int fmid, int fout);
+
 void jblas_timer(bool _init);
 
 int jblas_set_threads(int _nth);

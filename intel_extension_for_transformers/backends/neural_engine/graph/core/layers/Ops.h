@@ -72,6 +72,7 @@ enum ne_op {
   // LLM related
   NE_OP_MUL_QKV,
   NE_OP_MUL_FFN_SILU,
+  NE_OP_MUL_FFN_GELU,
   NE_OP_FLASH_ATTN,
   NE_OP_FLASH_FF,
 
