@@ -13,12 +13,16 @@
 #  limitations under the License.
 
 find_package(Threads REQUIRED)
-file(GLOB inner_product_srcs "inner_product/*.cpp")
-set(sources ne_layers.c ${inner_product_srcs})
+file(GLOB layers_srcs "layers/*.cpp")
+set(sources ne_layers.c ${layers_srcs})
 
 add_library_w_warning(ne_layers "${sources}")
 
 target_include_directories(ne_layers PUBLIC .)
 target_compile_features(ne_layers PUBLIC c_std_11) # don't bump
 set_target_properties(ne_layers PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(ne_layers PUBLIC rt Threads::Threads jblas::jblas ne_vec)
+target_link_libraries(ne_layers PUBLIC Threads::Threads jblas::jblas ne_vec)
+if(NOT WIN32)
+  target_link_libraries(ne_layers PUBLIC rt)
+endif()
+

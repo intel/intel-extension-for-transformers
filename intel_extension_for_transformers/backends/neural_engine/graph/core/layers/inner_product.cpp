@@ -11,10 +11,10 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#include "inner_product/inner_product.h"
+#include "layers/inner_product.h"
+#include "layers/ele_wise.h"
 #include "jblas/jit_blas_weight_compression.h"
 #include "jblas/jit_blas_transformer.h"
-#include "layers/ele_wise.h"
 
 using namespace jblas;
 

@@ -29,12 +29,12 @@ class JitBase : protected Xbyak::CodeGenerator {
  protected:
   JitBase(size_t size = 16 * 1024) : CodeGenerator(size) {}
 
-  void load32(const Xbyak::Reg64 &reg, const Xbyak::Address &addr) {
+  void load32(const Xbyak::Reg64& reg, const Xbyak::Address& addr) {
     xor_(reg, reg);
     mov(reg.cvt32(), addr);
   }
 
-  void vreg_push(const Xbyak::Reg64 &baseaddr) {
+  void vreg_push(const Xbyak::Reg64& baseaddr) {
 #ifdef _WIN32
     for (int i = 0; i < 10; i++) {
       movaps(xword[baseaddr + i * 16], Xbyak::Xmm(6 + i));
@@ -42,7 +42,7 @@ class JitBase : protected Xbyak::CodeGenerator {
 #endif
   }
 
-  void vreg_pop(const Xbyak::Reg64 &baseaddr) {
+  void vreg_pop(const Xbyak::Reg64& baseaddr) {
 #ifdef _WIN32
     for (int i = 0; i < 10; i++) {
       movaps(Xbyak::Xmm(6 + i), xword[baseaddr + i * 16]);
@@ -50,9 +50,8 @@ class JitBase : protected Xbyak::CodeGenerator {
 #endif
   }
 
-  void generate_Nbitsmask(const Xbyak::Opmask &_msk, const Xbyak::Reg64 &_pos,
-                          const Xbyak::Reg64 &_total, const Xbyak::Reg64 &_tmp,
-                          const Xbyak::Reg64 &_tmp1, int N) {
+  void generate_Nbitsmask(const Xbyak::Opmask& _msk, const Xbyak::Reg64& _pos, const Xbyak::Reg64& _total,
+                          const Xbyak::Reg64& _tmp, const Xbyak::Reg64& _tmp1, int N) {
     inLocalLabel();
     mov(_tmp, _total);
     sub(_tmp, _pos);
@@ -98,20 +97,16 @@ class JitAvx512f : protected JitAvx2 {
   static int constexpr VBits = 512;
   typedef Xbyak::Zmm vreg_t;
 
-  void interleave_2rows_4regs(Xbyak::Zmm *src_2regs, Xbyak::Zmm *tmp_2reg) {
+  void interleave_2rows_4regs(Xbyak::Zmm* src_2regs, Xbyak::Zmm* tmp_2reg) {
     vpunpcklwd(tmp_2reg[0], src_2regs[0], src_2regs[1]);
     vpunpckhwd(tmp_2reg[1], src_2regs[0], src_2regs[1]);
-    vshuff32x4(src_2regs[0], tmp_2reg[0], tmp_2reg[1],
-               0 | (1 << 2) | (0 << 4) | (1 << 6));
-    vshuff32x4(src_2regs[0], src_2regs[0], src_2regs[0],
-               0 | (2 << 2) | (1 << 4) | (3 << 6));
-    vshuff32x4(src_2regs[1], tmp_2reg[0], tmp_2reg[1],
-               2 | (3 << 2) | (2 << 4) | (3 << 6));
-    vshuff32x4(src_2regs[1], src_2regs[1], src_2regs[1],
-               0 | (2 << 2) | (1 << 4) | (3 << 6));
+    vshuff32x4(src_2regs[0], tmp_2reg[0], tmp_2reg[1], 0 | (1 << 2) | (0 << 4) | (1 << 6));
+    vshuff32x4(src_2regs[0], src_2regs[0], src_2regs[0], 0 | (2 << 2) | (1 << 4) | (3 << 6));
+    vshuff32x4(src_2regs[1], tmp_2reg[0], tmp_2reg[1], 2 | (3 << 2) | (2 << 4) | (3 << 6));
+    vshuff32x4(src_2regs[1], src_2regs[1], src_2regs[1], 0 | (2 << 2) | (1 << 4) | (3 << 6));
   }
 
-  void transpose16x16_4B(Xbyak::Zmm *src, Xbyak::Zmm *tmp, const int N = 16) {
+  void transpose16x16_4B(Xbyak::Zmm* src, Xbyak::Zmm* tmp, const int N = 16) {
     for (int i = 0; i < 8; ++i) {
       vpunpckldq(tmp[2 * i + 0], src[2 * i], src[2 * i + 1]);
       vpunpckhdq(tmp[2 * i + 1], src[2 * i], src[2 * i + 1]);
@@ -141,8 +136,7 @@ class JitAvx512f : protected JitAvx2 {
     }
   }
 
-  void interleave_4rows_6regs(Xbyak::Zmm *src_4regs, Xbyak::Zmm *tmp_regs,
-                              const Xbyak::Opmask *masks) {
+  void interleave_4rows_6regs(Xbyak::Zmm* src_4regs, Xbyak::Zmm* tmp_regs, const Xbyak::Opmask* masks) {
     vpunpcklbw(tmp_regs[0], src_4regs[0], src_4regs[1]);
     vpunpckhbw(tmp_regs[1], src_4regs[0], src_4regs[1]);
     vpunpcklbw(tmp_regs[2], src_4regs[2], src_4regs[3]);
@@ -155,39 +149,34 @@ class JitAvx512f : protected JitAvx2 {
     vshuff32x4(tmp_regs[1], tmp_regs[4], tmp_regs[0], (4 << 4) | 4);
     vshuff32x4(tmp_regs[3], tmp_regs[5], tmp_regs[2], (4 << 4) | 4);
     vmovups(src_4regs[0], tmp_regs[1]);
-    vshuff32x4(src_4regs[0] | masks[0], tmp_regs[3], tmp_regs[3],
-               0 | (0 << 2) | (0 << 4) | (2 << 6));
+    vshuff32x4(src_4regs[0] | masks[0], tmp_regs[3], tmp_regs[3], 0 | (0 << 2) | (0 << 4) | (2 << 6));
     vmovups(src_4regs[1], tmp_regs[3]);
-    vshuff32x4(src_4regs[1] | masks[1], tmp_regs[1], tmp_regs[1],
-               1 | (0 << 2) | (3 << 4) | (0 << 6));
+    vshuff32x4(src_4regs[1] | masks[1], tmp_regs[1], tmp_regs[1], 1 | (0 << 2) | (3 << 4) | (0 << 6));
     vshuff32x4(tmp_regs[1], tmp_regs[4], tmp_regs[0], (14 << 4) | 14);
     vshuff32x4(tmp_regs[3], tmp_regs[5], tmp_regs[2], (14 << 4) | 14);
     vmovups(src_4regs[2], tmp_regs[1]);
-    vshuff32x4(src_4regs[2] | masks[0], tmp_regs[3], tmp_regs[3],
-               0 | (0 << 2) | (0 << 4) | (2 << 6));
+    vshuff32x4(src_4regs[2] | masks[0], tmp_regs[3], tmp_regs[3], 0 | (0 << 2) | (0 << 4) | (2 << 6));
     vmovups(src_4regs[3], tmp_regs[3]);
-    vshuff32x4(src_4regs[3] | masks[1], tmp_regs[1], tmp_regs[1],
-               1 | (0 << 2) | (3 << 4) | (0 << 6));
+    vshuff32x4(src_4regs[3] | masks[1], tmp_regs[1], tmp_regs[1], 1 | (0 << 2) | (3 << 4) | (0 << 6));
   }
 
-  void cvt_fp32_bf16(const Xbyak::Ymm &_bf16, const Xbyak::Zmm &_fp32) {
+  void cvt_fp32_bf16(const Xbyak::Ymm& _bf16, const Xbyak::Zmm& _fp32) {
     vpsrld(_fp32, _fp32, 16);
     vpmovdw(_bf16, _fp32);
   }
 
-  void loadbf16_f32(const Xbyak::Zmm &dst, const Xbyak::Address &addr) {
+  void loadbf16_f32(const Xbyak::Zmm& dst, const Xbyak::Address& addr) {
     vpmovzxwd(dst, addr);
     vpslld(dst, dst, 16);
   }
 
-  void broadcastbf16_f32(const Xbyak::Zmm &dst, const Xbyak::Reg64 &tmp,
-                         const Xbyak::Address &addr) {
+  void broadcastbf16_f32(const Xbyak::Zmm& dst, const Xbyak::Reg64& tmp, const Xbyak::Address& addr) {
     mov(tmp.cvt16(), addr);
     shl(tmp.cvt32(), 16);
     vpbroadcastd(dst, tmp.cvt32());
   }
 
-  void store_fp32_bf16(const Xbyak::Zmm &_fp32, const Xbyak::Address &_add) {
+  void store_fp32_bf16(const Xbyak::Zmm& _fp32, const Xbyak::Address& _add) {
     auto bf16 = Xbyak::Ymm(_fp32.getIdx());
     cvt_fp32_bf16(bf16, _fp32);
     vmovups(_add, bf16);
@@ -207,8 +196,7 @@ class JitAmxtile : protected JitAvx512f {
     uint8_t rows[16];
   };
 
-  static void configure_tiles(tileconfig_t &tc, int TILE_M, int TILE_N,
-                              int TILE_K, int elesize, int ANum, int BNum,
+  static void configure_tiles(tileconfig_t& tc, int TILE_M, int TILE_N, int TILE_K, int elesize, int ANum, int BNum,
                               int CNum) {
     // Filling tile configure structure. Could be done offline.
     tc.palette_id = 1;
@@ -234,9 +222,7 @@ class JitAmxtile : protected JitAvx512f {
 
 class JitAmxbf16 : protected JitAmxtile {
  protected:
-  void cvt_fp32_bf16(const Xbyak::Ymm &_bf16, const Xbyak::Zmm &_fp32) {
-    vcvtneps2bf16(_bf16, _fp32);
-  }
+  void cvt_fp32_bf16(const Xbyak::Ymm& _bf16, const Xbyak::Zmm& _fp32) { vcvtneps2bf16(_bf16, _fp32); }
 };
 
 class JitAmxint8 : protected JitAmxtile {};

@@ -534,7 +534,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       cur = ne_mul(ctx0, cur, model.layers[il].attention_norm);
     }
     ne_tensor *Qcur, *Kcur, *Vcur;
-    if (model.layers[il].wq->type == NE_TYPE_Q4_JBLAS) {//fused execution of QKV
+    if (model.layers[il].wq->type == NE_TYPE_Q4_JBLAS) {  // fused execution of QKV
       struct ne_tensor* QKVcur = ne_mul_qkv(ctx0, model.layers[il].wq, model.layers[il].wk, model.layers[il].wv, cur);
       Qcur = ne_rope_inplace(
           ctx0,
@@ -666,7 +666,6 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 
         cur = ne_mul_mat(ctx0, model.layers[il].w2, cur);
       }
-      
     }
 
     cur = ne_add(ctx0, cur, inpFF);

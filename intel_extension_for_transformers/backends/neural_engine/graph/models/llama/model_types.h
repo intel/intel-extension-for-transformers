@@ -141,16 +141,16 @@ enum model_ftype {
   MODEL_FTYPE_MOSTLY_Q4_1_SOME_F16 = 4,  // tok_embeddings.weight and output.weight are F16
   // MODEL_FTYPE_MOSTLY_Q4_2       = 5, // support has been removed
   // MODEL_FTYPE_MOSTLY_Q4_3       = 6, // support has been removed
-  MODEL_FTYPE_MOSTLY_Q8_0 = 7,                // except 1d tensors
-  MODEL_FTYPE_MOSTLY_Q5_0 = 8,                // except 1d tensors
-  MODEL_FTYPE_MOSTLY_Q5_1 = 9,                // except 1d tensors
-  MODEL_FTYPE_MOSTLY_Q4_JBLAS_B32 = 10,       // except 1d tensors
-  MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128 = 11,      // except 1d tensors
-  MODEL_FTYPE_MOSTLY_Q4_JBLAS_B1024 = 12,     // except 1d tensors
-  MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32 = 13,  // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q8_0 = 7,                     // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q5_0 = 8,                     // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q5_1 = 9,                     // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_B32 = 10,            // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128 = 11,           // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_B1024 = 12,          // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32 = 13,       // except 1d tensors
   MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32 = 14,       // except 1d tensors
-  MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32 = 15,       // except 1d tensors
-  MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128 = 16,       // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32 = 15,  // except 1d tensors
+  MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128 = 16,      // except 1d tensors
 };
 
 enum model_file_version {

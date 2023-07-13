@@ -99,8 +99,7 @@ static void request_perm_xtile_data() {
   rc = syscall(SYS_arch_prctl, ARCH_GET_XCOMP_PERM, &bitmask);
   if (rc) fatal_error("prctl(ARCH_GET_XCOMP_PERM) error: %ld", rc);
 
-  if (bitmask & XFEATURE_MASK_XTILE)
-    printf("ARCH_REQ_XCOMP_PERM XTILE_DATA successful.\n");
+  if (bitmask & XFEATURE_MASK_XTILE) printf("ARCH_REQ_XCOMP_PERM XTILE_DATA successful.\n");
 }
 #else
 static void request_perm_xtile_data() {}
@@ -117,17 +116,13 @@ class isa_base {
   static bool constexpr amx_int8 = ISA_T >= JblasAMX_INT8;
 };
 
-static inline int padto_le(int src, int padding) {
-  return src / padding * padding;
-}
+static inline int padto_le(int src, int padding) { return src / padding * padding; }
 
 static inline int updiv(int a, int b) { return (a + b - 1) / b; }
 
 static inline int downdiv(int a, int b) { return a / b; }
 
-static inline int remainsize(int pos, int size, int N) {
-  return pos + N <= size ? N : size - pos;
-}
+static inline int remainsize(int pos, int size, int N) { return pos + N <= size ? N : size - pos; }
 
 template <typename _SRCT, typename _DSTT>
 static inline _DSTT cast(_SRCT _src) {
@@ -162,14 +157,14 @@ bf16 cast(float _src) {
 }
 
 template <typename _T>
-void serialize(int8_t *&buf, _T _val) {
-  *(_T *)buf = _val;
+void serialize(int8_t*& buf, _T _val) {
+  *(_T*)buf = _val;
   buf += sizeof(_T);
 }
 
 template <typename _T>
-_T deserialize(int8_t *&buf) {
-  auto val = *(_T *)buf;
+_T deserialize(int8_t*& buf) {
+  auto val = *(_T*)buf;
   buf += sizeof(_T);
   return val;
 }
@@ -187,20 +182,18 @@ class aligned_vector {
   size_t size() { return mRawsize; }
   void resize(size_t size) {
     mRawsize = size;
-    mAlignedsize =
-        (mRawsize + _Alignment - 1) / _Alignment * _Alignment + _Alignment;
+    mAlignedsize = (mRawsize + _Alignment - 1) / _Alignment * _Alignment + _Alignment;
     mVec.resize(mAlignedsize);
     auto uptr = reinterpret_cast<uint64_t>(mVec.data());
-    mPtr = reinterpret_cast<_T *>((uptr + _Alignment - 1) / _Alignment *
-                                  _Alignment);
+    mPtr = reinterpret_cast<_T*>((uptr + _Alignment - 1) / _Alignment * _Alignment);
   }
-  _T *data() const { return mPtr; }
-  _T &operator[](size_t _n) noexcept { return mPtr[_n]; }
+  _T* data() const { return mPtr; }
+  _T& operator[](size_t _n) noexcept { return mPtr[_n]; }
 
  protected:
   size_t mAlignedsize, mRawsize;
   std::vector<_T> mVec;
-  _T *mPtr;
+  _T* mPtr;
 };
 
 using milliseconds = std::chrono::milliseconds;
@@ -220,10 +213,7 @@ class timer {
 
   bool null_state() { return startT == stime_point_t::min(); }
 
-  float stop() {
-    return static_cast<float>(
-        std::chrono::duration_cast<_DUR>(sclock_t::now() - startT).count());
-  }
+  float stop() { return static_cast<float>(std::chrono::duration_cast<_DUR>(sclock_t::now() - startT).count()); }
 
   stime_point_t startT;
 };
@@ -251,16 +241,13 @@ class minmax_statistics {
   size_t count;
 };
 
-
-template <int _PRINT_CYCLE_MS = 100, typename _PRECISION = microseconds,
-          typename _LOG_PRECISION = milliseconds>
+template <int _PRINT_CYCLE_MS = 100, typename _PRECISION = microseconds, typename _LOG_PRECISION = milliseconds>
 class timer_statistics_logger {
  public:
   typedef timer<milliseconds> log_timer_t;
   timer_statistics_logger() {
     clear();
-    log_ratio = (float)std::chrono::duration_cast<_PRECISION>(_LOG_PRECISION(1))
-                    .count();
+    log_ratio = (float)std::chrono::duration_cast<_PRECISION>(_LOG_PRECISION(1)).count();
   }
 
   void clear() {
@@ -298,7 +285,7 @@ class timer_statistics_logger {
     return false;
   }
 
-  const char *get_log_str() {
+  const char* get_log_str() {
     sprintf(str, "Min:%.4f, Max:%.4f, Average:%.4f", min_val, max_val, avg_val);
     return str;
   }
@@ -363,7 +350,7 @@ class CpuDevice {
     omp_set_num_threads(numthreads);
   }
 
-  static CpuDevice *getInstance() {
+  static CpuDevice* getInstance() {
     static CpuDevice instance;
     return &instance;
   }
@@ -371,15 +358,13 @@ class CpuDevice {
 
  protected:
   uint32_t L2Cache, L1Cache;
-  bool mHasAVX2, mHasAVX_VNNI, mHasAVX, mHasAVX512_VNNI, mHasAMX_INT8,
-      mHasAMX_BF16, mHasAVX512F;
+  bool mHasAVX2, mHasAVX_VNNI, mHasAVX, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16, mHasAVX512F;
   int numcores;
   int ompthreads;
   int numthreads;
 };
 
-#define GetCPUDevice() \
-  auto _cd = jblas::utils::parallel::CpuDevice::getInstance();
+#define GetCPUDevice() auto _cd = jblas::utils::parallel::CpuDevice::getInstance();
 
 #define CheckISA(ISA)                       \
   {                                         \
@@ -390,8 +375,7 @@ class CpuDevice {
   }
 
 struct Parallel2D {
-  virtual void getIndex(int threadIdx, int *row, int *col, int *rowsize,
-                        int *colsize) {
+  virtual void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize) {
     if (threadIdx >= mValidThreads) {
       *rowsize = 0;
       *colsize = 0;
@@ -405,14 +389,11 @@ struct Parallel2D {
     *rowsize = padto(remainsize(*row, mRows, mThdRow), mPadRow);
   }
 
-  void calc_valid_threads() {
-    mValidThreads = mColThreads * int(std::ceil(float(mRows) / mThdRow));
-  }
+  void calc_valid_threads() { mValidThreads = mColThreads * int(std::ceil(float(mRows) / mThdRow)); }
 
   void print() {
     printf("Thread Block:(%d,%d)\n", mThdRow, mThdCol);
-    printf("Thread in use:%d of %d, Nx%d\n", mValidThreads, mThreadsCount,
-           mColThreads);
+    printf("Thread in use:%d of %d, Nx%d\n", mValidThreads, mThreadsCount, mColThreads);
   }
   int mThdRow = 0, mThdCol = 0;
   int mColThreads = 0;
@@ -447,9 +428,7 @@ struct Parallel2DRowMajor : Parallel2D {
 template <class _GemmCore_T>
 struct Parallel2DGemm : Parallel2D {
  public:
-  Parallel2DGemm() {
-    mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f;
-  }
+  Parallel2DGemm() { mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f; }
   static int constexpr BSize = sizeof(typename _GemmCore_T::BType);
   static int constexpr CSize = sizeof(typename _GemmCore_T::CType);
   bool update(int M, int N, int K, int threads) {
@@ -518,15 +497,13 @@ struct Parallel2DGemm : Parallel2D {
   }
   void print() {
     Parallel2D::print();
-    printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(),
-           getKStep());
+    printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(), getKStep());
     printf("Cache Size:%llu\n", mL2Size);
   }
 
  protected:
   float calculate_score() {
-    int tmpnstep =
-        mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
+    int tmpnstep = mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
     float threadratio = float(mValidThreads) / mThreadsCount;
     float density = float(tmpnstep) * mThdRow / (tmpnstep + mThdRow);
     const float Thres = 64;
@@ -592,8 +569,7 @@ struct Parallel2DRowMajorColBlock : Parallel2D {
   int mColBlock;
   int mTmpStride;
   int mTmpSize;
-  void update(int row, int col, int minrow, int mincol, int colblock,
-              int ncores) {
+  void update(int row, int col, int minrow, int mincol, int colblock, int ncores) {
     mCols = col;
     mRows = row;
     mPadCol = mincol;
@@ -629,8 +605,7 @@ struct Parallel2DRowMajorColBlock : Parallel2D {
     calc_valid_threads();
   }
 
-  virtual void getIndex(int threadIdx, int *row, int *col, int *rowsize,
-                        int *colsize, int *block, int *idxinblk) {
+  virtual void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize, int* block, int* idxinblk) {
     if (threadIdx >= mValidThreads) {
       *rowsize = 0;
       *colsize = 0;
@@ -670,9 +645,7 @@ struct Parallel2DRowMajorColBlock : Parallel2D {
 template <class _GemmCore_T>
 struct Parallel2DGemmKBlock : Parallel2D {
  public:
-  Parallel2DGemmKBlock() {
-    mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f;
-  }
+  Parallel2DGemmKBlock() { mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f; }
   static int constexpr BSize = sizeof(typename _GemmCore_T::BType);
   static int constexpr CSize = sizeof(typename _GemmCore_T::CType);
   bool update(int M, int N, int K, int KBlock, int threads) {
@@ -735,15 +708,13 @@ struct Parallel2DGemmKBlock : Parallel2D {
   }
   void print() {
     Parallel2D::print();
-    printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(),
-           getKStep());
+    printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(), getKStep());
     printf("Cache Size:%llu\n", mL2Size);
   }
 
  protected:
   float calculate_score() {
-    int tmpnstep =
-        mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
+    int tmpnstep = mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
     float threadratio = float(mValidThreads) / mThreadsCount;
     float density = float(tmpnstep) * mThdRow / (tmpnstep + mThdRow);
     const float Thres = 64;
@@ -802,9 +773,7 @@ struct Parallel2DGemmKBlock : Parallel2D {
 template <class _GemmCore_T>
 struct Parallel2DGemmKBlockFixed : Parallel2D {
  public:
-  Parallel2DGemmKBlockFixed() {
-    mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f;
-  }
+  Parallel2DGemmKBlockFixed() { mL2Size = CpuDevice::getInstance()->getL2CacheSize() * 0.8f; }
   static int constexpr BSize = sizeof(typename _GemmCore_T::BType);
   static int constexpr CSize = sizeof(typename _GemmCore_T::CType);
   bool update(int M, int N, int K, int KBlock, int threads) {
@@ -867,15 +836,13 @@ struct Parallel2DGemmKBlockFixed : Parallel2D {
   }
   void print() {
     Parallel2D::print();
-    printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(),
-           getKStep());
+    printf("GEMM MStep:%d NStep:%d KStep:%d\n", getMStep(), getNStep(), getKStep());
     printf("Cache Size:%llu\n", mL2Size);
   }
 
  protected:
   float calculate_score() {
-    int tmpnstep =
-        mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
+    int tmpnstep = mThdCol < _GemmCore_T::PREFERED_N ? mThdCol : _GemmCore_T::PREFERED_N;
     float threadratio = float(mValidThreads) / mThreadsCount;
     float density = float(tmpnstep) * mThdRow / (tmpnstep + mThdRow);
     const float Thres = 64;

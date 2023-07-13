@@ -135,7 +135,6 @@ link_directories(
 add_subdirectory(core)
 add_subdirectory(jblas)
 add_subdirectory(vectors)
-add_subdirectory(layers)
 add_subdirectory(models)
 
 if (NE_BUILD_APPLICATIONS)

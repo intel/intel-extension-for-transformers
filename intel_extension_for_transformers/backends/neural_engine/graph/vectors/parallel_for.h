@@ -32,7 +32,7 @@ void parallel_for(sycl::queue& q, size_t size, kernel_t kernel, kernel_tail_t ke
   e.wait();
   e_tail.wait();
 }
-//#endif
+// #endif
 
 // Example:
 //    float* input;

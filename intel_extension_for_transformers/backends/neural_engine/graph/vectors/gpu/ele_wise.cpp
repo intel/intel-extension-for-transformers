@@ -269,7 +269,7 @@ int main() {
   float* dst1 = malloc_shared<float>(size, q);
   //   float scale = 0.5f;
   for (unsigned i = 0; i < size; ++i) {
-    src0[i] = 4* i;
+    src0[i] = 4 * i;
   }
 
   ne_vec_gelu_f32(size, dst, src0);
@@ -283,7 +283,6 @@ int main() {
     std::cout << (float)dst1[i] << " ";
   }
   std::cout << std::endl;
-
 
   free(src0, q);
   free(src1, q);

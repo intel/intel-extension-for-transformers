@@ -31,13 +31,11 @@ static inline __m256i unpack_4bits_avx2(__m128i v4bits, __m256i vmask) {
   auto v2src0_ = _mm256_cvtepi8_epi16(vsrc0_);
   v2src0 = _mm256_slli_epi16(v2src0, 8);
   v2src0_ = _mm256_mask_mov_epi8(v2src0_, 0xaaaaaaaa, v2src0);
-  v2src0_ = _mm256_castps_si256(
-      _mm256_and_ps(_mm256_castsi256_ps(v2src0_), _mm256_castsi256_ps(vmask)));
+  v2src0_ = _mm256_castps_si256(_mm256_and_ps(_mm256_castsi256_ps(v2src0_), _mm256_castsi256_ps(vmask)));
   return v2src0_;
 }
 
-static inline void convert_s4_s8_48_avx2(int8_t* dstptr, int8_t* srcptr,
-                                         __m256i vmask) {
+static inline void convert_s4_s8_48_avx2(int8_t* dstptr, int8_t* srcptr, __m256i vmask) {
   auto vsrc0 = _mm_loadu_si128((const __m128i*)srcptr);
   auto vsrc1 = _mm_loadl_epi64((const __m128i*)(srcptr + 16));
   auto dst0 = unpack_4bits_avx2(vsrc0, vmask);
@@ -47,8 +45,7 @@ static inline void convert_s4_s8_48_avx2(int8_t* dstptr, int8_t* srcptr,
   _mm_storeu_si128((__m128i*)(dstptr + 32), dst1low);
 }
 
-static inline void convert_s4_s8_24_avx2(int8_t* dstptr, int8_t* srcptr,
-                                         __m256i vmask) {
+static inline void convert_s4_s8_24_avx2(int8_t* dstptr, int8_t* srcptr, __m256i vmask) {
   int8_t tmp[32];
   auto vsrc0 = _mm_loadu_si128((__m128i*)srcptr);
   auto dst0 = unpack_4bits_avx2(vsrc0, vmask);
@@ -58,8 +55,7 @@ static inline void convert_s4_s8_24_avx2(int8_t* dstptr, int8_t* srcptr,
   *(int64_t*)(dstptr + 16) = *(int64_t*)(tmp + 16);
 }
 
-static inline void convert_s4_s8_64_avx2(int8_t* dstptr, int8_t* srcptr,
-                                         __m256i vmask) {
+static inline void convert_s4_s8_64_avx2(int8_t* dstptr, int8_t* srcptr, __m256i vmask) {
   auto vsrc0 = _mm_loadu_si128((__m128i*)srcptr);
   auto vsrc1 = _mm_loadu_si128((__m128i*)(srcptr + 16));
   auto dst0 = unpack_4bits_avx2(vsrc0, vmask);
@@ -69,8 +65,7 @@ static inline void convert_s4_s8_64_avx2(int8_t* dstptr, int8_t* srcptr,
 }
 
 template <int N>
-static inline void dequant_s8_N_avx2(float* dstptr, int8_t* srcptr,
-                                     __m256* vscales) {
+static inline void dequant_s8_N_avx2(float* dstptr, int8_t* srcptr, __m256* vscales) {
   static_assert(N % 8 == 0);
   int constexpr VLoop = N / 8;
   for (int iv = 0; iv < VLoop; iv += 1) {
@@ -149,10 +144,9 @@ inline JBLAS_CODE decompress_avx2(utils::int4x2* srcptr, float* dstptr, int row,
   return JblasNotSupport;
 }
 #endif
-static inline JBLAS_CODE alphabeta_f32_f32(
-    const float alpha, const float* srcptr, const int srcstep, const float beta,
-    const float* src1ptr, const int src1step, float* dstptr, const int dststep,
-    const int M, const int N) {
+static inline JBLAS_CODE alphabeta_f32_f32(const float alpha, const float* srcptr, const int srcstep, const float beta,
+                                           const float* src1ptr, const int src1step, float* dstptr, const int dststep,
+                                           const int M, const int N) {
   int constexpr Vlen = 8;
   auto vN = utils::padto_le(N, Vlen);
   auto valpha = _mm256_set1_ps(alpha);
@@ -169,8 +163,7 @@ static inline JBLAS_CODE alphabeta_f32_f32(
         _mm256_storeu_ps(dstptr + i * dststep + j, vdst);
       }
       for (; j < N; j += 1) {
-        dstptr[i * dststep + j] =
-            alpha * srcptr[i * srcstep + j] + beta * src1ptr[i * src1step + j];
+        dstptr[i * dststep + j] = alpha * srcptr[i * srcstep + j] + beta * src1ptr[i * src1step + j];
       }
     } else {
       for (; j < vN; j += Vlen) {

@@ -12,8 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #include "common.h"
-
+#ifndef _WIN32
 #include <ext/alloc_traits.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unordered_set>
@@ -79,7 +80,7 @@ bool isValidFilename(const std::string& filename) {
   for (char c : filename) {
 #ifdef __linux__
     if (c == '/' || c == '\\') {
-#elif
+#elif _WIN32
     if (c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' || c == '\"' || c == '<' || c == '>' || c == '|') {
 #endif
       return false;

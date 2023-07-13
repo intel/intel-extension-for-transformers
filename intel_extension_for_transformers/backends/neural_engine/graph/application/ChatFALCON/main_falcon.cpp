@@ -40,11 +40,11 @@
 // TODO add n_head_kv to support 40B
 struct falcon_hparams {
   int32_t n_vocab = 65024;
-  int32_t n_ctx   = 2048;
-  int32_t n_embd  = 4544;
-  int32_t n_head  = 71;
+  int32_t n_ctx = 2048;
+  int32_t n_embd = 4544;
+  int32_t n_head = 71;
   int32_t n_layer = 32;
-  int32_t ftype   = 1;
+  int32_t ftype = 1;
 };
 
 struct falcon_layer {
@@ -104,10 +104,10 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
     auto& hparams = model.hparams;
 
     fin.read((char*)&hparams.n_vocab, sizeof(hparams.n_vocab));
-    fin.read((char*)&hparams.n_embd,  sizeof(hparams.n_embd));
-    fin.read((char*)&hparams.n_head,  sizeof(hparams.n_head));
+    fin.read((char*)&hparams.n_embd, sizeof(hparams.n_embd));
+    fin.read((char*)&hparams.n_head, sizeof(hparams.n_head));
     fin.read((char*)&hparams.n_layer, sizeof(hparams.n_layer));
-    fin.read((char*)&hparams.ftype,   sizeof(hparams.ftype));
+    fin.read((char*)&hparams.ftype, sizeof(hparams.ftype));
 
     const int32_t qntvr = hparams.ftype / NE_QNT_VERSION_FACTOR;
     // hparams.n_ctx = std::min(hparams.max_seq_len, hparams.n_ctx);
@@ -157,13 +157,13 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
   {
     const auto& hparams = model.hparams;
 
-    const int n_embd    = hparams.n_embd;
-    const int n_head    = hparams.n_head;
-    const int n_layer   = hparams.n_layer;
-    const int n_ctx     = hparams.n_ctx;
-    const int n_ff      = 4 * model.hparams.n_embd;
-    const int n_vocab   = hparams.n_vocab;
-    const int head_dim  = hparams.n_embd / hparams.n_head;
+    const int n_embd = hparams.n_embd;
+    const int n_head = hparams.n_head;
+    const int n_layer = hparams.n_layer;
+    const int n_ctx = hparams.n_ctx;
+    const int n_ff = 4 * model.hparams.n_embd;
+    const int n_vocab = hparams.n_vocab;
+    const int head_dim = hparams.n_embd / hparams.n_head;
 
     ctx_size += n_embd * n_vocab * ne_type_sizef(wtype);  // tok_embeddings
 
@@ -194,9 +194,9 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
   // create the ne context
   {
     struct ne_init_params params = {
-        .mem_size = ctx_size,
-        .mem_buffer = NULL,
-        .no_alloc = false,
+        /* .mem_size =*/ctx_size,
+        /* .mem_buffer = */ NULL,
+        /*.no_alloc = */ false,
     };
 
     model.ctx = ne_init(params);
@@ -210,11 +210,11 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
   {
     const auto& hparams = model.hparams;
 
-    const int n_embd    = hparams.n_embd;
-    const int n_head    = hparams.n_head;
-    const int n_layer   = hparams.n_layer;
-    const int n_ff      = 4 * model.hparams.n_embd;
-    const int n_vocab   = hparams.n_vocab;
+    const int n_embd = hparams.n_embd;
+    const int n_head = hparams.n_head;
+    const int n_layer = hparams.n_layer;
+    const int n_ff = 4 * model.hparams.n_embd;
+    const int n_vocab = hparams.n_vocab;
 
     model.layers.resize(n_layer);
 
@@ -225,9 +225,9 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
 
     // map by name
     model.tensors["transformer.word_embeddings.weight"] = model.tok_embeddings;
-    model.tensors["transformer.ln_f.weight"]            = model.output_norm;
-    model.tensors["transformer.ln_f.bias"]              = model.output_norm_b;
-    model.tensors["lm_head.weight"]                     = model.lm_head;
+    model.tensors["transformer.ln_f.weight"] = model.output_norm;
+    model.tensors["transformer.ln_f.bias"] = model.output_norm_b;
+    model.tensors["lm_head.weight"] = model.lm_head;
 
     for (int i = 0; i < n_layer; ++i) {
       auto& layer = model.layers[i];
@@ -241,18 +241,13 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
       layer.ffn_down = ne_new_tensor_2d(ctx, wtype, n_ff, n_embd, NE_SIZE_CALC);
 
       // map by name
-      model.tensors["transformer.h." + std::to_string(i) + ".input_layernorm.weight"]                =
-          layer.attention_norm;
-      model.tensors["transformer.h." + std::to_string(i) + ".input_layernorm.bias"]                  =
-          layer.attention_norm_b;
+      model.tensors["transformer.h." + std::to_string(i) + ".input_layernorm.weight"] = layer.attention_norm;
+      model.tensors["transformer.h." + std::to_string(i) + ".input_layernorm.bias"] = layer.attention_norm_b;
       model.tensors["transformer.h." + std::to_string(i) + ".self_attention.query_key_value.weight"] =
           layer.query_key_value;
-      model.tensors["transformer.h." + std::to_string(i) + ".self_attention.dense.weight"]           =
-          layer.wo;
-      model.tensors["transformer.h." + std::to_string(i) + ".mlp.dense_h_to_4h.weight"]              =
-          layer.ffn_up;
-      model.tensors["transformer.h." + std::to_string(i) + ".mlp.dense_4h_to_h.weight"]              =
-          layer.ffn_down;
+      model.tensors["transformer.h." + std::to_string(i) + ".self_attention.dense.weight"] = layer.wo;
+      model.tensors["transformer.h." + std::to_string(i) + ".mlp.dense_h_to_4h.weight"] = layer.ffn_up;
+      model.tensors["transformer.h." + std::to_string(i) + ".mlp.dense_4h_to_h.weight"] = layer.ffn_down;
     }
   }
 
@@ -260,11 +255,11 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
   {
     const auto& hparams = model.hparams;
 
-    const int n_layer   = hparams.n_layer;
-    const int n_ctx     = hparams.n_ctx;
-    const int head_dim  = hparams.n_embd / hparams.n_head;
+    const int n_layer = hparams.n_layer;
+    const int n_ctx = hparams.n_ctx;
+    const int head_dim = hparams.n_embd / hparams.n_head;
 
-    const int64_t n_mem      = n_layer * n_ctx;
+    const int64_t n_mem = n_layer * n_ctx;
     const int64_t n_elements = head_dim * n_mem;
 
     model.memory_k = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_elements, NE_SIZE_CALC);
@@ -368,13 +363,13 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
                  const std::vector<gpt_vocab::id>& embd_inp, std::vector<float>& embd_w, size_t& mem_per_token) {
   const int N = embd_inp.size();
 
-  const auto& hparams   = model.hparams;
+  const auto& hparams = model.hparams;
 
-  const int n_embd      = hparams.n_embd;
-  const int n_layer     = hparams.n_layer;
-  const int n_ctx       = hparams.n_ctx;
-  const int n_head      = hparams.n_head;
-  const int n_vocab     = hparams.n_vocab;
+  const int n_embd = hparams.n_embd;
+  const int n_layer = hparams.n_layer;
+  const int n_ctx = hparams.n_ctx;
+  const int n_head = hparams.n_head;
+  const int n_vocab = hparams.n_vocab;
   const size_t head_dim = n_embd / n_head;
 
   static size_t buf_size = 256u * 1024 * 1024;
@@ -402,9 +397,9 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
   }
 
   struct ne_init_params params = {
-      .mem_size = buf_size,
-      .mem_buffer = buf,
-      .no_alloc = false,
+      /* .mem_size =*/buf_size,
+      /* .mem_buffer = */ buf,
+      /*.no_alloc = */ false,
   };
 
   struct ne_context* ctx0 = ne_init(params);
@@ -422,7 +417,11 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
     struct ne_tensor* cur;
     struct ne_tensor* layernorm_output;
 
-    ne_set_scratch(ctx0, {0, scr0_size, scr0, });
+    ne_set_scratch(ctx0, {
+                             0,
+                             scr0_size,
+                             scr0,
+                         });
 
     // self-attention
     {
@@ -430,7 +429,7 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
         cur = ne_norm(ctx0, inpL);
 
         cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].attention_norm, cur), cur),
-                       ne_repeat(ctx0, model.layers[il].attention_norm_b, cur));
+                     ne_repeat(ctx0, model.layers[il].attention_norm_b, cur));
       }
       layernorm_output = cur;
 
@@ -446,7 +445,7 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
           ne_view_3d(ctx0, cur, head_dim, 1, N, head_dim * sizeof(float), fused_qkv_row_nb, n_embd * sizeof(float));
 
       struct ne_tensor* Vcur = ne_view_3d(ctx0, cur, head_dim, 1, N, head_dim * sizeof(float), fused_qkv_row_nb,
-                                            (n_embd + head_dim) * sizeof(float));
+                                          (n_embd + head_dim) * sizeof(float));
 
       // using mode = 2 for neox mode
       Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2);
@@ -455,9 +454,9 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
       // store key and value to memory
       {
         struct ne_tensor* k = ne_view_1d(ctx0, model.memory_k, N * head_dim,
-                                           (ne_element_size(model.memory_k) * head_dim) * (il * n_ctx + n_past));
+                                         (ne_element_size(model.memory_k) * head_dim) * (il * n_ctx + n_past));
         struct ne_tensor* v = ne_view_1d(ctx0, model.memory_v, N * head_dim,
-                                           (ne_element_size(model.memory_v) * head_dim) * (il * n_ctx + n_past));
+                                         (ne_element_size(model.memory_v) * head_dim) * (il * n_ctx + n_past));
 
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
@@ -468,19 +467,18 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
 
       struct ne_tensor* K =
           ne_permute(ctx0,
-                       ne_reshape_3d(ctx0,
-                                       ne_view_1d(ctx0, model.memory_k, (n_past + N) * head_dim,
-                                                    il * n_ctx * ne_element_size(model.memory_k) * head_dim),
-                                       head_dim, 1, n_past + N),
-                       0, 2, 1, 3);
+                     ne_reshape_3d(ctx0,
+                                   ne_view_1d(ctx0, model.memory_k, (n_past + N) * head_dim,
+                                              il * n_ctx * ne_element_size(model.memory_k) * head_dim),
+                                   head_dim, 1, n_past + N),
+                     0, 2, 1, 3);
 
       // K * Q
       K = ne_cont(ctx0, ne_repeat(ctx0, K, repeat_dummy));
       struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scaled =
-          ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
+      struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
 
       // KQ_masked = mask_past(KQ_scaled)
       struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
@@ -491,11 +489,11 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
       // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
       struct ne_tensor* V =
           ne_permute(ctx0,
-                       ne_reshape_3d(ctx0,
-                                       ne_view_1d(ctx0, model.memory_v, (n_past + N) * head_dim,
-                                                    il * n_ctx * ne_element_size(model.memory_v) * head_dim),
-                                       head_dim, 1, n_past + N),
-                       0, 2, 1, 3);
+                     ne_reshape_3d(ctx0,
+                                   ne_view_1d(ctx0, model.memory_v, (n_past + N) * head_dim,
+                                              il * n_ctx * ne_element_size(model.memory_v) * head_dim),
+                                   head_dim, 1, n_past + N),
+                     0, 2, 1, 3);
 
       V = ne_cont(ctx0, ne_transpose(ctx0, ne_repeat(ctx0, V, repeat_dummy)));
 
@@ -513,10 +511,10 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
     }
 
     ne_set_scratch(ctx0, {
-                               0,
-                               scr1_size,
-                               scr1,
-                           });
+                             0,
+                             scr1_size,
+                             scr1,
+                         });
 
     struct ne_tensor* inpFF = layernorm_output;
     struct ne_tensor* attn_out = ne_cpy(ctx0, cur, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
@@ -535,10 +533,10 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
   }
 
   ne_set_scratch(ctx0, {
-                             0,
-                             scr0_size,
-                             scr0,
-                         });
+                           0,
+                           scr0_size,
+                           scr0,
+                       });
 
   // norm
   {
@@ -546,14 +544,14 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
 
     // inpL = ln_f_g*inpL + ln_f_b
     inpL = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.output_norm, inpL), inpL),
-                    ne_repeat(ctx0, model.output_norm_b, inpL));
+                  ne_repeat(ctx0, model.output_norm_b, inpL));
   }
 
   ne_set_scratch(ctx0, {
-                             0,
-                             0,
-                             nullptr,
-                         });
+                           0,
+                           0,
+                           nullptr,
+                       });
 
   // lm_head
   {
@@ -574,7 +572,7 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
 #ifdef NE_PERF
   bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
   if (engine_profiling_) {
-      ne_graph_profiling(&gf);
+    ne_graph_profiling(&gf);
   }
 #endif
   // if (n_past%100 == 0) {
@@ -618,7 +616,7 @@ int main(int argc, char** argv) {
   }
 
   if (params.n_predict < 0) {
-        params.n_predict = 0;
+    params.n_predict = 0;
   }
 
   std::mt19937 rng(params.seed);
@@ -646,7 +644,7 @@ int main(int argc, char** argv) {
   }
 
   if (params.top_k == 0) {
-        params.top_k = model.hparams.n_vocab;
+    params.top_k = model.hparams.n_vocab;
   }
 
   printf("\n");
@@ -654,7 +652,7 @@ int main(int argc, char** argv) {
   printf("%s: seed           = %d\n", __func__, params.seed);
   printf("%s: n_threads      = %d\n", __func__, params.n_threads);
   printf("%s: n_batch        = %d\n", __func__, params.n_batch);
-  printf("%s: n_ctx          = %d\n",   __func__, params.n_ctx);
+  printf("%s: n_ctx          = %d\n", __func__, params.n_ctx);
   printf("%s: n_predict      = %d\n", __func__, params.n_predict);
   printf("%s: temp           = %.3f\n", __func__, params.temp);
   printf("%s: top_k          = %d\n", __func__, params.top_k);
@@ -775,7 +773,7 @@ int main(int argc, char** argv) {
     printf("%s: total time    = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
     printf("========== eval time log of each prediction ==========\n");
     for (int i = 0; i < eval_times.size(); ++i) {
-        printf("prediction %3d, time: %.2fms\n", i, eval_times[i] / 1000.0f);
+      printf("prediction %3d, time: %.2fms\n", i, eval_times[i] / 1000.0f);
     }
   }
 

@@ -441,7 +441,7 @@ struct model_model_loader {
   struct ne_tensor* get_tensor_for(model_load_tensor& lt, ne_backend backend) {
     struct ne_tensor* tensor;
     if (lt.ne.size() == 2) {
-      if (lt.type==NE_TYPE_Q4_JBLAS) {
+      if (lt.type == NE_TYPE_Q4_JBLAS) {
         tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1), lt.size);
       } else {
         tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1), NE_SIZE_CALC);

@@ -115,8 +115,7 @@ class PackedWeightS4F32 : public prologue::weight_comp::PackedWeightKBlock {
 
 class PackedWeightS4Bf16 : public prologue::weight_comp::PackedWeightKBlock {
  public:
-  PackedWeightS4Bf16(jblas::gemm::GemmCoreType _type)
-      : PackedWeightKBlock(_type) {
+  PackedWeightS4Bf16(jblas::gemm::GemmCoreType _type) : PackedWeightKBlock(_type) {
     mWPtr = NULL;
     mWSize = 0;
     mSPtr = NULL;
@@ -197,8 +196,7 @@ class PackedWeightS4Bf16 : public prologue::weight_comp::PackedWeightKBlock {
 
 class PackedWeightS8F32 : public prologue::weight_comp::PackedWeightKBlock {
  public:
-  PackedWeightS8F32(jblas::gemm::GemmCoreType _type)
-      : PackedWeightKBlock(_type) {
+  PackedWeightS8F32(jblas::gemm::GemmCoreType _type) : PackedWeightKBlock(_type) {
     mWPtr = NULL;
     mWSize = 0;
     mSPtr = NULL;
@@ -285,8 +283,8 @@ class WeightS8_KBlock {
   };
 
   template <JBLAS_ISA ISA_T>
-  void quantizeWeight(const int N, const int K, const float* B, const int ldb,
-                      int blocksize, int8_t* qB, float* scales) {
+  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB,
+                      float* scales) {
     utils::parallel::Parallel2DRowMajor _para;
     utils::CpuBase cb;
     _para.update(K, N, blocksize, 16, cb.mNumThreads);
@@ -297,21 +295,18 @@ class WeightS8_KBlock {
       int colidx, rowidx, rowsize, colsize;
       _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        int rowremain = utils::remainsize(
-            rowidx, K,
-            rowsize);  // rowremain: src valid size. rowsize: padded size
+        int rowremain = utils::remainsize(rowidx, K,
+                                          rowsize);  // rowremain: src valid size. rowsize: padded size
         int colremain = utils::remainsize(colidx, N, colsize);
-        kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(
-            B + rowidx * ldb + colidx, qB + rowidx * N + colidx, rowremain,
-            colremain, ldb, N, scales + rowidx / blocksize * N + colidx,
-            blocksize);
+        kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(B + rowidx * ldb + colidx, qB + rowidx * N + colidx,
+                                                            rowremain, colremain, ldb, N,
+                                                            scales + rowidx / blocksize * N + colidx, blocksize);
       }
     }
   }
 
   template <JBLAS_ISA ISA_T>
-  void transposeWeight(const int N, const int K, const float* src,
-                       const int ld_src, float* dst, const int ld_dst) {
+  void transposeWeight(const int N, const int K, const float* src, const int ld_src, float* dst, const int ld_dst) {
     utils::parallel::Parallel2DRowMajor _para;
     utils::CpuBase cb;
     _para.update(N, K, 16, 16, cb.mNumThreads);
@@ -322,21 +317,18 @@ class WeightS8_KBlock {
       int colidx, rowidx, rowsize, colsize;
       _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        int rowremain = utils::remainsize(
-            rowidx, N,
-            rowsize);  // rowremain: src valid size. rowsize: padded size
+        int rowremain = utils::remainsize(rowidx, N,
+                                          rowsize);  // rowremain: src valid size. rowsize: padded size
         int colremain = utils::remainsize(colidx, K, colsize);
         kernel::wrapper::Transpose2D<float>::forward<ISA_T>(
-            src + rowidx * ld_src + colidx, dst + rowidx + colidx * ld_dst,
-            rowremain, colremain, ld_src, ld_dst);
+            src + rowidx * ld_src + colidx, dst + rowidx + colidx * ld_dst, rowremain, colremain, ld_src, ld_dst);
       }
     }
   }
 
   // from KxN int8 symmetric weight to packed N//NtilexKPadxNTile int4 weight
   template <JBLAS_ISA ISA_T>
-  PackedWeight* compressWeight(const int N, const int K, const int8_t* B,
-                               const int ldb, const float* scales,
+  PackedWeight* compressWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales,
                                int blocksize, WeightCompType type) {
     int KPad = utils::padto(K, _GemmCore_T::KTILE);
     int NPad = utils::padto(N, _GemmCore_T::NTILE);
@@ -350,8 +342,7 @@ class WeightS8_KBlock {
       ptr = tmp;
 #pragma omp parallel for
       for (int i = 0; i < nk_scale; i++) {
-        std::memcpy(tmp->mSPtr + i * NPad, scales + i * N,
-                    N * sizeof(scales[0]));
+        std::memcpy(tmp->mSPtr + i * NPad, scales + i * N, N * sizeof(scales[0]));
       }
     }
     if (ptr == NULL) {
@@ -362,8 +353,8 @@ class WeightS8_KBlock {
   }
 
   template <JBLAS_ISA ISA_T>
-  void reorderCompress(const int N, const int K, const int8_t* B, const int ldb,
-                       const float* scales, int8_t* dstptr, int blocksize) {
+  void reorderCompress(const int N, const int K, const int8_t* B, const int ldb, const float* scales, int8_t* dstptr,
+                       int blocksize) {
     utils::parallel::Parallel2DRowMajor _para;
     utils::CpuBase cb;
     _para.update(K, N, _GemmCore_T::KTILE, _GemmCore_T::NTILE, cb.mNumThreads);
@@ -375,53 +366,44 @@ class WeightS8_KBlock {
       int colidx, rowidx, rowsize, colsize;
       _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        int rowremain = utils::remainsize(
-            rowidx, K,
-            rowsize);  // rowremain: src valid size. rowsize: padded size
+        int rowremain = utils::remainsize(rowidx, K,
+                                          rowsize);  // rowremain: src valid size. rowsize: padded size
         int colremain = utils::remainsize(colidx, N, colsize);
-        auto ret = kernel::wrapper::PaddingInterleaveMN<
-            _GemmCore_T::NTILE, sizeof(B[0]), _GemmCore_T::PACK_ROW>::
-            template forward<ISA_T>(
-                (void*)(B + rowidx * ldb + colidx),
-                dstptr + rowidx * _GemmCore_T::NTILE + colidx * KPad, rowremain,
-                colremain, rowsize, colsize, ldb * sizeof(B[0]),
-                KPad * sizeof(dstptr[0]));
+        auto ret = kernel::wrapper::PaddingInterleaveMN<_GemmCore_T::NTILE, sizeof(B[0]), _GemmCore_T::PACK_ROW>::
+            template forward<ISA_T>((void*)(B + rowidx * ldb + colidx),
+                                    dstptr + rowidx * _GemmCore_T::NTILE + colidx * KPad, rowremain, colremain, rowsize,
+                                    colsize, ldb * sizeof(B[0]), KPad * sizeof(dstptr[0]));
         assert(ret == JblasSuccess);
       }
     }
   }
 
   template <JBLAS_ISA ISA_T>
-  PackedWeight* compressWeightTranspose(const int N, const int K,
-                                        const float* B, const int ldb,
-                                        int blocksize, WeightCompType type) {
+  PackedWeight* compressWeightTranspose(const int N, const int K, const float* B, const int ldb, int blocksize,
+                                        WeightCompType type) {
     utils::aligned_vector<float> B_NT(N * K);
     transposeWeight<ISA_T>(N, K, B, ldb, B_NT.data(), N);
     return compressWeight<ISA_T>(N, K, B_NT.data(), N, blocksize, type);
   }
 
   template <JBLAS_ISA ISA_T>
-  PackedWeight* compressWeight(const int N, const int K, const float* B,
-                               const int ldb, int blocksize,
+  PackedWeight* compressWeight(const int N, const int K, const float* B, const int ldb, int blocksize,
                                WeightCompType type) {
     int nk_scale = utils::updiv(K, blocksize);
     utils::aligned_vector<int8_t> quanW(N * K);
     utils::aligned_vector<float> scales(nk_scale * N);
     quantizeWeight<ISA_T>(N, K, B, ldb, blocksize, quanW.data(), scales.data());
-    return compressWeight<ISA_T>(N, K, quanW.data(), N, scales.data(),
-                                 blocksize, type);
+    return compressWeight<ISA_T>(N, K, quanW.data(), N, scales.data(), blocksize, type);
   }
 
   template <JBLAS_ISA ISA_T, typename _T>
-  inline JBLAS_CODE getWeight(_T** dstptr, int* dststep, int k_size, int n_size,
-                              int k_offset, int n_offset,
+  inline JBLAS_CODE getWeight(_T** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
                               const PackedWeight* ptr) {
     return JblasNotSupport;
   }
 
   template <JBLAS_ISA ISA_T>
-  inline JBLAS_CODE getWeight(float** dstptr, int* dststep, int k_size,
-                              int n_size, int k_offset, int n_offset,
+  inline JBLAS_CODE getWeight(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
                               const PackedWeight* ptr) {
     static_assert(_GemmCore_T::PACK_ROW == 1);  // float PackRow==1
     {
@@ -429,16 +411,12 @@ class WeightS8_KBlock {
       if (wptr) {
         auto NPad = wptr->mNPad;
         auto KPad = wptr->mKPad;
-        auto bptr =
-            wptr->mWPtr + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
+        auto bptr = wptr->mWPtr + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
         for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
           kernel::wrapper::DecompressKBlockS8F32::forward<ISA_T, float>(
-              bptr + i * KPad, *dstptr + i * k_size,
-              k_size / _GemmCore_T::PACK_ROW,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-              wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
+              bptr + i * KPad, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
         }
         *dststep = k_size;
         return JblasSuccess;
@@ -483,8 +461,8 @@ class WeightS4_KBlock {
   };
 
   template <JBLAS_ISA ISA_T>
-  void quantizeWeight(const int N, const int K, const float* B, const int ldb,
-                      int blocksize, int8_t* qB, float* scales) {
+  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB,
+                      float* scales) {
     utils::parallel::Parallel2DRowMajor _para;
     utils::CpuBase cb;
     _para.update(K, N, blocksize, 16, cb.mNumThreads);
@@ -495,21 +473,18 @@ class WeightS4_KBlock {
       int colidx, rowidx, rowsize, colsize;
       _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        int rowremain = utils::remainsize(
-            rowidx, K,
-            rowsize);  // rowremain: src valid size. rowsize: padded size
+        int rowremain = utils::remainsize(rowidx, K,
+                                          rowsize);  // rowremain: src valid size. rowsize: padded size
         int colremain = utils::remainsize(colidx, N, colsize);
-        kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(
-            B + rowidx * ldb + colidx, qB + rowidx * N + colidx, rowremain,
-            colremain, ldb, N, scales + rowidx / blocksize * N + colidx,
-            blocksize);
+        kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(B + rowidx * ldb + colidx, qB + rowidx * N + colidx,
+                                                            rowremain, colremain, ldb, N,
+                                                            scales + rowidx / blocksize * N + colidx, blocksize);
       }
     }
   }
 
   template <JBLAS_ISA ISA_T>
-  void transposeWeight(const int N, const int K, const float* src,
-                       const int ld_src, float* dst, const int ld_dst) {
+  void transposeWeight(const int N, const int K, const float* src, const int ld_src, float* dst, const int ld_dst) {
     utils::parallel::Parallel2DRowMajor _para;
     utils::CpuBase cb;
     _para.update(N, K, 16, 16, cb.mNumThreads);
@@ -520,21 +495,18 @@ class WeightS4_KBlock {
       int colidx, rowidx, rowsize, colsize;
       _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        int rowremain = utils::remainsize(
-            rowidx, N,
-            rowsize);  // rowremain: src valid size. rowsize: padded size
+        int rowremain = utils::remainsize(rowidx, N,
+                                          rowsize);  // rowremain: src valid size. rowsize: padded size
         int colremain = utils::remainsize(colidx, K, colsize);
         kernel::wrapper::Transpose2D<float>::forward<ISA_T>(
-            src + rowidx * ld_src + colidx, dst + rowidx + colidx * ld_dst,
-            rowremain, colremain, ld_src, ld_dst);
+            src + rowidx * ld_src + colidx, dst + rowidx + colidx * ld_dst, rowremain, colremain, ld_src, ld_dst);
       }
     }
   }
 
   // from KxN int8 symmetric weight to packed N//NtilexKPadxNTile int4 weight
   template <JBLAS_ISA ISA_T>
-  PackedWeight* compressWeight(const int N, const int K, const int8_t* B,
-                               const int ldb, const float* scales,
+  PackedWeight* compressWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales,
                                int blocksize, WeightCompType type) {
     int KPad = utils::padto(K, _GemmCore_T::KTILE);
     int NPad = utils::padto(N, _GemmCore_T::NTILE);
@@ -548,8 +520,7 @@ class WeightS4_KBlock {
       ptr = tmp;
 #pragma omp parallel for
       for (int i = 0; i < nk_scale; i++) {
-        std::memcpy(tmp->mSPtr + i * NPad, scales + i * N,
-                    N * sizeof(scales[0]));
+        std::memcpy(tmp->mSPtr + i * NPad, scales + i * N, N * sizeof(scales[0]));
       }
     } else if (type == WeightCompType::S4_Bf16) {
       auto tmp = new PackedWeightS4Bf16(_GemmCore_T::TYPE);
@@ -559,8 +530,7 @@ class WeightS4_KBlock {
 #pragma omp parallel for
       for (int i = 0; i < nk_scale; i++) {
         for (int j = 0; j < N; j++) {
-          *(tmp->mSPtr + i * NPad + j) =
-              utils::cast<float, utils::bf16>(*(scales + i * N + j));
+          *(tmp->mSPtr + i * NPad + j) = utils::cast<float, utils::bf16>(*(scales + i * N + j));
         }
       }
     }
@@ -572,9 +542,8 @@ class WeightS4_KBlock {
   }
 
   template <JBLAS_ISA ISA_T>
-  void reorderCompress(const int N, const int K, const int8_t* B, const int ldb,
-                       const float* scales, utils::int4x2* dstptr,
-                       int blocksize) {
+  void reorderCompress(const int N, const int K, const int8_t* B, const int ldb, const float* scales,
+                       utils::int4x2* dstptr, int blocksize) {
     utils::parallel::Parallel2DRowMajor _para;
     utils::CpuBase cb;
     _para.update(K, N, _GemmCore_T::KTILE, _GemmCore_T::NTILE, cb.mNumThreads);
@@ -586,62 +555,49 @@ class WeightS4_KBlock {
       int colidx, rowidx, rowsize, colsize;
       _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        int rowremain = utils::remainsize(
-            rowidx, K,
-            rowsize);  // rowremain: src valid size. rowsize: padded size
+        int rowremain = utils::remainsize(rowidx, K,
+                                          rowsize);  // rowremain: src valid size. rowsize: padded size
         int colremain = utils::remainsize(colidx, N, colsize);
         utils::aligned_vector<int8_t> tmp;
         tmp.resize(colsize * rowsize);
-        auto ret = kernel::wrapper::PaddingInterleaveMN<
-            _GemmCore_T::NTILE, sizeof(B[0]), _GemmCore_T::PACK_ROW>::
-            template forward<ISA_T>((void*)(B + rowidx * ldb + colidx),
-                                    tmp.data(), rowremain, colremain, rowsize,
-                                    colsize, ldb * sizeof(B[0]),
-                                    rowsize * sizeof(tmp[0]));
+        auto ret = kernel::wrapper::PaddingInterleaveMN<_GemmCore_T::NTILE, sizeof(B[0]), _GemmCore_T::PACK_ROW>::
+            template forward<ISA_T>((void*)(B + rowidx * ldb + colidx), tmp.data(), rowremain, colremain, rowsize,
+                                    colsize, ldb * sizeof(B[0]), rowsize * sizeof(tmp[0]));
         assert(ret == JblasSuccess);
-        ret =
-            kernel::wrapper::CompressS8S4<_GemmCore_T::NTILE>::template forward<
-                ISA_T>(
-                tmp.data(),
-                dstptr + rowidx * _GemmCore_T::NTILE / 2 + colidx * KPad / 2,
-                rowsize, colsize, rowsize * sizeof(tmp[0]),
-                KPad * sizeof(dstptr[0]) / 2);
+        ret = kernel::wrapper::CompressS8S4<_GemmCore_T::NTILE>::template forward<ISA_T>(
+            tmp.data(), dstptr + rowidx * _GemmCore_T::NTILE / 2 + colidx * KPad / 2, rowsize, colsize,
+            rowsize * sizeof(tmp[0]), KPad * sizeof(dstptr[0]) / 2);
         assert(ret == JblasSuccess);
       }
     }
   }
 
   template <JBLAS_ISA ISA_T>
-  PackedWeight* compressWeightTranspose(const int N, const int K,
-                                        const float* B, const int ldb,
-                                        int blocksize, WeightCompType type) {
+  PackedWeight* compressWeightTranspose(const int N, const int K, const float* B, const int ldb, int blocksize,
+                                        WeightCompType type) {
     utils::aligned_vector<float> B_NT(N * K);
     transposeWeight<ISA_T>(N, K, B, ldb, B_NT.data(), N);
     return compressWeight<ISA_T>(N, K, B_NT.data(), N, blocksize, type);
   }
 
   template <JBLAS_ISA ISA_T>
-  PackedWeight* compressWeight(const int N, const int K, const float* B,
-                               const int ldb, int blocksize,
+  PackedWeight* compressWeight(const int N, const int K, const float* B, const int ldb, int blocksize,
                                WeightCompType type) {
     int nk_scale = utils::updiv(K, blocksize);
     utils::aligned_vector<int8_t> quanW(N * K);
     utils::aligned_vector<float> scales(nk_scale * N);
     quantizeWeight<ISA_T>(N, K, B, ldb, blocksize, quanW.data(), scales.data());
-    return compressWeight<ISA_T>(N, K, quanW.data(), N, scales.data(),
-                                 blocksize, type);
+    return compressWeight<ISA_T>(N, K, quanW.data(), N, scales.data(), blocksize, type);
   }
 
   template <JBLAS_ISA ISA_T, typename _T>
-  inline JBLAS_CODE getWeight(_T** dstptr, int* dststep, int k_size, int n_size,
-                              int k_offset, int n_offset,
+  inline JBLAS_CODE getWeight(_T** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
                               const PackedWeight* ptr) {
     return JblasNotSupport;
   }
 
   template <JBLAS_ISA ISA_T>
-  inline JBLAS_CODE getWeight(float** dstptr, int* dststep, int k_size,
-                              int n_size, int k_offset, int n_offset,
+  inline JBLAS_CODE getWeight(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
                               const PackedWeight* ptr) {
     static_assert(_GemmCore_T::PACK_ROW == 1);  // float PackRow==1
     {
@@ -649,16 +605,12 @@ class WeightS4_KBlock {
       if (wptr) {
         auto NPad = wptr->mNPad;
         auto KPad = wptr->mKPad;
-        auto bptr = wptr->mWPtr + n_offset * KPad / 2 +
-                    k_offset * _GemmCore_T::NTILE / 2;
+        auto bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
         for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
           kernel::wrapper::DecompressKBlockS4F32::forward<ISA_T, float>(
-              bptr + i * KPad / 2, *dstptr + i * k_size,
-              k_size / _GemmCore_T::PACK_ROW,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-              wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
+              bptr + i * KPad / 2, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
         }
         *dststep = k_size;
         return JblasSuccess;
@@ -669,16 +621,12 @@ class WeightS4_KBlock {
       if (wptr) {
         auto NPad = wptr->mNPad;
         auto KPad = wptr->mKPad;
-        auto bptr = wptr->mWPtr + n_offset * KPad / 2 +
-                    k_offset * _GemmCore_T::NTILE / 2;
+        auto bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
         for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
           kernel::wrapper::DecompressKBlockS4F32::forward<ISA_T, utils::bf16>(
-              bptr + i * KPad / 2, *dstptr + i * k_size,
-              k_size / _GemmCore_T::PACK_ROW,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
-              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-              wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
+              bptr + i * KPad / 2, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
         }
         *dststep = k_size;
         return JblasSuccess;
@@ -688,8 +636,7 @@ class WeightS4_KBlock {
   }
 
   template <JBLAS_ISA ISA_T>
-  inline JBLAS_CODE getWeight(int8_t** dstptr, int* dststep, int k_size,
-                              int n_size, int k_offset, int n_offset,
+  inline JBLAS_CODE getWeight(int8_t** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
                               const PackedWeight* ptr) {
     utils::int4x2* bptr = NULL;
     int NPad = 0, KPad = 0;
@@ -698,8 +645,7 @@ class WeightS4_KBlock {
       if (wptr) {
         NPad = wptr->mNPad;
         KPad = wptr->mKPad;
-        bptr = wptr->mWPtr + n_offset * KPad / 2 +
-               k_offset * _GemmCore_T::NTILE / 2;
+        bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
       }
     }
     {
@@ -707,8 +653,7 @@ class WeightS4_KBlock {
       if (wptr) {
         NPad = wptr->mNPad;
         KPad = wptr->mKPad;
-        bptr = wptr->mWPtr + n_offset * KPad / 2 +
-               k_offset * _GemmCore_T::NTILE / 2;
+        bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
       }
     }
     if (bptr == NULL) {
@@ -716,10 +661,8 @@ class WeightS4_KBlock {
     }
     for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
       kernel::wrapper::DecompressKBlockS4S8::forward<ISA_T>(
-          bptr + i * KPad / 2, *dstptr + i * k_size,
-          k_size / _GemmCore_T::PACK_ROW,
-          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
+          bptr + i * KPad / 2, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
+          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
           _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW);
     }
     *dststep = k_size;
@@ -727,14 +670,14 @@ class WeightS4_KBlock {
   }
 
   template <JBLAS_ISA ISA_T, typename _T>
-  JBLAS_CODE getScale(_T** dstptr, int* dststep, int n_size, int k_size,
-                      int n_offset, int k_offset, const PackedWeight* ptr) {
+  JBLAS_CODE getScale(_T** dstptr, int* dststep, int n_size, int k_size, int n_offset, int k_offset,
+                      const PackedWeight* ptr) {
     return JblasNotSupport;
   }
 
   template <JBLAS_ISA ISA_T>
-  JBLAS_CODE getScale(float** dstptr, int* dststep, int n_size, int k_size,
-                      int n_offset, int k_offset, const PackedWeight* ptr) {
+  JBLAS_CODE getScale(float** dstptr, int* dststep, int n_size, int k_size, int n_offset, int k_offset,
+                      const PackedWeight* ptr) {
     auto wptr = dynamic_cast<const PackedWeightS4F32*>(ptr);
     if (wptr) {
       auto NPad = wptr->mNPad;
@@ -747,8 +690,7 @@ class WeightS4_KBlock {
   }
 
   template <JBLAS_ISA ISA_T>
-  JBLAS_CODE getScale(utils::bf16** dstptr, int* dststep, int n_size,
-                      int k_size, int n_offset, int k_offset,
+  JBLAS_CODE getScale(utils::bf16** dstptr, int* dststep, int n_size, int k_size, int n_offset, int k_offset,
                       const PackedWeight* ptr) {
     auto wptr = dynamic_cast<const PackedWeightS4Bf16*>(ptr);
     if (wptr) {
@@ -768,8 +710,7 @@ class WeightS4_KBlock {
 namespace wrapper {
 namespace gemm_kblock {
 
-template <JBLAS_ISA _RT_ISA_T, class _GemmCore_T,
-          template <class _T> class _PrologueA_T,
+template <JBLAS_ISA _RT_ISA_T, class _GemmCore_T, template <class _T> class _PrologueA_T,
           template <class _T> class _PrologueB_T, class _Epilogue_T>
 class GemmLauncherKBlockPackWeight {
  public:
@@ -784,8 +725,7 @@ class GemmLauncherKBlockPackWeight {
   using BParam = typename PrologueB::Param;
   using CType = typename GemmCore::CType;
   using EpiParam = typename _Epilogue_T::Param;
-  static_assert(GemmCore::ISA <= _RT_ISA_T,
-                "RunTime ISA should cover GEMM's ISA");
+  static_assert(GemmCore::ISA <= _RT_ISA_T, "RunTime ISA should cover GEMM's ISA");
   struct Param {
     const int M, N, K;
     const AParam paramA;
@@ -804,12 +744,9 @@ class GemmLauncherKBlockPackWeight {
   PrologueB mProB;
   _Epilogue_T mEpilogue;
 
-  void launch(const ParallelConfig& _config, const Param& _param,
-              const QuanAParam& _quan) {
-    int rowremain =
-        utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
-    int colremain =
-        utils::remainsize(_config.colidx, _param.N, _config.colsize);
+  void launch(const ParallelConfig& _config, const Param& _param, const QuanAParam& _quan) {
+    int rowremain = utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
+    int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
     auto StackTmp = alloca(_config.StackSize);
     auto tmpB = (BType*)(StackTmp);
     auto tmpA = (AType*)(tmpB + _config.NStep * _config.KStep);
@@ -818,16 +755,14 @@ class GemmLauncherKBlockPackWeight {
       int n_remain = utils::remainsize(itern, colremain, _config.NStep);
       for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
         int m_remain = utils::remainsize(iterm, rowremain, _config.MStep);
-        run_block(_config, _param, _quan, iterm, itern, m_remain, n_remain,
-                  tmpA, tmpB, tmpC);
+        run_block(_config, _param, _quan, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC);
       }
     }
   }
 
  protected:
-  void run_block(const ParallelConfig& _config, const Param& _param,
-                 const QuanAParam& _quan, int blk_m, int blk_n, int blk_msize,
-                 int blk_nsize, AType* tmpA, BType* tmpB, CType* tmpC) {
+  void run_block(const ParallelConfig& _config, const Param& _param, const QuanAParam& _quan, int blk_m, int blk_n,
+                 int blk_msize, int blk_nsize, AType* tmpA, BType* tmpB, CType* tmpC) {
     int n_padded = utils::padto(blk_nsize, GemmCore::NTILE);
     auto c_tile_ptr = tmpC;
     auto c_block_ptr = (float*)(c_tile_ptr + GemmCore::NTILE * GemmCore::MTILE);
@@ -836,9 +771,8 @@ class GemmLauncherKBlockPackWeight {
       int k_padded = utils::padto(k_remain, GemmCore::KTILE);
       auto bptr_cache = tmpB;
       int bcache_step = 0;
-      mProB.template getWeight<_RT_ISA_T>(
-          &bptr_cache, &bcache_step, k_padded, n_padded, iterk,
-          _config.colidx + blk_n, _param.paramB.packedW);
+      mProB.template getWeight<_RT_ISA_T>(&bptr_cache, &bcache_step, k_padded, n_padded, iterk, _config.colidx + blk_n,
+                                          _param.paramB.packedW);
       int bcache_stride = bcache_step * sizeof(BType);
       for (int i = 0; i < blk_msize; i += GemmCore::MTILE) {
         int m_remain = utils::remainsize(i, blk_msize, GemmCore::MTILE);
@@ -847,60 +781,46 @@ class GemmLauncherKBlockPackWeight {
 
         AType* aptr_cache = nullptr;
         int acache_step = 0;
-        mProA.template getActivation<_RT_ISA_T>(
-            &aptr_cache, &acache_step, _quan, m_remain, k_padded,
-            (blk_m + i + _config.rowidx), iterk);
+        mProA.template getActivation<_RT_ISA_T>(&aptr_cache, &acache_step, _quan, m_remain, k_padded,
+                                                (blk_m + i + _config.rowidx), iterk);
         float* ascale_ptr = nullptr;
         int ascale_step = 0;
-        mProA.template getScale<_RT_ISA_T>(&ascale_ptr, &ascale_step, _quan,
-                                           m_remain, k_padded,
+        mProA.template getScale<_RT_ISA_T>(&ascale_ptr, &ascale_step, _quan, m_remain, k_padded,
                                            (blk_m + i + _config.rowidx), iterk);
         AType* azp_ptr = tmpA;
         int azp_step = _config.KStep;
-        mProA.template getZpBroadcast<_RT_ISA_T>(
-            &azp_ptr, &azp_step, _quan, m_remain, k_padded,
-            (blk_m + i + _config.rowidx), iterk);
+        mProA.template getZpBroadcast<_RT_ISA_T>(&azp_ptr, &azp_step, _quan, m_remain, k_padded,
+                                                 (blk_m + i + _config.rowidx), iterk);
         for (int itern = 0; itern < n_padded; itern += GemmCore::NTILE) {
-          mGemmCore.forward(aptr_cache, bptr_cache + itern * bcache_step,
-                            c_tile_ptr, m_remain, GemmCore::NTILE, k_padded,
-                            acache_step * sizeof(AType), bcache_stride,
-                            GemmCore::NTILE * sizeof(CType), 0);
+          mGemmCore.forward(aptr_cache, bptr_cache + itern * bcache_step, c_tile_ptr, m_remain, GemmCore::NTILE,
+                            k_padded, acache_step * sizeof(AType), bcache_stride, GemmCore::NTILE * sizeof(CType), 0);
           float* wscale_ptr = nullptr;
           int wscale_step = 0;
-          mProB.template getScale<_RT_ISA_T>(
-              &wscale_ptr, &wscale_step, GemmCore::NTILE, k_padded,
-              (blk_n + itern + _config.colidx), iterk, _param.paramB.packedW);
-          kernel::wrapper::AccumulateDequantizeS32F32::template forward<
-              _RT_ISA_T>(c_tile_ptr, cptr_cache + itern, 1.f,
-                         iterk == 0 ? 0.f : 1.f, m_remain, GemmCore::NTILE,
-                         GemmCore::NTILE, _config.NStep, ascale_ptr,
-                         ascale_step, wscale_ptr);
-          mGemmCore.forward(azp_ptr, bptr_cache + itern * bcache_step,
-                            c_tile_ptr, m_remain, GemmCore::NTILE, k_padded,
-                            azp_step * sizeof(AType), bcache_stride,
-                            GemmCore::NTILE * sizeof(CType), 0);
-          kernel::wrapper::AccumulateDequantizeS32F32::template forward<
-              _RT_ISA_T>(c_tile_ptr, cptr_cache + itern, -1.f, 1.f, m_remain,
-                         GemmCore::NTILE, GemmCore::NTILE, _config.NStep,
-                         ascale_ptr, ascale_step, wscale_ptr);
+          mProB.template getScale<_RT_ISA_T>(&wscale_ptr, &wscale_step, GemmCore::NTILE, k_padded,
+                                             (blk_n + itern + _config.colidx), iterk, _param.paramB.packedW);
+          kernel::wrapper::AccumulateDequantizeS32F32::template forward<_RT_ISA_T>(
+              c_tile_ptr, cptr_cache + itern, 1.f, iterk == 0 ? 0.f : 1.f, m_remain, GemmCore::NTILE, GemmCore::NTILE,
+              _config.NStep, ascale_ptr, ascale_step, wscale_ptr);
+          mGemmCore.forward(azp_ptr, bptr_cache + itern * bcache_step, c_tile_ptr, m_remain, GemmCore::NTILE, k_padded,
+                            azp_step * sizeof(AType), bcache_stride, GemmCore::NTILE * sizeof(CType), 0);
+          kernel::wrapper::AccumulateDequantizeS32F32::template forward<_RT_ISA_T>(
+              c_tile_ptr, cptr_cache + itern, -1.f, 1.f, m_remain, GemmCore::NTILE, GemmCore::NTILE, _config.NStep,
+              ascale_ptr, ascale_step, wscale_ptr);
         }
       }
     }
-    mEpilogue.template forward<_RT_ISA_T>(
-        c_block_ptr, _config.NStep, (_config.rowidx + blk_m),
-        _config.colidx + blk_n, blk_msize, blk_nsize, _param.paramC);
+    mEpilogue.template forward<_RT_ISA_T>(c_block_ptr, _config.NStep, (_config.rowidx + blk_m), _config.colidx + blk_n,
+                                          blk_msize, blk_nsize, _param.paramC);
   }
 };
 
-template <JBLAS_ISA _RT_ISA_T, template <class _T> class _PrologueA_T,
-          template <class _T> class _PrologueB_T, class _Epilogue_T>
+template <JBLAS_ISA _RT_ISA_T, template <class _T> class _PrologueA_T, template <class _T> class _PrologueB_T,
+          class _Epilogue_T>
 class GemmSLauncherKBlockPackWeight {
  public:
   static JBLAS_ISA constexpr RT_ISA = _RT_ISA_T;
-  using GemmCore =
-      jblas::gemm::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK<float, float>;
-  using GemmCoreBf16 =
-      jblas::gemm::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK<float, utils::bf16>;
+  using GemmCore = jblas::gemm::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK<float, float>;
+  using GemmCoreBf16 = jblas::gemm::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK<float, utils::bf16>;
   using PrologueA = _PrologueA_T<GemmCore>;
   using PrologueB = _PrologueB_T<GemmCore>;
   using AType = typename GemmCore::AType;
@@ -910,8 +830,7 @@ class GemmSLauncherKBlockPackWeight {
   using BParam = typename PrologueB::Param;
   using CType = typename GemmCore::CType;
   using EpiParam = typename _Epilogue_T::Param;
-  static_assert(GemmCore::ISA <= _RT_ISA_T,
-                "RunTime ISA should cover GEMM's ISA");
+  static_assert(GemmCore::ISA <= _RT_ISA_T, "RunTime ISA should cover GEMM's ISA");
   struct Param {
     const int M, N, K;
     const AParam paramA;
@@ -931,18 +850,13 @@ class GemmSLauncherKBlockPackWeight {
   PrologueB mProB;
   _Epilogue_T mEpilogue;
 
-  void launch(const ParallelConfig& _config, const Param& _param,
-              const QuanAParam& _quan) {
-    auto blkptr =
-        dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(
-            _param.paramB.packedW);
+  void launch(const ParallelConfig& _config, const Param& _param, const QuanAParam& _quan) {
+    auto blkptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramB.packedW);
     if (blkptr == nullptr) {
       return;
     }
-    int rowremain =
-        utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
-    int colremain =
-        utils::remainsize(_config.colidx, _param.N, _config.colsize);
+    int rowremain = utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
+    int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
     auto StackTmp = alloca(_config.StackSize);
     auto tmpB = (BType*)(StackTmp);
     auto tmpA = (AType*)(tmpB + _config.NStep * _config.KStep);
@@ -951,17 +865,15 @@ class GemmSLauncherKBlockPackWeight {
       int n_remain = utils::remainsize(itern, colremain, _config.NStep);
       for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
         int m_remain = utils::remainsize(iterm, rowremain, _config.MStep);
-        run_block(_config, _param, blkptr, _quan, iterm, itern, m_remain,
-                  n_remain, tmpA, tmpB, tmpC);
+        run_block(_config, _param, blkptr, _quan, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC);
       }
     }
   }
 
  protected:
   void run_block(const ParallelConfig& _config, const Param& _param,
-                 const prologue::weight_comp::PackedWeightKBlock* blkptr,
-                 const QuanAParam& _quan, int blk_m, int blk_n, int blk_msize,
-                 int blk_nsize, AType* tmpA, BType* tmpB, CType* tmpC) {
+                 const prologue::weight_comp::PackedWeightKBlock* blkptr, const QuanAParam& _quan, int blk_m, int blk_n,
+                 int blk_msize, int blk_nsize, AType* tmpA, BType* tmpB, CType* tmpC) {
     int n_padded = utils::padto(blk_nsize, GemmCore::NTILE);
     auto c_tile_ptr = tmpC;
     auto c_block_ptr = (float*)(c_tile_ptr + GemmCore::NTILE * GemmCore::MTILE);
@@ -970,22 +882,17 @@ class GemmSLauncherKBlockPackWeight {
       int k_padded = utils::padto(k_remain, GemmCore::KTILE);
       auto bptr_cache = tmpB;
       int bcache_step = 0;
-      mProB.template getWeight<_RT_ISA_T>(
-          &bptr_cache, &bcache_step, k_padded, n_padded, iterk,
-          _config.colidx + blk_n, _param.paramB.packedW);
+      mProB.template getWeight<_RT_ISA_T>(&bptr_cache, &bcache_step, k_padded, n_padded, iterk, _config.colidx + blk_n,
+                                          _param.paramB.packedW);
       float* wscale_ptr = nullptr;
       utils::bf16* wscale_bf16ptr = nullptr;
       int wscale_step = 0;
-      if (blkptr->mType ==
-          int(prologue::weight_comp::gemm::WeightCompType::S4_F32)) {
-        mProB.template getScale<_RT_ISA_T>(&wscale_ptr, &wscale_step, n_padded,
-                                           k_padded, (blk_n + _config.colidx),
+      if (blkptr->mType == int(prologue::weight_comp::gemm::WeightCompType::S4_F32)) {
+        mProB.template getScale<_RT_ISA_T>(&wscale_ptr, &wscale_step, n_padded, k_padded, (blk_n + _config.colidx),
                                            iterk, _param.paramB.packedW);
-      } else if (blkptr->mType ==
-                 int(prologue::weight_comp::gemm::WeightCompType::S4_Bf16)) {
-        mProB.template getScale<_RT_ISA_T>(
-            &wscale_bf16ptr, &wscale_step, n_padded, k_padded,
-            (blk_n + _config.colidx), iterk, _param.paramB.packedW);
+      } else if (blkptr->mType == int(prologue::weight_comp::gemm::WeightCompType::S4_Bf16)) {
+        mProB.template getScale<_RT_ISA_T>(&wscale_bf16ptr, &wscale_step, n_padded, k_padded, (blk_n + _config.colidx),
+                                           iterk, _param.paramB.packedW);
       }
 
       int bcache_stride = bcache_step * sizeof(BType);
@@ -996,39 +903,29 @@ class GemmSLauncherKBlockPackWeight {
 
         AType* aptr_cache = nullptr;
         int acache_step = 0;
-        mProA.template getActivation<_RT_ISA_T>(
-            &aptr_cache, &acache_step, _quan, m_remain, k_padded,
-            (blk_m + i + _config.rowidx), iterk);
+        mProA.template getActivation<_RT_ISA_T>(&aptr_cache, &acache_step, _quan, m_remain, k_padded,
+                                                (blk_m + i + _config.rowidx), iterk);
         float* ascale_ptr = nullptr;
         int ascale_step = 0;
-        mProA.template getScale<_RT_ISA_T>(&ascale_ptr, &ascale_step, _quan,
-                                           m_remain, k_padded,
+        mProA.template getScale<_RT_ISA_T>(&ascale_ptr, &ascale_step, _quan, m_remain, k_padded,
                                            (blk_m + i + _config.rowidx), iterk);
         AType* azp_ptr = tmpA;
         int azp_step = _config.KStep;
-        mProA.template getZp<_RT_ISA_T>(&azp_ptr, &azp_step, _quan, m_remain,
-                                        k_padded, (blk_m + i + _config.rowidx),
+        mProA.template getZp<_RT_ISA_T>(&azp_ptr, &azp_step, _quan, m_remain, k_padded, (blk_m + i + _config.rowidx),
                                         iterk);
-        if (blkptr->mType ==
-            int(prologue::weight_comp::gemm::WeightCompType::S4_F32)) {
-          mGemmCore.forward(aptr_cache, bptr_cache, cptr_cache, azp_ptr,
-                            ascale_ptr, ascale_step, wscale_ptr, wscale_step,
-                            m_remain, n_padded, k_padded, blkptr->mBlockSize,
-                            acache_step * sizeof(AType), bcache_stride,
-                            _config.NStep * sizeof(CType), iterk);
-        } else if (blkptr->mType ==
-                   int(prologue::weight_comp::gemm::WeightCompType::S4_Bf16)) {
-          mGemmCoreBf16.forward(
-              aptr_cache, bptr_cache, cptr_cache, azp_ptr, ascale_ptr,
-              ascale_step, wscale_bf16ptr, wscale_step, m_remain, n_padded,
-              k_padded, blkptr->mBlockSize, acache_step * sizeof(AType),
-              bcache_stride, _config.NStep * sizeof(CType), iterk);
+        if (blkptr->mType == int(prologue::weight_comp::gemm::WeightCompType::S4_F32)) {
+          mGemmCore.forward(aptr_cache, bptr_cache, cptr_cache, azp_ptr, ascale_ptr, ascale_step, wscale_ptr,
+                            wscale_step, m_remain, n_padded, k_padded, blkptr->mBlockSize, acache_step * sizeof(AType),
+                            bcache_stride, _config.NStep * sizeof(CType), iterk);
+        } else if (blkptr->mType == int(prologue::weight_comp::gemm::WeightCompType::S4_Bf16)) {
+          mGemmCoreBf16.forward(aptr_cache, bptr_cache, cptr_cache, azp_ptr, ascale_ptr, ascale_step, wscale_bf16ptr,
+                                wscale_step, m_remain, n_padded, k_padded, blkptr->mBlockSize,
+                                acache_step * sizeof(AType), bcache_stride, _config.NStep * sizeof(CType), iterk);
         }
       }
     }
-    mEpilogue.template forward<_RT_ISA_T>(
-        c_block_ptr, _config.NStep, (_config.rowidx + blk_m),
-        _config.colidx + blk_n, blk_msize, blk_nsize, _param.paramC);
+    mEpilogue.template forward<_RT_ISA_T>(c_block_ptr, _config.NStep, (_config.rowidx + blk_m), _config.colidx + blk_n,
+                                          blk_msize, blk_nsize, _param.paramC);
   }
 };
 
@@ -1051,16 +948,14 @@ class GemmInterfaceKBlockPackWeight {
   WeightType* getWeightPtr() { return &mLauncher.mProB; }
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param, Parallel _paral = Parallel()) {
-    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(
-        _param.paramB.packedW);
+    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramB.packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
-    auto quanA = mLauncher.mProA.template quantize<_Launcher_T::RT_ISA>(
-        _param.paramA, _param.M, _param.K, bptr->mBlockSize);
+    auto quanA =
+        mLauncher.mProA.template quantize<_Launcher_T::RT_ISA>(_param.paramA, _param.M, _param.K, bptr->mBlockSize);
     auto cb = utils::CpuBase();
-    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize,
-                      cb.mNumThreads)) {
+    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
       static bool dbgprint = false;
       if (dbgprint) {
         _paral.print();
@@ -1074,13 +969,7 @@ class GemmInterfaceKBlockPackWeight {
       int colidx, rowidx, rowsize, colsize;
       _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        Config _config{rowidx,
-                       colidx,
-                       rowsize,
-                       colsize,
-                       _paral.getMStep(),
-                       _paral.getNStep(),
-                       _paral.getKStep(),
+        Config _config{rowidx,     colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
                        cb.mL2Cache};
         mLauncher.launch(_config, _param, quanA);
       }
@@ -1097,49 +986,35 @@ namespace gemm_default {
 namespace weight_comp {
 namespace avx512f {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
-using GemmKernelS4KBlock =
-    jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
-        jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-            DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F,
-            jblas::prologue::gemm::ActivationBase,
-            jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-            jblas::epilogue::gemm::AlphaBetaProcessFp32>,
-        DefaultParallel>;
-using GemmKernelS8KBlock =
-    jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
-        jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-            DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F,
-            jblas::prologue::gemm::ActivationBase,
-            jblas::prologue::weight_comp::gemm::WeightS8_KBlock,
-            jblas::epilogue::gemm::AlphaBetaProcessFp32>,
-        DefaultParallel>;
+using GemmKernelS4KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F, jblas::prologue::gemm::ActivationBase,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+    DefaultParallel>;
+using GemmKernelS8KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F, jblas::prologue::gemm::ActivationBase,
+        jblas::prologue::weight_comp::gemm::WeightS8_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+    DefaultParallel>;
 }  // namespace avx512f
 namespace avx512_vnni {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
-using GemmKernelDynamicQuantS4KBlockSimple =
-    jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
-        jblas::wrapper::gemm_kblock::GemmLauncherKBlockPackWeight<
-            DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI,
-            jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-            jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-            jblas::epilogue::gemm::AccumulateWriteBack<float>>,
-        jblas::utils::parallel::Parallel2DGemmKBlock>;
-using GemmKernelDynamicQuantS4KBlock =
-    jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
-        jblas::wrapper::gemm_kblock::GemmLauncherKBlockPackWeight<
-            DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI,
-            jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-            jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-            jblas::epilogue::gemm::AlphaBetaProcessFp32>,
-        jblas::utils::parallel::Parallel2DGemmKBlock>;
+using GemmKernelDynamicQuantS4KBlockSimple = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmLauncherKBlockPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AccumulateWriteBack<float>>,
+    jblas::utils::parallel::Parallel2DGemmKBlock>;
+using GemmKernelDynamicQuantS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmLauncherKBlockPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+    jblas::utils::parallel::Parallel2DGemmKBlock>;
 
-using GemmSKernelDynamicS4KBlock =
-    jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
-        jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-            DefaultISA, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-            jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-            jblas::epilogue::gemm::AccumulateWriteBack<float>>,
-        jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        DefaultISA, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AccumulateWriteBack<float>>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
 }  // namespace avx512_vnni
 }  // namespace weight_comp

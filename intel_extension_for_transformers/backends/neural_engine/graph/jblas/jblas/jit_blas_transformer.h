@@ -27,8 +27,7 @@ class QKVGemmInterfaceKBlockPackWeight {
   using CParam = typename _Launcher_T::EpiParam;
   using QuanParam = typename _Launcher_T::QuanAParam;
   using Parallel = _Parallel_T<GemmCore>;
-  Parallel createParallel(int M = 0, int N = 0, int K = 0, int Batch = 1,
-                          int KBlock = 0) {
+  Parallel createParallel(int M = 0, int N = 0, int K = 0, int Batch = 1, int KBlock = 0) {
     Parallel _paral;
     auto cb = utils::CpuBase();
     _paral.update(M, N, K, KBlock, cb.mNumThreads);
@@ -38,16 +37,14 @@ class QKVGemmInterfaceKBlockPackWeight {
   WeightType* getWeightPtr() { return &mLauncher.mProB; }
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param, Parallel _paral = Parallel()) {
-    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(
-        _param.paramsB[0].packedW);
+    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramsB[0].packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
-    auto quanA = mLauncher.mProA.template quantize<_Launcher_T::RT_ISA>(
-        _param.paramA, _param.M, _param.K, bptr->mBlockSize);
+    auto quanA =
+        mLauncher.mProA.template quantize<_Launcher_T::RT_ISA>(_param.paramA, _param.M, _param.K, bptr->mBlockSize);
     auto cb = utils::CpuBase();
-    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize,
-                      cb.mNumThreads)) {
+    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
       static bool dbgprint = false;
       if (dbgprint) {
         _paral.print();
@@ -61,19 +58,12 @@ class QKVGemmInterfaceKBlockPackWeight {
       int colidx, rowidx, rowsize, colsize;
       _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        Config _config{rowidx,
-                       colidx,
-                       rowsize,
-                       colsize,
-                       _paral.getMStep(),
-                       _paral.getNStep(),
-                       _paral.getKStep(),
+        Config _config{rowidx,     colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
                        cb.mL2Cache};
         for (size_t i = 0; i < _param.Batch; i++) {
           mLauncher.launch(
               _config,
-              {_param.M, _param.N, _param.K, _param.paramA, _param.paramsB[i],
-               _param.paramsC[i], _param.workspace},
+              {_param.M, _param.N, _param.K, _param.paramA, _param.paramsB[i], _param.paramsC[i], _param.workspace},
               quanA);
         }
       }
@@ -82,32 +72,27 @@ class QKVGemmInterfaceKBlockPackWeight {
   }
 
   JBLAS_CODE compute2(const Arguments& _param, Parallel _paral = Parallel()) {
-    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(
-        _param.paramsB[0].packedW);
+    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramsB[0].packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
 
     auto cb = utils::CpuBase();
-    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize,
-                      cb.mNumThreads)) {
+    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
       static bool dbgprint = false;
       if (dbgprint) {
         _paral.print();
         dbgprint = false;
       }
     }
-    auto paraA =
-        mLauncher.mProA.createParallel(_param.M, _param.K, bptr->mBlockSize);
-    auto quanA =
-        mLauncher.mProA.createObj(_param.M, _param.K, bptr->mBlockSize);
+    auto paraA = mLauncher.mProA.createParallel(_param.M, _param.K, bptr->mBlockSize);
+    auto quanA = mLauncher.mProA.createObj(_param.M, _param.K, bptr->mBlockSize);
 
     omp_set_num_threads(cb.mNumThreads);
 #pragma omp parallel
     {
       int tidx = omp_get_thread_num();
-      mLauncher.mProA.template quantizeT<_Launcher_T::RT_ISA>(
-          _param.paramA, tidx, quanA, paraA);
+      mLauncher.mProA.template quantizeT<_Launcher_T::RT_ISA>(_param.paramA, tidx, quanA, paraA);
 #pragma omp barrier
       launchT(_param, tidx, _paral, quanA, cb.mL2Cache);
     }
@@ -115,24 +100,16 @@ class QKVGemmInterfaceKBlockPackWeight {
   }
 
  protected:
-  void launchT(const Arguments& _param, int tidx, Parallel& _paral,
-               QuanParam& quanA, size_t l2cache) {
+  void launchT(const Arguments& _param, int tidx, Parallel& _paral, QuanParam& quanA, size_t l2cache) {
     int colidx, rowidx, rowsize, colsize;
     _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
     if (rowsize > 0 && colsize > 0) {
-      Config _config{rowidx,
-                     colidx,
-                     rowsize,
-                     colsize,
-                     _paral.getMStep(),
-                     _paral.getNStep(),
-                     _paral.getKStep(),
+      Config _config{rowidx, colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
                      l2cache};
       for (size_t i = 0; i < _param.Batch; i++) {
         mLauncher.launch(
             _config,
-            {_param.M, _param.N, _param.K, _param.paramA, _param.paramsB[i],
-             _param.paramsC[i], _param.workspace},
+            {_param.M, _param.N, _param.K, _param.paramA, _param.paramsB[i], _param.paramsC[i], _param.workspace},
             quanA);
       }
     }
@@ -147,13 +124,11 @@ namespace weight_comp {
 namespace avx512_vnni {
 static JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
 
-using QKVGemmSKernelDynamicS4KBlock =
-    jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-        jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-            DefaultISA, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-            jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-            jblas::epilogue::gemm::AccumulateWriteBack<float>>,
-        jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+using QKVGemmSKernelDynamicS4KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        DefaultISA, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AccumulateWriteBack<float>>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
 }  // namespace avx512_vnni
 }  // namespace weight_comp
