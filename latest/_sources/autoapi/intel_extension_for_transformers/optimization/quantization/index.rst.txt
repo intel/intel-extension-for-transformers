@@ -26,6 +26,7 @@ Classes
 
 
 
+
    Currently support three quantization modes.
 
 

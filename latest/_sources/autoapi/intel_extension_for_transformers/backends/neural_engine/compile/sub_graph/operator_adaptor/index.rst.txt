@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The OperatorAdaptor pattern.
 
    Modify some operators after all fusion patterns. For example, sweep input tensors to make

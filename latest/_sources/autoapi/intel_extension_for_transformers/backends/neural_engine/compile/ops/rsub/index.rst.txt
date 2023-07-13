@@ -26,6 +26,7 @@ Classes
 
 
 
+
    Register the Tile operator.
 
    .. py:method:: set_attr(framework, node)

@@ -26,6 +26,7 @@ Classes
 
 
 
+
    Objective class.
 
    .. py:method:: performance()

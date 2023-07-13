@@ -26,6 +26,7 @@ Classes
 
 
 
+
    Parse the ONNXINPUT operator to the neural engine.
 
    .. py:method:: extract(framework, node, framework_model, nodes_dict, engine_graph=None)

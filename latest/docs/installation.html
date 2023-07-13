@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; Intel® Extension for Transformers 1.0.0 documentation</title>
+  <title>Installation &mdash; Intel® Extension for Transformers 0.1.dev1+g3d79875 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -51,16 +51,10 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#linux-installation">Linux Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#install-from-pypi">Install from Pypi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-from-source">Install from Source</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#install-from-pypi">Install from Pypi</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#install-from-source">Install from Source</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#windows-installation">Windows Installation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id1">Prerequisites</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id2">Install from Pypi</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id3">Install from Source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-intel-extension-for-transformers">Install Intel Extension for Transformers</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#system-requirements">System Requirements</a><ul>
@@ -105,39 +99,22 @@
   <section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
 <ol>
-<li><p><a class="reference external" href="#linux-installation">Linux Installation</a></p>
-<p>1.1. <a class="reference external" href="#prerequisites">Prerequisites</a></p>
-<p>1.2. <a class="reference external" href="#install-from-pypi">Install from Pypi</a></p>
-<p>1.3. <a class="reference external" href="#install-from-source">Install from Source</a></p>
-</li>
-<li><p><a class="reference external" href="#windows-installation">Windows Installation</a></p>
-<p>2.1. <a class="reference external" href="#prerequisites-1">Prerequisites</a></p>
-<p>2.2. <a class="reference external" href="#install-from-pypi-1">Install from Pypi</a></p>
-<p>2.3. <a class="reference external" href="#install-from-source-1">Install from Source</a></p>
+<li><p><a class="reference external" href="#install-from-pypi">Install from Pypi</a></p></li>
+<li><p><a class="reference external" href="#install-from-source">Install from Source</a></p>
+<p>2.1. <a class="reference external" href="#prerequisites">Prerequisites</a></p>
+<p>2.2. <a class="reference external" href="#install-intel-extension-for-transformers">Install Intel Extension for Transformers</a></p>
 </li>
 <li><p><a class="reference external" href="#system-requirements">System Requirements</a></p>
 <p>3.1. <a class="reference external" href="#validated-hardware-environment">Validated Hardware Environment</a></p>
 <p>3.2. <a class="reference external" href="#validated-software-environment">Validated Software Environment</a></p>
 </li>
 </ol>
-<section id="linux-installation">
-<h2>Linux Installation<a class="headerlink" href="#linux-installation" title="Permalink to this heading"></a></h2>
-<section id="prerequisites">
-<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h3>
-<p>The following prerequisites and requirements must be satisfied for a successful installation:</p>
-<ul class="simple">
-<li><p>Python version: 3.7 or 3.8 or 3.9 or 3.10</p></li>
-</ul>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp"># Install Dependency</span>
-<span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="o">-</span><span class="n">r</span><span class="w"> </span><span class="n">requirements</span><span class="p">.</span><span class="n">txt</span>
-</pre></div>
-</div>
+<section id="install-from-pypi">
+<h2>Install from Pypi<a class="headerlink" href="#install-from-pypi" title="Permalink to this heading"></a></h2>
+<p>Binary builds for python 3.7, 3.8, 3.9 and 3.10 are available in Pypi</p>
 <blockquote>
 <div><p><strong>Note</strong>: Recommend install protobuf &lt;= 3.20.0 if use onnxruntime &lt;= 1.11</p>
 </div></blockquote>
-</section>
-<section id="install-from-pypi">
-<h3>Install from Pypi<a class="headerlink" href="#install-from-pypi" title="Permalink to this heading"></a></h3>
 <div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># install stable basic version from pypi</span>
 pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
 </pre></div>
@@ -148,49 +125,27 @@ pip<span class="w"> </span>install<span class="w"> </span>-i<span class="w"> </s
 pip<span class="w"> </span>install<span class="w"> </span>-i<span class="w"> </span>https://test.pypi.org/simple/<span class="w"> </span>intel-extension-for-transformers-backend
 </pre></div>
 </div>
-<div class="highlight-Shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># install stable basic version from from conda</span>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># install stable basic version from from conda</span>
 conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>intel<span class="w"> </span>intel_extension_for_transformers
 </pre></div>
 </div>
 </section>
 <section id="install-from-source">
-<h3>Install from Source<a class="headerlink" href="#install-from-source" title="Permalink to this heading"></a></h3>
-<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>intel_extension_for_transformers
-<span class="nb">cd</span><span class="w"> </span>intel_extension_for_transformers
-<span class="c1"># Install Dependency</span>
-pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
-<span class="c1"># Install intel_extension_for_transformers</span>
-python<span class="w"> </span>setup.py<span class="w"> </span>install
-</pre></div>
-</div>
-</section>
-</section>
-<section id="windows-installation">
-<h2>Windows Installation<a class="headerlink" href="#windows-installation" title="Permalink to this heading"></a></h2>
-<section id="id1">
-<h3>Prerequisites<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<h2>Install from Source<a class="headerlink" href="#install-from-source" title="Permalink to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h3>
 <p>The following prerequisites and requirements must be satisfied for a successful installation:</p>
 <ul class="simple">
-<li><p>Python version: 3.7 or 3.8 or 3.9</p></li>
-<li><p>Visual Studio</p></li>
+<li><p>Python version: 3.7 or 3.8 or 3.9 or 3.10</p></li>
+<li><p>GCC (on Linux) or Visual Studio (on Windows)</p></li>
 </ul>
 </section>
-<section id="id2">
-<h3>Install from Pypi<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
-<div class="highlight-Bat notranslate"><div class="highlight"><pre><span></span>pip install intel-extension-for-transformers
-</pre></div>
-</div>
-</section>
-<section id="id3">
-<h3>Install from Source<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
-<div class="highlight-Bat notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/intel/intel-extension-for-transformers.git intel_extension_for_transformers
-<span class="k">cd</span> intel_extension_for_transformers
-# Install Dependency
-pip install -r requirements.txt
-git submodule update --init --recursive
-# Install intel_extension_for_transformers
-python setup.py install
+<section id="install-intel-extension-for-transformers">
+<h3>Install Intel Extension for Transformers<a class="headerlink" href="#install-intel-extension-for-transformers" title="Permalink to this heading"></a></h3>
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>itrex
+<span class="nb">cd</span><span class="w"> </span>itrex
+<span class="c1"># Install intel_extension_for_transformers</span>
+pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span>.
 </pre></div>
 </div>
 </section>

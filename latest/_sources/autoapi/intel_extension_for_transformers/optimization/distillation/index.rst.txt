@@ -27,10 +27,12 @@ Classes
 
 
 
+
    Criterion class for distillation.
 
 
 .. py:class:: DistillationCriterionMode
+
 
 
 

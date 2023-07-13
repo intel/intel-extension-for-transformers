@@ -26,6 +26,7 @@ Classes
 
 .. py:class:: BaseTrainer(*args, **kwargs)
 
+
    The base class of trainer.
 
    .. py:method:: builtin_eval_func(model)
@@ -396,10 +397,12 @@ Classes
 
 
 
+
    Trainer for nlp base on class BaseTrainer and Trainer form Transformers.
 
 
 .. py:class:: NLPSeq2SeqTrainer(*args, **kwargs)
+
 
 
 

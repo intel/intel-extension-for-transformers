@@ -23,6 +23,7 @@ Classes
 
 
 
+
    The bass pattern class.
 
 

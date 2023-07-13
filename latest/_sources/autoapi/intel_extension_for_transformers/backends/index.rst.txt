@@ -6,3 +6,12 @@
 .. py:module:: intel_extension_for_transformers.backends
 
 
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   neural_engine/index.rst
+
+

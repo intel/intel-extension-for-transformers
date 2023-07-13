@@ -40,6 +40,7 @@ Functions
 
 
 
+
    The logger class.
 
    .. py:method:: get_logger()

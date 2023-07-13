@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The TorchEmbedding pattern.
 
    Fuse the original sub-graph into the custom acceleration 'TorchEmbedding' graph.

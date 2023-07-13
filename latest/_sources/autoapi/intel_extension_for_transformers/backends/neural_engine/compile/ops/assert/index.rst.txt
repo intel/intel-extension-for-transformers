@@ -26,6 +26,7 @@ Classes
 
 
 
+
    Parse the Assert operator to the neural engine.
 
    .. py:method:: set_attr(framework, node)

@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The RemoveLastView pattern.
 
    Fuse the original sub-graph into the custom acceleration 'RemoveLastView' graph.

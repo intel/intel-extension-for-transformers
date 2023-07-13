@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The TorchExtractor class.
 
    Decorate the node in model.graph_def, and the new node has the attributes like input_tensors

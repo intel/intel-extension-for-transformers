@@ -17,6 +17,7 @@ Submodules
 
    all/index.rst
    assert/index.rst
+   baddbmm/index.rst
    batch_matmul/index.rst
    batch_matmul_v2/index.rst
    bias_add/index.rst
@@ -77,6 +78,7 @@ Submodules
    unpack/index.rst
    unsqueeze/index.rst
    view/index.rst
+   where/index.rst
 
 
 Package Contents

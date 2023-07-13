@@ -17,7 +17,7 @@ See the accompanying [license](https://github.com/intel/intel-extension-for-tran
 
 If you use Intel® Extension for Transformers in your research, or you wish to refer to the tuning results published in the [Validated Models](validated_model_list.md), use the following BibTeX entry.
 
-```
+```bibtex
 @misc{Intel® Extension for Transformers,
   author =       {Hanwen Chang, Haihao Shen, Dong bo, Hengyu Meng and Wenxin Zhang},
   title =        {Intel® Extension for Transformers},

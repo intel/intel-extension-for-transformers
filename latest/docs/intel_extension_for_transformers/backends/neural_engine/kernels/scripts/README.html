@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to visualize weights distribution of sparse model &mdash; Intel® Extension for Transformers 1.0.0 documentation</title>
+  <title>How to visualize weights distribution of sparse model &mdash; Intel® Extension for Transformers 0.1.dev1+g3d79875 documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -85,25 +85,26 @@
 <h1>How to visualize weights distribution of sparse model<a class="headerlink" href="#how-to-visualize-weights-distribution-of-sparse-model" title="Permalink to this heading"></a></h1>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
-<p>sparse model is one type of compressed model, which contains un-structure information more than pre-trained model in the same weights tensor. visualization these sparse models could help us design a better kernel level computation pattern in specific hardware platform. this script currently supports both neural engine model and pytorch model.</p>
+<p>Sparse model is one type of compressed model, which contains un-structure information more than pre-trained model in the same weights tensor. visualization these sparse models could help us design a better kernel level computation pattern in specific hardware platform. this script currently supports both neural engine model and pytorch model.</p>
 </section>
 <section id="setups">
 <h2>Setups<a class="headerlink" href="#setups" title="Permalink to this heading"></a></h2>
 <section id="prepare-the-sparse-model">
 <h3>1. Prepare the sparse model<a class="headerlink" href="#prepare-the-sparse-model" title="Permalink to this heading"></a></h3>
-<p>you have to prepare a model.bin file and its conf.yaml file for neural engine model in the same IR directory, but just one model.bin for pytorch model.</p>
+<p>You have to prepare a model.bin file and its conf.yaml file for neural engine model in the same IR directory, but just one model.bin for pytorch model.</p>
 </section>
 <section id="run-below-commands">
 <h3>2. Run below commands<a class="headerlink" href="#run-below-commands" title="Permalink to this heading"></a></h3>
-<p>|   |   |
-|—|—|
-A. Neural Engine model | python sparsity_all.py –mt 1 –path /path to IR directory
-B. Pytorch model | python sparsity_all.py –mt 0 –path /path to pytorch model directory</p>
+<p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></p>
+<ol class="simple">
+<li><p>Neural Engine model: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">sparsity_all.py</span> <span class="pre">--mt</span> <span class="pre">1</span> <span class="pre">--path</span> <span class="pre">/path</span> <span class="pre">to</span> <span class="pre">IR</span> <span class="pre">directory</span></code></p></li>
+<li><p>Pytorch model: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">sparsity_all.py</span> <span class="pre">--mt</span> <span class="pre">0</span> <span class="pre">--path</span> <span class="pre">/path</span> <span class="pre">to</span> <span class="pre">pytorch</span> <span class="pre">model</span> <span class="pre">directory</span></code></p></li>
+</ol>
 </section>
 <section id="analysis-results">
 <h3>3. Analysis results<a class="headerlink" href="#analysis-results" title="Permalink to this heading"></a></h3>
-<p>you could see visualization one of results as below hotmap figure after running above command in the same directory, and it could generate JPG format pictures for each weight tensor, the name of pictures corresponding with tensor name.
-<img alt="Image text" src="../../../../../../_images/sample_figure.jpg" /></p>
+<p>You could see visualization one of results as below hotmap figure after running above command in the same directory, and it could generate JPG format pictures for each weight tensor, the name of pictures corresponding with tensor name.
+<img alt="Sample figure" src="../../../../../../_images/sample_figure.jpg" /></p>
 </section>
 </section>
 </section>

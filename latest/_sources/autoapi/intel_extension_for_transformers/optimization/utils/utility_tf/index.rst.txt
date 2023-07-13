@@ -36,6 +36,7 @@ Functions
 
 
 
+
    Tensorflow dataloader.
 
    :param dataset: Dataset

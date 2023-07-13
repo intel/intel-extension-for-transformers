@@ -26,6 +26,7 @@ Classes
 
 .. py:class:: DataAugmentation(augmenter_type: str)
 
+
    DataAugmentation provides many ways to enhance existing datasets.
 
    :param augmenter_type: augmenter type like: "TextGenerationAug", "KeyboardAug", ...

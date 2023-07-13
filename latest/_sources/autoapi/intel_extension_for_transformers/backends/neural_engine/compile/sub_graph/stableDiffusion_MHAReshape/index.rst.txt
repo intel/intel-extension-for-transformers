@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The StableDiffusion_MHAReshape pattern.
 
    Fuse the original sub-graph into the custom acceleration 'StableDiffusion_MHAReshape' graph.

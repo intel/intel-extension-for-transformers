@@ -24,6 +24,7 @@ Classes
 
 .. py:class:: OptimizedModel(*args, **kwargs)
 
+
    Provide the from_pretrained function.
 
    .. py:method:: from_pretrained(model_name_or_path: str, **kwargs)

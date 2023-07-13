@@ -29,6 +29,7 @@ Classes
 
 
 
+
    Extractor base class.
 
    A super class for an operation extractor.

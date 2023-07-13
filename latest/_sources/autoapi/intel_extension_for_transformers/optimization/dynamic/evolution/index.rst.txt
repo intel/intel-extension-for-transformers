@@ -51,6 +51,7 @@ Functions
 
 
 
+
    Class of Evolution supports for evolutionary searching.
 
    .. py:method:: load_store(store_file)

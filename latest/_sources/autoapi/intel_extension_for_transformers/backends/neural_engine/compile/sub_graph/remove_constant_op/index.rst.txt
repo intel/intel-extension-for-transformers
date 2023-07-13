@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The RemoveConstantOP pattern.
 
    Remove Constant OP

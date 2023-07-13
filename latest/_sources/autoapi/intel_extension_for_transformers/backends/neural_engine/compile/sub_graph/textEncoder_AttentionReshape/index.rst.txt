@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The TextEncoder_AttentionReshape pattern.
 
    Fuse the original sub-graph into the custom acceleration 'TextEncoder_AttentionReshape' graph.

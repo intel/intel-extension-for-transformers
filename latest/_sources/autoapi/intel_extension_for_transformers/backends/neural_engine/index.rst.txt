@@ -1,9 +1,12 @@
-:orphan:
-
 :py:mod:`intel_extension_for_transformers.backends.neural_engine`
 =================================================================
 
 .. py:module:: intel_extension_for_transformers.backends.neural_engine
+
+.. autoapi-nested-parse::
+
+   The module of Neural Engine.
+
 
 
 Subpackages
@@ -13,5 +16,23 @@ Subpackages
    :maxdepth: 3
 
    compile/index.rst
+
+
+Package Contents
+----------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.backends.neural_engine.neural_engine_bin
+
+
+
+.. py:function:: neural_engine_bin()
+
+   Entry point for C++ interface
 
 

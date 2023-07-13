@@ -64,6 +64,7 @@ Functions
 
 
 
+
    Construct the embeddings from word, position and token_type embeddings.
 
    .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, past_key_values_length: int = 0) -> torch.Tensor
@@ -73,6 +74,7 @@ Functions
 
 
 .. py:class:: BertSelfAttention(config, position_embedding_type=None)
+
 
 
 
@@ -93,6 +95,7 @@ Functions
 
 
 
+
    Bert self output.
 
    .. py:method:: forward(hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor
@@ -102,6 +105,7 @@ Functions
 
 
 .. py:class:: BertAttention(config, position_embedding_type=None)
+
 
 
 
@@ -122,6 +126,7 @@ Functions
 
 
 
+
    Bert intermediate.
 
    .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
@@ -134,6 +139,7 @@ Functions
 
 
 
+
    Bert output.
 
    .. py:method:: forward(hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor
@@ -143,6 +149,7 @@ Functions
 
 
 .. py:class:: BertLayer(config)
+
 
 
 
@@ -163,6 +170,7 @@ Functions
 
 
 
+
    Bert encoder.
 
    .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = False, output_hidden_states: Optional[bool] = False, return_dict: Optional[bool] = True, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.BaseModelOutputWithPastAndCrossAttentions]
@@ -172,6 +180,7 @@ Functions
 
 
 .. py:class:: BertPooler(config)
+
 
 
 
@@ -187,6 +196,7 @@ Functions
 
 
 
+
    Bert prediction head transform.
 
    .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
@@ -196,6 +206,7 @@ Functions
 
 
 .. py:class:: BertLMPredictionHead(config)
+
 
 
 
@@ -211,6 +222,7 @@ Functions
 
 
 
+
    Bert only for masked language modeling head.
 
    .. py:method:: forward(sequence_output: torch.Tensor) -> torch.Tensor
@@ -220,6 +232,7 @@ Functions
 
 
 .. py:class:: BertOnlyNSPHead(config)
+
 
 
 
@@ -235,6 +248,7 @@ Functions
 
 
 
+
    Bert pretraining heads.
 
    .. py:method:: forward(sequence_output, pooled_output)
@@ -247,11 +261,13 @@ Functions
 
 
 
+
    An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
    models.
 
 
 .. py:class:: BertForPreTrainingOutput
+
 
 
 
@@ -281,6 +297,7 @@ Functions
 
 
 .. py:class:: BertModel(config, add_pooling_layer=True)
+
 
 
 
@@ -341,6 +358,7 @@ Functions
 
 
 
+
    Bert for pretrained model
 
    .. py:method:: get_output_embeddings()
@@ -389,6 +407,7 @@ Functions
 
 
 .. py:class:: BertLMHeadModel(config)
+
 
 
 
@@ -441,6 +460,7 @@ Functions
 
 
 
+
    Bert for masked language modeling.
 
    .. py:method:: get_output_embeddings()
@@ -468,6 +488,7 @@ Functions
 
 
 .. py:class:: BertForNextSentencePrediction(config)
+
 
 
 
@@ -508,6 +529,7 @@ Functions
 
 
 
+
    Bert for sequence classification.
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.SequenceClassifierOutput]
@@ -520,6 +542,7 @@ Functions
 
 
 .. py:class:: BertForMultipleChoice(config)
+
 
 
 
@@ -538,6 +561,7 @@ Functions
 
 
 
+
    Bert for token classification.
 
    .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.TokenClassifierOutput]
@@ -548,6 +572,7 @@ Functions
 
 
 .. py:class:: BertForQuestionAnswering(config)
+
 
 
 

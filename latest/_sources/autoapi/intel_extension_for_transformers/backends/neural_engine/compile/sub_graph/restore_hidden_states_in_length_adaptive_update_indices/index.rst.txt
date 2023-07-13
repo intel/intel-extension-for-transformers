@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The RestoreHiddenStatesInLengthAdaptive pattern.
 
    Fuse the original sub-graph into the custom acceleration 'RestoreHiddenStatesInLengthAdaptive' graph.

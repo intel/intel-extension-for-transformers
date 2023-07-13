@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Intel® Extension for Transformers &mdash; Intel® Extension for Transformers 1.0.0 documentation</title>
+  <title>Intel® Extension for Transformers &mdash; Intel® Extension for Transformers 0.1.dev1+g3d79875 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -157,13 +157,10 @@ conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> <
 </section>
 <section id="install-from-source">
 <h4>2.3 Install from Source<a class="headerlink" href="#install-from-source" title="Permalink to this heading"></a></h4>
-<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>intel_extension_for_transformers
-<span class="nb">cd</span><span class="w"> </span>intel_extension_for_transformers
-<span class="c1"># Install Dependency</span>
-pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+<div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>itrex
+<span class="nb">cd</span><span class="w"> </span>itrex
 <span class="c1"># Install intel_extension_for_transformers</span>
-python<span class="w"> </span>setup.py<span class="w"> </span>install
+pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span>.
 </pre></div>
 </div>
 <p>You can check if installation succeeded by running <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">intel_extension_for_transformers</span></code></p>
@@ -174,7 +171,7 @@ python<span class="w"> </span>setup.py<span class="w"> </span>install
 <p>In this example, we show how to use the quantization API for model optimization. For other model compression samples, refer to <a class="reference internal" href="get_started.html"><span class="doc">Get Started Page</span></a>. For additional validated examples, refer to <a class="reference internal" href="examples.html"><span class="doc">Support Model Matrix</span></a></p>
 <section id="install-requirements">
 <h4>3.1 Install Requirements<a class="headerlink" href="#install-requirements" title="Permalink to this heading"></a></h4>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">transformers</span><span class="o">==</span><span class="m">4</span>.23.1<span class="w"> </span>datasets<span class="w"> </span>onnx<span class="w"> </span>onnxruntime<span class="w"> </span>torch
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>transformers<span class="w"> </span>datasets<span class="w"> </span>onnx<span class="w"> </span>onnxruntime<span class="w"> </span>torch
 pip<span class="w"> </span>install<span class="w"> </span>neural-compressor
 </pre></div>
 </div>

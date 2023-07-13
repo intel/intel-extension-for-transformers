@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The ExplicitNHWCTransposeForConv pattern.
 
    Fuse the original sub-graph into the custom acceleration 'ExplicitNHWCTransposeForConv' graph.

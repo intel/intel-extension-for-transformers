@@ -47,6 +47,7 @@ Functions
 
 
 
+
    The bass pattern class.
 
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Data Augmentation &mdash; Intel® Extension for Transformers 1.0.0 documentation</title>
+  <title>Data Augmentation &mdash; Intel® Extension for Transformers 0.1.dev1+g3d79875 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -113,7 +113,7 @@
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
 <li><p><a class="reference external" href="#getting-started">Getting Started</a></p>
 <p>2.1. <a class="reference external" href="#install-dependency">Install Dependency</a></p>
-<p>2.2. <a class="reference external" href="#install-intel_extension_for_transformers">Install Intel_Extension_for_Transformers</a></p>
+<p>2.2. <a class="reference external" href="#install-intel_extension_for_transformers">Install Intel Extension for Transformers</a></p>
 </li>
 <li><p><a class="reference external" href="#data-augmentation">Data Augmentation</a></p>
 <p>3.1. <a class="reference external" href="#script">Script</a></p>
@@ -132,16 +132,15 @@
 <section id="install-dependency">
 <h3>Install Dependency<a class="headerlink" href="#install-dependency" title="Permalink to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>nlpaug
-pip<span class="w"> </span>install<span class="w"> </span>transformers&gt;<span class="o">=</span><span class="m">4</span>.12.0
+pip<span class="w"> </span>install<span class="w"> </span>transformers
 </pre></div>
 </div>
 </section>
 <section id="install-intel-extension-for-transformers">
-<h3>Install Intel_Extension_for_Transformers<a class="headerlink" href="#install-intel-extension-for-transformers" title="Permalink to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>intel_extension_for_transformers
-<span class="nb">cd</span><span class="w"> </span>intel_extension_for_transformers
-git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
-python<span class="w"> </span>setup.py<span class="w"> </span>install
+<h3>Install Intel Extension for Transformers<a class="headerlink" href="#install-intel-extension-for-transformers" title="Permalink to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>itrex
+<span class="nb">cd</span><span class="w"> </span>itrex
+pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span>.
 </pre></div>
 </div>
 </section>

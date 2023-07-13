@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The QKVMerge pattern.
 
    Fuse the original sub-graph into the custom acceleration 'QKVMerge' graph.

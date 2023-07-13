@@ -29,6 +29,7 @@ Classes
 
 
 
+
    Create object of different NAS approaches.
 
    :param conf_fname_or_obj: The path to the YAML configuration file or the object of NASConfig.

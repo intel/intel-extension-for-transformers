@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The DecoderAttnReshape pattern.
 
    Fuse the original sub-graph into the custom acceleration 'DecoderAttnReshape' graph.

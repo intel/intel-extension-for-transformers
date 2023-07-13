@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The InteractFeatures pattern.
 
    Fuse the original sub-graph into the custom acceleration 'InteractFeatures' graph.

@@ -24,6 +24,7 @@ Classes
 
 .. py:class:: Optimizer(graph, input_shape=None, *args, **kwargs)
 
+
    The defintion of the neural engine optimizer.
 
    .. py:method:: optimize()

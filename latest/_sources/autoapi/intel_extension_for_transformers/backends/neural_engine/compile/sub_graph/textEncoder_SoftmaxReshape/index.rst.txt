@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The TextEncoder_SoftmaxReshape pattern.
 
    Fuse the original sub-graph into the custom acceleration 'TextEncoder_SoftmaxReshape' graph.

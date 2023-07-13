@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The Int8BF16MixedPrecisionChecker pattern.
 
    Check if the model can be inferenced under in8/bf16 mixed precision. And modify graph if need.

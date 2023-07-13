@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The EmbeddingsTo2DBeforeInnerProduct pattern.
 
    Fuse the original sub-graph into the custom acceleration 'EmbeddingsTo2DBeforeInnerProduct' graph.

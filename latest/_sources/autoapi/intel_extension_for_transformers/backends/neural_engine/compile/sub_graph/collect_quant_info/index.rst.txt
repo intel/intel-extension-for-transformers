@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The CollectQuantInfo pattern.
 
    Fuse the original sub-graph into the custom acceleration 'CollectQuantInfo' graph.

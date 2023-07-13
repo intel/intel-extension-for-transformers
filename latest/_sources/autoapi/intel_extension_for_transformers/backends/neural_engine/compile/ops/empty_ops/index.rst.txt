@@ -49,7 +49,6 @@ Classes
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Tanh
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TensorSliceDataset
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.TransposeBatchMatMul
-   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Where
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Range
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Relu
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.MatMulWithBiasRelu
@@ -82,11 +81,13 @@ Classes
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Max
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.ListUnpack
    intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Silu
+   intel_extension_for_transformers.backends.neural_engine.compile.ops.empty_ops.Zeros
 
 
 
 
 .. py:class:: AddV2
+
 
 
 
@@ -97,10 +98,12 @@ Classes
 
 
 
+
    The class of neural engine operator.
 
 
 .. py:class:: Add
+
 
 
 
@@ -111,10 +114,12 @@ Classes
 
 
 
+
    Register the BinaryAdd operator.
 
 
 .. py:class:: ConstantOfShape
+
 
 
 
@@ -125,10 +130,12 @@ Classes
 
 
 
+
    Register the DequantizeLinear operator.
 
 
 .. py:class:: Dequantize
+
 
 
 
@@ -139,10 +146,12 @@ Classes
 
 
 
+
    Register the Erf operator.
 
 
 .. py:class:: Expand
+
 
 
 
@@ -153,10 +162,12 @@ Classes
 
 
 
+
    Register the Fill operator.
 
 
 .. py:class:: FlatMapDataset
+
 
 
 
@@ -167,10 +178,12 @@ Classes
 
 
 
+
    Register the Identity operator.
 
 
 .. py:class:: InnerProduct
+
 
 
 
@@ -181,10 +194,12 @@ Classes
 
 
 
+
    Register the Input operator.
 
 
 .. py:class:: MakeIterator
+
 
 
 
@@ -195,10 +210,12 @@ Classes
 
 
 
+
    Register the MatMulWithBiasAdd operator.
 
 
 .. py:class:: MatMulWithBiasGelu
+
 
 
 
@@ -209,10 +226,12 @@ Classes
 
 
 
+
    Register the MatMulWithBiasTanh operator.
 
 
 .. py:class:: MatMulWithBias
+
 
 
 
@@ -223,10 +242,12 @@ Classes
 
 
 
+
    Register the Output operator.
 
 
 .. py:class:: QLinearMatMul
+
 
 
 
@@ -237,10 +258,12 @@ Classes
 
 
 
+
    Register the QLinearAdd operator.
 
 
 .. py:class:: QLinearMul
+
 
 
 
@@ -251,10 +274,12 @@ Classes
 
 
 
+
    Register the RealDiv operator.
 
 
 .. py:class:: Rsqrt
+
 
 
 
@@ -265,10 +290,12 @@ Classes
 
 
 
+
    Register the Sqrt operator.
 
 
 .. py:class:: Square
+
 
 
 
@@ -279,10 +306,12 @@ Classes
 
 
 
+
    Register the SquaredDifference operator.
 
 
 .. py:class:: StopGradient
+
 
 
 
@@ -293,10 +322,12 @@ Classes
 
 
 
+
    Register the Tanh operator.
 
 
 .. py:class:: TensorSliceDataset
+
 
 
 
@@ -307,17 +338,12 @@ Classes
 
 
 
+
    Register the TransposeBatchMatMul operator.
 
 
-.. py:class:: Where
-
-
-
-   Register the Where operator.
-
-
 .. py:class:: Range
+
 
 
 
@@ -328,10 +354,12 @@ Classes
 
 
 
+
    Register the Relu operator.
 
 
 .. py:class:: MatMulWithBiasRelu
+
 
 
 
@@ -342,10 +370,12 @@ Classes
 
 
 
+
    Register the Matmul operator.
 
 
 .. py:class:: CumSum
+
 
 
 
@@ -356,10 +386,12 @@ Classes
 
 
 
+
    Register the Onehot operator.
 
 
 .. py:class:: TokenTypeIds
+
 
 
 
@@ -370,10 +402,12 @@ Classes
 
 
 
+
    Register the PositionIds operator.
 
 
 .. py:class:: Loop
+
 
 
 
@@ -384,10 +418,12 @@ Classes
 
 
 
+
    Register the Sigmoid operator.
 
 
 .. py:class:: MatMulWithBiasSigmoid
+
 
 
 
@@ -398,10 +434,12 @@ Classes
 
 
 
+
    Register the EmbeddingBag operator.
 
 
 .. py:class:: Flatten
+
 
 
 
@@ -412,10 +450,12 @@ Classes
 
 
 
+
    Register the MergedEmbeddingbag operator.
 
 
 .. py:class:: Convolution
+
 
 
 
@@ -426,10 +466,12 @@ Classes
 
 
 
+
    Register the ExpandIndices operator.
 
 
 .. py:class:: Tile
+
 
 
 
@@ -440,10 +482,12 @@ Classes
 
 
 
+
    Register the OpAny operator.
 
 
 .. py:class:: SequenceLength
+
 
 
 
@@ -454,10 +498,12 @@ Classes
 
 
 
+
    Register the Tile operator.
 
 
 .. py:class:: Reciprocal
+
 
 
 
@@ -468,10 +514,12 @@ Classes
 
 
 
+
    Register the Tile operator.
 
 
 .. py:class:: Repeat
+
 
 
 
@@ -482,10 +530,12 @@ Classes
 
 
 
+
    Register the Tile operator.
 
 
 .. py:class:: Constant
+
 
 
 
@@ -496,10 +546,12 @@ Classes
 
 
 
+
    Register the Tile operator.
 
 
 .. py:class:: LatRange
+
 
 
 
@@ -510,10 +562,12 @@ Classes
 
 
 
+
    Register the Tile operator.
 
 
 .. py:class:: Floor_divide
+
 
 
 
@@ -524,6 +578,7 @@ Classes
 
 
 
+
    Register the Tile operator.
 
 
@@ -531,10 +586,20 @@ Classes
 
 
 
+
    Register the Tile operator.
 
 
 .. py:class:: Silu
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Zeros
+
 
 
 

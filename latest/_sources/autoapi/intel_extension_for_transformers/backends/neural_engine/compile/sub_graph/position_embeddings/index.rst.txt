@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The PositionEmbeddings pattern.
 
    Fuse the original sub-graph into the custom acceleration 'PositionEmbeddings' graph.

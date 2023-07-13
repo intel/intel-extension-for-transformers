@@ -64,6 +64,8 @@ Submodules
    matmul_with_transpose/index.rst
    matmul_with_transpose_scale_add/index.rst
    merged_embeddingbag/index.rst
+   neox_reorder_change/index.rst
+   neox_rotary_pos_emb/index.rst
    operator_adaptor/index.rst
    output_data/index.rst
    padding_sequence/index.rst
@@ -78,6 +80,8 @@ Submodules
    remove_constant_op/index.rst
    remove_last_view/index.rst
    remove_range/index.rst
+   remove_unused_operator/index.rst
+   remove_zeros/index.rst
    removeslice/index.rst
    reshape_after_restore_hidden_states/index.rst
    reshape_before_and_after_attention_out_layer_norm_gather_elements/index.rst
@@ -105,6 +109,7 @@ Submodules
    token_type_embeddings_v1/index.rst
    torch_embedding/index.rst
    torch_ip_insert_bias/index.rst
+   torch_unpack_baddbmm/index.rst
    torchinsertbf16node/index.rst
    torchpaddingsquence/index.rst
    transformer2Dmodel_AttentionMaskAddReshape/index.rst

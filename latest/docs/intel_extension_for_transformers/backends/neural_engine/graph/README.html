@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ITREX Graph &mdash; Intel® Extension for Transformers 0.1.dev1+g3d79875 documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../../../_static/jquery.js"></script>
+        <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/doctools.js"></script>
+        <script src="../../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../legal.html">Legal Information</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ITREX Graph</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/backends/neural_engine/graph/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="itrex-graph">
+<h1>ITREX Graph<a class="headerlink" href="#itrex-graph" title="Permalink to this heading"></a></h1>
+<p>ITREX Graph is an experimental c++ bare metal LLM inference solution that mainly references and borrows from the llama.cpp project. llama.cpp puts almost all core code and kernels in a single file and use a large number of macros, making it difficult for developers to read and modify. The graph has the following features:</p>
+<ul class="simple">
+<li><p>Simple and hierarchical structure, you can add your own high-performance implementation.</p></li>
+<li><p>Applied quantization into high 4 bitsfrom int8, higher performance and accuracy compared with the original one.</p></li>
+<li><p>Utilized AVX512F instruction set, more instructions support on the way.</p></li>
+<li><p>Currently only supports x86 platforms, and initial Intel GPU support.</p></li>
+</ul>
+<p>In short, ITREX Graph is an experimental feature and may keep changing.</p>
+<section id="compile-graph">
+<h2>Compile Graph<a class="headerlink" href="#compile-graph" title="Permalink to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>-G<span class="w"> </span>Ninja
+ninja
+</pre></div>
+</div>
+</section>
+<section id="how-to-use">
+<h2>How to use<a class="headerlink" href="#how-to-use" title="Permalink to this heading"></a></h2>
+<section id="convert-model">
+<h3>Convert model<a class="headerlink" href="#convert-model" title="Permalink to this heading"></a></h3>
+<p>Currently, Graph uses the same models as llama.cpp. You can also convert the model yourself</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>./models
+65B<span class="w"> </span>30B<span class="w"> </span>13B<span class="w"> </span>7B<span class="w"> </span>tokenizer_checklist.chk<span class="w"> </span>tokenizer.model
+
+<span class="c1"># convert the pytorch 7B model to llama.cpp format</span>
+python<span class="w"> </span>scripts/convert_llama.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span>models/7B/
+
+./build/bin/quant_llama<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q4_j.bin<span class="w"> </span>q4_j_vnni_b128<span class="w">  </span><span class="c1">#q8_0 for int8, q4_j_vnni_b128 for int4(recommend)  </span>
+
+<span class="c1"># convert the pytorch gptneox model to llama.cpp format</span>
+python<span class="w"> </span>scripts/convert_gptneox.py<span class="w">  </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span><span class="w"> </span><span class="m">0</span>
+
+./build/bin/quant_gptneox<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q8.bin<span class="w"> </span><span class="s2">&quot;q8_0&quot;</span><span class="w"> </span><span class="c1">#q8_0 for int8, q4_0 for int4</span>
+
+<span class="c1"># convert the pytorch mpt model to llama.cpp format</span>
+python<span class="w"> </span>scripts/convert_mpt.py<span class="w"> </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span><span class="w"> </span><span class="m">0</span>
+
+./build/bin/quant_mpt<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q8.bin<span class="w"> </span><span class="s2">&quot;q8_0&quot;</span><span class="w"> </span><span class="c1">#q8_0 for int8, q4_0 for int4</span>
+
+<span class="c1"># convert the pytorch falcon model to llama.cpp format (0 for fp32 model type)</span>
+python<span class="w"> </span>scripts/convert_falcon.py<span class="w"> </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span><span class="w"> </span><span class="m">0</span>
+
+./build/bin/quant_falcon<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q8.bin<span class="w"> </span>q8_0<span class="w"> </span>
+</pre></div>
+</div>
+</section>
+<section id="run-models">
+<h3>Run Models<a class="headerlink" href="#run-models" title="Permalink to this heading"></a></h3>
+<p>Running LLAMA model, for details please refer to <a class="reference internal" href="application/ChatLLAMA/README.html"><span class="doc">LLaMA model documentation</span></a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>./build/bin/main_llama<span class="w"> </span>-m<span class="w"> </span>~/llama.cpp/models/ne-model-q4_j.bin<span class="w"> </span>--seed<span class="w"> </span><span class="m">12</span><span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>--keep<span class="w"> </span><span class="m">48</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--repeat-penalty<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
+</pre></div>
+</div>
+<p>Running GPT-NEOX/ MPT / FALCON model, please use <code class="docutils literal notranslate"><span class="pre">main_gptneox</span></code> / <code class="docutils literal notranslate"><span class="pre">main_mpt</span></code> / <code class="docutils literal notranslate"><span class="pre">main_falcon</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>./build/bin/main_gptneox<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q8.bin<span class="w"> </span>--seed<span class="w"> </span><span class="m">12</span><span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--repeat-penalty<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="supported-model">
+<h3>Supported model<a class="headerlink" href="#supported-model" title="Permalink to this heading"></a></h3>
+<p>Now we supports <a class="reference external" href="https://github.com/EleutherAI/gpt-neox">GPT-NeoX</a>, <a class="reference external" href="https://github.com/facebookresearch/llama">LLaMA</a>, <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a>, <a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">FALCON</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

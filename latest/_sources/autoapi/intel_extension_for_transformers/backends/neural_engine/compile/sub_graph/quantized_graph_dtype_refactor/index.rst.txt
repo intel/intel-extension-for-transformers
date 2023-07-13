@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The QuantizedGraphDtypeRefactor pattern.
    Fuse the original sub-graph into the custom acceleration 'QuantizedGraphDtypeRefactor' graph.
    The search strategy is based on the following pattern mapping configs for different models.

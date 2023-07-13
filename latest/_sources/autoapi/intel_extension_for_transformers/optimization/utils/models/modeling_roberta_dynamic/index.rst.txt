@@ -53,6 +53,7 @@ Functions
 
 
 
+
    Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
 
    .. py:method:: forward(input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None, past_key_values_length=0)
@@ -76,6 +77,7 @@ Functions
 
 
 
+
    Roberta self attention.
 
    .. py:method:: transpose_for_scores(x: torch.Tensor) -> torch.Tensor
@@ -93,6 +95,7 @@ Functions
 
 
 
+
    Roberta self output.
 
    .. py:method:: forward(hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor
@@ -102,6 +105,7 @@ Functions
 
 
 .. py:class:: RobertaAttention(config, position_embedding_type=None)
+
 
 
 
@@ -122,6 +126,7 @@ Functions
 
 
 
+
    Roberta intermidiate.
 
    .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
@@ -134,6 +139,7 @@ Functions
 
 
 
+
    Roberta output.
 
    .. py:method:: forward(hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor
@@ -143,6 +149,7 @@ Functions
 
 
 .. py:class:: RobertaLayer(config)
+
 
 
 
@@ -163,6 +170,7 @@ Functions
 
 
 
+
    The encoder for Roberata.
 
    .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = False, output_hidden_states: Optional[bool] = False, return_dict: Optional[bool] = True, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.BaseModelOutputWithPastAndCrossAttentions]
@@ -172,6 +180,7 @@ Functions
 
 
 .. py:class:: RobertaPooler(config)
+
 
 
 
@@ -187,6 +196,7 @@ Functions
 
 
 
+
    Roberta pretrained model.
 
    An abstract class to handle weights initialization and a simple interface for
@@ -199,6 +209,7 @@ Functions
 
 
 .. py:class:: RobertaModel(config, add_pooling_layer=True)
+
 
 
 
@@ -263,6 +274,7 @@ Functions
 
 
 .. py:class:: RobertaForCausalLM(config)
+
 
 
 
@@ -335,6 +347,7 @@ Functions
 
 
 
+
    Roberta for masked language model task.
 
    .. py:method:: get_output_embeddings()
@@ -364,6 +377,7 @@ Functions
 
 
 
+
    Roberta Head for masked language modeling.
 
    .. py:method:: forward(features, **kwargs)
@@ -373,6 +387,7 @@ Functions
 
 
 .. py:class:: RobertaForSequenceClassification(config)
+
 
 
 
@@ -393,6 +408,7 @@ Functions
 
 
 
+
    Roberta for multiple choice task.
 
    .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.MultipleChoiceModelOutput]
@@ -407,6 +423,7 @@ Functions
 
 
 .. py:class:: RobertaForTokenClassification(config)
+
 
 
 
@@ -425,6 +442,7 @@ Functions
 
 
 
+
    Head for sentence-level classification tasks.
 
    .. py:method:: forward(features, **kwargs)
@@ -434,6 +452,7 @@ Functions
 
 
 .. py:class:: RobertaForQuestionAnswering(config)
+
 
 
 

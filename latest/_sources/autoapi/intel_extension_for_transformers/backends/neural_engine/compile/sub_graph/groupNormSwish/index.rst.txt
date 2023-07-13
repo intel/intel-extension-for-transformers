@@ -23,6 +23,7 @@ Classes
 
 
 
+
    The input channels are separated into num_groups groups, each containing num_channels /
    num_groups channels. Each group is calculated like:
    y = (x - E(X)) / (Var(x) + epsilon) * gamma + beta

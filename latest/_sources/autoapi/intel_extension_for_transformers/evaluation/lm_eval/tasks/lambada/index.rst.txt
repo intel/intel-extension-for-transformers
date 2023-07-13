@@ -38,10 +38,12 @@ Classes
 
 
 
+
    The LAMBADA task using the standard original LAMBADA dataset.
 
 
 .. py:class:: LambadaOpenAI
+
 
 
 

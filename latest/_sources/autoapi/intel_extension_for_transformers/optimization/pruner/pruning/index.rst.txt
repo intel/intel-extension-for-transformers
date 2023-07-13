@@ -24,6 +24,7 @@ Classes
 
 .. py:class:: Pruning(config)
 
+
    Pruning.
 
    The main class to do pruning; it contains at least one Pruner object.

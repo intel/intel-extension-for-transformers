@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.backends.neural_engine &mdash; Intel® Extension for Transformers 1.0.0 documentation</title>
+  <title>intel_extension_for_transformers.backends.neural_engine &mdash; Intel® Extension for Transformers 0.1.dev1+g3d79875 documentation</title>
       <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
@@ -83,6 +83,7 @@
              
   <section id="module-intel_extension_for_transformers.backends.neural_engine">
 <span id="intel-extension-for-transformers-backends-neural-engine"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.backends.neural_engine" title="intel_extension_for_transformers.backends.neural_engine"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.backends.neural_engine" title="Permalink to this heading"></a></h1>
+<p>The module of Neural Engine.</p>
 <section id="subpackages">
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
 <div class="toctree-wrapper compound">
@@ -106,6 +107,7 @@
 <li class="toctree-l2"><a class="reference internal" href="compile/ops/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="compile/ops/all/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.all</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/ops/assert/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.assert</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="compile/ops/baddbmm/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.baddbmm</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/ops/batch_matmul/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.batch_matmul</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/ops/batch_matmul_v2/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.batch_matmul_v2</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/ops/bias_add/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.bias_add</span></code></a></li>
@@ -166,6 +168,7 @@
 <li class="toctree-l3"><a class="reference internal" href="compile/ops/unpack/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.unpack</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/ops/unsqueeze/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.unsqueeze</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/ops/view/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.view</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="compile/ops/where/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.ops.where</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="compile/sub_graph/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph</span></code></a><ul>
@@ -218,6 +221,8 @@
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/matmul_with_transpose/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_transpose</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/matmul_with_transpose_scale_add/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.matmul_with_transpose_scale_add</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/merged_embeddingbag/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.merged_embeddingbag</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/neox_reorder_change/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.neox_reorder_change</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/neox_rotary_pos_emb/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.neox_rotary_pos_emb</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/operator_adaptor/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.operator_adaptor</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/output_data/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.output_data</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/padding_sequence/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.padding_sequence</span></code></a></li>
@@ -232,6 +237,8 @@
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/remove_constant_op/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.remove_constant_op</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/remove_last_view/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.remove_last_view</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/remove_range/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.remove_range</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/remove_unused_operator/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.remove_unused_operator</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/remove_zeros/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.remove_zeros</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/removeslice/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.removeslice</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/reshape_after_restore_hidden_states/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_after_restore_hidden_states</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/reshape_before_and_after_attention_out_layer_norm_gather_elements/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements</span></code></a></li>
@@ -259,6 +266,7 @@
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/token_type_embeddings_v1/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.token_type_embeddings_v1</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/torch_embedding/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.torch_embedding</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/torch_ip_insert_bias/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.torch_ip_insert_bias</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/torch_unpack_baddbmm/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.torch_unpack_baddbmm</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/torchinsertbf16node/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.torchinsertbf16node</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/torchpaddingsquence/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.torchpaddingsquence</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="compile/sub_graph/transformer2Dmodel_AttentionMaskAddReshape/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transformer2Dmodel_AttentionMaskAddReshape</span></code></a></li>
@@ -286,6 +294,25 @@
 </li>
 </ul>
 </div>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Permalink to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.backends.neural_engine.neural_engine_bin" title="intel_extension_for_transformers.backends.neural_engine.neural_engine_bin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">neural_engine_bin</span></code></a>()</p></td>
+<td><p>Entry point for C++ interface</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.backends.neural_engine.neural_engine_bin">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.backends.neural_engine.</span></span><span class="sig-name descname"><span class="pre">neural_engine_bin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/backends/neural_engine.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.backends.neural_engine.neural_engine_bin" title="Permalink to this definition"></a></dt>
+<dd><p>Entry point for C++ interface</p>
+</dd></dl>
+
+</section>
 </section>
 </section>
 

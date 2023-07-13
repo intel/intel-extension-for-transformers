@@ -25,6 +25,7 @@ Classes
 
 .. py:class:: Orchestrate_optimizer(model, components: Optional[List[neural_compressor.experimental.Component]] = [], eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, output_dir: Optional[str] = 'saved_results')
 
+
    Orchestrate_optimizer aggregates and orchestrates components such as Quantization, Pruning and Distillation.
 
    .. py:method:: fit()
@@ -44,6 +45,7 @@ Classes
 
 
 .. py:class:: NoTrainerOptimizer(model, output_dir: Optional[str] = 'saved_results')
+
 
    Optimizer without using Trainer.
 

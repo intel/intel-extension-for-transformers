@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The SliceMask pattern.
 
    Fuse the original sub-graph into the custom acceleration 'SliceMask' graph.

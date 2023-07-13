@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The WordEmbeddings pattern.
 
    Fuse the original sub-graph into the custom acceleration 'WordEmbeddings' graph.

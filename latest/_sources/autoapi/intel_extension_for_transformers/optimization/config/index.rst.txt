@@ -45,6 +45,7 @@ Functions
 
 
 
+
    Optimization functionalities provider: INC or NNCF.
 
 
@@ -60,6 +61,7 @@ Functions
 
 
 .. py:class:: DynamicLengthConfig(max_length: int = None, length_config: str = None, const_rate: float = None, num_sandwich: int = 2, length_drop_ratio_bound: float = 0.2, layer_dropout_prob: float = None, layer_dropout_bound: int = 0, dynamic_training: bool = False, load_store_file: str = None, evo_iter: int = 30, population_size: int = 20, mutation_size: int = 30, mutation_prob: float = 0.5, crossover_size: int = 30, num_cpus: int = 48, distributed_world_size: int = 5, latency_constraint: bool = True, evo_eval_metric='eval_f1')
+
 
 
 
@@ -86,6 +88,7 @@ Functions
 
 
 .. py:class:: QuantizationConfig(framework: str = 'pytorch', approach: str = 'PostTrainingStatic', strategy: str = 'basic', timeout: int = 0, max_trials: int = 100, metrics: Union[intel_extension_for_transformers.optimization.utils.metrics.Metric, List] = None, objectives: Union[intel_extension_for_transformers.optimization.utils.objectives.Objective, List] = performance, config_file: str = None, sampling_size: int = 100, use_bf16: bool = False, recipes: dict = None)
+
 
 
 
@@ -121,6 +124,7 @@ Functions
 
 
 
+
    Configure the pruning process.
 
    :param framework: Which framework you used
@@ -143,6 +147,7 @@ Functions
 
 
 
+
    Configure the distillation process.
 
    :param framework: Which framework you used
@@ -152,6 +157,7 @@ Functions
 
 
 .. py:class:: TFDistillationConfig(loss_types: list = [], loss_weights: list = [], train_steps: list = [], temperature: float = 1.0)
+
 
 
 
@@ -167,10 +173,12 @@ Functions
 
 
 
+
    The flash distillation configuration used by AutoDistillationConfig.
 
 
 .. py:class:: AutoDistillationConfig(framework: str = 'pytorch', search_space: dict = {}, search_algorithm: str = 'BO', metrics: Union[List, intel_extension_for_transformers.optimization.utils.metrics.Metric] = None, max_trials: int = None, seed: int = None, knowledge_transfer: FlashDistillationConfig = None, regular_distillation: FlashDistillationConfig = None)
+
 
 
 
@@ -192,6 +200,7 @@ Functions
 
 
 
+
    config parser.
 
    :param approach: The approach of the NAS.
@@ -199,6 +208,7 @@ Functions
 
 
 .. py:class:: BenchmarkConfig(backend: str = 'torch', batch_size: int = 1, warmup: int = 5, iteration: int = 20, cores_per_instance: int = 4, num_of_instance: int = -1, torchscript: bool = False, generate: bool = False, **kwargs)
+
 
    Config Class for Benchmark.
 
@@ -220,10 +230,12 @@ Functions
 
 .. py:class:: PrunerV2(target_sparsity=None, pruning_type=None, pattern=None, op_names=None, excluded_op_names=None, start_step=None, end_step=None, pruning_scope=None, pruning_frequency=None, min_sparsity_ratio_per_op=None, max_sparsity_ratio_per_op=None, sparsity_decay_type=None, pruning_op_types=None, reg_type=None, criterion_reduce_type=None, parameters=None, resume_from_pruned_checkpoint=None)
 
+
    similiar to torch optimizer's interface
 
 
 .. py:class:: WeightPruningConfig(pruning_configs=[{}], target_sparsity=0.9, pruning_type='snip_momentum', pattern='4x1', op_names=[], excluded_op_names=[], start_step=0, end_step=0, pruning_scope='global', pruning_frequency=1, min_sparsity_ratio_per_op=0.0, max_sparsity_ratio_per_op=0.98, sparsity_decay_type='exp', pruning_op_types=['Conv', 'Linear'], **kwargs)
+
 
    Similiar to torch optimizer's interface.
 

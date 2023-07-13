@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The Transformer2Dmodel_GetSampleBatch pattern.
 
    Fuse the original sub-graph into the custom acceleration 'Transformer2Dmodel_GetSampleBatch' graph.

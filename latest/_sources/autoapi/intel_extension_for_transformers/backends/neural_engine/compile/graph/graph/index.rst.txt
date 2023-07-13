@@ -26,6 +26,7 @@ Classes
 
 
 
+
    The defintion of the neural engine graph.
 
    .. py:method:: add_config_item(key, val)
@@ -98,7 +99,7 @@ Classes
       Dump tensors to the bin and yaml file.
 
 
-   .. py:method:: engine_init(net_info={}, weight_data=b'')
+   .. py:method:: engine_init(net_info={}, weight_data=b'', refresh_model=True)
 
       Pybind engine executor.
 

@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`clang-format`
+======================
+
+.. py:module:: clang-format
+
+
