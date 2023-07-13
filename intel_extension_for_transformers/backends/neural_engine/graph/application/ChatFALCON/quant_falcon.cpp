@@ -117,7 +117,7 @@ bool falcon_model_quantize(const std::string& fname_inp, const std::string& fnam
       ".*weight",
   };
 
-  if (!ne_common_quantize_0(finp, fout, ftype, to_quant, {})) {
+  if (!ne_common_quantize_0(finp, fout, ftype, to_quant, {"transformer.word_embeddings.weight", "lm_head.weight"})) {
     fprintf(stderr, "%s: failed to quantize model '%s'\n", __func__, fname_inp.c_str());
     return false;
   }
@@ -128,14 +128,19 @@ bool falcon_model_quantize(const std::string& fname_inp, const std::string& fnam
   return true;
 }
 
-// usage:
-//  ./quant_falcon models/ne-model.bin models/ne-model-quant.bin type (q8_0 / q4_0, etc.)
 int main(int argc, char** argv) {
-  if (argc != 4) {
-    fprintf(stderr, "usage: %s model-f32.bin model-quant.bin type\n", argv[0]);
-    ne_print_ftypes(stderr);
+  quant_params q_params;
+  if (quant_params_parse(argc, argv, q_params) == false) {
     return 1;
   }
+  const std::string fname_inp = q_params.model_file;
+  const std::string fname_out = q_params.out_file;
+  if (!isValidFilename(fname_inp)) {
+    fprintf(stderr, "invalid file names '%s'\n", fname_inp.c_str());
+    return 1;
+  }
+  ne_ftype ftype = NE_FTYPE_MAP[
+      std::make_tuple(q_params.bits, q_params.alg, q_params.block_size, q_params.scale_dtype, q_params.gemm_isa)];
 
   // needed to initialize f16 tables
   {
@@ -143,16 +148,6 @@ int main(int argc, char** argv) {
     struct ne_context* ctx = ne_init(params);
     ne_free(ctx);
   }
-
-  const std::string fname_inp = argv[1];
-  const std::string fname_out = argv[2];
-
-  if (!isValidFilename(fname_out) || !isValidFilename(fname_inp)) {
-    fprintf(stderr, "invalid file names '%s' '%s'\n", fname_out.c_str(), fname_inp.c_str());
-    return 1;
-  }
-
-  const ne_ftype ftype = ne_parse_ftype(argv[3]);
 
   const int64_t t_main_start_us = ne_time_us();
 

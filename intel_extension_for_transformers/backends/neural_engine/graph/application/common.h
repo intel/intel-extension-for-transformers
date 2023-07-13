@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <string>
 #include <map>
+#include <unordered_map>
+#include <tuple>
 #include <vector>
 #include <random>
 #include <thread>
@@ -130,9 +132,38 @@ gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float*
                                             int top_k, double top_p, double temp, int repeat_last_n,
                                             float repeat_penalty, std::mt19937& rng);
 
-enum ne_ftype ne_parse_ftype(const char* str);
+struct MyHash {
+  std::size_t operator()(const std::tuple<int, std::string, int, std::string, std::string>& k) const {
+    return std::hash<int>()(std::get<0>(k))
+           ^ (std::hash<std::string>()(std::get<1>(k)))
+           ^ std::hash<int>()(std::get<2>(k))
+           ^ (std::hash<std::string>()(std::get<3>(k)))
+           ^ (std::hash<std::string>()(std::get<4>(k)));
+  }
+};
 
-void ne_print_ftypes(FILE* fp = stderr);
+static std::unordered_map<std::tuple<int, std::string, int, std::string, std::string>, enum ne_ftype, MyHash>
+NE_FTYPE_MAP = {
+  // bits, alg, block size, scale dtype, gemm_isa -> ne_ftype
+  {{4,  "sym",   QK4_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q4_0},
+  {{4, "asym",   QK4_1,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q4_1},
+  {{5,  "sym",   QK5_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q5_0},
+  {{5, "asym",   QK5_1,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q5_1},
+  {{8,  "sym",   QK8_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q8_0},
+};
+
+struct quant_params {
+  std::string model_file = "";
+  std::string out_file = "";
+
+  int32_t bits = 4;
+  std::string alg = "sym";
+  int32_t block_size = 32;
+  std::string scale_dtype = "fp32";
+  std::string gemm_isa = "none";
+};
+
+bool quant_params_parse(int argc, char** argv, quant_params& params);
 
 bool ne_common_quantize_0(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,
                           const std::vector<std::string>& to_quant, const std::vector<std::string>& to_skip);

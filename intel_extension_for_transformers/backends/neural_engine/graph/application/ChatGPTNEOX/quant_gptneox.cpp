@@ -124,42 +124,37 @@ bool gpt_neox_model_quantize(const std::string& fname_inp, const std::string& fn
       ".*weight",
   };
 
-  if (!ne_common_quantize_0(finp, fout, ftype, to_quant, {})) {
+  if (!ne_common_quantize_0(finp, fout, ftype, to_quant, {"gpt_neox.embed_in.weight", "embed_out.weight"})) {
     fprintf(stderr, "%s: failed to quantize model '%s'\n", __func__, fname_inp.c_str());
     return false;
   }
 
   finp.close();
   fout.close();
-
   return true;
 }
 
-// usage:
-//  ./gpt-neox-quantize models/stalellm2-117M/ggml-model.bin models/stablelm2-117M/ggml-model-quant.bin type
-//
-int main(int argc, char** argv) {
-  if (argc != 4) {
-    fprintf(stderr, "usage: %s model-f32.bin model-quant.bin type\n", argv[0]);
-    ne_print_ftypes(stderr);
+int main(int argc, char ** argv) {
+  quant_params q_params;
+  if (quant_params_parse(argc, argv, q_params) == false) {
+      return 1;
+  }
+  const std::string fname_inp = q_params.model_file;
+  const std::string fname_out = q_params.out_file;
+  if (!isValidFilename(fname_inp)) {
+    fprintf(stderr, "invalid file names '%s'\n", fname_inp.c_str());
     return 1;
   }
+
+  ne_ftype ftype = NE_FTYPE_MAP[
+      std::make_tuple(q_params.bits, q_params.alg, q_params.block_size, q_params.scale_dtype, q_params.gemm_isa)];
 
   // needed to initialize f16 tables
   {
-    struct ne_init_params params = {0, NULL, false};
-    struct ne_context* ctx = ne_init(params);
-    ne_free(ctx);
+      struct ne_init_params params = { 0, NULL, false };
+      struct ne_context * ctx = ne_init(params);
+      ne_free(ctx);
   }
-
-  const std::string fname_inp = argv[1];
-  const std::string fname_out = argv[2];
-
-  if (!isValidFilename(fname_out) || !isValidFilename(fname_inp)) {
-    fprintf(stderr, "invalid file names '%s' '%s'\n", fname_out.c_str(), fname_inp.c_str());
-    return 1;
-  }
-  const ne_ftype ftype = ne_parse_ftype(argv[3]);
 
   const int64_t t_main_start_us = ne_time_us();
 
@@ -176,6 +171,7 @@ int main(int argc, char** argv) {
 
     t_quantize_us = ne_time_us() - t_start_us;
   }
+
 
   // report timing
   {

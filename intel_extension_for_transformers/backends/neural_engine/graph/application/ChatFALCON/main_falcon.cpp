@@ -165,12 +165,12 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
     const int n_vocab = hparams.n_vocab;
     const int head_dim = hparams.n_embd / hparams.n_head;
 
-    ctx_size += n_embd * n_vocab * ne_type_sizef(wtype);  // tok_embeddings
+    ctx_size += n_embd * n_vocab * ne_type_sizef(NE_TYPE_F32);  // tok_embeddings
 
     ctx_size += n_embd * ne_type_sizef(NE_TYPE_F32);  // output_norm
     ctx_size += n_embd * ne_type_sizef(NE_TYPE_F32);  // output_norm_b
 
-    ctx_size += n_embd * n_vocab * ne_type_sizef(wtype);  // lm_head
+    ctx_size += n_embd * n_vocab * ne_type_sizef(NE_TYPE_F32);  // lm_head
 
     ctx_size += n_layer * (n_embd * ne_type_sizef(NE_TYPE_F32));  // attention_norm
     ctx_size += n_layer * (n_embd * ne_type_sizef(NE_TYPE_F32));  // attention_norm_b
@@ -218,10 +218,10 @@ bool falcon_model_load(const std::string& fname, falcon_model& model, gpt_vocab&
 
     model.layers.resize(n_layer);
 
-    model.tok_embeddings = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
+    model.tok_embeddings = ne_new_tensor_2d(ctx, NE_TYPE_F32, n_embd, n_vocab, NE_SIZE_CALC);
     model.output_norm = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
     model.output_norm_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
-    model.lm_head = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
+    model.lm_head = ne_new_tensor_2d(ctx, NE_TYPE_F32, n_embd, n_vocab, NE_SIZE_CALC);
 
     // map by name
     model.tensors["transformer.word_embeddings.weight"] = model.tok_embeddings;

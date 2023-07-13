@@ -77,21 +77,8 @@ int32_t get_num_physical_cores() {
 }
 
 bool isValidFilename(const std::string& filename) {
-  for (char c : filename) {
-#ifdef __linux__
-    if (c == '/' || c == '\\') {
-#elif _WIN32
-    if (c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' || c == '\"' || c == '<' || c == '>' || c == '|') {
-#endif
-      return false;
-    }
-  }
-
-  if (filename == "." || filename == "..") {
-    return false;
-  }
-
-  return true;
+  std::ifstream infile(filename.c_str());
+  return infile.good();
 }
 
 void gpt_print_usage(int /*argc*/, char** argv, const common_params& params) {
@@ -154,7 +141,7 @@ bool common_params_parse(int argc, char** argv, common_params& params) {
     } else if (arg == "-b" || arg == "--batch_size") {
       params.n_batch = std::stoi(argv[++i]);
     } else if (arg == "-m" || arg == "--model") {
-      if (!isValidFilename(argv[++i])) return false;
+      if (!isValidFilename(argv[i + 1])) return false;
       params.model = argv[++i];
     } else if (arg == "-h" || arg == "--help") {
       gpt_print_usage(argc, argv, params);
@@ -650,31 +637,47 @@ gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float*
   return logits_id[idx].second;
 }
 
-static const std::map<std::string, enum ne_ftype> NE_FTYPE_MAP = {
-    {"q4_0", NE_FTYPE_MOSTLY_Q4_0}, {"q4_1", NE_FTYPE_MOSTLY_Q4_1}, {"q5_0", NE_FTYPE_MOSTLY_Q5_0},
-    {"q5_1", NE_FTYPE_MOSTLY_Q5_1}, {"q8_0", NE_FTYPE_MOSTLY_Q8_0},
-};
-
-void ne_print_ftypes(FILE* fp) {
-  for (auto it = NE_FTYPE_MAP.begin(); it != NE_FTYPE_MAP.end(); it++) {
-    fprintf(fp, "  type = \"%s\" or %d\n", it->first.c_str(), it->second);
-  }
+void quant_print_usage(int argc, char** argv, const quant_params& params) {
+  fprintf(stderr, "usage: %s [options]\n", argv[0]);
+  fprintf(stderr, "\n");
+  fprintf(stderr, "options:\n");
+  fprintf(stderr, "  -h, --help            show this help message and exit\n");
+  fprintf(stderr, "  --model_file          path to fp32 model\n");
+  fprintf(stderr, "  --out_file            path to save quantized model\n");
+  fprintf(stderr, "  --nthread N           thread number (default: 1)\n");
+  fprintf(stderr, "  --bits N              quant bits (default: 4)\n");
+  fprintf(stderr, "  --alg                 quantize algorithm: sym/asym   (default: sym)\n");
+  fprintf(stderr, "  --block_size N        block size (default: 32)\n");
+  fprintf(stderr, "  --scale_dtype dtype   fp32/bf16 type for scales (default: fp32)\n");
+  fprintf(stderr, "  --gemm_isa            vnni/ams/none (default: none)\n");
+  fprintf(stderr, "\n");
 }
 
-enum ne_ftype ne_parse_ftype(const char* str) {
-  enum ne_ftype ftype;
-  if (str[0] == 'q') {
-    const auto it = NE_FTYPE_MAP.find(str);
-    if (it == NE_FTYPE_MAP.end()) {
-      fprintf(stderr, "%s: unknown ftype '%s'\n", __func__, str);
-      return NE_FTYPE_UNKNOWN;
+bool quant_params_parse(int argc, char** argv, quant_params& params) {
+  for (int i = 1; i < argc; i++) {
+    std::string arg = argv[i];
+    if (arg == "--model_file") {
+      params.model_file = argv[++i];
+    } else if (arg == "--out_file") {
+      params.out_file = argv[++i];
+    } else if (arg == "--bits") {
+      params.bits = std::stoi(argv[++i]);
+    } else if (arg == "--alg") {
+      params.alg = argv[++i];
+    } else if (arg == "--block_size") {
+      params.block_size = std::stoi(argv[++i]);
+    } else if (arg == "--scale_dtype") {
+      params.scale_dtype = argv[++i];
+    } else if (arg == "-h" || arg == "--help") {
+      quant_print_usage(argc, argv, params);
+      exit(0);
+    } else {
+      fprintf(stderr, "error: unknown argument: %s\n", arg.c_str());
+      quant_print_usage(argc, argv, params);
+      exit(0);
     }
-    ftype = it->second;
-  } else {
-    ftype = (enum ne_ftype)atoi(str);
   }
-
-  return ftype;
+  return true;
 }
 
 bool ne_common_quantize_0(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,

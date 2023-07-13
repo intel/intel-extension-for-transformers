@@ -27,22 +27,22 @@ ls ./models
 # convert the pytorch 7B model to llama.cpp format
 python scripts/convert_llama.py --outtype f32 --outfile ${output_path}/ne-f32.bin models/7B/
 
-./build/bin/quant_llama ${output_path}/ne-f32.bin ${output_path}/ne-q4_j.bin q4_j_vnni_b128  #q8_0 for int8, q4_j_vnni_b128 for int4(recommend)  
+./build/bin/quant_llama --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4 --block_size 32 # bits=4, block_size=128, gemm_isa=vnni means q4_j_vnni_b128(recommend)  
 
 # convert the pytorch gptneox model to llama.cpp format
-python scripts/convert_gptneox.py  ${input_model_name_or_path} ${output_path} 0
+python scripts/convert_gptneox.py  ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
 
-./build/bin/quant_gptneox ${output_path}/ne-f32.bin ${output_path}/ne-q8.bin "q8_0" #q8_0 for int8, q4_0 for int4
+./build/bin/quant_gptneox --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
 
 # convert the pytorch mpt model to llama.cpp format
-python scripts/convert_mpt.py ${input_model_name_or_path} ${output_path} 0
+python scripts/convert_mpt.py ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
 
-./build/bin/quant_mpt ${output_path}/ne-f32.bin ${output_path}/ne-q8.bin "q8_0" #q8_0 for int8, q4_0 for int4
-
+./build/bin/quant_mpt --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
 # convert the pytorch falcon model to llama.cpp format (0 for fp32 model type)
-python scripts/convert_falcon.py ${input_model_name_or_path} ${output_path} 0
+python scripts/convert_falcon.py ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
 
-./build/bin/quant_falcon ${output_path}/ne-f32.bin ${output_path}/ne-q8.bin q8_0 
+./build/bin/quant_falcon --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
+
 ```
 
 ### Run Models

@@ -178,7 +178,7 @@ bool mpt_model_load(const std::string& fname, mpt_model& model, gpt_vocab& vocab
     const size_t n_layer = hparams.n_layers;
     const size_t n_vocab = hparams.n_vocab;
 
-    ctx_size += n_embd * n_vocab * ne_type_sizef(wtype);  // wte_weight
+    ctx_size += n_embd * n_vocab * ne_type_sizef(NE_TYPE_F32);  // wte_weight
     ctx_size += n_embd * ne_type_sizef(NE_TYPE_F32);      // norm_f_weight
 
     ctx_size += n_layer * (n_embd * ne_type_sizef(NE_TYPE_F32));         // ln_1_weight
@@ -221,7 +221,7 @@ bool mpt_model_load(const std::string& fname, mpt_model& model, gpt_vocab& vocab
 
     model.layers.resize(n_layer);
 
-    model.wte_weight = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
+    model.wte_weight = ne_new_tensor_2d(ctx, NE_TYPE_F32, n_embd, n_vocab, NE_SIZE_CALC);
     model.norm_f_weight = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
     // map by name
@@ -402,7 +402,8 @@ bool mpt_eval(const mpt_model& model, const int n_threads, const int n_past, con
   };
 
   struct ne_context* ctx0 = ne_init(params);
-  struct ne_cgraph gf = {/* .n_threads =*/n_threads};
+  struct ne_cgraph gf = {};
+  gf.n_threads = n_threads;
 
   struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
   memcpy(embd->data, embd_inp.data(), N * ne_element_size(embd));

@@ -234,12 +234,12 @@ bool gpt_neox_model_load(const std::string& fname, gpt_neox_model& model, gpt_vo
 
     model.layers.resize(n_layer);
 
-    model.wte = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
+    model.wte = ne_new_tensor_2d(ctx, NE_TYPE_F32, n_embd, n_vocab, NE_SIZE_CALC);
 
     model.ln_f_g = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
     model.ln_f_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-    model.lmh_g = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
+    model.lmh_g = ne_new_tensor_2d(ctx, NE_TYPE_F32, n_embd, n_vocab, NE_SIZE_CALC);
     // model.lmh_b  = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_vocab);
 
     // map by name
