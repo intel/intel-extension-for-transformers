@@ -19,10 +19,11 @@ source /PATH_TO_ONEAPI/intel/oneapi/compiler/latest/env/vars.sh
 # generate dataset and model
 >> Note: Require a python with tensorflow, six, numpy
 ```
-pip install tensorflow six numpy
+pip install tensorflow six numpy transformers datasets
 cd ./datasets
 wget https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v1.1.json -O ./dev-v1.1.json
-python gen_data.py --model_name [Minilm_l12 or Minilm_l8]
+#bert_large and minilm_l12 for Minilm_12 and minilm_8 for Minilm_l8
+python gen_data.py --model_name [Minilm_l12 or Minilm_l8] 
 cd ../
 pip install gdown 
 gdown --no-check-certificate --folder https://drive.google.com/drive/folders/1nXrJvP1_gVk-eBR2FtJ0Cm7mHglK5K69
@@ -84,5 +85,6 @@ Require transformers in python
 ```
 mkdir mlperf_output
 GLOG_minloglevel=2  INST_NUM=20 ./build/inference_sut --model_conf=./minilm_mha_ir/conf.yaml --model_weight=./minilm_mha_ir/model.bin  --sample_file=./datasets/ --output_dir=./mlperf_output --mlperf_config=./mlperf.conf --user_config=user.conf  --accuracy=true
+#bert_large and minilm_l12 for Minilm_12 and minilm_8 for Minilm_l8
 python accuracy-squad.py --model_name  [Minilm_l12 or Minilm_l8] | tee mlperf_output/accuracy.txt
 ```
