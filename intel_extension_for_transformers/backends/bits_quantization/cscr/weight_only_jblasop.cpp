@@ -2,7 +2,7 @@
 #include <torch/torch.h>
 
 #include "jblas_quantize.hpp"
-#include "jblas_weights4block_f32_linear.hpp"
+#include "jblas_quantweight_f32_linear.hpp"
 
 static torch::Tensor jblas_quantize(const torch::Tensor& Fp32Wei,
                                     bool transpose, int64_t bits,
@@ -12,16 +12,16 @@ static torch::Tensor jblas_quantize(const torch::Tensor& Fp32Wei,
                         compute_type);
 }
 
-static void jblas_weights4block_f32_linear(const torch::Tensor& activation,
-                                           const torch::Tensor& weight,
-                                           torch::Tensor& output, int64_t m,
-                                           int64_t n, int64_t k, int64_t lda,
-                                           int64_t ldo) {
-  weights4block_f32_linear_launcher(activation, weight, output, m, n, k, lda,
-                                    ldo);
+static void jblas_quantweight_f32_linear(const torch::Tensor& activation,
+                                         const torch::Tensor& weight,
+                                         torch::Tensor& output, int64_t m,
+                                         int64_t n, int64_t k, int64_t lda,
+                                         int64_t ldo) {
+  quantweight_f32_linear_launcher(activation, weight, output, m, n, k, lda,
+                                  ldo);
 }
 
 TORCH_LIBRARY(weight_only_jblasop, m) {
   m.def("jblas_quantize", &jblas_quantize);
-  m.def("jblas_weights4block_f32_linear", &jblas_weights4block_f32_linear);
+  m.def("jblas_quantweight_f32_linear", &jblas_quantweight_f32_linear);
 }
