@@ -223,7 +223,7 @@ struct model_file_loader {
     hparams.n_head = file.read_u32();
     hparams.n_layer = file.read_u32();
     hparams.n_rot = file.read_u32();
-    hparams.ftype = (enum model_ftype)file.read_u32();
+    hparams.ftype = (enum ne_ftype)file.read_u32();
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
@@ -304,7 +304,7 @@ struct model_file_loader {
 struct model_file_saver {
   model_file file;
   model_file_loader* any_file_loader;
-  model_file_saver(const char* fname, model_file_loader* any_file_loader, enum model_ftype new_ftype)
+  model_file_saver(const char* fname, model_file_loader* any_file_loader, enum ne_ftype new_ftype)
       : file(fname, "wb"), any_file_loader(any_file_loader) {
     fprintf(stderr, "model.cpp: saving model to %s\n", fname);
     write_magic();
@@ -315,7 +315,7 @@ struct model_file_saver {
     file.write_u32(MODEL_FILE_MAGIC);    // magic
     file.write_u32(MODEL_FILE_VERSION);  // version
   }
-  void write_hparams(enum model_ftype new_ftype) {
+  void write_hparams(enum ne_ftype new_ftype) {
     const model_hparams& hparams = any_file_loader->hparams;
     file.write_u32(hparams.n_vocab);
     file.write_u32(hparams.n_embd);
@@ -650,23 +650,23 @@ static const char* model_file_version_name(model_file_version version) {
   return "unknown";
 }
 
-static const char* model_ftype_name(enum model_ftype ftype) {
+static const char* ne_ftype_name(enum ne_ftype ftype) {
   switch (ftype) {
-    case MODEL_FTYPE_ALL_F32:
+    case NE_FTYPE_ALL_F32:
       return "all F32";
-    case MODEL_FTYPE_MOSTLY_F16:
+    case NE_FTYPE_MOSTLY_F16:
       return "mostly F16";
-    case MODEL_FTYPE_MOSTLY_Q4_0:
+    case NE_FTYPE_MOSTLY_Q4_0:
       return "mostly Q4_0";
-    case MODEL_FTYPE_MOSTLY_Q4_1:
+    case NE_FTYPE_MOSTLY_Q4_1:
       return "mostly Q4_1";
-    case MODEL_FTYPE_MOSTLY_Q4_1_SOME_F16:
+    case NE_FTYPE_MOSTLY_Q4_1_SOME_F16:
       return "mostly Q4_1, some F16";
-    case MODEL_FTYPE_MOSTLY_Q5_0:
+    case NE_FTYPE_MOSTLY_Q5_0:
       return "mostly Q5_0";
-    case MODEL_FTYPE_MOSTLY_Q5_1:
+    case NE_FTYPE_MOSTLY_Q5_1:
       return "mostly Q5_1";
-    case MODEL_FTYPE_MOSTLY_Q8_0:
+    case NE_FTYPE_MOSTLY_Q8_0:
       return "mostly Q8_0";
     default:
       return "unknown, may not work";
@@ -730,22 +730,22 @@ static void model_model_load_internal(const std::string& fname, model_context& l
     fprintf(stderr, "%s: n_head     = %u\n", __func__, hparams.n_head);
     fprintf(stderr, "%s: n_layer    = %u\n", __func__, hparams.n_layer);
     fprintf(stderr, "%s: n_rot      = %u\n", __func__, hparams.n_rot);
-    fprintf(stderr, "%s: ftype      = %u (%s)\n", __func__, hparams.ftype, model_ftype_name(hparams.ftype));
+    fprintf(stderr, "%s: ftype      = %u (%s)\n", __func__, hparams.ftype, ne_ftype_name(hparams.ftype));
     fprintf(stderr, "%s: n_ff       = %u\n", __func__, n_ff);
     fprintf(stderr, "%s: n_parts    = %zu\n", __func__, ml->file_loaders.size());
     fprintf(stderr, "%s: model size = %s\n", __func__, model_model_type_name(model.type));
   }
 
   if (file_version < MODEL_FILE_VERSION_GGJT_V2) {
-    if (hparams.ftype != MODEL_FTYPE_ALL_F32 && hparams.ftype != MODEL_FTYPE_MOSTLY_F16 &&
-        hparams.ftype != MODEL_FTYPE_MOSTLY_Q8_0) {
+    if (hparams.ftype != NE_FTYPE_ALL_F32 && hparams.ftype != NE_FTYPE_MOSTLY_F16 &&
+        hparams.ftype != NE_FTYPE_MOSTLY_Q8_0) {
       throw format("this format is no longer supported (see https://github.com/ggerganov/model.cpp/pull/1405)");
     }
   }
 
   if (file_version < MODEL_FILE_VERSION_GGJT_V3) {
-    if (hparams.ftype == MODEL_FTYPE_MOSTLY_Q4_0 || hparams.ftype == MODEL_FTYPE_MOSTLY_Q4_1 ||
-        hparams.ftype == MODEL_FTYPE_MOSTLY_Q8_0) {
+    if (hparams.ftype == NE_FTYPE_MOSTLY_Q4_0 || hparams.ftype == NE_FTYPE_MOSTLY_Q4_1 ||
+        hparams.ftype == NE_FTYPE_MOSTLY_Q8_0) {
       throw format("this format is no longer supported (see https://github.com/ggerganov/model.cpp/pull/1508)");
     }
   }
@@ -1453,31 +1453,31 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
 //
 
 static void model_model_quantize_internal(const std::string& fname_inp, const std::string& fname_out,
-                                          enum model_ftype ftype, int nthread) {
+                                          enum ne_ftype ftype, int nthread) {
   ne_type quantized_type;
   switch (ftype) {
-    case MODEL_FTYPE_MOSTLY_Q4_0:
+    case NE_FTYPE_MOSTLY_Q4_0:
       quantized_type = NE_TYPE_Q4_0;
       break;
-    case MODEL_FTYPE_MOSTLY_Q4_1:
+    case NE_FTYPE_MOSTLY_Q4_1:
       quantized_type = NE_TYPE_Q4_1;
       break;
-    case MODEL_FTYPE_MOSTLY_Q5_0:
+    case NE_FTYPE_MOSTLY_Q5_0:
       quantized_type = NE_TYPE_Q5_0;
       break;
-    case MODEL_FTYPE_MOSTLY_Q5_1:
+    case NE_FTYPE_MOSTLY_Q5_1:
       quantized_type = NE_TYPE_Q5_1;
       break;
-    case MODEL_FTYPE_MOSTLY_Q8_0:
+    case NE_FTYPE_MOSTLY_Q8_0:
       quantized_type = NE_TYPE_Q8_0;
       break;
-    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_B32:
-    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128:
-    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_B1024:
-    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32:
-    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32:
-    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32:
-    case MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_B32:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_B128:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_B1024:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128:
       quantized_type = NE_TYPE_Q4_JBLAS;
       break;
     default:
@@ -1566,31 +1566,31 @@ static void model_model_quantize_internal(const std::string& fname_inp, const st
           jblas::prologue::PackedWeight* packedw = NULL;
           int blocksize = 32;
           auto type = CompType::S4_F32;
-          if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_B32) {
+          if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_B32) {
             blocksize = 32;
             type = CompType::S4_F32;
-          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128) {
+          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_B128) {
             blocksize = 128;
             type = CompType::S4_F32;
-          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_B1024) {
+          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_B1024) {
             blocksize = 1024;
             type = CompType::S4_F32;
-          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32) {
+          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32) {
             blocksize = 32;
             type = CompType::S4_Bf16;
-          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32) {
+          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32) {
             blocksize = 32;
             type = CompType::S4_F32;
-          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128) {
+          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128) {
             blocksize = 128;
             type = CompType::S4_F32;
-          } else if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32) {
+          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32) {
             blocksize = 32;
             type = CompType::S4_Bf16;
           }
           auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-          if (ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32 || ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128 ||
-              ftype == MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32) {
+          if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32 || ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128 ||
+              ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32) {
             if (cd->AVX512F()) {
               packedw = vnnikernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n_, k_, (float*)tensor.data,
                                                                                          k_, blocksize, type);
@@ -1783,7 +1783,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-int model_model_quantize(const char* fname_inp, const char* fname_out, enum model_ftype ftype, int nthread) {
+int model_model_quantize(const char* fname_inp, const char* fname_out, enum ne_ftype ftype, int nthread) {
   try {
     model_model_quantize_internal(fname_inp, fname_out, ftype, nthread);
     return 0;

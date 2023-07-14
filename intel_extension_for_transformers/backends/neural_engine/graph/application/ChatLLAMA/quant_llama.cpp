@@ -38,21 +38,21 @@ struct MyHash {
 };
 
 
-static std::unordered_map<std::tuple<int, std::string, int, std::string, std::string>, enum model_ftype, MyHash>
+static std::unordered_map<std::tuple<int, std::string, int, std::string, std::string>, enum ne_ftype, MyHash>
 NE_FTYPE_MAP = {
     // bits, alg, block size, scale dtype, gemm_isa -> ne_ftype
-    {{4,  "sym",   QK4_0,  "fp32",  "none"}, MODEL_FTYPE_MOSTLY_Q4_0},
-    {{4, "asym",   QK4_1,  "fp32",  "none"}, MODEL_FTYPE_MOSTLY_Q4_1},
-    {{5,  "sym",   QK5_0,  "fp32",  "none"}, MODEL_FTYPE_MOSTLY_Q5_0},
-    {{5, "asym",   QK5_1,  "fp32",  "none"}, MODEL_FTYPE_MOSTLY_Q5_1},
-    {{8,  "sym",   QK8_0,  "fp32",  "none"}, MODEL_FTYPE_MOSTLY_Q8_0},
-    {{4,  "sym",      32,  "fp32",  "amx"}, MODEL_FTYPE_MOSTLY_Q4_JBLAS_B32},
-    {{4,  "sym",      32,  "bf16",  "amx"}, MODEL_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32},
-    {{4,  "sym",     128,  "fp32",  "amx"}, MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128},
-    {{4,  "sym",   -1024,  "fp32",  "amx"}, MODEL_FTYPE_MOSTLY_Q4_JBLAS_B128},
-    {{4,  "sym",      32,  "fp32",  "vnni"}, MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32},
-    {{4,  "sym",     128,  "fp32",  "vnni"}, MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128},
-    {{4,  "sym",      32,  "bf16",  "vnni"}, MODEL_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32},
+    {{4,  "sym",   QK4_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q4_0},
+    {{4, "asym",   QK4_1,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q4_1},
+    {{5,  "sym",   QK5_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q5_0},
+    {{5, "asym",   QK5_1,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q5_1},
+    {{8,  "sym",   QK8_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q8_0},
+    {{4,  "sym",      32,  "fp32",  "amx"}, NE_FTYPE_MOSTLY_Q4_JBLAS_B32},
+    {{4,  "sym",      32,  "bf16",  "amx"}, NE_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32},
+    {{4,  "sym",     128,  "fp32",  "amx"}, NE_FTYPE_MOSTLY_Q4_JBLAS_B128},
+    {{4,  "sym",   -1024,  "fp32",  "amx"}, NE_FTYPE_MOSTLY_Q4_JBLAS_B128},
+    {{4,  "sym",      32,  "fp32",  "vnni"}, NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32},
+    {{4,  "sym",     128,  "fp32",  "vnni"}, NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128},
+    {{4,  "sym",      32,  "bf16",  "vnni"}, NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32},
 };
 
 struct quant_params {
@@ -125,9 +125,9 @@ int main(int argc, char** argv) {
   }
   const std::string fname_inp = q_params.model_file;
   const std::string fname_out = q_params.out_file;
-  model_ftype ftype = NE_FTYPE_MAP[
+  ne_ftype ftype = NE_FTYPE_MAP[
       std::make_tuple(q_params.bits, q_params.alg, q_params.block_size, q_params.scale_dtype, q_params.gemm_isa)];
-  printf("model_ftype: %d\n", ftype);
+  printf("ne_ftype: %d\n", ftype);
   const int nthread = q_params.nthread;
 
   const int64_t t_main_start_us = model_time_us();

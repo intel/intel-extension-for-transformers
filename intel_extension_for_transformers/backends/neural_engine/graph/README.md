@@ -52,11 +52,19 @@ Running LLAMA model, for details please refer to [LLaMA model documentation](./a
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 ./build/bin/main_llama -m ~/llama.cpp/models/ne-model-q4_j.bin --seed 12 -c 512 -b 1024 -n 256 --keep 48 -t 56 --repeat-penalty 1.0 --color -p "She opened the door and see"
 ```
 
-Running GPT-NEOX/ MPT / FALCON model, please use `main_gptneox` / `main_mpt` / `main_falcon`.
+Running GPT-NEOX/ MPT / FALCON / GPT-J model, please use `main_gptneox` / `main_mpt` / `main_falcon` / `main_gptj`.
 
 ```bash
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 ./build/bin/main_gptneox -m ${output_path}/ne-q8.bin --seed 12 -c 512 -b 1024 -n 256 -t 56 --repeat-penalty 1.0 -p "She opened the door and see"
 ```
 
+for GPT-J, you can also try python binds which is experimental currently:
+
+```bash
+cp scripts/gptj_binding.py build
+cd build
+python gptj_binding.py
+```
+
 ### Supported model
-Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b)
+Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj)

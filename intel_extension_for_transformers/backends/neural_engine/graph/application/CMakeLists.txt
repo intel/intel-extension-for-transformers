@@ -19,9 +19,7 @@ add_library(${TARGET} OBJECT
     common.cpp
     )
 
-if (BUILD_SHARED_LIBS)
-    set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
+set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(${TARGET} PUBLIC .)
 target_compile_features(${TARGET} PUBLIC cxx_std_11)
@@ -33,3 +31,4 @@ add_subdirectory(ChatLLAMA)
 add_subdirectory(ChatGPTNEOX)
 add_subdirectory(ChatMPT)
 add_subdirectory(ChatFALCON)
+add_subdirectory(ChatGPTJ)

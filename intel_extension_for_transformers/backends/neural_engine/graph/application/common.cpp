@@ -700,6 +700,15 @@ bool ne_common_quantize_0(std::ifstream& finp, std::ofstream& fout, const ne_fty
     case NE_FTYPE_MOSTLY_Q8_0:
       qtype = NE_TYPE_Q8_0;
       break;
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_B32:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_B128:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_B1024:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32:
+    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128:
+      qtype = NE_TYPE_Q4_JBLAS;
+      break;
     case NE_FTYPE_UNKNOWN:
     case NE_FTYPE_ALL_F32:
     case NE_FTYPE_MOSTLY_F16:
