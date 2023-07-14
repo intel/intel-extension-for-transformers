@@ -73732,18 +73732,17 @@ END LICENSE(S) FOR ---------- zstandard -----------------------------
 
 
 The following third party programs have their own third party program files. These additional third party program files are as follows:
-<<Replace this with relevant components and its tpp url>>
 e.g 
-1. oneMKL Interfaces : https://github.com/oneapi-src/oneMKL/tree/develop/third-party-programs
-2. oneTBB : https://github.com/oneapi-src/oneTBB/blob/master/third-party-programs.txt
+1. Intel® Neural Compressor: ./neural-compressor-third-party-programs.txt
+2. Intel® Extension for PyTorch* : ./IPEX-third-party-programs.txt
+3. Intel® Optimizations for TensorFlow: ./intel-tensorflow-third-party-programs.txt
+4. Intel® extensions for Transformers: ./ITREX-third-party-programs.txt
 
 
 
 The Dockerfile depends on the use of the following additional layers.
-<<Replace this with relevant components and its tpp url>>
 e.g 
 1. ubuntu:20.04 https://hub.docker.com/_/ubuntu tag 20.04
-2. centos:8 https://www.centos.org/legal/licensing-policy/ tag centos8
 
 Other names and brands may be claimed as the property of others. 
 
